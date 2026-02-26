@@ -1,5 +1,21 @@
 // database.js - Gestão Rápida com Enforcamento de MAIÚSCULAS e Suporte a Usuários
 import * as SQLite from 'expo-sqlite';
+import isaac from 'isaac';
+import bcrypt from 'react-native-bcrypt';
+
+// Setup Random Number Generator for Bcrypt
+bcrypt.setRandomFallback((len) => {
+    const buf = new Uint8Array(len);
+    return buf.map(() => Math.floor(isaac.random() * 256));
+});
+
+// Helper de Hash Seguro
+const hashPassword = (plainPassword) => {
+    if (!plainPassword) return null;
+    if (plainPassword.startsWith('$2a$')) return plainPassword; // Já está hash
+    const salt = bcrypt.genSaltSync(10);
+    return bcrypt.hashSync(plainPassword, salt);
+};
 
 let db;
 
@@ -202,8 +218,16 @@ const createTables = async () => {
             await executeQuery(query);
         }
 
-        // Inserir Admin padrão se não existir (Paridade com Desktop)
-        await executeQuery(`INSERT OR IGNORE INTO usuarios (usuario, senha, nivel) VALUES ('ADMIN', '1234', 'ADM')`);
+        // Inserir Admin padrão com HASH (Segurança Regra #9)
+        const adminPass = hashPassword('1234');
+        await executeQuery(`INSERT OR IGNORE INTO usuarios (usuario, senha, nivel) VALUES ('ADMIN', ?, 'ADM')`, [adminPass]);
+
+        // CORREÇÃO DE SEGURANÇA: Migrar Admin antigo (texto plano) para Hash
+        try {
+            await executeQuery(`UPDATE usuarios SET senha = ? WHERE usuario = 'ADMIN' AND senha = '1234'`, [adminPass]);
+        } catch (e) {
+            console.log('Admin já seguro ou erro na migração de senha.');
+        }
 
         // MIGRATION: Adicionar email se não existir (v3.5)
         try {
@@ -524,13 +548,15 @@ export const getConfig = async (chave) => {
 
 // --- USUÁRIOS ---
 export const insertUsuario = async (u) => {
+    const senhaHash = hashPassword(u.senha);
     await executeQuery(`INSERT INTO usuarios (usuario, senha, nivel, email, nome_completo, telefone, endereco, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [up(u.usuario), u.senha, up(u.nivel), u.email ? u.email.trim() : null, up(u.nome_completo), u.telefone, up(u.endereco), new Date().toISOString()]);
+        [up(u.usuario), senhaHash, up(u.nivel), u.email ? u.email.trim() : null, up(u.nome_completo), u.telefone, up(u.endereco), new Date().toISOString()]);
 };
 
 export const updateUsuario = async (u) => {
+    const senhaHash = hashPassword(u.senha);
     await executeQuery(`UPDATE usuarios SET senha = ?, nivel = ?, email = ?, nome_completo = ?, telefone = ?, endereco = ?, last_updated = ? WHERE id = ?`,
-        [u.senha, up(u.nivel), u.email ? u.email.trim() : null, up(u.nome_completo), u.telefone, up(u.endereco), new Date().toISOString(), u.id]);
+        [senhaHash, up(u.nivel), u.email ? u.email.trim() : null, up(u.nome_completo), u.telefone, up(u.endereco), new Date().toISOString(), u.id]);
 };
 
 export const getUsuarios = async () => {

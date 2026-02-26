@@ -14,6 +14,7 @@ import { executeQuery } from '../database/database';
 
 import AgroInput from '../components/AgroInput';
 import AgroButton from '../components/AgroButton';
+import { Logger } from '../services/logger';
 
 export default function LoginScreen({ navigation }) {
     const [usuario, setUsuario] = useState('');
@@ -143,7 +144,9 @@ export default function LoginScreen({ navigation }) {
                     });
                     isValid = bcrypt.compareSync(passTrim, hash);
                 } else {
+                    // LEGACY FALLBACK (Log this occurrence)
                     isValid = (hash === passTrim);
+                    if (isValid) Logger.error(new Error(`Legacy Password Used: ${userRow.usuario}`), 'LoginScreenAuth', { legacy: true });
                 }
 
                 if (isValid) {
@@ -167,8 +170,8 @@ export default function LoginScreen({ navigation }) {
                 Alert.alert('Não Encontrado', 'Verifique o telefone ou usuário digitado.');
             }
         } catch (e) {
-            console.error(e);
-            Alert.alert('Erro', 'Falha ao conectar.');
+            Logger.error(e, 'LoginScreen', { user: userTrim });
+            Alert.alert('Erro', 'Falha ao conectar. Tente novamente.');
         } finally {
             setLoading(false);
         }

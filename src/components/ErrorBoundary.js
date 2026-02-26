@@ -4,6 +4,8 @@ import * as Updates from 'expo-updates';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { Logger } from '../services/logger';
+
 export default class ErrorBoundary extends React.Component {
     constructor(props) {
         super(props);
@@ -15,7 +17,8 @@ export default class ErrorBoundary extends React.Component {
     }
 
     componentDidCatch(error, errorInfo) {
-        console.error("Uncaught Error:", error, errorInfo);
+        // REPORT ERROR TO ADMIN (Rule #7)
+        Logger.error(error, 'ErrorBoundary', errorInfo);
         this.setState({ errorInfo });
     }
 
