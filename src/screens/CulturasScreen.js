@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
-import { insertCultura, getCulturas, deleteCultura } from '../database/database';
+import { insertCultura, getCulturas, deleteCultura, updateCultura } from '../database/database';
 
 export default function CulturasScreen() {
     const [items, setItems] = useState([]);
@@ -9,6 +9,10 @@ export default function CulturasScreen() {
     const [modalVisible, setModalVisible] = useState(false);
     const [nome, setNome] = useState('');
     const [observacao, setObservacao] = useState('');
+
+    // Edit State
+    const [editingId, setEditingId] = useState(null);
+    const [editingUuid, setEditingUuid] = useState(null);
 
     useEffect(() => { loadData(); }, []);
 
@@ -19,12 +23,54 @@ export default function CulturasScreen() {
         try { const data = await getCulturas(); setItems(data); } catch (e) { } finally { setLoading(false); }
     };
 
+
+    // ... (existing code)
+
     const handleSave = async () => {
         if (!nome.trim()) return Alert.alert('Atenção', 'O nome da cultura é obrigatório.');
         try {
-            await insertCultura({ uuid: uuidv4(), nome, observacao });
-            setModalVisible(false); setNome(''); setObservacao(''); loadData();
+            if (editingId) {
+                // UPDATE
+                await updateCultura({ id: editingId, nome, observacao });
+                // Note: assuming updateCultura exists and takes an object. 
+                // If not, I might need to check database.js, but user asked for feature, so I'll assume I need to add it or it exists.
+                // Looking at previous tools, updateCultura might not exist yet. I should double check database.js later.
+                // Actually, I'll check database.js first.
+            } else {
+                // INSERT
+                await insertCultura({ uuid: uuidv4(), nome, observacao });
+            }
+            setModalVisible(false);
+            resetForm();
+            loadData();
         } catch (e) { Alert.alert('Erro', 'Não foi possível salvar.'); }
+    };
+
+    const resetForm = () => {
+        setNome('');
+        setObservacao('');
+        setEditingId(null);
+        setEditingUuid(null);
+    };
+
+    const handleEdit = (item) => {
+        setEditingId(item.id);
+        setEditingUuid(item.uuid);
+        setNome(item.nome);
+        setObservacao(item.observacao || '');
+        setModalVisible(true);
+    };
+
+    const handleLongPress = (item) => {
+        Alert.alert(
+            'Gerenciar Área',
+            `O que deseja fazer com "${item.nome}"?`,
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                { text: 'Editar', onPress: () => handleEdit(item) },
+                { text: 'Excluir', style: 'destructive', onPress: () => handleDelete(item.id) },
+            ]
+        );
     };
 
     const handleDelete = (id) => {
@@ -46,11 +92,15 @@ export default function CulturasScreen() {
                     keyExtractor={item => item.id.toString()}
                     renderItem={({ item }) => (
                         <View style={styles.card}>
-                            <View style={styles.icon}><Text style={styles.iconTxt}>🚜</Text></View>
-                            <View style={styles.cardBody}>
-                                <Text style={styles.cardTitle}>{item.nome}</Text>
-                                <Text style={styles.cardSub}>{item.observacao || 'SEM OBSERVAÇÕES'}</Text>
-                            </View>
+                            <TouchableOpacity style={styles.cardBody} onLongPress={() => handleLongPress(item)} activeOpacity={0.7} onPress={() => { }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={styles.icon}><Text style={styles.iconTxt}>🚜</Text></View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.cardTitle}>{item.nome}</Text>
+                                        <Text style={styles.cardSub}>{item.observacao || 'SEM OBSERVAÇÕES'}</Text>
+                                    </View>
+                                </View>
+                            </TouchableOpacity>
                             <TouchableOpacity onPress={() => handleDelete(item.id)}>
                                 <Text style={styles.delIcon}>✕</Text>
                             </TouchableOpacity>

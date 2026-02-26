@@ -1,0 +1,71 @@
+Starting Metro Bundler
+warning: Bundler cache is empty, rebuilding (this may take a minute)
+
+SyntaxError: SyntaxError: C:\Users\Bruno\Documents\AgroGB\mobile_app\src\components\cadastro\CadastroInsumos.js: Unexpected token (174:13)
+
+  172 |     return (
+  173 |         <View style={styles.container}>
+> 174 |             <!-- Gradiente removido -->
+      |              ^
+  175 |             <!-- Header Removido para o Hub -->
+  176 |                 <TouchableOpacity
+  177 |                     style={{ backgroundColor: '#10B981', padding: 8, borderRadius: 12, justifyContent: 'center', alignItems: 'center' }}
+SyntaxError: C:\Users\Bruno\Documents\AgroGB\mobile_app\src\components\cadastro\CadastroInsumos.js: Unexpected token (174:13)
+
+  172 |     return (
+  173 |         <View style={styles.container}>
+> 174 |             <!-- Gradiente removido -->
+      |              ^
+  175 |             <!-- Header Removido para o Hub -->
+  176 |                 <TouchableOpacity
+  177 |                     style={{ backgroundColor: '#10B981', padding: 8, borderRadius: 12, justifyContent: 'center', alignItems: 'center' }}
+    at constructor (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:365:19)
+    at FlowParserMixin.raise (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:6599:19)
+    at FlowParserMixin.unexpected (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:6619:16)
+    at FlowParserMixin.jsxParseIdentifier (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:4569:12)
+    at FlowParserMixin.jsxParseNamespacedName (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:4576:23)
+    at FlowParserMixin.jsxParseElementName (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:4585:21)
+    at FlowParserMixin.jsxParseOpeningElementAt (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:4661:22)
+    at FlowParserMixin.jsxParseElementAt (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:4686:33)
+    at FlowParserMixin.jsxParseElementAt (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:4698:32)
+    at FlowParserMixin.jsxParseElement (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:4749:17)
+    at FlowParserMixin.parseExprAtom (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:4759:19)
+    at FlowParserMixin.parseExprSubscripts (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:11081:23)
+    at FlowParserMixin.parseUpdate (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:11066:21)
+    at FlowParserMixin.parseMaybeUnary (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:11046:23)
+    at FlowParserMixin.parseMaybeUnaryOrPrivate (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:10899:61)
+    at FlowParserMixin.parseExprOps (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:10904:23)
+    at FlowParserMixin.parseMaybeConditional (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:10881:23)
+    at FlowParserMixin.parseMaybeAssign (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:10831:21)
+    at C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:3498:39
+    at FlowParserMixin.tryParse (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:6907:20)
+    at FlowParserMixin.parseMaybeAssign (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:3498:18)
+    at C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:10800:39
+    at FlowParserMixin.allowInAnd (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:12426:12)
+    at FlowParserMixin.parseMaybeAssignAllowIn (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:10800:17)
+    at FlowParserMixin.parseMaybeAssignAllowInOrVoidPattern (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:12493:17)
+    at FlowParserMixin.parseParenAndDistinguishExpression (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:11675:28)
+    at FlowParserMixin.parseParenAndDistinguishExpression (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:3591:18)
+    at FlowParserMixin.parseExprAtom (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:11331:23)
+    at FlowParserMixin.parseExprAtom (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:4764:20)
+    at FlowParserMixin.parseExprSubscripts (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:11081:23)
+    at FlowParserMixin.parseUpdate (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:11066:21)
+    at FlowParserMixin.parseMaybeUnary (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:11046:23)
+    at FlowParserMixin.parseMaybeUnaryOrPrivate (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:10899:61)
+    at FlowParserMixin.parseExprOps (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:10904:23)
+    at FlowParserMixin.parseMaybeConditional (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:10881:23)
+    at FlowParserMixin.parseMaybeAssign (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:10831:21)
+    at FlowParserMixin.parseMaybeAssign (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:3549:18)
+    at FlowParserMixin.parseExpressionBase (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:10784:23)
+    at C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:10780:39
+    at FlowParserMixin.allowInAnd (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:12421:16)
+    at FlowParserMixin.parseExpression (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:10780:17)
+    at FlowParserMixin.parseReturnStatement (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:13142:28)
+    at FlowParserMixin.parseStatementContent (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:12798:21)
+    at FlowParserMixin.parseStatementLike (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:12767:17)
+    at FlowParserMixin.parseStatementLike (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:2918:24)
+    at FlowParserMixin.parseStatementListItem (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:12747:17)
+    at FlowParserMixin.parseBlockOrModuleBlockBody (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:13316:61)
+    at FlowParserMixin.parseBlockBody (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:13309:10)
+    at FlowParserMixin.parseBlock (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:13297:10)
+    at FlowParserMixin.parseFunctionBody (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\@babel\parser\lib\index.js:12100:24)

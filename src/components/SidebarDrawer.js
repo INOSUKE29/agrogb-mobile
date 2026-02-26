@@ -56,7 +56,9 @@ export default function SidebarDrawer({ visible, onClose }) {
                     onPress: async () => {
                         onClose();
                         try {
-                            await AsyncStorage.multiRemove(['@user_session', '@user_profile']);
+                            await AsyncStorage.removeItem('user_session');
+                            await AsyncStorage.removeItem('@user_level');
+                            await AsyncStorage.removeItem('@user_id');
                             // Opcional: Limpar tudo exceto configurações importantes
                             navigation.reset({
                                 index: 0,
@@ -111,9 +113,11 @@ export default function SidebarDrawer({ visible, onClose }) {
                     <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
                         <Text style={styles.sectionTitle}>NAVEGAÇÃO</Text>
                         <MenuItem icon="home-outline" label="Painel / Início" screen="Home" />
-                        <MenuItem icon="camera-outline" label="Monitoramento" screen="Monitoramento" />
+                        <MenuItem icon="book-outline" label="Caderno de Campo" screen="CadernoCampo" />
+                        <MenuItem icon="camera-outline" label="Monitoramento (Novo)" screen="Monitoramento" />
                         <MenuItem icon="cube-outline" label="Estoque" screen="Estoque" />
                         <MenuItem icon="cart-outline" label="Compras" screen="Compras" />
+                        <MenuItem icon="bar-chart-outline" label="Relatórios (BI)" screen="Relatorios" />
                         <MenuItem icon="people-outline" label="Clientes" screen="Clientes" />
 
                         <View style={styles.divider} />

@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 // CONFIGURAÇÃO PADRÃO (FALLBACK)
 const DEFAULT_CONFIG = {
     menu_columns: 3,

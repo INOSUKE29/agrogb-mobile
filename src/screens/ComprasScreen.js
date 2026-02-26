@@ -1,55 +1,106 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator, Vibration } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator, Vibration, StatusBar as RNStatusBar } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
-import { insertCompra, getCadastro, getComprasRecentes, updateCompra, deleteCompra, insertCadastro as insertCadastros } from '../database/database';
+import { insertCompra, getCadastro, getComprasRecentes, updateCompra, deleteCompra, insertCadastro as insertCadastros, executeQuery } from '../database/database';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Camera } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { useFocusEffect } from '@react-navigation/native';
+import CultureSelector from '../components/CultureSelector';
+import { COLORS } from '../styles/theme';
+import { AppInput } from '../ui/components/AppInput';
+import { AppButton } from '../ui/components/AppButton';
 
 export default function ComprasScreen({ navigation }) {
+    // Form State
     const [item, setItem] = useState('');
     const [quantidade, setQuantidade] = useState('');
     const [valor, setValor] = useState('');
-    const [cultura, setCultura] = useState('');
     const [observacao, setObservacao] = useState('');
-    const [detalhes, setDetalhes] = useState(''); // Bula / Info Técnica
+    const [detalhes, setDetalhes] = useState(''); // Compatibility
+
+    // Culture State 
+    const [selectedCulture, setSelectedCulture] = useState(null);
+    const [culturesList, setCulturesList] = useState([]);
+    const [loadingCultures, setLoadingCultures] = useState(false);
+
     const [editingUuid, setEditingUuid] = useState(null);
 
+    // History & Items
     const [history, setHistory] = useState([]);
-
-    // Selection Modal State
-    const [modalVisible, setModalVisible] = useState(false);
     const [items, setItems] = useState([]);
+
+    // Modals
+    const [modalVisible, setModalVisible] = useState(false);
     const [searchText, setSearchText] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // Quick Add State
+    // Quick Add
     const [quickAddModal, setQuickAddModal] = useState(false);
     const [newItemName, setNewItemName] = useState('');
 
-    // Camera State
-    const [hasPermission, setHasPermission] = useState(null);
-    const [scanned, setScanned] = useState(false);
-    const [cameraVisible, setCameraVisible] = useState(false);
+    // Anexos (Nota)
+    const [anexoUri, setAnexoUri] = useState(null);
 
     useFocusEffect(useCallback(() => {
         loadItems();
         loadHistory();
+        loadCultures();
     }, []));
 
-    useEffect(() => {
-        (async () => {
-            const { status } = await Camera.requestCameraPermissionsAsync();
-            setHasPermission(status === 'granted');
-        })();
-    }, []);
+    const handleAnexarNota = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Aviso', 'Precisamos de permissão para acessar suas fotos.');
+            return;
+        }
+
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            quality: 0.5,
+        });
+
+        if (!result.canceled) {
+            const sourceUri = result.assets[0].uri;
+            const filename = sourceUri.split('/').pop();
+            const newPath = FileSystem.documentDirectory + filename;
+            try {
+                await FileSystem.copyAsync({ from: sourceUri, to: newPath });
+                setAnexoUri(newPath);
+                Alert.alert('Sucesso', 'Nota anexada com sucesso!');
+            } catch (e) {
+                console.error("Erro ao salvar nota", e);
+                Alert.alert('Erro', 'Não foi possível salvar o anexo localmente.');
+            }
+        }
+    };
+
+    const loadCultures = async () => {
+        setLoadingCultures(true);
+        try {
+            const res = await executeQuery('SELECT * FROM culturas ORDER BY nome ASC');
+            const rows = [];
+            for (let i = 0; i < res.rows.length; i++) {
+                rows.push(res.rows.item(i));
+            }
+            setCulturesList(rows);
+            if (rows.length === 1 && !selectedCulture) {
+                setSelectedCulture(rows[0]);
+            }
+        } catch (e) {
+            console.error("Erro ao carregar culturas", e);
+        } finally {
+            setLoadingCultures(false);
+        }
+    };
 
     const loadItems = async () => {
         setLoading(true);
         try {
             const all = await getCadastro();
-            // Strict Filter: INSUMO or EMBALAGEM for Compras
             const inputs = all.filter(i => ['INSUMO', 'EMBALAGEM'].includes(i.tipo));
             setItems(inputs);
         } catch (e) { } finally { setLoading(false); }
@@ -60,16 +111,7 @@ export default function ComprasScreen({ navigation }) {
         setHistory(data);
     };
 
-    const handleBarCodeScanned = ({ type, data }) => {
-        setScanned(true);
-        Vibration.vibrate();
-        setCameraVisible(false);
-        setObservacao(prev => {
-            const prefix = prev ? prev + ' | ' : '';
-            return prefix + `Nota/Ref: ${data}`;
-        });
-        Alert.alert('Código Escaneado', `Código ${data} adicionado à observação.`);
-    };
+    // Handlers legacy de câmera removidos para dar lugar à compressão nativa
 
     const getFilteredItems = () => {
         if (!searchText) return items;
@@ -91,17 +133,11 @@ export default function ComprasScreen({ navigation }) {
                 estocavel: 1,
                 vendavel: 0
             });
-            // Reload
-            // Reload Strict
             const all = await getCadastro();
             const inputs = all.filter(i => ['INSUMO', 'EMBALAGEM'].includes(i.tipo));
             setItems(inputs);
-
-            // Select
-            // Select
-            handleEdit({ item: newItemName, uuid: null, quantidade: '', valor: '', cultura: '', observacao: '', detalhes: '' }); // Just set item name really
             setItem(newItemName);
-            setModalVisible(false); // Close main modal
+            setModalVisible(false);
             setQuickAddModal(false);
             setNewItemName('');
         } catch (e) { Alert.alert('Erro', 'Falha ao criar item.'); }
@@ -109,7 +145,12 @@ export default function ComprasScreen({ navigation }) {
 
     const salvar = async () => {
         if (!item || !quantidade || !valor) {
-            Alert.alert('Alerta', 'Preencha os campos obrigatórios (*)');
+            Alert.alert('Alerta', 'Preencha Produto, Quantidade e Valor.');
+            return;
+        }
+
+        if (!selectedCulture) {
+            Alert.alert('Atenção', 'Selecione uma cultura para vincular a compra.');
             return;
         }
 
@@ -118,9 +159,11 @@ export default function ComprasScreen({ navigation }) {
             item: item.toUpperCase(),
             quantidade: parseFloat(quantidade) || 0,
             valor: parseFloat(valor) || 0,
-            cultura: (cultura || 'GERAL').toUpperCase(),
+            cultura: selectedCulture.nome.toUpperCase(),
+            cultureId: selectedCulture.uuid || selectedCulture.id,
             observacao: observacao.toUpperCase(),
-            detalhes: detalhes.toUpperCase(),
+            detalhes: anexoUri ? anexoUri : detalhes.toUpperCase(),
+
             data: new Date().toISOString().split('T')[0]
         };
 
@@ -137,11 +180,9 @@ export default function ComprasScreen({ navigation }) {
             setItem('');
             setQuantidade('');
             setValor('');
-            setQuantidade('');
-            setValor('');
             setObservacao('');
             setDetalhes('');
-
+            setAnexoUri(null);
             loadHistory();
         } catch (error) {
             Alert.alert('Erro', 'Falha ao salvar compra.');
@@ -153,9 +194,19 @@ export default function ComprasScreen({ navigation }) {
         setItem(rec.item);
         setQuantidade(rec.quantidade.toString());
         setValor(rec.valor.toString());
-        setCultura(rec.cultura);
         setObservacao(rec.observacao || '');
         setDetalhes(rec.detalhes || '');
+        if (rec.detalhes && rec.detalhes.includes('file://')) {
+            setAnexoUri(rec.detalhes);
+        } else {
+            setAnexoUri(null);
+        }
+        const found = culturesList.find(c => c.nome === rec.cultura);
+        if (found) {
+            setSelectedCulture(found);
+        } else if (rec.cultura) {
+            setSelectedCulture({ id: 'legacy', nome: rec.cultura, uuid: null });
+        }
     };
 
     const handleDelete = (rec) => {
@@ -174,109 +225,113 @@ export default function ComprasScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+            <RNStatusBar barStyle="light-content" backgroundColor={COLORS.backgroundDark} />
+            <LinearGradient colors={[COLORS.backgroundDark, '#052e22']} style={StyleSheet.absoluteFill} />
+
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 5 }}>
+                    <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>{editingUuid ? 'EDITAR COMPRA' : 'REGISTRAR COMPRA'}</Text>
+                <View style={{ width: 34 }} />
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100, padding: 20 }}>
+
+                {/* CARD FOR FORM - GLASS */}
                 <View style={styles.card}>
-                    <LinearGradient colors={['#6366F1', '#4F46E5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.cardHeader}>
-                        <Text style={styles.headerTitle}>{editingUuid ? 'EDITAR COMPRA' : 'ENTRADA DE INSUMOS'}</Text>
-                        <Text style={styles.headerSub}>Compras e Suprimentos da Fazenda</Text>
-                    </LinearGradient>
 
-                    <View style={styles.form}>
-                        {/* CAMERA BUTTON */}
-                        <TouchableOpacity style={styles.scanBtn} onPress={() => {
-                            if (!hasPermission) {
-                                Alert.alert('Permissão', 'Acesso à câmera necessário.');
-                                return;
-                            }
-                            setScanned(false);
-                            setCameraVisible(true);
-                        }}>
-                            <Ionicons name="scan" size={20} color="#4F46E5" />
-                            <Text style={styles.scanText}>ESCANEAR CÓDIGO / NOTA</Text>
-                        </TouchableOpacity>
-
-                        <View style={styles.field}>
-                            <Text style={styles.label}>PRODUTO / INSUMO COMPRADO *</Text>
-                            <TouchableOpacity style={styles.selectBtn} onPress={() => setModalVisible(true)}>
-                                <Text style={[styles.selectText, !item && { color: '#9CA3AF' }]}>
-                                    {item || "SELECIONAR ITEM..."}
-                                </Text>
-                                <Ionicons name="chevron-down" size={20} color="#6B7280" />
-                            </TouchableOpacity>
-                        </View>
-
-                        <View style={styles.row}>
-                            <View style={[styles.field, { flex: 1, marginRight: 10 }]}>
-                                <Text style={styles.label}>QUANTIDADE *</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="0"
-                                    value={quantidade}
-                                    onChangeText={setQuantidade}
-                                    keyboardType="decimal-pad"
-                                />
+                    {/* BOTAO ANEXAR NOTA */}
+                    <TouchableOpacity style={styles.scanBtn} onPress={handleAnexarNota}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={[styles.scanIconBg, { backgroundColor: anexoUri ? '#10B981' : 'rgba(255,255,255,0.1)' }]}>
+                                <Ionicons name={anexoUri ? "checkmark-circle" : "document-attach-outline"} size={24} color={COLORS.white} />
                             </View>
-                            <View style={[styles.field, { flex: 1 }]}>
-                                <Text style={styles.label}>VALOR TOTAL R$ *</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="0.00"
-                                    value={valor}
-                                    onChangeText={setValor}
-                                    keyboardType="decimal-pad"
-                                />
+                            <View style={{ marginLeft: 15 }}>
+                                <Text style={styles.scanTitle}>{anexoUri ? "NOTA ANEXADA" : "ANEXAR NOTA"}</Text>
+                                <Text style={styles.scanSub}>{anexoUri ? "Salvo no celular (Offline)" : "Tirar foto ou galeria"}</Text>
                             </View>
                         </View>
-
-                        <View style={styles.field}>
-                            <Text style={styles.label}>VINCULAR À CULTURA</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="EX: MORANGO ALBION ou GERAL"
-                                value={cultura}
-                                onChangeText={(t) => up(t, setCultura)}
-                                autoCapitalize="characters"
-                            />
-                        </View>
-
-                        <View style={styles.field}>
-                            <Text style={styles.label}>DETALHES TÉCNICOS / BULA</Text>
-                            <TextInput
-                                style={[styles.input, { height: 60 }]}
-                                placeholder="EX: NPK 04-14-08, APLICAÇÃO FOLIAR..."
-                                value={detalhes}
-                                onChangeText={(t) => up(t, setDetalhes)}
-                                multiline
-                                autoCapitalize="characters"
-                            />
-                        </View>
-
-                        <View style={styles.field}>
-                            <Text style={styles.label}>DETALHES / FORNECEDOR / NOTA</Text>
-                            <TextInput
-                                style={[styles.input, styles.textArea]}
-                                placeholder="NOTAS SOBRE A COMPRA..."
-                                value={observacao}
-                                onChangeText={(t) => up(t, setObservacao)}
-                                multiline
-                                autoCapitalize="characters"
-                            />
-                        </View>
-
-                        <View style={styles.row}>
-                            {editingUuid && (
-                                <TouchableOpacity style={[styles.btn, { backgroundColor: '#EF4444', flex: 1, marginRight: 10 }]} onPress={() => { setEditingUuid(null); setItem(''); setQuantidade(''); setValor(''); setObservacao(''); setDetalhes(''); setCultura(''); }}>
-                                    <Text style={styles.btnText}>CANCELAR</Text>
-                                </TouchableOpacity>
-                            )}
-                            <TouchableOpacity style={[styles.btn, { flex: 2 }]} onPress={salvar}>
-                                <Text style={styles.btnText}>{editingUuid ? 'SALVAR ALTERAÇÕES' : 'REGISTRAR ENTRADA'}</Text>
+                        {anexoUri ?
+                            <TouchableOpacity onPress={() => setAnexoUri(null)} style={{ padding: 5 }}>
+                                <Ionicons name="trash-outline" size={20} color="#F87171" />
                             </TouchableOpacity>
+                            :
+                            <Ionicons name="image-outline" size={20} color={COLORS.glassBorder} />
+                        }
+                    </TouchableOpacity>
+
+                    {/* PRODUTO */}
+                    <TouchableOpacity onPress={() => setModalVisible(true)}>
+                        <AppInput
+                            label="PRODUTO / INSUMO *"
+                            value={item}
+                            placeholder="Buscar no catálogo..."
+                            icon="search"
+                            style={{ pointerEvents: 'none' }}
+                            editable={false}
+                            variant="glass"
+                        />
+                    </TouchableOpacity>
+
+                    {/* QUANTITY & VALUE */}
+                    <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 10 }}>
+                            <AppInput
+                                label="QUANTIDADE *"
+                                value={quantidade}
+                                onChangeText={setQuantidade}
+                                placeholder="0"
+                                keyboardType="decimal-pad"
+                                variant="glass"
+                            />
                         </View>
+                        <View style={{ flex: 1 }}>
+                            <AppInput
+                                label="VALOR (R$)"
+                                value={valor}
+                                onChangeText={setValor}
+                                placeholder="0,00"
+                                keyboardType="decimal-pad"
+                                variant="glass"
+                            />
+                        </View>
+                    </View>
+
+                    {/* CULTURE */}
+                    <View style={{ marginBottom: 20 }}>
+                        <Text style={styles.label}>CULTURA (DESTINO) *</Text>
+                        <View style={{ backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 12, padding: 4, borderWidth: 1, borderColor: COLORS.glassBorder }}>
+                            <CultureSelector
+                                cultures={culturesList}
+                                selectedCulture={selectedCulture ? (selectedCulture.nome || selectedCulture.id) : null}
+                                onSelect={setSelectedCulture}
+                                loading={loadingCultures}
+                                dark={true} // Hypothetical prop, or just renders better on dark
+                            />
+                        </View>
+                    </View>
+
+                    {/* ACTIONS */}
+                    <View style={styles.actionRow}>
+                        {editingUuid && (
+                            <AppButton
+                                title="CANCELAR"
+                                onPress={() => { setEditingUuid(null); setItem(''); setQuantidade(''); setValor(''); setObservacao(''); setDetalhes(''); setAnexoUri(null); setSelectedCulture(null); }}
+                                variant="glass"
+                                style={{ flex: 1, marginRight: 10 }}
+                                textStyle={{ color: COLORS.white }}
+                            />
+                        )}
+                        <AppButton
+                            title={editingUuid ? 'SALVAR ALTERAÇÕES' : 'SALVAR COMPRA'}
+                            onPress={salvar}
+                            style={{ flex: 1 }}
+                        />
                     </View>
                 </View>
 
-                {/* HISTÓRICO */}
+                {/* HISTÓRICO - DARK Items */}
                 <Text style={styles.historyTitle}>ENTRADAS RECENTES</Text>
                 {history.map(rec => (
                     <View key={rec.uuid} style={styles.historyItem}>
@@ -284,61 +339,42 @@ export default function ComprasScreen({ navigation }) {
                             <Text style={styles.hProd}>{rec.item}</Text>
                             <Text style={styles.hSub}>{new Date(rec.data).toLocaleDateString()} • {rec.cultura || 'Geral'}</Text>
                             <Text style={styles.hVal}>{rec.quantidade} un • R$ {rec.valor.toFixed(2)}</Text>
-                            {rec.detalhes ? <Text style={[styles.hObs, { color: '#4B5563', fontWeight: 'bold' }]}>📦 {rec.detalhes}</Text> : null}
-                            {rec.observacao ? <Text style={styles.hObs}>📝 {rec.observacao}</Text> : null}
                         </View>
                         <View style={styles.actions}>
                             <TouchableOpacity onPress={() => handleEdit(rec)} style={styles.actionBtn}>
-                                <Ionicons name="create-outline" size={20} color="#4F46E5" />
+                                <Ionicons name="create-outline" size={20} color={COLORS.primaryLight} />
                             </TouchableOpacity>
                             <TouchableOpacity onPress={() => handleDelete(rec)} style={styles.actionBtn}>
-                                <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                <Ionicons name="trash-outline" size={20} color={COLORS.destructive} />
                             </TouchableOpacity>
                         </View>
                     </View>
                 ))}
             </ScrollView>
 
-            {/* CAMERA MODAL */}
-            <Modal visible={cameraVisible} animationType="slide">
-                <Camera
-                    style={StyleSheet.absoluteFill}
-                    onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
-                >
-                    <View style={styles.cameraOverlay}>
-                        <View style={styles.scanBox} />
-                        <TouchableOpacity style={styles.closeCamera} onPress={() => setCameraVisible(false)}>
-                            <Text style={styles.closeCameraText}>CANCELAR SCANNER</Text>
-                        </TouchableOpacity>
-                    </View>
-                </Camera>
-            </Modal>
+            {/* CAMERA MODAL REMOVIDA (Substituída por nativo ImagePicker) */}
 
-            {/* SELECTION MODAL */}
+            {/* SELECTION MODAL - Dark? Or keep light for contrast? Keeping Light Modal is safer for lists usually, but let's try Dark Modal for consistency */}
             <Modal visible={modalVisible} animationType="slide" transparent>
                 <View style={styles.overlay}>
                     <View style={styles.modalBg}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>SELECIONAR MATERIAL</Text>
-                            <View style={{ flexDirection: 'row', gap: 15 }}>
-                                <TouchableOpacity onPress={() => { setModalVisible(false); setQuickAddModal(true); }}>
-                                    <Ionicons name="add-circle" size={28} color="#6366F1" />
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                    <Ionicons name="close" size={24} color="#374151" />
-                                </TouchableOpacity>
-                            </View>
+                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                                <Ionicons name="close" size={24} color={COLORS.gray200} />
+                            </TouchableOpacity>
                         </View>
 
                         <TextInput
                             style={styles.searchBar}
                             placeholder="Buscar item..."
+                            placeholderTextColor={COLORS.gray500}
                             value={searchText}
                             onChangeText={t => up(t, setSearchText)}
                             autoCapitalize="characters"
                         />
 
-                        {loading ? <ActivityIndicator color="#6366F1" /> :
+                        {loading ? <ActivityIndicator color={COLORS.primary} /> :
                             <FlatList
                                 data={getFilteredItems()}
                                 keyExtractor={i => i.uuid || i.id.toString()}
@@ -351,6 +387,12 @@ export default function ComprasScreen({ navigation }) {
                                 ListEmptyComponent={<Text style={styles.empty}>Nenhum material encontrado.</Text>}
                             />
                         }
+                        <TouchableOpacity
+                            style={styles.quickAddBtn}
+                            onPress={() => { setModalVisible(false); setQuickAddModal(true); }}
+                        >
+                            <Text style={styles.quickAddText}>+ CADASTRAR NOVO</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             </Modal>
@@ -361,16 +403,11 @@ export default function ComprasScreen({ navigation }) {
                     <View style={[styles.modalBg, { height: 'auto', paddingBottom: 40 }]}>
                         <Text style={styles.modalTitle}>NOVO INSUMO RÁPIDO</Text>
                         <View style={styles.field}>
-                            <Text style={styles.label}>NOME DO ITEM</Text>
-                            <TextInput style={styles.input} value={newItemName} onChangeText={t => up(t, setNewItemName)} autoCapitalize="characters" placeholder="EX: ADUBO ORGANICO" />
+                            <AppInput label="NOME DO ITEM" value={newItemName} onChangeText={t => up(t, setNewItemName)} placeholder="EX: ADUBO ORGANICO" variant="glass" />
                         </View>
                         <View style={styles.row}>
-                            <TouchableOpacity style={[styles.btn, { backgroundColor: '#EF4444', flex: 1, marginRight: 10 }]} onPress={() => setQuickAddModal(false)}>
-                                <Text style={styles.btnText}>CANCELAR</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.btn, { flex: 1 }]} onPress={quickSave}>
-                                <Text style={styles.btnText}>SALVAR</Text>
-                            </TouchableOpacity>
+                            <AppButton title="CANCELAR" onPress={() => setQuickAddModal(false)} variant="glass" style={{ flex: 1, marginRight: 10 }} textStyle={{ color: 'white' }} />
+                            <AppButton title="SALVAR" onPress={quickSave} style={{ flex: 1 }} />
                         </View>
                     </View>
                 </View>
@@ -380,42 +417,86 @@ export default function ComprasScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F9FAFB', padding: 20 },
-    card: { backgroundColor: '#FFF', borderRadius: 32, overflow: 'hidden', elevation: 8, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 20, marginBottom: 30 },
-    cardHeader: { padding: 30 },
-    headerTitle: { fontSize: 18, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
-    headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 5, fontWeight: 'bold' },
-    form: { padding: 25 },
-    field: { marginBottom: 20 },
+    container: { flex: 1, backgroundColor: COLORS.backgroundDark },
+    header: {
+        paddingHorizontal: 20,
+        paddingTop: 50,
+        paddingBottom: 20,
+        borderBottomLeftRadius: 24,
+        borderBottomRightRadius: 24,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 10,
+    },
+    headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.white, letterSpacing: 1 },
+
+    card: {
+        backgroundColor: COLORS.surface, // Dark Green
+        borderRadius: 24,
+        padding: 20,
+        marginBottom: 25,
+        borderWidth: 1,
+        borderColor: COLORS.glassBorder
+    },
     row: { flexDirection: 'row' },
-    label: { fontSize: 9, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1.5, marginBottom: 8 },
-    input: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 16, padding: 16, fontSize: 15, color: '#111827' },
-    textArea: { height: 80, textAlignVertical: 'top' },
-    btn: { backgroundColor: '#6366F1', paddingVertical: 18, borderRadius: 18, alignItems: 'center', marginTop: 10 },
-    btnText: { color: '#FFF', fontSize: 13, fontWeight: '900', letterSpacing: 1 },
-    selectBtn: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 16, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    selectText: { fontSize: 15, fontWeight: '600', color: '#111827' },
-    scanBtn: { flexDirection: 'row', backgroundColor: '#EEF2FF', padding: 12, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 20, borderWidth: 1, borderColor: '#C7D2FE' },
-    scanText: { color: '#4F46E5', fontWeight: 'bold', marginLeft: 8, fontSize: 12, letterSpacing: 0.5 },
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    modalBg: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '80%', padding: 20 },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-    modalTitle: { fontSize: 16, fontWeight: '900', color: '#1F2937' },
-    searchBar: { backgroundColor: '#F3F4F6', padding: 12, borderRadius: 12, marginBottom: 10, fontSize: 14 },
-    itemRow: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-    itemText: { fontSize: 14, fontWeight: 'bold', color: '#374151' },
-    itemSub: { fontSize: 10, color: '#9CA3AF' },
-    empty: { textAlign: 'center', marginTop: 20, color: '#9CA3AF' },
-    historyTitle: { fontSize: 12, fontWeight: '900', color: '#6B7280', letterSpacing: 1, marginBottom: 15, marginLeft: 10 },
-    historyItem: { backgroundColor: '#FFF', padding: 15, borderRadius: 16, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 5, elevation: 2 },
-    hProd: { fontSize: 14, fontWeight: 'bold', color: '#1F2937' },
-    hSub: { fontSize: 11, color: '#9CA3AF' },
-    hVal: { fontSize: 12, fontWeight: '900', color: '#059669', marginTop: 4 },
-    hObs: { fontSize: 10, color: '#6B7280', marginTop: 2, fontStyle: 'italic' },
+    label: { fontSize: 12, fontWeight: 'bold', color: COLORS.primaryLight, marginBottom: 8, letterSpacing: 0.5, marginLeft: 4 },
+
+    // Scanner
+    scanBtn: {
+        flexDirection: 'row',
+        backgroundColor: 'rgba(0,0,0,0.2)',
+        padding: 12,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: COLORS.glassBorder
+    },
+    scanIconBg: { width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center' },
+    scanTitle: { color: COLORS.white, fontWeight: 'bold', fontSize: 14 },
+    scanSub: { color: COLORS.gray500, fontSize: 12 },
+
+    // Actions
+    actionRow: { flexDirection: 'row', marginTop: 10 },
+
+    // History
+    historyTitle: { fontSize: 12, fontWeight: 'bold', color: COLORS.gray500, marginBottom: 10, paddingLeft: 5, letterSpacing: 1 },
+    historyItem: {
+        backgroundColor: COLORS.surface,
+        padding: 16,
+        borderRadius: 16,
+        marginBottom: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: COLORS.glassBorder
+    },
+    hProd: { fontSize: 14, fontWeight: 'bold', color: COLORS.white },
+    hSub: { fontSize: 11, color: COLORS.gray500, marginTop: 2 },
+    hVal: { fontSize: 13, fontWeight: 'bold', color: COLORS.primaryLight, marginTop: 2 },
     actions: { flexDirection: 'row', gap: 10 },
-    actionBtn: { padding: 8, backgroundColor: '#F3F4F6', borderRadius: 8 },
-    cameraOverlay: { flex: 1, backgroundColor: 'transparent', justifyContent: 'center', alignItems: 'center' },
-    scanBox: { width: 250, height: 250, borderWidth: 2, borderColor: '#FFF', borderRadius: 20 },
-    closeCamera: { position: 'absolute', bottom: 50, backgroundColor: '#FFF', paddingHorizontal: 30, paddingVertical: 15, borderRadius: 30 },
-    closeCameraText: { color: '#000', fontWeight: 'bold' }
+    actionBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 8 },
+
+    // Modals
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' },
+    modalBg: { backgroundColor: COLORS.backgroundDark, borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '80%', padding: 20, borderWidth: 1, borderColor: COLORS.glassBorder },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    modalTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.white },
+    searchBar: { backgroundColor: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 12, marginBottom: 10, color: 'white', borderWidth: 1, borderColor: COLORS.glassBorder },
+    itemRow: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: COLORS.glassBorder },
+    itemText: { fontSize: 14, fontWeight: 'bold', color: COLORS.white, marginBottom: 2 },
+    itemSub: { fontSize: 11, color: COLORS.gray500 },
+    empty: { textAlign: 'center', marginTop: 20, color: COLORS.gray500 },
+    quickAddBtn: { marginTop: 10, padding: 15, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, borderWidth: 1, borderColor: COLORS.glassBorder },
+    quickAddText: { color: COLORS.primaryLight, fontWeight: 'bold' },
+    field: { marginBottom: 10 },
+
+    // Camera
+    cameraOverlay: { flex: 1 },
+    scanBox: { flex: 1, margin: 40, borderWidth: 2, borderColor: '#FFF', borderRadius: 20 },
+    closeCamera: { position: 'absolute', bottom: 50, alignSelf: 'center', backgroundColor: '#FFF', paddingHorizontal: 30, paddingVertical: 15, borderRadius: 30 },
+    closeCameraText: { fontWeight: 'bold' }
 });

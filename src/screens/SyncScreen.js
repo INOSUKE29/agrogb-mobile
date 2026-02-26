@@ -30,19 +30,23 @@ export default function SyncScreen() {
     const sincronizarDados = async () => {
         setLoading(true);
         try {
-            // 1. Enviar todas as tabelas pendentes
-            const tables = ['colheitas', 'vendas', 'compras', 'plantio', 'custos', 'descarte', 'clientes', 'culturas', 'cadastro', 'maquinas', 'manutencao_frota'];
+            // 1. MODO OFFLINE / VALIDATION (Solicitado pelo Usuário)
+            Alert.alert('Modo Validação', 'Sincronização com Nuvem desativada temporariamente para testes locais.');
 
+            /* 
+            // CÓDIGO DE SYNC REAL (Desativado)
+            const tables = ['colheitas', 'vendas', 'compras', 'plantio', 'custos', 'descarte', 'clientes', 'culturas', 'cadastro', 'maquinas', 'manutencao_frota'];
             for (const tab of tables) {
                 await syncTable(tab);
             }
+            */
 
-            Alert.alert('☁️ Sucesso', 'Sincronização com a Nuvem concluída!');
+            // Simulação de Sucesso Loca
             verificarPendencias();
             checkCloudConnection();
 
         } catch (e) {
-            Alert.alert('Erro', 'Falha ao sincronizar. Verifique sua conexão com a internet.');
+            Alert.alert('Erro', 'Falha ao processar.');
             console.error(e);
         } finally { setLoading(false); }
     };

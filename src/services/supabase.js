@@ -1,11 +1,12 @@
 
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
-import { executeQuery } from '../database/database';
+import { executeQuery } from '../database/core';
 
-// ⚠️ CHAVES REAIS DO SUPABASE ⚠️
+// ⚠️ SUPABASE PRODUCTION CONFIG ⚠️
 const SUPABASE_URL = 'https://bybryyvmwkahoohgtmpc.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_QdNitBVoMJmfgG7vE4cPUg_bIwVA7sn';
+// USE APENAS A CHAVE PÚBLICA (ANON) NO APP. A SERVICE_ROLE (SECRET) DEVE FICAR APENAS NO BACKEND.
+const SUPABASE_ANON_KEY = 'sb_publishable_6e3KZkbHgcfd_-xaOeIBLA_2AJeN9Ew';
 
 let supabaseInstance = null;
 

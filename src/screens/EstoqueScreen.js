@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, TextInput, Modal, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, TextInput, Modal, Alert, ScrollView, StatusBar as RNStatusBar } from 'react-native';
 import { getEstoque, atualizarEstoque } from '../database/database';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -80,7 +80,7 @@ export default function EstoqueScreen() {
     };
 
     const renderHeader = () => (
-        <View style={styles.header}>
+        <LinearGradient colors={['#059669', '#047857']} style={styles.header}>
             <Text style={styles.title}>Estoque Geral</Text>
 
             <View style={styles.searchBar}>
@@ -108,7 +108,7 @@ export default function EstoqueScreen() {
                     </TouchableOpacity>
                 ))}
             </View>
-        </View>
+        </LinearGradient>
     );
 
     const renderItem = ({ item }) => {
@@ -146,6 +146,8 @@ export default function EstoqueScreen() {
 
     return (
         <View style={styles.container}>
+            <RNStatusBar barStyle="light-content" backgroundColor="#059669" />
+            <LinearGradient colors={['#E6F4EA', '#FFFFFF']} style={StyleSheet.absoluteFill} />
             {renderHeader()}
 
             <View style={styles.tableHeader}>
@@ -204,8 +206,8 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F9FAFB' },
 
     // Header
-    header: { backgroundColor: '#FFF', padding: 20, paddingTop: 50, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-    title: { fontSize: 20, fontWeight: 'bold', color: '#111827', marginBottom: 15 },
+    header: { padding: 20, paddingTop: 50 },
+    title: { fontSize: 20, fontWeight: 'bold', color: '#FFF', marginBottom: 15 },
     searchBar: { flexDirection: 'row', backgroundColor: '#F3F4F6', borderRadius: 8, paddingHorizontal: 10, alignItems: 'center', height: 40, marginBottom: 15 },
     inputSearch: { flex: 1, marginLeft: 10, fontSize: 14, color: '#374151' },
 
