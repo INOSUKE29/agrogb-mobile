@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { COLORS } from '../styles/theme';
+import { theme } from '../styles/theme';
 
 export default function AgroButton({
     title,
@@ -10,18 +10,21 @@ export default function AgroButton({
     disabled = false,
     style
 }) {
+    const isPrimary = variant === 'primary';
+    const isDanger = variant === 'danger';
+
     // Define cores com base na variante
-    let bg = COLORS.primary;
+    let bg = theme.colors.primary;
     let txt = '#FFF';
     let border = 'transparent';
 
     if (variant === 'secondary') {
         bg = 'transparent';
-        txt = COLORS.primaryDark;
-        border = COLORS.primary;
+        txt = theme.colors.primaryDeep;
+        border = theme.colors.primary;
     } else if (variant === 'danger') {
         bg = '#FEE2E2';
-        txt = COLORS.destructive;
+        txt = theme.colors.error;
     }
 
     // Estado desativado
@@ -46,7 +49,7 @@ export default function AgroButton({
                 <ActivityIndicator color={txt} />
             ) : (
                 <Text style={[styles.text, { color: txt }]}>
-                    {title ? title.toUpperCase() : ''}
+                    {title.toUpperCase()}
                 </Text>
             )}
         </TouchableOpacity>
@@ -55,8 +58,8 @@ export default function AgroButton({
 
 const styles = StyleSheet.create({
     container: {
-        height: 52,
-        borderRadius: 12,
+        height: theme.metrics.buttonHeight,
+        borderRadius: theme.metrics.radius,
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 20,

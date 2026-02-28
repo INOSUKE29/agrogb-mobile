@@ -1,12 +1,11 @@
 
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
-import { executeQuery } from '../database/core';
+import { executeQuery } from '../database/database';
 
-// ⚠️ SUPABASE PRODUCTION CONFIG ⚠️
+// ⚠️ CHAVES REAIS DO SUPABASE ⚠️
 const SUPABASE_URL = 'https://bybryyvmwkahoohgtmpc.supabase.co';
-// USE APENAS A CHAVE PÚBLICA (ANON) NO APP. A SERVICE_ROLE (SECRET) DEVE FICAR APENAS NO BACKEND.
-const SUPABASE_ANON_KEY = 'sb_publishable_6e3KZkbHgcfd_-xaOeIBLA_2AJeN9Ew';
+const SUPABASE_ANON_KEY = 'sb_publishable_QdNitBVoMJmfgG7vE4cPUg_bIwVA7sn';
 
 let supabaseInstance = null;
 
@@ -41,18 +40,22 @@ export const syncTable = async (tableName) => {
                 return rest;
             });
 
-            const { error } = await supabase.from(tableName).upsert(cleanRows, { onConflict: 'uuid' });
+            try {
+                const { error } = await supabase.from(tableName).upsert(cleanRows, { onConflict: 'uuid' });
 
-            if (!error) {
-                // Marca como sincronizado localmente
-                for (const row of rows) {
-                    await executeQuery(`UPDATE ${tableName} SET sync_status = 1 WHERE uuid = ?`, [row.uuid]);
+                if (!error) {
+                    // Marca como sincronizado localmente
+                    for (const row of rows) {
+                        await executeQuery(`UPDATE ${tableName} SET sync_status = 1 WHERE uuid = ?`, [row.uuid]);
+                    }
+                } else {
+                    console.log(`⚠️ Aviso envio ${tableName} (PostgREST Error):`, error);
                 }
-            } else {
-                console.error(`Erro envio ${tableName}:`, error);
+            } catch (netErr) {
+                console.log(`📡 Falha de Rede no Envio de ${tableName}:`, netErr.message || netErr);
             }
         }
-    } catch (e) { console.error(`Erro local ${tableName}:`, e); }
+    } catch (e) { console.log(`⚠️ Aviso local ${tableName}:`, e.message || e); }
 
     // 2. PULL: Baixa dados novos da nuvem
     // (Simplificado: baixa tudo que mudou recentemente, ou tudo se for pequeno. 

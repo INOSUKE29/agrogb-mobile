@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Animated, 
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { executeQuery } from '../database/database';
 
 const { width, height } = Dimensions.get('window');
 const DRAWER_WIDTH = width * 0.75;
@@ -33,9 +34,22 @@ export default function SidebarDrawer({ visible, onClose }) {
 
     const loadProfile = async () => {
         try {
-            const json = await AsyncStorage.getItem('@user_profile');
-            if (json) setUser(JSON.parse(json));
-        } catch (e) { }
+            const json = await AsyncStorage.getItem('user_session');
+            if (json) {
+                const session = JSON.parse(json);
+                const res = await executeQuery('SELECT * FROM usuarios WHERE id = ?', [session.id]);
+                if (res.rows.length > 0) {
+                    const u = res.rows.item(0);
+                    setUser({
+                        nome: u.nome_completo || u.usuario,
+                        email: u.email || 'agrogb@sistema.com',
+                        avatar: u.avatar || null
+                    });
+                } else {
+                    setUser({ nome: session.nome, email: 'agrogb@sistema.com', avatar: null });
+                }
+            }
+        } catch (e) { console.error('Sidebar Profile Error:', e); }
     };
 
     const handleNavigation = (screen, params = {}) => {
@@ -56,9 +70,7 @@ export default function SidebarDrawer({ visible, onClose }) {
                     onPress: async () => {
                         onClose();
                         try {
-                            await AsyncStorage.removeItem('user_session');
-                            await AsyncStorage.removeItem('@user_level');
-                            await AsyncStorage.removeItem('@user_id');
+                            await AsyncStorage.multiRemove(['user_session', '@user_session', '@user_profile']);
                             // Opcional: Limpar tudo exceto configurações importantes
                             navigation.reset({
                                 index: 0,
@@ -98,10 +110,14 @@ export default function SidebarDrawer({ visible, onClose }) {
                     {/* Header: User Info */}
                     <View style={styles.header}>
                         <View style={styles.avatar}>
-                            <Ionicons name="person" size={30} color="#FFF" />
+                            {user.avatar ? (
+                                <Image source={{ uri: user.avatar }} style={{ width: 50, height: 50, borderRadius: 25 }} />
+                            ) : (
+                                <Ionicons name="person" size={30} color="#FFF" />
+                            )}
                         </View>
                         <View>
-                            <Text style={styles.userName}>{user.nome_completo || user.nome || 'AgroGB User'}</Text>
+                            <Text style={styles.userName}>{user.nome || 'AgroGB User'}</Text>
                             <Text style={styles.userEmail}>{user.email || 'Online'}</Text>
                         </View>
                         <TouchableOpacity onPress={onClose} style={{ position: 'absolute', top: 20, right: 10 }}>
@@ -113,11 +129,9 @@ export default function SidebarDrawer({ visible, onClose }) {
                     <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
                         <Text style={styles.sectionTitle}>NAVEGAÇÃO</Text>
                         <MenuItem icon="home-outline" label="Painel / Início" screen="Home" />
-                        <MenuItem icon="book-outline" label="Caderno de Campo" screen="CadernoCampo" />
-                        <MenuItem icon="camera-outline" label="Monitoramento (Novo)" screen="Monitoramento" />
+                        <MenuItem icon="camera-outline" label="Monitoramento" screen="Monitoramento" />
                         <MenuItem icon="cube-outline" label="Estoque" screen="Estoque" />
                         <MenuItem icon="cart-outline" label="Compras" screen="Compras" />
-                        <MenuItem icon="bar-chart-outline" label="Relatórios (BI)" screen="Relatorios" />
                         <MenuItem icon="people-outline" label="Clientes" screen="Clientes" />
 
                         <View style={styles.divider} />

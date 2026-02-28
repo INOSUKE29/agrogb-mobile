@@ -1,3 +1,1 @@
-module.exports = {
-    isSea: false,
-};
+module.exports = {};

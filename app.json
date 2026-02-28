@@ -2,7 +2,7 @@
   "expo": {
     "name": "AgroGB Mobile",
     "slug": "agrogb-mobile",
-    "version": "1.0.0",
+    "version": "7.0.0",
     "scheme": "agrogb",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -29,11 +29,15 @@
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",
         "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.DETECT_SCREEN_CAPTURE"
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     },
     "extra": {
       "eas": {
@@ -74,8 +78,7 @@
             }
           }
         }
-      ],
-      "expo-secure-store"
+      ]
     ]
   }
 }

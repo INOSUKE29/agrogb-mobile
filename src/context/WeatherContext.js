@@ -17,26 +17,19 @@ export const WeatherProvider = ({ children }) => {
             if (coords) {
                 setPermissionDenied(false);
                 const data = await WeatherService.getWeather(coords.lat, coords.lon);
-                if (data) {
-                    setWeather(data);
-                } else {
-                    setError(true);
-                }
+                if (data) setWeather(data);
+                else setError(true);
             } else {
-                setPermissionDenied(true); // O usuário não deu permissão ou ainda não foi solicitada
+                setPermissionDenied(true);
             }
         } catch (e) {
-            console.error(e);
             setError(true);
         } finally {
             setLoading(false);
         }
     };
 
-    // Tenta carregar no início SEM forçar pedido de permissão (apenas se já concedida)
-    useEffect(() => {
-        refreshWeather(false);
-    }, []);
+    useEffect(() => { refreshWeather(false); }, []);
 
     return (
         <WeatherContext.Provider value={{ weather, loading, error, permissionDenied, refreshWeather }}>
@@ -47,14 +40,6 @@ export const WeatherProvider = ({ children }) => {
 
 export const useWeather = () => {
     const context = useContext(WeatherContext);
-    if (!context) {
-        return {
-            weather: null,
-            loading: false,
-            error: null,
-            permissionDenied: true,
-            refreshWeather: () => { }
-        };
-    }
+    if (!context) return { weather: null, loading: false, error: null, permissionDenied: true, refreshWeather: () => { } };
     return context;
 };

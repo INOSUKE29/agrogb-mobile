@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, TextInput, Text, StyleSheet } from 'react-native';
-import { COLORS } from '../styles/theme';
+import { theme } from '../styles/theme';
 
 export default function AgroInput({
     label,
@@ -16,12 +16,12 @@ export default function AgroInput({
 }) {
     const [isFocused, setIsFocused] = useState(false);
 
-    // Cor da borda dinâmica — usando COLORS (já importado)
+    // Cor da borda dinâmica
     const borderColor = error
-        ? COLORS.destructive
+        ? theme.colors.error
         : isFocused
-            ? COLORS.primary
-            : COLORS.glassBorder;
+            ? theme.colors.primary
+            : theme.colors.border;
 
     return (
         <View style={[styles.container, style]}>
@@ -35,7 +35,7 @@ export default function AgroInput({
                 value={value}
                 onChangeText={onChangeText}
                 placeholder={placeholder}
-                placeholderTextColor={COLORS.gray500}
+                placeholderTextColor={theme.colors.textMuted}
                 secureTextEntry={secureTextEntry}
                 keyboardType={keyboardType}
                 autoCapitalize={autoCapitalize}
@@ -57,21 +57,21 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 10,
         fontWeight: 'bold',
-        color: COLORS.gray500,
+        color: theme.colors.textMuted,
         marginBottom: 6,
         letterSpacing: 0.5,
     },
     input: {
-        height: 50,
-        backgroundColor: 'rgba(255,255,255,0.05)',
+        height: theme.metrics.inputHeight,
+        backgroundColor: theme.colors.surface,
         borderWidth: 1,
-        borderRadius: 8,
+        borderRadius: 8, // Design System: Radius 8px para inputs
         paddingHorizontal: 15,
         fontSize: 16,
-        color: COLORS.white,
+        color: theme.colors.textDark,
     },
     errorText: {
-        color: COLORS.destructive,
+        color: theme.colors.error,
         fontSize: 12,
         marginTop: 4,
     }

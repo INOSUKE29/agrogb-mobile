@@ -1,141 +1,60 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import staticTheme from '../styles/theme'; // Fallback base
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getAppSettings, updateAppSetting } from '../database/database';
 
-const THEME_KEY = '@agrogb:theme_v2'; // New key for V2 structure
-
-// Theme Definitions
-const THEMES = {
-    light_standard: {
-        name: 'Claro (Padrão)',
-        isDark: false,
-        colors: {
-            // Verde Agro Clássico
-            primary: '#10B981',
-            primaryDark: '#059669',
-            primaryLight: '#34D399',
-            background: '#FFFFFF', // Fundo Branco
-            backgroundDark: '#F3F4F6', // Cinza Claro p/ contrastes leves
-            surface: '#FFFFFF', // Cards Brancos
-            glass: '#FFFFFF',
-            glassBorder: '#E5E7EB', // Borda Cinza Clara
-            text: '#1F2937', // Texto Escuro (Preto Suave)
-            textSecondary: '#6B7280', // Texto Secundário (Cinza)
-            textOnDark: '#FFFFFF', // Texto quando estiver sobre cor forte (botão verde)
-            inputBackground: '#F9FAFB',
-            destructive: '#EF4444',
-            white: '#FFFFFF',
-            accent: '#FCD34D',
-            gray500: '#6B7280',
-            success: '#10B981',
-            // Aliases de legibilidade
-            border: '#E5E7EB',
-            card: '#FFFFFF',
-            error: '#EF4444'
-        },
-        params: {
-            radius: 12,
-            glass: false,
-            inputHeight: 56,
-            cardElevation: 2
-        }
-    },
-    ultra_premium: {
-        name: 'Ultra-Premium (Vidro)',
-        isDark: true,
-        colors: {
-            // Dark Green Premium
-            primary: '#1E7F5C',
-            primaryDark: '#0F4D3A',
-            primaryLight: '#2FA97A',
-            background: '#0B3D2E', // Deep Green
-            backgroundDark: '#0B3D2E',
-            surface: '#0F4D3A',
-            glass: 'rgba(255,255,255,0.05)',
-            glassBorder: 'rgba(255,255,255,0.1)',
-            text: '#FFFFFF',
-            textSecondary: '#9CA3AF',
-            textOnDark: '#FFFFFF',
-            inputBackground: 'rgba(0, 0, 0, 0.3)',
-            destructive: '#D64545',
-            white: '#FFFFFF',
-            accent: '#FCD34D',
-            gray500: '#7A8793',
-            success: '#10B981',
-            // Aliases de compatibilidade
-            border: 'rgba(255,255,255,0.1)',
-            card: '#0F4D3A',
-            error: '#D64545'
-        },
-        params: {
-            radius: 18,
-            glass: true,
-            inputHeight: 56,
-            cardElevation: 2
-        }
-    }
-};
-
-const ThemeContext = createContext({
-    theme: 'light_standard',
-    colors: THEMES.light_standard.colors,
-    themeParams: THEMES.light_standard.params,
-    setTheme: () => { },
-    isDark: false
-});
+const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-    const [themeKey, setThemeKey] = useState('light_standard');
-    const [themeConfig, setThemeConfig] = useState(THEMES.light_standard);
+    const [theme, setTheme] = useState({
+        primary_color: '#059669', // Verde Padrão (AgroGB)
+        theme_mode: 'light', // 'light' | 'dark' | 'system'
+        loading: true
+    });
 
-    // Load theme on mount
     useEffect(() => {
         loadTheme();
     }, []);
 
     const loadTheme = async () => {
         try {
-            const savedTheme = await AsyncStorage.getItem(THEME_KEY);
-            if (savedTheme && THEMES[savedTheme]) {
-                setThemeKey(savedTheme);
-                setThemeConfig(THEMES[savedTheme]);
+            const settings = await getAppSettings();
+            if (settings) {
+                setTheme({
+                    primary_color: settings.primary_color || '#059669',
+                    theme_mode: settings.theme_mode || 'light',
+                    loading: false
+                });
+            } else {
+                setTheme(prev => ({ ...prev, loading: false }));
             }
-        } catch (e) {
-            console.error('Error loading theme:', e);
+        } catch (error) {
+            console.error('Falha ao carregar tema:', error);
+            setTheme(prev => ({ ...prev, loading: false }));
         }
     };
 
-    const setTheme = async (newThemeKey) => {
+    const saveTheme = async (mode, color) => {
         try {
-            if (THEMES[newThemeKey]) {
-                setThemeKey(newThemeKey);
-                setThemeConfig(THEMES[newThemeKey]);
-                await AsyncStorage.setItem(THEME_KEY, newThemeKey);
-            }
-        } catch (e) {
-            console.error('Error saving theme:', e);
+            // Salvar no Banco
+            if (mode) await updateAppSetting('theme_mode', mode);
+            if (color) await updateAppSetting('primary_color', color);
+
+            // Atualizar Contexto
+            setTheme(prev => ({
+                ...prev,
+                theme_mode: mode || prev.theme_mode,
+                primary_color: color || prev.primary_color
+            }));
+        } catch (error) {
+            console.error('Falha ao salvar tema:', error);
+            throw error;
         }
     };
 
     return (
-        <ThemeContext.Provider value={{
-            theme: themeKey,
-            colors: themeConfig.colors,
-            themeParams: themeConfig.params,
-            setTheme,
-            isDark: themeConfig.isDark
-        }}>
-            {children}
+        <ThemeContext.Provider value={{ theme, saveTheme, loadTheme }}>
+            {!theme.loading && children}
         </ThemeContext.Provider>
     );
 };
 
-export const useTheme = () => {
-    const context = useContext(ThemeContext);
-    if (!context) {
-        throw new Error('useTheme must be used within ThemeProvider');
-    }
-    return context;
-};
-
-export const AVAILABLE_THEMES = THEMES;
+export const useTheme = () => useContext(ThemeContext);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Alert } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons'; // FontAwesome5 for specific agro icons
-import { COLORS } from '../styles/theme';
+import { theme } from '../styles/theme';
 import { getPlanosAdubacao, deletePlanoAdubacao } from '../database/database';
 import { useIsFocused } from '@react-navigation/native';
 
@@ -64,7 +64,7 @@ export default function AdubacaoListScreen({ navigation }) {
                     <View style={styles.cardContent}>
                         <Text style={styles.cardTitle}>{item.nome_plano}</Text>
                         <Text style={styles.cardSubtitle}>
-                            {new Date(item.data_criacao).toLocaleDateString()} • {item.cultura}
+                            {item.cultura} • {item.tipo_aplicacao}
                         </Text>
                     </View>
                     <View style={styles.statusBadge}>
@@ -109,7 +109,7 @@ export default function AdubacaoListScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F9FAFB' },
+    container: { flex: 1, backgroundColor: theme.colors.background },
     listContent: { padding: 15, paddingBottom: 100 },
     card: {
         backgroundColor: '#FFF',
@@ -133,21 +133,21 @@ const styles = StyleSheet.create({
         marginRight: 12
     },
     cardContent: { flex: 1 },
-    cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#1F2937' },
-    cardSubtitle: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+    cardTitle: { fontSize: 16, fontWeight: 'bold', color: theme.colors.textDark },
+    cardSubtitle: { fontSize: 12, color: theme.colors.textMuted, marginTop: 2 },
     statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: '#F3F4F6' },
     statusText: { fontSize: 10, fontWeight: 'bold' },
     textPlanned: { color: '#F59E0B' },
     textApplied: { color: '#10B981' },
-    localText: { marginTop: 10, fontSize: 12, color: '#9CA3AF', fontStyle: 'italic' },
+    localText: { marginTop: 10, fontSize: 12, color: theme.colors.textMuted, fontStyle: 'italic' },
     fab: {
         position: 'absolute', bottom: 20, right: 20,
         width: 56, height: 56, borderRadius: 28,
-        backgroundColor: COLORS.primary,
+        backgroundColor: theme.colors.primary,
         alignItems: 'center', justifyContent: 'center',
         elevation: 5, shadowColor: '#000', shadowOpacity: 0.3
     },
     emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 100 },
-    emptyText: { marginTop: 20, fontSize: 16, fontWeight: 'bold', color: '#9CA3AF' },
+    emptyText: { marginTop: 20, fontSize: 16, fontWeight: 'bold', color: theme.colors.textMuted },
     emptySub: { marginTop: 5, fontSize: 14, color: '#9CA3AF' }
 });

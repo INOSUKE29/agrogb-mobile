@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const DEFAULT_CONFIG = {
     menu_columns: 3,
     menu_items: [
+        { id: "caderno", label: "Caderno", icon: "book-outline", screen: "CadernoCampo", color: "#064E3B", enabled: true },
         { id: "colheita", label: "Colheita", icon: "leaf-outline", screen: "Colheita", color: "#059669", enabled: true },
         { id: "vendas", label: "Vendas", icon: "cash-outline", screen: "Vendas", color: "#10B981", enabled: true },
         { id: "estoque", label: "Estoque", icon: "cube-outline", screen: "Estoque", color: "#3B82F6", enabled: true },
@@ -11,6 +12,8 @@ const DEFAULT_CONFIG = {
         { id: "adubacao", label: "Adubação", icon: "flask-outline", screen: "AdubacaoList", color: "#7C3AED", enabled: true },
         { id: "compras", label: "Compras", icon: "cart-outline", screen: "Compras", color: "#F59E0B", enabled: true },
         { id: "plantio", label: "Plantio", icon: "nutrition-outline", screen: "Plantio", color: "#8B5CF6", enabled: true },
+        { id: "custos", label: "Custos", icon: "calculator-outline", screen: "Custos", color: "#F97316", enabled: true },
+        { id: "descarte", label: "Descarte", icon: "trash-outline", screen: "Descarte", color: "#EF4444", enabled: true },
         { id: "frota", label: "Frota", icon: "car-sport-outline", screen: "Frota", color: "#2563EB", enabled: true },
         { id: "relatorios", label: "Relatórios", icon: "pie-chart-outline", screen: "Relatorios", color: "#374151", enabled: true },
         // Secondary

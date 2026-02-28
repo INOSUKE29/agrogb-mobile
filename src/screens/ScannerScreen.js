@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
-import { Camera } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImageManipulator from 'expo-image-manipulator';
 
 export default function ScannerScreen({ navigation, route }) {
     const [hasPermission, setHasPermission] = useState(null);
@@ -16,33 +15,31 @@ export default function ScannerScreen({ navigation, route }) {
 
     useEffect(() => {
         (async () => {
-            const { status } = await Camera.requestCameraPermissionsAsync();
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
             setHasPermission(status === 'granted');
         })();
     }, []);
 
     const takePicture = async () => {
-        if (cameraRef.current) {
-            try {
-                const photo = await cameraRef.current.takePictureAsync({ quality: 0.5 });
+        try {
+            let result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                quality: 0.5,
+                allowsEditing: true,
+                aspect: [4, 3],
+            });
 
-                // Opcional: Resize/Compress para economizar dados
-                const manipulated = await ImageManipulator.manipulateAsync(
-                    photo.uri,
-                    [{ resize: { width: 800 } }],
-                    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-                );
-
+            if (!result.canceled) {
                 if (step === 1) {
-                    setImgProduto(manipulated.uri);
+                    setImgProduto(result.assets[0].uri);
                     setStep(2); // Próximo passo: Rótulo
                 } else if (step === 2) {
-                    setImgRotulo(manipulated.uri);
+                    setImgRotulo(result.assets[0].uri);
                     setStep(3); // Próximo passo: Review/Análise
                 }
-            } catch (error) {
-                Alert.alert('Erro', 'Não foi possível capturar a foto.');
             }
+        } catch (error) {
+            Alert.alert('Erro', 'Não foi possível capturar a foto.');
         }
     };
 
@@ -115,38 +112,35 @@ export default function ScannerScreen({ navigation, route }) {
         );
     }
 
-    // STEPS 1 & 2: CÂMERA
+    // STEPS 1 & 2: CÂMERA MODO DE CAPTURA RÁPIDA
     return (
         <View style={styles.container}>
-            <Camera style={styles.camera} type={Camera.Constants.Type.back} ref={cameraRef}>
-                <View style={styles.overlay}>
-                    <View style={styles.topBar}>
-                        <TouchableOpacity onPress={() => navigation.goBack()}>
-                            <Ionicons name="close" size={30} color="#FFF" />
-                        </TouchableOpacity>
-                        <View style={styles.stepBadge}>
-                            <Text style={styles.stepText}>PASSO {step}/2</Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.guideContainer}>
-                        <View style={[styles.guideBox, step === 2 ? styles.guideBoxText : null]}>
-                            <Text style={styles.guideText}>
-                                {step === 1 ? 'Posicione o PRODUTO aqui' : 'Foque no RÓTULO / BULA'}
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.bottomBar}>
-                        <Text style={styles.instruction}>
-                            {step === 1 ? 'Tire uma foto clara da embalagem' : 'Aproxime para ler os textos técnicos'}
-                        </Text>
-                        <TouchableOpacity style={styles.captureBtn} onPress={takePicture}>
-                            <View style={styles.captureInner} />
-                        </TouchableOpacity>
+            <View style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }}>
+                <View style={[styles.topBar, { position: 'absolute', top: 0, width: '100%' }]}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="close" size={30} color="#FFF" />
+                    </TouchableOpacity>
+                    <View style={styles.stepBadge}>
+                        <Text style={styles.stepText}>PASSO {step}/2</Text>
                     </View>
                 </View>
-            </Camera>
+
+                <View style={styles.guideContainer}>
+                    <Ionicons name="camera-outline" size={80} color="#10B981" />
+                    <Text style={[styles.guideText, { fontSize: 18, marginTop: 20 }]}>
+                        {step === 1 ? 'TOQUE ABAIXO PARA FOTO DO PRODUTO' : 'AGORA A FOTO RÓTULO / BULA'}
+                    </Text>
+                </View>
+
+                <View style={[styles.bottomBar, { position: 'absolute', bottom: 0, width: '100%' }]}>
+                    <Text style={styles.instruction}>
+                        {step === 1 ? 'Foto clara da embalagem' : 'Textos técnicos visíveis'}
+                    </Text>
+                    <TouchableOpacity style={styles.captureBtn} onPress={takePicture}>
+                        <Ionicons name="scan-outline" size={30} color="#FFF" />
+                    </TouchableOpacity>
+                </View>
+            </View>
         </View>
     );
 }

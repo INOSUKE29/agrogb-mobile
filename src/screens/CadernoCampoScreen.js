@@ -1,19 +1,19 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar as RNStatusBar, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar as RNStatusBar, ActivityIndicator, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { executeQuery } from '../database/database';
+import { executeQuery, insertCadernoNota } from '../database/database';
 
 export default function CadernoCampoScreen({ navigation }) {
     const [timeline, setTimeline] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [notaTexto, setNotaTexto] = useState('');
 
     const loadTimeline = async () => {
         setLoading(true);
         try {
-            // MOCK UNIFIED TIMELINE: Lendo Colheitas, Vendas, Custos, Plantio e Anotações Livres
-            // Para simplificar a query SQLite (Que não suporta full FULL OUTER JOIN complexo de forma fácil), faremos UNION ALL
-
+            // MOCK UNIFIED TIMELINE: Lendo Colheitas, Vendas, Custos, Plantio e Anotações
             const query = `
                 SELECT 'COLHEITA' as tipo, data, cultura || ' - ' || produto || ' (' || quantidade || 'kg)' as descricao, observacao
                 FROM colheitas WHERE is_deleted = 0
@@ -27,8 +27,11 @@ export default function CadernoCampoScreen({ navigation }) {
                 SELECT 'COMPRA' as tipo, data, item || ' (R$ ' || valor || ')' as descricao, observacao
                 FROM compras WHERE is_deleted = 0
                 UNION ALL
-                SELECT 'PLANTIO' as tipo, data, cultura || ' (' || area || ' ha)' as descricao, observacao
+                SELECT 'PLANTIO' as tipo, data, cultura || ' (' || quantidade_pes || ' area/pes)' as descricao, observacao
                 FROM plantio WHERE is_deleted = 0
+                UNION ALL
+                SELECT 'ANOTAÇÃO' as tipo, data, 'Nota Manual' as descricao, observacao
+                FROM caderno_notas WHERE is_deleted = 0
                 ORDER BY data DESC
                 LIMIT 50
             `;
@@ -41,7 +44,6 @@ export default function CadernoCampoScreen({ navigation }) {
             setTimeline(data);
         } catch (e) {
             console.error('Timeline Error:', e);
-            // Ignorar erro se tabela plantio/anotacoes ainda n existir
         } finally {
             setLoading(false);
         }
@@ -58,6 +60,25 @@ export default function CadernoCampoScreen({ navigation }) {
             case 'PLANTIO': return { name: 'analytics', color: '#8B5CF6', bg: '#EDE9FE' };
             case 'ANOTAÇÃO': return { name: 'document-text', color: '#6B7280', bg: '#F3F4F6' };
             default: return { name: 'ellipse', color: '#9CA3AF', bg: '#F9FAFB' };
+        }
+    };
+
+    const handleSaveNota = async () => {
+        if (!notaTexto.trim()) {
+            Alert.alert('Aviso', 'Escreva algo para salvar.');
+            return;
+        }
+        try {
+            await insertCadernoNota({
+                observacao: notaTexto.trim(),
+                data: new Date().toISOString()
+            });
+            setNotaTexto('');
+            setModalVisible(false);
+            loadTimeline();
+        } catch (e) {
+            console.error(e);
+            Alert.alert('Erro', 'Não foi possível salvar a anotação.');
         }
     };
 
@@ -87,12 +108,11 @@ export default function CadernoCampoScreen({ navigation }) {
                         <View style={styles.emptyState}>
                             <Ionicons name="journal-outline" size={60} color="#D1D5DB" />
                             <Text style={styles.emptyText}>Nenhum registro no caderno ainda.</Text>
-                            <Text style={styles.emptySub}>Comece lançando colheitas, vendas ou anotações.</Text>
+                            <Text style={styles.emptySub}>Comece lançando colheitas, vendas ou compras.</Text>
                         </View>
                     ) : (
                         timeline.map((item, index) => {
                             const iconConfig = getIcon(item.tipo);
-                            // Simulação de formatação amigável de data
                             let dateLabel = item.data;
                             if (dateLabel && dateLabel.includes('T')) dateLabel = dateLabel.split('T')[0];
 
@@ -106,7 +126,7 @@ export default function CadernoCampoScreen({ navigation }) {
                                     </View>
 
                                     <View style={styles.timelineContent}>
-                                        <Text style={styles.dateText}>{dateLabel.split('-').reverse().join('/')}</Text>
+                                        <Text style={styles.dateText}>{dateLabel ? dateLabel.split('-').reverse().join('/') : '--'}</Text>
                                         <View style={styles.card}>
                                             <View style={styles.cardTop}>
                                                 <Text style={[styles.tipoBadge, { color: iconConfig.color }]}>{item.tipo}</Text>
@@ -125,10 +145,35 @@ export default function CadernoCampoScreen({ navigation }) {
             )}
 
             {/* FAB MANUAIS */}
-            <TouchableOpacity style={styles.fab} onPress={() => alert('Nota Manual entrará na Fase 5')}>
+            <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
                 <Ionicons name="pencil" size={24} color="#FFF" />
             </TouchableOpacity>
 
+            {/* MODAL NOVA NOTA */}
+            <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Nova Anotação de Campo</Text>
+                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                                <Ionicons name="close" size={24} color="#6B7280" />
+                            </TouchableOpacity>
+                        </View>
+                        <TextInput
+                            style={styles.inputArea}
+                            placeholder="Descreva observações, anomalias climáticas ou lembretes da lavoura..."
+                            placeholderTextColor="#9CA3AF"
+                            multiline
+                            textAlignVertical="top"
+                            value={notaTexto}
+                            onChangeText={setNotaTexto}
+                        />
+                        <TouchableOpacity style={styles.saveBtn} onPress={handleSaveNota}>
+                            <Text style={styles.saveBtnText}>Salvar no Caderno</Text>
+                        </TouchableOpacity>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
         </View>
     );
 }
@@ -164,5 +209,14 @@ const styles = StyleSheet.create({
         position: 'absolute', bottom: 30, right: 30,
         backgroundColor: '#10B981', width: 60, height: 60, borderRadius: 30,
         justifyContent: 'center', alignItems: 'center', elevation: 5
-    }
+    },
+
+    // Modal
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 25, minHeight: 300 },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#1F2937' },
+    inputArea: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 10, padding: 15, height: 120, fontSize: 16, color: '#1F2937', marginBottom: 20 },
+    saveBtn: { backgroundColor: '#10B981', padding: 15, borderRadius: 10, alignItems: 'center' },
+    saveBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' }
 });
