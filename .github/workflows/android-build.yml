@@ -1,0 +1,65 @@
+name: Android Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🏗 Setup Repo
+        uses: actions/checkout@v4
+
+      - name: 🏗 Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 🏗 Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: 📦 Install Dependencies
+        run: |
+          npm cache clean --force
+          npm install
+          npm install expo-modules-core
+
+      - name: ⚙️ Expo Prebuild
+        run: npx expo prebuild --platform android --clean
+
+      - name: 🔑 Setup Release Keystore
+        run: |
+          # 1. Generate Keystore
+          keytool -genkey -v -keystore android/app/release.keystore \
+          -storepass android -alias my-key-alias -keypass android \
+          -keyalg RSA -keysize 2048 -validity 10000 \
+          -dname "CN=AgroGB,O=AgroGB,C=BR"
+
+          # 2. Configure gradle.properties for Signing
+          echo "" >> android/gradle.properties
+          echo "MYAPP_UPLOAD_STORE_FILE=release.keystore" >> android/gradle.properties
+          echo "MYAPP_UPLOAD_KEY_ALIAS=my-key-alias" >> android/gradle.properties
+          echo "MYAPP_UPLOAD_STORE_PASSWORD=android" >> android/gradle.properties
+          echo "MYAPP_UPLOAD_KEY_PASSWORD=android" >> android/gradle.properties
+
+      - name: 🐘 Build APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace --info
+
+      - name: 📤 Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agrogb-v7-release
+          path: android/app/build/outputs/apk/release/app-release.apk
