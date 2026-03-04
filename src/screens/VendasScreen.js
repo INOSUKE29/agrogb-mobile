@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { DARK } from '../styles/darkTheme';
+import AutoSyncService from '../services/AutoSyncService';
 
 export default function VendasScreen({ navigation }) {
     const [cliente, setCliente] = useState('');
@@ -126,15 +127,14 @@ export default function VendasScreen({ navigation }) {
                 Alert.alert('Sucesso', 'Venda registrada!');
             }
 
-            // Reset Form (keep Client maybe? No, reset all for fresh sale)
             setProduto('');
             setQuantidade('');
             setValor('');
             setObservacao('');
             setStatusPagamento('A_RECEBER');
-            // setCliente(''); // Optional: keep client selected for rapid entry
 
             loadHistory();
+            AutoSyncService.trigger(); // 🔄 envia para a nuvem
         } catch (error) {
             Alert.alert('Erro', 'Falha ao processar venda.');
         }

@@ -23,45 +23,44 @@ export const getSupabase = () => {
     return supabaseInstance;
 };
 
-// Sincronização Bidirecional
+// ============================================================
+// SYNC BIDIRECIONAL COMPLETO
+// 1. PUSH: envia dados locais pendentes (sync_status=0) para o Supabase
+// 2. PULL: baixa registros novos da nuvem e salva no SQLite local
+// ============================================================
 export const syncTable = async (tableName) => {
     const supabase = getSupabase();
 
-    // 1. PUSH: Envia dados locais pendentes (sync_status = 0)
+    // ── 1. PUSH ──────────────────────────────────────────────
     try {
         const res = await executeQuery(`SELECT * FROM ${tableName} WHERE sync_status = 0`);
         const rows = [];
         for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
 
         if (rows.length > 0) {
-            // Remove campos locais antes de enviar (id, sync_status)
             const cleanRows = rows.map(r => {
                 const { id, sync_status, ...rest } = r;
                 return rest;
             });
 
-            try {
-                const { error } = await supabase.from(tableName).upsert(cleanRows, { onConflict: 'uuid' });
+            const { error } = await supabase.from(tableName).upsert(cleanRows, { onConflict: 'uuid' });
 
-                if (!error) {
-                    // Marca como sincronizado localmente
-                    for (const row of rows) {
-                        await executeQuery(`UPDATE ${tableName} SET sync_status = 1 WHERE uuid = ?`, [row.uuid]);
-                    }
-                } else {
-                    console.log(`⚠️ Aviso envio ${tableName} (PostgREST Error):`, error);
+            if (!error) {
+                for (const row of rows) {
+                    await executeQuery(`UPDATE ${tableName} SET sync_status = 1 WHERE uuid = ?`, [row.uuid]);
                 }
-            } catch (netErr) {
-                console.log(`📡 Falha de Rede no Envio de ${tableName}:`, netErr.message || netErr);
+                console.log(`✅ PUSH ${tableName}: ${rows.length} registros enviados`);
+            } else {
+                console.log(`⚠️ Erro PUSH ${tableName}:`, error.message);
             }
         }
-    } catch (e) { console.log(`⚠️ Aviso local ${tableName}:`, e.message || e); }
+    } catch (e) {
+        console.log(`📡 Falha de rede PUSH ${tableName}:`, e.message || e);
+    }
 
-    // 2. PULL: Baixa dados novos da nuvem
-    // (Simplificado: baixa tudo que mudou recentemente, ou tudo se for pequeno. 
-    // Ideal: Usar 'last_updated' local máximo para filtrar)
+    // ── 2. PULL ──────────────────────────────────────────────
     try {
-        // Pega o maior last_updated local
+        // Busca a data do registro mais recente que temos localmente
         const resLast = await executeQuery(`SELECT MAX(last_updated) as max_date FROM ${tableName}`);
         const lastDate = resLast.rows.item(0).max_date || '1970-01-01T00:00:00.000Z';
 
@@ -70,16 +69,67 @@ export const syncTable = async (tableName) => {
             .select('*')
             .gt('last_updated', lastDate);
 
+        if (error) { console.log(`⚠️ Erro PULL ${tableName}:`, error.message); return; }
+
         if (data && data.length > 0) {
+            console.log(`📥 PULL ${tableName}: ${data.length} registros recebidos`);
             for (const item of data) {
-                // Insere ou Atualiza Local
-                // Precisamos montar a query de insert dinamicamente ou ter funções específicas no database.js
-                // Por simplicidade, vamos assumir que o usuário vai recarregar o app ou implementar update genérico
-                // AQUI É UM PONTO CRÍTICO: Generic Insert/Update no SQLite é chato sem ORM.
-                // Vou focar no upload por enquanto ou implementar um insert genérico no SyncScreen.
+                await upsertLocal(tableName, item);
             }
         }
-    } catch (e) { }
+    } catch (e) {
+        console.log(`📡 Falha de rede PULL ${tableName}:`, e.message || e);
+    }
+};
+
+// ── INSERT OR REPLACE genérico no SQLite local ───────────────
+const upsertLocal = async (tableName, item) => {
+    try {
+        const keys = Object.keys(item);
+        const placeholders = keys.map(() => '?').join(', ');
+        const values = keys.map(k => item[k]);
+
+        // Tenta INSERT OR REPLACE (funciona quando há UNIQUE uuid)
+        await executeQuery(
+            `INSERT OR REPLACE INTO ${tableName} (${keys.join(', ')}, sync_status)
+             VALUES (${placeholders}, 1)`,
+            values
+        );
+    } catch (e) {
+        // Se falhar (ex: coluna não existe ainda), tenta UPDATE
+        try {
+            if (!item.uuid) return;
+            const sets = Object.keys(item).filter(k => k !== 'uuid').map(k => `${k} = ?`).join(', ');
+            const vals = Object.keys(item).filter(k => k !== 'uuid').map(k => item[k]);
+            await executeQuery(
+                `UPDATE ${tableName} SET ${sets}, sync_status = 1 WHERE uuid = ?`,
+                [...vals, item.uuid]
+            );
+        } catch (e2) { /* ignora */ }
+    }
+};
+
+// ============================================================
+// SYNC COMPLETO — todas as tabelas de uma vez
+// ============================================================
+const SYNC_TABLES = [
+    'colheitas', 'vendas', 'compras', 'plantio', 'custos',
+    'descarte', 'clientes', 'culturas', 'cadastro', 'maquinas',
+    'manutencao_frota', 'monitoramento_entidade', 'monitoramento_media',
+    'planos_adubacao', 'caderno_notas'
+];
+
+export const syncAll = async () => {
+    console.log('🔄 Sincronização automática iniciada...');
+    let success = 0;
+    for (const table of SYNC_TABLES) {
+        try {
+            await syncTable(table);
+            success++;
+        } catch (e) { /* continua para próxima tabela */ }
+    }
+    console.log(`✅ Sync completo: ${success}/${SYNC_TABLES.length} tabelas`);
+    return success;
 };
 
 export const testConnection = async () => {

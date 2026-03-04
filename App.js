@@ -5,6 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
 import { initDB } from './src/database/database';
+import AutoSyncService from './src/services/AutoSyncService';
 import LoginScreen from './src/screens/LoginScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import ColheitaScreen from './src/screens/ColheitaScreen';
@@ -39,7 +40,17 @@ const Stack = createStackNavigator();
 
 export default function App() {
     useEffect(() => {
-        initDB().catch(console.error);
+        // Inicializa banco de dados
+        initDB()
+            .then(() => {
+                // Inicia sincronização automática após DB pronto
+                AutoSyncService.start();
+            })
+            .catch(console.error);
+
+        return () => {
+            AutoSyncService.stop();
+        };
     }, []);
 
     return (
