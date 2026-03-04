@@ -2,8 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertCliente, getClientes, deleteCliente } from '../database/database';
+import { Ionicons } from '@expo/vector-icons';
+import AppContainer from '../ui/AppContainer';
+import ScreenHeader from '../ui/ScreenHeader';
+import GlowCard from '../ui/GlowCard';
+import GlowInput from '../ui/GlowInput';
+import PrimaryButton from '../ui/PrimaryButton';
+import GlowFAB from '../ui/GlowFAB';
+import { DARK, MODAL_OVERLAY } from '../styles/darkTheme';
 
-export default function ClientesScreen() {
+export default function ClientesScreen({ navigation }) {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
@@ -18,7 +26,11 @@ export default function ClientesScreen() {
 
     const loadData = async () => {
         setLoading(true);
-        try { const data = await getClientes(); setItems(data); } catch (e) { } finally { setLoading(false); }
+        try {
+            const data = await getClientes();
+            const uniqueData = [...new Map(data.map(item => [item.cpf_cnpj ? item.cpf_cnpj.trim() : item.nome.trim().toUpperCase(), item])).values()];
+            setItems(uniqueData);
+        } catch (e) { } finally { setLoading(false); }
     };
 
     const handleSave = async () => {
@@ -26,7 +38,7 @@ export default function ClientesScreen() {
         try {
             await insertCliente({ uuid: uuidv4(), nome, telefone, endereco, cpf_cnpj: cpf, observacao: '' });
             setModalVisible(false); setNome(''); setTelefone(''); setEndereco(''); setCpf(''); loadData();
-        } catch (e) { Alert.alert('Erro', 'Falha ao salvar cliente.'); }
+        } catch (e) { Alert.alert('Erro', e.message || 'Falha ao salvar cliente.'); }
     };
 
     const handleDelete = (id) => {
@@ -36,86 +48,89 @@ export default function ClientesScreen() {
     };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>CLIENTES E PARCEIROS</Text>
-                <Text style={styles.sub}>Gestão de Contatos Comerciais</Text>
-            </View>
+        <AppContainer>
+            <ScreenHeader title="Clientes e Parceiros" onBack={navigation?.goBack ? () => navigation.goBack() : null} />
 
-            {loading ? <ActivityIndicator size="large" color="#EC4899" style={{ marginTop: 50 }} /> :
+            {loading ? <ActivityIndicator size="large" color={DARK.glow} style={{ marginTop: 50 }} /> :
                 <FlatList
                     data={items}
                     keyExtractor={item => item.id.toString()}
+                    contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
                     renderItem={({ item }) => (
-                        <View style={styles.card}>
-                            <View style={styles.avatar}><Text style={styles.avatarTxt}>{item.nome.charAt(0)}</Text></View>
+                        <GlowCard style={styles.card}>
+                            <View style={styles.avatar}>
+                                <Text style={styles.avatarTxt}>{item.nome.charAt(0)}</Text>
+                            </View>
                             <View style={styles.cardBody}>
                                 <Text style={styles.cardTitle}>{item.nome}</Text>
                                 <Text style={styles.cardSub}>{item.telefone || 'SEM TELEFONE'}</Text>
+                                {item.cpf_cnpj ? <Text style={styles.cardMeta}>{item.cpf_cnpj}</Text> : null}
                             </View>
-                            <TouchableOpacity onPress={() => handleDelete(item.id)}>
-                                <Text style={styles.delIcon}>✕</Text>
+                            <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.deleteBtn}>
+                                <Ionicons name="trash-outline" size={18} color={DARK.danger} />
                             </TouchableOpacity>
-                        </View>
+                        </GlowCard>
                     )}
-                    contentContainerStyle={{ padding: 20 }}
-                    ListEmptyComponent={<Text style={styles.empty}>Nenhum cliente cadastrado.</Text>}
-                />}
+                    ListEmptyComponent={
+                        <View style={styles.empty}>
+                            <Ionicons name="people-outline" size={60} color={DARK.glowBorder} />
+                            <Text style={styles.emptyText}>Nenhum cliente cadastrado.</Text>
+                            <Text style={styles.emptySub}>Toque no + para adicionar.</Text>
+                        </View>
+                    }
+                />
+            }
 
-            <TouchableOpacity style={[styles.fab, { backgroundColor: '#EC4899' }]} onPress={() => setModalVisible(true)}>
-                <Text style={styles.fabText}>+</Text>
-            </TouchableOpacity>
+            <GlowFAB onPress={() => setModalVisible(true)} />
 
             <Modal visible={modalVisible} transparent animationType="slide">
                 <View style={styles.overlay}>
                     <View style={styles.modal}>
-                        <Text style={styles.modalTitle}>NOVO PARCEIRO</Text>
-
-                        <Text style={styles.label}>NOME COMPLETO / EMPRESA *</Text>
-                        <TextInput style={styles.input} value={nome} onChangeText={t => up(t, setNome)} autoCapitalize="characters" />
-
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>NOVO PARCEIRO</Text>
+                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                                <Ionicons name="close" size={24} color={DARK.textMuted} />
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={styles.label}>NOME COMPLETO / EMPRESA</Text>
+                        <GlowInput value={nome} onChangeText={t => up(t, setNome)} placeholder="Ex: JOÃO SILVA" />
                         <Text style={styles.label}>TELEFONE / WHATSAPP</Text>
-                        <TextInput style={styles.input} value={telefone} onChangeText={setTelefone} keyboardType="phone-pad" />
-
-                        <Text style={styles.label}>ENDEREÇO / LOCALIZAÇÃO</Text>
-                        <TextInput style={styles.input} value={endereco} onChangeText={t => up(t, setEndereco)} autoCapitalize="characters" />
-
+                        <GlowInput value={telefone} onChangeText={setTelefone} placeholder="(11) 99999-9999" keyboardType="phone-pad" />
+                        <Text style={styles.label}>ENDEREÇO</Text>
+                        <GlowInput value={endereco} onChangeText={t => up(t, setEndereco)} placeholder="Rua, Bairro, Cidade" />
                         <Text style={styles.label}>CPF / CNPJ</Text>
-                        <TextInput style={styles.input} value={cpf} onChangeText={setCpf} />
-
-                        <View style={styles.modalBtns}>
-                            <TouchableOpacity style={[styles.btn, styles.btnBack]} onPress={() => setModalVisible(false)}><Text style={styles.btnText}>VOLTAR</Text></TouchableOpacity>
-                            <TouchableOpacity style={[styles.btn, { backgroundColor: '#EC4899' }]} onPress={handleSave}><Text style={[styles.btnText, { color: '#FFF' }]}>SALVAR</Text></TouchableOpacity>
+                        <GlowInput value={cpf} onChangeText={setCpf} placeholder="000.000.000-00" keyboardType="numeric" />
+                        <View style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}>
+                            <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
+                                <Text style={{ color: DARK.textMuted, fontWeight: 'bold' }}>CANCELAR</Text>
+                            </TouchableOpacity>
+                            <PrimaryButton label="SALVAR" onPress={handleSave} style={{ flex: 1 }} />
                         </View>
                     </View>
                 </View>
             </Modal>
-        </View>
+        </AppContainer>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F9FAFB' },
-    header: { padding: 25, paddingTop: 50 },
-    title: { fontSize: 22, fontWeight: '900', color: '#1F2937' },
-    sub: { fontSize: 11, color: '#9CA3AF', letterSpacing: 1, marginTop: 5 },
-    card: { backgroundColor: '#FFF', borderRadius: 24, padding: 20, marginBottom: 12, flexDirection: 'row', alignItems: 'center', elevation: 2 },
-    avatar: { width: 45, height: 45, borderRadius: 15, backgroundColor: '#FCE7F3', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-    avatarTxt: { fontSize: 18, fontWeight: 'bold', color: '#EC4899' },
+    card: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, padding: 16 },
+    avatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(0,255,156,0.15)', borderWidth: 1, borderColor: DARK.glowBorder, justifyContent: 'center', alignItems: 'center', marginRight: 14 },
+    avatarTxt: { fontSize: 18, fontWeight: '900', color: DARK.glow },
     cardBody: { flex: 1 },
-    cardTitle: { fontSize: 16, fontWeight: '800', color: '#1F2937' },
-    cardSub: { fontSize: 12, color: '#9CA3AF', fontWeight: 'bold', marginTop: 2 },
-    delIcon: { color: '#EF4444', fontWeight: 'bold', fontSize: 18, padding: 10 },
-    fab: { position: 'absolute', bottom: 30, right: 30, width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', elevation: 10 },
-    fabText: { fontSize: 32, color: '#FFF' },
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 20 },
-    modal: { backgroundColor: '#FFF', borderRadius: 32, padding: 30 },
-    modalTitle: { fontSize: 18, fontWeight: '900', marginBottom: 25 },
-    label: { fontSize: 9, fontWeight: '900', color: '#9CA3AF', marginBottom: 6, letterSpacing: 1 },
-    input: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 14, padding: 14, marginBottom: 15, fontSize: 15 },
-    modalBtns: { flexDirection: 'row', gap: 10, marginTop: 10 },
-    btn: { flex: 1, padding: 18, borderRadius: 16, alignItems: 'center' },
-    btnBack: { backgroundColor: '#F3F4F6' },
-    btnText: { fontWeight: 'bold', fontSize: 12 },
-    empty: { textAlign: 'center', marginTop: 100, color: '#9CA3AF' }
+    cardTitle: { fontSize: 15, fontWeight: '700', color: DARK.textPrimary },
+    cardSub: { fontSize: 11, color: DARK.textSecondary, marginTop: 2 },
+    cardMeta: { fontSize: 10, color: DARK.textMuted, marginTop: 2 },
+    deleteBtn: { padding: 8 },
+
+    empty: { alignItems: 'center', marginTop: 80 },
+    emptyText: { marginTop: 16, fontSize: 16, fontWeight: 'bold', color: DARK.textSecondary },
+    emptySub: { marginTop: 5, fontSize: 13, color: DARK.textMuted },
+
+    overlay: { flex: 1, backgroundColor: MODAL_OVERLAY, justifyContent: 'flex-end' },
+    modal: { backgroundColor: DARK.modal, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 40, borderWidth: 1, borderColor: DARK.glowBorder },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    modalTitle: { fontSize: 16, fontWeight: '900', color: DARK.textPrimary },
+    label: { fontSize: 10, fontWeight: '900', color: DARK.textMuted, letterSpacing: 1.2, marginBottom: 8, marginTop: 4 },
+    cancelBtn: { flex: 1, height: 52, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: DARK.glowBorder },
 });

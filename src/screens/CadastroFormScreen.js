@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image, Modal, FlatList, Animated, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { v4 as uuidv4 } from 'uuid';
 import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as DB from '../database/database';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function CadastroFormScreen({ route, navigation }) {
     const { tipo, title } = route.params || { tipo: 'PRODUTO', title: 'Novo Cadastro' };
@@ -19,12 +24,38 @@ export default function CadastroFormScreen({ route, navigation }) {
     const [qtdInicial, setQtdInicial] = useState('0');
     const [valor, setValor] = useState('0');
 
+    // CONFIGURAÇÕES MODERN TOGGLES
+    const [vendavel, setVendavel] = useState(tipo === 'PRODUTO');
+    const [estocavel, setEstocavel] = useState(true);
+
     // SEÇÃO 2 - DADOS TÉCNICOS (OPCIONAL)
     const [principioA, setPrincipioA] = useState('');
     const [classeT, setClasseT] = useState('');
     const [conteudoE, setConteudoE] = useState('1');
     const [composicao, setComposicao] = useState('');
     const [obs, setObs] = useState('');
+
+    // SISTEMA DE COMPOSIÇÃO (RECEITAS)
+    const [composicaoAberta, setComposicaoAberta] = useState(false);
+    const [itemComponents, setItemComponents] = useState([]);
+
+    // Modal Seleção Cadastro
+    const [modalVisible, setModalVisible] = useState(false);
+    const [catalogo, setCatalogo] = useState([]);
+    const [searchText, setSearchText] = useState('');
+    const [qtdComponente, setQtdComponente] = useState('1');
+    const [itemSelecionado, setItemSelecionado] = useState(null);
+
+    useEffect(() => { loadCatalogo(); }, []);
+
+    const loadCatalogo = async () => {
+        try {
+            if (typeof DB.getCadastro === 'function') {
+                const data = await DB.getCadastro();
+                setCatalogo(data);
+            }
+        } catch (e) { console.log(e); }
+    };
 
     // SEÇÃO 3 - IMAGENS (100% OPCIONAL)
     const [fotoPrincipal, setFotoPrincipal] = useState(null);
@@ -64,8 +95,8 @@ export default function CadastroFormScreen({ route, navigation }) {
                 unidade: unidade || 'UN',
                 fator_conversao: safeNum(conteudoE, 1),
                 observacao: obs ? obs.trim() : '',
-                vendavel: tipo === 'PRODUTO' ? 1 : 0,
-                estocavel: 1,
+                vendavel: vendavel ? 1 : 0,
+                estocavel: estocavel ? 1 : 0,
                 principio_ativo: principioA || '',
                 classe_toxicologica: classeT || '',
                 composicao: composicao || '',
@@ -89,6 +120,17 @@ export default function CadastroFormScreen({ route, navigation }) {
                     await DB.insertCadastro(baseObj);
                 } else {
                     throw new Error('Função de banco não importada.');
+                }
+            }
+
+            // SEÇÃO COMPOSIÇÃO: INSERIR RECEITAS NA BASE
+            if (composicaoAberta && itemComponents.length > 0) {
+                if (typeof DB.insertReceita === 'function') {
+                    for (const comp of itemComponents) {
+                        try {
+                            await DB.insertReceita(baseObj.uuid, comp.uuid, comp.qtd);
+                        } catch (e) { console.warn('Falha na receita:', e); }
+                    }
                 }
             }
 
@@ -116,119 +158,288 @@ export default function CadastroFormScreen({ route, navigation }) {
         }
     };
 
-    return (
-        <ScrollView style={styles.container} contentContainerStyle={{ padding: 25 }}>
-            <Text style={styles.topInfo}>PREENCHIMENTO RÁPIDO</Text>
+    const handleAddComposicao = () => {
+        Alert.alert(
+            'Atenção',
+            'TEM CERTEZA QUE DESEJA INCLUIR UMA COMPOSIÇÃO PARA ESTE ITEM?',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Sim, configurar',
+                    onPress: () => {
+                        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                        setComposicaoAberta(true);
+                    }
+                }
+            ]
+        );
+    };
 
-            <Text style={styles.labelCampo}>NOME DO NOVO ITEM *</Text>
-            <TextInput style={styles.inputGrande} value={nome} onChangeText={t => setNome(t.toUpperCase())} placeholder="Ex: Milho, Adubo, Trator" />
+    const confirmComponent = () => {
+        if (!itemSelecionado) return Alert.alert('Aviso', 'Selecione um item do catálogo.');
+        const q = parseFloat(qtdComponente);
+        if (isNaN(q) || q <= 0) return Alert.alert('Aviso', 'Quantidade inválida.');
 
-            <View style={{ flexDirection: 'row', gap: 15, marginBottom: 15 }}>
-                <View style={{ flex: 1 }}>
-                    <Text style={styles.labelCampo}>TIPO *</Text>
-                    <TextInput style={styles.inputMedio} value={categoria} onChangeText={t => setCategoria(t.toUpperCase())} />
-                </View>
-                <View style={{ flex: 1 }}>
-                    <Text style={styles.labelCampo}>UNIDADE *</Text>
-                    <TextInput style={styles.inputMedio} value={unidade} onChangeText={t => setUnidade(t.toUpperCase())} placeholder="KG, LT, UN" />
+        const novo = {
+            id: uuidv4(),
+            uuid: itemSelecionado.uuid,
+            nome: itemSelecionado.nome,
+            unidade: itemSelecionado.unidade,
+            qtd: q
+        };
+
+        setItemComponents([...itemComponents, novo]);
+        setModalVisible(false);
+        setItemSelecionado(null);
+        setQtdComponente('1');
+    };
+
+    const removeComponent = (id) => {
+        setItemComponents(itemComponents.filter(c => c.id !== id));
+    };
+
+    const getFilteredCatalogo = () => {
+        if (!searchText) return catalogo;
+        return catalogo.filter(c => c.nome.toUpperCase().includes(searchText.toUpperCase()));
+    };
+
+    <View style={styles.container}>
+        <LinearGradient colors={['#1E8E5A', '#34A853']} style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 5 }}>
+                <Ionicons name="arrow-back" size={26} color="#FFF" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>{title.toUpperCase()}</Text>
+            <View style={{ width: 36 }} />
+        </LinearGradient>
+
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
+            {/* BLOCO 1 - IDENTIFICAÇÃO */}
+            <View style={styles.card}>
+                <Text style={styles.sectionTitle}>IDENTIFICAÇÃO PRINCIPAL</Text>
+                <View style={styles.divider} />
+
+                <Text style={styles.label}>NOME DO ITEM *</Text>
+                <TextInput style={styles.inputGrande} value={nome} onChangeText={t => setNome(t.toUpperCase())} placeholder="Ex: Milho Premium" />
+
+                <Text style={styles.label}>CATEGORIA / TIPO *</Text>
+                <TextInput style={styles.input} value={categoria} onChangeText={t => setCategoria(t.toUpperCase())} placeholder="Ex: INSUMO" />
+
+                <Text style={styles.label}>UNIDADE DE MEDIDA *</Text>
+                <View style={styles.segmentContainer}>
+                    {['KG', 'LT', 'CX', 'SC', 'UN'].map((u) => (
+                        <TouchableOpacity
+                            key={u}
+                            style={[styles.segmentBtn, unidade === u && styles.segmentBtnActive]}
+                            onPress={() => setUnidade(u)}
+                        >
+                            <Text style={[styles.segmentTxt, unidade === u && styles.segmentTxtActive]}>{u}</Text>
+                        </TouchableOpacity>
+                    ))}
                 </View>
             </View>
 
+            {/* BLOCO 2 - DADOS DE EMBALAGEM E VALORES */}
             {tipo !== 'CULTURA' && (
-                <View style={{ flexDirection: 'row', gap: 15, marginBottom: 10 }}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.labelCampo}>PREÇO/CUSTO (R$)</Text>
-                        <TextInput style={styles.inputGrande} value={valor} onChangeText={setValor} keyboardType="numeric" placeholder="R$ 0.00" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.labelCampo}>TEM EM ESTOQUE?</Text>
-                        <TextInput style={styles.inputGrande} value={qtdInicial} onChangeText={setQtdInicial} keyboardType="numeric" placeholder="0" />
+                <View style={styles.card}>
+                    <Text style={styles.sectionTitle}>CUSTO E EMBALAGEM</Text>
+                    <View style={styles.divider} />
+
+                    <View style={{ flexDirection: 'row', gap: 15 }}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.label}>PREÇO (R$)</Text>
+                            <TextInput style={styles.input} value={valor} onChangeText={setValor} keyboardType="numeric" placeholder="0.00" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.label}>ESTOQUE INICIAL</Text>
+                            <TextInput style={styles.input} value={qtdInicial} onChangeText={setQtdInicial} keyboardType="numeric" placeholder="0" />
+                        </View>
                     </View>
                 </View>
             )}
 
-            {/* BOTÃO PRINCIPAL GIGANTE PRA FACILITAR CLIQUE NO CAMPO */}
+            {/* BLOCO 3 - CONFIGURAÇÕES OBRIGATÓRIAS */}
+            <View style={styles.card}>
+                <Text style={styles.sectionTitle}>COMPORTAMENTO DO ITEM</Text>
+                <View style={styles.divider} />
+
+                <View style={styles.toggleRow}>
+                    <View>
+                        <Text style={styles.toggleLabel}>CONTROLA ESTOQUE</Text>
+                        <Text style={styles.toggleSub}>Pode ser comprado e armazenado</Text>
+                    </View>
+                    <TouchableOpacity style={[styles.toggleBtn, estocavel && styles.toggleBtnActive]} onPress={() => setEstocavel(!estocavel)}>
+                        <View style={[styles.toggleCircle, estocavel && styles.toggleCircleActive]} />
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.toggleRow}>
+                    <View>
+                        <Text style={styles.toggleLabel}>PERMITIR VENDAS</Text>
+                        <Text style={styles.toggleSub}>Aparecerá na tela Registrar Venda</Text>
+                    </View>
+                    <TouchableOpacity style={[styles.toggleBtn, vendavel && styles.toggleBtnActive]} onPress={() => setVendavel(!vendavel)}>
+                        <View style={[styles.toggleCircle, vendavel && styles.toggleCircleActive]} />
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            {/* BLOCO 4 - SISTEMA DE COMPOSIÇÃO */}
+            {!composicaoAberta ? (
+                <TouchableOpacity style={styles.addComposicaoBtn} onPress={handleAddComposicao}>
+                    <Ionicons name="git-merge-outline" size={20} color="#1E8E5A" style={{ marginRight: 8 }} />
+                    <Text style={styles.addComposicaoTxt}>+ ADICIONAR COMPOSIÇÃO</Text>
+                </TouchableOpacity>
+            ) : (
+                <View style={[styles.card, { borderColor: '#1E8E5A', borderWidth: 2 }]}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={[styles.sectionTitle, { color: '#1E8E5A' }]}>SISTEMA DE COMPOSIÇÃO</Text>
+                        <TouchableOpacity onPress={() => {
+                            setComposicaoAberta(false);
+                            setItemComponents([]);
+                        }}>
+                            <Ionicons name="close-circle-outline" size={22} color="#EF4444" />
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.divider} />
+
+                    <Text style={[styles.label, { marginBottom: 15 }]}>Itens exigidos ao vender 1 unidade deste produto:</Text>
+
+                    {itemComponents.map((c) => (
+                        <View key={c.id} style={styles.compItem}>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.compNome}>{c.nome}</Text>
+                                <Text style={styles.compDetalhe}>Baixa: {c.qtd} {c.unidade} por venda</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => removeComponent(c.id)} style={{ padding: 5 }}>
+                                <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                            </TouchableOpacity>
+                        </View>
+                    ))}
+
+                    <TouchableOpacity style={styles.addCptBtn} onPress={() => setModalVisible(true)}>
+                        <Text style={styles.addCptTxt}>+ Adicionar Componente</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
+            {/* BOTÃO SALVAR */}
             <TouchableOpacity
                 style={[styles.saveBtnGigante, loading && { backgroundColor: '#9CA3AF' }]}
                 onPress={handleSave}
                 disabled={loading}
             >
-                {loading ? <ActivityIndicator size="large" color="#FFF" /> : <Text style={styles.saveBtnTxtGigante}>✔ SALVAR</Text>}
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.avancadoBtn} onPress={() => setMostrarAvancado(!mostrarAvancado)}>
-                <Text style={styles.avancadoTxt}>{mostrarAvancado ? 'Ocultar Detalhes Técnicos ▲' : 'Mostrar Mais Opções (Técnico / Fotos) ▼'}</Text>
-            </TouchableOpacity>
-
-            {mostrarAvancado && (
-                <View style={styles.avancadoBox}>
-                    <Text style={styles.sectionTitle}>DADOS TÉCNICOS ADICIONAIS</Text>
-
-                    <Text style={styles.label}>PRINCÍPIO ATIVO</Text>
-                    <TextInput style={styles.input} value={principioA} onChangeText={t => setPrincipioA(t.toUpperCase())} />
-
-                    <Text style={styles.label}>CLASSE TOXICOLÓGICA</Text>
-                    <TextInput style={styles.input} value={classeT} onChangeText={t => setClasseT(t.toUpperCase())} />
-
-                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.label}>CONTEÚDO (EMB)</Text>
-                            <TextInput style={styles.input} value={conteudoE} onChangeText={setConteudoE} keyboardType="numeric" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.label}>COMPOSIÇÃO NPK</Text>
-                            <TextInput style={styles.input} value={composicao} onChangeText={t => setComposicao(t.toUpperCase())} />
-                        </View>
+                {loading ? <ActivityIndicator size="large" color="#FFF" /> : (
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Ionicons name="checkmark-circle" size={26} color="#FFF" style={{ marginRight: 10 }} />
+                        <Text style={styles.saveBtnTxtGigante}>SALVAR CADASTRO</Text>
                     </View>
-
-                    <Text style={styles.label}>OBSERVAÇÕES ADICIONAIS</Text>
-                    <TextInput style={[styles.input, { height: 80 }]} value={obs} onChangeText={t => setObs(t.toUpperCase())} multiline />
-
-                    <View style={styles.divider} />
-
-                    <Text style={styles.sectionTitle}>IMAGENS PÓS-CADASTRO (OPCIONAL)</Text>
-                    <Text style={styles.infoText}>Não obrigatório. A inserção não cancela o salvamento em caso de falta de sinal local.</Text>
-
-                    <View style={{ flexDirection: 'row', gap: 15, marginTop: 15 }}>
-                        <TouchableOpacity style={styles.imgBox} onPress={() => getImg(setFotoPrincipal)}>
-                            {fotoPrincipal ? <Image source={{ uri: fotoPrincipal }} style={styles.img} /> : <Ionicons name="camera-outline" size={30} color="#9CA3AF" />}
-                            <Text style={styles.imgLbl}>FOTO PRINCIPAL</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.imgBox} onPress={() => getImg(setFotoRotulo)}>
-                            {fotoRotulo ? <Image source={{ uri: fotoRotulo }} style={styles.img} /> : <Ionicons name="barcode-outline" size={30} color="#9CA3AF" />}
-                            <Text style={styles.imgLbl}>BATER FOTO RÓTULO</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            )}
-
-            <View style={{ height: 60 }} />
+                )}
+            </TouchableOpacity>
+            <View style={{ height: 50 }} />
         </ScrollView>
-    );
+
+        {/* MODAL CATÁLOGO */}
+        <Modal visible={modalVisible} transparent={true} animationType="slide">
+            <View style={styles.modalBg}>
+                <View style={styles.modalCard}>
+                    {itemSelecionado ? (
+                        <View>
+                            <Text style={styles.modalTitle}>Quantidade Exigida</Text>
+                            <Text style={styles.modalSub}>Quantos <Text style={{ fontWeight: 'bold' }}>{itemSelecionado.unidade}</Text> de {itemSelecionado.nome} usa?</Text>
+                            <TextInput
+                                style={styles.inputGrande}
+                                keyboardType="numeric"
+                                value={qtdComponente}
+                                onChangeText={setQtdComponente}
+                                autoFocus
+                            />
+                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+                                <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#9CA3AF' }]} onPress={() => setItemSelecionado(null)}>
+                                    <Text style={styles.modalBtnTxt}>Voltar</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#1E8E5A' }]} onPress={confirmComponent}>
+                                    <Text style={styles.modalBtnTxt}>Confirmar</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    ) : (
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.modalTitle}>Vincular Insumo / Item</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Buscar item..."
+                                value={searchText}
+                                onChangeText={setSearchText}
+                            />
+                            <FlatList
+                                data={getFilteredCatalogo().filter(c => !itemComponents.some(ic => ic.uuid === c.uuid))}
+                                keyExtractor={i => i.uuid}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity style={styles.catItem} onPress={() => setItemSelecionado(item)}>
+                                        <Text style={styles.catNome}>{item.nome}</Text>
+                                        <Text style={styles.catUnidade}>{item.unidade}</Text>
+                                    </TouchableOpacity>
+                                )}
+                            />
+                            <TouchableOpacity style={styles.modalClsBtn} onPress={() => setModalVisible(false)}>
+                                <Text style={styles.modalClsTxt}>Fechar</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </View>
+            </View>
+        </Modal>
+    </View>
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F3F4F6' },
-    topInfo: { fontSize: 13, fontWeight: 'bold', color: '#10B981', marginBottom: 20 },
-    labelCampo: { fontSize: 13, fontWeight: '900', color: '#374151', marginBottom: 8 },
-    inputGrande: { backgroundColor: '#FFF', borderWidth: 2, borderColor: '#D1D5DB', borderRadius: 14, padding: 18, fontSize: 18, fontWeight: 'bold', color: '#1F2937', marginBottom: 20 },
-    inputMedio: { backgroundColor: '#FFF', borderWidth: 1.5, borderColor: '#D1D5DB', borderRadius: 12, padding: 16, fontSize: 16, color: '#1F2937', marginBottom: 5 },
+    container: { flex: 1, backgroundColor: '#F5F7F9' },
+    header: { paddingTop: 50, paddingBottom: 20, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFF', letterSpacing: 0.5 },
 
-    saveBtnGigante: { backgroundColor: '#10B981', padding: 22, borderRadius: 16, alignItems: 'center', marginTop: 10, elevation: 3 },
-    saveBtnTxtGigante: { color: '#FFF', fontWeight: '900', fontSize: 18, letterSpacing: 1 },
+    card: { backgroundColor: '#FFF', borderRadius: 16, padding: 20, marginBottom: 20, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3 },
+    sectionTitle: { fontSize: 13, fontWeight: '900', color: '#6B7280', letterSpacing: 0.5 },
+    divider: { height: 1, backgroundColor: '#F3F4F6', marginVertical: 12 },
 
-    avancadoBtn: { marginTop: 30, alignItems: 'center', padding: 15, backgroundColor: '#E5E7EB', borderRadius: 12 },
-    avancadoTxt: { fontWeight: 'bold', color: '#4B5563', fontSize: 14 },
-    avancadoBox: { marginTop: 20, backgroundColor: '#FFF', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: '#E5E7EB' },
+    label: { fontSize: 12, fontWeight: 'bold', color: '#9CA3AF', marginBottom: 6 },
+    input: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, padding: 14, fontSize: 16, color: '#1F2937', marginBottom: 15 },
+    inputGrande: { backgroundColor: '#FFF', borderWidth: 1.5, borderColor: '#D1D5DB', borderRadius: 12, padding: 16, fontSize: 18, fontWeight: 'bold', color: '#1F2937', marginBottom: 15 },
 
-    sectionTitle: { fontSize: 14, fontWeight: 'bold', color: '#6B7280', marginBottom: 15 },
-    divider: { height: 1, backgroundColor: '#F3F4F6', marginVertical: 15 },
-    label: { fontSize: 11, fontWeight: 'bold', color: '#9CA3AF', marginBottom: 6 },
-    input: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, padding: 12, marginBottom: 15, color: '#374151', fontSize: 14 },
-    infoText: { fontSize: 12, color: '#6B7280', fontStyle: 'italic', marginBottom: 10 },
+    segmentContainer: { flexDirection: 'row', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, overflow: 'hidden', marginBottom: 5 },
+    segmentBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', backgroundColor: '#FFF', borderRightWidth: 1, borderRightColor: '#E5E7EB' },
+    segmentBtnActive: { backgroundColor: '#1E8E5A' },
+    segmentTxt: { fontSize: 13, fontWeight: 'bold', color: '#6B7280' },
+    segmentTxtActive: { color: '#FFF' },
 
-    imgBox: { flex: 1, backgroundColor: '#F9FAFB', height: 110, borderRadius: 15, borderWidth: 1, borderStyle: 'dashed', borderColor: '#D1D5DB', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-    img: { width: '100%', height: '100%' },
-    imgLbl: { fontSize: 9, color: '#1F2937', fontWeight: 'bold', marginTop: 8 }
+    toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 10 },
+    toggleLabel: { fontSize: 14, fontWeight: 'bold', color: '#374151' },
+    toggleSub: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+    toggleBtn: { width: 50, height: 28, borderRadius: 15, backgroundColor: '#E5E7EB', padding: 2, justifyContent: 'center' },
+    toggleBtnActive: { backgroundColor: '#34A853' },
+    toggleCircle: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2 },
+    toggleCircleActive: { transform: [{ translateX: 22 }] },
+
+    addComposicaoBtn: { flexDirection: 'row', backgroundColor: '#ECFDF5', padding: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#A7F3D0', marginBottom: 20 },
+    addComposicaoTxt: { color: '#1E8E5A', fontWeight: 'bold', fontSize: 14 },
+
+    compItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F9FAFB', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 10 },
+    compNome: { fontSize: 14, fontWeight: 'bold', color: '#1F2937' },
+    compDetalhe: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+    addCptBtn: { alignItems: 'center', padding: 12, marginTop: 5 },
+    addCptTxt: { color: '#1A73E8', fontWeight: 'bold', fontSize: 14 },
+
+    saveBtnGigante: { backgroundColor: '#1E8E5A', padding: 20, borderRadius: 16, alignItems: 'center', elevation: 4, shadowColor: '#1E8E5A', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 },
+    saveBtnTxtGigante: { color: '#FFF', fontWeight: '900', fontSize: 16, letterSpacing: 1 },
+
+    modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
+    modalCard: { backgroundColor: '#FFF', borderRadius: 16, padding: 20, maxHeight: '80%' },
+    modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#1F2937', marginBottom: 5 },
+    modalSub: { fontSize: 14, color: '#6B7280', marginBottom: 15 },
+    modalBtn: { flex: 1, padding: 14, borderRadius: 10, alignItems: 'center' },
+    modalBtnTxt: { color: '#FFF', fontWeight: 'bold', fontSize: 15 },
+    catItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+    catNome: { fontSize: 15, fontWeight: 'bold', color: '#374151' },
+    catUnidade: { fontSize: 13, color: '#9CA3AF' },
+    modalClsBtn: { marginTop: 15, padding: 12, alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 10 },
+    modalClsTxt: { color: '#4B5563', fontWeight: 'bold' }
 });

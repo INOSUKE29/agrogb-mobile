@@ -1,153 +1,103 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Alert } from 'react-native';
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons'; // FontAwesome5 for specific agro icons
-import { theme } from '../styles/theme';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { getPlanosAdubacao, deletePlanoAdubacao } from '../database/database';
 import { useIsFocused } from '@react-navigation/native';
+import AppContainer from '../ui/AppContainer';
+import ScreenHeader from '../ui/ScreenHeader';
+import GlowCard from '../ui/GlowCard';
+import GlowFAB from '../ui/GlowFAB';
+import { DARK } from '../styles/darkTheme';
 
 export default function AdubacaoListScreen({ navigation }) {
     const [planos, setPlanos] = useState([]);
     const [loading, setLoading] = useState(false);
-    const isFocused = useIsFocused(); // Recarrega ao voltar
+    const isFocused = useIsFocused();
 
     const loadPlanos = async () => {
         setLoading(true);
-        try {
-            const data = await getPlanosAdubacao();
-            setPlanos(data);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
+        try { const data = await getPlanosAdubacao(); setPlanos(data); }
+        catch (e) { console.error(e); } finally { setLoading(false); }
     };
 
-    useEffect(() => {
-        if (isFocused) loadPlanos();
-    }, [isFocused]);
+    useEffect(() => { if (isFocused) loadPlanos(); }, [isFocused]);
 
     const handleDelete = (plano) => {
-        Alert.alert(
-            'Excluir Plano',
-            `Deseja excluir "${plano.nome_plano}"?`,
-            [
-                { text: 'Cancelar', style: 'cancel' },
-                {
-                    text: 'Excluir',
-                    style: 'destructive',
-                    onPress: async () => {
-                        await deletePlanoAdubacao(plano.uuid);
-                        loadPlanos();
-                    }
-                }
-            ]
-        );
+        Alert.alert('Excluir Plano', `Deseja excluir "${plano.nome_plano}"?`, [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Excluir', style: 'destructive', onPress: async () => { await deletePlanoAdubacao(plano.uuid); loadPlanos(); } }
+        ]);
     };
 
     const renderItem = ({ item }) => {
         const isApplied = item.status === 'APLICADO';
+        const accentColor = isApplied ? DARK.glow : DARK.warning;
 
         return (
             <TouchableOpacity
-                style={[styles.card, isApplied && styles.cardApplied]}
                 onPress={() => navigation.navigate('AdubacaoDetail', { plano: item })}
                 onLongPress={() => handleDelete(item)}
+                activeOpacity={0.85}
             >
-                <View style={styles.cardHeader}>
-                    <View style={styles.iconContainer}>
-                        <FontAwesome5
-                            name={item.tipo_aplicacao === 'GOTEJO' ? 'faucet' : 'spray-can'}
-                            size={20}
-                            color={isApplied ? '#059669' : '#F59E0B'}
-                        />
+                <GlowCard style={[styles.card, { borderLeftColor: accentColor, borderLeftWidth: 3 }]}>
+                    <View style={styles.cardHeader}>
+                        <View style={[styles.iconBox, { backgroundColor: accentColor + '18' }]}>
+                            <FontAwesome5
+                                name={item.tipo_aplicacao === 'GOTEJO' ? 'faucet' : 'spray-can'}
+                                size={18}
+                                color={accentColor}
+                            />
+                        </View>
+                        <View style={styles.cardContent}>
+                            <Text style={styles.cardTitle}>{item.nome_plano}</Text>
+                            <Text style={styles.cardSubtitle}>{item.cultura} • {item.tipo_aplicacao}</Text>
+                        </View>
+                        <View style={[styles.statusBadge, { borderColor: accentColor + '50' }]}>
+                            <Text style={[styles.statusText, { color: accentColor }]}>{item.status}</Text>
+                        </View>
                     </View>
-                    <View style={styles.cardContent}>
-                        <Text style={styles.cardTitle}>{item.nome_plano}</Text>
-                        <Text style={styles.cardSubtitle}>
-                            {item.cultura} • {item.tipo_aplicacao}
-                        </Text>
-                    </View>
-                    <View style={styles.statusBadge}>
-                        <Text style={[styles.statusText, isApplied ? styles.textApplied : styles.textPlanned]}>
-                            {item.status}
-                        </Text>
-                    </View>
-                </View>
-
-                {item.area_local ? (
-                    <Text style={styles.localText}>📍 {item.area_local}</Text>
-                ) : null}
+                    {item.area_local ? (
+                        <Text style={styles.localText}>📍 {item.area_local}</Text>
+                    ) : null}
+                </GlowCard>
             </TouchableOpacity>
         );
     };
 
     return (
-        <View style={styles.container}>
+        <AppContainer>
+            <ScreenHeader title="Planos de Adubação" onBack={navigation?.goBack ? () => navigation.goBack() : null} />
             <FlatList
                 data={planos}
-                keyExtractor={(item) => item.uuid}
+                keyExtractor={item => item.uuid}
                 renderItem={renderItem}
                 contentContainerStyle={styles.listContent}
-                refreshControl={<RefreshControl refreshing={loading} onRefresh={loadPlanos} />}
+                refreshControl={<RefreshControl refreshing={loading} onRefresh={loadPlanos} tintColor={DARK.glow} />}
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <Ionicons name="flask-outline" size={64} color="#D1D5DB" />
+                        <Ionicons name="flask-outline" size={64} color={DARK.glowBorder} />
                         <Text style={styles.emptyText}>Nenhum plano de adubação criado.</Text>
                         <Text style={styles.emptySub}>Toque no + para criar uma receita.</Text>
                     </View>
                 }
             />
-
-            <TouchableOpacity
-                style={styles.fab}
-                onPress={() => navigation.navigate('AdubacaoForm')}
-            >
-                <Ionicons name="add" size={30} color="#FFF" />
-            </TouchableOpacity>
-        </View>
+            <GlowFAB onPress={() => navigation.navigate('AdubacaoForm')} icon="add" />
+        </AppContainer>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.colors.background },
-    listContent: { padding: 15, paddingBottom: 100 },
-    card: {
-        backgroundColor: '#FFF',
-        borderRadius: 12,
-        padding: 15,
-        marginBottom: 12,
-        elevation: 2,
-        shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4,
-        borderLeftWidth: 4,
-        borderLeftColor: '#F59E0B' // Padrão: Planejado (Amber)
-    },
-    cardApplied: {
-        borderLeftColor: '#10B981', // Verde
-        opacity: 0.8
-    },
+    listContent: { padding: 16, paddingBottom: 100 },
+    card: { marginBottom: 12 },
     cardHeader: { flexDirection: 'row', alignItems: 'center' },
-    iconContainer: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: '#F3F4F6',
-        alignItems: 'center', justifyContent: 'center',
-        marginRight: 12
-    },
+    iconBox: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
     cardContent: { flex: 1 },
-    cardTitle: { fontSize: 16, fontWeight: 'bold', color: theme.colors.textDark },
-    cardSubtitle: { fontSize: 12, color: theme.colors.textMuted, marginTop: 2 },
-    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: '#F3F4F6' },
+    cardTitle: { fontSize: 15, fontWeight: 'bold', color: DARK.textPrimary },
+    cardSubtitle: { fontSize: 12, color: DARK.textSecondary, marginTop: 2 },
+    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, borderWidth: 1, backgroundColor: 'rgba(0,0,0,0.2)' },
     statusText: { fontSize: 10, fontWeight: 'bold' },
-    textPlanned: { color: '#F59E0B' },
-    textApplied: { color: '#10B981' },
-    localText: { marginTop: 10, fontSize: 12, color: theme.colors.textMuted, fontStyle: 'italic' },
-    fab: {
-        position: 'absolute', bottom: 20, right: 20,
-        width: 56, height: 56, borderRadius: 28,
-        backgroundColor: theme.colors.primary,
-        alignItems: 'center', justifyContent: 'center',
-        elevation: 5, shadowColor: '#000', shadowOpacity: 0.3
-    },
+    localText: { marginTop: 10, fontSize: 12, color: DARK.textMuted, fontStyle: 'italic' },
     emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 100 },
-    emptyText: { marginTop: 20, fontSize: 16, fontWeight: 'bold', color: theme.colors.textMuted },
-    emptySub: { marginTop: 5, fontSize: 14, color: '#9CA3AF' }
+    emptyText: { marginTop: 20, fontSize: 16, fontWeight: 'bold', color: DARK.textSecondary },
+    emptySub: { marginTop: 5, fontSize: 14, color: DARK.textMuted },
 });

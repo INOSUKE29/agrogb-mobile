@@ -38,6 +38,14 @@ export default function MenuCadastrosScreen({ navigation }) {
             description: "Gerenciar quem fornece insumos.",
             route: "Clientes",
             color: "#9CA3AF" // Gray Light
+        },
+        {
+            title: "CATEGORIAS DE DESPESA",
+            subtitle: "Fixas, Variáveis...",
+            icon: "cash-outline",
+            description: "Gerenciar classificação e tipos de contas e gastos gerais.",
+            route: "CategoriasDespesa",
+            color: "#DC2626" // Red 600
         }
     ];
 

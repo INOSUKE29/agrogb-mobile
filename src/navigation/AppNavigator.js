@@ -33,6 +33,7 @@ import MenuCadastrosScreen from '../screens/MenuCadastrosScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import VerifyCodeScreen from '../screens/VerifyCodeScreen';
 import ResetPasswordScreen from '../screens/ResetPasswordScreen';
+import CategoriasDespesaScreen from '../screens/CategoriasDespesaScreen';
 
 const Stack = createStackNavigator();
 
@@ -58,6 +59,7 @@ export default function AppNavigator() {
             <Stack.Screen name="Plantio" component={PlantioScreen} options={{ title: 'Registrar Plantio' }} />
             <Stack.Screen name="Custos" component={CustosScreen} options={{ title: 'Registrar Custo' }} />
             <Stack.Screen name="MenuCadastros" component={MenuCadastrosScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="CategoriasDespesa" component={CategoriasDespesaScreen} options={{ title: 'Categorias de Despesa' }} />
             <Stack.Screen name="Cadastro" component={CadastroScreen} options={{ title: 'Cadastros Gerais' }} />
             <Stack.Screen name="CadastroForm" component={CadastroFormScreen} options={({ route }) => ({ title: route.params?.title || 'Novo Cadastro' })} />
             <Stack.Screen name="Clientes" component={ClientesScreen} options={{ title: 'Gerenciar Clientes' }} />

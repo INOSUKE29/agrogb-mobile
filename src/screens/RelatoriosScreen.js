@@ -4,10 +4,14 @@ import { executeQuery } from '../database/database';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { generatePDFAgro } from '../services/ReportService';
+import { Ionicons } from '@expo/vector-icons';
+import AppContainer from '../ui/AppContainer';
+import ScreenHeader from '../ui/ScreenHeader';
+import { DARK, GLOW_CARD_SHADOW } from '../styles/darkTheme';
 
 const { width } = Dimensions.get('window');
 
-export default function RelatoriosScreen() {
+export default function RelatoriosScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState({ prod: 0, vendas: 0, custos: 0, perdas: 0 });
 
@@ -18,31 +22,26 @@ export default function RelatoriosScreen() {
             const rVendas = await executeQuery('SELECT SUM(valor * quantidade) as total FROM vendas');
             const rCustos = await executeQuery('SELECT SUM(valor_total) as total FROM custos');
             const rPerdas = await executeQuery('SELECT SUM(quantidade_kg) as total FROM descarte');
-
             setData({
                 prod: rProd.rows.item(0).total || 0,
                 vendas: rVendas.rows.item(0).total || 0,
                 custos: rCustos.rows.item(0).total || 0,
                 perdas: rPerdas.rows.item(0).total || 0
             });
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
+        } catch (e) { console.error(e); } finally { setLoading(false); }
     };
 
     useFocusEffect(useCallback(() => { loadData(); }, []));
 
-    const StatCard = ({ title, value, unit, color, icon }) => (
-        <View style={styles.card}>
-            <View style={[styles.iconBox, { backgroundColor: color + '15' }]}>
+    const StatCard = ({ title, value, unit, glowColor, icon }) => (
+        <View style={[styles.statCard, { borderColor: glowColor + '40', shadowColor: glowColor }]}>
+            <View style={[styles.iconBox, { backgroundColor: glowColor + '18' }]}>
                 <Text style={styles.icon}>{icon}</Text>
             </View>
             <View style={styles.cardInfo}>
                 <Text style={styles.cardLabel}>{title}</Text>
                 <View style={styles.valueRow}>
-                    <Text style={styles.cardValue}>{value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</Text>
+                    <Text style={[styles.cardValue, { color: glowColor }]}>{value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</Text>
                     <Text style={styles.cardUnit}>{unit}</Text>
                 </View>
             </View>
@@ -61,93 +60,100 @@ export default function RelatoriosScreen() {
     };
 
     return (
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-            <View style={styles.header}>
-                <Text style={styles.title}>BI RURAL PERFORMANCE</Text>
-                <Text style={styles.sub}>Análise de Resultados e Produtividade</Text>
-            </View>
+        <AppContainer>
+            <ScreenHeader
+                title="BI Rural Performance"
+                onBack={navigation?.goBack ? () => navigation.goBack() : null}
+            />
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+                {loading ? <ActivityIndicator size="large" color={DARK.glow} style={{ marginTop: 80 }} /> : (
+                    <>
+                        <StatCard title="PRODUÇÃO TOTAL" value={data.prod} unit="KG" glowColor={DARK.glow} icon="🌾" />
+                        <StatCard title="FATURAMENTO" value={data.vendas} unit="R$" glowColor="#3B82F6" icon="💰" />
+                        <StatCard title="CUSTOS OPERACIONAIS" value={data.custos} unit="R$" glowColor={DARK.danger} icon="💸" />
+                        <StatCard title="QUEBRAS / PERDAS" value={data.perdas} unit="KG" glowColor="#F59E0B" icon="📉" />
 
-            {loading ? <ActivityIndicator size="large" color="#F59E0B" style={{ marginTop: 100 }} /> : (
-                <View style={styles.content}>
-                    <StatCard title="PRODUÇÃO TOTAL" value={data.prod} unit="KG" color="#10B981" icon="🌾" />
-                    <StatCard title="FATURAMENTO" value={data.vendas} unit="R$" color="#3B82F6" icon="💰" />
-                    <StatCard title="CUSTOS OPERACIONAIS" value={data.custos} unit="R$" color="#EF4444" icon="💸" />
-                    <StatCard title="QUEBRAS / PERDAS" value={data.perdas} unit="KG" color="#7F1D1D" icon="📉" />
-
-                    <View style={styles.insightBox}>
-                        <LinearGradient colors={['#F59E0B', '#D97706']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.insightHeader}>
-                            <Text style={styles.insightTitle}>INSIGHT DO DIA</Text>
-                        </LinearGradient>
-                        <View style={styles.insightBody}>
+                        {/* Insight */}
+                        <LinearGradient
+                            colors={['rgba(0,255,156,0.15)', 'rgba(0,255,156,0.05)']}
+                            style={styles.insightBox}
+                        >
+                            <Text style={styles.insightTitle}>💡 INSIGHT DO DIA</Text>
                             <Text style={styles.insightTxt}>
                                 {data.vendas > data.custos
-                                    ? 'LUCRATIVIDADE OPERACIONAL POSITIVA EM R$ ' + (data.vendas - data.custos).toFixed(2)
-                                    : 'ATENÇÃO: CUSTOS EXCEDENDO FATURAMENTO. REVISE SUAS ENTRADAS.'}
+                                    ? '✅ LUCRATIVIDADE OPERACIONAL POSITIVA EM R$ ' + (data.vendas - data.custos).toFixed(2)
+                                    : '⚠️ ATENÇÃO: CUSTOS EXCEDENDO FATURAMENTO. REVISE SUAS ENTRADAS.'}
                             </Text>
-                        </View>
-                    </View>
+                        </LinearGradient>
 
-                    {/* PDF REPORTS SECTION */}
-                    <View style={styles.pdfSection}>
+                        {/* PDF Section */}
                         <Text style={styles.sectionTitle}>RELATÓRIOS OFICIAIS (PDF)</Text>
-
                         <View style={styles.presetRow}>
-                            <TouchableOpacity style={styles.presetBtn} onPress={() => handlePreset(0)}><Text style={styles.presetText}>Hoje</Text></TouchableOpacity>
-                            <TouchableOpacity style={styles.presetBtn} onPress={() => handlePreset(7)}><Text style={styles.presetText}>7 Dias</Text></TouchableOpacity>
-                            <TouchableOpacity style={styles.presetBtn} onPress={() => handlePreset(30)}><Text style={styles.presetText}>30 Dias</Text></TouchableOpacity>
+                            {[{ label: 'Hoje', days: 0 }, { label: '7 Dias', days: 7 }, { label: '30 Dias', days: 30 }].map(p => (
+                                <TouchableOpacity key={p.label} style={styles.presetBtn} onPress={() => handlePreset(p.days)}>
+                                    <Text style={styles.presetText}>{p.label}</Text>
+                                </TouchableOpacity>
+                            ))}
                         </View>
 
                         <View style={styles.dateRow}>
-                            <TextInput style={styles.dateInput} value={startDate} onChangeText={setStartDate} placeholder="AAAA-MM-DD" keyboardType="numeric" />
-                            <Text style={{ alignSelf: 'center', fontWeight: 'bold', color: '#9CA3AF' }}>ATÉ</Text>
-                            <TextInput style={styles.dateInput} value={endDate} onChangeText={setEndDate} placeholder="AAAA-MM-DD" keyboardType="numeric" />
+                            <TextInput style={styles.dateInput} value={startDate} onChangeText={setStartDate} placeholder="AAAA-MM-DD" placeholderTextColor={DARK.placeholder} keyboardType="numeric" />
+                            <Text style={{ alignSelf: 'center', fontWeight: 'bold', color: DARK.textMuted }}>ATÉ</Text>
+                            <TextInput style={styles.dateInput} value={endDate} onChangeText={setEndDate} placeholder="AAAA-MM-DD" placeholderTextColor={DARK.placeholder} keyboardType="numeric" />
                         </View>
 
                         <TouchableOpacity style={styles.pdfBtn} onPress={() => generatePDFAgro('VENDAS', startDate, endDate)}>
-                            <Text style={{ fontSize: 20 }}>📄</Text>
+                            <Text style={{ fontSize: 18 }}>📄</Text>
                             <Text style={styles.pdfBtnText}>GERAR RELATÓRIO DE VENDAS</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={[styles.pdfBtn, styles.stockBtn]} onPress={() => generatePDFAgro('ESTOQUE', startDate, endDate)}>
-                            <Text style={{ fontSize: 20 }}>📦</Text>
+                        <TouchableOpacity style={[styles.pdfBtn, { borderColor: '#3B82F640' }]} onPress={() => generatePDFAgro('ESTOQUE', startDate, endDate)}>
+                            <Text style={{ fontSize: 18 }}>📦</Text>
                             <Text style={styles.pdfBtnText}>POSIÇÃO DE ESTOQUE ATUAL</Text>
                         </TouchableOpacity>
-                    </View>
-                </View>
-            )}
-        </ScrollView>
+                    </>
+                )}
+                <View style={{ height: 60 }} />
+            </ScrollView>
+        </AppContainer>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F9FAFB' },
-    header: { padding: 30, paddingTop: 50 },
-    title: { fontSize: 22, fontWeight: '900', color: '#1F2937' },
-    sub: { fontSize: 11, color: '#9CA3AF', letterSpacing: 1, marginTop: 5 },
-    content: { padding: 25 },
-    card: { backgroundColor: '#FFF', borderRadius: 28, padding: 25, marginBottom: 20, flexDirection: 'row', alignItems: 'center', elevation: 3, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10 },
-    iconBox: { width: 60, height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginRight: 20 },
-    icon: { fontSize: 28 },
+    scroll: { padding: 20 },
+    statCard: {
+        backgroundColor: DARK.card,
+        borderRadius: 20,
+        padding: 20,
+        marginBottom: 14,
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
+        elevation: 5,
+    },
+    iconBox: { width: 56, height: 56, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginRight: 18 },
+    icon: { fontSize: 26 },
     cardInfo: { flex: 1 },
-    cardLabel: { fontSize: 9, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1.5, marginBottom: 8 },
-    valueRow: { flexDirection: 'row', alignItems: 'baseline' },
-    cardValue: { fontSize: 22, fontWeight: '800', color: '#1F2937' },
-    cardUnit: { fontSize: 10, fontWeight: 'bold', color: '#9CA3AF', marginLeft: 8 },
-    insightBox: { backgroundColor: '#FFF', borderRadius: 28, overflow: 'hidden', marginTop: 10, elevation: 4 },
-    insightHeader: { padding: 15, alignItems: 'center' },
-    insightTitle: { fontSize: 10, fontWeight: '900', color: '#FFF', letterSpacing: 2 },
-    insightBody: { padding: 25, alignItems: 'center' },
-    insightTxt: { fontSize: 13, fontWeight: '800', color: '#4B5563', textAlign: 'center', lineHeight: 22 },
+    cardLabel: { fontSize: 9, fontWeight: '900', color: DARK.textMuted, letterSpacing: 1.5, marginBottom: 6 },
+    valueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+    cardValue: { fontSize: 22, fontWeight: '800' },
+    cardUnit: { fontSize: 10, fontWeight: 'bold', color: DARK.textMuted },
 
-    // PDF Section Styles
-    pdfSection: { marginTop: 30, marginBottom: 50 },
-    sectionTitle: { fontSize: 14, fontWeight: '900', color: '#374151', marginBottom: 15, letterSpacing: 1 },
-    dateRow: { flexDirection: 'row', gap: 10, marginBottom: 15 },
-    dateInput: { flex: 1, backgroundColor: '#FFF', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#E5E7EB', textAlign: 'center' },
-    pdfBtn: { backgroundColor: '#10B981', padding: 16, borderRadius: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10, elevation: 2, marginBottom: 10 },
-    pdfBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 14 },
-    stockBtn: { backgroundColor: '#3B82F6' },
-    presetRow: { flexDirection: 'row', gap: 8, marginBottom: 15, justifyContent: 'center' },
-    presetBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#E5E7EB', borderRadius: 20 },
-    presetText: { fontSize: 10, fontWeight: 'bold', color: '#4B5563' }
+    insightBox: { borderRadius: 18, padding: 20, borderWidth: 1, borderColor: DARK.glowBorder, marginBottom: 24, marginTop: 6 },
+    insightTitle: { fontSize: 10, fontWeight: '900', color: DARK.glow, letterSpacing: 2, marginBottom: 10 },
+    insightTxt: { fontSize: 13, fontWeight: '700', color: DARK.textSecondary, lineHeight: 22 },
+
+    sectionTitle: { fontSize: 11, fontWeight: '900', color: DARK.textMuted, marginBottom: 14, letterSpacing: 1.5 },
+    presetRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+    presetBtn: { paddingHorizontal: 14, paddingVertical: 8, backgroundColor: 'rgba(0,255,156,0.1)', borderRadius: 20, borderWidth: 1, borderColor: DARK.glowBorder },
+    presetText: { fontSize: 11, fontWeight: 'bold', color: DARK.glow },
+
+    dateRow: { flexDirection: 'row', gap: 10, marginBottom: 14, alignItems: 'center' },
+    dateInput: { flex: 1, backgroundColor: DARK.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: DARK.glowBorder, textAlign: 'center', color: DARK.textPrimary, fontSize: 13 },
+
+    pdfBtn: { backgroundColor: 'rgba(0,255,156,0.12)', borderWidth: 1, borderColor: DARK.glowBorder, padding: 15, borderRadius: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 10 },
+    pdfBtnText: { color: DARK.glow, fontWeight: 'bold', fontSize: 13 },
 });

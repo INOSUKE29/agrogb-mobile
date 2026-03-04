@@ -547,8 +547,58 @@ const createTables = async () => {
             console.log('✅ Tabela caderno_notas verificada/criada');
         } catch (e) { }
 
+        // MIGRATION: V9.0 - Financeiro (Contas a Receber)
+        try {
+            await executeQuery('ALTER TABLE vendas ADD COLUMN status_pagamento TEXT DEFAULT "A_RECEBER"');
+            await executeQuery('ALTER TABLE vendas ADD COLUMN data_recebimento TEXT');
+            await executeQuery('ALTER TABLE vendas ADD COLUMN forma_pagamento TEXT');
+            console.log('✅ Colunas de status_pagamento adicionadas na tabela vendas');
+        } catch (e) { }
+
+        // MIGRATION: V9.0 - Financeiro (Categorias de Despesa e Custos)
+        try {
+            await executeQuery(`CREATE TABLE IF NOT EXISTS categorias_despesa (
+                id TEXT PRIMARY KEY,
+                nome TEXT NOT NULL,
+                tipo TEXT,
+                created_at TEXT
+            )`);
+            console.log('✅ Tabela categorias_despesa verificada/criada');
+        } catch (e) { }
+
+        try {
+            await executeQuery('ALTER TABLE custos ADD COLUMN categoria_id TEXT');
+            console.log('✅ Coluna categoria_id adicionada na tabela custos');
+        } catch (e) { }
+
+        // FASE 1: DEDUPLICAR CLIENTES EXISTENTES NO INÍCIO DO APP
+        await deduplicateClientes();
+
     } catch (error) {
         console.error('❌ Erro ao criar tabelas:', error);
+    }
+};
+
+export const deduplicateClientes = async () => {
+    try {
+        console.log('🧹 Iniciando deduplicação de clientes...');
+        const res = await executeQuery('SELECT * FROM clientes WHERE is_deleted = 0 ORDER BY id ASC');
+        const clientes = [];
+        for (let i = 0; i < res.rows.length; i++) clientes.push(res.rows.item(i));
+
+        const map = new Map();
+        for (const c of clientes) {
+            const key = c.cpf_cnpj ? c.cpf_cnpj.trim() : c.nome.trim().toUpperCase();
+            if (map.has(key)) {
+                console.log(`🗑️ Removendo cliente duplicado: ${c.nome} (ID: ${c.id})`);
+                await executeQuery('UPDATE clientes SET is_deleted = 1, sync_status = 0 WHERE id = ?', [c.id]);
+            } else {
+                map.set(key, c);
+            }
+        }
+        console.log('✅ Deduplicação de clientes concluída.');
+    } catch (e) {
+        console.error('❌ Erro na deduplicação de clientes:', e);
     }
 };
 
@@ -711,8 +761,8 @@ export const getColheitasRecentes = async () => {
 
 export const insertVenda = async (v) => {
     await executeQuery(
-        `INSERT INTO vendas (uuid, cliente, produto, quantidade, valor, data, observacao, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [v.uuid, up(v.cliente), up(v.produto), v.quantidade, v.valor, v.data, up(v.observacao), new Date().toISOString(), 0]
+        `INSERT INTO vendas (uuid, cliente, produto, quantidade, valor, data, observacao, status_pagamento, data_recebimento, forma_pagamento, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [v.uuid, up(v.cliente), up(v.produto), v.quantidade, v.valor, v.data, up(v.observacao), v.status_pagamento || 'A_RECEBER', v.data_recebimento || null, v.forma_pagamento || null, new Date().toISOString(), 0]
     );
 
     // LÓGICA V4.1: BAIXA DE ESTOQUE POR RECEITA
@@ -763,10 +813,17 @@ export const updateVenda = async (uuid, v) => {
     }
 
     await executeQuery(
-        `UPDATE vendas SET cliente = ?, produto = ?, quantidade = ?, valor = ?, data = ?, observacao = ?, last_updated = ?, sync_status = 0 WHERE uuid = ?`,
-        [up(v.cliente), up(v.produto), v.quantidade, v.valor, v.data, up(v.observacao), new Date().toISOString(), uuid]
+        `UPDATE vendas SET cliente = ?, produto = ?, quantidade = ?, valor = ?, data = ?, observacao = ?, status_pagamento = ?, data_recebimento = ?, forma_pagamento = ?, last_updated = ?, sync_status = 0 WHERE uuid = ?`,
+        [up(v.cliente), up(v.produto), v.quantidade, v.valor, v.data, up(v.observacao), v.status_pagamento || 'A_RECEBER', v.data_recebimento || null, v.forma_pagamento || null, new Date().toISOString(), uuid]
     );
     await atualizarEstoque(v.produto, -v.quantidade); // Tira do estoque novamente com nova qtd
+};
+
+export const marcarVendaRecebida = async (uuid) => {
+    await executeQuery(
+        `UPDATE vendas SET status_pagamento = 'RECEBIDO', data_recebimento = ?, sync_status = 0, last_updated = ? WHERE uuid = ?`,
+        [new Date().toISOString(), new Date().toISOString(), uuid]
+    );
 };
 
 export const deleteVenda = async (uuid) => {
@@ -825,8 +882,8 @@ export const insertPlantio = async (d) => {
 };
 
 export const insertCusto = async (d) => {
-    await executeQuery(`INSERT INTO custos (uuid, produto, tipo, quantidade, valor_total, data, observacao, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [d.uuid, up(d.produto), up(d.tipo), d.quantidade, d.valor_total, d.data, up(d.observacao), new Date().toISOString(), 0]);
+    await executeQuery(`INSERT INTO custos (uuid, produto, tipo, quantidade, valor_total, data, observacao, categoria_id, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [d.uuid, up(d.produto), up(d.tipo), d.quantidade, d.valor_total, d.data, up(d.observacao), d.categoria_id || null, new Date().toISOString(), 0]);
 };
 
 export const insertDescarte = async (d) => {
@@ -852,8 +909,27 @@ export const getCulturas = async () => {
 export const deleteCultura = async (id) => { await executeQuery('UPDATE culturas SET is_deleted = 1, sync_status = 0 WHERE id = ?', [id]); };
 
 export const insertCliente = async (d) => {
+    const nomeUp = up(d.nome);
+    const cpf = d.cpf_cnpj ? d.cpf_cnpj.trim() : null;
+
+    // FASE 2: Prevenção
+    let queryCheck = 'SELECT id FROM clientes WHERE is_deleted = 0 AND (nome = ?';
+    let paramsCheck = [nomeUp];
+
+    if (cpf) {
+        queryCheck += ' OR cpf_cnpj = ?';
+        paramsCheck.push(cpf);
+    }
+    queryCheck += ')';
+
+    const checkDuplicate = await executeQuery(queryCheck, paramsCheck);
+
+    if (checkDuplicate.rows.length > 0) {
+        throw new Error('Cliente já cadastrado com este Nome ou CPF/CNPJ.');
+    }
+
     await executeQuery(`INSERT INTO clientes (uuid, nome, telefone, endereco, cpf_cnpj, observacao, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [d.uuid, up(d.nome), d.telefone, up(d.endereco), d.cpf_cnpj, up(d.observacao), new Date().toISOString(), 0]);
+        [d.uuid, nomeUp, d.telefone, up(d.endereco), d.cpf_cnpj, up(d.observacao), new Date().toISOString(), 0]);
 };
 
 export const getClientes = async () => {
@@ -1201,4 +1277,22 @@ export const updateAppSetting = async (column, value) => {
         console.error(`Erro ao atualizar app_setting [${column}]:`, error);
         throw error;
     }
+};
+
+// --- CATEGORIAS DE DESPESA (v9.0) ---
+
+export const getCategoriasDespesa = async () => {
+    const res = await executeQuery('SELECT * FROM categorias_despesa ORDER BY nome ASC');
+    const rows = [];
+    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    return rows;
+};
+
+export const insertCategoriaDespesa = async (d) => {
+    await executeQuery(`INSERT INTO categorias_despesa (id, nome, tipo, created_at) VALUES (?, ?, ?, ?)`,
+        [d.id, up(d.nome), up(d.tipo), new Date().toISOString()]);
+};
+
+export const deleteCategoriaDespesa = async (id) => {
+    await executeQuery('DELETE FROM categorias_despesa WHERE id = ?', [id]);
 };

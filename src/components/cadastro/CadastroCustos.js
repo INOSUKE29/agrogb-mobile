@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
-import { insertCusto, getCadastro } from '../../database/database';
+import { insertCusto, getCategoriasDespesa } from '../../database/database';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function CadastroCustos({ navigation }) {
-    const [produto, setProduto] = useState('');
-    const [tipo, setTipo] = useState('');
+    const [categoria, setCategoria] = useState(null); // Objeto da Categoria
+    // const [produto, setProduto] = useState(''); // replaced by Categoria
+    // const [tipo, setTipo] = useState(''); // replaced by Categoria
     const [quantidade, setQuantidade] = useState('');
     const [valorTotal, setValorTotal] = useState('');
     const [observacao, setObservacao] = useState('');
@@ -23,10 +24,8 @@ export default function CadastroCustos({ navigation }) {
     const loadItems = async () => {
         setLoading(true);
         try {
-            const all = await getCadastro();
-            // Filter services
-            const services = all.filter(i => i.tipo === 'SERVICO' || i.tipo === 'OUTRO');
-            setItems(services);
+            const all = await getCategoriasDespesa();
+            setItems(all);
         } catch (e) { } finally { setLoading(false); }
     };
 
@@ -38,19 +37,20 @@ export default function CadastroCustos({ navigation }) {
     const up = (t, setter) => setter(t.toUpperCase());
 
     const salvar = async () => {
-        if (!produto || !quantidade || !valorTotal) {
+        if (!categoria || !quantidade || !valorTotal) {
             Alert.alert('Atenção', 'Preencha os campos obrigatórios (*)');
             return;
         }
 
         const dados = {
             uuid: uuidv4(),
-            produto: produto.toUpperCase(),
-            tipo: (tipo || 'GERAL').toUpperCase(),
+            produto: categoria.nome.toUpperCase(),
+            tipo: categoria.tipo ? categoria.tipo.toUpperCase() : 'GERAL',
             quantidade: parseFloat(quantidade) || 0,
             valor_total: parseFloat(valorTotal) || 0,
             observacao: observacao.toUpperCase(),
-            data: new Date().toISOString().split('T')[0]
+            data: new Date().toISOString().split('T')[0],
+            categoria_id: categoria.id
         };
 
         try {
@@ -67,25 +67,25 @@ export default function CadastroCustos({ navigation }) {
                 {/* Header Mantido limpo para o Hub */}
                 <View style={styles.form}>
                     <View style={styles.field}>
-                        <Text style={styles.label}>IDENTIFICAÇÃO DA DESPESA *</Text>
+                        <Text style={styles.label}>CATEGORIA DA DESPESA *</Text>
                         <TouchableOpacity style={styles.selectBtn} onPress={() => setModalVisible(true)}>
-                            <Text style={[styles.selectText, !produto && { color: '#9CA3AF' }]}>
-                                {produto || "SELECIONAR SERVIÇO/DESPESA..."}
+                            <Text style={[styles.selectText, !categoria && { color: '#9CA3AF' }]}>
+                                {categoria ? categoria.nome : "SELECIONAR DEPESA / CATEGORIA..."}
                             </Text>
                             <Ionicons name="chevron-down" size={20} color="#6B7280" />
                         </TouchableOpacity>
                     </View>
 
-                    <View style={styles.field}>
-                        <Text style={styles.label}>CATEGORIA / TIPO</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="EX: FIXA / VARIÁVEL / MÃO DE OBRA"
-                            value={tipo}
-                            onChangeText={(t) => up(t, setTipo)}
-                            autoCapitalize="characters"
-                        />
-                    </View>
+                    {categoria && (
+                        <View style={styles.field}>
+                            <Text style={styles.label}>TIPO (FIXA / VARIÁVEL)</Text>
+                            <TextInput
+                                style={[styles.input, { backgroundColor: '#F3F4F6', color: '#6B7280' }]}
+                                value={categoria.tipo || 'NÃO DEFINIDO'}
+                                editable={false}
+                            />
+                        </View>
+                    )}
 
                     <View style={styles.row}>
                         <View style={[styles.field, { flex: 1, marginRight: 10 }]}>
@@ -151,14 +151,14 @@ export default function CadastroCustos({ navigation }) {
                         {loading ? <ActivityIndicator color="#DC2626" /> :
                             <FlatList
                                 data={getFilteredItems()}
-                                keyExtractor={i => i.uuid || i.id.toString()}
+                                keyExtractor={i => i.id.toString()}
                                 renderItem={({ item }) => (
-                                    <TouchableOpacity style={styles.itemRow} onPress={() => { setProduto(item.nome); setModalVisible(false); }}>
+                                    <TouchableOpacity style={styles.itemRow} onPress={() => { setCategoria(item); setModalVisible(false); }}>
                                         <Text style={styles.itemText}>{item.nome}</Text>
                                         <Text style={styles.itemSub}>{item.tipo}</Text>
                                     </TouchableOpacity>
                                 )}
-                                ListEmptyComponent={<Text style={styles.empty}>Nenhum serviço cadastrado.</Text>}
+                                ListEmptyComponent={<Text style={styles.empty}>Nenhuma categoria cadastrada.</Text>}
                             />
                         }
                     </View>

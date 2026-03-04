@@ -1,27 +1,31 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator, Animated } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { useFocusEffect } from '@react-navigation/native';
-import { insertPlantio, getCadastro, updatePlantio, deletePlantio, executeQuery } from '../database/database'; // Assuming these exist or using queries direct
+import { insertPlantio, getCadastro, updatePlantio, deletePlantio, executeQuery } from '../database/database';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { DARK } from '../styles/darkTheme';
 
 const up = (t, setter) => setter(t.toUpperCase());
 
 export default function PlantioScreen({ navigation }) {
-    const [talhao, setTalhao] = useState(''); // Stores Name of Area
+    const [talhao, setTalhao] = useState('');
     const [quantidade, setQuantidade] = useState('');
     const [variedade, setVariedade] = useState('');
     const [previsao, setPrevisao] = useState('');
     const [observacao, setObservacao] = useState('');
     const [history, setHistory] = useState([]);
 
-    // Selection Modal State
     const [modalVisible, setModalVisible] = useState(false);
-    const [modalType, setModalType] = useState(null); // 'AREA' or 'CULTURA'
+    const [modalType, setModalType] = useState(null);
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(false);
     const [selectedUnit, setSelectedUnit] = useState('PÉS');
+
+    const scaleAnim = new Animated.Value(1);
+    const pressIn = () => Animated.spring(scaleAnim, { toValue: 0.97, useNativeDriver: true }).start();
+    const pressOut = () => Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
 
     useFocusEffect(useCallback(() => { loadHistory(); }, []));
 
@@ -40,7 +44,6 @@ export default function PlantioScreen({ navigation }) {
         setModalVisible(true);
         try {
             const all = await getCadastro();
-            // Filter by Type
             const filtered = all.filter(i => i.tipo === type);
             setItems(filtered);
         } catch (e) { } finally { setLoading(false); }
@@ -64,27 +67,8 @@ export default function PlantioScreen({ navigation }) {
 
         const dados = {
             uuid: uuidv4(),
-            cultura: talhao.toUpperCase(), // Using "cultura" field to store Area temporarily or logic needs update? 
-            // WAIT: Database schema for Plantio has 'cultura' (text). User wants Relation.
-            // For now, I will store the AREA NAME in specific field or append? 
-            // Standard approach without breaking DB schema: Use 'cultura' column for CROP NAME, and we need a place for AREA.
-            // DB Schema: cultura, quantidade_pes, tipo_plantio, data...
-            // MAPPING: cultura = Crop Name (e.g. ALFACE), tipo_plantio = Variedade?? 
-            // User requirement: "Campo Cultura atualizado", "Campo Área atualizado".
-            // Let's use 'observacao' to store structured data regarding Area if column missing, OR assumed 'tipo_plantio' is used, OR add column.
-            // BEST: Using the new approach, I'll update the insert.
-
-            // CORRECTION: 'cultura' in DB likely refers to the Crop. 
-            // We need to store Area. Checking DB Schema again...
-            // Table plantio: uuid, cultura, quantidade_pes, tipo_plantio, data...
-            // I will Assume: cultura = CROP (e.g. Alface), tipo_plantio = VARIETY + AREA??
-            // Better: Store Area in 'observacao' or verify if I can add column quickly. 
-            // User allowed DB changes. I will add 'area_local' column to plantio if possible, but for stability, let's look at schema.
-            // Schema has 'cultura' (TEXT) and 'tipo_plantio' (TEXT).
-            // Let's map: cultura = CROP NAME. tipo_plantio = AREA NAME.
-
-            cultura: variedade.toUpperCase(),       // The Crop (Alface)
-            tipo_plantio: talhao.toUpperCase(),     // The Area (Estufa 1) - Hijacking this field effectively
+            cultura: variedade.toUpperCase(),
+            tipo_plantio: talhao.toUpperCase(),
             quantidade_pes: parseInt(quantidade) || 0,
             data: new Date().toISOString().split('T')[0],
             observacao: `PREV: ${previsao} | ${observacao}`.toUpperCase()
@@ -115,142 +99,156 @@ export default function PlantioScreen({ navigation }) {
     };
 
     return (
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-            <View style={styles.card}>
-                <LinearGradient colors={['#16A34A', '#15803D']} style={styles.cardHeader}>
-                    <Text style={styles.headerTitle}>NOVO PLANTIO</Text>
-                    <Text style={styles.headerSub}>Preencha os dados do ciclo</Text>
-                </LinearGradient>
+        <LinearGradient colors={['#0F3D2E', '#145C43']} style={{ flex: 1 }}>
+            {/* HEADER */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 6 }}>
+                    <Ionicons name="arrow-back" size={24} color="#FFF" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>REGISTRO DE PLANTIO</Text>
+                <View style={{ width: 36 }} />
+            </View>
 
-                <View style={styles.form}>
-                    <View style={styles.field}>
-                        <Text style={styles.label}>ÁREA DE PLANTIO (ONDE?)</Text>
-                        <TouchableOpacity style={styles.selectBtn} onPress={() => openSelector('AREA')}>
-                            <Text style={[styles.selectText, !talhao && { color: '#9CA3AF' }]}>
-                                {talhao || "SELECIONAR ÁREA..."}
-                            </Text>
-                            <Ionicons name="map-outline" size={20} color="#6B7280" />
-                        </TouchableOpacity>
-                    </View>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+                <View style={styles.card}>
+                    <Text style={styles.cardLabel}>NOVO CICLO DE PLANTIO</Text>
 
-                    <View style={styles.field}>
-                        <Text style={styles.label}>CULTURA (O QUE?)</Text>
-                        <TouchableOpacity style={styles.selectBtn} onPress={() => openSelector('CULTURA')}>
-                            <Text style={[styles.selectText, !variedade && { color: '#9CA3AF' }]}>
-                                {variedade || "SELECIONAR CULTURA..."}
-                            </Text>
-                            <Ionicons name="leaf-outline" size={20} color="#6B7280" />
-                        </TouchableOpacity>
-                    </View>
+                    <Text style={styles.label}>ÁREA DE PLANTIO (ONDE?)</Text>
+                    <TouchableOpacity style={styles.selectBtn} onPress={() => openSelector('AREA')}>
+                        <Text style={[styles.selectText, !talhao && { color: '#6B7280' }]}>
+                            {talhao || 'SELECIONAR ÁREA...'}
+                        </Text>
+                        <Ionicons name="map-outline" size={18} color="#34D399" />
+                    </TouchableOpacity>
 
-                    <View style={styles.row}>
-                        <View style={[styles.field, { flex: 1, marginRight: 10 }]}>
+                    <Text style={styles.label}>CULTURA (O QUE?)</Text>
+                    <TouchableOpacity style={styles.selectBtn} onPress={() => openSelector('CULTURA')}>
+                        <Text style={[styles.selectText, !variedade && { color: '#6B7280' }]}>
+                            {variedade || 'SELECIONAR CULTURA...'}
+                        </Text>
+                        <Ionicons name="leaf-outline" size={18} color="#34D399" />
+                    </TouchableOpacity>
+
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                        <View style={{ flex: 1 }}>
                             <Text style={styles.label}>QTD ({selectedUnit})</Text>
                             <TextInput
                                 style={styles.input}
                                 placeholder="0"
+                                placeholderTextColor="#6B7280"
                                 value={quantidade}
                                 onChangeText={setQuantidade}
                                 keyboardType="numeric"
                             />
                         </View>
-                        <View style={[styles.field, { flex: 1 }]}>
+                        <View style={{ flex: 1 }}>
                             <Text style={styles.label}>PREVISÃO COLHEITA</Text>
                             <TextInput
                                 style={styles.input}
                                 placeholder="MÊS/ANO"
+                                placeholderTextColor="#6B7280"
                                 value={previsao}
                                 onChangeText={(t) => up(t, setPrevisao)}
                             />
                         </View>
                     </View>
 
-                    <TouchableOpacity style={styles.btn} onPress={salvar}>
-                        <Text style={styles.btnText}>CONFIRMAR PLANTIO</Text>
-                    </TouchableOpacity>
+                    <Text style={styles.label}>OBSERVAÇÕES</Text>
+                    <TextInput
+                        style={[styles.input, { height: 70, textAlignVertical: 'top' }]}
+                        placeholder="Detalhes do plantio..."
+                        placeholderTextColor="#6B7280"
+                        value={observacao}
+                        onChangeText={(t) => up(t, setObservacao)}
+                        multiline
+                    />
+
+                    <Animated.View style={{ transform: [{ scale: scaleAnim }], marginTop: 6 }}>
+                        <TouchableOpacity style={styles.btn} onPress={salvar} onPressIn={pressIn} onPressOut={pressOut}>
+                            <Ionicons name="leaf" size={20} color="#FFF" style={{ marginRight: 8 }} />
+                            <Text style={styles.btnText}>CONFIRMAR PLANTIO</Text>
+                        </TouchableOpacity>
+                    </Animated.View>
                 </View>
-            </View>
 
-            <Text style={styles.histTitle}>PLANTIOS RECENTES (TOQUE LONGO P/ OPÇÕES)</Text>
-            {history.map(item => (
-                <TouchableOpacity key={item.uuid} style={styles.histCard} onLongPress={() => handleLongPress(item)}>
-                    <View style={styles.histIcon}>
-                        <Ionicons name="leaf" size={24} color="#FFF" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.histCultura}>{item.cultura}</Text>
-                        <Text style={styles.histLocal}>{item.tipo_plantio} • {item.quantidade_pes} mudas</Text>
-                    </View>
-                    <Text style={styles.histDate}>{item.data.split('-').reverse().slice(0, 2).join('/')}</Text>
-                </TouchableOpacity>
-            ))}
-
-            <Modal visible={modalVisible} animationType="slide" transparent>
-                <View style={styles.overlay}>
-                    <View style={styles.modalBg}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>SELECIONAR {modalType}</Text>
-                            <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <Ionicons name="close" size={24} color="#374151" />
-                            </TouchableOpacity>
+                {/* HISTÓRICO */}
+                <Text style={styles.histTitle}>PLANTIOS RECENTES (TOQUE LONGO P/ OPÇÕES)</Text>
+                {history.map(item => (
+                    <TouchableOpacity key={item.uuid} style={styles.histCard} onLongPress={() => handleLongPress(item)}>
+                        <View style={styles.histIcon}>
+                            <Ionicons name="leaf" size={22} color="#FFF" />
                         </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.histCultura}>{item.cultura}</Text>
+                            <Text style={styles.histLocal}>{item.tipo_plantio} • {item.quantidade_pes} mudas</Text>
+                        </View>
+                        <Text style={styles.histDate}>{item.data.split('-').reverse().slice(0, 2).join('/')}</Text>
+                    </TouchableOpacity>
+                ))}
 
-                        {loading ? <ActivityIndicator color="#16A34A" /> :
-                            <FlatList
-                                data={items}
-                                keyExtractor={i => i.uuid || i.id.toString()}
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity style={styles.itemRow} onPress={() => handleSelect(item)}>
-                                        <Text style={styles.itemText}>{item.nome}</Text>
-                                        <Text style={styles.itemSub}>{item.unidade || 'UN'}</Text>
-                                    </TouchableOpacity>
-                                )}
-                                ListEmptyComponent={
-                                    <Text style={styles.empty}>
-                                        Nenhum item cadastrado como {modalType}.
-                                        Vá em CADASTROS para adicionar.
-                                    </Text>
-                                }
-                            />
-                        }
+                <Modal visible={modalVisible} animationType="slide" transparent>
+                    <View style={styles.overlay}>
+                        <View style={styles.modalBg}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>SELECIONAR {modalType}</Text>
+                                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                                    <Ionicons name="close" size={24} color="#9CA3AF" />
+                                </TouchableOpacity>
+                            </View>
+
+                            {loading ? <ActivityIndicator color={DARK.glow} style={{ marginTop: 20 }} /> :
+                                <FlatList
+                                    data={items}
+                                    keyExtractor={i => i.uuid || i.id.toString()}
+                                    renderItem={({ item }) => (
+                                        <TouchableOpacity style={styles.itemRow} onPress={() => handleSelect(item)}>
+                                            <Text style={styles.itemText}>{item.nome}</Text>
+                                            <Text style={styles.itemSub}>{item.unidade || 'UN'}</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    ListEmptyComponent={
+                                        <Text style={styles.empty}>
+                                            Nenhum item cadastrado como {modalType}.{'\n'}Vá em CADASTROS para adicionar.
+                                        </Text>
+                                    }
+                                />
+                            }
+                        </View>
                     </View>
-                </View>
-            </Modal>
-        </ScrollView>
+                </Modal>
+            </ScrollView>
+        </LinearGradient>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F9FAFB', padding: 20 },
-    card: { backgroundColor: '#FFF', borderRadius: 24, overflow: 'hidden', elevation: 4, marginBottom: 25 },
-    cardHeader: { padding: 25 },
-    headerTitle: { fontSize: 18, fontWeight: '900', color: '#FFF' },
-    headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.9)' },
-    form: { padding: 20 },
-    field: { marginBottom: 15 },
-    row: { flexDirection: 'row' },
-    label: { fontSize: 10, fontWeight: '900', color: '#6B7280', marginBottom: 5, letterSpacing: 0.5 },
-    input: { backgroundColor: '#F3F4F6', borderRadius: 12, padding: 14, fontSize: 15, borderWidth: 1, borderColor: '#E5E7EB' },
-    selectBtn: { backgroundColor: '#F3F4F6', borderRadius: 12, padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' },
-    selectText: { fontSize: 15, fontWeight: '600', color: '#1F2937' },
-    btn: { backgroundColor: '#15803D', padding: 18, borderRadius: 14, alignItems: 'center', marginTop: 10 },
-    btnText: { color: '#FFF', fontWeight: '900' },
+    header: { paddingTop: 55, paddingBottom: 18, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    headerTitle: { fontSize: 16, fontWeight: '700', color: DARK.textPrimary, letterSpacing: 0.5 },
 
-    // History Styles
-    histTitle: { fontSize: 12, fontWeight: '900', color: '#9CA3AF', marginBottom: 15, letterSpacing: 1 },
-    histCard: { backgroundColor: '#FFF', padding: 15, borderRadius: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 10, elevation: 2 },
-    histIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#10B981', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-    histCultura: { fontSize: 16, fontWeight: '800', color: '#111827' },
-    histLocal: { fontSize: 12, color: '#6B7280', fontWeight: 'bold' },
-    histDate: { fontSize: 12, fontWeight: '900', color: '#9CA3AF' },
+    card: { backgroundColor: DARK.card, borderRadius: 22, padding: 22, borderWidth: 1, borderColor: DARK.glowBorder, marginBottom: 28, elevation: 5, shadowColor: '#00FF9C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 10 },
+    cardLabel: { fontSize: 11, fontWeight: '900', color: DARK.glow, letterSpacing: 1.5, marginBottom: 18 },
 
-    // Modal
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    modalBg: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '70%', padding: 20 },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-    modalTitle: { fontSize: 16, fontWeight: '900', color: '#1F2937' },
-    itemRow: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-    itemText: { fontSize: 15, fontWeight: 'bold', color: '#374151' },
-    itemSub: { fontSize: 11, color: '#9CA3AF' },
-    empty: { textAlign: 'center', marginTop: 50, color: '#9CA3AF', paddingHorizontal: 40 }
+    label: { fontSize: 10, fontWeight: '900', color: DARK.textMuted, letterSpacing: 1.2, marginBottom: 8, marginTop: 4 },
+    input: { backgroundColor: DARK.card, borderWidth: 1, borderColor: DARK.glowBorderStrong, borderRadius: 14, padding: 15, fontSize: 15, color: DARK.textPrimary, marginBottom: 16 },
+    selectBtn: { backgroundColor: DARK.card, borderWidth: 1, borderColor: DARK.glowBorderStrong, borderRadius: 14, padding: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+    selectText: { fontSize: 14, fontWeight: '600', color: DARK.textPrimary },
+
+    btn: { backgroundColor: DARK.glow, paddingVertical: 17, borderRadius: 20, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', elevation: 4, shadowColor: '#00FF9C', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.45, shadowRadius: 8 },
+    btnText: { color: '#061E1A', fontSize: 14, fontWeight: '900', letterSpacing: 1 },
+
+    histTitle: { fontSize: 11, fontWeight: '900', color: DARK.textMuted, letterSpacing: 1.2, marginBottom: 14, paddingLeft: 4 },
+    histCard: { backgroundColor: DARK.card, padding: 16, borderRadius: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 10, borderWidth: 1, borderColor: DARK.glowBorder },
+    histIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,255,156,0.15)', justifyContent: 'center', alignItems: 'center', marginRight: 14 },
+    histCultura: { fontSize: 15, fontWeight: '800', color: DARK.textPrimary },
+    histLocal: { fontSize: 12, color: DARK.textSecondary, fontWeight: 'bold', marginTop: 2 },
+    histDate: { fontSize: 12, fontWeight: '900', color: DARK.glow },
+
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+    modalBg: { backgroundColor: DARK.modal, borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '70%', padding: 22, borderWidth: 1, borderColor: DARK.glowBorder },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 },
+    modalTitle: { fontSize: 16, fontWeight: '900', color: DARK.textPrimary },
+    itemRow: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+    itemText: { fontSize: 15, fontWeight: 'bold', color: DARK.textPrimary },
+    itemSub: { fontSize: 11, color: DARK.textMuted, marginTop: 2 },
+    empty: { textAlign: 'center', marginTop: 50, color: DARK.textMuted, paddingHorizontal: 40 }
 });
