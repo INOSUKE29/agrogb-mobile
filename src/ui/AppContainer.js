@@ -1,13 +1,19 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { DARK } from '../styles/darkTheme';
+import { BG_GRADIENT } from '../styles/darkTheme';
 
+/**
+ * AppContainer — fundo com gradiente verde agrícola
+ * #0F3D2E → #1A6B4A → #4CAF50
+ */
 export default function AppContainer({ children, style }) {
     return (
         <LinearGradient
-            colors={DARK.bgGradient}
-            style={[styles.root, style]}
+            colors={BG_GRADIENT}
+            style={[styles.fill, style]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
         >
             {children}
         </LinearGradient>
@@ -15,5 +21,5 @@ export default function AppContainer({ children, style }) {
 }
 
 const styles = StyleSheet.create({
-    root: { flex: 1 },
+    fill: { flex: 1 },
 });

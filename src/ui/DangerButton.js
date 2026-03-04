@@ -1,24 +1,30 @@
 import React, { useRef } from 'react';
-import { TouchableOpacity, Text, StyleSheet, Animated } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { DARK } from '../styles/darkTheme';
+import { TouchableOpacity, Text, StyleSheet, Animated, ActivityIndicator } from 'react-native';
 
-export default function DangerButton({ label, onPress, style, textStyle }) {
+/**
+ * DangerButton — Soft Shadow Moderno
+ * Botão vermelho sólido para ações críticas
+ */
+export default function DangerButton({ title, onPress, loading, style, textStyle }) {
     const scale = useRef(new Animated.Value(1)).current;
-    const pressIn = () => Animated.spring(scale, { toValue: 0.96, useNativeDriver: true }).start();
-    const pressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
+
+    const pressIn = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, friction: 6 }).start();
+    const pressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 6 }).start();
 
     return (
         <Animated.View style={[{ transform: [{ scale }] }, style]}>
-            <TouchableOpacity activeOpacity={0.9} onPress={onPress} onPressIn={pressIn} onPressOut={pressOut}>
-                <LinearGradient
-                    colors={DARK.dangerGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.btn}
-                >
-                    <Text style={[styles.label, textStyle]}>{label}</Text>
-                </LinearGradient>
+            <TouchableOpacity
+                style={styles.btn}
+                onPress={onPress}
+                onPressIn={pressIn}
+                onPressOut={pressOut}
+                activeOpacity={0.85}
+                disabled={loading}
+            >
+                {loading
+                    ? <ActivityIndicator color="#FFF" size="small" />
+                    : <Text style={[styles.label, textStyle]}>{title}</Text>
+                }
             </TouchableOpacity>
         </Animated.View>
     );
@@ -26,20 +32,22 @@ export default function DangerButton({ label, onPress, style, textStyle }) {
 
 const styles = StyleSheet.create({
     btn: {
-        height: 52,
+        backgroundColor: '#DC2626',
         borderRadius: 14,
+        paddingVertical: 14,
+        paddingHorizontal: 20,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: '#FF3B3B',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
-        shadowRadius: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.18,
+        shadowRadius: 14,
         elevation: 6,
     },
     label: {
-        color: '#FFF',
+        color: '#FFFFFF',
         fontSize: 14,
-        fontWeight: '900',
-        letterSpacing: 0.8,
+        fontWeight: '700',
+        letterSpacing: 0.5,
     },
 });

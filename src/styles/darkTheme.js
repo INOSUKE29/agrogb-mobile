@@ -1,45 +1,60 @@
 // ============================================================
-// DARK AGRO TECH – Design System Tokens
-// AgroGB Mobile v7.0
+// SOFT SHADOW MODERNO – Design System Tokens
+// AgroGB Mobile v8.1
+// Inspirado em: SaaS agrícola premium, dashboard fintech limpo
 // ============================================================
 
 export const DARK = {
     // Backgrounds
-    bg: '#061E1A',
-    bgGradient: ['#061E1A', '#0B2E26', '#0F3D32'],
-    card: '#0F2E28',
-    cardAlt: '#0A2420',
-    modal: '#0B2E26',
+    bg: '#0F3D2E',
+    bgGradient: ['#0F3D2E', '#1F7A5A', '#4CAF50'],
+    card: 'rgba(255,255,255,0.95)',
+    cardAlt: 'rgba(255,255,255,0.85)',
+    modal: '#FFFFFF',
 
-    // Glow Green (Primary)
-    glow: '#00FF9C',
-    glowSoft: '#1BFFB2',
-    glowBorder: 'rgba(0,255,156,0.25)',
-    glowBorderStrong: 'rgba(0,255,156,0.45)',
-    glowShadow: 'rgba(0,255,156,0.20)',
+    // Primary accent (verde agrícola profissional)
+    glow: '#1F7A5A',
+    glowSoft: '#4CAF50',
+    glowBorder: 'rgba(0,0,0,0.08)',
+    glowBorderStrong: 'rgba(31,122,90,0.35)',
+    glowShadow: 'rgba(31,122,90,0.18)',
 
-    // Text
-    textPrimary: '#FFFFFF',
-    textSecondary: '#A8C5BE',
-    textMuted: '#6FAEA3',
-    placeholder: '#6FAEA3',
+    // Text (escuro — cards são claros)
+    textPrimary: '#1E293B',
+    textSecondary: '#334155',
+    textMuted: '#64748B',
+    placeholder: '#94A3B8',
+    textOnPrimary: '#FFFFFF',
 
     // Status / Financial
-    danger: '#FF3B3B',
-    dangerGradient: ['#FF3B3B', '#B80000'],
-    warning: '#F59E0B',
+    danger: '#DC2626',
+    dangerGradient: ['#EF4444', '#B91C1C'],
+    warning: '#D97706',
     warningDark: '#92400E',
 
     // Header separator
-    glowLine: 'rgba(0,255,156,0.35)',
+    glowLine: 'rgba(255,255,255,0.25)',
 };
 
+// Card shadow — branco com sombra suave
 export const GLOW_CARD_SHADOW = {
-    shadowColor: '#00FF9C',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
+    shadowOpacity: 0.10,
+    shadowRadius: 14,
     elevation: 6,
 };
 
-export const MODAL_OVERLAY = 'rgba(0,0,0,0.7)';
+// Sombra forte para modais
+export const STRONG_SHADOW = {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.20,
+    shadowRadius: 24,
+    elevation: 14,
+};
+
+export const MODAL_OVERLAY = 'rgba(0,0,0,0.55)';
+
+// Gradiente do fundo principal
+export const BG_GRADIENT = ['#0F3D2E', '#1A6B4A', '#4CAF50'];

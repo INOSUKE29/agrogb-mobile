@@ -1,64 +1,77 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { DARK } from '../styles/darkTheme';
 
-export default function ScreenHeader({ title, onBack, rightElement, style }) {
+/**
+ * ScreenHeader — Soft Shadow Moderno
+ * Header translúcido sobre gradiente verde com linha separadora
+ */
+export default function ScreenHeader({ title, navigation, rightIcon, onRightPress }) {
     return (
-        <View style={[styles.wrapper, style]}>
+        <View style={styles.header}>
             <View style={styles.row}>
-                {onBack ? (
-                    <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-                        <Ionicons name="arrow-back" size={22} color={DARK.textPrimary} />
+                {navigation ? (
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
+                        <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
                     </TouchableOpacity>
-                ) : <View style={styles.backBtn} />}
+                ) : (
+                    <View style={styles.back} />
+                )}
 
                 <Text style={styles.title} numberOfLines={1}>{title}</Text>
 
-                <View style={styles.backBtn}>
-                    {rightElement || null}
-                </View>
+                {rightIcon ? (
+                    <TouchableOpacity onPress={onRightPress} style={styles.right}>
+                        <Ionicons name={rightIcon} size={22} color="#FFFFFF" />
+                    </TouchableOpacity>
+                ) : (
+                    <View style={styles.right} />
+                )}
             </View>
-            {/* Glow line separator */}
-            <View style={styles.glowLine} />
+            <View style={styles.separator} />
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    wrapper: {
+    header: {
         paddingTop: 52,
-        paddingBottom: 12,
+        paddingBottom: 14,
         paddingHorizontal: 20,
-        backgroundColor: 'transparent',
+        backgroundColor: 'rgba(15,61,46,0.6)',
     },
     row: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
     },
-    backBtn: {
+    back: {
         width: 36,
         height: 36,
-        alignItems: 'center',
+        borderRadius: 18,
+        backgroundColor: 'rgba(255,255,255,0.15)',
         justifyContent: 'center',
+        alignItems: 'center',
     },
     title: {
         flex: 1,
         textAlign: 'center',
         fontSize: 16,
         fontWeight: '700',
-        color: DARK.textPrimary,
-        letterSpacing: 1,
-        textTransform: 'uppercase',
+        color: '#FFFFFF',
+        letterSpacing: 0.5,
+        marginHorizontal: 8,
     },
-    glowLine: {
+    right: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    separator: {
         height: 1,
-        backgroundColor: DARK.glowLine,
-        marginTop: 12,
-        shadowColor: '#00FF9C',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.8,
-        shadowRadius: 4,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        marginTop: 14,
     },
 });
