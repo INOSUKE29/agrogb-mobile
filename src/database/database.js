@@ -910,12 +910,8 @@ export const updateVenda = async (uuid, v) => {
     await atualizarEstoque(v.produto, -v.quantidade); // Tira do estoque novamente com nova qtd
 };
 
-export const marcarVendaRecebida = async (uuid) => {
-    await executeQuery(
-        `UPDATE vendas SET status_pagamento = 'RECEBIDO', data_recebimento = ?, sync_status = 0, last_updated = ? WHERE uuid = ?`,
-        [new Date().toISOString(), new Date().toISOString(), uuid]
-    );
-};
+
+
 
 export const deleteVenda = async (uuid) => {
     const ant = await executeQuery('SELECT * FROM vendas WHERE uuid = ?', [uuid]);
