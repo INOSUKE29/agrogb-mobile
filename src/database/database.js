@@ -574,10 +574,69 @@ const createTables = async () => {
         // FASE 1: DEDUPLICAR CLIENTES EXISTENTES NO INÍCIO DO APP
         await deduplicateClientes();
 
+        // =============================================
+        // MIGRATION: v8.1 — Unidades de Medida
+        // =============================================
+        try {
+            await executeQuery(`CREATE TABLE IF NOT EXISTS unidades_medida (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome TEXT NOT NULL,
+                sigla TEXT NOT NULL UNIQUE
+            )`);
+            const countUn = await executeQuery('SELECT COUNT(*) as c FROM unidades_medida');
+            if (countUn.rows.item(0).c === 0) {
+                const defaultUnits = [
+                    ['Quilograma', 'kg'], ['Caixa', 'cx'], ['Unidade', 'un'],
+                    ['Metro', 'm'], ['Litro', 'L'], ['Saco', 'sc'], ['Bandeja', 'bdj']
+                ];
+                for (const [nome, sigla] of defaultUnits) {
+                    await executeQuery('INSERT OR IGNORE INTO unidades_medida (nome, sigla) VALUES (?, ?)', [nome, sigla]);
+                }
+                console.log('✅ Seed unidades_medida concluído');
+            }
+            console.log('✅ Tabela unidades_medida verificada/criada');
+        } catch (e) { console.error('Erro unidades_medida:', e); }
+
+        // MIGRATION: v8.1 — unidade_id na tabela cadastro
+        try {
+            await executeQuery('ALTER TABLE cadastro ADD COLUMN unidade_id INTEGER REFERENCES unidades_medida(id)');
+            console.log('✅ Coluna unidade_id adicionada em cadastro');
+        } catch (e) { }
+
+        // MIGRATION: v8.1 — peso_medio_caixa na tabela culturas
+        try {
+            await executeQuery('ALTER TABLE culturas ADD COLUMN peso_medio_caixa REAL DEFAULT 1');
+            console.log('✅ Coluna peso_medio_caixa adicionada em culturas');
+        } catch (e) { }
+
+        // MIGRATION: v8.1 — valor_recebido na tabela vendas
+        try {
+            await executeQuery('ALTER TABLE vendas ADD COLUMN valor_recebido REAL');
+            console.log('✅ Coluna valor_recebido adicionada em vendas');
+        } catch (e) { }
+
+        // MIGRATION: v8.1 — Movimentação de Estoque Profissional
+        try {
+            await executeQuery(`CREATE TABLE IF NOT EXISTS movimentacao_estoque (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                produto_id TEXT NOT NULL,
+                tipo TEXT NOT NULL,
+                quantidade REAL NOT NULL,
+                origem TEXT,
+                data TEXT NOT NULL,
+                observacao TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0
+            )`);
+            console.log('✅ Tabela movimentacao_estoque verificada/criada');
+        } catch (e) { console.error('Erro movimentacao_estoque:', e); }
+
     } catch (error) {
         console.error('❌ Erro ao criar tabelas:', error);
     }
 };
+
 
 export const deduplicateClientes = async () => {
     try {
@@ -679,8 +738,40 @@ export const deletePlanoAdubacao = async (uuid) => {
     await executeQuery('DELETE FROM planos_adubacao WHERE uuid = ?', [uuid]);
 };
 
+// --- v8.1 EXPORTS ---
+
+export const getUnidades = async () => {
+    const res = await executeQuery('SELECT * FROM unidades_medida ORDER BY nome ASC');
+    const rows = [];
+    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    return rows;
+};
+
+export const insertMovimentacao = async (m) => {
+    await executeQuery(
+        `INSERT INTO movimentacao_estoque (uuid, produto_id, tipo, quantidade, origem, data, observacao, last_updated, sync_status) VALUES (?,?,?,?,?,?,?,?,0)`,
+        [m.uuid, m.produto_id, m.tipo, m.quantidade, m.origem || null, m.data, m.observacao || null, new Date().toISOString()]
+    );
+};
+
+export const getSaldoEstoque = async (produto_id) => {
+    const res = await executeQuery(
+        `SELECT COALESCE(SUM(CASE WHEN tipo IN ('ENTRADA') THEN quantidade WHEN tipo IN ('SAIDA','VENDA','CONSUMO','DESCARTE') THEN -quantidade ELSE 0 END),0) AS saldo FROM movimentacao_estoque WHERE produto_id = ?`,
+        [produto_id]
+    );
+    return res.rows.item(0).saldo || 0;
+};
+
+export const marcarVendaRecebida = async (uuid, valor_recebido) => {
+    await executeQuery(
+        `UPDATE vendas SET status_pagamento = 'RECEBIDO', valor_recebido = ?, data_recebimento = ?, last_updated = ? WHERE uuid = ?`,
+        [valor_recebido, new Date().toISOString(), new Date().toISOString(), uuid]
+    );
+};
+
 // --- HELPER PARA MAIÚSCULAS ---
 const up = (text) => text ? text.toString().toUpperCase().trim() : '';
+
 
 // --- CONFIG ---
 export const setConfig = async (chave, valor) => {

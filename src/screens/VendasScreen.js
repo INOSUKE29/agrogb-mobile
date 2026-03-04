@@ -24,7 +24,12 @@ export default function VendasScreen({ navigation }) {
     // Modal States
     const [modalVisible, setModalVisible] = useState(false); // Product
     const [clientModalVisible, setClientModalVisible] = useState(false); // Client
-    const [newClientModal, setNewClientModal] = useState(false); // New Client Form
+    const [newClientModal, setNewClientModal] = useState(false);
+
+    // Recebimento modal
+    const [recebimentoModal, setRecebimentoModal] = useState(false);
+    const [recebimentoItem, setRecebimentoItem] = useState(null);
+    const [valorRecebido, setValorRecebido] = useState('');
 
     // Lists
     const [items, setItems] = useState([]);
@@ -171,16 +176,26 @@ export default function VendasScreen({ navigation }) {
     };
 
     const handleBaixar = (item) => {
-        Alert.alert('Confirmar Pagamento', `Marcar a venda de ${item.produto} para ${item.cliente} como Recebida?`, [
-            { text: 'Cancelar', style: 'cancel' },
-            {
-                text: 'Confirmar',
-                onPress: async () => {
-                    await marcarVendaRecebida(item.uuid);
-                    loadHistory();
-                }
-            }
-        ]);
+        setRecebimentoItem(item);
+        setValorRecebido(item.valor ? item.valor.toString() : '');
+        setRecebimentoModal(true);
+    };
+
+    const confirmarRecebimento = async () => {
+        if (!valorRecebido || isNaN(parseFloat(valorRecebido))) {
+            Alert.alert('Atenção', 'Informe o valor recebido.');
+            return;
+        }
+        try {
+            await marcarVendaRecebida(recebimentoItem.uuid, parseFloat(valorRecebido));
+            setRecebimentoModal(false);
+            setRecebimentoItem(null);
+            setValorRecebido('');
+            loadHistory();
+            Alert.alert('✅ Recebido!', `Venda de ${recebimentoItem.produto} marcada como recebida.`);
+        } catch (e) {
+            Alert.alert('Erro', 'Falha ao marcar como recebido.');
+        }
     };
 
     const getFilteredHistory = () => {
@@ -376,9 +391,46 @@ export default function VendasScreen({ navigation }) {
                     </View>
                 </View>
             </Modal>
+
+            {/* MODAL MARCAR COMO RECEBIDO */}
+            <Modal visible={recebimentoModal} transparent animationType="fade">
+                <View style={styles.overlayCenter}>
+                    <View style={styles.miniModal}>
+                        <Text style={styles.modalTitle}>✅ CONFIRMAR RECEBIMENTO</Text>
+                        {recebimentoItem && (
+                            <Text style={{ color: DARK.textSecondary, marginVertical: 12, fontSize: 13 }}>
+                                Venda: <Text style={{ color: DARK.textPrimary, fontWeight: 'bold' }}>{recebimentoItem.produto}</Text>{'\n'}
+                                Cliente: <Text style={{ color: DARK.textPrimary, fontWeight: 'bold' }}>{recebimentoItem.cliente}</Text>
+                            </Text>
+                        )}
+                        <Text style={styles.label}>VALOR RECEBIDO (R$)</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="0.00"
+                            placeholderTextColor={DARK.textMuted}
+                            value={valorRecebido}
+                            onChangeText={setValorRecebido}
+                            keyboardType="decimal-pad"
+                        />
+                        <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
+                            <TouchableOpacity
+                                style={[styles.btn, { flex: 1, backgroundColor: 'rgba(255,255,255,0.07)', shadowOpacity: 0 }]}
+                                onPress={() => { setRecebimentoModal(false); setRecebimentoItem(null); }}
+                            >
+                                <Text style={[styles.btnText, { color: DARK.textMuted }]}>CANCELAR</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.btn, { flex: 1 }]} onPress={confirmarRecebimento}>
+                                <Ionicons name="checkmark-circle" size={18} color="#061E1A" />
+                                <Text style={[styles.btnText, { marginLeft: 6 }]}>CONFIRMAR</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </LinearGradient>
     );
 }
+
 
 const styles = StyleSheet.create({
     header: { paddingTop: 55, paddingBottom: 18, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
