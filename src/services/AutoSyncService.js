@@ -14,7 +14,6 @@
  */
 
 import { syncAll } from './supabase';
-import NetInfo from '@react-native-community/netinfo';
 
 const SYNC_INTERVAL_MS = 2 * 60 * 1000; // 2 minutos
 const DEBOUNCE_MS = 3000; // aguarda 3s após último trigger para evitar spam
@@ -87,17 +86,7 @@ class AutoSyncService {
     }
 
     async _runSync() {
-        if (this._isSyncing) return; // evita execuções paralelas
-
-        // Verifica conectividade primeiro
-        try {
-            const net = await NetInfo.fetch();
-            if (!net.isConnected) {
-                console.log('📴 AutoSync: sem internet, pulando...');
-                this._notify('offline');
-                return;
-            }
-        } catch (e) { /* se NetInfo falhar, tenta mesmo assim */ }
+        if (this._isSyncing) return;
 
         this._isSyncing = true;
         this._notify('syncing');
