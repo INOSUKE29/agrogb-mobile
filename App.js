@@ -1,6 +1,7 @@
 import 'react-native-get-random-values';
 import 'react-native-gesture-handler';
 import React, { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
@@ -54,111 +55,113 @@ export default function App() {
     }, []);
 
     return (
-        <ErrorBoundary>
-            <ThemeProvider>
-                <WeatherProvider>
-                    <StatusBar style="light" />
-                    <NavigationContainer>
-                        <Stack.Navigator
-                            initialRouteName="Login"
-                            screenOptions={{
-                                headerStyle: { backgroundColor: '#10B981' }, // Será dinâmico futuramente usando styled headers
-                                headerTintColor: '#fff',
-                                headerTitleStyle: { fontWeight: 'bold' }
-                            }}
-                        >
-                            <Stack.Screen
-                                name="Login"
-                                component={LoginScreen}
-                                options={{ headerShown: false }}
-                            />
-                            <Stack.Screen
-                                name="Register"
-                                component={RegisterScreen}
-                                options={{ headerShown: false }}
-                            />
-                            <Stack.Screen
-                                name="Home"
-                                component={HomeScreen}
-                                options={{ headerShown: false }}
-                            />
-                            <Stack.Screen
-                                name="Colheita"
-                                component={ColheitaScreen}
-                                options={{ title: 'Registrar Colheita' }}
-                            />
-                            <Stack.Screen
-                                name="Vendas"
-                                component={VendasScreen}
-                                options={{ title: 'Registrar Venda' }}
-                            />
-                            <Stack.Screen
-                                name="Estoque"
-                                component={EstoqueScreen}
-                                options={{ title: 'Consultar Estoque' }}
-                            />
-                            <Stack.Screen
-                                name="Sync"
-                                component={SyncScreen}
-                                options={{ title: 'Sincronizar Dados' }}
-                            />
-                            <Stack.Screen
-                                name="Compras"
-                                component={ComprasScreen}
-                                options={{ title: 'Registrar Compra' }}
-                            />
-                            <Stack.Screen
-                                name="Plantio"
-                                component={PlantioScreen}
-                                options={{ title: 'Registrar Plantio' }}
-                            />
-                            <Stack.Screen
-                                name="Custos"
-                                component={CustosScreen}
-                                options={{ title: 'Registrar Custo' }}
-                            />
-                            <Stack.Screen
-                                name="Descarte"
-                                component={DescarteScreen}
-                                options={{ title: 'Registrar Descarte' }}
-                            />
-                            <Stack.Screen
-                                name="Cadastro"
-                                component={CadastroScreen}
-                                options={{ title: 'Cadastros Gerais' }}
-                            />
-                            <Stack.Screen
-                                name="Clientes"
-                                component={ClientesScreen}
-                                options={{ title: 'Gerenciar Clientes' }}
-                            />
-                            <Stack.Screen
-                                name="Culturas"
-                                component={CulturasScreen}
-                                options={{ title: 'Culturas e Áreas' }}
-                            />
-                            <Stack.Screen
-                                name="Relatorios"
-                                component={RelatoriosScreen}
-                                options={{ title: 'Relatórios' }}
-                            />
-                            <Stack.Screen name="Usuarios" component={UsuariosScreen} options={{ title: 'Controle de Usuários' }} />
-                            <Stack.Screen name="Monitoramento" component={MonitoramentoScreen} options={{ title: 'Monitoramento' }} />
-                            <Stack.Screen name="Ocr" component={OcrScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="Scanner" component={ScannerScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="CadernoCampo" component={CadernoCampoScreen} options={{ title: 'Caderno de Campo' }} />
-                            <Stack.Screen name="Frota" component={FrotaScreen} options={{ title: 'Gestão de Frota' }} />
-                            <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Meu Perfil UltraPro' }} />
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <ErrorBoundary>
+                <ThemeProvider>
+                    <WeatherProvider>
+                        <StatusBar style="light" />
+                        <NavigationContainer>
+                            <Stack.Navigator
+                                initialRouteName="Login"
+                                screenOptions={{
+                                    headerStyle: { backgroundColor: '#10B981' }, // Será dinâmico futuramente usando styled headers
+                                    headerTintColor: '#fff',
+                                    headerTitleStyle: { fontWeight: 'bold' }
+                                }}
+                            >
+                                <Stack.Screen
+                                    name="Login"
+                                    component={LoginScreen}
+                                    options={{ headerShown: false }}
+                                />
+                                <Stack.Screen
+                                    name="Register"
+                                    component={RegisterScreen}
+                                    options={{ headerShown: false }}
+                                />
+                                <Stack.Screen
+                                    name="Home"
+                                    component={HomeScreen}
+                                    options={{ headerShown: false }}
+                                />
+                                <Stack.Screen
+                                    name="Colheita"
+                                    component={ColheitaScreen}
+                                    options={{ title: 'Registrar Colheita' }}
+                                />
+                                <Stack.Screen
+                                    name="Vendas"
+                                    component={VendasScreen}
+                                    options={{ title: 'Registrar Venda' }}
+                                />
+                                <Stack.Screen
+                                    name="Estoque"
+                                    component={EstoqueScreen}
+                                    options={{ title: 'Consultar Estoque' }}
+                                />
+                                <Stack.Screen
+                                    name="Sync"
+                                    component={SyncScreen}
+                                    options={{ title: 'Sincronizar Dados' }}
+                                />
+                                <Stack.Screen
+                                    name="Compras"
+                                    component={ComprasScreen}
+                                    options={{ title: 'Registrar Compra' }}
+                                />
+                                <Stack.Screen
+                                    name="Plantio"
+                                    component={PlantioScreen}
+                                    options={{ title: 'Registrar Plantio' }}
+                                />
+                                <Stack.Screen
+                                    name="Custos"
+                                    component={CustosScreen}
+                                    options={{ title: 'Registrar Custo' }}
+                                />
+                                <Stack.Screen
+                                    name="Descarte"
+                                    component={DescarteScreen}
+                                    options={{ title: 'Registrar Descarte' }}
+                                />
+                                <Stack.Screen
+                                    name="Cadastro"
+                                    component={CadastroScreen}
+                                    options={{ title: 'Cadastros Gerais' }}
+                                />
+                                <Stack.Screen
+                                    name="Clientes"
+                                    component={ClientesScreen}
+                                    options={{ title: 'Gerenciar Clientes' }}
+                                />
+                                <Stack.Screen
+                                    name="Culturas"
+                                    component={CulturasScreen}
+                                    options={{ title: 'Culturas e Áreas' }}
+                                />
+                                <Stack.Screen
+                                    name="Relatorios"
+                                    component={RelatoriosScreen}
+                                    options={{ title: 'Relatórios' }}
+                                />
+                                <Stack.Screen name="Usuarios" component={UsuariosScreen} options={{ title: 'Controle de Usuários' }} />
+                                <Stack.Screen name="Monitoramento" component={MonitoramentoScreen} options={{ title: 'Monitoramento' }} />
+                                <Stack.Screen name="Ocr" component={OcrScreen} options={{ headerShown: false }} />
+                                <Stack.Screen name="Scanner" component={ScannerScreen} options={{ headerShown: false }} />
+                                <Stack.Screen name="CadernoCampo" component={CadernoCampoScreen} options={{ title: 'Caderno de Campo' }} />
+                                <Stack.Screen name="Frota" component={FrotaScreen} options={{ title: 'Gestão de Frota' }} />
+                                <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Meu Perfil UltraPro' }} />
 
-                            {/* ADUBAÇÃO v5.4 */}
-                            <Stack.Screen name="AdubacaoList" component={AdubacaoListScreen} options={{ title: 'Planos de Adubação' }} />
-                            <Stack.Screen name="AdubacaoForm" component={AdubacaoFormScreen} options={{ title: 'Novo Plano' }} />
-                            <Stack.Screen name="AdubacaoDetail" component={AdubacaoDetailScreen} options={{ title: 'Detalhes do Plano' }} />
+                                {/* ADUBAÇÃO v5.4 */}
+                                <Stack.Screen name="AdubacaoList" component={AdubacaoListScreen} options={{ title: 'Planos de Adubação' }} />
+                                <Stack.Screen name="AdubacaoForm" component={AdubacaoFormScreen} options={{ title: 'Novo Plano' }} />
+                                <Stack.Screen name="AdubacaoDetail" component={AdubacaoDetailScreen} options={{ title: 'Detalhes do Plano' }} />
 
-                        </Stack.Navigator>
-                    </NavigationContainer>
-                </WeatherProvider>
-            </ThemeProvider>
-        </ErrorBoundary>
+                            </Stack.Navigator>
+                        </NavigationContainer>
+                    </WeatherProvider>
+                </ThemeProvider>
+            </ErrorBoundary>
+        </GestureHandlerRootView>
     );
 }
