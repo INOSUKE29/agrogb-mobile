@@ -984,6 +984,15 @@ export const insertDescarte = async (d) => {
     await atualizarEstoque(d.produto, -d.quantidade_kg);
 };
 
+// --- ESTOQUE AJUSTE INICIAL ---
+export const registrarAjusteEstoqueInicial = async (d) => {
+    // Insere como uma compra com valor = 0 e um texto identificador
+    // para que não gere custo, mas aumente a quantidade de estoque.
+    await executeQuery(`INSERT INTO compras (uuid, item, quantidade, valor, cultura, data, observacao, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [d.uuid, up(d.produto), d.quantidade, 0, 'SISTEMA', new Date().toISOString(), 'AJUSTE_INICIAL|' + (d.observacao || ''), new Date().toISOString(), 0]);
+    await atualizarEstoque(d.produto, d.quantidade);
+};
+
 // --- CADASTROS ---
 
 export const insertCultura = async (d) => {

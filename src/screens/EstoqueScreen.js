@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, TextInput, Modal, Alert, ScrollView } from 'react-native';
-import { getEstoque, atualizarEstoque } from '../database/database';
+import { getEstoque, atualizarEstoque, registrarAjusteEstoqueInicial } from '../database/database';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-
-
+import DropdownPicker from '../components/DropdownPicker';
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
 
 const THEME = {
     bg: '#F9FAFB',
@@ -24,18 +25,21 @@ export default function EstoqueScreen() {
     const [filter, setFilter] = useState('TODOS');
     const [searchText, setSearchText] = useState('');
 
-    // Modal Ajuste Rápido
+    // Modal Ajuste Rápido (Antigo / + e -)
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const [actionType, setActionType] = useState('ENTRADA');
     const [qty, setQty] = useState('');
+
+    // Modal Estoque Inicial (Novo Fluxo)
+    const [modalAjusteVisible, setModalAjusteVisible] = useState(false);
+    const [newEstoque, setNewEstoque] = useState({ produto: '', quantidade: '', unidade: 'kg', observacao: '' });
 
     const loadData = async () => {
         setLoading(true);
         try {
             const data = await getEstoque();
             const sorted = data.sort((a, b) => {
-                // Ordenar alfabeticamente
                 if (a.produto < b.produto) return -1;
                 if (a.produto > b.produto) return 1;
                 return 0;
@@ -79,9 +83,38 @@ export default function EstoqueScreen() {
         } catch (e) { Alert.alert('Erro', 'Falha ao atualizar.'); }
     };
 
+    const handleSalvarAjuste = async () => {
+        if (!newEstoque.produto || !newEstoque.quantidade) {
+            Alert.alert('Erro', 'Preencha os campos obrigatórios.');
+            return;
+        }
+        try {
+            await registrarAjusteEstoqueInicial({
+                uuid: uuidv4(),
+                produto: newEstoque.produto,
+                quantidade: parseFloat(newEstoque.quantidade),
+                unidade: newEstoque.unidade,
+                observacao: newEstoque.observacao
+            });
+            setModalAjusteVisible(false);
+            setNewEstoque({ produto: '', quantidade: '', unidade: 'kg', observacao: '' });
+            Alert.alert('Sucesso', 'Estoque inicial registrado!');
+            loadData();
+        } catch (e) {
+            console.error(e);
+            Alert.alert('Erro', 'Falha ao registrar.');
+        }
+    };
+
     const renderHeader = () => (
         <View style={styles.header}>
-            <Text style={styles.title}>Estoque Geral</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+                <Text style={styles.title}>Estoque Geral</Text>
+                <TouchableOpacity onPress={() => setModalAjusteVisible(true)} style={styles.btnAjusteInicial}>
+                    <Ionicons name="add" size={14} color="#FFF" />
+                    <Text style={styles.btnAjusteTxt}>Estoque Inicial</Text>
+                </TouchableOpacity>
+            </View>
 
             <View style={styles.searchBar}>
                 <Ionicons name="search" size={18} color="#9CA3AF" />
@@ -166,7 +199,7 @@ export default function EstoqueScreen() {
                 />
             }
 
-            {/* MODAL SIMPLIFICADO */}
+            {/* MODAL SIMPLIFICADO (+/- CARD) */}
             <Modal visible={modalVisible} transparent animationType="fade">
                 <View style={styles.overlay}>
                     <View style={styles.modalBg}>
@@ -191,6 +224,70 @@ export default function EstoqueScreen() {
                             </TouchableOpacity>
                             <TouchableOpacity onPress={confirmAction} style={[styles.btnConfirm, { backgroundColor: actionType === 'ENTRADA' ? '#059669' : '#DC2626' }]}>
                                 <Text style={styles.txtConfirm}>Confirmar</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* MODAL ESTOQUE INICIAL */}
+            <Modal visible={modalAjusteVisible} transparent animationType="slide">
+                <View style={styles.overlayFull}>
+                    <View style={styles.modalBgFull}>
+                        <View style={styles.modalHeaderFull}>
+                            <Text style={styles.modalTitleFull}>Adicionar Estoque Inicial</Text>
+                            <TouchableOpacity onPress={() => setModalAjusteVisible(false)}>
+                                <Ionicons name="close" size={24} color="#6B7280" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, padding: 20 }}>
+                            <Text style={styles.labelFull}>Produto *</Text>
+                            <TextInput
+                                style={styles.inputFull}
+                                placeholder="Ex: Adubo NPK 10-10-10"
+                                value={newEstoque.produto}
+                                onChangeText={(t) => setNewEstoque(prev => ({ ...prev, produto: t }))}
+                            />
+
+                            <View style={{ flexDirection: 'row', gap: 15 }}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.labelFull}>Quantidade *</Text>
+                                    <TextInput
+                                        style={styles.inputFull}
+                                        placeholder="0.00"
+                                        keyboardType="numeric"
+                                        value={newEstoque.quantidade}
+                                        onChangeText={(t) => setNewEstoque(prev => ({ ...prev, quantidade: t }))}
+                                    />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.labelFull}>Unidade</Text>
+                                    <TextInput
+                                        style={styles.inputFull}
+                                        placeholder="Ex: kg, un"
+                                        value={newEstoque.unidade}
+                                        onChangeText={(t) => setNewEstoque(prev => ({ ...prev, unidade: t }))}
+                                    />
+                                </View>
+                            </View>
+
+                            <Text style={styles.labelFull}>Observação (Opcional)</Text>
+                            <TextInput
+                                style={[styles.inputFull, { height: 80, textAlignVertical: 'top' }]}
+                                placeholder="Lote, validade, anotações..."
+                                multiline
+                                value={newEstoque.observacao}
+                                onChangeText={(t) => setNewEstoque(prev => ({ ...prev, observacao: t }))}
+                            />
+
+                            <Text style={styles.helperText}>* Esse lançamento não gera custo no fluxo de caixa.</Text>
+
+                        </ScrollView>
+
+                        <View style={styles.modalFooterFull}>
+                            <TouchableOpacity style={styles.btnSaveFull} onPress={handleSalvarAjuste}>
+                                <Text style={styles.btnSaveFullTxt}>SALVAR ESTOQUE</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -252,5 +349,22 @@ const styles = StyleSheet.create({
     btnCancel: { flex: 1, padding: 12, borderRadius: 8, backgroundColor: '#F3F4F6', alignItems: 'center' },
     txtCancel: { fontSize: 13, fontWeight: 'bold', color: '#4B5563' },
     btnConfirm: { flex: 1, padding: 12, borderRadius: 8, alignItems: 'center' },
-    txtConfirm: { fontSize: 13, fontWeight: 'bold', color: '#FFF' }
+    txtConfirm: { fontSize: 13, fontWeight: 'bold', color: '#FFF' },
+
+    // Modal Ajuste Inicial e Elementos
+    btnAjusteInicial: { flexDirection: 'row', backgroundColor: '#059669', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, alignItems: 'center', gap: 4 },
+    btnAjusteTxt: { color: '#FFF', fontSize: 10, fontWeight: 'bold' },
+
+    overlayFull: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+    modalBgFull: { backgroundColor: '#FFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, height: '80%', paddingBottom: 20 },
+    modalHeaderFull: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderColor: '#F3F4F6' },
+    modalTitleFull: { fontSize: 16, fontWeight: 'bold', color: '#111827' },
+
+    labelFull: { fontSize: 12, fontWeight: '600', color: '#4B5563', marginBottom: 6, marginTop: 15 },
+    inputFull: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: '#1F2937' },
+    helperText: { fontSize: 12, color: '#9CA3AF', marginTop: 10, fontStyle: 'italic' },
+
+    modalFooterFull: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 10 },
+    btnSaveFull: { backgroundColor: '#059669', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+    btnSaveFullTxt: { color: '#FFF', fontSize: 14, fontWeight: '800' }
 });
