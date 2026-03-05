@@ -1,19 +1,17 @@
 import React, { useState, useCallback, useRef } from 'react';
 import {
     View, Text, TouchableOpacity, StyleSheet, Dimensions, StatusBar as RNStatusBar,
-    InteractionManager, Vibration, Animated
+    InteractionManager, FlatList
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import WeatherWidget from '../components/WeatherWidget';
 import { getDashboardStats } from '../database/database';
 import { syncTable } from '../services/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import SidebarDrawer from '../components/SidebarDrawer';
-import { DARK, GLOW_CARD_SHADOW, BG_GRADIENT } from '../styles/darkTheme';
-import { getMenuOrder, saveManualOrder, recordUsage } from '../services/MenuService';
+import { DARK } from '../styles/darkTheme';
+import { getMenuOrder, recordUsage } from '../services/MenuService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const NUM_COLS = 3;
@@ -25,8 +23,6 @@ export default function HomeScreen({ navigation }) {
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [isReady, setIsReady] = useState(false);
     const [menuItems, setMenuItems] = useState([]);
-    const [isDragging, setIsDragging] = useState(false);
-    const shakeAnim = useRef(new Animated.Value(0)).current;
 
     const loadStats = async () => {
         const data = await getDashboardStats();
@@ -49,23 +45,6 @@ export default function HomeScreen({ navigation }) {
         return () => task.cancel();
     }, []));
 
-    const startShake = () => {
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(shakeAnim, { toValue: 2, duration: 60, useNativeDriver: true }),
-                Animated.timing(shakeAnim, { toValue: -2, duration: 60, useNativeDriver: true }),
-                Animated.timing(shakeAnim, { toValue: 0, duration: 60, useNativeDriver: true }),
-            ]),
-            { iterations: 3 }
-        ).start();
-    };
-
-    const handleDragEnd = async ({ data }) => {
-        setIsDragging(false);
-        setMenuItems(data);
-        await saveManualOrder(data.map(i => i.id));
-    };
-
     const handleNavPress = (item) => {
         recordUsage(item.id);
         navigation.navigate(item.route);
@@ -73,112 +52,94 @@ export default function HomeScreen({ navigation }) {
 
     const formatBRL = (v) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-    const renderItem = ({ item, drag, isActive }) => (
-        <ScaleDecorator activeScale={0.95}>
-            <Animated.View style={[{ transform: [{ translateX: isActive ? 0 : shakeAnim }] }]}>
-                <TouchableOpacity
-                    style={[styles.card, isActive && styles.cardDragging]}
-                    onPress={() => !isDragging && handleNavPress(item)}
-                    onLongPress={() => {
-                        Vibration.vibrate(80);
-                        startShake();
-                        setIsDragging(true);
-                        drag();
-                    }}
-                    delayLongPress={600}
-                    activeOpacity={0.75}
-                >
-                    <View style={styles.iconCircle}>
-                        <Ionicons name={item.icon} size={22} color={DARK.glow} />
-                    </View>
-                    <Text style={styles.cardTitle} numberOfLines={1}>{item.label}</Text>
-                </TouchableOpacity>
-            </Animated.View>
-        </ScaleDecorator>
+    const renderItem = ({ item }) => (
+        <TouchableOpacity
+            style={styles.card}
+            onPress={() => handleNavPress(item)}
+            activeOpacity={0.75}
+        >
+            <View style={styles.iconCircle}>
+                <Ionicons name={item.icon} size={22} color={DARK.glow} />
+            </View>
+            <Text style={styles.cardTitle} numberOfLines={1}>{item.label}</Text>
+        </TouchableOpacity>
     );
 
     return (
-        <GestureHandlerRootView style={{ flex: 1 }}>
-            <View style={styles.container}>
-                <RNStatusBar barStyle="light-content" backgroundColor={DARK.bg} />
+        <View style={styles.container}>
+            <RNStatusBar barStyle="light-content" backgroundColor={DARK.bg} />
 
-                {/* HEADER */}
-                <LinearGradient colors={['#0D3526', '#1A6B4A']} style={styles.header}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, width: '100%' }}>
-                        <TouchableOpacity onPress={() => setDrawerVisible(true)} style={styles.menuBtn}>
-                            <Ionicons name="menu" size={26} color="#FFFFFF" />
-                        </TouchableOpacity>
-                        <View>
-                            <Text style={styles.brand}>AgroGB</Text>
-                            <Text style={styles.salutation}>PAINEL GERENCIAL</Text>
-                        </View>
+            {/* HEADER */}
+            <LinearGradient colors={['#0D3526', '#1A6B4A']} style={styles.header}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, width: '100%' }}>
+                    <TouchableOpacity onPress={() => setDrawerVisible(true)} style={styles.menuBtn}>
+                        <Ionicons name="menu" size={26} color="#FFFFFF" />
+                    </TouchableOpacity>
+                    <View>
+                        <Text style={styles.brand}>AgroGB</Text>
+                        <Text style={styles.salutation}>PAINEL GERENCIAL</Text>
                     </View>
-                    <View style={{ marginTop: 14, width: '100%' }}>
-                        <WeatherWidget />
-                    </View>
-
-                    {/* KPI ROW */}
-                    {isReady && (
-                        <View style={styles.kpiRow}>
-                            <View style={styles.kpiItem}>
-                                <Text style={styles.kpiLabel}>COLHEITA HOJE</Text>
-                                <Text style={styles.kpiValue}>{stats.colheitaHoje} <Text style={styles.unit}>kg</Text></Text>
-                            </View>
-                            <View style={styles.vr} />
-                            <View style={styles.kpiItem}>
-                                <Text style={styles.kpiLabel}>VENDAS HOJE</Text>
-                                <Text style={styles.kpiValue}>{formatBRL(stats.vendasHoje)}</Text>
-                            </View>
-                            <View style={styles.vr} />
-                            <View style={styles.kpiItem}>
-                                <Text style={styles.kpiLabel}>RESULTADO MÊS</Text>
-                                <Text style={[styles.kpiValue, { color: (stats.saldo || 0) >= 0 ? '#4ADE80' : '#FCA5A5' }]}>
-                                    {formatBRL(stats.saldo)}
-                                </Text>
-                            </View>
-                        </View>
-                    )}
-                    <View style={styles.glowLine} />
-                </LinearGradient>
-
-                {/* CONTENT */}
-                <View style={styles.content}>
-                    {stats.maquinasAlert > 0 && (
-                        <TouchableOpacity style={styles.alertBar} onPress={() => navigation.navigate('Frota')}>
-                            <Ionicons name="warning" size={18} color={DARK.warning} />
-                            <Text style={styles.alertText}>{stats.maquinasAlert} MÁQUINAS PRECISAM DE REVISÃO</Text>
-                            <Ionicons name="chevron-forward" size={18} color={DARK.warning} />
-                        </TouchableOpacity>
-                    )}
-
-                    <Text style={styles.sectionTitle}>ACESSO RÁPIDO</Text>
-                    {isDragging && (
-                        <Text style={styles.dragHint}>Solte para reposicionar • Toque longo para mover</Text>
-                    )}
-
-                    {menuItems.length > 0 && (
-                        <DraggableFlatList
-                            data={menuItems}
-                            keyExtractor={item => item.id}
-                            renderItem={renderItem}
-                            onDragEnd={handleDragEnd}
-                            numColumns={NUM_COLS}
-                            columnWrapperStyle={styles.gridRow}
-                            contentContainerStyle={styles.gridContent}
-                            showsVerticalScrollIndicator={false}
-                            ListFooterComponent={
-                                <View style={styles.footer}>
-                                    <Text style={styles.version}>AgroGB Mobile v8.1 • Dark Agro Tech</Text>
-                                    <Text style={styles.dragTip}>Pressione e segure um card para reorganizar</Text>
-                                </View>
-                            }
-                        />
-                    )}
+                </View>
+                <View style={{ marginTop: 14, width: '100%' }}>
+                    <WeatherWidget />
                 </View>
 
-                <SidebarDrawer visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
+                {/* KPI ROW */}
+                {isReady && (
+                    <View style={styles.kpiRow}>
+                        <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>COLHEITA HOJE</Text>
+                            <Text style={styles.kpiValue}>{stats.colheitaHoje} <Text style={styles.unit}>kg</Text></Text>
+                        </View>
+                        <View style={styles.vr} />
+                        <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>VENDAS HOJE</Text>
+                            <Text style={styles.kpiValue}>{formatBRL(stats.vendasHoje)}</Text>
+                        </View>
+                        <View style={styles.vr} />
+                        <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>RESULTADO MÊS</Text>
+                            <Text style={[styles.kpiValue, { color: (stats.saldo || 0) >= 0 ? '#4ADE80' : '#FCA5A5' }]}>
+                                {formatBRL(stats.saldo)}
+                            </Text>
+                        </View>
+                    </View>
+                )}
+                <View style={styles.glowLine} />
+            </LinearGradient>
+
+            {/* CONTENT */}
+            <View style={styles.content}>
+                {stats.maquinasAlert > 0 && (
+                    <TouchableOpacity style={styles.alertBar} onPress={() => navigation.navigate('Frota')}>
+                        <Ionicons name="warning" size={18} color={DARK.warning} />
+                        <Text style={styles.alertText}>{stats.maquinasAlert} MÁQUINAS PRECISAM DE REVISÃO</Text>
+                        <Ionicons name="chevron-forward" size={18} color={DARK.warning} />
+                    </TouchableOpacity>
+                )}
+
+                <Text style={styles.sectionTitle}>ACESSO RÁPIDO</Text>
+
+                {menuItems.length > 0 && (
+                    <FlatList
+                        data={menuItems}
+                        keyExtractor={item => item.id}
+                        renderItem={renderItem}
+                        numColumns={NUM_COLS}
+                        columnWrapperStyle={styles.gridRow}
+                        contentContainerStyle={styles.gridContent}
+                        showsVerticalScrollIndicator={false}
+                        ListFooterComponent={
+                            <View style={styles.footer}>
+                                <Text style={styles.version}>AgroGB Mobile v8.2 • Dark Agro Tech</Text>
+                            </View>
+                        }
+                    />
+                )}
             </View>
-        </GestureHandlerRootView>
+
+            <SidebarDrawer visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
+        </View>
     );
 }
 
@@ -203,7 +164,6 @@ const styles = StyleSheet.create({
     alertText: { flex: 1, fontSize: 11, fontWeight: 'bold', color: '#92400E' },
 
     sectionTitle: { fontSize: 10, fontWeight: '900', color: 'rgba(255,255,255,0.8)', marginBottom: 12, letterSpacing: 1.5 },
-    dragHint: { fontSize: 10, color: '#FFFFFF', textAlign: 'center', marginBottom: 10, fontWeight: 'bold' },
 
     gridContent: { paddingBottom: 40 },
     gridRow: { gap: CARD_GAP, marginBottom: CARD_GAP },
@@ -222,17 +182,9 @@ const styles = StyleSheet.create({
         shadowRadius: 12,
         elevation: 6,
     },
-    cardDragging: {
-        borderColor: '#1F7A5A',
-        shadowColor: '#1F7A5A',
-        shadowOpacity: 0.35,
-        elevation: 14,
-        transform: [{ scale: 1.04 }],
-    },
     iconCircle: { width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(31,122,90,0.12)', justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
     cardTitle: { fontSize: 10, fontWeight: '700', color: '#334155', textAlign: 'center' },
 
     footer: { marginTop: 24, alignItems: 'center' },
     version: { color: 'rgba(255,255,255,0.55)', fontSize: 10, fontWeight: 'bold' },
-    dragTip: { color: 'rgba(255,255,255,0.45)', fontSize: 10, marginTop: 4 },
 });
