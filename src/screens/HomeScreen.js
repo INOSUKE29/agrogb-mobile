@@ -35,9 +35,11 @@ const GridItem = ({ item, index, isEditMode, shakeAnim, onMoveItem, onDropItem, 
     const pan = useRef(new Animated.ValueXY(pos)).current;
     const [isDragging, setIsDragging] = useState(false);
 
-    // Anima o card suavemente para nova posição quando a ordem muda
+    const initialPos = useRef({ x: pos.x, y: pos.y });
+
     useEffect(() => {
         if (!isDragging) {
+            initialPos.current = getPosition(index);
             Animated.spring(pan, {
                 toValue: getPosition(index),
                 useNativeDriver: false,
@@ -49,19 +51,20 @@ const GridItem = ({ item, index, isEditMode, shakeAnim, onMoveItem, onDropItem, 
 
     const panResponder = useRef(
         PanResponder.create({
-            onStartShouldSetPanResponder: () => isEditMode,
-            onMoveShouldSetPanResponder: () => isEditMode,
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: () => true,
             onPanResponderGrant: () => {
                 setIsDragging(true);
-                pan.setOffset({ x: pan.x._value, y: pan.y._value });
+                // Reseta a base do arrasto para a última posição correta salva no Ref
+                pan.setOffset({ x: initialPos.current.x, y: initialPos.current.y });
                 pan.setValue({ x: 0, y: 0 });
             },
             onPanResponderMove: (e, gesture) => {
                 pan.setValue({ x: gesture.dx, y: gesture.dy });
 
-                // Calcula o centro do elemento durante o arrasto
-                const currentX = pan.x._value + pan.x._offset;
-                const currentY = pan.y._value + pan.y._offset;
+                // Calcula o centro do elemento durante o arrasto baseado no toque relativo
+                const currentX = initialPos.current.x + gesture.dx;
+                const currentY = initialPos.current.y + gesture.dy;
                 const centerX = currentX + (CARD_SIZE / 2);
                 const centerY = currentY + (CARD_HEIGHT / 2);
 
@@ -156,9 +159,9 @@ export default function HomeScreen({ navigation }) {
             setIsEditMode(true);
             Animated.loop(
                 Animated.sequence([
-                    Animated.timing(shakeAnim, { toValue: 1, duration: 60, useNativeDriver: true }),
-                    Animated.timing(shakeAnim, { toValue: -1, duration: 60, useNativeDriver: true }),
-                    Animated.timing(shakeAnim, { toValue: 0, duration: 60, useNativeDriver: true }),
+                    Animated.timing(shakeAnim, { toValue: 1, duration: 60, useNativeDriver: false }),
+                    Animated.timing(shakeAnim, { toValue: -1, duration: 60, useNativeDriver: false }),
+                    Animated.timing(shakeAnim, { toValue: 0, duration: 60, useNativeDriver: false }),
                 ])
             ).start();
         } else {
@@ -169,22 +172,32 @@ export default function HomeScreen({ navigation }) {
         }
     };
 
-    const handleMoveItem = (id, col, row) => {
-        const maxRow = Math.ceil(menuItems.length / NUM_COLS) - 1;
-        const validRow = Math.max(0, Math.min(maxRow, row));
-        let targetIndex = validRow * NUM_COLS + col;
-        targetIndex = Math.max(0, Math.min(menuItems.length - 1, targetIndex));
+    const handleMoveItem = useCallback((id, col, row) => {
+        setMenuItems(prev => {
+            const maxRow = Math.ceil(prev.length / NUM_COLS) - 1;
+            const validRow = Math.max(0, Math.min(maxRow, row));
+            let targetIndex = validRow * NUM_COLS + col;
+            targetIndex = Math.max(0, Math.min(prev.length - 1, targetIndex));
 
-        const currentIndex = menuItems.findIndex(i => i.id === id);
-        if (currentIndex !== targetIndex && currentIndex !== -1) {
-            setMenuItems(prev => {
+            const currentIndex = prev.findIndex(i => i.id === id);
+            if (currentIndex !== targetIndex && currentIndex !== -1) {
                 const newItems = [...prev];
                 const item = newItems.splice(currentIndex, 1)[0];
                 newItems.splice(targetIndex, 0, item);
                 return newItems;
-            });
-        }
-    };
+            }
+            return prev;
+        });
+    }, []);
+
+    // Atualiza a persistência corretamente lendo a Ref ou valor em momento não-stale
+    const handleDropItem = useCallback(() => {
+        // Enforce save from the LATEST state (React 18 style flush) 
+        setMenuItems(latest => {
+            saveManualOrder(latest.map(i => i.id));
+            return latest;
+        });
+    }, []);
 
     const handleNavPress = (item) => {
         recordUsage(item.id);
@@ -231,7 +244,7 @@ export default function HomeScreen({ navigation }) {
                         <View style={styles.vr} />
                         <View style={styles.kpiItem}>
                             <Text style={styles.kpiLabel}>RESULTADO MÊS</Text>
-                            <Text style={[styles.kpiValue, { color: (stats.saldo || 0) >= 0 ? '#10B981' : '#FCA5A5' }]}>
+                            <Text style={[styles.kpiValue, { color: (stats.saldo || 0) >= 0 ? '#A7F3D0' : '#FDA4AF' }]}>
                                 {formatBRL(stats.saldo)}
                             </Text>
                         </View>
@@ -278,7 +291,7 @@ export default function HomeScreen({ navigation }) {
                                     isEditMode={isEditMode}
                                     shakeAnim={shakeAnim}
                                     onMoveItem={handleMoveItem}
-                                    onDropItem={() => saveManualOrder(menuItems.map(i => i.id))}
+                                    onDropItem={handleDropItem}
                                     onPress={() => !isEditMode && handleNavPress(item)}
                                     onLongPress={toggleEditMode}
                                 />
@@ -304,20 +317,20 @@ const styles = StyleSheet.create({
     salutation: { fontSize: 10, color: 'rgba(255,255,255,0.9)', fontWeight: '700', letterSpacing: 1.5, marginTop: 2 },
     glowLine: { height: 1, backgroundColor: 'rgba(255,255,255,0.25)', marginTop: 16 },
 
-    kpiRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)', padding: 14, borderRadius: 14, marginTop: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+    kpiRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', padding: 16, borderRadius: 16, marginTop: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 10 },
     kpiItem: { flex: 1, alignItems: 'center' },
-    kpiLabel: { fontSize: 8, color: 'rgba(255,255,255,0.9)', fontWeight: '900', marginBottom: 5, letterSpacing: 0.8 },
-    kpiValue: { fontSize: 13, color: '#FFFFFF', fontWeight: 'bold' },
-    unit: { fontSize: 10, color: 'rgba(255,255,255,0.85)' },
-    vr: { width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.3)' },
+    kpiLabel: { fontSize: 9, color: 'rgba(255,255,255,0.85)', fontWeight: '800', marginBottom: 6, letterSpacing: 0.5 },
+    kpiValue: { fontSize: 18, color: '#FFFFFF', fontWeight: '900' },
+    unit: { fontSize: 11, color: 'rgba(255,255,255,0.8)' },
+    vr: { width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.2)' },
 
     content: { flex: 1, paddingTop: 20, paddingHorizontal: 20 },
 
     alertBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', borderWidth: 1, borderColor: '#F59E0B', padding: 12, borderRadius: 14, marginBottom: 16, gap: 10, shadowColor: '#F59E0B', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 4 },
     alertText: { flex: 1, fontSize: 11, fontWeight: 'bold', color: '#92400E' },
 
-    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-    sectionTitle: { fontSize: 11, fontWeight: '900', color: '#334155', letterSpacing: 1.2 },
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 8 },
+    sectionTitle: { fontSize: 12, fontWeight: '800', color: '#475569', letterSpacing: 1.5 },
     doneBtn: { backgroundColor: '#4CAF50', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, shadowColor: '#4CAF50', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 3 },
     doneBtnText: { color: '#FFFFFF', fontSize: 10, fontWeight: '900' },
     dragHintText: { fontSize: 11, color: '#64748B', fontWeight: '600', marginBottom: 14 },
@@ -326,16 +339,16 @@ const styles = StyleSheet.create({
     gridContainer: { width: '100%', position: 'relative' },
     card: {
         backgroundColor: '#FFFFFF',
-        borderRadius: 18,
+        borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.04)',
-        shadowColor: '#64748B',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.08,
-        shadowRadius: 10,
-        elevation: 3,
+        borderColor: 'rgba(0,0,0,0.03)',
+        shadowColor: '#0f172a',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.05,
+        shadowRadius: 14,
+        elevation: 4,
     },
     cardEditMode: {
         borderColor: '#4CAF50',
@@ -353,7 +366,7 @@ const styles = StyleSheet.create({
         shadowRadius: 16,
     },
     editBadge: { position: 'absolute', top: -5, right: -5, width: 22, height: 22, borderRadius: 11, backgroundColor: '#4CAF50', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 3 },
-    iconCircle: { width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(76,175,80,0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+    iconCircle: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#ECFDF5', justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
     cardTitle: { fontSize: 10, fontWeight: '700', color: '#1E293B', textAlign: 'center', paddingHorizontal: 4 },
 
     footer: { position: 'absolute', bottom: -40, left: 0, right: 0, alignItems: 'center' },

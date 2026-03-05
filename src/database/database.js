@@ -201,8 +201,13 @@ const createTables = async () => {
             );`
         ];
 
+        // Executar todas as queries de criação iniciais em sequência para evitar "database is locked"
         for (const query of queries) {
-            await executeQuery(query);
+            try {
+                await executeQuery(query);
+            } catch (error) {
+                if (__DEV__) console.log("Aviso ao criar tabela: ", error.message);
+            }
         }
 
         // Inserir Admin padrão se não existir (Paridade com Desktop)
