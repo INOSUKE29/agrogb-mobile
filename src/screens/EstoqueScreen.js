@@ -4,7 +4,6 @@ import { getEstoque, atualizarEstoque, registrarAjusteEstoqueInicial } from '../
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import DropdownPicker from '../components/DropdownPicker';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 
