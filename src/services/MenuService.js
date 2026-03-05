@@ -20,7 +20,7 @@ export const BASE_MENU = [
     { id: 'adubacao', label: 'Adubação', icon: 'flask', route: 'AdubacaoList' },
     { id: 'descarte', label: 'Descarte', icon: 'trash', route: 'Descarte' },
     { id: 'caderno', label: 'Caderno', icon: 'book', route: 'CadernoCampo' },
-    { id: 'cadastros', label: 'Cadastros', icon: 'list', route: 'MenuCadastros' },
+    { id: 'cadastros', label: 'Cadastros', icon: 'list', route: 'Cadastro' },
 ];
 
 // === RECORD USAGE ===
