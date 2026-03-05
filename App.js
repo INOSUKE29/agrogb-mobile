@@ -1,6 +1,7 @@
 import 'react-native-get-random-values';
 import 'react-native-gesture-handler';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -40,19 +41,31 @@ import { ThemeProvider } from './src/context/ThemeContext';
 const Stack = createStackNavigator();
 
 export default function App() {
+    const [isDbReady, setIsDbReady] = useState(false);
+
     useEffect(() => {
-        // Inicializa banco de dados
+        // Inicializa banco de dados ANTES de renderizar qualquer contexto
         initDB()
             .then(() => {
-                // Inicia sincronização automática após DB pronto
+                setIsDbReady(true);
                 AutoSyncService.start();
             })
-            .catch(console.error);
+            .catch(error => {
+                console.error("Falha fatal na inicialização do DB:", error);
+            });
 
         return () => {
             AutoSyncService.stop();
         };
     }, []);
+
+    if (!isDbReady) {
+        return (
+            <View style={{ flex: 1, backgroundColor: '#10B981', justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator size="large" color="#ffffff" />
+            </View>
+        );
+    }
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>

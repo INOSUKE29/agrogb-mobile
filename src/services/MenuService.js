@@ -11,7 +11,7 @@ export const BASE_MENU = [
     { id: 'vendas', label: 'Vendas', icon: 'cash', route: 'Vendas' },
     { id: 'estoque', label: 'Estoque', icon: 'cube', route: 'Estoque' },
     { id: 'compras', label: 'Compras', icon: 'cart', route: 'Compras' },
-    { id: 'plantio', label: 'Plantio', icon: 'seed-outline', route: 'Plantio' },
+    { id: 'plantio', label: 'Plantio', icon: 'leaf-outline', route: 'Plantio' },
     { id: 'custos', label: 'Custos', icon: 'wallet', route: 'Custos' },
     { id: 'monitorar', label: 'Monitorar', icon: 'eye', route: 'Monitoramento' },
     { id: 'frota', label: 'Frota', icon: 'car', route: 'Frota' },
