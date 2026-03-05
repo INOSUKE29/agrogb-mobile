@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { executeQuery, getAppSettings, updateAppSetting } from '../database/database';
+import * as Updates from 'expo-updates';
 
 export default function SyncScreen({ navigation }) {
     const { theme, saveTheme } = useTheme();
@@ -87,6 +88,42 @@ export default function SyncScreen({ navigation }) {
         );
     };
 
+    const checkForUpdates = async () => {
+        try {
+            if (__DEV__) {
+                Alert.alert('Modo Dev', 'As atualizações OTA não funcionam no servidor local de desenvolvimento. Teste na versão buildada.');
+                return;
+            }
+            const update = await Updates.checkForUpdateAsync();
+            if (update.isAvailable) {
+                Alert.alert(
+                    'Nova Versão Disponível!',
+                    'Deseja baixar e instalar a nova versão do aplicativo silenciosamente?',
+                    [
+                        { text: 'Agora não', style: 'cancel' },
+                        {
+                            text: 'Atualizar', onPress: async () => {
+                                try {
+                                    await Updates.fetchUpdateAsync();
+                                    Alert.alert('Pronto', 'A atualização foi concluída. O aplicativo será reiniciado para aplicar as mudanças.', [
+                                        { text: 'Reiniciar', onPress: () => Updates.reloadAsync() }
+                                    ]);
+                                } catch (e) {
+                                    Alert.alert('Erro', 'Não foi possível completar o download: ' + e.message);
+                                }
+                            }
+                        }
+                    ]
+                );
+            } else {
+                Alert.alert('Tudo Atualizado', 'O seu aplicativo já está na última versão disponível.');
+            }
+        } catch (error) {
+            Alert.alert('Falha', 'Não foi possível buscar atualizações. Verifique a internet e tente novamente.');
+            console.error(error);
+        }
+    };
+
     return (
         <View style={styles.container}>
             <LinearGradient colors={[theme.primary_color, theme.primary_color + '90']} style={styles.header}>
@@ -126,6 +163,10 @@ export default function SyncScreen({ navigation }) {
                 <SettingCard
                     icon="sync-outline" label="Nuvem & Backup Local" description="Gerar backup ou sincronizar Agrogb"
                     onPress={() => Alert.alert('Em breve', 'Modal de Nuvem')}
+                />
+                <SettingCard
+                    icon="cloud-download-outline" label="Atualizar Aplicativo" description="Procurar e instalar atualizações via OTA (Sem baixar APK)"
+                    onPress={checkForUpdates}
                 />
 
                 {isAdmin && (
