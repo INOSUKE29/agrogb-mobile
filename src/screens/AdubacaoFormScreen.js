@@ -7,7 +7,7 @@ import AgroButton from '../ui/components/AgroButton';
 import { insertPlanoAdubacao, updatePlanoAdubacao } from '../database/database';
 import * as ImagePicker from 'expo-image-picker';
 import { v4 as uuidv4 } from 'uuid';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function AdubacaoFormScreen({ route, navigation }) {
     const { colors } = useTheme();

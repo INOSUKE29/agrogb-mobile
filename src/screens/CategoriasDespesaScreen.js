@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, TextInput, M
 import { Ionicons } from '@expo/vector-icons';
 import { v4 as uuidv4 } from 'uuid';
 import { getCategoriasDespesa, insertCategoriaDespesa, deleteCategoriaDespesa } from '../database/database';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function CategoriasDespesaScreen({ navigation }) {
     const { colors } = useTheme();

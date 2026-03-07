@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { insertCadastro, getCadastro, deleteCadastro, updateCadastro, getReceita, insertReceita, deleteItemReceita } from '../database/database';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { showToast } from '../ui/Toast';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
 import GlowCard from '../ui/GlowCard';

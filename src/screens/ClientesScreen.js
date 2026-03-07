@@ -10,7 +10,7 @@ import GlowInput from '../ui/GlowInput';
 import PrimaryButton from '../ui/PrimaryButton';
 import GlowFAB from '../ui/GlowFAB';
 import { MODAL_OVERLAY } from '../styles/themes';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import ConfirmModal from '../ui/ConfirmModal';
 
 export default function ClientesScreen({ navigation }) {

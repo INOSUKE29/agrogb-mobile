@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { insertCost, getCostCategories, insertCostCategory, executeQuery } from '../database/database';
 import { Ionicons } from '@expo/vector-icons';
 import { showToast } from '../ui/Toast';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function CustosScreen({ navigation }) {
     const { colors } = useTheme();

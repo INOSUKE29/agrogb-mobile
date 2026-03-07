@@ -1,7 +1,7 @@
 import React from 'react';
 import { COLORS } from '../styles/theme';
 import { View, Text, StyleSheet } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function SettingSection({ title, children }) {
     const { colors } = useTheme();

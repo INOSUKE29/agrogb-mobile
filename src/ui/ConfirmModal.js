@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function ConfirmModal({ visible, title = 'Atenção', message = 'Tem certeza que deseja continuar?', onCancel, onConfirm, confirmText = 'Confirmar', cancelText = 'Cancelar', isDestructive = true }) {
     const { colors } = useTheme();

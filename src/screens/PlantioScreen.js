@@ -5,7 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { insertPlantio, getCadastro, updatePlantio, deletePlantio, executeQuery } from '../database/database';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { showToast } from '../ui/Toast';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
 import GlowCard from '../ui/GlowCard';

@@ -9,7 +9,7 @@ import GlowCard from '../ui/GlowCard';
 import GlowInput from '../ui/GlowInput';
 import PrimaryButton from '../ui/PrimaryButton';
 import GlowFAB from '../ui/GlowFAB';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function FrotaScreen({ navigation }) {
     const { colors } = useTheme();

@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert 
 import { v4 as uuidv4 } from 'uuid';
 import { insertProcessamento } from '../services/EstoqueService';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import GlowInput from '../ui/GlowInput';
 import PrimaryButton from '../ui/PrimaryButton';

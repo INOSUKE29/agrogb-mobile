@@ -7,7 +7,7 @@ import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
 import GlowCard from '../ui/GlowCard';
 import GlowFAB from '../ui/GlowFAB';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function AdubacaoListScreen({ navigation }) {
     const { colors } = useTheme();

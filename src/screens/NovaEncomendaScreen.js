@@ -5,7 +5,7 @@ import { executeQuery } from '../database/database';
 import { v4 as uuidv4 } from 'uuid';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function NovaEncomendaScreen({ route }) {
     const navigation = useNavigation();

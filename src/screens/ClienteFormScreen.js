@@ -9,7 +9,7 @@ import { AppButton } from '../ui/components/AppButton';
 import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
 import GlowCard from '../ui/GlowCard';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function ClienteFormScreen({ navigation, route }) {
     const { colors, theme } = useTheme();

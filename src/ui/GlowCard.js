@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { GLOW_CARD_SHADOW } from '../styles/themes';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function GlowCard({ children, style }) {
     const { colors } = useTheme();

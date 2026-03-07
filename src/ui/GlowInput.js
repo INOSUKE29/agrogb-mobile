@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { TextInput, StyleSheet } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function GlowInput({ style, ...props }) {
     const { colors } = useTheme();

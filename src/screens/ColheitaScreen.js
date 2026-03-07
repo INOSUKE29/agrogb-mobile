@@ -18,7 +18,7 @@ import GlowInput from '../ui/GlowInput';
 import PrimaryButton from '../ui/PrimaryButton';
 import DangerButton from '../ui/DangerButton';
 import { showToast } from '../ui/Toast';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import ConfirmModal from '../ui/ConfirmModal';
 
 const DRAFT_KEY = '@draft_ColheitaScreen_v2';
