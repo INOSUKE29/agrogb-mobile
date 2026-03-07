@@ -92,7 +92,7 @@ export default function MenuCadastrosScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.backgroundDark },
+    container: { flex: 1 },
 
     header: {
         paddingHorizontal: 20,
@@ -112,12 +112,12 @@ const styles = StyleSheet.create({
     card: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.surface, // Dark Surface
+        backgroundColor: '#1E293B', // fallback dark surface
         borderRadius: 18,
         padding: 20,
         marginBottom: 16,
         borderWidth: 1,
-        borderColor: COLORS.glassBorder
+        borderColor: 'rgba(255,255,255,0.1)'
     },
     iconBox: { width: 60, height: 60, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
     textContainer: { flex: 1 },

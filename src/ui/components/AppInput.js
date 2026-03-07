@@ -1,5 +1,4 @@
 import React from 'react';
-import { COLORS } from '../../styles/theme';
 import { TextInput, View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
 // Dynamic hook

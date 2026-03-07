@@ -1,5 +1,4 @@
 import React from 'react';
-import { COLORS } from '../../styles/theme';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
 

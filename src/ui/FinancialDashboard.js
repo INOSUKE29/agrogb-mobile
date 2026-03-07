@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator
 import { LineChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
 import { executeQuery } from '../database/database';
-import { COLORS } from '../styles/theme';
+import { useTheme } from '../theme/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -116,16 +116,7 @@ export default function FinancialDashboard() {
         }
     };
 
-    // --- RENDER HELPERS ---
-    const PeriodBtn = ({ title, value }) => (
-        <TouchableOpacity
-            style={[styles.periodBtn, period === value && styles.periodBtnActive]}
-            onPress={() => setPeriod(value)}
-        >
-            <Text style={[styles.periodText, period === value && styles.periodTextActive]}>{title}</Text>
-        </TouchableOpacity>
-    );
-
+    const { colors } = useTheme();
     const formatBRL = (val) => `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
     return (
@@ -139,7 +130,7 @@ export default function FinancialDashboard() {
             </View>
 
             {loading ? (
-                <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 50 }} />
+                <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 50 }} />
             ) : (
                 <>
                     {/* 2. MAIN CARD: NET RESULT */}
@@ -149,10 +140,10 @@ export default function FinancialDashboard() {
                             <Ionicons
                                 name={kpis.result >= 0 ? "trending-up" : "trending-down"}
                                 size={20}
-                                color={kpis.result >= 0 ? COLORS.primary : COLORS.danger}
+                                color={kpis.result >= 0 ? colors.primary : colors.danger}
                             />
                         </View>
-                        <Text style={[styles.bigNumber, { color: kpis.result >= 0 ? COLORS.primary : COLORS.danger }]}>
+                        <Text style={[styles.bigNumber, { color: kpis.result >= 0 ? colors.primary : colors.danger }]}>
                             {formatBRL(kpis.result)}
                         </Text>
                         <View style={styles.badgeRow}>
@@ -192,21 +183,21 @@ export default function FinancialDashboard() {
                             title="Faturamento"
                             value={formatBRL(kpis.revenue)}
                             icon="cash-outline"
-                            color={COLORS.primary}
+                            color={colors.primary}
                             trend="+4.5%"
                         />
                         <KpiCard
                             title="Custos Totais"
                             value={formatBRL(kpis.costs)}
                             icon="alert-circle-outline"
-                            color={COLORS.danger}
+                            color={colors.danger}
                             trend="-1.2%"
                         />
                         <KpiCard
                             title="Insumos"
                             value={formatBRL(kpis.inputs)}
                             icon="cart-outline"
-                            color="#F59E0B"
+                            color={colors.warning}
                             trend="Estável"
                         />
                         <KpiCard
@@ -230,7 +221,7 @@ const KpiCard = ({ title, value, icon, color, trend }) => (
             <View style={[styles.iconBox, { backgroundColor: color + '20' }]}>
                 <Ionicons name={icon} size={18} color={color} />
             </View>
-            <Text style={[styles.trendText, { color: trend.includes('-') ? COLORS.danger : COLORS.primary }]}>
+            <Text style={[styles.trendText, { color: trend.includes('-') ? colors.danger : colors.primary }]}>
                 {trend}
             </Text>
         </View>
@@ -270,7 +261,7 @@ const styles = StyleSheet.create({
         color: '#6B7280'
     },
     periodTextActive: {
-        color: COLORS.primary
+        color: '#10B981' // Agro Green fixed for selector
     },
 
     // Main Card
