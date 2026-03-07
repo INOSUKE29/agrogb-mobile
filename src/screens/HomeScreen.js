@@ -131,6 +131,7 @@ const GridItem = ({ item, index, isEditMode, shakeAnim, onMoveItem, onDropItem, 
 export default function HomeScreen({ navigation }) {
     const { colors, theme } = useTheme();
     const [stats, setStats] = useState({ saldo: 0, colheitaHoje: 0, vendasHoje: 0, custosMes: 0, plantioAtivo: 0, maquinasAlert: 0, pendentes: 0 });
+    const shakeAnim = useRef(new Animated.Value(0)).current;
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [isReady, setIsReady] = useState(false);
 

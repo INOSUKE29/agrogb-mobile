@@ -13,7 +13,7 @@
  *   AutoSyncService.trigger(); // após salvar dados
  */
 
-import { syncAll } from './supabase';
+import { syncAllMaster } from './supabase';
 
 const SYNC_INTERVAL_MS = 2 * 60 * 1000; // 2 minutos
 const DEBOUNCE_MS = 3000; // aguarda 3s após último trigger para evitar spam
@@ -92,7 +92,7 @@ class AutoSyncService {
         this._notify('syncing');
 
         try {
-            await syncAll();
+            await syncAllMaster();
             this._lastSync = Date.now();
             this._notify('done');
             console.log('✅ AutoSync: concluído');

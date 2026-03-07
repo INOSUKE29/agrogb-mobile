@@ -40,7 +40,20 @@ const TABLE_MAP = {
     'colheitas': 'colheitas',
     'vendas': 'vendas',
     'estoque': 'estoque',
-    'movimentacao_estoque': 'movimentos_estoque'
+    'movimentacao_estoque': 'movimentos_estoque',
+    'planos_adubacao': 'planos_adubacao',
+    'compras': 'compras',
+    'plantio': 'plantio',
+    'custos': 'custos',
+    'descarte': 'descarte',
+    'maquinas': 'maquinas',
+    'manutencao_frota': 'manutencao_frota',
+    'monitoramento_entidade': 'monitoramento_entidade',
+    'monitoramento_media': 'monitoramento_media',
+    'analise_ia': 'analise_ia',
+    'caderno_notas': 'caderno_notas',
+    'activity_log': 'activity_log',
+    'error_logs': 'error_logs'
 };
 
 // ============================================================

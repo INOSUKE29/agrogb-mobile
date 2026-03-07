@@ -2,13 +2,14 @@
 # Autor: Antigravity Assistant
 
 $gitPath = "C:\Program Files\Git\cmd\git.exe"
-$repoUrl = "https://github.com/INOSUKE29/agrogb-mobile..git"
+$repoUrl = "https://github.com/INOSUKE29/agrogb-mobile.git"
 
 Write-Host "Git encontrado em: $gitPath" -ForegroundColor Green
 Write-Host "Repositório alvo: $repoUrl" -ForegroundColor Cyan
 
 # Função para rodar Git seguro
-function Run-Git {
+function 
+Git {
     param([string]$assess)
     $argsList = $assess -split " "
     & $gitPath $argsList
@@ -17,7 +18,7 @@ function Run-Git {
 Write-Host "Configurando Git..." -ForegroundColor Green
 & $gitPath init
 & $gitPath add .
-& $gitPath commit -m "V7.0 Build Setup - GitHub Actions"
+& $gitPath commit -m "V8.5.0 Master - Global Integrity Audit & Navigation Fixes"
 & $gitPath branch -M main
 
 Write-Host "Conectando ao GitHub..." -ForegroundColor Green

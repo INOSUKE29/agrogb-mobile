@@ -33,6 +33,15 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import AdubacaoListScreen from './src/screens/AdubacaoListScreen';
 import AdubacaoFormScreen from './src/screens/AdubacaoFormScreen';
 import AdubacaoDetailScreen from './src/screens/AdubacaoDetailScreen';
+import ClienteFormScreen from './src/screens/ClienteFormScreen';
+import CadastroFormScreen from './src/screens/CadastroFormScreen';
+import MenuCadastrosScreen from './src/screens/MenuCadastrosScreen';
+import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
+import RecoverScreen from './src/screens/RecoverScreen';
+import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
+import VerifyCodeScreen from './src/screens/VerifyCodeScreen';
+import EncomendasScreen from './src/screens/EncomendasScreen';
+import NovaEncomendaScreen from './src/screens/NovaEncomendaScreen';
 
 import ErrorBoundary from './src/ui/ErrorBoundary';
 import { WeatherProvider } from './src/context/WeatherContext';
@@ -175,6 +184,16 @@ export default function App() {
                                 <Stack.Screen name="AdubacaoList" component={AdubacaoListScreen} options={{ title: 'Planos de Adubação' }} />
                                 <Stack.Screen name="AdubacaoForm" component={AdubacaoFormScreen} options={{ title: 'Novo Plano' }} />
                                 <Stack.Screen name="AdubacaoDetail" component={AdubacaoDetailScreen} options={{ title: 'Detalhes do Plano' }} />
+
+                                <Stack.Screen name="ClienteForm" component={ClienteFormScreen} options={{ title: 'Novo Cliente' }} />
+                                <Stack.Screen name="CadastroForm" component={CadastroFormScreen} options={{ title: 'Novo Cadastro' }} />
+                                <Stack.Screen name="MenuCadastros" component={MenuCadastrosScreen} options={{ title: 'Menu de Cadastros' }} />
+                                <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: 'Recuperar Senha' }} />
+                                <Stack.Screen name="Recover" component={RecoverScreen} options={{ title: 'Recuperação' }} />
+                                <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ title: 'Nova Senha' }} />
+                                <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} options={{ title: 'Verificar Código' }} />
+                                <Stack.Screen name="Encomendas" component={EncomendasScreen} options={{ title: 'Minhas Encomendas' }} />
+                                <Stack.Screen name="NovaEncomenda" component={NovaEncomendaScreen} options={{ title: 'Nova Encomenda' }} />
 
                             </Stack.Navigator>
                         </NavigationContainer>
