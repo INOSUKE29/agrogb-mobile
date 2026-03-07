@@ -9,7 +9,7 @@ import { useTheme } from '../theme/ThemeContext';
 
 export default function NovaEncomendaScreen({ route }) {
     const navigation = useNavigation();
-    const { primaryColor } = useTheme();
+    const { colors } = useTheme();
 
     const [clientes, setClientes] = useState([]);
     const [produtos, setProdutos] = useState([]);
@@ -263,7 +263,7 @@ export default function NovaEncomendaScreen({ route }) {
                 />
 
                 <TouchableOpacity
-                    style={[styles.saveButton, { backgroundColor: primaryColor }]}
+                    style={[styles.saveButton, { backgroundColor: colors.primary }]}
                     onPress={handleSalvar}
                 >
                     <Ionicons name="checkmark-circle-outline" size={24} color="#FFF" />

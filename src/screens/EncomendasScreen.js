@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 export default function EncomendasScreen() {
     const navigation = useNavigation();
-    const { primaryColor } = useTheme();
+    const { colors } = useTheme();
     const [encomendas, setEncomendas] = useState([]);
 
     useEffect(() => {

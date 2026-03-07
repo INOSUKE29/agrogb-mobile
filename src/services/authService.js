@@ -107,10 +107,37 @@ export const login = async (user, password) => {
     }
 };
 
-export const logout = async () => {
-    await safeRemove("session");
+const checkSession = async () => {
+    return await safeGet("session");
 };
 
-export const checkSession = async () => {
-    return await safeGet("session");
+// --- PASSWORD RESET (v8.5) ---
+const requestPasswordReset = async (emailOrUser) => {
+    // Simulação de envio para o MVP
+    console.log(`[AuthService] Reset requested for: ${emailOrUser}`);
+    return { success: true, message: "Código enviado!" };
+};
+
+const verifyResetToken = async (identifier, code) => {
+    // Simulação: Aceitar qualquer código de 6 dígitos para o usuário cadastrado localmente
+    console.log(`[AuthService] Verifying code ${code} for ${identifier}`);
+    if (code.length === 6) {
+        return { success: true, tokenId: "temp_reset_token_" + Date.now() };
+    }
+    return { success: false, message: "Código inválido." };
+};
+
+const updatePassword = async (tokenId, newPassword) => {
+    console.log(`[AuthService] Updating password for token: ${tokenId}`);
+    return { success: true };
+};
+
+export const AuthService = {
+    register,
+    login,
+    logout,
+    checkSession,
+    requestPasswordReset,
+    verifyResetToken,
+    updatePassword
 };
