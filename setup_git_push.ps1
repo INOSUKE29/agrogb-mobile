@@ -2,7 +2,7 @@
 # Autor: Antigravity Assistant
 
 $gitPath = "C:\Program Files\Git\cmd\git.exe"
-$repoUrl = "https://github.com/INOSUKE29/agrogb-mobile.git"
+$repoUrl = "https://github.com/INOSUKE29/agrogb-mobile..git"
 
 Write-Host "Git encontrado em: $gitPath" -ForegroundColor Green
 Write-Host "Repositório alvo: $repoUrl" -ForegroundColor Cyan
