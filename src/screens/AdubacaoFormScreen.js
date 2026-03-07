@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../styles/theme';
-import AgroInput from '../components/AgroInput';
-import AgroButton from '../components/AgroButton';
+import AgroInput from '../ui/components/AgroInput';
+import AgroButton from '../ui/components/AgroButton';
 import { insertPlanoAdubacao, updatePlanoAdubacao } from '../database/database';
 import * as ImagePicker from 'expo-image-picker';
 import { v4 as uuidv4 } from 'uuid';
+import { useTheme } from '../context/ThemeContext';
 
 export default function AdubacaoFormScreen({ route, navigation }) {
+    const { colors } = useTheme();
     const editMode = !!route.params?.plano;
     const plano = route.params?.plano || {};
 
@@ -86,8 +88,8 @@ export default function AdubacaoFormScreen({ route, navigation }) {
     };
 
     return (
-        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-            <Text style={styles.title}>{editMode ? 'Editar Plano' : 'Novo Plano de Adubação'}</Text>
+        <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>{editMode ? 'Editar Plano' : 'Novo Plano de Adubação'}</Text>
 
             <AgroInput label="NOME DO PLANO (Ex: Tomate Sem. 4)" value={nome} onChangeText={(t) => setNome(t.toUpperCase())} />
 
@@ -101,25 +103,25 @@ export default function AdubacaoFormScreen({ route, navigation }) {
             </View>
 
             {/* SELETOR TIPO DE APLICAÇÃO */}
-            <Text style={styles.label}>TIPO DE APLICAÇÃO</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>TIPO DE APLICAÇÃO</Text>
             <View style={styles.pillContainer}>
                 <TouchableOpacity
-                    style={[styles.pill, tipo === 'GOTEJO' && styles.pillActive]}
+                    style={[styles.pill, { backgroundColor: colors.card, borderColor: colors.glassBorder }, tipo === 'GOTEJO' && { backgroundColor: colors.primary + '20', borderColor: colors.primary }]}
                     onPress={() => setTipo('GOTEJO')}
                 >
-                    <Text style={[styles.pillText, tipo === 'GOTEJO' && styles.pillTextActive]}>💧 GOTEJO</Text>
+                    <Text style={[styles.pillText, { color: colors.textMuted }, tipo === 'GOTEJO' && { color: colors.primary }]}>💧 GOTEJO</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.pill, tipo === 'PULVERIZACAO' && styles.pillActive]}
+                    style={[styles.pill, { backgroundColor: colors.card, borderColor: colors.glassBorder }, tipo === 'PULVERIZACAO' && { backgroundColor: colors.primary + '20', borderColor: colors.primary }]}
                     onPress={() => setTipo('PULVERIZACAO')}
                 >
-                    <Text style={[styles.pillText, tipo === 'PULVERIZACAO' && styles.pillTextActive]}>🌫️ PULVERIZAÇÃO</Text>
+                    <Text style={[styles.pillText, { color: colors.textMuted }, tipo === 'PULVERIZACAO' && { color: colors.primary }]}>🌫️ PULVERIZAÇÃO</Text>
                 </TouchableOpacity>
             </View>
 
             {/* DESCRIÇÃO TÉCNICA */}
             <View style={styles.textAreaContainer}>
-                <Text style={styles.label}>RECEITA TÉCNICA / OBSERVAÇÕES</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>RECEITA TÉCNICA / OBSERVAÇÕES</Text>
                 <AgroInput
                     value={descricao}
                     onChangeText={setDescricao}
@@ -130,7 +132,7 @@ export default function AdubacaoFormScreen({ route, navigation }) {
             </View>
 
             {/* ANEXOS */}
-            <Text style={styles.label}>FOTO / ANEXO (OPCIONAL)</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>FOTO / ANEXO (OPCIONAL)</Text>
             <View style={styles.attachContainer}>
                 {imageUri ? (
                     <View style={styles.imagePreview}>
@@ -141,13 +143,13 @@ export default function AdubacaoFormScreen({ route, navigation }) {
                     </View>
                 ) : (
                     <View style={styles.attachButtons}>
-                        <TouchableOpacity style={styles.attachBtn} onPress={takePhoto}>
-                            <Ionicons name="camera" size={24} color={theme.colors.primary} />
-                            <Text style={styles.attachText}>CÂMERA</Text>
+                        <TouchableOpacity style={[styles.attachBtn, { backgroundColor: colors.card, borderColor: colors.glassBorder }]} onPress={takePhoto}>
+                            <Ionicons name="camera" size={24} color={colors.primary} />
+                            <Text style={[styles.attachText, { color: colors.primary }]}>CÂMERA</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.attachBtn} onPress={pickImage}>
-                            <Ionicons name="images" size={24} color={theme.colors.primary} />
-                            <Text style={styles.attachText}>GALERIA</Text>
+                        <TouchableOpacity style={[styles.attachBtn, { backgroundColor: colors.card, borderColor: colors.glassBorder }]} onPress={pickImage}>
+                            <Ionicons name="images" size={24} color={colors.primary} />
+                            <Text style={[styles.attachText, { color: colors.primary }]}>GALERIA</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -162,21 +164,21 @@ export default function AdubacaoFormScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.colors.background },
+    container: { flex: 1 },
     content: { padding: 20 },
-    title: { fontSize: 22, fontWeight: 'bold', color: theme.colors.textDark, marginBottom: 20 },
+    title: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
     row: { flexDirection: 'row' },
-    label: { fontSize: 10, fontWeight: 'bold', color: theme.colors.textMuted, marginBottom: 8, marginTop: 10 },
+    label: { fontSize: 10, fontWeight: 'bold', marginBottom: 8, marginTop: 10 },
     pillContainer: { flexDirection: 'row', marginBottom: 20, gap: 10 },
     pill: { flex: 1, padding: 12, borderRadius: 8, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#D1D5DB', alignItems: 'center' },
-    pillActive: { backgroundColor: '#ECFDF5', borderColor: theme.colors.primary },
-    pillText: { fontWeight: 'bold', color: theme.colors.textMuted, fontSize: 12 },
-    pillTextActive: { color: theme.colors.primary },
+    pillActive: { backgroundColor: '#ECFDF5' },
+    pillText: { fontWeight: 'bold', fontSize: 12 },
+    pillTextActive: {},
     textAreaContainer: { marginBottom: 10 },
     attachContainer: { marginBottom: 30 },
     attachButtons: { flexDirection: 'row', gap: 15 },
-    attachBtn: { flex: 1, backgroundColor: '#FFF', padding: 20, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#D1D5DB', borderStyle: 'dashed' },
-    attachText: { fontSize: 12, fontWeight: 'bold', color: theme.colors.primary, marginTop: 5 },
+    attachBtn: { flex: 1, padding: 20, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed' },
+    attachText: { fontSize: 12, fontWeight: 'bold', marginTop: 5 },
     imagePreview: { position: 'relative' },
     removeBtn: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.6)', padding: 8, borderRadius: 20 }
 });

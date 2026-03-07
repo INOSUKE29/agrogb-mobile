@@ -4,8 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { AntDesign, Ionicons } from '@expo/vector-icons';
 import { insertUsuario } from '../database/database';
 import { Link } from '@react-navigation/native';
-import AgroInput from '../components/AgroInput';
-import AgroButton from '../components/AgroButton';
+import AgroInput from '../ui/components/AgroInput';
+import AgroButton from '../ui/components/AgroButton';
 
 const { width, height } = Dimensions.get('window');
 

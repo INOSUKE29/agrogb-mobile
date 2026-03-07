@@ -1,35 +1,42 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Share } from 'react-native';
 import { executeQuery } from '../database/database';
 import { useFocusEffect } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LineChart, BarChart } from 'react-native-chart-kit';
+import { useTheme } from '../context/ThemeContext';
 import AppContainer from '../ui/AppContainer';
+import ScreenHeader from '../ui/ScreenHeader';
 import GlowCard from '../ui/GlowCard';
-import { DARK } from '../styles/darkTheme';
+import { showToast } from '../ui/Toast';
+import { generatePDFAgro } from '../services/ReportService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CHART_WIDTH = SCREEN_WIDTH - 64;
-
-const CHART_CFG = {
-    backgroundGradientFrom: '#0F2E28',
-    backgroundGradientTo: '#0F2E28',
-    color: (opacity = 1) => `rgba(0, 255, 156, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(168, 197, 190, ${opacity})`,
-    strokeWidth: 2,
-    barPercentage: 0.65,
-    propsForDots: { r: '4', strokeWidth: '1', stroke: '#00FF9C' },
-    propsForBackgroundLines: { stroke: 'rgba(0,255,156,0.08)' },
-};
+const CHART_WIDTH = SCREEN_WIDTH - 48; // Padding ajustado para GlowCard
 
 const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
 export default function RelatoriosScreen({ navigation }) {
+    const { colors, theme } = useTheme();
     const [loading, setLoading] = useState(true);
     const [kpi, setKpi] = useState({ prod: 0, faturamento: 0, custos: 0, lucro: 0 });
     const [monthlyProd, setMonthlyProd] = useState(Array(6).fill(0));
     const [monthlyRevCost, setMonthlyRevCost] = useState({ rev: Array(6).fill(0), cost: Array(6).fill(0) });
     const [period, setPeriod] = useState('mes'); // 'mes' | 'trimestre' | 'ano'
+
+    const isDark = theme === 'dark' || theme === 'ultra_premium';
+
+    const chartConfig = {
+        backgroundGradientFrom: colors.card,
+        backgroundGradientTo: colors.card,
+        color: (opacity = 1) => colors.primary,
+        labelColor: (opacity = 1) => colors.textMuted,
+        strokeWidth: 2,
+        barPercentage: 0.6,
+        useShadowColorFromDataset: false,
+        propsForDots: { r: '4', strokeWidth: '1', stroke: colors.primary },
+        propsForBackgroundLines: { stroke: colors.glassBorder, strokeDasharray: '' },
+    };
 
     const loadData = async () => {
         setLoading(true);
@@ -41,12 +48,14 @@ export default function RelatoriosScreen({ navigation }) {
             else { startDate = new Date(now.getFullYear(), 0, 1); }
             const start = startDate.toISOString().split('T')[0];
 
-            const rProd = await executeQuery('SELECT SUM(quantidade) as t FROM colheitas WHERE data >= ?', [start]);
-            const rFat = await executeQuery("SELECT SUM(valor * quantidade) as t FROM vendas WHERE status_pagamento = 'RECEBIDO' AND data >= ?", [start]);
-            const rCust = await executeQuery('SELECT SUM(valor_total) as t FROM custos WHERE data >= ?', [start]);
+            const rProd = await executeQuery('SELECT SUM(quantidade) as t FROM colheitas WHERE data >= ? AND is_deleted = 0', [start]);
+            const rFat = await executeQuery("SELECT SUM(valor * quantidade) as t FROM vendas WHERE data >= ? AND is_deleted = 0", [start]);
+            const rCust = await executeQuery('SELECT SUM(valor_total) as t FROM custos WHERE data >= ? AND is_deleted = 0', [start]);
+
             const prod = rProd.rows.item(0).t || 0;
             const fat = rFat.rows.item(0).t || 0;
             const cust = rCust.rows.item(0).t || 0;
+
             setKpi({ prod, faturamento: fat, custos: cust, lucro: fat - cust });
 
             // Monthly production last 6 months
@@ -56,7 +65,7 @@ export default function RelatoriosScreen({ navigation }) {
                 d.setMonth(d.getMonth() - i);
                 const y = d.getFullYear();
                 const m = String(d.getMonth() + 1).padStart(2, '0');
-                const r = await executeQuery(`SELECT SUM(quantidade) as t FROM colheitas WHERE strftime('%Y-%m', data) = ?`, [`${y}-${m}`]);
+                const r = await executeQuery(`SELECT SUM(quantidade) as t FROM colheitas WHERE strftime('%Y-%m', data) = ? AND is_deleted = 0`, [`${y}-${m}`]);
                 prodArr.push(r.rows.item(0).t || 0);
             }
             setMonthlyProd(prodArr);
@@ -68,8 +77,8 @@ export default function RelatoriosScreen({ navigation }) {
                 d.setMonth(d.getMonth() - i);
                 const y = d.getFullYear();
                 const m = String(d.getMonth() + 1).padStart(2, '0');
-                const rr = await executeQuery(`SELECT SUM(valor * quantidade) as t FROM vendas WHERE status_pagamento = 'RECEBIDO' AND strftime('%Y-%m', data) = ?`, [`${y}-${m}`]);
-                const rc = await executeQuery(`SELECT SUM(valor_total) as t FROM custos WHERE strftime('%Y-%m', data) = ?`, [`${y}-${m}`]);
+                const rr = await executeQuery(`SELECT SUM(valor * quantidade) as t FROM vendas WHERE strftime('%Y-%m', data) = ? AND is_deleted = 0`, [`${y}-${m}`]);
+                const rc = await executeQuery(`SELECT SUM(valor_total) as t FROM custos WHERE strftime('%Y-%m', data) = ? AND is_deleted = 0`, [`${y}-${m}`]);
                 revArr.push(rr.rows.item(0).t || 0);
                 costArr.push(rc.rows.item(0).t || 0);
             }
@@ -82,140 +91,290 @@ export default function RelatoriosScreen({ navigation }) {
     const fmtBRL = (v) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const fmtKg = (v) => `${(v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kg`;
 
-    const last6Months = Array.from({ length: 6 }, (_, i) => {
+    const last6MonthsLabels = Array.from({ length: 6 }, (_, i) => {
         const d = new Date();
         d.setMonth(d.getMonth() - (5 - i));
         return MONTHS[d.getMonth()];
     });
 
-    const kpis = [
-        { label: 'PRODUÇÃO', value: fmtKg(kpi.prod), icon: 'leaf', color: '#00FF9C' },
-        { label: 'FATURAMENTO', value: fmtBRL(kpi.faturamento), icon: 'cash', color: '#1BFFB2' },
-        { label: 'CUSTOS', value: fmtBRL(kpi.custos), icon: 'wallet', color: '#FF6B6B' },
-        { label: 'LUCRO LÍQUIDO', value: fmtBRL(kpi.lucro), icon: 'trending-up', color: kpi.lucro >= 0 ? '#00FF9C' : '#FF3B3B' },
-    ];
+    const handleExport = async (type) => {
+        const now = new Date().toISOString().split('T')[0];
+        const past = new Date();
+        past.setMonth(past.getMonth() - 1);
+        const start = past.toISOString().split('T')[0];
+
+        showToast(`Gerando PDF de ${type}...`);
+        await generatePDFAgro(type, start, now);
+    };
 
     return (
         <AppContainer>
-            {/* HEADER */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4 }}>
-                    <Ionicons name="arrow-back" size={24} color="#FFF" />
-                </TouchableOpacity>
-                <Text style={styles.title}>RELATÓRIOS</Text>
-                <View style={{ width: 28 }} />
-            </View>
-            <View style={styles.glowLine} />
+            <ScreenHeader
+                title="INTELIGÊNCIA"
+                onBack={() => navigation.goBack()}
+            />
 
-            {loading ? (
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ActivityIndicator size="large" color={DARK.glow} />
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
+                {/* SELETOR DE PERÍODO */}
+                <View style={styles.periodSelector}>
+                    {[
+                        { id: 'mes', label: 'ESTE MÊS' },
+                        { id: 'trimestre', label: '3 MESES' },
+                        { id: 'ano', label: 'ESTE ANO' }
+                    ].map((p) => (
+                        <TouchableOpacity
+                            key={p.id}
+                            onPress={() => setPeriod(p.id)}
+                            style={[
+                                styles.periodBtn,
+                                { borderColor: colors.glassBorder },
+                                period === p.id && { backgroundColor: colors.primary, borderColor: colors.primary }
+                            ]}
+                        >
+                            <Text style={[
+                                styles.periodText,
+                                { color: colors.textSecondary },
+                                period === p.id && { color: '#FFF' }
+                            ]}>{p.label}</Text>
+                        </TouchableOpacity>
+                    ))}
                 </View>
-            ) : (
-                <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
-                    {/* PERIOD PILLS */}
-                    <View style={styles.periodRow}>
-                        {[['mes', 'ESTE MÊS'], ['trimestre', 'TRIMESTRE'], ['ano', 'ANO']].map(([k, l]) => (
-                            <TouchableOpacity key={k} style={[styles.pill, period === k && styles.pillActive]} onPress={() => setPeriod(k)}>
-                                <Text style={[styles.pillText, period === k && styles.pillTextActive]}>{l}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
 
-                    {/* KPI CARDS 2x2 */}
-                    <View style={styles.kpiGrid}>
-                        {kpis.map(({ label, value, icon, color }) => (
-                            <GlowCard key={label} style={[styles.kpiCard, { borderColor: color + '40' }]}>
-                                <View style={[styles.kpiIcon, { backgroundColor: color + '18' }]}>
-                                    <Ionicons name={icon} size={20} color={color} />
-                                </View>
-                                <Text style={[styles.kpiValue, { color }]}>{value}</Text>
-                                <Text style={styles.kpiLabel}>{label}</Text>
-                            </GlowCard>
-                        ))}
-                    </View>
-
-                    {/* CHART: PRODUÇÃO MENSAL */}
-                    <GlowCard style={{ marginBottom: 20 }}>
-                        <Text style={styles.chartTitle}>📦 PRODUÇÃO MENSAL (kg)</Text>
-                        <LineChart
-                            data={{ labels: last6Months, datasets: [{ data: monthlyProd.map(v => Math.max(v, 0)) }] }}
-                            width={CHART_WIDTH}
-                            height={180}
-                            chartConfig={CHART_CFG}
-                            bezier
-                            style={{ borderRadius: 12, marginTop: 10 }}
-                            withInnerLines={true}
-                            withOuterLines={false}
-                        />
+                {/* KPI GRID */}
+                <View style={styles.kpiGrid}>
+                    <GlowCard style={styles.kpiCard}>
+                        <Ionicons name="leaf" size={20} color={colors.primary} />
+                        <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>PRODUÇÃO</Text>
+                        <Text style={[styles.kpiValue, { color: colors.textPrimary }]}>{fmtKg(kpi.prod)}</Text>
                     </GlowCard>
 
-                    {/* CHART: RECEITA VS CUSTO */}
-                    <GlowCard style={{ marginBottom: 20 }}>
-                        <Text style={styles.chartTitle}>💰 RECEITA vs CUSTO (R$)</Text>
-                        <View style={styles.legendRow}>
-                            <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: '#00FF9C' }]} /><Text style={styles.legendText}>Receita</Text></View>
-                            <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: '#FF6B6B' }]} /><Text style={styles.legendText}>Custo</Text></View>
+                    <GlowCard style={styles.kpiCard}>
+                        <Ionicons name="cash" size={20} color={colors.glow} />
+                        <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>FATURAMENTO</Text>
+                        <Text style={[styles.kpiValue, { color: colors.textPrimary }]}>{fmtBRL(kpi.faturamento)}</Text>
+                    </GlowCard>
+
+                    <GlowCard style={styles.kpiCard}>
+                        <Ionicons name="wallet" size={20} color={colors.danger} />
+                        <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>CUSTOS</Text>
+                        <Text style={[styles.kpiValue, { color: colors.textPrimary }]}>{fmtBRL(kpi.custos)}</Text>
+                    </GlowCard>
+
+                    <GlowCard style={styles.kpiCard}>
+                        <Ionicons name="trending-up" size={20} color={colors.success || colors.primary} />
+                        <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>LUCRO ESTIMADO</Text>
+                        <Text style={[styles.kpiValue, { color: kpi.lucro >= 0 ? colors.success || colors.primary : colors.danger }]}>
+                            {fmtBRL(kpi.lucro)}
+                        </Text>
+                    </GlowCard>
+                </View>
+
+                {/* GRÁFICO PRODUÇÃO */}
+                <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>EVOLUÇÃO DE PRODUÇÃO (KG)</Text>
+                <GlowCard style={styles.chartCard}>
+                    <LineChart
+                        data={{
+                            labels: last6MonthsLabels,
+                            datasets: [{ data: monthlyProd.map(v => Math.max(v, 0)) }]
+                        }}
+                        width={CHART_WIDTH - 32}
+                        height={180}
+                        chartConfig={chartConfig}
+                        bezier
+                        style={styles.chart}
+                        withInnerLines={true}
+                        withOuterLines={false}
+                    />
+                </GlowCard>
+
+                {/* GRÁFICO FINANCEIRO */}
+                <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>RECEITA vs CUSTO (R$)</Text>
+                <GlowCard style={styles.chartCard}>
+                    <View style={styles.legend}>
+                        <View style={styles.legendItem}>
+                            <View style={[styles.dot, { backgroundColor: colors.primary }]} />
+                            <Text style={[styles.legendText, { color: colors.textMuted }]}>Receita</Text>
                         </View>
-                        <BarChart
-                            data={{
-                                labels: last6Months,
-                                datasets: [
-                                    { data: monthlyRevCost.rev.map(v => Math.max(v, 0)), color: () => '#00FF9C' },
-                                    { data: monthlyRevCost.cost.map(v => Math.max(v, 0)), color: () => '#FF6B6B' }
-                                ]
-                            }}
-                            width={CHART_WIDTH}
-                            height={180}
-                            chartConfig={{ ...CHART_CFG, color: (opacity) => `rgba(0,255,156,${opacity})` }}
-                            style={{ borderRadius: 12, marginTop: 10 }}
-                            withInnerLines={true}
-                            withCustomBarColorFromData
-                            flatColor
-                            showValuesOnTopOfBars={false}
-                        />
-                    </GlowCard>
-
-                    {/* INSIGHT BOX */}
-                    <GlowCard style={{ borderColor: kpi.lucro >= 0 ? 'rgba(0,255,156,0.35)' : 'rgba(255,59,59,0.35)' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                            <Ionicons name={kpi.lucro >= 0 ? 'trending-up' : 'trending-down'} size={22} color={kpi.lucro >= 0 ? DARK.glow : DARK.danger} />
-                            <Text style={[styles.chartTitle, { marginBottom: 0 }]}>RESUMO DO PERÍODO</Text>
+                        <View style={styles.legendItem}>
+                            <View style={[styles.dot, { backgroundColor: colors.danger }]} />
+                            <Text style={[styles.legendText, { color: colors.textMuted }]}>Custo</Text>
                         </View>
-                        <Text style={styles.insightText}>Lucro Líquido: <Text style={{ color: kpi.lucro >= 0 ? DARK.glow : DARK.danger, fontWeight: 'bold' }}>{fmtBRL(kpi.lucro)}</Text></Text>
-                        {kpi.faturamento > 0 && (
-                            <Text style={styles.insightText}>Margem: <Text style={{ color: DARK.glow, fontWeight: 'bold' }}>{((kpi.lucro / kpi.faturamento) * 100).toFixed(1)}%</Text></Text>
-                        )}
-                        <Text style={styles.insightText}>Produção total: <Text style={{ color: DARK.glow, fontWeight: 'bold' }}>{fmtKg(kpi.prod)}</Text></Text>
-                    </GlowCard>
-                </ScrollView>
-            )}
+                    </View>
+                    <BarChart
+                        data={{
+                            labels: last6MonthsLabels,
+                            datasets: [
+                                { data: monthlyRevCost.rev.map(v => Math.max(v, 0)), color: () => colors.primary },
+                                { data: monthlyRevCost.cost.map(v => Math.max(v, 0)), color: () => colors.danger }
+                            ]
+                        }}
+                        width={CHART_WIDTH - 32}
+                        height={180}
+                        chartConfig={{ ...chartConfig, color: (opacity = 1) => colors.primary }}
+                        style={styles.chart}
+                        flatColor={true}
+                        withCustomBarColorFromData={true}
+                    />
+                </GlowCard>
+
+                {/* MENU DE EXPORTAÇÃO */}
+                <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>REPOSITÓRIO E EXPORTAÇÃO (PDF)</Text>
+                <GlowCard style={styles.exportSection}>
+                    <TouchableOpacity style={styles.exportItem} onPress={() => handleExport('VENDAS')}>
+                        <View style={[styles.exportIcon, { backgroundColor: colors.primary + '15' }]}>
+                            <MaterialCommunityIcons name="file-pdf-box" size={24} color={colors.primary} />
+                        </View>
+                        <View style={styles.exportInfo}>
+                            <Text style={[styles.exportLabel, { color: colors.textPrimary }]}>Relatório de Vendas</Text>
+                            <Text style={[styles.exportDesc, { color: colors.textMuted }]}>Detalhamento de comercialização</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                    </TouchableOpacity>
+
+                    <View style={[styles.divider, { backgroundColor: colors.glassBorder }]} />
+
+                    <TouchableOpacity style={styles.exportItem} onPress={() => handleExport('ESTOQUE')}>
+                        <View style={[styles.exportIcon, { backgroundColor: colors.primary + '15' }]}>
+                            <MaterialCommunityIcons name="file-pdf-box" size={24} color={colors.primary} />
+                        </View>
+                        <View style={styles.exportInfo}>
+                            <Text style={[styles.exportLabel, { color: colors.textPrimary }]}>Inventário de Estoque</Text>
+                            <Text style={[styles.exportDesc, { color: colors.textMuted }]}>Posição atual de insumos e produtos</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                    </TouchableOpacity>
+
+                    <View style={[styles.divider, { backgroundColor: colors.glassBorder }]} />
+
+                    <TouchableOpacity style={styles.exportItem} onPress={() => handleExport('COLHEITA')}>
+                        <View style={[styles.exportIcon, { backgroundColor: colors.primary + '15' }]}>
+                            <MaterialCommunityIcons name="file-pdf-box" size={24} color={colors.primary} />
+                        </View>
+                        <View style={styles.exportInfo}>
+                            <Text style={[styles.exportLabel, { color: colors.textPrimary }]}>Histórico de Colheitas</Text>
+                            <Text style={[styles.exportDesc, { color: colors.textMuted }]}>Rastreabilidade de campo</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                    </TouchableOpacity>
+                </GlowCard>
+
+                <View style={{ height: 40 }} />
+            </ScrollView>
         </AppContainer>
     );
 }
 
 const styles = StyleSheet.create({
-    header: { paddingTop: 52, paddingHorizontal: 20, paddingBottom: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    title: { fontSize: 15, fontWeight: '900', color: DARK.textPrimary, letterSpacing: 1 },
-    glowLine: { height: 1, backgroundColor: DARK.glowLine, marginBottom: 4 },
-
-    periodRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
-    pill: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, backgroundColor: 'rgba(0,255,156,0.05)', borderWidth: 1, borderColor: DARK.glowBorder },
-    pillActive: { backgroundColor: DARK.glow, borderColor: DARK.glow },
-    pillText: { fontSize: 11, fontWeight: 'bold', color: DARK.textMuted },
-    pillTextActive: { color: '#061E1A' },
-
-    kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 20 },
-    kpiCard: { width: (SCREEN_WIDTH - 52) / 2, alignItems: 'center', padding: 16 },
-    kpiIcon: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-    kpiValue: { fontSize: 15, fontWeight: '900', marginBottom: 4 },
-    kpiLabel: { fontSize: 9, fontWeight: '900', color: DARK.textMuted, letterSpacing: 1, textAlign: 'center' },
-
-    chartTitle: { fontSize: 11, fontWeight: '900', color: DARK.glow, letterSpacing: 1, marginBottom: 4 },
-    legendRow: { flexDirection: 'row', gap: 16, marginTop: 4 },
-    legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    legendDot: { width: 10, height: 10, borderRadius: 5 },
-    legendText: { fontSize: 10, color: DARK.textMuted, fontWeight: 'bold' },
-
-    insightText: { fontSize: 13, color: DARK.textSecondary, marginBottom: 6, lineHeight: 20 },
+    scrollContent: {
+        padding: 20,
+    },
+    periodSelector: {
+        flexDirection: 'row',
+        gap: 8,
+        marginBottom: 20,
+    },
+    periodBtn: {
+        flex: 1,
+        height: 40,
+        borderRadius: 20,
+        borderWidth: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    periodText: {
+        fontSize: 10,
+        fontWeight: '900',
+        letterSpacing: 1,
+    },
+    kpiGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12,
+        marginBottom: 25,
+    },
+    kpiCard: {
+        width: (SCREEN_WIDTH - 52) / 2,
+        padding: 16,
+        alignItems: 'flex-start',
+    },
+    kpiLabel: {
+        fontSize: 9,
+        fontWeight: '900',
+        letterSpacing: 1,
+        marginTop: 10,
+        marginBottom: 4,
+    },
+    kpiValue: {
+        fontSize: 16,
+        fontWeight: '900',
+    },
+    sectionTitle: {
+        fontSize: 10,
+        fontWeight: '900',
+        letterSpacing: 1.5,
+        marginBottom: 12,
+        marginLeft: 4,
+    },
+    chartCard: {
+        padding: 16,
+        marginBottom: 25,
+        alignItems: 'center',
+    },
+    chart: {
+        borderRadius: 12,
+        marginTop: 10,
+    },
+    legend: {
+        flexDirection: 'row',
+        gap: 20,
+        alignSelf: 'flex-start',
+        marginBottom: 10,
+    },
+    legendItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    dot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+    },
+    legendText: {
+        fontSize: 10,
+        fontWeight: '700',
+    },
+    exportSection: {
+        padding: 4,
+        marginBottom: 20,
+    },
+    exportItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+    },
+    exportIcon: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    exportInfo: {
+        flex: 1,
+        marginLeft: 12,
+    },
+    exportLabel: {
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    exportDesc: {
+        fontSize: 11,
+        marginTop: 2,
+    },
+    divider: {
+        height: 1,
+        marginHorizontal: 12,
+    }
 });

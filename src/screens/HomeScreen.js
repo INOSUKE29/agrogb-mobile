@@ -5,19 +5,24 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
-import WeatherWidget from '../components/WeatherWidget';
+import WeatherWidget from '../ui/WeatherWidget';
 import { getDashboardStats } from '../database/database';
-import { syncTable } from '../services/supabase';
+import { syncAllMaster, testConnection } from '../services/supabase';
+// ... outras importações
+
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import SidebarDrawer from '../components/SidebarDrawer';
-import { DARK } from '../styles/darkTheme';
+import SidebarDrawer from '../ui/SidebarDrawer';
+import { useTheme } from '../theme/ThemeContext';
 import { getMenuOrder, saveManualOrder, recordUsage } from '../services/MenuService';
+import { SPACING } from '../design/spacing';
+import { RADIUS } from '../design/radius';
+import { TYPOGRAPHY } from '../design/typography';
 
 // --- CONFIGURAÇÕES DO GRID ---
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const NUM_COLS = 3;
-const CARD_GAP = 12;
+const CARD_GAP = SPACING.md;
 const CARD_SIZE = (SCREEN_WIDTH - 40 - CARD_GAP * (NUM_COLS - 1)) / NUM_COLS;
 const CARD_HEIGHT = CARD_SIZE * 0.85;
 
@@ -30,7 +35,7 @@ const getPosition = (index) => {
     };
 };
 
-const GridItem = ({ item, index, isEditMode, shakeAnim, onMoveItem, onDropItem, onPress, onLongPress }) => {
+const GridItem = ({ item, index, isEditMode, shakeAnim, onMoveItem, onDropItem, onPress, onLongPress, colors }) => {
     const pos = getPosition(index);
     const pan = useRef(new Animated.ValueXY(pos)).current;
     const [isDragging, setIsDragging] = useState(false);
@@ -103,16 +108,16 @@ const GridItem = ({ item, index, isEditMode, shakeAnim, onMoveItem, onDropItem, 
             {...(isEditMode ? panResponder.panHandlers : {})}
         >
             <TouchableOpacity
-                style={[styles.card, (isDragging ? styles.cardDragging : (isEditMode ? styles.cardEditMode : null)), { width: '100%', height: '100%' }]}
+                style={[styles.card, (isDragging ? styles.cardDragging : (isEditMode ? styles.cardEditMode : null)), { width: '100%', height: '100%', backgroundColor: colors.card, borderColor: colors.glassBorder }]}
                 onPress={onPress}
                 onLongPress={onLongPress}
                 delayLongPress={500}
                 activeOpacity={isEditMode ? 1 : 0.75}
             >
-                <View style={[styles.iconCircle, isDragging && { backgroundColor: DARK.glow }]}>
-                    <Ionicons name={item.icon} size={22} color={isDragging ? '#FFF' : DARK.glow} />
+                <View style={[styles.iconCircle, isDragging && { backgroundColor: colors.glow }]}>
+                    <Ionicons name={item.icon} size={22} color={isDragging ? '#FFF' : colors.glow} />
                 </View>
-                <Text style={[styles.cardTitle, isDragging && { color: DARK.glow }]} numberOfLines={1}>{item.label}</Text>
+                <Text style={[styles.cardTitle, isDragging && { color: colors.glow }, { color: colors.textPrimary }]} numberOfLines={1}>{item.label}</Text>
                 {isEditMode && !isDragging && (
                     <View style={styles.editBadge}>
                         <Ionicons name="move" size={12} color="#fff" />
@@ -124,13 +129,14 @@ const GridItem = ({ item, index, isEditMode, shakeAnim, onMoveItem, onDropItem, 
 };
 
 export default function HomeScreen({ navigation }) {
-    const [stats, setStats] = useState({ saldo: 0, colheitaHoje: 0, vendasHoje: 0, plantioAtivo: 0, maquinasAlert: 0, pendentes: 0 });
+    const { colors, theme } = useTheme();
+    const [stats, setStats] = useState({ saldo: 0, colheitaHoje: 0, vendasHoje: 0, custosMes: 0, plantioAtivo: 0, maquinasAlert: 0, pendentes: 0 });
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [isReady, setIsReady] = useState(false);
 
     const [menuItems, setMenuItems] = useState([]);
     const [isEditMode, setIsEditMode] = useState(false);
-    const shakeAnim = useRef(new Animated.Value(0)).current;
+    const [isOffline, setIsOffline] = useState(false);
 
     const loadStats = async () => {
         const data = await getDashboardStats();
@@ -138,8 +144,17 @@ export default function HomeScreen({ navigation }) {
     };
 
     const autoSync = async () => {
-        const tables = ['colheitas', 'vendas', 'compras', 'plantio', 'custos', 'descarte', 'clientes', 'culturas', 'cadastro', 'maquinas', 'manutencao_frota', 'monitoramento_entidade', 'analise_ia', 'monitoramento_media'];
-        for (const tab of tables) { syncTable(tab).catch(() => { }); }
+        setIsOffline(false);
+        try {
+            const isConnected = await testConnection();
+            if (!isConnected) {
+                setIsOffline(true);
+                return;
+            }
+            await syncAllMaster();
+        } catch (e) {
+            setIsOffline(true);
+        }
     };
 
     useFocusEffect(useCallback(() => {
@@ -208,47 +223,79 @@ export default function HomeScreen({ navigation }) {
 
     // Calcula altura total necessária para o grid absoluto
     const totalRowsCount = Math.ceil(menuItems.length / NUM_COLS);
-    const containerHeight = totalRowsCount * (CARD_HEIGHT + CARD_GAP);
+    // Sync Indicator Helpers
+    const getSyncColor = () => {
+        if (isOffline) return "#EF4444"; // Red
+        if (stats.pendentes > 0) return "#FCD34D"; // Yellow
+        return "#34D399"; // Green
+    };
+    const getSyncIcon = () => {
+        if (isOffline) return "cloud-offline";
+        if (stats.pendentes > 0) return "cloud-upload";
+        return "cloud-done";
+    };
+    const getSyncText = () => {
+        if (isOffline) return "OFFLINE";
+        if (stats.pendentes > 0) return `${stats.pendentes} PENDENTES`;
+        return "SYNC OK";
+    };
 
     return (
-        <LinearGradient colors={['#F0FDF4', '#DCFCE7']} style={styles.container}>
-            <RNStatusBar barStyle="dark-content" backgroundColor="#F0FDF4" />
+        <LinearGradient colors={colors.bgGradient} style={styles.container}>
+            <RNStatusBar barStyle={theme === 'dark' || (theme === 'system' && colors.effectiveTheme === 'dark') ? 'light-content' : 'dark-content'} />
 
             {/* HEADER */}
-            <LinearGradient colors={DARK.bgGradient} style={styles.header}>
+            <LinearGradient colors={colors.bgGradient} style={[styles.header, { shadowColor: colors.shadow || '#000' }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, width: '100%' }}>
                     <TouchableOpacity onPress={() => setDrawerVisible(true)} style={styles.menuBtn}>
                         <Ionicons name="menu" size={26} color="#FFFFFF" />
                     </TouchableOpacity>
-                    <View>
+                    <View style={{ flex: 1 }}>
                         <Text style={styles.brand}>AgroGB</Text>
-                        <Text style={styles.salutation}>PAINEL GERENCIAL</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <Text style={styles.salutation}>PAINEL GERENCIAL</Text>
+                            {isReady && (
+                                <TouchableOpacity onPress={() => navigation.navigate('Sync')} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 10, marginTop: 2 }}>
+                                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: getSyncColor() }} />
+                                    <Text style={{ fontSize: 9, color: '#FFF', fontWeight: '900', letterSpacing: 0.5 }}>
+                                        {getSyncText().split(' ')[0]} {/* Apenas SYNC ou OFFLINE */}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
                     </View>
                 </View>
                 <View style={{ marginTop: 14, width: '100%' }}>
                     <WeatherWidget />
                 </View>
 
-                {/* KPI ROW */}
+                {/* KPI ROW - HORIZONTAL SCROLL FOR 4 CARDS */}
                 {isReady && (
-                    <View style={styles.kpiRow}>
-                        <View style={styles.kpiItem}>
-                            <Text style={styles.kpiLabel}>COLHEITA HOJE</Text>
-                            <Text style={styles.kpiValue}>{stats.colheitaHoje} <Text style={styles.unit}>kg</Text></Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 20 }} style={{ marginTop: 16 }}>
+                        <View style={styles.kpiContainer}>
+                            <View style={styles.kpiCard}>
+                                <Text style={styles.kpiLabel}>PRODUÇÃO</Text>
+                                <Text style={styles.kpiValue}>{stats.colheitaHoje} <Text style={styles.unit}>kg</Text></Text>
+                            </View>
+
+                            <View style={styles.kpiCard}>
+                                <Text style={styles.kpiLabel}>VENDAS HOJE</Text>
+                                <Text style={[styles.kpiValue, { color: '#34D399' }]}>{formatBRL(stats.vendasHoje)}</Text>
+                            </View>
+
+                            <View style={styles.kpiCard}>
+                                <Text style={styles.kpiLabel}>CUSTOS MÊS</Text>
+                                <Text style={[styles.kpiValue, { color: '#FCD34D' }]}>{formatBRL(stats.custosMes)}</Text>
+                            </View>
+
+                            <View style={styles.kpiCard}>
+                                <Text style={styles.kpiLabel}>LUCRO MÊS</Text>
+                                <Text style={[styles.kpiValue, { color: (stats.saldo || 0) >= 0 ? '#34D399' : '#F87171' }]}>
+                                    {formatBRL(stats.saldo)}
+                                </Text>
+                            </View>
                         </View>
-                        <View style={styles.vr} />
-                        <View style={styles.kpiItem}>
-                            <Text style={styles.kpiLabel}>VENDAS HOJE</Text>
-                            <Text style={styles.kpiValue}>{formatBRL(stats.vendasHoje)}</Text>
-                        </View>
-                        <View style={styles.vr} />
-                        <View style={styles.kpiItem}>
-                            <Text style={styles.kpiLabel}>RESULTADO MÊS</Text>
-                            <Text style={[styles.kpiValue, { color: (stats.saldo || 0) >= 0 ? '#A7F3D0' : '#FDA4AF' }]}>
-                                {formatBRL(stats.saldo)}
-                            </Text>
-                        </View>
-                    </View>
+                    </ScrollView>
                 )}
                 <View style={styles.glowLine} />
             </LinearGradient>
@@ -256,12 +303,16 @@ export default function HomeScreen({ navigation }) {
             {/* CONTENT */}
             <View style={styles.content}>
                 {stats.maquinasAlert > 0 && !isEditMode && (
-                    <TouchableOpacity style={styles.alertBar} onPress={() => navigation.navigate('Frota')}>
-                        <Ionicons name="warning" size={18} color={DARK.warningDark} />
-                        <Text style={styles.alertText}>{stats.maquinasAlert} MÁQUINAS PRECISAM DE REVISÃO</Text>
-                        <Ionicons name="chevron-forward" size={18} color={DARK.warningDark} />
+                    <TouchableOpacity
+                        style={[styles.alertBar, { backgroundColor: colors.warning + '20', borderColor: colors.warning }]}
+                        onPress={() => navigation.navigate('Frota')}
+                    >
+                        <Ionicons name="warning" size={18} color={colors.warningDark} />
+                        <Text style={[styles.alertText, { color: colors.warningDark }]}>{stats.maquinasAlert} MÁQUINAS PRECISAM DE REVISÃO</Text>
+                        <Ionicons name="chevron-forward" size={18} color={colors.warningDark} />
                     </TouchableOpacity>
                 )}
+
 
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>{isEditMode ? 'MODO DE ORGANIZAÇÃO' : 'ACESSO RÁPIDO'}</Text>
@@ -288,6 +339,7 @@ export default function HomeScreen({ navigation }) {
                                     key={item.id}
                                     item={item}
                                     index={index}
+                                    colors={colors}
                                     isEditMode={isEditMode}
                                     shakeAnim={shakeAnim}
                                     onMoveItem={handleMoveItem}
@@ -298,14 +350,14 @@ export default function HomeScreen({ navigation }) {
                             ))}
                         </View>
                         <View style={styles.footer}>
-                            <Text style={styles.version}>AgroGB Mobile v8.3 • Soft Shadow</Text>
+                            <Text style={[styles.version, { color: colors.textMuted }]}>AgroGB Mobile v8.5 Master • Backend Pro</Text>
                         </View>
                     </ScrollView>
                 )}
             </View>
 
             <SidebarDrawer visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
-        </LinearGradient>
+        </LinearGradient >
     );
 }
 
@@ -317,29 +369,31 @@ const styles = StyleSheet.create({
     salutation: { fontSize: 10, color: 'rgba(255,255,255,0.9)', fontWeight: '700', letterSpacing: 1.5, marginTop: 2 },
     glowLine: { height: 1, backgroundColor: 'rgba(255,255,255,0.25)', marginTop: 16 },
 
-    kpiRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', padding: 16, borderRadius: 16, marginTop: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 10 },
-    kpiItem: { flex: 1, alignItems: 'center' },
+    kpiContainer: { flexDirection: 'row', gap: 12 },
+    kpiCard: { backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', padding: 14, borderRadius: 16, minWidth: 110, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 10 },
     kpiLabel: { fontSize: 9, color: 'rgba(255,255,255,0.85)', fontWeight: '800', marginBottom: 6, letterSpacing: 0.5 },
-    kpiValue: { fontSize: 18, color: '#FFFFFF', fontWeight: '900' },
-    unit: { fontSize: 11, color: 'rgba(255,255,255,0.8)' },
-    vr: { width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.2)' },
+    kpiValue: { fontSize: 16, color: '#FFFFFF', fontWeight: '900' },
+    unit: { fontSize: 10, color: 'rgba(255,255,255,0.8)' },
 
     content: { flex: 1, paddingTop: 20, paddingHorizontal: 20 },
 
     alertBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', borderWidth: 1, borderColor: '#F59E0B', padding: 12, borderRadius: 14, marginBottom: 16, gap: 10, shadowColor: '#F59E0B', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 4 },
     alertText: { flex: 1, fontSize: 11, fontWeight: 'bold', color: '#92400E' },
 
-    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 8 },
-    sectionTitle: { fontSize: 12, fontWeight: '800', color: '#475569', letterSpacing: 1.5 },
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 4 },
+    sectionTitle: { fontSize: 11, fontWeight: '800', color: '#64748B', letterSpacing: 1.5 },
     doneBtn: { backgroundColor: '#4CAF50', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, shadowColor: '#4CAF50', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 3 },
     doneBtnText: { color: '#FFFFFF', fontSize: 10, fontWeight: '900' },
     dragHintText: { fontSize: 11, color: '#64748B', fontWeight: '600', marginBottom: 14 },
+
+    shortcutBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF', paddingVertical: 12, borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', gap: 6, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 },
+    shortcutText: { fontSize: 11, fontWeight: '800', color: '#475569' },
 
     gridContent: { paddingBottom: 40, paddingTop: 6 },
     gridContainer: { width: '100%', position: 'relative' },
     card: {
         backgroundColor: '#FFFFFF',
-        borderRadius: 20,
+        borderRadius: RADIUS.lg,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
@@ -369,6 +423,6 @@ const styles = StyleSheet.create({
     iconCircle: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#ECFDF5', justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
     cardTitle: { fontSize: 10, fontWeight: '700', color: '#1E293B', textAlign: 'center', paddingHorizontal: 4 },
 
-    footer: { position: 'absolute', bottom: -40, left: 0, right: 0, alignItems: 'center' },
-    version: { color: '#94A3B8', fontSize: 10, fontWeight: 'bold' },
+    footer: { width: '100%', alignItems: 'center', marginTop: 20, marginBottom: 20 },
+    version: { fontSize: 10, fontWeight: 'bold' },
 });

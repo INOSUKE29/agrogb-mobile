@@ -73,7 +73,7 @@ export const pushLocalChanges = async () => {
         }
         return { success: true, pushed: totalsSynced };
     } catch (e) {
-        console.error('Push Error:', e);
+        console.error('[SYNC ERROR] Push Error:', e);
         return { success: false, error: e.message };
     }
 };
@@ -140,7 +140,7 @@ export const pullServerChanges = async () => {
         return { success: true, pulled: totalsPulled };
 
     } catch (e) {
-        console.error('Pull Error:', e);
+        console.error('[SYNC ERROR] Pull Error:', e);
         return { success: false, error: e.message };
     }
 };

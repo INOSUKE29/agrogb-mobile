@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, Dimensions, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { executeQuery, insertUsuario } from '../database/database';
-import AgroInput from '../components/AgroInput';
+import AgroInput from '../ui/components/AgroInput';
 
 // Botão Simples embutido para garantir a cor verde caso o AgroButton genérico tenha cache de azul
 const GreenButton = ({ title, onPress, loading }) => (
@@ -153,7 +153,7 @@ export default function LoginScreen({ navigation }) {
                     </View>
                 </View>
 
-                <Text style={{ textAlign: 'center', marginTop: 30, color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 'bold' }}>SISTEMA PRO AGRÍCOLA v7.0</Text>
+                <Text style={{ textAlign: 'center', marginTop: 30, color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 'bold' }}>SISTEMA PRO AGRÍCOLA v8.0</Text>
             </KeyboardAvoidingView>
         </ImageBackground>
     );

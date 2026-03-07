@@ -1,14 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator, Animated } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
-import { insertVenda, getCadastro, getClientes, insertCliente, getVendasRecentes, deleteVenda, updateVenda, marcarVendaRecebida } from '../database/database';
+import { getCadastro, getClientes, insertCliente } from '../database/database';
+import { insertVenda, getVendasRecentes, deleteVenda, updateVenda, marcarVendaRecebida } from '../services/VendaService';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
-import { DARK } from '../styles/darkTheme';
 import AutoSyncService from '../services/AutoSyncService';
+import { showToast } from '../ui/Toast';
+import { useTheme } from '../theme/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import ConfirmModal from '../ui/ConfirmModal';
+import AppContainer from '../ui/AppContainer';
+import ScreenHeader from '../ui/ScreenHeader';
+import GlowCard from '../ui/GlowCard';
+import GlowInput from '../ui/GlowInput';
+import PrimaryButton from '../ui/PrimaryButton';
 
-export default function VendasScreen({ navigation }) {
+export default function VendasScreen({ navigation, route }) {
+    const { colors, theme } = useTheme();
     const [cliente, setCliente] = useState('');
     const [produto, setProduto] = useState('');
     const [quantidade, setQuantidade] = useState('');
@@ -25,7 +34,6 @@ export default function VendasScreen({ navigation }) {
     // Modal States
     const [modalVisible, setModalVisible] = useState(false); // Product
     const [clientModalVisible, setClientModalVisible] = useState(false); // Client
-    const [newClientModal, setNewClientModal] = useState(false);
 
     // Recebimento modal
     const [recebimentoModal, setRecebimentoModal] = useState(false);
@@ -41,14 +49,69 @@ export default function VendasScreen({ navigation }) {
     const [clientSearchText, setClientSearchText] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // New Client Form State
-    const [newClientName, setNewClientName] = useState('');
-    const [newClientPhone, setNewClientPhone] = useState('');
+    // Delete State
+    const [confirmVisible, setConfirmVisible] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState(null);
+
+    const DRAFT_KEY = '@draft_VendasScreen_v2';
+
+    const isDark = theme === 'dark' || theme === 'ultra_premium';
+
+    // Rascunho - Recuperação
+    useEffect(() => {
+        const checkDraft = async () => {
+            try {
+                const saved = await AsyncStorage.getItem(DRAFT_KEY);
+                if (saved) {
+                    Alert.alert(
+                        'Rascunho Encontrado',
+                        'Existe uma venda não finalizada. Deseja continuá-la?',
+                        [
+                            { text: 'Descartar', style: 'destructive', onPress: () => AsyncStorage.removeItem(DRAFT_KEY) },
+                            {
+                                text: 'Continuar', onPress: () => {
+                                    const draft = JSON.parse(saved);
+                                    setCliente(draft.cliente || '');
+                                    setProduto(draft.produto || '');
+                                    setQuantidade(draft.quantidade || '');
+                                    setValor(draft.valor || '');
+                                    setObservacao(draft.observacao || '');
+                                    setStatusPagamento(draft.statusPagamento || 'A_RECEBER');
+                                }
+                            }
+                        ]
+                    );
+                }
+            } catch (e) { console.log('Draft error:', e); }
+        };
+        setTimeout(checkDraft, 600);
+    }, []);
+
+    // Rascunho - Auto-Save
+    useEffect(() => {
+        const saveDraft = async () => {
+            if (!editingUuid && (cliente || produto || quantidade || valor)) {
+                await AsyncStorage.setItem(DRAFT_KEY, JSON.stringify({ cliente, produto, quantidade, valor, observacao, statusPagamento }));
+            } else if (!editingUuid && !cliente && !produto && !quantidade && !valor) {
+                await AsyncStorage.removeItem(DRAFT_KEY);
+            }
+        };
+        const timer = setTimeout(saveDraft, 1000);
+        return () => clearTimeout(timer);
+    }, [cliente, produto, quantidade, valor, observacao, statusPagamento, editingUuid]);
 
     useFocusEffect(useCallback(() => {
         loadInitialData();
         loadHistory();
     }, []));
+
+    useEffect(() => {
+        if (route?.params?.newClient) {
+            setCliente(route.params.newClient.nome.toUpperCase());
+            getClientes().then(setClients);
+            navigation.setParams({ newClient: undefined });
+        }
+    }, [route?.params?.newClient]);
 
     const loadInitialData = async () => {
         setLoading(true);
@@ -60,7 +123,7 @@ export default function VendasScreen({ navigation }) {
             const allClients = await getClientes();
             setClients(allClients);
         } catch (e) {
-            console.error(e);
+            console.error('[SCREEN ERROR]', e);
         } finally {
             setLoading(false);
         }
@@ -72,32 +135,6 @@ export default function VendasScreen({ navigation }) {
     };
 
     const up = (t, setter) => setter(t.toUpperCase());
-
-    const handleSaveClient = async () => {
-        if (!newClientName.trim()) return Alert.alert('Erro', 'Nome do cliente obrigatório');
-        try {
-            const uuid = uuidv4();
-            await insertCliente({
-                uuid,
-                nome: newClientName,
-                telefone: newClientPhone,
-                endereco: '',
-                cpf_cnpj: '',
-                observacao: 'CADASTRADO NA VENDA'
-            });
-            setNewClientName('');
-            setNewClientPhone('');
-            setNewClientModal(false);
-
-            // Reload clients and select the new one
-            const updatedClients = await getClientes();
-            setClients(updatedClients);
-            setCliente(newClientName.toUpperCase());
-            setClientModalVisible(false);
-        } catch (e) {
-            Alert.alert('Erro', 'Falha ao criar cliente');
-        }
-    };
 
     const salvar = async () => {
         if (!produto || !quantidade || !valor) {
@@ -120,11 +157,11 @@ export default function VendasScreen({ navigation }) {
         try {
             if (editingUuid) {
                 await updateVenda(editingUuid, dados);
-                Alert.alert('Sucesso', 'Venda atualizada!');
+                showToast('Venda atualizada com sucesso!');
                 setEditingUuid(null);
             } else {
                 await insertVenda(dados);
-                Alert.alert('Sucesso', 'Venda registrada!');
+                showToast('Venda registrada com sucesso!');
             }
 
             setProduto('');
@@ -133,8 +170,9 @@ export default function VendasScreen({ navigation }) {
             setObservacao('');
             setStatusPagamento('A_RECEBER');
 
+            await AsyncStorage.removeItem(DRAFT_KEY);
             loadHistory();
-            AutoSyncService.trigger(); // 🔄 envia para a nuvem
+            AutoSyncService.trigger();
         } catch (error) {
             Alert.alert('Erro', 'Falha ao processar venda.');
         }
@@ -148,21 +186,21 @@ export default function VendasScreen({ navigation }) {
         setValor(item.valor.toString());
         setObservacao(item.observacao || '');
         setStatusPagamento(item.status_pagamento || 'A_RECEBER');
-        // Scroll to top?
     };
 
     const handleDelete = (item) => {
-        Alert.alert('Excluir', 'Deseja excluir esta venda?', [
-            { text: 'Cancelar', style: 'cancel' },
-            {
-                text: 'Excluir',
-                style: 'destructive',
-                onPress: async () => {
-                    await deleteVenda(item.uuid);
-                    loadHistory();
-                }
-            }
-        ]);
+        setItemToDelete(item);
+        setConfirmVisible(true);
+    };
+
+    const confirmDelete = async () => {
+        if (itemToDelete) {
+            await deleteVenda(itemToDelete.uuid);
+            setConfirmVisible(false);
+            setItemToDelete(null);
+            showToast('Venda excluída com sucesso!');
+            loadHistory();
+        }
     };
 
     const getFilteredItems = () => {
@@ -204,290 +242,362 @@ export default function VendasScreen({ navigation }) {
         return history.filter(h => h.status_pagamento === 'RECEBIDO');
     };
 
-    const scaleAnim = new Animated.Value(1);
-    const pressIn = () => Animated.spring(scaleAnim, { toValue: 0.97, useNativeDriver: true }).start();
-    const pressOut = () => Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
-
     return (
-        <LinearGradient colors={['#0F3D2E', '#145C43']} style={{ flex: 1 }}>
-            {/* HEADER */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 6 }}>
-                    <Ionicons name="arrow-back" size={24} color="#FFF" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{editingUuid ? 'EDITAR VENDA' : 'REGISTRAR VENDA'}</Text>
-                <View style={{ width: 36 }} />
-            </View>
+        <AppContainer>
+            <ScreenHeader
+                title="VENDAS & SAÍDAS"
+                onBack={() => navigation.goBack()}
+            />
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-                <View style={styles.card}>
-                    <Text style={styles.cardLabel}>FATURAMENTO E SAÍDA DE ESTOQUE</Text>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
-                    <Text style={styles.label}>CLIENTE / PARCEIRO</Text>
-                    <TouchableOpacity style={styles.selectBtn} onPress={() => setClientModalVisible(true)}>
-                        <Text style={[styles.selectText, !cliente && { color: '#6B7280' }]}>{cliente || 'SELECIONAR CLIENTE...'}</Text>
-                        <Ionicons name="people-outline" size={18} color="#34D399" />
+                {/* BLOCO DE ENTRADA */}
+                <GlowCard style={styles.card}>
+                    <Text style={[styles.sectionTitle, { color: colors.primary }]}>DADOS DA TRANSAÇÃO</Text>
+
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>CLIENTE / PARCEIRO</Text>
+                    <TouchableOpacity
+                        style={[styles.selectBtn, { backgroundColor: colors.cardAlt, borderColor: colors.glassBorder }]}
+                        onPress={() => setClientModalVisible(true)}
+                    >
+                        <Text style={[styles.selectText, { color: colors.textPrimary }, !cliente && { color: colors.placeholder }]}>
+                            {cliente || 'SELECIONAR CLIENTE...'}
+                        </Text>
+                        <Ionicons name="people-outline" size={18} color={colors.primary} />
                     </TouchableOpacity>
 
-                    <Text style={styles.label}>PRODUTO VENDIDO *</Text>
-                    <TouchableOpacity style={styles.selectBtn} onPress={() => setModalVisible(true)}>
-                        <Text style={[styles.selectText, !produto && { color: '#6B7280' }]}>{produto || 'SELECIONAR PRODUTO...'}</Text>
-                        <Ionicons name="chevron-down" size={18} color="#34D399" />
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>PRODUTO VENDIDO *</Text>
+                    <TouchableOpacity
+                        style={[styles.selectBtn, { backgroundColor: colors.cardAlt, borderColor: colors.glassBorder }]}
+                        onPress={() => setModalVisible(true)}
+                    >
+                        <Text style={[styles.selectText, { color: colors.textPrimary }, !produto && { color: colors.placeholder }]}>
+                            {produto || 'SELECIONAR PRODUTO...'}
+                        </Text>
+                        <Ionicons name="cube-outline" size={18} color={colors.primary} />
                     </TouchableOpacity>
 
-                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <View style={styles.row}>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.label}>QTD *</Text>
-                            <TextInput style={styles.input} placeholder="0.00" placeholderTextColor="#6B7280" value={quantidade} onChangeText={setQuantidade} keyboardType="decimal-pad" />
+                            <Text style={[styles.label, { color: colors.textSecondary }]}>QTD *</Text>
+                            <GlowInput
+                                placeholder="0.00"
+                                value={quantidade}
+                                onChangeText={setQuantidade}
+                                keyboardType="decimal-pad"
+                                style={{ marginBottom: 0 }}
+                            />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.label}>VALOR R$ *</Text>
-                            <TextInput style={styles.input} placeholder="0.00" placeholderTextColor="#6B7280" value={valor} onChangeText={setValor} keyboardType="decimal-pad" />
+                            <Text style={[styles.label, { color: colors.textSecondary }]}>VALOR TOTAL R$ *</Text>
+                            <GlowInput
+                                placeholder="0.00"
+                                value={valor}
+                                onChangeText={setValor}
+                                keyboardType="decimal-pad"
+                                style={{ marginBottom: 0 }}
+                            />
                         </View>
                     </View>
 
-                    <Text style={styles.label}>OBSERVAÇÕES</Text>
-                    <TextInput style={[styles.input, { height: 70, textAlignVertical: 'top' }]} placeholder="Detalhes..." placeholderTextColor="#6B7280" value={observacao} onChangeText={(t) => up(t, setObservacao)} multiline />
+                    <Text style={[styles.label, { color: colors.textSecondary, marginTop: 15 }]}>OBSERVAÇÕES (OPCIONAL)</Text>
+                    <GlowInput
+                        placeholder="Detalhes adicionais..."
+                        value={observacao}
+                        onChangeText={(t) => up(t, setObservacao)}
+                        multiline
+                        style={{ height: 80, textAlignVertical: 'top' }}
+                    />
 
-                    <Text style={styles.label}>STATUS DO PAGAMENTO</Text>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>STATUS FINANCEIRO</Text>
                     <View style={styles.radioGroup}>
-                        <TouchableOpacity style={[styles.radioBtn, statusPagamento === 'A_RECEBER' && styles.radioActiveA]} onPress={() => setStatusPagamento('A_RECEBER')}>
-                            <View style={[styles.radioDot, statusPagamento === 'A_RECEBER' && styles.radioDotActiveA]} />
-                            <Text style={[styles.radioText, statusPagamento === 'A_RECEBER' && { color: '#FCD34D' }]}>A RECEBER</Text>
+                        <TouchableOpacity
+                            style={[
+                                styles.radioBtn,
+                                { backgroundColor: colors.cardAlt, borderColor: colors.glassBorder },
+                                statusPagamento === 'A_RECEBER' && { borderColor: colors.warning, backgroundColor: colors.warning + '10' }
+                            ]}
+                            onPress={() => setStatusPagamento('A_RECEBER')}
+                        >
+                            <View style={[styles.radioDot, { borderColor: colors.placeholder }, statusPagamento === 'A_RECEBER' && { borderColor: colors.warning, backgroundColor: colors.warning }]} />
+                            <Text style={[styles.radioText, { color: colors.textSecondary }, statusPagamento === 'A_RECEBER' && { color: colors.warningDark, fontWeight: '900' }]}>A RECEBER</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.radioBtn, statusPagamento === 'RECEBIDO' && styles.radioActiveR]} onPress={() => setStatusPagamento('RECEBIDO')}>
-                            <View style={[styles.radioDot, statusPagamento === 'RECEBIDO' && styles.radioDotActiveR]} />
-                            <Text style={[styles.radioText, statusPagamento === 'RECEBIDO' && { color: '#34D399' }]}>RECEBIDO</Text>
+
+                        <TouchableOpacity
+                            style={[
+                                styles.radioBtn,
+                                { backgroundColor: colors.cardAlt, borderColor: colors.glassBorder },
+                                statusPagamento === 'RECEBIDO' && { borderColor: colors.primary, backgroundColor: colors.primary + '10' }
+                            ]}
+                            onPress={() => setStatusPagamento('RECEBIDO')}
+                        >
+                            <View style={[styles.radioDot, { borderColor: colors.placeholder }, statusPagamento === 'RECEBIDO' && { borderColor: colors.primary, backgroundColor: colors.primary }]} />
+                            <Text style={[styles.radioText, { color: colors.textSecondary }, statusPagamento === 'RECEBIDO' && { color: colors.primary, fontWeight: '900' }]} >RECEBIDO</Text>
                         </TouchableOpacity>
                     </View>
 
-                    <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+                    <View style={{ marginTop: 20 }}>
+                        <PrimaryButton
+                            label={editingUuid ? 'ATUALIZAR VENDA' : 'CONFIRMAR VENDA'}
+                            onPress={salvar}
+                            icon={editingUuid ? "save-outline" : "checkmark-circle-outline"}
+                        />
                         {editingUuid && (
-                            <TouchableOpacity style={[styles.btn, { backgroundColor: '#EF4444', flex: 1 }]} onPress={() => { setEditingUuid(null); setProduto(''); setQuantidade(''); setValor(''); setObservacao(''); }}>
-                                <Text style={styles.btnText}>CANCELAR</Text>
+                            <TouchableOpacity
+                                style={styles.cancelLink}
+                                onPress={() => { setEditingUuid(null); setProduto(''); setQuantidade(''); setValor(''); setObservacao(''); setStatusPagamento('A_RECEBER'); }}
+                            >
+                                <Text style={{ color: colors.danger, fontWeight: 'bold', fontSize: 12 }}>CANCELAR EDIÇÃO</Text>
                             </TouchableOpacity>
                         )}
-                        <Animated.View style={[{ flex: 2 }, { transform: [{ scale: scaleAnim }] }]}>
-                            <TouchableOpacity style={styles.btn} onPress={salvar} onPressIn={pressIn} onPressOut={pressOut}>
-                                <Ionicons name="checkmark-circle" size={20} color="#FFF" style={{ marginRight: 8 }} />
-                                <Text style={styles.btnText}>{editingUuid ? 'SALVAR ALTERAÇÕES' : 'CONFIRMAR VENDA'}</Text>
-                            </TouchableOpacity>
-                        </Animated.View>
                     </View>
-                </View>
+                </GlowCard>
 
                 {/* HISTÓRICO */}
-                <View style={styles.historyHeader}>
-                    <Text style={styles.historyTitle}>ÚCTIMAS VENDAS</Text>
-                    <View style={styles.filterGroup}>
+                <View style={styles.historySection}>
+                    <Text style={[styles.historyTitle, { color: colors.textMuted }]}>ÚLTIMOS REGISTROS</Text>
+
+                    <View style={styles.filterBar}>
                         {['TODAS', 'A_RECEBER', 'RECEBIDAS'].map((f) => (
-                            <TouchableOpacity key={f} style={[styles.filterPill, filterStatus === f && styles.filterPillActive]} onPress={() => setFilterStatus(f)}>
-                                <Text style={[styles.filterPillText, filterStatus === f && styles.filterPillTextActive]}>{f === 'A_RECEBER' ? 'A RECEBER' : f}</Text>
+                            <TouchableOpacity
+                                key={f}
+                                style={[
+                                    styles.filterPill,
+                                    { backgroundColor: colors.card, borderColor: colors.glassBorder },
+                                    filterStatus === f && { backgroundColor: colors.primary, borderColor: colors.primary }
+                                ]}
+                                onPress={() => setFilterStatus(f)}
+                            >
+                                <Text style={[styles.filterPillText, { color: colors.textSecondary }, filterStatus === f && { color: '#FFF' }]}>
+                                    {f === 'RECEBIDAS' ? 'PAGAS' : f.replace('_', ' ')}
+                                </Text>
                             </TouchableOpacity>
                         ))}
                     </View>
+
+                    {getFilteredHistory().map(item => {
+                        const isReceived = item.status_pagamento === 'RECEBIDO';
+                        return (
+                            <GlowCard key={item.uuid} style={styles.historyItem}>
+                                <View style={styles.historyInfo}>
+                                    <View style={styles.historyHeaderRow}>
+                                        <Text style={[styles.hProd, { color: colors.textPrimary }]}>{item.produto}</Text>
+                                        <View style={[styles.statusBadge, { backgroundColor: isReceived ? colors.primary + '15' : colors.warning + '15' }]}>
+                                            <Text style={[styles.statusBadgeText, { color: isReceived ? colors.primary : colors.warningDark }]}>
+                                                {isReceived ? 'PAGO' : 'PENDENTE'}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    <Text style={[styles.hSub, { color: colors.textMuted }]}>
+                                        {item.cliente} • {new Date(item.data).toLocaleDateString('pt-BR')}
+                                    </Text>
+                                    <Text style={[styles.hVal, { color: colors.primary }]}>
+                                        {item.quantidade} un • R$ {item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    </Text>
+                                </View>
+
+                                <View style={styles.actions}>
+                                    {!isReceived && (
+                                        <TouchableOpacity onPress={() => handleBaixar(item)} style={[styles.actionBtn, { backgroundColor: colors.primary + '10' }]}>
+                                            <Ionicons name="cash" size={18} color={colors.primary} />
+                                        </TouchableOpacity>
+                                    )}
+                                    <TouchableOpacity onPress={() => handleEdit(item)} style={[styles.actionBtn, { backgroundColor: colors.cardAlt }]}>
+                                        <Ionicons name="create-outline" size={18} color={colors.textSecondary} />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => handleDelete(item)} style={[styles.actionBtn, { backgroundColor: colors.cardAlt }]}>
+                                        <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                                    </TouchableOpacity>
+                                </View>
+                            </GlowCard>
+                        );
+                    })}
                 </View>
 
-                {getFilteredHistory().map(item => {
-                    const isReceived = item.status_pagamento === 'RECEBIDO';
-                    return (
-                        <View key={item.uuid} style={styles.historyItem}>
-                            <View style={{ flex: 1 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                                    <Text style={styles.hProd}>{item.produto}</Text>
-                                    <View style={[styles.statusBadge, isReceived ? styles.badgeGreen : styles.badgeYellow]}>
-                                        <Text style={[styles.statusBadgeText, isReceived ? styles.badgeTextGreen : styles.badgeTextYellow]}>
-                                            {isReceived ? 'RECEBIDO' : 'A RECEBER'}
-                                        </Text>
-                                    </View>
-                                </View>
-                                <Text style={styles.hSub}>{item.cliente} • {new Date(item.data).toLocaleDateString()}</Text>
-                                <Text style={styles.hVal}>{item.quantidade} x R$ {item.valor.toFixed(2)}</Text>
-                            </View>
-                            <View style={styles.actions}>
-                                {!isReceived && (
-                                    <TouchableOpacity onPress={() => handleBaixar(item)} style={[styles.actionBtn, { backgroundColor: 'rgba(52,211,153,0.15)' }]}>
-                                        <Ionicons name="checkmark-done" size={18} color="#34D399" />
-                                    </TouchableOpacity>
-                                )}
-                                <TouchableOpacity onPress={() => handleEdit(item)} style={styles.actionBtn}>
-                                    <Ionicons name="create-outline" size={18} color="#60A5FA" />
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={() => handleDelete(item)} style={styles.actionBtn}>
-                                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    );
-                })}
+                {getFilteredHistory().length === 0 && (
+                    <View style={styles.emptyState}>
+                        <Ionicons name="receipt-outline" size={48} color={colors.placeholder} />
+                        <Text style={[styles.emptyText, { color: colors.textMuted }]}>Nenhuma venda encontrada no filtro selecionado.</Text>
+                    </View>
+                )}
+
+                <View style={{ height: 40 }} />
             </ScrollView>
 
-            {/* PRODUCT MODAL */}
-            <Modal visible={modalVisible} animationType="slide" transparent>
-                <View style={styles.overlay}>
-                    <View style={styles.modalBg}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>SELECIONAR PRODUTO</Text>
-                            <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <Ionicons name="close" size={24} color="#9CA3AF" />
-                            </TouchableOpacity>
-                        </View>
-                        <TextInput style={styles.searchBar} placeholder="Buscar..." placeholderTextColor="#9CA3AF" value={searchText} onChangeText={t => up(t, setSearchText)} />
-                        <FlatList data={getFilteredItems()} keyExtractor={i => i.uuid || i.id.toString()} renderItem={({ item }) => (
-                            <TouchableOpacity style={styles.itemRow} onPress={() => { setProduto(item.nome); setModalVisible(false); }}>
-                                <Text style={styles.itemText}>{item.nome}</Text>
-                                <Text style={styles.itemSub}>{item.unidade}</Text>
-                            </TouchableOpacity>
-                        )} />
+            {/* MODALS */}
+            <Modal visible={modalVisible} animationType="slide">
+                <AppContainer>
+                    <ScreenHeader title="SELECIONAR PRODUTO" onBack={() => setModalVisible(false)} />
+                    <View style={styles.modalContent}>
+                        <GlowInput
+                            placeholder="Pesquisar produto..."
+                            value={searchText}
+                            onChangeText={t => up(t, setSearchText)}
+                            autoFocus
+                        />
+                        <FlatList
+                            data={getFilteredItems()}
+                            keyExtractor={i => i.uuid || i.id.toString()}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.glassBorder }]}
+                                    onPress={() => { setProduto(item.nome); setModalVisible(false); }}
+                                >
+                                    <View>
+                                        <Text style={[styles.listItemTitle, { color: colors.textPrimary }]}>{item.nome}</Text>
+                                        <Text style={[styles.listItemSub, { color: colors.textMuted }]}>{item.unidade}</Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+                                </TouchableOpacity>
+                            )}
+                        />
                     </View>
-                </View>
+                </AppContainer>
             </Modal>
 
-            {/* CLIENT MODAL */}
-            <Modal visible={clientModalVisible} animationType="slide" transparent>
-                <View style={styles.overlay}>
-                    <View style={styles.modalBg}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>SELECIONAR CLIENTE</Text>
-                            <TouchableOpacity onPress={() => setClientModalVisible(false)}>
-                                <Ionicons name="close" size={24} color="#9CA3AF" />
+            <Modal visible={clientModalVisible} animationType="slide">
+                <AppContainer>
+                    <ScreenHeader
+                        title="CLIENTE / PARCEIRO"
+                        onBack={() => setClientModalVisible(false)}
+                        rightElement={
+                            <TouchableOpacity onPress={() => { setClientModalVisible(false); navigation.navigate('ClienteForm', { returnTo: 'Vendas' }); }}>
+                                <Ionicons name="person-add" size={22} color={colors.primary} />
                             </TouchableOpacity>
-                        </View>
-                        <TouchableOpacity style={styles.newClientBtn} onPress={() => setNewClientModal(true)}>
-                            <Ionicons name="add-circle" size={22} color="#FFF" />
-                            <Text style={styles.newClientText}>CADASTRAR NOVO CLIENTE</Text>
-                        </TouchableOpacity>
-                        <TextInput style={styles.searchBar} placeholder="Buscar cliente..." placeholderTextColor="#9CA3AF" value={clientSearchText} onChangeText={t => up(t, setClientSearchText)} />
-                        <FlatList data={getFilteredClients()} keyExtractor={i => i.uuid || i.id.toString()} renderItem={({ item }) => (
-                            <TouchableOpacity style={styles.itemRow} onPress={() => { setCliente(item.nome); setClientModalVisible(false); }}>
-                                <Text style={styles.itemText}>{item.nome}</Text>
-                                <Text style={styles.itemSub}>{item.telefone || 'Sem telefone'}</Text>
-                            </TouchableOpacity>
-                        )} ListHeaderComponent={
-                            <TouchableOpacity style={styles.itemRow} onPress={() => { setCliente('BALCÃO'); setClientModalVisible(false); }}>
-                                <Text style={styles.itemText}>BALCÃO / AVULSO</Text>
-                                <Text style={styles.itemSub}>Venda sem cadastro</Text>
-                            </TouchableOpacity>
-                        } />
+                        }
+                    />
+                    <View style={styles.modalContent}>
+                        <GlowInput
+                            placeholder="Filtrar por nome..."
+                            value={clientSearchText}
+                            onChangeText={t => up(t, setClientSearchText)}
+                            autoFocus
+                        />
+                        <FlatList
+                            data={getFilteredClients()}
+                            keyExtractor={i => i.uuid || i.id.toString()}
+                            ListHeaderComponent={
+                                <TouchableOpacity
+                                    style={[styles.listItem, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30' }]}
+                                    onPress={() => { setCliente('BALCÃO'); setClientModalVisible(false); }}
+                                >
+                                    <View>
+                                        <Text style={[styles.listItemTitle, { color: colors.primary }]}>BALCÃO / CONSUMIDOR FINAL</Text>
+                                        <Text style={[styles.listItemSub, { color: colors.primary }]}>Venda rápida sem identificação</Text>
+                                    </View>
+                                    <Ionicons name="flash-outline" size={18} color={colors.primary} />
+                                </TouchableOpacity>
+                            }
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.glassBorder }]}
+                                    onPress={() => { setCliente(item.nome); setClientModalVisible(false); }}
+                                >
+                                    <View>
+                                        <Text style={[styles.listItemTitle, { color: colors.textPrimary }]}>{item.nome}</Text>
+                                        <Text style={[styles.listItemSub, { color: colors.textMuted }]}>{item.telefone || 'Sem contato'}</Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+                                </TouchableOpacity>
+                            )}
+                        />
                     </View>
-                </View>
+                </AppContainer>
             </Modal>
 
-            {/* NEW CLIENT FORM */}
-            <Modal visible={newClientModal} animationType="fade" transparent>
-                <View style={styles.overlayCenter}>
-                    <View style={styles.miniModal}>
-                        <Text style={styles.modalTitle}>Novo Cliente</Text>
-                        <TextInput style={[styles.input, { marginTop: 16 }]} placeholder="Nome *" placeholderTextColor="#6B7280" value={newClientName} onChangeText={t => up(t, setNewClientName)} />
-                        <TextInput style={styles.input} placeholder="Telefone" placeholderTextColor="#6B7280" value={newClientPhone} onChangeText={setNewClientPhone} keyboardType="phone-pad" />
-                        <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
-                            <TouchableOpacity style={[styles.btn, { backgroundColor: '#6B7280', flex: 1 }]} onPress={() => setNewClientModal(false)}>
-                                <Text style={styles.btnText}>CANCELAR</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.btn, { flex: 1 }]} onPress={handleSaveClient}>
-                                <Text style={styles.btnText}>SALVAR</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* MODAL MARCAR COMO RECEBIDO */}
+            {/* CONFIRMAR RECEBIMENTO MODAL */}
             <Modal visible={recebimentoModal} transparent animationType="fade">
                 <View style={styles.overlayCenter}>
-                    <View style={styles.miniModal}>
-                        <Text style={styles.modalTitle}>✅ CONFIRMAR RECEBIMENTO</Text>
+                    <GlowCard style={styles.miniModal}>
+                        <Text style={[styles.miniModalTitle, { color: colors.textPrimary }]}>CONFIRMAR RECEBIMENTO</Text>
                         {recebimentoItem && (
-                            <Text style={{ color: DARK.textSecondary, marginVertical: 12, fontSize: 13 }}>
-                                Venda: <Text style={{ color: DARK.textPrimary, fontWeight: 'bold' }}>{recebimentoItem.produto}</Text>{'\n'}
-                                Cliente: <Text style={{ color: DARK.textPrimary, fontWeight: 'bold' }}>{recebimentoItem.cliente}</Text>
-                            </Text>
+                            <View style={[styles.receivedSummary, { backgroundColor: colors.cardAlt }]}>
+                                <Text style={[styles.summaryText, { color: colors.textMuted }]}>Produto: <Text style={{ color: colors.textPrimary }}>{recebimentoItem.produto}</Text></Text>
+                                <Text style={[styles.summaryText, { color: colors.textMuted }]}>Valor Original: <Text style={{ color: colors.textPrimary }}>R$ {recebimentoItem.valor.toFixed(2)}</Text></Text>
+                            </View>
                         )}
-                        <Text style={styles.label}>VALOR RECEBIDO (R$)</Text>
-                        <TextInput
-                            style={styles.input}
+
+                        <Text style={[styles.label, { color: colors.textSecondary }]}>VALOR RECEBIDO</Text>
+                        <GlowInput
                             placeholder="0.00"
-                            placeholderTextColor={DARK.textMuted}
                             value={valorRecebido}
                             onChangeText={setValorRecebido}
                             keyboardType="decimal-pad"
                         />
-                        <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
+
+                        <View style={styles.modalActions}>
                             <TouchableOpacity
-                                style={[styles.btn, { flex: 1, backgroundColor: 'rgba(255,255,255,0.07)', shadowOpacity: 0 }]}
+                                style={[styles.modalBtnCancel, { borderColor: colors.glassBorder }]}
                                 onPress={() => { setRecebimentoModal(false); setRecebimentoItem(null); }}
                             >
-                                <Text style={[styles.btnText, { color: DARK.textMuted }]}>CANCELAR</Text>
+                                <Text style={{ color: colors.textMuted, fontWeight: 'bold' }}>VOLTAR</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={[styles.btn, { flex: 1 }]} onPress={confirmarRecebimento}>
-                                <Ionicons name="checkmark-circle" size={18} color="#061E1A" />
-                                <Text style={[styles.btnText, { marginLeft: 6 }]}>CONFIRMAR</Text>
+                            <TouchableOpacity style={[styles.modalBtnConfirm, { backgroundColor: colors.primary }]} onPress={confirmarRecebimento}>
+                                <Text style={{ color: '#FFF', fontWeight: 'bold' }}>BAIXAR PAGAMENTO</Text>
                             </TouchableOpacity>
                         </View>
-                    </View>
+                    </GlowCard>
                 </View>
             </Modal>
-        </LinearGradient>
+
+            <ConfirmModal
+                visible={confirmVisible}
+                title="EXCLUIR REGISTRO"
+                message="Deseja realmente apagar esta venda? Esta ação não pode ser desfeita."
+                onConfirm={confirmDelete}
+                onCancel={() => setConfirmVisible(false)}
+            />
+        </AppContainer>
     );
 }
 
-
 const styles = StyleSheet.create({
-    header: { paddingTop: 55, paddingBottom: 18, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    headerTitle: { fontSize: 16, fontWeight: '700', color: DARK.textPrimary, letterSpacing: 0.5 },
+    scrollContent: { padding: 20 },
+    card: { padding: 20, marginBottom: 25 },
+    sectionTitle: { fontSize: 10, fontWeight: '900', letterSpacing: 1.5, marginBottom: 15 },
+    label: { fontSize: 10, fontWeight: '900', letterSpacing: 1, marginBottom: 8 },
+    row: { flexDirection: 'row', gap: 12, marginBottom: 15 },
+    selectBtn: { height: 50, borderRadius: 14, borderWidth: 1, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 },
+    selectText: { fontSize: 15, fontWeight: '600' },
+    radioGroup: { flexDirection: 'row', gap: 10, marginTop: 5 },
+    radioBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 14, padding: 15, gap: 10 },
+    radioDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 1.5 },
+    radioText: { fontSize: 11 },
+    cancelLink: { marginTop: 15, padding: 5, alignSelf: 'center' },
 
-    card: { backgroundColor: DARK.card, borderRadius: 22, padding: 22, borderWidth: 1, borderColor: DARK.glowBorder, marginBottom: 28, elevation: 5, shadowColor: '#00FF9C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 10 },
-    cardLabel: { fontSize: 11, fontWeight: '900', color: DARK.glow, letterSpacing: 1.5, marginBottom: 18 },
+    historySection: { marginTop: 10 },
+    historyTitle: { fontSize: 10, fontWeight: '900', letterSpacing: 1.5, marginBottom: 15, marginLeft: 5 },
+    historyItem: { padding: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center' },
+    historyInfo: { flex: 1 },
+    historyHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 },
+    hProd: { fontSize: 15, fontWeight: 'bold' },
+    hSub: { fontSize: 11, marginBottom: 4 },
+    hVal: { fontSize: 13, fontWeight: '900' },
 
-    label: { fontSize: 10, fontWeight: '900', color: DARK.textMuted, letterSpacing: 1.2, marginBottom: 8, marginTop: 4 },
-    input: { backgroundColor: DARK.card, borderWidth: 1, borderColor: DARK.glowBorderStrong, borderRadius: 14, padding: 15, fontSize: 15, color: DARK.textPrimary, marginBottom: 16 },
-    selectBtn: { backgroundColor: DARK.card, borderWidth: 1, borderColor: DARK.glowBorderStrong, borderRadius: 14, padding: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-    selectText: { fontSize: 14, fontWeight: '600', color: DARK.textPrimary },
+    statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+    statusBadgeText: { fontSize: 9, fontWeight: '900' },
 
-    btn: { backgroundColor: DARK.glow, paddingVertical: 17, borderRadius: 20, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', elevation: 4, shadowColor: '#00FF9C', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.45, shadowRadius: 8 },
-    btnText: { color: '#061E1A', fontSize: 13, fontWeight: '900', letterSpacing: 1 },
+    actions: { flexDirection: 'row', gap: 8 },
+    actionBtn: { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
 
-    historyHeader: { paddingHorizontal: 4, marginBottom: 14 },
-    historyTitle: { fontSize: 11, fontWeight: '900', color: DARK.textMuted, letterSpacing: 1.2, marginBottom: 10 },
-    historyItem: { backgroundColor: DARK.card, padding: 16, borderRadius: 16, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: DARK.glowBorder },
-    hProd: { fontSize: 14, fontWeight: 'bold', color: DARK.textPrimary },
-    hSub: { fontSize: 11, color: DARK.textSecondary, marginTop: 2 },
-    hVal: { fontSize: 12, fontWeight: '900', color: DARK.glow, marginTop: 4 },
-    actions: { flexDirection: 'row', gap: 6, alignItems: 'center' },
-    actionBtn: { padding: 8, backgroundColor: 'rgba(0,255,156,0.08)', borderRadius: 10, borderWidth: 1, borderColor: DARK.glowBorder },
+    filterBar: { flexDirection: 'row', gap: 8, marginBottom: 15 },
+    filterPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+    filterPillText: { fontSize: 10, fontWeight: '900' },
 
-    radioGroup: { flexDirection: 'row', gap: 10, marginBottom: 4 },
-    radioBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,255,156,0.04)', borderWidth: 1, borderColor: DARK.glowBorder, borderRadius: 14, padding: 14 },
-    radioDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 1.5, borderColor: DARK.textMuted, marginRight: 10 },
-    radioText: { fontSize: 12, fontWeight: 'bold', color: DARK.textMuted },
-    radioActiveA: { borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,0.1)' },
-    radioDotActiveA: { borderColor: '#B45309', backgroundColor: '#F59E0B' },
-    radioActiveR: { borderColor: DARK.glow, backgroundColor: 'rgba(0,255,156,0.1)' },
-    radioDotActiveR: { borderColor: '#047857', backgroundColor: DARK.glow },
+    modalContent: { flex: 1, padding: 20 },
+    listItem: { padding: 16, borderRadius: 16, borderWidth: 1, marginBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    listItemTitle: { fontSize: 15, fontWeight: 'bold' },
+    listItemSub: { fontSize: 12, marginTop: 2 },
 
-    filterGroup: { flexDirection: 'row', gap: 8, marginTop: 8 },
-    filterPill: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20, backgroundColor: 'rgba(0,255,156,0.05)', borderWidth: 1, borderColor: DARK.glowBorder },
-    filterPillActive: { backgroundColor: DARK.glow, borderColor: DARK.glow },
-    filterPillText: { fontSize: 10, fontWeight: 'bold', color: DARK.textMuted },
-    filterPillTextActive: { color: '#061E1A' },
-
-    statusBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 8 },
-    statusBadgeText: { fontSize: 9, fontWeight: 'bold' },
-    badgeYellow: { backgroundColor: 'rgba(245,158,11,0.2)' },
-    badgeTextYellow: { color: '#FCD34D' },
-    badgeGreen: { backgroundColor: 'rgba(0,255,156,0.15)' },
-    badgeTextGreen: { color: DARK.glow },
-
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
     overlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 25 },
-    modalBg: { backgroundColor: DARK.modal, borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '80%', padding: 22, borderWidth: 1, borderColor: DARK.glowBorder },
-    miniModal: { backgroundColor: DARK.modal, borderRadius: 22, padding: 28, borderWidth: 1, borderColor: DARK.glowBorder },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 },
-    modalTitle: { fontSize: 16, fontWeight: '900', color: DARK.textPrimary },
-    searchBar: { backgroundColor: DARK.card, padding: 13, borderRadius: 12, marginBottom: 12, fontSize: 14, color: DARK.textPrimary, borderWidth: 1, borderColor: DARK.glowBorder },
-    itemRow: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
-    itemText: { fontSize: 14, fontWeight: 'bold', color: DARK.textPrimary },
-    itemSub: { fontSize: 10, color: DARK.textMuted, marginTop: 2 },
-    newClientBtn: { flexDirection: 'row', backgroundColor: DARK.glow, padding: 14, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-    newClientText: { color: '#061E1A', fontWeight: 'bold', marginLeft: 10, fontSize: 12 },
+    miniModal: { padding: 25, borderRadius: 24 },
+    miniModalTitle: { fontSize: 18, fontWeight: '900', marginBottom: 20, textAlign: 'center' },
+    receivedSummary: { padding: 15, borderRadius: 12, marginBottom: 20 },
+    summaryText: { fontSize: 13, marginBottom: 5 },
+    modalActions: { flexDirection: 'row', gap: 12, marginTop: 10 },
+    modalBtnCancel: { flex: 1, height: 50, borderRadius: 14, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
+    modalBtnConfirm: { flex: 2, height: 50, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+
+    emptyState: { alignItems: 'center', marginTop: 40, opacity: 0.5 },
+    emptyText: { fontSize: 12, fontWeight: 'bold', marginTop: 10, textAlign: 'center' }
 });

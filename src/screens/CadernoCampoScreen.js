@@ -1,19 +1,29 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar as RNStatusBar, ActivityIndicator, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar as RNStatusBar, ActivityIndicator, Modal, TextInput, Alert, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
+import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { executeQuery, insertCadernoNota } from '../database/database';
+import { useTheme } from '../theme/ThemeContext';
+import { SPACING } from '../design/spacing';
+import { TYPOGRAPHY } from '../design/typography';
+import { RADIUS } from '../design/radius';
+
+const { width } = Dimensions.get('window');
 
 export default function CadernoCampoScreen({ navigation }) {
+    const { colors, isDark } = useTheme();
     const [timeline, setTimeline] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [notaTexto, setNotaTexto] = useState('');
+    const [filter, setFilter] = useState('TODOS');
+
+    const FILTERS = ['TODOS', 'COLHEITA', 'VENDA', 'CUSTO', 'COMPRA', 'PLANTIO', 'ANOTAÇÃO'];
 
     const loadTimeline = async () => {
         setLoading(true);
         try {
-            // MOCK UNIFIED TIMELINE: Lendo Colheitas, Vendas, Custos, Plantio e Anotações
+            // UNIFIED TIMELINE v8.5
             const query = `
                 SELECT 'COLHEITA' as tipo, data, cultura || ' - ' || produto || ' (' || quantidade || 'kg)' as descricao, observacao
                 FROM colheitas WHERE is_deleted = 0
@@ -51,17 +61,19 @@ export default function CadernoCampoScreen({ navigation }) {
 
     useFocusEffect(useCallback(() => { loadTimeline(); }, []));
 
-    const getIcon = (tipo) => {
+    const getIconConfig = (tipo) => {
         switch (tipo) {
-            case 'COLHEITA': return { name: 'leaf', color: '#10B981', bg: '#D1FAE5' };
-            case 'VENDA': return { name: 'cash', color: '#3B82F6', bg: '#DBEAFE' };
-            case 'CUSTO': return { name: 'trending-down', color: '#EF4444', bg: '#FEE2E2' };
-            case 'COMPRA': return { name: 'cart', color: '#F59E0B', bg: '#FEF3C7' };
-            case 'PLANTIO': return { name: 'analytics', color: '#8B5CF6', bg: '#EDE9FE' };
-            case 'ANOTAÇÃO': return { name: 'document-text', color: '#6B7280', bg: '#F3F4F6' };
-            default: return { name: 'ellipse', color: '#9CA3AF', bg: '#F9FAFB' };
+            case 'COLHEITA': return { name: 'leaf', color: '#10B981', bg: '#D1FAE520', emoji: '🌾' };
+            case 'VENDA': return { name: 'cash', color: '#3B82F6', bg: '#DBEAFE20', emoji: '💰' };
+            case 'CUSTO': return { name: 'trending-down', color: '#EF4444', bg: '#FEE2E220', emoji: '📉' };
+            case 'COMPRA': return { name: 'cart', color: '#F59E0B', bg: '#FEF3C720', emoji: '🛒' };
+            case 'PLANTIO': return { name: 'analytics', color: '#8B5CF6', bg: '#EDE9FE20', emoji: '🌱' };
+            case 'ANOTAÇÃO': return { name: 'document-text', color: '#6B7280', bg: '#F3F4F620', emoji: '📝' };
+            default: return { name: 'ellipse', color: '#9CA3AF', bg: '#F9FAFB20', emoji: '📌' };
         }
     };
+
+    const filteredTimeline = filter === 'TODOS' ? timeline : timeline.filter(t => t.tipo === filter);
 
     const handleSaveNota = async () => {
         if (!notaTexto.trim()) {
@@ -83,92 +95,110 @@ export default function CadernoCampoScreen({ navigation }) {
     };
 
     return (
-        <View style={styles.container}>
-            <RNStatusBar barStyle="light-content" backgroundColor="#064E3B" />
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+            <RNStatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
-            {/* HEADER */}
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor: colors.primary }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                     <Ionicons name="arrow-back" size={24} color="#FFF" />
                 </TouchableOpacity>
                 <View>
                     <Text style={styles.headerTitle}>Caderno Agrícola</Text>
-                    <Text style={styles.headerSub}>Histórico Cronológico Auto</Text>
+                    <Text style={styles.headerSub}>Linha do Tempo Profissional v8</Text>
                 </View>
                 <View style={{ width: 24 }} />
             </View>
 
             {loading ? (
                 <View style={styles.center}>
-                    <ActivityIndicator size="large" color="#10B981" />
+                    <ActivityIndicator size="large" color={colors.primary} />
                 </View>
             ) : (
-                <ScrollView contentContainerStyle={styles.scroll}>
-                    {timeline.length === 0 ? (
-                        <View style={styles.emptyState}>
-                            <Ionicons name="journal-outline" size={60} color="#D1D5DB" />
-                            <Text style={styles.emptyText}>Nenhum registro no caderno ainda.</Text>
-                            <Text style={styles.emptySub}>Comece lançando colheitas, vendas ou compras.</Text>
-                        </View>
-                    ) : (
-                        timeline.map((item, index) => {
-                            const iconConfig = getIcon(item.tipo);
-                            let dateLabel = item.data;
-                            if (dateLabel && dateLabel.includes('T')) dateLabel = dateLabel.split('T')[0];
+                <>
+                    <View style={[styles.filterContainer, { backgroundColor: colors.background, borderBottomColor: colors.glassBorder }]}>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillScroll}>
+                            {FILTERS.map(f => (
+                                <TouchableOpacity
+                                    key={f}
+                                    style={[
+                                        styles.filterPill,
+                                        { backgroundColor: colors.card, borderColor: colors.glassBorder },
+                                        filter === f && { backgroundColor: colors.primary, borderColor: colors.primary }
+                                    ]}
+                                    onPress={() => setFilter(f)}
+                                >
+                                    <Text style={[styles.filterPillText, { color: colors.textSecondary }, filter === f && { color: '#FFF' }]}>{f}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
 
-                            return (
-                                <View key={index} style={styles.timelineItem}>
-                                    <View style={styles.timelineLeft}>
-                                        <View style={[styles.iconCircle, { backgroundColor: iconConfig.bg }]}>
-                                            <Ionicons name={iconConfig.name} size={18} color={iconConfig.color} />
-                                        </View>
-                                        {index < timeline.length - 1 && <View style={styles.timelineLine} />}
-                                    </View>
+                    <ScrollView contentContainerStyle={styles.scroll}>
+                        {filteredTimeline.length === 0 ? (
+                            <View style={styles.emptyState}>
+                                <Ionicons name="journal-outline" size={60} color={colors.glassBorder} />
+                                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Nenhum registro encontrado.</Text>
+                            </View>
+                        ) : (
+                            filteredTimeline.map((item, index) => {
+                                const iconCfg = getIconConfig(item.tipo);
+                                const dateObj = new Date(item.data);
+                                const day = String(dateObj.getDate()).padStart(2, '0');
+                                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
 
-                                    <View style={styles.timelineContent}>
-                                        <Text style={styles.dateText}>{dateLabel ? dateLabel.split('-').reverse().join('/') : '--'}</Text>
-                                        <View style={styles.card}>
-                                            <View style={styles.cardTop}>
-                                                <Text style={[styles.tipoBadge, { color: iconConfig.color }]}>{item.tipo}</Text>
+                                return (
+                                    <View key={index} style={styles.timelineItem}>
+                                        <View style={styles.timelineLeft}>
+                                            <View style={[styles.iconCircle, { backgroundColor: iconCfg.color + '20' }]}>
+                                                <Ionicons name={iconCfg.name} size={18} color={iconCfg.color} />
                                             </View>
-                                            <Text style={styles.descText}>{item.descricao}</Text>
-                                            {item.observacao ? (
-                                                <Text style={styles.obsText}>"{item.observacao}"</Text>
-                                            ) : null}
+                                            {index < filteredTimeline.length - 1 && <View style={[styles.timelineLine, { backgroundColor: colors.glassBorder }]} />}
+                                        </View>
+
+                                        <View style={styles.timelineContent}>
+                                            <Text style={[styles.dateText, { color: colors.textMuted }]}>{day}/{month}</Text>
+                                            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.glassBorder }]}>
+                                                <View style={styles.cardTop}>
+                                                    <Text style={[styles.tipoBadge, { color: iconCfg.color }]}>
+                                                        {iconCfg.emoji} {item.tipo}
+                                                    </Text>
+                                                </View>
+                                                <Text style={[styles.descText, { color: colors.textPrimary }]}>{item.descricao}</Text>
+                                                {item.observacao ? (
+                                                    <Text style={[styles.obsText, { color: colors.textSecondary, backgroundColor: colors.background }]}>"{item.observacao}"</Text>
+                                                ) : null}
+                                            </View>
                                         </View>
                                     </View>
-                                </View>
-                            );
-                        })
-                    )}
-                </ScrollView>
+                                );
+                            })
+                        )}
+                    </ScrollView>
+                </>
             )}
 
-            {/* FAB MANUAIS */}
-            <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
+            <TouchableOpacity style={[styles.fab, { backgroundColor: colors.primary }]} onPress={() => setModalVisible(true)}>
                 <Ionicons name="pencil" size={24} color="#FFF" />
             </TouchableOpacity>
 
-            {/* MODAL NOVA NOTA */}
-            <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+            <Modal animationType="slide" transparent={true} visible={modalVisible}>
                 <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Nova Anotação de Campo</Text>
+                            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Anotação de Campo</Text>
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <Ionicons name="close" size={24} color="#6B7280" />
+                                <Ionicons name="close" size={24} color={colors.textSecondary} />
                             </TouchableOpacity>
                         </View>
                         <TextInput
-                            style={styles.inputArea}
-                            placeholder="Descreva observações, anomalias climáticas ou lembretes da lavoura..."
-                            placeholderTextColor="#9CA3AF"
+                            style={[styles.inputArea, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.glassBorder }]}
+                            placeholder="Descreva detalhes da lavoura..."
+                            placeholderTextColor={colors.placeholder}
                             multiline
-                            textAlignVertical="top"
                             value={notaTexto}
                             onChangeText={setNotaTexto}
                         />
-                        <TouchableOpacity style={styles.saveBtn} onPress={handleSaveNota}>
+                        <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary }]} onPress={handleSaveNota}>
                             <Text style={styles.saveBtnText}>Salvar no Caderno</Text>
                         </TouchableOpacity>
                     </View>
@@ -179,13 +209,21 @@ export default function CadernoCampoScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F9FAFB' },
-    header: { backgroundColor: '#064E3B', paddingTop: 50, paddingBottom: 20, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    container: { flex: 1 },
+    header: { paddingTop: 50, paddingBottom: 20, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     headerTitle: { color: '#FFF', fontSize: 20, fontWeight: 'bold' },
-    headerSub: { color: '#A7F3D0', fontSize: 12 },
+    headerSub: { color: 'rgba(255,255,255,0.7)', fontSize: 10, letterSpacing: 1 },
     backBtn: { padding: 4 },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     scroll: { padding: 20, paddingBottom: 100 },
+
+    // Filters
+    filterContainer: { backgroundColor: '#F9FAFB', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+    pillScroll: { paddingHorizontal: 20, paddingVertical: 12, gap: 10 },
+    filterPill: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#D1D5DB' },
+    filterPillActive: { backgroundColor: '#10B981', borderColor: '#10B981' },
+    filterPillText: { fontSize: 12, fontWeight: '600', color: '#4B5563' },
+    filterPillTextActive: { color: '#FFF' },
 
     // Timeline
     timelineItem: { flexDirection: 'row', marginBottom: 0 },

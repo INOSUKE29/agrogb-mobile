@@ -1,7 +1,8 @@
 import React from 'react';
 import { COLORS } from '../../styles/theme';
 import { TextInput, View, Text, StyleSheet } from 'react-native';
-import { useTheme } from '../../context/ThemeContext'; // Dynamic hook
+import { useTheme } from '../../theme/ThemeContext';
+// Dynamic hook
 import { Ionicons } from '@expo/vector-icons';
 
 export function AppInput({
@@ -14,19 +15,17 @@ export function AppInput({
     keyboardType,
     autoCapitalize,
     style,
-    variant = 'glass' // Default intended variant
+    variant = 'glass',
+    maxLength
 }) {
-    const { colors, themeParams } = useTheme();
-
-    // Check if we should enforce glass look based on Theme Context
-    const isGlassMode = themeParams.glass && variant === 'glass';
+    const { colors } = useTheme();
 
     return (
         <View style={[styles.inputWrapper, style]}>
             {label && (
                 <Text style={[
                     styles.label,
-                    { color: isGlassMode ? colors.primaryLight : colors.gray500 }
+                    { color: colors.textSecondary }
                 ]}>
                     {label}
                 </Text>
@@ -34,29 +33,30 @@ export function AppInput({
             <View style={[
                 styles.inputContainer,
                 {
-                    backgroundColor: isGlassMode ? colors.inputBackground : colors.inputBackground,
+                    backgroundColor: colors.cardAlt || 'rgba(0,0,0,0.05)',
                     borderColor: colors.glassBorder,
-                    borderRadius: themeParams.radius, // Dynamic Radius
-                    height: themeParams.inputHeight
+                    borderRadius: 12, // Fixed radius
+                    height: 52
                 }
             ]}>
                 {icon && (
                     <Ionicons
                         name={icon}
                         size={20}
-                        color={isGlassMode ? colors.primaryLight : colors.primary}
+                        color={colors.primary}
                         style={{ marginRight: 10 }}
                     />
                 )}
                 <TextInput
-                    style={[styles.input, { color: colors.text }]}
+                    style={[styles.input, { color: colors.textPrimary }]}
                     value={value}
                     onChangeText={onChangeText}
                     placeholder={placeholder}
-                    placeholderTextColor={colors.gray500}
+                    placeholderTextColor={colors.placeholder}
                     secureTextEntry={secureTextEntry}
                     keyboardType={keyboardType}
                     autoCapitalize={autoCapitalize}
+                    maxLength={maxLength}
                 />
             </View>
         </View>

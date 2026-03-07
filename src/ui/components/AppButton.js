@@ -1,7 +1,7 @@
 import React from 'react';
 import { COLORS } from '../../styles/theme';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../theme/ThemeContext';
 
 export function AppButton({
     title,
@@ -12,29 +12,29 @@ export function AppButton({
     style,
     textStyle
 }) {
-    const { colors, themeParams } = useTheme();
+    const { colors } = useTheme();
 
     const getBackgroundColor = () => {
-        if (disabled) return colors.gray500;
+        if (disabled) return colors.placeholder;
         switch (variant) {
-            case 'secondary': return 'transparent'; // Often transparent with border
+            case 'secondary': return 'transparent';
             case 'ghost': return 'transparent';
-            case 'danger': return colors.destructive;
-            case 'glass': return themeParams.glass ? colors.glass : colors.surface;
+            case 'danger': return colors.danger;
+            case 'glass': return colors.card;
             default: return colors.primary;
         }
     };
 
     const getBorderColor = () => {
-        if (variant === 'secondary' || variant === 'ghost' || variant === 'glass') return colors.glassBorder;
+        if (variant === 'secondary' || variant === 'ghost' || variant === 'glass') return colors.glassBorder || colors.glowBorder;
         return 'transparent';
     };
 
     const getTextColor = () => {
         if (disabled) return colors.textSecondary;
-        if (variant === 'secondary' || variant === 'ghost') return colors.white; // Usually white on dark bg
-        if (variant === 'glass') return colors.primaryLight;
-        return colors.white;
+        if (variant === 'secondary' || variant === 'ghost') return colors.textPrimary;
+        if (variant === 'glass') return colors.primary;
+        return colors.textOnPrimary;
     };
 
     return (
@@ -45,8 +45,8 @@ export function AppButton({
                     backgroundColor: getBackgroundColor(),
                     borderColor: getBorderColor(),
                     borderWidth: (variant === 'secondary' || variant === 'glass' || variant === 'ghost') ? 1 : 0,
-                    borderRadius: themeParams.radius, // Dynamic Radius
-                    elevation: themeParams.cardElevation
+                    borderRadius: 12,
+                    elevation: 4
                 },
                 style
             ]}

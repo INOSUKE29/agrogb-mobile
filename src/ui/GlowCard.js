@@ -1,14 +1,17 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { GLOW_CARD_SHADOW, DARK } from '../styles/darkTheme';
+import { GLOW_CARD_SHADOW } from '../styles/themes';
+import { useTheme } from '../context/ThemeContext';
 
-/**
- * GlowCard — Soft Shadow Moderno
- * Card claro elevado com sombra expansiva
- */
 export default function GlowCard({ children, style }) {
+    const { colors } = useTheme();
+
     return (
-        <View style={[styles.card, style]}>
+        <View style={[
+            styles.card,
+            { backgroundColor: colors.card, borderColor: colors.glassBorder || 'rgba(0,0,0,0.04)' },
+            style
+        ]}>
             {children}
         </View>
     );
@@ -16,11 +19,9 @@ export default function GlowCard({ children, style }) {
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: DARK.card,
         borderRadius: 18,
         padding: 16,
         borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.04)',
         ...GLOW_CARD_SHADOW,
     },
 });

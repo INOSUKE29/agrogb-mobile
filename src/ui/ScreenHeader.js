@@ -1,77 +1,74 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../theme/ThemeContext';
 
 /**
- * ScreenHeader — Soft Shadow Moderno
- * Header translúcido sobre gradiente verde com linha separadora
+ * ScreenHeader — Moderno e Dinâmico v8
  */
-export default function ScreenHeader({ title, navigation, rightIcon, onRightPress }) {
+export default function ScreenHeader({ title, onBack, rightElement }) {
+    const { colors, effectiveTheme } = useTheme();
+
+    const isLight = effectiveTheme === 'light';
+
     return (
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: isLight ? 'rgba(255,255,255,0.7)' : 'rgba(15,23,42,0.6)' }]}>
             <View style={styles.row}>
-                {navigation ? (
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-                        <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+                {onBack ? (
+                    <TouchableOpacity onPress={onBack} style={[styles.back, { backgroundColor: colors.glassBorder }]}>
+                        <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
                     </TouchableOpacity>
                 ) : (
-                    <View style={styles.back} />
+                    <View style={styles.backDim} />
                 )}
 
-                <Text style={styles.title} numberOfLines={1}>{title}</Text>
+                <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>{title}</Text>
 
-                {rightIcon ? (
-                    <TouchableOpacity onPress={onRightPress} style={styles.right}>
-                        <Ionicons name={rightIcon} size={22} color="#FFFFFF" />
-                    </TouchableOpacity>
+                {rightElement ? (
+                    <View style={styles.right}>
+                        {rightElement}
+                    </View>
                 ) : (
-                    <View style={styles.right} />
+                    <View style={styles.backDim} />
                 )}
             </View>
-            <View style={styles.separator} />
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     header: {
-        paddingTop: 52,
-        paddingBottom: 14,
-        paddingHorizontal: 20,
-        backgroundColor: 'rgba(15,61,46,0.6)',
+        paddingTop: 54,
+        paddingBottom: 12,
+        paddingHorizontal: 16,
+        borderBottomWidth: 0,
     },
     row: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        gap: 10
     },
     back: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: 'rgba(255,255,255,0.15)',
+        width: 38,
+        height: 38,
+        borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    backDim: {
+        width: 38,
     },
     title: {
         flex: 1,
         textAlign: 'center',
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#FFFFFF',
-        letterSpacing: 0.5,
-        marginHorizontal: 8,
+        fontSize: 15,
+        fontWeight: '900',
+        letterSpacing: 0.8,
     },
     right: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        minWidth: 38,
+        alignItems: 'flex-end',
         justifyContent: 'center',
-        alignItems: 'center',
-    },
-    separator: {
-        height: 1,
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        marginTop: 14,
-    },
+    }
 });

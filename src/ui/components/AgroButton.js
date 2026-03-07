@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { theme } from '../styles/theme';
+import { useTheme } from '../../theme/ThemeContext';
 
 export default function AgroButton({
     title,
@@ -10,21 +10,21 @@ export default function AgroButton({
     disabled = false,
     style
 }) {
+    const { colors } = useTheme();
     const isPrimary = variant === 'primary';
     const isDanger = variant === 'danger';
 
-    // Define cores com base na variante
-    let bg = theme.colors.primary;
+    let bg = colors.primary;
     let txt = '#FFF';
     let border = 'transparent';
 
     if (variant === 'secondary') {
         bg = 'transparent';
-        txt = theme.colors.primaryDeep;
-        border = theme.colors.primary;
+        txt = colors.primary;
+        border = colors.primary;
     } else if (variant === 'danger') {
-        bg = '#FEE2E2';
-        txt = theme.colors.error;
+        bg = colors.danger + '20';
+        txt = colors.danger;
     }
 
     // Estado desativado
@@ -58,8 +58,8 @@ export default function AgroButton({
 
 const styles = StyleSheet.create({
     container: {
-        height: theme.metrics.buttonHeight,
-        borderRadius: theme.metrics.radius,
+        height: 50,
+        borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 20,

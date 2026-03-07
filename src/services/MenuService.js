@@ -18,7 +18,7 @@ export const BASE_MENU = [
     { id: 'relatorios', label: 'Relatórios', icon: 'bar-chart', route: 'Relatorios' },
     { id: 'clientes', label: 'Clientes', icon: 'people', route: 'Clientes' },
     { id: 'adubacao', label: 'Adubação', icon: 'flask', route: 'AdubacaoList' },
-    { id: 'descarte', label: 'Descarte', icon: 'trash', route: 'Descarte' },
+    { id: 'processamento', label: 'Processamento', icon: 'snow', route: 'Processamento' },
     { id: 'caderno', label: 'Caderno', icon: 'book', route: 'CadernoCampo' },
     { id: 'cadastros', label: 'Cadastros', icon: 'list', route: 'Cadastro' },
 ];

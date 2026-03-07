@@ -4,12 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { executeQuery } from '../database/database';
+import { useTheme } from '../theme/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 const DRAWER_WIDTH = width * 0.75;
 
 export default function SidebarDrawer({ visible, onClose }) {
     const navigation = useNavigation();
+    const { colors } = useTheme();
     const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current; // Start hidden (left)
     const [user, setUser] = useState({ name: 'Usuário', email: 'agrogb@sistema.com' });
 
@@ -49,7 +51,9 @@ export default function SidebarDrawer({ visible, onClose }) {
                     setUser({ nome: session.nome, email: 'agrogb@sistema.com', avatar: null });
                 }
             }
-        } catch (e) { console.error('Sidebar Profile Error:', e); }
+        } catch (e) {
+            console.error('[UI ERROR] Sidebar Profile Error:', e);
+        }
     };
 
     const handleNavigation = (screen, params = {}) => {
@@ -89,10 +93,10 @@ export default function SidebarDrawer({ visible, onClose }) {
     const MenuItem = ({ icon, label, screen, badge }) => (
         <TouchableOpacity style={styles.menuItem} onPress={() => handleNavigation(screen)}>
             <View style={{ width: 30, alignItems: 'center' }}>
-                <Ionicons name={icon} size={22} color="#374151" />
+                <Ionicons name={icon} size={22} color={colors.textPrimary} />
             </View>
-            <Text style={styles.menuText}>{label}</Text>
-            {badge && <View style={styles.badge}><Text style={styles.badgeText}>{badge}</Text></View>}
+            <Text style={[styles.menuText, { color: colors.textPrimary }]}>{label}</Text>
+            {badge && <View style={[styles.badge, { backgroundColor: colors.primary }]}><Text style={styles.badgeText}>{badge}</Text></View>}
         </TouchableOpacity>
     );
 
@@ -105,10 +109,10 @@ export default function SidebarDrawer({ visible, onClose }) {
                 <TouchableOpacity style={styles.backdrop} onPress={onClose} activeOpacity={1} />
 
                 {/* Drawer Content */}
-                <Animated.View style={[styles.drawer, { transform: [{ translateX: slideAnim }] }]}>
+                <Animated.View style={[styles.drawer, { backgroundColor: colors.card, transform: [{ translateX: slideAnim }] }]}>
 
                     {/* Header: User Info */}
-                    <View style={styles.header}>
+                    <View style={[styles.header, { backgroundColor: colors.primary }]}>
                         <View style={styles.avatar}>
                             {user.avatar ? (
                                 <Image source={{ uri: user.avatar }} style={{ width: 50, height: 50, borderRadius: 25 }} />
@@ -127,28 +131,28 @@ export default function SidebarDrawer({ visible, onClose }) {
 
                     {/* Menu Items */}
                     <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-                        <Text style={styles.sectionTitle}>NAVEGAÇÃO</Text>
+                        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>NAVEGAÇÃO</Text>
                         <MenuItem icon="home-outline" label="Painel / Início" screen="Home" />
                         <MenuItem icon="camera-outline" label="Monitoramento" screen="Monitoramento" />
                         <MenuItem icon="cube-outline" label="Estoque" screen="Estoque" />
                         <MenuItem icon="cart-outline" label="Compras" screen="Compras" />
                         <MenuItem icon="people-outline" label="Clientes" screen="Clientes" />
 
-                        <View style={styles.divider} />
+                        <View style={[styles.divider, { backgroundColor: colors.glassBorder }]} />
 
-                        <Text style={styles.sectionTitle}>SISTEMA</Text>
+                        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>SISTEMA</Text>
                         <MenuItem icon="person-outline" label="Meu Perfil" screen="Profile" />
-                        <MenuItem icon="settings-outline" label="Configurações" screen="Sync" />
+                        <MenuItem icon="settings-outline" label="Configurações (Painel)" screen="Sync" />
                         <MenuItem icon="information-circle-outline" label="Sobre" screen="Help" />
                     </ScrollView>
 
                     {/* Footer: Logout */}
-                    <View style={styles.footer}>
+                    <View style={[styles.footer, { backgroundColor: colors.cardAlt, borderTopColor: colors.glassBorder }]}>
                         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-                            <Ionicons name="log-out-outline" size={24} color="#EF4444" />
-                            <Text style={styles.logoutText}>Sair</Text>
+                            <Ionicons name="log-out-outline" size={24} color={colors.danger} />
+                            <Text style={[styles.logoutText, { color: colors.danger }]}>Sair</Text>
                         </TouchableOpacity>
-                        <Text style={styles.version}>v7.0.0 (MVP)</Text>
+                        <Text style={[styles.version, { color: colors.textMuted }]}>AgroGB v8.5 • Theme Professional</Text>
                     </View>
 
                 </Animated.View>

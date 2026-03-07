@@ -1,14 +1,22 @@
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { loadSetting } from './settingsService';
 import 'react-native-url-polyfill/auto';
 
-const API_KEY = '5a6875971488c5d20775d7b8764b85c8';
+const DEFAULT_API_KEY = '5a6875971488c5d20775d7b8764b85c8';
 const BASE_URL = 'https://api.openweathermap.org/data/2.5/weather';
 const FORECAST_URL = 'https://api.openweathermap.org/data/2.5/forecast';
 
 export const WeatherService = {
-    getLocation: async (forceRequest = false) => {
+    getLocationOrManual: async (forceRequest = false) => {
         try {
+            const useGpsStr = await loadSetting('weather_use_gps');
+            const useGps = useGpsStr === null ? true : (useGpsStr === true || useGpsStr === 'true');
+
+            if (!useGps) {
+                return { manual: true };
+            }
+
             let { status } = await Location.getForegroundPermissionsAsync();
 
             if (status !== 'granted' && forceRequest) {
@@ -21,17 +29,32 @@ export const WeatherService = {
             const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
             const coords = { lat: location.coords.latitude, lon: location.coords.longitude };
             await AsyncStorage.setItem('user_location', JSON.stringify(coords));
-            return coords;
+            return Object.assign(coords, { manual: false });
         } catch (error) {
+            console.log('Erro ao obter GPS', error);
             const cached = await AsyncStorage.getItem('user_location');
-            return cached ? JSON.parse(cached) : null;
+            return cached ? Object.assign(JSON.parse(cached), { manual: false }) : null;
         }
     },
 
-    getWeather: async (lat, lon) => {
+    getWeather: async (locationData) => {
         try {
-            const endpoint = `${BASE_URL}?lat=${lat}&lon=${lon}&units=metric&lang=pt_br&appid=${API_KEY}`;
-            const forecastEnd = `${FORECAST_URL}?lat=${lat}&lon=${lon}&units=metric&lang=pt_br&appid=${API_KEY}`;
+            const useGps = await loadSetting('weather_use_gps');
+            let city = await loadSetting('weather_city');
+            let apiKey = await loadSetting('weather_api_key');
+            if (!apiKey || apiKey.trim() === '') apiKey = DEFAULT_API_KEY;
+
+            let endpoint, forecastEnd;
+
+            if (useGps !== false && locationData && locationData.lat && locationData.lon) {
+                endpoint = `${BASE_URL}?lat=${locationData.lat}&lon=${locationData.lon}&units=metric&lang=pt_br&appid=${apiKey}`;
+                forecastEnd = `${FORECAST_URL}?lat=${locationData.lat}&lon=${locationData.lon}&units=metric&lang=pt_br&appid=${apiKey}`;
+            } else if (city && city.trim() !== '') {
+                endpoint = `${BASE_URL}?q=${encodeURIComponent(city.trim())}&units=metric&lang=pt_br&appid=${apiKey}`;
+                forecastEnd = `${FORECAST_URL}?q=${encodeURIComponent(city.trim())}&units=metric&lang=pt_br&appid=${apiKey}`;
+            } else {
+                return null;
+            }
 
             const [response, forecastRes] = await Promise.all([
                 fetch(endpoint),

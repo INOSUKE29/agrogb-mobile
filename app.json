@@ -2,7 +2,7 @@
   "expo": {
     "name": "AgroGB Mobile",
     "slug": "agrogb-mobile",
-    "version": "7.0.0",
+    "version": "8.5.0",
     "scheme": "agrogb",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

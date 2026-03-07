@@ -13,10 +13,10 @@ export const WeatherProvider = ({ children }) => {
         setLoading(true);
         setError(false);
         try {
-            const coords = await WeatherService.getLocation(forceRequest);
-            if (coords) {
+            const locInfo = await WeatherService.getLocationOrManual(forceRequest);
+            if (locInfo) {
                 setPermissionDenied(false);
-                const data = await WeatherService.getWeather(coords.lat, coords.lon);
+                const data = await WeatherService.getWeather(locInfo);
                 if (data) setWeather(data);
                 else setError(true);
             } else {

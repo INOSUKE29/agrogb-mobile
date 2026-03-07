@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Image, Alert, Share } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { theme } from '../styles/theme';
-import AgroButton from '../components/AgroButton';
+import { useTheme } from '../theme/ThemeContext';
+import AgroButton from '../ui/components/AgroButton';
 import { updatePlanoAdubacao } from '../database/database';
 
 export default function AdubacaoDetailScreen({ route, navigation }) {
+    const { colors } = useTheme();
     const { plano } = route.params;
     const [currentPlano, setCurrentPlano] = useState(plano);
     const [loading, setLoading] = useState(false);
@@ -76,7 +77,7 @@ export default function AdubacaoDetailScreen({ route, navigation }) {
                         <FontAwesome5
                             name={currentPlano.tipo_aplicacao === 'GOTEJO' ? 'faucet' : 'spray-can'}
                             size={24}
-                            color={theme.colors.primary}
+                            color={colors.primary}
                         />
                     </View>
                     <View>

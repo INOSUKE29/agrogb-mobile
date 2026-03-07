@@ -2,9 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar as RNStatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS } from '../styles/theme';
+import { useTheme } from '../context/ThemeContext';
 
 export default function MenuCadastrosScreen({ navigation }) {
+    const { colors } = useTheme();
 
     const MENU_ITEMS = [
         {
@@ -13,7 +14,7 @@ export default function MenuCadastrosScreen({ navigation }) {
             icon: "cube-outline",
             description: "Gerenciar catálogo de itens usados no campo.",
             route: "Cadastro",
-            color: COLORS.primaryLight
+            color: colors.primary
         },
         {
             title: "CLIENTES / COMPRADORES",
@@ -50,15 +51,15 @@ export default function MenuCadastrosScreen({ navigation }) {
     ];
 
     return (
-        <View style={styles.container}>
-            <RNStatusBar barStyle="light-content" backgroundColor={COLORS.backgroundDark} />
-            <LinearGradient colors={[COLORS.backgroundDark, '#052e22']} style={StyleSheet.absoluteFill} />
+        <View style={[styles.container, { backgroundColor: colors.bg }]}>
+            <RNStatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+            <LinearGradient colors={colors.bgGradient} style={StyleSheet.absoluteFill} />
 
             {/* HEADER */}
             <View style={styles.header}>
-                <View style={styles.headerTop}>
+                <View style={[styles.headerTop, { marginTop: 30 }]}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+                        <Ionicons name="arrow-back" size={24} color={colors.textOnPrimary} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>MENU DE CADASTROS</Text>
                     <View style={{ width: 24 }} />
@@ -70,7 +71,7 @@ export default function MenuCadastrosScreen({ navigation }) {
                 {MENU_ITEMS.map((item, index) => (
                     <TouchableOpacity
                         key={index}
-                        style={styles.card}
+                        style={[styles.card, { backgroundColor: colors.card, borderColor: colors.glassBorder }]}
                         onPress={() => navigation.navigate(item.route)}
                         activeOpacity={0.7}
                     >
@@ -79,10 +80,10 @@ export default function MenuCadastrosScreen({ navigation }) {
                         </View>
                         <View style={styles.textContainer}>
                             <Text style={[styles.cardTitle, { color: item.color }]}>{item.title}</Text>
-                            <Text style={styles.cardSub}>{item.subtitle}</Text>
-                            <Text style={styles.cardDesc}>{item.description}</Text>
+                            <Text style={[styles.cardSub, { color: colors.textPrimary }]}>{item.subtitle}</Text>
+                            <Text style={[styles.cardDesc, { color: colors.textSecondary }]}>{item.description}</Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={24} color={COLORS.glassBorder} />
+                        <Ionicons name="chevron-forward" size={24} color={colors.glassBorder} />
                     </TouchableOpacity>
                 ))}
             </ScrollView>
@@ -103,8 +104,8 @@ const styles = StyleSheet.create({
     },
     headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
     backButton: { marginRight: 10 },
-    headerTitle: { fontSize: 20, fontWeight: '900', color: COLORS.white, letterSpacing: 0.5, flex: 1, textAlign: 'center' },
-    headerSub: { color: 'rgba(255,255,255,0.7)', textAlign: 'center', fontSize: 13 },
+    headerTitle: { fontSize: 20, fontWeight: '900', color: '#FFF', letterSpacing: 0.5, flex: 1, textAlign: 'center' },
+    headerSub: { color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontSize: 13 },
 
     content: { padding: 20, paddingBottom: 50 },
 
@@ -121,6 +122,6 @@ const styles = StyleSheet.create({
     iconBox: { width: 60, height: 60, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
     textContainer: { flex: 1 },
     cardTitle: { fontSize: 13, fontWeight: '900', marginBottom: 4, letterSpacing: 0.5 },
-    cardSub: { fontSize: 13, fontWeight: 'bold', color: COLORS.white, marginBottom: 2 },
-    cardDesc: { fontSize: 11, color: COLORS.gray500 }
+    cardSub: { fontSize: 13, fontWeight: 'bold', marginBottom: 2 },
+    cardDesc: { fontSize: 11 }
 });

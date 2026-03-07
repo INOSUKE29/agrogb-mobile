@@ -7,9 +7,10 @@ import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
 import GlowCard from '../ui/GlowCard';
 import GlowFAB from '../ui/GlowFAB';
-import { DARK } from '../styles/darkTheme';
+import { useTheme } from '../context/ThemeContext';
 
 export default function AdubacaoListScreen({ navigation }) {
+    const { colors } = useTheme();
     const [planos, setPlanos] = useState([]);
     const [loading, setLoading] = useState(false);
     const isFocused = useIsFocused();
@@ -31,7 +32,7 @@ export default function AdubacaoListScreen({ navigation }) {
 
     const renderItem = ({ item }) => {
         const isApplied = item.status === 'APLICADO';
-        const accentColor = isApplied ? DARK.glow : DARK.warning;
+        const accentColor = isApplied ? colors.primary : colors.warning;
 
         return (
             <TouchableOpacity
@@ -39,7 +40,7 @@ export default function AdubacaoListScreen({ navigation }) {
                 onLongPress={() => handleDelete(item)}
                 activeOpacity={0.85}
             >
-                <GlowCard style={[styles.card, { borderLeftColor: accentColor, borderLeftWidth: 3 }]}>
+                <GlowCard style={[styles.card, { borderLeftColor: accentColor, borderLeftWidth: 3, backgroundColor: colors.card, borderColor: colors.glassBorder }]}>
                     <View style={styles.cardHeader}>
                         <View style={[styles.iconBox, { backgroundColor: accentColor + '18' }]}>
                             <FontAwesome5
@@ -49,15 +50,15 @@ export default function AdubacaoListScreen({ navigation }) {
                             />
                         </View>
                         <View style={styles.cardContent}>
-                            <Text style={styles.cardTitle}>{item.nome_plano}</Text>
-                            <Text style={styles.cardSubtitle}>{item.cultura} • {item.tipo_aplicacao}</Text>
+                            <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{item.nome_plano}</Text>
+                            <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>{item.cultura} • {item.tipo_aplicacao}</Text>
                         </View>
                         <View style={[styles.statusBadge, { borderColor: accentColor + '50' }]}>
                             <Text style={[styles.statusText, { color: accentColor }]}>{item.status}</Text>
                         </View>
                     </View>
                     {item.area_local ? (
-                        <Text style={styles.localText}>📍 {item.area_local}</Text>
+                        <Text style={[styles.localText, { color: colors.textMuted }]}>📍 {item.area_local}</Text>
                     ) : null}
                 </GlowCard>
             </TouchableOpacity>
@@ -72,12 +73,12 @@ export default function AdubacaoListScreen({ navigation }) {
                 keyExtractor={item => item.uuid}
                 renderItem={renderItem}
                 contentContainerStyle={styles.listContent}
-                refreshControl={<RefreshControl refreshing={loading} onRefresh={loadPlanos} tintColor={DARK.glow} />}
+                refreshControl={<RefreshControl refreshing={loading} onRefresh={loadPlanos} tintColor={colors.primary} />}
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <Ionicons name="flask-outline" size={64} color={DARK.glowBorder} />
-                        <Text style={styles.emptyText}>Nenhum plano de adubação criado.</Text>
-                        <Text style={styles.emptySub}>Toque no + para criar uma receita.</Text>
+                        <Ionicons name="flask-outline" size={64} color={colors.glassBorder} />
+                        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Nenhum plano de adubação criado.</Text>
+                        <Text style={[styles.emptySub, { color: colors.textMuted }]}>Toque no + para criar uma receita.</Text>
                     </View>
                 }
             />
@@ -92,12 +93,12 @@ const styles = StyleSheet.create({
     cardHeader: { flexDirection: 'row', alignItems: 'center' },
     iconBox: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
     cardContent: { flex: 1 },
-    cardTitle: { fontSize: 15, fontWeight: 'bold', color: DARK.textPrimary },
-    cardSubtitle: { fontSize: 12, color: DARK.textSecondary, marginTop: 2 },
+    cardTitle: { fontSize: 15, fontWeight: 'bold' },
+    cardSubtitle: { fontSize: 12, marginTop: 2 },
     statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, borderWidth: 1, backgroundColor: 'rgba(0,0,0,0.2)' },
     statusText: { fontSize: 10, fontWeight: 'bold' },
-    localText: { marginTop: 10, fontSize: 12, color: DARK.textMuted, fontStyle: 'italic' },
+    localText: { marginTop: 10, fontSize: 12, fontStyle: 'italic' },
     emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 100 },
-    emptyText: { marginTop: 20, fontSize: 16, fontWeight: 'bold', color: DARK.textSecondary },
-    emptySub: { marginTop: 5, fontSize: 14, color: DARK.textMuted },
+    emptyText: { marginTop: 20, fontSize: 16, fontWeight: 'bold' },
+    emptySub: { marginTop: 5, fontSize: 14 },
 });

@@ -1,23 +1,35 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, TextInput, Modal, Alert, Linking } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, TextInput, Modal, Alert, Linking, ScrollView } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { executeQuery } from '../database/database';
+import { showToast } from '../ui/Toast';
+import { useTheme } from '../theme/ThemeContext';
 import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
 import GlowCard from '../ui/GlowCard';
-import GlowInput from '../ui/GlowInput';
 import GlowFAB from '../ui/GlowFAB';
-import { DARK, MODAL_OVERLAY } from '../styles/darkTheme';
+import GlowInput from '../ui/GlowInput';
+import PrimaryButton from '../ui/PrimaryButton';
+import { v4 as uuidv4 } from 'uuid';
 
 const TABS = ['CAMPO', 'PESQUISA'];
+const CATEGORIAS = ['PRAGA', 'DOENÇA', 'NUTRIÇÃO', 'CLIMA', 'OUTROS'];
+const SEVERIDADES = [
+    { label: 'BAIXA', color: '#10B981', icon: 'check-circle-outline' },
+    { label: 'MÉDIA', color: '#F59E0B', icon: 'alert-circle-outline' },
+    { label: 'ALTA', color: '#EF4444', icon: 'alert-decagram-outline' }
+];
 
 export default function MonitoramentoScreen({ navigation }) {
+    const { colors } = useTheme();
     const [activeTab, setActiveTab] = useState('CAMPO');
     const [history, setHistory] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [fieldNote, setFieldNote] = useState('');
     const [fieldLocal, setFieldLocal] = useState('');
+    const [fieldCategoria, setFieldCategoria] = useState('OUTROS');
+    const [fieldSeveridade, setFieldSeveridade] = useState('BAIXA');
     const [loading, setLoading] = useState(false);
     const [addModal, setAddModal] = useState(false);
 
@@ -28,11 +40,13 @@ export default function MonitoramentoScreen({ navigation }) {
     const loadHistory = async () => {
         setLoading(true);
         try {
-            const res = await executeQuery(`SELECT * FROM monitoramento_entidade ORDER BY data DESC LIMIT 50`);
+            const res = await executeQuery(`SELECT * FROM monitoramento_entidade WHERE status != 'EXCLUIDO' ORDER BY data DESC LIMIT 50`);
             const rows = [];
             for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
             setHistory(rows);
-        } catch (e) { } finally { setLoading(false); }
+        } catch (e) {
+            console.error('Erro ao carregar histórico:', e);
+        } finally { setLoading(false); }
     };
 
     const handleSearch = async () => {
@@ -46,117 +60,195 @@ export default function MonitoramentoScreen({ navigation }) {
 
     const handleSaveNote = async () => {
         if (!fieldNote.trim()) { Alert.alert('Atenção', 'Escreva uma observação.'); return; }
-        const { v4: uuidv4 } = require('uuid');
         try {
             await executeQuery(
-                `INSERT INTO monitoramento_entidade (uuid, cultura_id, data, observacao_usuario, status, nivel_confianca, criado_em, last_updated) VALUES (?,?,?,?,?,?,?,?)`,
-                [uuidv4(), fieldLocal.toUpperCase() || 'GERAL', new Date().toISOString(), fieldNote.toUpperCase(), 'CONFIRMADO', 'TÉCNICO', new Date().toISOString(), new Date().toISOString()]
+                `INSERT INTO monitoramento_entidade (uuid, cultura_id, data, observacao_usuario, status, nivel_confianca, severidade, categoria, criado_em, last_updated) VALUES (?,?,?,?,?,?,?,?,?,?)`,
+                [uuidv4(), fieldLocal.toUpperCase() || 'GERAL', new Date().toISOString(), fieldNote.toUpperCase(), 'CONFIRMADO', 'TÉCNICO', fieldSeveridade, fieldCategoria, new Date().toISOString(), new Date().toISOString()]
             );
-            setFieldNote(''); setFieldLocal('');
+            setFieldNote(''); setFieldLocal(''); setFieldCategoria('OUTROS'); setFieldSeveridade('BAIXA');
             setAddModal(false); loadHistory();
-        } catch (e) { Alert.alert('Erro', 'Falha ao salvar.'); }
+            showToast('Observação de campo salva!');
+        } catch (e) {
+            console.error('Erro ao salvar monitoramento:', e);
+            Alert.alert('Erro', 'Falha ao salvar. Verifique se o banco está atualizado.');
+        }
+    };
+
+    const getSeveridadeStyle = (sev) => {
+        const s = SEVERIDADES.find(x => x.label === sev) || SEVERIDADES[0];
+        return { color: s.color, icon: s.icon };
+    };
+
+    const renderItem = ({ item, index }) => {
+        const sevStyle = getSeveridadeStyle(item.severidade);
+        const isLast = index === history.length - 1;
+
+        return (
+            <View style={styles.timelineRow}>
+                {/* LINHA DE TIMELINE */}
+                <View style={styles.timelineSidebar}>
+                    <View style={[styles.timelineDot, { backgroundColor: sevStyle.color }]} />
+                    {!isLast && <View style={[styles.timelineLine, { backgroundColor: colors.glassBorder }]} />}
+                </View>
+
+                <GlowCard style={[styles.card, { backgroundColor: colors.card, borderColor: colors.glassBorder, flex: 1 }]}>
+                    <View style={styles.cardHeader}>
+                        <View style={styles.headerInfo}>
+                            <View style={[styles.pill, { backgroundColor: sevStyle.color + '20', borderColor: sevStyle.color + '40' }]}>
+                                <MaterialCommunityIcons name={sevStyle.icon} size={14} color={sevStyle.color} />
+                                <Text style={[styles.pillText, { color: sevStyle.color }]}>{item.severidade}</Text>
+                            </View>
+                            <Text style={[styles.categoryPill, { color: colors.textMuted }]}>#{item.categoria}</Text>
+                        </View>
+                        <Text style={[styles.dateText, { color: colors.textMuted }]}>
+                            {new Date(item.data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                        </Text>
+                    </View>
+
+                    <Text style={[styles.localTitle, { color: colors.textPrimary }]}>{item.cultura_id || 'GERAL'}</Text>
+                    <Text style={[styles.noteText, { color: colors.textSecondary }]} numberOfLines={4}>
+                        {item.observacao_usuario}
+                    </Text>
+
+                    <View style={styles.cardFooter}>
+                        <Ionicons name="person-circle-outline" size={14} color={colors.textMuted} />
+                        <Text style={[styles.footerText, { color: colors.textMuted }]}>REGISTRADO POR VOCÊ</Text>
+                    </View>
+                </GlowCard>
+            </View>
+        );
     };
 
     return (
         <AppContainer>
-            {/* HEADER */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4 }}>
-                    <Ionicons name="arrow-back" size={24} color="#FFF" />
-                </TouchableOpacity>
-                <Text style={styles.title}>MONITORAMENTO</Text>
-                <View style={{ width: 28 }} />
-            </View>
+            <ScreenHeader title="Monitoramento & Pragas" onBack={() => navigation.goBack()} />
 
-            {/* TABS */}
-            <View style={styles.tabBar}>
+            {/* TABS PREMIUM */}
+            <View style={[styles.tabContainer, { backgroundColor: colors.card + '80' }]}>
                 {TABS.map(t => (
-                    <TouchableOpacity key={t} style={[styles.tab, activeTab === t && styles.tabActive]} onPress={() => setActiveTab(t)}>
-                        <Text style={[styles.tabText, activeTab === t && styles.tabTextActive]}>{t === 'CAMPO' ? '📋 DIÁRIO DE CAMPO' : '🔍 PESQUISAR'}</Text>
+                    <TouchableOpacity
+                        key={t}
+                        style={[styles.tabBtn, activeTab === t && { backgroundColor: colors.primary }]}
+                        onPress={() => setActiveTab(t)}
+                    >
+                        <Text style={[styles.tabLabel, { color: activeTab === t ? '#FFF' : colors.textSecondary }]}>
+                            {t === 'CAMPO' ? 'DIÁRIO' : 'PESQUISA'}
+                        </Text>
                     </TouchableOpacity>
                 ))}
             </View>
-            <View style={styles.glowLine} />
 
-            {/* TAB: CAMPOS */}
-            {activeTab === 'CAMPO' && (
+            {activeTab === 'CAMPO' ? (
                 <View style={{ flex: 1 }}>
                     <FlatList
                         data={history}
-                        keyExtractor={i => i.uuid}
-                        contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
-                        renderItem={({ item }) => (
-                            <GlowCard style={{ marginBottom: 12 }}>
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                                    <View style={styles.pill}>
-                                        <Text style={styles.pillText}>{new Date(item.data).toLocaleDateString('pt-BR').slice(0, 5)}</Text>
-                                    </View>
-                                    <Text style={styles.local}>{item.cultura_id || 'GERAL'}</Text>
-                                </View>
-                                <Text style={styles.note} numberOfLines={3}>{item.observacao_usuario}</Text>
-                            </GlowCard>
-                        )}
+                        keyExtractor={item => item.uuid}
+                        renderItem={renderItem}
+                        contentContainerStyle={styles.listContent}
                         ListEmptyComponent={
                             <View style={styles.emptyBox}>
-                                <Ionicons name="leaf-outline" size={56} color={DARK.glowBorder} />
-                                <Text style={styles.emptyText}>Nenhum registro no diário.</Text>
+                                <MaterialCommunityIcons name="leaf-off-outline" size={64} color={colors.glassBorder} />
+                                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Nenhum registro encontrado.</Text>
                             </View>
                         }
                     />
-                    <GlowFAB onPress={() => setAddModal(true)} icon="add" />
+                    <GlowFAB icon="add" onPress={() => setAddModal(true)} />
                 </View>
-            )}
-
-            {/* TAB: PESQUISA */}
-            {activeTab === 'PESQUISA' && (
-                <View style={{ flex: 1, padding: 20 }}>
-                    <GlowCard>
-                        <Text style={styles.cardLabel}>PESQUISAR PRAGA / DOENÇA</Text>
-                        <Text style={styles.cardDesc}>Digite o nome da praga, doença ou sintoma. O sistema abrirá uma busca no Google com foco em agricultura.</Text>
+            ) : (
+                <ScrollView contentContainerStyle={styles.searchContainer}>
+                    <GlowCard style={[styles.searchCard, { backgroundColor: colors.card, borderColor: colors.glassBorder }]}>
+                        <Text style={[styles.cardLabel, { color: colors.primary }]}>PESQUISA INTELIGENTE</Text>
+                        <Text style={[styles.cardDesc, { color: colors.textSecondary }]}>
+                            Busque soluções técnicas, bulas ou sintomas diretamente no Google com filtros agrícolas aplicados.
+                        </Text>
                         <GlowInput
+                            placeholder="Ex: Ferrugem asiática soja..."
                             value={searchQuery}
                             onChangeText={setSearchQuery}
-                            placeholder="Ex: mancha foliar morango, ferrugem soja..."
-                            style={{ marginTop: 12 }}
                         />
-                        <TouchableOpacity style={styles.searchBtn} onPress={handleSearch}>
-                            <Ionicons name="search" size={20} color="#061E1A" />
-                            <Text style={styles.searchBtnText}>PESQUISAR NO GOOGLE</Text>
-                        </TouchableOpacity>
+                        <PrimaryButton
+                            label="PESQUISAR NO GOOGLE"
+                            icon="search"
+                            onPress={handleSearch}
+                            style={{ marginTop: 10 }}
+                        />
                     </GlowCard>
 
-                    <GlowCard style={{ marginTop: 16 }}>
-                        <Text style={styles.cardLabel}>PESQUISAS RÁPIDAS</Text>
-                        {['pragas morango', 'ferrugem soja', 'fungicida tomate', 'deficiência nitrogênio folha'].map(q => (
-                            <TouchableOpacity key={q} style={styles.quickTag} onPress={() => { setSearchQuery(q); setActiveTab('PESQUISA'); }}>
-                                <Ionicons name="search-circle-outline" size={16} color={DARK.glow} />
-                                <Text style={styles.quickTagText}>{q}</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>ATALHOS RÁPIDOS</Text>
+                    <View style={styles.quickActions}>
+                        {['Pragas Morango', 'Ferrugem Soja', 'Fungicidas Tomate', 'Carencia de Boro'].map(q => (
+                            <TouchableOpacity
+                                key={q}
+                                style={[styles.quickBtn, { backgroundColor: colors.card, borderColor: colors.glassBorder }]}
+                                onPress={() => { setSearchQuery(q); handleSearch(); }}
+                            >
+                                <Ionicons name="search-outline" size={16} color={colors.primary} />
+                                <Text style={[styles.quickLabel, { color: colors.textPrimary }]}>{q}</Text>
                             </TouchableOpacity>
                         ))}
-                    </GlowCard>
-                </View>
+                    </View>
+                </ScrollView>
             )}
 
-            {/* MODAL ADICIONAR NOTA */}
+            {/* MODAL NOVO REGISTRO */}
             <Modal visible={addModal} transparent animationType="slide">
-                <View style={styles.overlay}>
-                    <View style={styles.modal}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 18 }}>
-                            <Text style={styles.modalTitle}>NOVO REGISTRO DE CAMPO</Text>
-                            <TouchableOpacity onPress={() => setAddModal(false)}><Ionicons name="close" size={24} color={DARK.textMuted} /></TouchableOpacity>
-                        </View>
-                        <Text style={styles.fieldLabel}>LOCAL / CULTURA</Text>
-                        <GlowInput placeholder="Ex: Talhão 1, Morango" value={fieldLocal} onChangeText={t => setFieldLocal(t.toUpperCase())} />
-                        <Text style={styles.fieldLabel}>OBSERVAÇÃO</Text>
-                        <GlowInput style={{ height: 90, textAlignVertical: 'top' }} multiline value={fieldNote} onChangeText={t => setFieldNote(t.toUpperCase())} placeholder="Descreva o que foi observado no campo..." />
-                        <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
-                            <TouchableOpacity style={styles.cancelBtn} onPress={() => setAddModal(false)}>
-                                <Text style={{ color: DARK.textMuted, fontWeight: 'bold' }}>CANCELAR</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.saveBtn} onPress={handleSaveNote}>
-                                <Text style={{ color: '#061E1A', fontWeight: 'bold' }}>SALVAR</Text>
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+                        <View style={styles.modalHeader}>
+                            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>NOVA OBSERVAÇÃO</Text>
+                            <TouchableOpacity onPress={() => setAddModal(false)}>
+                                <Ionicons name="close" size={24} color={colors.textPrimary} />
                             </TouchableOpacity>
                         </View>
+
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>LOCAL / TALHÃO / CULTURA</Text>
+                            <GlowInput
+                                placeholder="EX: TALHÃO 02 - MORANGO"
+                                value={fieldLocal}
+                                onChangeText={t => setFieldLocal(t.toUpperCase())}
+                            />
+
+                            <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>CATEGORIA</Text>
+                            <View style={styles.selectorRow}>
+                                {CATEGORIAS.map(cat => (
+                                    <TouchableOpacity
+                                        key={cat}
+                                        onPress={() => setFieldCategoria(cat)}
+                                        style={[styles.selectorBtn, fieldCategoria === cat ? { backgroundColor: colors.primary, borderColor: colors.primary } : { borderColor: colors.glassBorder }]}
+                                    >
+                                        <Text style={[styles.selectorText, { color: fieldCategoria === cat ? '#FFF' : colors.textSecondary }]}>{cat}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            <Text style={[styles.fieldLabel, { color: colors.textMuted, marginTop: 10 }]}>SEVERIDADE</Text>
+                            <View style={styles.selectorRow}>
+                                {SEVERIDADES.map(sev => (
+                                    <TouchableOpacity
+                                        key={sev.label}
+                                        onPress={() => setFieldSeveridade(sev.label)}
+                                        style={[styles.sevBtn, fieldSeveridade === sev.label ? { backgroundColor: sev.color, borderColor: sev.color } : { borderColor: colors.glassBorder }]}
+                                    >
+                                        <MaterialCommunityIcons name={sev.icon} size={16} color={fieldSeveridade === sev.label ? '#FFF' : sev.color} />
+                                        <Text style={[styles.selectorText, { color: fieldSeveridade === sev.label ? '#FFF' : colors.textPrimary }]}>{sev.label}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            <Text style={[styles.fieldLabel, { color: colors.textMuted, marginTop: 15 }]}>OBSERVAÇÃO DETALHADA</Text>
+                            <TextInput
+                                style={[styles.textArea, { backgroundColor: colors.background, borderColor: colors.glassBorder, color: colors.textPrimary }]}
+                                multiline
+                                placeholder="Descreva os sintomas, pragas observadas ou ações tomadas..."
+                                placeholderTextColor={colors.placeholder}
+                                value={fieldNote}
+                                onChangeText={t => setFieldNote(t.toUpperCase())}
+                            />
+
+                            <PrimaryButton label="SALVAR REGISTRO" onPress={handleSaveNote} style={{ marginTop: 20 }} />
+                            <View style={{ height: 30 }} />
+                        </ScrollView>
                     </View>
                 </View>
             </Modal>
@@ -165,38 +257,48 @@ export default function MonitoramentoScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    header: { paddingTop: 52, paddingHorizontal: 20, paddingBottom: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    title: { fontSize: 15, fontWeight: '900', color: DARK.textPrimary, letterSpacing: 1 },
-    glowLine: { height: 1, backgroundColor: DARK.glowLine },
+    tabContainer: { flexDirection: 'row', marginHorizontal: 20, marginTop: 15, borderRadius: 15, padding: 4, height: 48 },
+    tabBtn: { flex: 1, justifyContent: 'center', alignItems: 'center', borderRadius: 12 },
+    tabLabel: { fontSize: 12, fontWeight: 'bold', letterSpacing: 0.5 },
 
-    tabBar: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 2, backgroundColor: 'rgba(0,255,156,0.06)', borderRadius: 12, padding: 4, borderWidth: 1, borderColor: DARK.glowBorder },
-    tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 },
-    tabActive: { backgroundColor: DARK.glow },
-    tabText: { fontSize: 11, fontWeight: 'bold', color: DARK.textMuted },
-    tabTextActive: { color: '#061E1A' },
+    listContent: { padding: 20, paddingBottom: 100 },
+    timelineRow: { flexDirection: 'row', gap: 15 },
+    timelineSidebar: { alignItems: 'center', width: 20 },
+    timelineDot: { width: 12, height: 12, borderRadius: 6, marginTop: 22, zIndex: 2 },
+    timelineLine: { position: 'absolute', top: 34, bottom: -15, width: 2, zIndex: 1 },
 
-    pill: { backgroundColor: 'rgba(0,255,156,0.12)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: DARK.glowBorder },
-    pillText: { fontSize: 10, fontWeight: 'bold', color: DARK.glow },
-    local: { fontSize: 13, fontWeight: 'bold', color: DARK.textPrimary },
-    note: { fontSize: 13, color: DARK.textSecondary, lineHeight: 20 },
+    card: { marginBottom: 15, padding: 18, borderRadius: 24, borderWidth: 1 },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    headerInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    pill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, borderWidth: 1, gap: 4 },
+    pillText: { fontSize: 10, fontWeight: 'bold' },
+    categoryPill: { fontSize: 10, fontWeight: 'bold' },
+    dateText: { fontSize: 11, fontWeight: 'bold' },
+    localTitle: { fontSize: 15, fontWeight: 'bold', marginBottom: 6 },
+    noteText: { fontSize: 13, lineHeight: 18 },
+    cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 15, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 10 },
+    footerText: { fontSize: 9, fontWeight: 'bold', letterSpacing: 0.5 },
 
-    emptyBox: { alignItems: 'center', marginTop: 60 },
-    emptyText: { color: DARK.textMuted, marginTop: 16, fontSize: 15 },
+    emptyBox: { alignItems: 'center', justifyContent: 'center', marginTop: 100 },
+    emptyText: { marginTop: 15, fontSize: 14, fontWeight: 'bold' },
 
-    cardLabel: { fontSize: 11, fontWeight: '900', color: DARK.glow, letterSpacing: 1.2, marginBottom: 10 },
-    cardDesc: { fontSize: 13, color: DARK.textSecondary, lineHeight: 20, marginBottom: 6 },
+    searchContainer: { padding: 20 },
+    searchCard: { padding: 22, borderRadius: 24, borderWidth: 1 },
+    cardLabel: { fontSize: 11, fontWeight: '900', letterSpacing: 1.5, marginBottom: 8 },
+    cardDesc: { fontSize: 13, lineHeight: 19, marginBottom: 15 },
+    sectionTitle: { fontSize: 13, fontWeight: 'bold', marginTop: 25, marginBottom: 15, marginLeft: 5 },
+    quickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    quickBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, paddingVertical: 12, borderRadius: 12, borderWidth: 1, gap: 8 },
+    quickLabel: { fontSize: 12, fontWeight: 'bold' },
 
-    searchBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: DARK.glow, borderRadius: 14, paddingVertical: 14, gap: 10, marginTop: 12, shadowColor: '#00FF9C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8 },
-    searchBtnText: { color: '#061E1A', fontWeight: '900', fontSize: 13, letterSpacing: 0.5 },
-
-    quickTag: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', gap: 10 },
-    quickTagText: { color: DARK.textSecondary, fontSize: 13 },
-
-    overlay: { flex: 1, backgroundColor: MODAL_OVERLAY, justifyContent: 'flex-end' },
-    modal: { backgroundColor: DARK.modal, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, borderWidth: 1, borderColor: DARK.glowBorder },
-    modalTitle: { fontSize: 14, fontWeight: '900', color: DARK.textPrimary },
-    fieldLabel: { fontSize: 10, fontWeight: '800', color: DARK.textMuted, letterSpacing: 1, marginBottom: 6, marginTop: 12 },
-
-    cancelBtn: { flex: 1, height: 52, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: DARK.glowBorder, alignItems: 'center', justifyContent: 'center' },
-    saveBtn: { flex: 1, height: 52, borderRadius: 14, backgroundColor: DARK.glow, alignItems: 'center', justifyContent: 'center', shadowColor: '#00FF9C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8 },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+    modalContent: { borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 25, maxHeight: '90%' },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
+    modalTitle: { fontSize: 18, fontWeight: '900' },
+    fieldLabel: { fontSize: 10, fontWeight: '900', letterSpacing: 1, marginBottom: 8, marginTop: 5 },
+    selectorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
+    selectorBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1 },
+    sevBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 5 },
+    selectorText: { fontSize: 11, fontWeight: 'bold' },
+    textArea: { height: 120, borderRadius: 16, padding: 15, fontSize: 14, textAlignVertical: 'top', borderWidth: 1 }
 });

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import InputField from '../components/InputField';
+import InputField from '../ui/InputField';
 import { AuthService } from '../services/authService';
 
 export default function ResetPasswordScreen({ route, navigation }) {

@@ -13,7 +13,7 @@ const DEFAULT_CONFIG = {
         { id: "compras", label: "Compras", icon: "cart-outline", screen: "Compras", color: "#F59E0B", enabled: true },
         { id: "plantio", label: "Plantio", icon: "nutrition-outline", screen: "Plantio", color: "#8B5CF6", enabled: true },
         { id: "custos", label: "Custos", icon: "calculator-outline", screen: "Custos", color: "#F97316", enabled: true },
-        { id: "descarte", label: "Descarte", icon: "trash-outline", screen: "Descarte", color: "#EF4444", enabled: true },
+        { id: "processamento", label: "Processamento", icon: "snow-outline", screen: "Processamento", color: "#1E3A8A", enabled: true },
         { id: "frota", label: "Frota", icon: "car-sport-outline", screen: "Frota", color: "#2563EB", enabled: true },
         { id: "relatorios", label: "Relatórios", icon: "pie-chart-outline", screen: "Relatorios", color: "#374151", enabled: true },
         // Secondary

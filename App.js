@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
 import { initDB } from './src/database/database';
 import AutoSyncService from './src/services/AutoSyncService';
@@ -17,7 +17,7 @@ import SyncScreen from './src/screens/SyncScreen';
 import ComprasScreen from './src/screens/ComprasScreen';
 import PlantioScreen from './src/screens/PlantioScreen';
 import CustosScreen from './src/screens/CustosScreen';
-import DescarteScreen from './src/screens/DescarteScreen';
+import ProcessamentoScreen from './src/screens/ProcessamentoScreen';
 import RelatoriosScreen from './src/screens/RelatoriosScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import MonitoramentoScreen from './src/screens/MonitoramentoScreen';
@@ -34,9 +34,10 @@ import AdubacaoListScreen from './src/screens/AdubacaoListScreen';
 import AdubacaoFormScreen from './src/screens/AdubacaoFormScreen';
 import AdubacaoDetailScreen from './src/screens/AdubacaoDetailScreen';
 
-import ErrorBoundary from './src/components/ErrorBoundary';
+import ErrorBoundary from './src/ui/ErrorBoundary';
 import { WeatherProvider } from './src/context/WeatherContext';
-import { ThemeProvider } from './src/context/ThemeContext';
+import { ThemeProvider } from './src/theme/ThemeContext';
+import Toast from './src/ui/Toast';
 
 const Stack = createStackNavigator();
 
@@ -79,7 +80,12 @@ export default function App() {
                                 screenOptions={{
                                     headerStyle: { backgroundColor: '#10B981' }, // Será dinâmico futuramente usando styled headers
                                     headerTintColor: '#fff',
-                                    headerTitleStyle: { fontWeight: 'bold' }
+                                    headerTitleStyle: { fontWeight: 'bold' },
+                                    cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+                                    transitionSpec: {
+                                        open: { animation: 'timing', config: { duration: 250 } },
+                                        close: { animation: 'timing', config: { duration: 250 } }
+                                    }
                                 }}
                             >
                                 <Stack.Screen
@@ -133,9 +139,9 @@ export default function App() {
                                     options={{ title: 'Registrar Custo' }}
                                 />
                                 <Stack.Screen
-                                    name="Descarte"
-                                    component={DescarteScreen}
-                                    options={{ title: 'Registrar Descarte' }}
+                                    name="Processamento"
+                                    component={ProcessamentoScreen}
+                                    options={{ title: 'Processamento & Perdas' }}
                                 />
                                 <Stack.Screen
                                     name="Cadastro"
@@ -172,6 +178,7 @@ export default function App() {
 
                             </Stack.Navigator>
                         </NavigationContainer>
+                        <Toast />
                     </WeatherProvider>
                 </ThemeProvider>
             </ErrorBoundary>

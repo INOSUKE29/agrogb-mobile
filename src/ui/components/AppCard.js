@@ -3,19 +3,12 @@ import { View, StyleSheet } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 
 export function AppCard({ children, variant = 'default', style }) {
-    const { colors, themeParams } = useTheme();
+    const { colors } = useTheme();
 
     const getVariantStyle = () => {
-        if (variant === 'glass' || (themeParams.glass && variant === 'default')) {
-            if (!themeParams.glass) {
-                return {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.glassBorder,
-                    borderWidth: 1
-                }
-            }
+        if (variant === 'glass') {
             return {
-                backgroundColor: colors.glass,
+                backgroundColor: colors.glass || 'rgba(255,255,255,0.1)',
                 borderColor: colors.glassBorder,
                 borderWidth: 1
             };
@@ -23,25 +16,26 @@ export function AppCard({ children, variant = 'default', style }) {
         if (variant === 'danger') {
             return {
                 backgroundColor: 'rgba(214, 69, 69, 0.1)',
-                borderColor: colors.destructive,
+                borderColor: colors.danger || '#EF4444',
                 borderWidth: 1
             };
         }
-        return {};
+        return {
+            backgroundColor: colors.card || colors.surface,
+            borderColor: colors.glassBorder,
+            borderWidth: 1
+        };
     };
 
     const cardStyle = {
-        backgroundColor: colors.surface,
-        borderRadius: themeParams.radius,
+        borderRadius: 16,
         padding: 20,
         marginBottom: 20,
-        borderWidth: 1,
-        borderColor: colors.glassBorder,
-        elevation: themeParams.cardElevation,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
+        shadowOpacity: 0.1,
         shadowRadius: 4,
+        elevation: 3,
         ...getVariantStyle()
     };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 
 // Screens
 import LoginScreen from '../screens/LoginScreen';
@@ -30,7 +30,7 @@ import CadernoCampoScreen from '../screens/CadernoCampoScreen';
 import ClienteFormScreen from '../screens/ClienteFormScreen';
 import CadastroFormScreen from '../screens/CadastroFormScreen';
 import MenuCadastrosScreen from '../screens/MenuCadastrosScreen';
-import SettingsScreen from '../screens/SettingsScreen';
+import ResetPasswordScreen from '../screens/ResetPasswordScreen';
 import VerifyCodeScreen from '../screens/VerifyCodeScreen';
 import ResetPasswordScreen from '../screens/ResetPasswordScreen';
 import CategoriasDespesaScreen from '../screens/CategoriasDespesaScreen';
@@ -44,40 +44,44 @@ export default function AppNavigator() {
             screenOptions={{
                 headerStyle: { backgroundColor: '#10B981' },
                 headerTintColor: '#fff',
-                headerTitleStyle: { fontWeight: 'bold' }
+                headerTitleStyle: { fontWeight: 'bold' },
+                cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+                transitionSpec: {
+                    open: { animation: 'timing', config: { duration: 250 } },
+                    close: { animation: 'timing', config: { duration: 250 } }
+                }
             }}
         >
             <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ForgotPassword" component={RecoverScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'AgroGB Mobile' }} />
-            <Stack.Screen name="Colheita" component={ColheitaScreen} options={{ title: 'Registrar Colheita' }} />
-            <Stack.Screen name="Vendas" component={VendasScreen} options={{ title: 'Registrar Venda' }} />
-            <Stack.Screen name="Estoque" component={EstoqueScreen} options={{ title: 'Consultar Estoque' }} />
-            <Stack.Screen name="Sync" component={SyncScreen} options={{ title: 'Sincronizar Dados' }} />
-            <Stack.Screen name="Compras" component={ComprasScreen} options={{ title: 'Registrar Compra' }} />
-            <Stack.Screen name="Plantio" component={PlantioScreen} options={{ title: 'Registrar Plantio' }} />
-            <Stack.Screen name="Custos" component={CustosScreen} options={{ title: 'Registrar Custo' }} />
+            <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Colheita" component={ColheitaScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Vendas" component={VendasScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Estoque" component={EstoqueScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Sync" component={SyncScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Compras" component={ComprasScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Plantio" component={PlantioScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Custos" component={CustosScreen} options={{ headerShown: false }} />
             <Stack.Screen name="MenuCadastros" component={MenuCadastrosScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="CategoriasDespesa" component={CategoriasDespesaScreen} options={{ title: 'Categorias de Despesa' }} />
-            <Stack.Screen name="Cadastro" component={CadastroScreen} options={{ title: 'Cadastros Gerais' }} />
-            <Stack.Screen name="CadastroForm" component={CadastroFormScreen} options={({ route }) => ({ title: route.params?.title || 'Novo Cadastro' })} />
-            <Stack.Screen name="Clientes" component={ClientesScreen} options={{ title: 'Gerenciar Clientes' }} />
-            <Stack.Screen name="Culturas" component={CulturasScreen} options={{ title: 'Culturas e Áreas' }} />
-            <Stack.Screen name="Relatorios" component={RelatoriosScreen} options={{ title: 'Relatórios' }} />
-            <Stack.Screen name="Usuarios" component={UsuariosScreen} options={{ title: 'Controle de Usuários' }} />
-            <Stack.Screen name="Monitoramento" component={MonitoramentoScreen} options={{ title: 'Monitoramento' }} />
+            <Stack.Screen name="CategoriasDespesa" component={CategoriasDespesaScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Cadastro" component={CadastroScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="CadastroForm" component={CadastroFormScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Clientes" component={ClientesScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Culturas" component={CulturasScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Relatorios" component={RelatoriosScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Usuarios" component={UsuariosScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Monitoramento" component={MonitoramentoScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Ocr" component={OcrScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Scanner" component={ScannerScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Frota" component={FrotaScreen} options={{ title: 'Gestão de Frota' }} />
-            <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Meu Perfil' }} />
+            <Stack.Screen name="Frota" component={FrotaScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
             <Stack.Screen name="CadernoCampo" component={CadernoCampoScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Area" component={CulturasScreen} options={{ title: 'Gerenciar Áreas/Talhões' }} />
-            <Stack.Screen name="AdubacaoList" component={AdubacaoListScreen} options={{ title: 'Planos de Adubação' }} />
-            <Stack.Screen name="AdubacaoForm" component={AdubacaoFormScreen} options={{ title: 'Novo Plano' }} />
-            <Stack.Screen name="AdubacaoDetail" component={AdubacaoDetailScreen} options={{ title: 'Detalhes do Plano' }} />
+            <Stack.Screen name="Area" component={CulturasScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="AdubacaoList" component={AdubacaoListScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="AdubacaoForm" component={AdubacaoFormScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="AdubacaoDetail" component={AdubacaoDetailScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ClienteForm" component={ClienteFormScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
             <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
         </Stack.Navigator>

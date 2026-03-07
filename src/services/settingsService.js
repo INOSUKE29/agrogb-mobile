@@ -17,7 +17,10 @@ export const STORAGE_KEYS = {
     NOTIFY_APPLICATION: '@agrogb:notify_application',
     NOTIFY_HARVEST: '@agrogb:notify_harvest',
     GOOGLE_AUTH: '@agrogb:google_auth',
-    BIOMETRIC_AUTH: '@agrogb:biometric_auth'
+    BIOMETRIC_AUTH: '@agrogb:biometric_auth',
+    WEATHER_API_KEY: '@agrogb:weather_api_key',
+    WEATHER_CITY: '@agrogb:weather_city',
+    WEATHER_USE_GPS: '@agrogb:weather_use_gps'
 };
 
 // Default Values
@@ -36,7 +39,10 @@ const DEFAULTS = {
     notify_application: true,
     notify_harvest: true,
     google_auth: false,
-    biometric_auth: false
+    biometric_auth: false,
+    weather_api_key: '5a6875971488c5d20775d7b8764b85c8',
+    weather_city: '',
+    weather_use_gps: true
 };
 
 // Save Setting

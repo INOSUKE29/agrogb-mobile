@@ -4,8 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 import { executeQuery } from '../database/database';
 
 // ⚠️ CHAVES REAIS DO SUPABASE ⚠️
-const SUPABASE_URL = 'https://bybryyvmwkahoohgtmpc.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_QdNitBVoMJmfgG7vE4cPUg_bIwVA7sn';
+const SUPABASE_URL = 'https://uklygrvibmiknwarzqap.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_6e3KZkbHgcfd_-xaOeIBLA_2AJeN9Ew';
 
 let supabaseInstance = null;
 
@@ -28,114 +28,133 @@ export const getSupabase = () => {
 // 1. PUSH: envia dados locais pendentes (sync_status=0) para o Supabase
 // 2. PULL: baixa registros novos da nuvem e salva no SQLite local
 // ============================================================
-export const syncTable = async (tableName) => {
-    const supabase = getSupabase();
 
-    // ── 1. PUSH ──────────────────────────────────────────────
+// ============================================================
+// MAPEAMENTO DE TABELAS (LOCAL vs SUPABASE MASTER)
+// ============================================================
+const TABLE_MAP = {
+    'usuarios': 'users',
+    'culturas': 'areas',
+    'cadastro': 'items',
+    'clientes': 'clientes',
+    'colheitas': 'colheitas',
+    'vendas': 'vendas',
+    'estoque': 'estoque',
+    'movimentacao_estoque': 'movimentos_estoque'
+};
+
+// ============================================================
+// SYNC MASTER BIDIRECIONAL
+// ============================================================
+export const syncTableMaster = async (localTable) => {
+    const supabase = getSupabase();
+    const remoteTable = TABLE_MAP[localTable] || localTable;
+
+    console.log(`🔄 Iniciando Sync Master: ${localTable} -> ${remoteTable}`);
+
+    // ── 1. PUSH (Local -> Cloud) ──────────────────────────────
     try {
-        const res = await executeQuery(`SELECT * FROM ${tableName} WHERE sync_status = 0`);
+        const res = await executeQuery(`SELECT * FROM ${localTable} WHERE sync_status = 0`);
         const rows = [];
         for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
 
         if (rows.length > 0) {
+            // Mapear campos locais para os campos do Supabase se necessário
             const cleanRows = rows.map(r => {
                 const { id, sync_status, ...rest } = r;
+                // Ajustes específicos de campo podem entrar aqui
+                if (localTable === 'culturas') {
+                    return { ...rest, uuid: r.uuid };
+                }
                 return rest;
             });
 
-            const { error } = await supabase.from(tableName).upsert(cleanRows, { onConflict: 'uuid' });
+            const { error } = await supabase.from(remoteTable).upsert(cleanRows, { onConflict: 'uuid' });
 
             if (!error) {
                 for (const row of rows) {
-                    await executeQuery(`UPDATE ${tableName} SET sync_status = 1 WHERE uuid = ?`, [row.uuid]);
+                    await executeQuery(`UPDATE ${localTable} SET sync_status = 1 WHERE uuid = ?`, [row.uuid]);
                 }
-                console.log(`✅ PUSH ${tableName}: ${rows.length} registros enviados`);
+                console.log(`✅ PUSH ${remoteTable}: ${rows.length} registros enviados`);
             } else {
-                console.log(`⚠️ Erro PUSH ${tableName}:`, error.message);
+                console.warn(`⚠️ Erro PUSH ${remoteTable}:`, error.message);
             }
         }
     } catch (e) {
-        console.log(`📡 Falha de rede PUSH ${tableName}:`, e.message || e);
+        console.log(`📡 Falha PUSH ${localTable}:`, e.message);
     }
 
-    // ── 2. PULL ──────────────────────────────────────────────
+    // ── 2. PULL (Cloud -> Local) ──────────────────────────────
     try {
-        // Busca a data do registro mais recente que temos localmente
-        const resLast = await executeQuery(`SELECT MAX(last_updated) as max_date FROM ${tableName}`);
+        const resLast = await executeQuery(`SELECT MAX(last_updated) as max_date FROM ${localTable}`);
         const lastDate = resLast.rows.item(0).max_date || '1970-01-01T00:00:00.000Z';
 
         const { data, error } = await supabase
-            .from(tableName)
+            .from(remoteTable)
             .select('*')
             .gt('last_updated', lastDate);
 
-        if (error) { console.log(`⚠️ Erro PULL ${tableName}:`, error.message); return; }
+        if (error) {
+            console.warn(`⚠️ Erro PULL ${remoteTable}:`, error.message);
+            return;
+        }
 
         if (data && data.length > 0) {
-            console.log(`📥 PULL ${tableName}: ${data.length} registros recebidos`);
+            console.log(`📥 PULL ${remoteTable}: ${data.length} registros recebidos`);
             for (const item of data) {
-                await upsertLocal(tableName, item);
+                await upsertLocalMaster(localTable, item);
             }
         }
     } catch (e) {
-        console.log(`📡 Falha de rede PULL ${tableName}:`, e.message || e);
+        console.log(`📡 Falha PULL ${localTable}:`, e.message);
     }
 };
 
 // ── INSERT OR REPLACE genérico no SQLite local ───────────────
-const upsertLocal = async (tableName, item) => {
+const upsertLocalMaster = async (localTable, item) => {
     try {
-        const keys = Object.keys(item);
+        // Remove campos que não existem no banco local se houver divergência
+        const { id, ...cleanItem } = item;
+        const keys = Object.keys(cleanItem);
         const placeholders = keys.map(() => '?').join(', ');
-        const values = keys.map(k => item[k]);
+        const values = keys.map(k => cleanItem[k]);
 
-        // Tenta INSERT OR REPLACE (funciona quando há UNIQUE uuid)
         await executeQuery(
-            `INSERT OR REPLACE INTO ${tableName} (${keys.join(', ')}, sync_status)
+            `INSERT OR REPLACE INTO ${localTable} (${keys.join(', ')}, sync_status)
              VALUES (${placeholders}, 1)`,
             values
         );
     } catch (e) {
-        // Se falhar (ex: coluna não existe ainda), tenta UPDATE
-        try {
-            if (!item.uuid) return;
-            const sets = Object.keys(item).filter(k => k !== 'uuid').map(k => `${k} = ?`).join(', ');
-            const vals = Object.keys(item).filter(k => k !== 'uuid').map(k => item[k]);
-            await executeQuery(
-                `UPDATE ${tableName} SET ${sets}, sync_status = 1 WHERE uuid = ?`,
-                [...vals, item.uuid]
-            );
-        } catch (e2) { /* ignora */ }
+        console.warn(`⚠️ Erro Upsert ${localTable}:`, e.message);
     }
 };
 
 // ============================================================
-// SYNC COMPLETO — todas as tabelas de uma vez
-// ============================================================
-const SYNC_TABLES = [
-    'colheitas', 'vendas', 'compras', 'plantio', 'custos',
-    'descarte', 'clientes', 'culturas', 'cadastro', 'maquinas',
-    'manutencao_frota', 'monitoramento_entidade', 'monitoramento_media',
-    'planos_adubacao', 'caderno_notas'
-];
+// SYNC COMPLETO MASTER
+// =============================================
+export const syncAllMaster = async () => {
+    console.log('🚀 Sincronização MASTER iniciada...');
+    const tables = Object.keys(TABLE_MAP);
+    let successCount = 0;
 
-export const syncAll = async () => {
-    console.log('🔄 Sincronização automática iniciada...');
-    let success = 0;
-    for (const table of SYNC_TABLES) {
+    for (const table of tables) {
         try {
-            await syncTable(table);
-            success++;
-        } catch (e) { /* continua para próxima tabela */ }
+            await syncTableMaster(table);
+            successCount++;
+        } catch (e) {
+            console.error('[API ERROR]', e);
+        }
     }
-    console.log(`✅ Sync completo: ${success}/${SYNC_TABLES.length} tabelas`);
-    return success;
+
+    console.log(`🏁 Sincronização MASTER concluída: ${successCount}/${tables.length} tabelas processadas.`);
+    return successCount;
 };
 
 export const testConnection = async () => {
     try {
         const supabase = getSupabase();
-        const { data, error } = await supabase.from('usuarios').select('count').limit(1);
+        // Testa com a nova tabela 'users' do Master
+        const { error } = await supabase.from('users').select('id').limit(1);
         return !error;
     } catch (e) {
         return false;

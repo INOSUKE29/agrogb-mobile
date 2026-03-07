@@ -1,23 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, TextInput, Modal, Alert, ScrollView } from 'react-native';
-import { getEstoque, atualizarEstoque, registrarAjusteEstoqueInicial } from '../database/database';
+import { getEstoque, atualizarEstoque, registrarAjusteEstoqueInicial } from '../services/EstoqueService';
 import { useFocusEffect } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
+import { showToast } from '../ui/Toast';
+import { useTheme } from '../context/ThemeContext';
+import AppContainer from '../ui/AppContainer';
+import ScreenHeader from '../ui/ScreenHeader';
+import GlowCard from '../ui/GlowCard';
+import GlowInput from '../ui/GlowInput';
+import PrimaryButton from '../ui/PrimaryButton';
+import SkeletonCard from '../ui/SkeletonCard';
 
-const THEME = {
-    bg: '#F9FAFB',
-    headerBg: ['#FFFFFF', '#FFFFFF'], // Header limpo (Light)
-    textMain: '#111827',
-    textSub: '#6B7280',
-    primary: '#059669',
-    border: '#E5E7EB',
-    danger: '#DC2626'
-};
-
-export default function EstoqueScreen() {
+export default function EstoqueScreen({ navigation }) {
+    const { colors, theme } = useTheme();
     const [originalItems, setOriginalItems] = useState([]);
     const [filteredItems, setFilteredItems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -45,7 +43,11 @@ export default function EstoqueScreen() {
             });
             setOriginalItems(sorted);
             applyFilter(sorted, filter, searchText);
-        } catch (e) { console.error(e); } finally { setLoading(false); }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
     };
 
     useFocusEffect(useCallback(() => { loadData(); }, []));
@@ -60,9 +62,9 @@ export default function EstoqueScreen() {
     };
 
     const getStatusInfo = (qtd) => {
-        if (qtd <= 0) return { color: '#DC2626', label: 'Esgotado', bg: '#FEF2F2' };
-        if (qtd <= 10) return { color: '#D97706', label: 'Baixo', bg: '#FFFBEB' };
-        return { color: '#059669', label: 'Normal', bg: '#ECFDF5' }; // Green
+        if (qtd <= 0) return { color: colors.danger, label: 'ESGOTADO', bg: colors.danger + '15' };
+        if (qtd <= 10) return { color: colors.warningDark, label: 'BAIXO', bg: colors.warning + '15' };
+        return { color: colors.primary, label: 'NORMAL', bg: colors.primary + '15' };
     };
 
     const openModal = (item, type) => {
@@ -73,69 +75,73 @@ export default function EstoqueScreen() {
     };
 
     const confirmAction = async () => {
-        if (!qty || isNaN(qty) || parseFloat(qty) <= 0) { Alert.alert('Erro', 'Valor inválido.'); return; }
+        if (!qty || isNaN(qty) || parseFloat(qty) <= 0) {
+            Alert.alert('Erro', 'Por favor, informe um valor válido.');
+            return;
+        }
         const delta = actionType === 'ENTRADA' ? parseFloat(qty) : -parseFloat(qty);
         try {
             await atualizarEstoque(selectedItem.produto, delta);
             setModalVisible(false);
+            showToast('Estoque atualizado com sucesso!');
             loadData();
-        } catch (e) { Alert.alert('Erro', 'Falha ao atualizar.'); }
+        } catch (e) {
+            Alert.alert('Erro', 'Falha ao atualizar o estoque.');
+        }
     };
 
     const handleSalvarAjuste = async () => {
         if (!newEstoque.produto || !newEstoque.quantidade) {
-            Alert.alert('Erro', 'Preencha os campos obrigatórios.');
+            Alert.alert('Atenção', 'Campos obrigatórios não preenchidos.');
             return;
         }
         try {
             await registrarAjusteEstoqueInicial({
                 uuid: uuidv4(),
-                produto: newEstoque.produto,
+                produto: newEstoque.produto.toUpperCase(),
                 quantidade: parseFloat(newEstoque.quantidade),
-                unidade: newEstoque.unidade,
-                observacao: newEstoque.observacao
+                unidade: (newEstoque.unidade || 'kg').toLowerCase(),
+                observacao: newEstoque.observacao.toUpperCase()
             });
             setModalAjusteVisible(false);
             setNewEstoque({ produto: '', quantidade: '', unidade: 'kg', observacao: '' });
-            Alert.alert('Sucesso', 'Estoque inicial registrado!');
+            showToast('Lançamento inicial registrado!');
             loadData();
         } catch (e) {
-            console.error(e);
-            Alert.alert('Erro', 'Falha ao registrar.');
+            Alert.alert('Erro', 'Falha ao salvar o ajuste.');
         }
     };
 
     const renderHeader = () => (
         <View style={styles.header}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
-                <Text style={styles.title}>Estoque Geral</Text>
-                <TouchableOpacity onPress={() => setModalAjusteVisible(true)} style={styles.btnAjusteInicial}>
-                    <Ionicons name="add" size={14} color="#FFF" />
-                    <Text style={styles.btnAjusteTxt}>Estoque Inicial</Text>
-                </TouchableOpacity>
-            </View>
-
             <View style={styles.searchBar}>
-                <Ionicons name="search" size={18} color="#9CA3AF" />
+                <Ionicons name="search" size={18} color={colors.placeholder} />
                 <TextInput
-                    style={styles.inputSearch}
-                    placeholder="Buscar produto..."
-                    placeholderTextColor="#9CA3AF"
+                    style={[styles.inputSearch, { color: colors.textPrimary }]}
+                    placeholder="Filtrar por nome do produto..."
+                    placeholderTextColor={colors.placeholder}
                     value={searchText}
                     onChangeText={setSearchText}
                 />
             </View>
 
-            {/* SEGMENTED CONTROL / TABS */}
             <View style={styles.tabsContainer}>
                 {['TODOS', 'LOW', 'ZERO'].map(tab => (
                     <TouchableOpacity
                         key={tab}
-                        style={[styles.tab, filter === tab && styles.tabActive]}
+                        style={[
+                            styles.tab,
+                            { borderColor: colors.glassBorder },
+                            filter === tab && { backgroundColor: colors.primary, borderColor: colors.primary }
+                        ]}
                         onPress={() => setFilter(tab)}
                     >
-                        <Text style={[styles.tabText, filter === tab && styles.tabTextActive]}>
-                            {tab === 'TODOS' ? 'Todos' : tab === 'LOW' ? 'Baixo' : 'Acabou'}
+                        <Text style={[
+                            styles.tabText,
+                            { color: colors.textSecondary },
+                            filter === tab && { color: '#FFF' }
+                        ]}>
+                            {tab === 'TODOS' ? 'Todos' : tab === 'LOW' ? 'Baixo' : 'Zerado'}
                         </Text>
                     </TouchableOpacity>
                 ))}
@@ -146,224 +152,239 @@ export default function EstoqueScreen() {
     const renderItem = ({ item }) => {
         const st = getStatusInfo(item.quantidade);
         return (
-            <View style={styles.row}>
-                <View style={styles.cellMain}>
-                    <Text style={styles.itemName} numberOfLines={1}>{item.produto}</Text>
-                    <Text style={styles.itemCat}>{item.tipo || 'Geral'}</Text>
-                </View>
+            <GlowCard style={styles.itemCard}>
+                <View style={styles.itemInfo}>
+                    <Text style={[styles.itemName, { color: colors.textPrimary }]} numberOfLines={1}>{item.produto}</Text>
+                    <Text style={[styles.itemCat, { color: colors.textMuted }]}>{item.tipo || 'CATEGORIA GERAL'}</Text>
 
-                <View style={styles.cellQty}>
-                    <Text style={styles.itemQty}>{item.quantidade}</Text>
-                    <Text style={styles.itemUnit}>{item.unidade || 'un'}</Text>
-                </View>
-
-                <View style={styles.cellStatus}>
-                    <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
-                        <View style={[styles.statusDot, { backgroundColor: st.color }]} />
-                        <Text style={[styles.statusText, { color: st.color }]}>{st.label}</Text>
+                    <View style={styles.itemStatsRow}>
+                        <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
+                            <View style={[styles.statusDot, { backgroundColor: st.color }]} />
+                            <Text style={[styles.statusText, { color: st.color }]}>{st.label}</Text>
+                        </View>
+                        <Text style={[styles.qtyLabel, { color: colors.textSecondary }]}>
+                            Disponível: <Text style={{ color: colors.primary, fontWeight: '900' }}>{item.quantidade} {item.unidade || 'un'}</Text>
+                        </Text>
                     </View>
                 </View>
 
-                <View style={styles.cellActions}>
-                    <TouchableOpacity onPress={() => openModal(item, 'ENTRADA')} style={styles.miniBtn}>
-                        <Ionicons name="add" size={18} color="#059669" />
+                <View style={styles.actions}>
+                    <TouchableOpacity
+                        onPress={() => openModal(item, 'ENTRADA')}
+                        style={[styles.miniBtn, { backgroundColor: colors.primary + '10' }]}
+                    >
+                        <Ionicons name="add" size={18} color={colors.primary} />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => openModal(item, 'SAIDA')} style={[styles.miniBtn, { marginLeft: 8 }]}>
-                        <Ionicons name="remove" size={18} color="#DC2626" />
+                    <TouchableOpacity
+                        onPress={() => openModal(item, 'SAIDA')}
+                        style={[styles.miniBtn, { backgroundColor: colors.danger + '10' }]}
+                    >
+                        <Ionicons name="remove" size={18} color={colors.danger} />
                     </TouchableOpacity>
                 </View>
-            </View>
+            </GlowCard>
         );
     };
 
     return (
-        <View style={styles.container}>
-            {renderHeader()}
+        <AppContainer>
+            <ScreenHeader
+                title="ESTOQUE & INSUMOS"
+                onBack={() => navigation.goBack()}
+                rightElement={
+                    <TouchableOpacity onPress={() => setModalAjusteVisible(true)}>
+                        <Ionicons name="add-circle" size={24} color={colors.primary} />
+                    </TouchableOpacity>
+                }
+            />
 
-            <View style={styles.tableHeader}>
-                <Text style={[styles.th, { flex: 2 }]}>PRODUTO</Text>
-                <Text style={[styles.th, { flex: 1, textAlign: 'center' }]}>QTD</Text>
-                <Text style={[styles.th, { flex: 1.2, textAlign: 'center' }]}>STATUS</Text>
-                <Text style={[styles.th, { flex: 1, textAlign: 'right' }]}>AÇÕES</Text>
-            </View>
+            <FlatList
+                data={loading ? [] : filteredItems}
+                keyExtractor={(item, index) => item.produto + index}
+                renderItem={renderItem}
+                ListHeaderComponent={renderHeader}
+                contentContainerStyle={styles.listContent}
+                ListLoadingComponent={
+                    <View style={{ padding: 20 }}>
+                        <SkeletonCard height={80} />
+                        <SkeletonCard height={80} />
+                        <SkeletonCard height={80} />
+                    </View>
+                }
+                ListEmptyComponent={
+                    !loading && (
+                        <View style={styles.emptyContainer}>
+                            <Ionicons name="cube-outline" size={48} color={colors.placeholder} />
+                            <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+                                Nenhum produto encontrado com os filtros aplicados.
+                            </Text>
+                        </View>
+                    )
+                }
+            />
 
-            {loading ? <ActivityIndicator color="#059669" style={{ marginTop: 50 }} /> :
-                <FlatList
-                    data={filteredItems}
-                    keyExtractor={i => i.toString()} // Using index or whatever unique if id missing
-                    renderItem={renderItem}
-                    contentContainerStyle={{ paddingBottom: 100 }}
-                    ItemSeparatorComponent={() => <View style={styles.separator} />}
-                    ListEmptyComponent={<Text style={styles.empty}>Nenhum registro.</Text>}
-                />
-            }
-
-            {/* MODAL SIMPLIFICADO (+/- CARD) */}
+            {/* MODAL AJUSTE RÁPIDO */}
             <Modal visible={modalVisible} transparent animationType="fade">
                 <View style={styles.overlay}>
-                    <View style={styles.modalBg}>
-                        <Text style={styles.modalTitle}>{actionType === 'ENTRADA' ? 'Adicionar Estoque' : 'Baixar Estoque'}</Text>
-                        <Text style={styles.modalSub}>{selectedItem?.produto}</Text>
+                    <GlowCard style={styles.miniModal}>
+                        <Text style={[styles.miniModalTitle, { color: colors.textPrimary }]}>
+                            {actionType === 'ENTRADA' ? 'ENTRADA MANUAL' : 'SAÍDA MANUAL'}
+                        </Text>
+                        <Text style={[styles.miniModalSub, { color: colors.textMuted }]}>{selectedItem?.produto}</Text>
 
                         <View style={styles.inputWrap}>
                             <TextInput
-                                style={styles.modalInput}
+                                style={[styles.modalInput, { color: colors.textPrimary, borderBottomColor: colors.glassBorder }]}
                                 placeholder="0.00"
-                                keyboardType="numeric"
+                                placeholderTextColor={colors.placeholder}
+                                keyboardType="decimal-pad"
                                 autoFocus
                                 value={qty}
                                 onChangeText={setQty}
                             />
-                            <Text style={styles.modalUnit}>{selectedItem?.unidade}</Text>
+                            <Text style={[styles.modalUnit, { color: colors.textMuted }]}>{selectedItem?.unidade}</Text>
                         </View>
 
                         <View style={styles.modalActions}>
-                            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.btnCancel}>
-                                <Text style={styles.txtCancel}>Cancelar</Text>
+                            <TouchableOpacity
+                                onPress={() => setModalVisible(false)}
+                                style={[styles.modalBtnCancel, { borderColor: colors.glassBorder }]}
+                            >
+                                <Text style={{ color: colors.textMuted, fontWeight: 'bold' }}>CANCELAR</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={confirmAction} style={[styles.btnConfirm, { backgroundColor: actionType === 'ENTRADA' ? '#059669' : '#DC2626' }]}>
-                                <Text style={styles.txtConfirm}>Confirmar</Text>
+                            <TouchableOpacity
+                                onPress={confirmAction}
+                                style={[
+                                    styles.modalBtnConfirm,
+                                    { backgroundColor: actionType === 'ENTRADA' ? colors.primary : colors.danger }
+                                ]}
+                            >
+                                <Text style={{ color: '#FFF', fontWeight: 'bold' }}>CONFIRMAR</Text>
                             </TouchableOpacity>
                         </View>
-                    </View>
+                    </GlowCard>
                 </View>
             </Modal>
 
             {/* MODAL ESTOQUE INICIAL */}
-            <Modal visible={modalAjusteVisible} transparent animationType="slide">
-                <View style={styles.overlayFull}>
-                    <View style={styles.modalBgFull}>
-                        <View style={styles.modalHeaderFull}>
-                            <Text style={styles.modalTitleFull}>Adicionar Estoque Inicial</Text>
-                            <TouchableOpacity onPress={() => setModalAjusteVisible(false)}>
-                                <Ionicons name="close" size={24} color="#6B7280" />
-                            </TouchableOpacity>
-                        </View>
+            <Modal visible={modalAjusteVisible} transparent={false} animationType="slide">
+                <AppContainer>
+                    <ScreenHeader
+                        title="ESTOQUE INICIAL"
+                        onBack={() => setModalAjusteVisible(false)}
+                    />
 
-                        <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, padding: 20 }}>
-                            <Text style={styles.labelFull}>Produto *</Text>
-                            <TextInput
-                                style={styles.inputFull}
-                                placeholder="Ex: Adubo NPK 10-10-10"
+                    <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, padding: 20 }}>
+                        <GlowCard style={{ padding: 20 }}>
+                            <Text style={[styles.label, { color: colors.textSecondary }]}>NOME DO PRODUTO *</Text>
+                            <GlowInput
+                                placeholder="Ex: ADUBO NPK 10-10-10"
                                 value={newEstoque.produto}
                                 onChangeText={(t) => setNewEstoque(prev => ({ ...prev, produto: t }))}
                             />
 
-                            <View style={{ flexDirection: 'row', gap: 15 }}>
+                            <View style={styles.row}>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.labelFull}>Quantidade *</Text>
-                                    <TextInput
-                                        style={styles.inputFull}
+                                    <Text style={[styles.label, { color: colors.textSecondary }]}>QUANTIDADE *</Text>
+                                    <GlowInput
                                         placeholder="0.00"
-                                        keyboardType="numeric"
+                                        keyboardType="decimal-pad"
                                         value={newEstoque.quantidade}
                                         onChangeText={(t) => setNewEstoque(prev => ({ ...prev, quantidade: t }))}
                                     />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.labelFull}>Unidade</Text>
-                                    <TextInput
-                                        style={styles.inputFull}
-                                        placeholder="Ex: kg, un"
+                                    <Text style={[styles.label, { color: colors.textSecondary }]}>UNIDADE</Text>
+                                    <GlowInput
+                                        placeholder="Ex: KG, UN, LT"
                                         value={newEstoque.unidade}
                                         onChangeText={(t) => setNewEstoque(prev => ({ ...prev, unidade: t }))}
                                     />
                                 </View>
                             </View>
 
-                            <Text style={styles.labelFull}>Observação (Opcional)</Text>
-                            <TextInput
-                                style={[styles.inputFull, { height: 80, textAlignVertical: 'top' }]}
+                            <Text style={[styles.label, { color: colors.textSecondary }]}>OBSERVAÇÃO (OPCIONAL)</Text>
+                            <GlowInput
                                 placeholder="Lote, validade, anotações..."
                                 multiline
+                                style={{ height: 100, textAlignVertical: 'top' }}
                                 value={newEstoque.observacao}
                                 onChangeText={(t) => setNewEstoque(prev => ({ ...prev, observacao: t }))}
                             />
 
-                            <Text style={styles.helperText}>* Esse lançamento não gera custo no fluxo de caixa.</Text>
+                            <View style={[styles.infoBox, { backgroundColor: colors.primary + '10' }]}>
+                                <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
+                                <Text style={[styles.helperText, { color: colors.textMuted }]}>
+                                    O lançamento inicial serve para ajustar o inventário sem gerar registros financeiros de custo.
+                                </Text>
+                            </View>
 
-                        </ScrollView>
-
-                        <View style={styles.modalFooterFull}>
-                            <TouchableOpacity style={styles.btnSaveFull} onPress={handleSalvarAjuste}>
-                                <Text style={styles.btnSaveFullTxt}>SALVAR ESTOQUE</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
+                            <PrimaryButton
+                                label="SALVAR NO ESTOQUE"
+                                onPress={handleSalvarAjuste}
+                                icon="checkmark-circle"
+                                style={{ marginTop: 20 }}
+                            />
+                        </GlowCard>
+                    </ScrollView>
+                </AppContainer>
             </Modal>
-        </View>
+        </AppContainer>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F9FAFB' },
+    header: { paddingHorizontal: 20, paddingTop: 10, marginBottom: 15 },
+    searchBar: {
+        flexDirection: 'row',
+        height: 50,
+        borderRadius: 14,
+        paddingHorizontal: 15,
+        alignItems: 'center',
+        marginBottom: 15,
+        backgroundColor: 'rgba(0,0,0,0.03)',
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.05)'
+    },
+    inputSearch: { flex: 1, marginLeft: 10, fontSize: 14, fontWeight: '500' },
 
-    // Header
-    header: { backgroundColor: '#FFF', padding: 20, paddingTop: 50, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-    title: { fontSize: 20, fontWeight: 'bold', color: '#111827', marginBottom: 15 },
-    searchBar: { flexDirection: 'row', backgroundColor: '#F3F4F6', borderRadius: 8, paddingHorizontal: 10, alignItems: 'center', height: 40, marginBottom: 15 },
-    inputSearch: { flex: 1, marginLeft: 10, fontSize: 14, color: '#374151' },
+    tabsContainer: { flexDirection: 'row', gap: 8 },
+    tab: { flex: 1, height: 40, borderRadius: 20, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
+    tabText: { fontSize: 11, fontWeight: '900' },
 
-    // Tabs
-    tabsContainer: { flexDirection: 'row', backgroundColor: '#F3F4F6', borderRadius: 8, padding: 2 },
-    tab: { flex: 1, paddingVertical: 6, alignItems: 'center', borderRadius: 6 },
-    tabActive: { backgroundColor: '#FFF', elevation: 1 },
-    tabText: { fontSize: 12, fontWeight: '600', color: '#6B7280' },
-    tabTextActive: { color: '#059669', fontWeight: 'bold' },
+    listContent: { paddingBottom: 100 },
+    itemCard: { marginHorizontal: 20, padding: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center' },
+    itemInfo: { flex: 1 },
+    itemName: { fontSize: 15, fontWeight: 'bold' },
+    itemCat: { fontSize: 10, fontWeight: '900', letterSpacing: 0.5, marginTop: 2 },
 
-    // Table
-    tableHeader: { flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#F9FAFB', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-    th: { fontSize: 10, fontWeight: 'bold', color: '#9CA3AF', letterSpacing: 0.5 },
+    itemStatsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 12 },
+    statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, gap: 4 },
+    statusDot: { width: 5, height: 5, borderRadius: 3 },
+    statusText: { fontSize: 9, fontWeight: '900' },
+    qtyLabel: { fontSize: 11, fontWeight: '500' },
 
-    row: { flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 12, alignItems: 'center', backgroundColor: '#FFF' },
-    cellMain: { flex: 2 },
-    itemName: { fontSize: 14, fontWeight: '600', color: '#1F2937' },
-    itemCat: { fontSize: 10, color: '#9CA3AF', marginTop: 1 },
+    actions: { flexDirection: 'row', gap: 6 },
+    miniBtn: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
 
-    cellQty: { flex: 1, alignItems: 'center' },
-    itemQty: { fontSize: 14, fontWeight: 'bold', color: '#374151' },
-    itemUnit: { fontSize: 9, color: '#9CA3AF' },
+    emptyContainer: { alignItems: 'center', marginTop: 80, opacity: 0.5 },
+    emptyText: { textAlign: 'center', fontSize: 13, fontWeight: '500', marginTop: 15, paddingHorizontal: 40 },
 
-    cellStatus: { flex: 1.2, alignItems: 'center' },
-    statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, gap: 4 },
-    statusDot: { width: 6, height: 6, borderRadius: 3 },
-    statusText: { fontSize: 10, fontWeight: 'bold' },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 25 },
+    miniModal: { padding: 25, borderRadius: 24 },
+    miniModalTitle: { fontSize: 11, fontWeight: '900', letterSpacing: 1.5, textAlign: 'center', marginBottom: 5 },
+    miniModalSub: { fontSize: 16, fontWeight: 'bold', textAlign: 'center', marginBottom: 25 },
 
-    cellActions: { flex: 1, flexDirection: 'row', justifyContent: 'flex-end' },
-    miniBtn: { width: 32, height: 32, borderRadius: 6, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center' },
+    inputWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 30 },
+    modalInput: { fontSize: 42, fontWeight: '900', minWidth: 100, textAlign: 'center', borderBottomWidth: 2 },
+    modalUnit: { fontSize: 14, marginLeft: 10, fontWeight: '900', opacity: 0.6 },
 
-    separator: { height: 1, backgroundColor: '#F3F4F6' },
-    empty: { textAlign: 'center', marginTop: 50, color: '#9CA3AF' },
+    modalActions: { flexDirection: 'row', gap: 12 },
+    modalBtnCancel: { flex: 1, height: 50, borderRadius: 14, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
+    modalBtnConfirm: { flex: 2, height: 50, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
 
-    // Modal
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-    modalBg: { backgroundColor: '#FFF', width: '100%', borderRadius: 12, padding: 20, elevation: 5 },
-    modalTitle: { fontSize: 16, fontWeight: 'bold', color: '#111827', textAlign: 'center' },
-    modalSub: { fontSize: 12, color: '#6B7280', textAlign: 'center', marginBottom: 20 },
-    inputWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 25 },
-    modalInput: { fontSize: 32, fontWeight: 'bold', color: '#111827', minWidth: 80, textAlign: 'center', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-    modalUnit: { fontSize: 14, color: '#9CA3AF', marginLeft: 10, fontWeight: 'bold' },
-    modalActions: { flexDirection: 'row', gap: 10 },
-    btnCancel: { flex: 1, padding: 12, borderRadius: 8, backgroundColor: '#F3F4F6', alignItems: 'center' },
-    txtCancel: { fontSize: 13, fontWeight: 'bold', color: '#4B5563' },
-    btnConfirm: { flex: 1, padding: 12, borderRadius: 8, alignItems: 'center' },
-    txtConfirm: { fontSize: 13, fontWeight: 'bold', color: '#FFF' },
-
-    // Modal Ajuste Inicial e Elementos
-    btnAjusteInicial: { flexDirection: 'row', backgroundColor: '#059669', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, alignItems: 'center', gap: 4 },
-    btnAjusteTxt: { color: '#FFF', fontSize: 10, fontWeight: 'bold' },
-
-    overlayFull: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-    modalBgFull: { backgroundColor: '#FFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, height: '80%', paddingBottom: 20 },
-    modalHeaderFull: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderColor: '#F3F4F6' },
-    modalTitleFull: { fontSize: 16, fontWeight: 'bold', color: '#111827' },
-
-    labelFull: { fontSize: 12, fontWeight: '600', color: '#4B5563', marginBottom: 6, marginTop: 15 },
-    inputFull: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: '#1F2937' },
-    helperText: { fontSize: 12, color: '#9CA3AF', marginTop: 10, fontStyle: 'italic' },
-
-    modalFooterFull: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 10 },
-    btnSaveFull: { backgroundColor: '#059669', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-    btnSaveFullTxt: { color: '#FFF', fontSize: 14, fontWeight: '800' }
+    label: { fontSize: 10, fontWeight: '900', letterSpacing: 1, marginBottom: 8 },
+    row: { flexDirection: 'row', gap: 15 },
+    infoBox: { flexDirection: 'row', gap: 10, padding: 15, borderRadius: 12, marginTop: 10, alignItems: 'center' },
+    helperText: { flex: 1, fontSize: 11, fontStyle: 'italic', lineHeight: 16 }
 });

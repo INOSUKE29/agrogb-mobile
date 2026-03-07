@@ -1,5 +1,5 @@
-// database.js - Gestão Rápida com Enforcamento de MAIÚSCULAS e Suporte a Usuários
 import * as SQLite from 'expo-sqlite';
+import { atualizarEstoque } from '../services/EstoqueService';
 
 let db;
 
@@ -35,7 +35,7 @@ export const initDB = async () => {
         await createTables();
         return db;
     } catch (error) {
-        console.error('❌ Erro ao abrir banco:', error);
+        console.error('[DATABASE ERROR] Erro ao abrir banco:', error);
         throw error;
     }
 };
@@ -157,7 +157,9 @@ const createTables = async () => {
                 cpf_cnpj TEXT,
                 observacao TEXT,
                 last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0
+                sync_status INTEGER DEFAULT 0,
+                cidade TEXT,
+                estado TEXT
             );`,
             `CREATE TABLE IF NOT EXISTS culturas (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -248,6 +250,17 @@ const createTables = async () => {
         } catch (e) { }
 
         // MIGRATION: Cadastro Fator Conversão (v4.2)
+        try {
+            await executeQuery('ALTER TABLE cadastro ADD COLUMN fator_conversao REAL DEFAULT 1');
+            console.log('✅ Coluna fator_conversao adicionada');
+        } catch (e) { }
+
+        // MIGRATION: Monitoramento Severidade & Categoria (v21.0)
+        try {
+            await executeQuery('ALTER TABLE monitoramento_entidade ADD COLUMN severidade TEXT DEFAULT "BAIXA"');
+            await executeQuery('ALTER TABLE monitoramento_entidade ADD COLUMN categoria TEXT DEFAULT "OUTROS"');
+            console.log('✅ Monitoramento v21 Schema atualizado');
+        } catch (e) { }
         try {
             await executeQuery('ALTER TABLE cadastro ADD COLUMN fator_conversao REAL DEFAULT 1');
             console.log('✅ Coluna fator_conversao adicionada');
@@ -357,6 +370,8 @@ const createTables = async () => {
                 observacao_usuario TEXT,
                 status TEXT DEFAULT 'RASCUNHO', -- RASCUNHO / CONFIRMADO
                 nivel_confianca TEXT DEFAULT 'TÉCNICO', -- INFORMATIVO / TÉCNICO / VALIDADO
+                severidade TEXT DEFAULT 'BAIXA', -- BAIXA / MEDIA / ALTA
+                categoria TEXT DEFAULT 'OUTROS', -- PRAGA / DOENCA / NUTRICAO / CLIMA / OUTROS
                 criado_em TEXT NOT NULL,
                 sync_status INTEGER DEFAULT 0,
                 last_updated TEXT NOT NULL
@@ -576,6 +591,28 @@ const createTables = async () => {
             console.log('✅ Coluna categoria_id adicionada na tabela custos');
         } catch (e) { }
 
+        // MIGRATION: V9.1 - Logs de Auditoria e Erro (Fase 19)
+        try {
+            await executeQuery(`CREATE TABLE IF NOT EXISTS activity_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                data TEXT NOT NULL,
+                usuario TEXT,
+                acao TEXT NOT NULL,
+                entidade TEXT,
+                descricao TEXT,
+                sync_status INTEGER DEFAULT 0
+            )`);
+            await executeQuery(`CREATE TABLE IF NOT EXISTS error_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                data TEXT NOT NULL,
+                tela TEXT,
+                erro TEXT,
+                stack TEXT,
+                sync_status INTEGER DEFAULT 0
+            )`);
+            console.log('✅ Tabelas activity_log e error_logs verificadas/criadas');
+        } catch (e) { }
+
         // FASE 1: DEDUPLICAR CLIENTES EXISTENTES NO INÍCIO DO APP
         await deduplicateClientes();
 
@@ -591,13 +628,19 @@ const createTables = async () => {
             const countUn = await executeQuery('SELECT COUNT(*) as c FROM unidades_medida');
             if (countUn.rows.item(0).c === 0) {
                 const defaultUnits = [
-                    ['Quilograma', 'kg'], ['Caixa', 'cx'], ['Unidade', 'un'],
-                    ['Metro', 'm'], ['Litro', 'L'], ['Saco', 'sc'], ['Bandeja', 'bdj']
+                    ['Quilograma', 'KG'], ['Caixa', 'CX'], ['Unidade', 'UNI'],
+                    ['Metro', 'M'], ['Litro', 'LT'], ['Saco', 'SC'], ['Bandeja', 'BDJ'],
+                    ['Hectare', 'HA'], ['Cambuca', 'CBC']
                 ];
                 for (const [nome, sigla] of defaultUnits) {
                     await executeQuery('INSERT OR IGNORE INTO unidades_medida (nome, sigla) VALUES (?, ?)', [nome, sigla]);
                 }
                 console.log('✅ Seed unidades_medida concluído');
+            } else {
+                // MIGRATION: Adicionar ha, cbc e M se os outros já existirem
+                await executeQuery('INSERT OR IGNORE INTO unidades_medida (nome, sigla) VALUES (?, ?)', ['Hectare', 'HA']);
+                await executeQuery('INSERT OR IGNORE INTO unidades_medida (nome, sigla) VALUES (?, ?)', ['Cambuca', 'CBC']);
+                await executeQuery('INSERT OR IGNORE INTO unidades_medida (nome, sigla) VALUES (?, ?)', ['Metro', 'M']);
             }
             console.log('✅ Tabela unidades_medida verificada/criada');
         } catch (e) { console.error('Erro unidades_medida:', e); }
@@ -636,6 +679,29 @@ const createTables = async () => {
             )`);
             console.log('✅ Tabela movimentacao_estoque verificada/criada');
         } catch (e) { console.error('Erro movimentacao_estoque:', e); }
+
+        // MIGRATION: v8.5 — Configurações Unificadas (Fase 23)
+        try {
+            const configCols = [
+                'fazenda_area REAL',
+                'fazenda_safra TEXT',
+                'unidade_padrao TEXT DEFAULT "KG"',
+                'rel_graficos INTEGER DEFAULT 1',
+                'rel_auto_pdf INTEGER DEFAULT 0',
+                'rel_rodape TEXT'
+            ];
+            for (const col of configCols) {
+                try { await executeQuery(`ALTER TABLE app_settings ADD COLUMN ${col}`); } catch (e) { }
+            }
+        } catch (e) { }
+
+        // MIGRATION: v8.6 — codigo na tabela cadastro
+        try { await executeQuery('ALTER TABLE cadastro ADD COLUMN codigo TEXT'); } catch (e) { }
+
+        // MIGRATION: v8.6 — cidade e estado na tabela clientes
+        try { await executeQuery('ALTER TABLE clientes ADD COLUMN cidade TEXT'); } catch (e) { }
+        try { await executeQuery('ALTER TABLE clientes ADD COLUMN estado TEXT'); } catch (e) { }
+
 
     } catch (error) {
         console.error('❌ Erro ao criar tabelas:', error);
@@ -711,7 +777,7 @@ const seedKnowledgeBasePro = async () => {
             }
             console.log('✅ Base de Conhecimento Seedada com sucesso!');
         }
-    } catch (e) { console.error('Seed Error:', e); }
+    } catch (e) { console.error('[SYNC ERROR]', e); }
 };
 
 // ... (helpers)
@@ -767,15 +833,25 @@ export const getSaldoEstoque = async (produto_id) => {
     return res.rows.item(0).saldo || 0;
 };
 
-export const marcarVendaRecebida = async (uuid, valor_recebido) => {
-    await executeQuery(
-        `UPDATE vendas SET status_pagamento = 'RECEBIDO', valor_recebido = ?, data_recebimento = ?, last_updated = ? WHERE uuid = ?`,
-        [valor_recebido, new Date().toISOString(), new Date().toISOString(), uuid]
-    );
-};
+// marcarVendaRecebida migrou para VendaService.js
 
 // --- HELPER PARA MAIÚSCULAS ---
 const up = (text) => text ? text.toString().toUpperCase().trim() : '';
+
+// --- LOGGING / AUDITORIA (Fase 19) ---
+export const logActivity = async (acao, entidade, descricao, usuario = 'SISTEMA') => {
+    try {
+        await executeQuery(`INSERT INTO activity_log (data, usuario, acao, entidade, descricao, sync_status) VALUES (?, ?, ?, ?, ?, 0)`,
+            [new Date().toISOString(), up(usuario), up(acao), up(entidade), up(descricao)]);
+    } catch (e) { console.log('Erro ao registrar log:', e); }
+};
+
+export const logError = async (tela, erroMsg, stack = '') => {
+    try {
+        await executeQuery(`INSERT INTO error_logs (data, tela, erro, stack, sync_status) VALUES (?, ?, ?, ?, 0)`,
+            [new Date().toISOString(), up(tela), erroMsg, stack]);
+    } catch (e) { console.log('Erro ao registrar erro interno:', e); }
+};
 
 
 // --- CONFIG ---
@@ -814,125 +890,8 @@ export const deleteUsuario = async (id) => {
 
 // --- OPERAÇÕES (TODAS COM up()) ---
 
-export const insertColheita = async (c) => {
-    await executeQuery(
-        `INSERT INTO colheitas (uuid, cultura, produto, quantidade, congelado, data, observacao, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [c.uuid, up(c.cultura), up(c.produto), c.quantidade, c.congelado || 0, c.data, up(c.observacao), new Date().toISOString(), 0]
-    );
-    await atualizarEstoque(c.produto, c.quantidade, c.data);
-};
-
-export const updateColheita = async (uuid, dados) => {
-    // Primeiro desfazer o estoque da quantidade antiga é complexo sem ler antes, 
-    // mas para simplificar vamos assumir que a UI lida ou o usuário ajusta estoque se errar muito.
-    // O ideal seria ler, subtrair, adicionar novo.
-    const ant = await executeQuery('SELECT * FROM colheitas WHERE uuid = ?', [uuid]);
-    if (ant.rows.length > 0) {
-        const old = ant.rows.item(0);
-        await atualizarEstoque(old.produto, -old.quantidade, old.data); // Reverte com data original
-    }
-
-    await executeQuery(
-        `UPDATE colheitas SET cultura = ?, produto = ?, quantidade = ?, congelado = ?, data = ?, observacao = ?, last_updated = ?, sync_status = 0 WHERE uuid = ?`,
-        [up(dados.cultura), up(dados.produto), dados.quantidade, dados.congelado || 0, dados.data, up(dados.observacao), new Date().toISOString(), uuid]
-    );
-    await atualizarEstoque(dados.produto, dados.quantidade, dados.data); // Aplica novo com data nova
-};
-
-export const deleteColheita = async (uuid) => {
-    const ant = await executeQuery('SELECT * FROM colheitas WHERE uuid = ?', [uuid]);
-    if (ant.rows.length > 0) {
-        const old = ant.rows.item(0);
-        await atualizarEstoque(old.produto, -old.quantidade); // Reverte estoque
-    }
-    await executeQuery('UPDATE colheitas SET is_deleted = 1, sync_status = 0 WHERE uuid = ?', [uuid]);
-};
-
-export const getColheitasRecentes = async () => {
-    const res = await executeQuery('SELECT * FROM colheitas WHERE is_deleted = 0 ORDER BY data DESC, id DESC LIMIT 50');
-    const rows = [];
-    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
-    return rows;
-};
-
-export const insertVenda = async (v) => {
-    await executeQuery(
-        `INSERT INTO vendas (uuid, cliente, produto, quantidade, valor, data, observacao, status_pagamento, data_recebimento, forma_pagamento, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [v.uuid, up(v.cliente), up(v.produto), v.quantidade, v.valor, v.data, up(v.observacao), v.status_pagamento || 'A_RECEBER', v.data_recebimento || null, v.forma_pagamento || null, new Date().toISOString(), 0]
-    );
-
-    // LÓGICA V4.1: BAIXA DE ESTOQUE POR RECEITA
-    try {
-        // 1. Descobrir UUID do produto vendido pelo Nome
-        const prodRes = await executeQuery('SELECT uuid FROM cadastro WHERE nome = ?', [up(v.produto)]);
-        if (prodRes.rows.length > 0) {
-            const paiUuid = prodRes.rows.item(0).uuid;
-
-            // 2. Verificar se tem Receita
-            const receitaRes = await executeQuery('SELECT * FROM receitas WHERE produto_pai_uuid = ?', [paiUuid]);
-
-            if (receitaRes.rows.length > 0) {
-                // TEM RECEITA: Baixar componentes
-                console.log(`📦 Produto ${v.produto} tem receita. Baixando ingredientes...`);
-                for (let i = 0; i < receitaRes.rows.length; i++) {
-                    const ingrediente = receitaRes.rows.item(i);
-                    const qtdIngrediente = ingrediente.quantidade * v.quantidade; // Qtd Receita * Qtd Venda
-
-                    // Descobrir nome do filho para baixar estoque
-                    const filhoRes = await executeQuery('SELECT nome FROM cadastro WHERE uuid = ?', [ingrediente.item_filho_uuid]);
-                    if (filhoRes.rows.length > 0) {
-                        const nomeFilho = filhoRes.rows.item(0).nome;
-                        await atualizarEstoque(nomeFilho, -qtdIngrediente, v.data);
-                        console.log(`   - Baixado: ${qtdIngrediente} de ${nomeFilho}`);
-                    }
-                }
-            } else {
-                // SEM RECEITA: Baixa o produto direto (Comportamento Clássico)
-                await atualizarEstoque(v.produto, -v.quantidade, v.data);
-            }
-        } else {
-            // Produto não cadastrado (Avulso): Baixa direto pelo nome
-            await atualizarEstoque(v.produto, -v.quantidade, v.data);
-        }
-    } catch (e) {
-        console.error("Erro na baixa de estoque receita:", e);
-        // Fallback: tenta baixar o principal se der erro
-        await atualizarEstoque(v.produto, -v.quantidade, v.data);
-    }
-};
-
-export const updateVenda = async (uuid, v) => {
-    const ant = await executeQuery('SELECT * FROM vendas WHERE uuid = ?', [uuid]);
-    if (ant.rows.length > 0) {
-        const old = ant.rows.item(0);
-        await atualizarEstoque(old.produto, old.quantidade); // Devolve ao estoque (reverte saída)
-    }
-
-    await executeQuery(
-        `UPDATE vendas SET cliente = ?, produto = ?, quantidade = ?, valor = ?, data = ?, observacao = ?, status_pagamento = ?, data_recebimento = ?, forma_pagamento = ?, last_updated = ?, sync_status = 0 WHERE uuid = ?`,
-        [up(v.cliente), up(v.produto), v.quantidade, v.valor, v.data, up(v.observacao), v.status_pagamento || 'A_RECEBER', v.data_recebimento || null, v.forma_pagamento || null, new Date().toISOString(), uuid]
-    );
-    await atualizarEstoque(v.produto, -v.quantidade); // Tira do estoque novamente com nova qtd
-};
-
-
-
-
-export const deleteVenda = async (uuid) => {
-    const ant = await executeQuery('SELECT * FROM vendas WHERE uuid = ?', [uuid]);
-    if (ant.rows.length > 0) {
-        const old = ant.rows.item(0);
-        await atualizarEstoque(old.produto, old.quantidade); // Devolve ao estoque
-    }
-    await executeQuery('UPDATE vendas SET is_deleted = 1, sync_status = 0 WHERE uuid = ?', [uuid]);
-};
-
-export const getVendasRecentes = async () => {
-    const res = await executeQuery('SELECT * FROM vendas WHERE is_deleted = 0 ORDER BY data DESC, id DESC LIMIT 50');
-    const rows = [];
-    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
-    return rows;
-};
+// Lógicas de Vendas (insert, update, delete, get) migraram para VendaService.js
+// Lógicas de Colheita migraram para ColheitaService.js
 
 export const insertCompra = async (d) => {
     await executeQuery(`INSERT INTO compras (uuid, item, quantidade, valor, cultura, data, observacao, detalhes, last_updated, sync_status, anexo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -984,14 +943,7 @@ export const insertDescarte = async (d) => {
     await atualizarEstoque(d.produto, -d.quantidade_kg);
 };
 
-// --- ESTOQUE AJUSTE INICIAL ---
-export const registrarAjusteEstoqueInicial = async (d) => {
-    // Insere como uma compra com valor = 0 e um texto identificador
-    // para que não gere custo, mas aumente a quantidade de estoque.
-    await executeQuery(`INSERT INTO compras (uuid, item, quantidade, valor, cultura, data, observacao, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [d.uuid, up(d.produto), d.quantidade, 0, 'SISTEMA', new Date().toISOString(), 'AJUSTE_INICIAL|' + (d.observacao || ''), new Date().toISOString(), 0]);
-    await atualizarEstoque(d.produto, d.quantidade);
-};
+// Lógicas de Ajuste Inicial de Estoque migraram para EstoqueService.js
 
 // --- CADASTROS ---
 
@@ -1104,62 +1056,6 @@ export const getReceita = async (paiUuid) => {
 
 export const deleteItemReceita = async (id) => {
     await executeQuery('DELETE FROM receitas WHERE id = ?', [id]);
-};
-
-// --- ESTOQUE & SYNC ---
-
-// --- ESTOQUE & SYNC ---
-
-// V5.0: Logica de Estoque Seguro e Histórico
-// Regra 1: Estoque (snapshot atual) nunca negativo.
-// Regra 2: Movimentações históricas (antes de 2026) não afetam estoque atual.
-const APP_START_DATE = '2026-01-01'; // Data de Corte
-
-export const atualizarEstoque = async (produto, quantidadeDelta, dataReferencia = null) => {
-    try {
-        // REGRA DE HISTÓRICO: Se a data for antiga, não mexe no estoque atual
-        if (dataReferencia) {
-            if (new Date(dataReferencia) < new Date(APP_START_DATE)) {
-                console.log(`📜 Registro histórico (${dataReferencia}): Estoque inalterado.`);
-                return;
-            }
-        }
-
-        const prodUp = up(produto);
-        const result = await executeQuery('SELECT * FROM estoque WHERE produto = ?', [prodUp]);
-        const timestamp = new Date().toISOString();
-
-        if (result.rows.length > 0) {
-            const current = result.rows.item(0);
-            let novaQuantidade = current.quantidade + quantidadeDelta;
-
-            // REGRA DE NEGATIVO: Se for ficar negativo, zera.
-            if (novaQuantidade < 0) {
-                console.warn(`⚠️ Estoque insuficiente de ${produto}. Ajustando de ${current.quantidade} para 0.`);
-                novaQuantidade = 0;
-            }
-
-            await executeQuery('UPDATE estoque SET quantidade = ?, last_updated = ? WHERE produto = ?', [novaQuantidade, timestamp, prodUp]);
-        } else {
-            // Se não existe e delta é negativo, começa com 0 (não cria negativo)
-            const inicial = quantidadeDelta < 0 ? 0 : quantidadeDelta;
-            await executeQuery('INSERT INTO estoque (produto, quantidade, last_updated) VALUES (?, ?, ?)', [prodUp, inicial, timestamp]);
-        }
-    } catch (e) { console.error('Erro Estoque:', e); }
-};
-
-export const getEstoque = async () => {
-    // JOIN com cadastro para pegar unidade e tipo
-    const res = await executeQuery(`
-        SELECT e.*, c.unidade, c.tipo, c.fator_conversao 
-        FROM estoque e
-        LEFT JOIN cadastro c ON UPPER(e.produto) = UPPER(c.nome)
-        WHERE e.is_deleted = 0
-        ORDER BY e.quantidade ASC
-    `);
-    const rows = [];
-    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
-    return rows;
 };
 
 // --- CUSTOS PROFISSIONAIS (MÓDULO V8.0) ---
@@ -1311,6 +1207,8 @@ export const insertMonitoramentoCompleto = async (d) => {
 export const getDashboardStats = async () => {
     try {
         const today = new Date().toISOString().split('T')[0];
+        const firstDayOfMonth = today.substring(0, 8) + '01'; // ex: '2023-10-01'
+        const APP_START_DATE = '2024-01-01'; // Default safe date
 
         // 1. Colheita Hoje (KG)
         const resColheita = await executeQuery(`SELECT SUM(quantidade) as total FROM colheitas WHERE data = ? AND is_deleted = 0`, [today]);
@@ -1320,28 +1218,35 @@ export const getDashboardStats = async () => {
         const resVendas = await executeQuery(`SELECT SUM(valor) as total FROM vendas WHERE data = ? AND is_deleted = 0`, [today]);
         const vendasHoje = resVendas.rows.item(0).total || 0;
 
-        // 3. Plantio Ativo (Total de registros não colhidos? Simplificado: Total Plantio Recente)
+        // 3. Plantio Ativo
         const resPlantio = await executeQuery(`SELECT COUNT(*) as total FROM plantio WHERE is_deleted = 0`);
         const plantioAtivo = resPlantio.rows.item(0).total || 0;
 
-        // 4. Máquinas Revisão (Alerta)
+        // 4. Máquinas Revisão
         const resMaquinas = await executeQuery(`SELECT COUNT(*) as total FROM maquinas WHERE horimetro_atual >= intervalo_revisao AND is_deleted = 0`);
         const maquinasAlert = resMaquinas.rows.item(0).total || 0;
 
-        // 5. Saldo Geral (AGORA: Resultado do Ano/Período Atual)
-        // Ignora histórico incompleto antes de APP_START_DATE
-        const resRec = await executeQuery('SELECT SUM(valor * quantidade) as total FROM vendas WHERE data >= ? AND is_deleted = 0', [APP_START_DATE]);
-        const resDesp = await executeQuery('SELECT SUM(valor) as total FROM compras WHERE data >= ? AND is_deleted = 0', [APP_START_DATE]);
-        const resCust = await executeQuery('SELECT SUM(valor_total) as total FROM custos WHERE data >= ? AND is_deleted = 0', [APP_START_DATE]);
-        const saldo = (resRec.rows.item(0).total || 0) - ((resDesp.rows.item(0).total || 0) + (resCust.rows.item(0).total || 0));
+        // 5. Custos do Mês
+        const resCustosMes = await executeQuery('SELECT SUM(valor_total) as total FROM custos WHERE data >= ? AND is_deleted = 0', [firstDayOfMonth]);
+        const resComprasMes = await executeQuery('SELECT SUM(valor * quantidade) as total FROM compras WHERE data >= ? AND is_deleted = 0', [firstDayOfMonth]);
+        const custosMes = (resCustosMes.rows.item(0).total || 0) + (resComprasMes.rows.item(0).total || 0);
 
-        // 6. Pendentes Sync
-        const pendentes = (await getDadosPendentes()).total;
+        // 6. Resultado do Mês (Saldo do Mês)
+        const resVendasMes = await executeQuery('SELECT SUM(valor) as total FROM vendas WHERE data >= ? AND is_deleted = 0', [firstDayOfMonth]);
+        const vendasMesTotal = resVendasMes.rows.item(0).total || 0;
+        const saldoMes = vendasMesTotal - custosMes;
 
-        return { colheitaHoje, vendasHoje, plantioAtivo, maquinasAlert, saldo, pendentes };
-    } catch (e) {
-        console.error('Dashboard Stats Error:', e);
-        return { colheitaHoje: 0, vendasHoje: 0, plantioAtivo: 0, maquinasAlert: 0, saldo: 0, pendentes: 0 };
+        // 7. Pendentes Sync (Safeguard se existir a query)
+        let pendentes = 0;
+        try {
+            const resPendente = await executeQuery('SELECT COUNT(*) as total FROM colheitas WHERE sync_status = 0');
+            pendentes = resPendente.rows.item(0).total || 0;
+        } catch (err) { }
+
+        return { colheitaHoje, vendasHoje, plantioAtivo, maquinasAlert, custosMes, saldo: saldoMes, pendentes };
+    } catch (error) {
+        console.error('[DATABASE ERROR]', error);
+        return { colheitaHoje: 0, vendasHoje: 0, plantioAtivo: 0, maquinasAlert: 0, custosMes: 0, saldo: 0, pendentes: 0 };
     }
 };
 
@@ -1367,7 +1272,8 @@ export const updateAppSetting = async (column, value) => {
             'primary_color', 'theme_mode', 'fazenda_nome', 'fazenda_produtor', 'fazenda_documento',
             'fazenda_telefone', 'fazenda_email', 'fazenda_logo', 'fin_moeda', 'fin_mes_fiscal',
             'fin_calc_margem', 'fin_vinc_custo', 'fin_meta_lucro', 'clima_api_key', 'clima_cidade',
-            'clima_gps', 'clima_ativo', 'rel_incluir_logo', 'rel_modelo', 'img_qualidade', 'img_limite'
+            'clima_gps', 'clima_ativo', 'rel_incluir_logo', 'rel_modelo', 'img_qualidade', 'img_limite',
+            'fazenda_area', 'fazenda_safra', 'unidade_padrao', 'rel_graficos', 'rel_auto_pdf', 'rel_rodape'
         ];
 
         if (!validColumns.includes(column)) throw new Error('Coluna de configuração inválida');
@@ -1397,3 +1303,7 @@ export const insertCategoriaDespesa = async (d) => {
 export const deleteCategoriaDespesa = async (id) => {
     await executeQuery('DELETE FROM categorias_despesa WHERE id = ?', [id]);
 };
+
+// --- FIM DO ARQUIVO ---
+
+// --- FIM DO ARQUIVO ---

@@ -5,12 +5,20 @@ import { v4 as uuidv4 } from 'uuid';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as DB from '../database/database';
+import { useTheme } from '../context/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import AppContainer from '../ui/AppContainer';
+import ScreenHeader from '../ui/ScreenHeader';
+import GlowCard from '../ui/GlowCard';
+import GlowInput from '../ui/GlowInput';
+import PrimaryButton from '../ui/PrimaryButton';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
 export default function CadastroFormScreen({ route, navigation }) {
+    const { colors } = useTheme();
     const { tipo, title } = route.params || { tipo: 'PRODUTO', title: 'Novo Cadastro' };
     const [loading, setLoading] = useState(false);
 
@@ -21,6 +29,7 @@ export default function CadastroFormScreen({ route, navigation }) {
     const [nome, setNome] = useState('');
     const [categoria, setCategoria] = useState(tipo);
     const [unidade, setUnidade] = useState('UN');
+    const [codigo, setCodigo] = useState('');
     const [qtdInicial, setQtdInicial] = useState('0');
     const [valor, setValor] = useState('0');
 
@@ -35,27 +44,51 @@ export default function CadastroFormScreen({ route, navigation }) {
     const [composicao, setComposicao] = useState('');
     const [obs, setObs] = useState('');
 
-    // SISTEMA DE COMPOSIÇÃO (RECEITAS)
-    const [composicaoAberta, setComposicaoAberta] = useState(false);
-    const [itemComponents, setItemComponents] = useState([]);
 
-    // Modal Seleção Cadastro
-    const [modalVisible, setModalVisible] = useState(false);
-    const [catalogo, setCatalogo] = useState([]);
-    const [searchText, setSearchText] = useState('');
-    const [qtdComponente, setQtdComponente] = useState('1');
-    const [itemSelecionado, setItemSelecionado] = useState(null);
+    const DRAFT_KEY = `@draft_CadastroFormScreen_${tipo}`;
 
-    useEffect(() => { loadCatalogo(); }, []);
+    // Rascunho - Recuperação
+    useEffect(() => {
+        const checkDraft = async () => {
+            try {
+                const saved = await AsyncStorage.getItem(DRAFT_KEY);
+                if (saved) {
+                    Alert.alert(
+                        'Rascunho de Cadastro',
+                        'Existe um formulário não finalizado. Deseja continuá-lo?',
+                        [
+                            { text: 'Descartar', style: 'destructive', onPress: () => AsyncStorage.removeItem(DRAFT_KEY) },
+                            {
+                                text: 'Continuar', onPress: () => {
+                                    const draft = JSON.parse(saved);
+                                    setNome(draft.nome || '');
+                                    setUnidade(draft.unidade || 'UN');
+                                    setQtdInicial(draft.qtdInicial || '0');
+                                    setValor(draft.valor || '0');
+                                    setObs(draft.obs || '');
+                                }
+                            }
+                        ]
+                    );
+                }
+            } catch (e) { console.log('Draft error:', e); }
+        };
+        setTimeout(checkDraft, 600);
+    }, [tipo]);
 
-    const loadCatalogo = async () => {
-        try {
-            if (typeof DB.getCadastro === 'function') {
-                const data = await DB.getCadastro();
-                setCatalogo(data);
+    // Rascunho - Auto-Save
+    useEffect(() => {
+        const saveDraft = async () => {
+            if (nome) {
+                await AsyncStorage.setItem(DRAFT_KEY, JSON.stringify({ nome, unidade, qtdInicial, valor, obs }));
+            } else if (!nome) {
+                await AsyncStorage.removeItem(DRAFT_KEY);
             }
-        } catch (e) { console.log(e); }
-    };
+        };
+        const timer = setTimeout(saveDraft, 1000);
+        return () => clearTimeout(timer);
+    }, [nome, unidade, qtdInicial, valor, obs, tipo]);
+
 
     // SEÇÃO 3 - IMAGENS (100% OPCIONAL)
     const [fotoPrincipal, setFotoPrincipal] = useState(null);
@@ -100,6 +133,7 @@ export default function CadastroFormScreen({ route, navigation }) {
                 principio_ativo: principioA || '',
                 classe_toxicologica: classeT || '',
                 composicao: composicao || '',
+                codigo: codigo ? codigo.trim().toUpperCase() : '',
                 preco_venda: safeNum(valor, 0)
             };
 
@@ -123,16 +157,6 @@ export default function CadastroFormScreen({ route, navigation }) {
                 }
             }
 
-            // SEÇÃO COMPOSIÇÃO: INSERIR RECEITAS NA BASE
-            if (composicaoAberta && itemComponents.length > 0) {
-                if (typeof DB.insertReceita === 'function') {
-                    for (const comp of itemComponents) {
-                        try {
-                            await DB.insertReceita(baseObj.uuid, comp.uuid, comp.qtd);
-                        } catch (e) { console.warn('Falha na receita:', e); }
-                    }
-                }
-            }
 
             // SEÇÃO 3: IMAGENS APÓS SALVAR (Tudo Seguro)
             if (fotoPrincipal || fotoRotulo) {
@@ -146,9 +170,27 @@ export default function CadastroFormScreen({ route, navigation }) {
                 }
             }
 
-            Alert.alert('Pronto!', 'Salvo com sucesso.', [
-                { text: 'OK', onPress: () => navigation.goBack() }
-            ]);
+            await AsyncStorage.removeItem(DRAFT_KEY);
+
+            if (vendavel) {
+                Alert.alert(
+                    'Sucesso!',
+                    'Item cadastrado com sucesso. Deseja configurar a composição (receita) deste produto agora?',
+                    [
+                        { text: 'Não', onPress: () => navigation.goBack() },
+                        {
+                            text: 'Sim',
+                            onPress: () => {
+                                navigation.navigate('Cadastro', { openRecipeFor: baseObj.uuid, itemName: baseObj.nome });
+                            }
+                        }
+                    ]
+                );
+            } else {
+                Alert.alert('Pronto!', 'Salvo com sucesso.', [
+                    { text: 'OK', onPress: () => navigation.goBack() }
+                ]);
+            }
 
         } catch (error) {
             console.error('[AgroGB] Detalhe Crítico:', error);
@@ -158,288 +200,138 @@ export default function CadastroFormScreen({ route, navigation }) {
         }
     };
 
-    const handleAddComposicao = () => {
-        Alert.alert(
-            'Atenção',
-            'TEM CERTEZA QUE DESEJA INCLUIR UMA COMPOSIÇÃO PARA ESTE ITEM?',
-            [
-                { text: 'Cancelar', style: 'cancel' },
-                {
-                    text: 'Sim, configurar',
-                    onPress: () => {
-                        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                        setComposicaoAberta(true);
-                    }
-                }
-            ]
-        );
-    };
 
-    const confirmComponent = () => {
-        if (!itemSelecionado) return Alert.alert('Aviso', 'Selecione um item do catálogo.');
-        const q = parseFloat(qtdComponente);
-        if (isNaN(q) || q <= 0) return Alert.alert('Aviso', 'Quantidade inválida.');
+    return (
+        <AppContainer>
+            <ScreenHeader
+                title={title.toUpperCase()}
+                onBack={() => navigation.goBack()}
+            />
 
-        const novo = {
-            id: uuidv4(),
-            uuid: itemSelecionado.uuid,
-            nome: itemSelecionado.nome,
-            unidade: itemSelecionado.unidade,
-            qtd: q
-        };
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
+                {/* BLOCO 1 - IDENTIFICAÇÃO */}
+                <GlowCard style={styles.card}>
+                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>IDENTIFICAÇÃO PRINCIPAL</Text>
+                    <View style={[styles.divider, { backgroundColor: colors.glassBorder }]} />
 
-        setItemComponents([...itemComponents, novo]);
-        setModalVisible(false);
-        setItemSelecionado(null);
-        setQtdComponente('1');
-    };
+                    <Text style={[styles.label, { color: colors.textMuted }]}>NOME DO ITEM *</Text>
+                    <GlowInput
+                        value={nome}
+                        onChangeText={t => setNome(t.toUpperCase())}
+                        placeholder="Ex: Milho Premium"
+                    />
 
-    const removeComponent = (id) => {
-        setItemComponents(itemComponents.filter(c => c.id !== id));
-    };
+                    <Text style={[styles.label, { color: colors.textMuted }]}>CATEGORIA / TIPO *</Text>
+                    <GlowInput
+                        value={categoria}
+                        onChangeText={t => setCategoria(t.toUpperCase())}
+                        placeholder="Ex: INSUMO"
+                    />
 
-    const getFilteredCatalogo = () => {
-        if (!searchText) return catalogo;
-        return catalogo.filter(c => c.nome.toUpperCase().includes(searchText.toUpperCase()));
-    };
+                    <Text style={[styles.label, { color: colors.textMuted }]}>CÓDIGO DE IDENTIFICAÇÃO (OPCIONAL)</Text>
+                    <GlowInput
+                        placeholder="Ex: EMB-001, PRD-002..."
+                        value={codigo}
+                        onChangeText={t => setCodigo(t.toUpperCase())}
+                    />
 
-    <View style={styles.container}>
-        <LinearGradient colors={['#1E8E5A', '#34A853']} style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 5 }}>
-                <Ionicons name="arrow-back" size={26} color="#FFF" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>{title.toUpperCase()}</Text>
-            <View style={{ width: 36 }} />
-        </LinearGradient>
-
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
-            {/* BLOCO 1 - IDENTIFICAÇÃO */}
-            <View style={styles.card}>
-                <Text style={styles.sectionTitle}>IDENTIFICAÇÃO PRINCIPAL</Text>
-                <View style={styles.divider} />
-
-                <Text style={styles.label}>NOME DO ITEM *</Text>
-                <TextInput style={styles.inputGrande} value={nome} onChangeText={t => setNome(t.toUpperCase())} placeholder="Ex: Milho Premium" />
-
-                <Text style={styles.label}>CATEGORIA / TIPO *</Text>
-                <TextInput style={styles.input} value={categoria} onChangeText={t => setCategoria(t.toUpperCase())} placeholder="Ex: INSUMO" />
-
-                <Text style={styles.label}>UNIDADE DE MEDIDA *</Text>
-                <View style={styles.segmentContainer}>
-                    {['KG', 'LT', 'CX', 'SC', 'UN'].map((u) => (
-                        <TouchableOpacity
-                            key={u}
-                            style={[styles.segmentBtn, unidade === u && styles.segmentBtnActive]}
-                            onPress={() => setUnidade(u)}
-                        >
-                            <Text style={[styles.segmentTxt, unidade === u && styles.segmentTxtActive]}>{u}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-            </View>
-
-            {/* BLOCO 2 - DADOS DE EMBALAGEM E VALORES */}
-            {tipo !== 'CULTURA' && (
-                <View style={styles.card}>
-                    <Text style={styles.sectionTitle}>CUSTO E EMBALAGEM</Text>
-                    <View style={styles.divider} />
-
-                    <View style={{ flexDirection: 'row', gap: 15 }}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.label}>PREÇO (R$)</Text>
-                            <TextInput style={styles.input} value={valor} onChangeText={setValor} keyboardType="numeric" placeholder="0.00" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.label}>ESTOQUE INICIAL</Text>
-                            <TextInput style={styles.input} value={qtdInicial} onChangeText={setQtdInicial} keyboardType="numeric" placeholder="0" />
-                        </View>
+                    <Text style={[styles.label, { color: colors.textMuted }]}>UNIDADE DE MEDIDA *</Text>
+                    <View style={[styles.segmentContainer, { borderColor: colors.glassBorder }]}>
+                        {['KG', 'LT', 'CX', 'SC', 'UNI', 'M', 'HA', 'CBC'].map((u) => (
+                            <TouchableOpacity
+                                key={u}
+                                style={[styles.segmentBtn, { backgroundColor: colors.card, borderRightColor: colors.glassBorder }, unidade === u && { backgroundColor: colors.primary }]}
+                                onPress={() => setUnidade(u)}
+                            >
+                                <Text style={[styles.segmentTxt, { color: colors.textSecondary, fontSize: u.length > 2 ? 10 : 12 }, unidade === u && { color: colors.textOnPrimary }]}>{u}</Text>
+                            </TouchableOpacity>
+                        ))}
                     </View>
-                </View>
-            )}
+                </GlowCard>
 
-            {/* BLOCO 3 - CONFIGURAÇÕES OBRIGATÓRIAS */}
-            <View style={styles.card}>
-                <Text style={styles.sectionTitle}>COMPORTAMENTO DO ITEM</Text>
-                <View style={styles.divider} />
+                {/* BLOCO 2 - DADOS DE EMBALAGEM E VALORES */}
+                {tipo !== 'CULTURA' && (
+                    <GlowCard style={styles.card}>
+                        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>CUSTO E EMBALAGEM</Text>
+                        <View style={[styles.divider, { backgroundColor: colors.glassBorder }]} />
 
-                <View style={styles.toggleRow}>
-                    <View>
-                        <Text style={styles.toggleLabel}>CONTROLA ESTOQUE</Text>
-                        <Text style={styles.toggleSub}>Pode ser comprado e armazenado</Text>
-                    </View>
-                    <TouchableOpacity style={[styles.toggleBtn, estocavel && styles.toggleBtnActive]} onPress={() => setEstocavel(!estocavel)}>
-                        <View style={[styles.toggleCircle, estocavel && styles.toggleCircleActive]} />
-                    </TouchableOpacity>
-                </View>
-
-                <View style={styles.toggleRow}>
-                    <View>
-                        <Text style={styles.toggleLabel}>PERMITIR VENDAS</Text>
-                        <Text style={styles.toggleSub}>Aparecerá na tela Registrar Venda</Text>
-                    </View>
-                    <TouchableOpacity style={[styles.toggleBtn, vendavel && styles.toggleBtnActive]} onPress={() => setVendavel(!vendavel)}>
-                        <View style={[styles.toggleCircle, vendavel && styles.toggleCircleActive]} />
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            {/* BLOCO 4 - SISTEMA DE COMPOSIÇÃO */}
-            {!composicaoAberta ? (
-                <TouchableOpacity style={styles.addComposicaoBtn} onPress={handleAddComposicao}>
-                    <Ionicons name="git-merge-outline" size={20} color="#1E8E5A" style={{ marginRight: 8 }} />
-                    <Text style={styles.addComposicaoTxt}>+ ADICIONAR COMPOSIÇÃO</Text>
-                </TouchableOpacity>
-            ) : (
-                <View style={[styles.card, { borderColor: '#1E8E5A', borderWidth: 2 }]}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text style={[styles.sectionTitle, { color: '#1E8E5A' }]}>SISTEMA DE COMPOSIÇÃO</Text>
-                        <TouchableOpacity onPress={() => {
-                            setComposicaoAberta(false);
-                            setItemComponents([]);
-                        }}>
-                            <Ionicons name="close-circle-outline" size={22} color="#EF4444" />
-                        </TouchableOpacity>
-                    </View>
-                    <View style={styles.divider} />
-
-                    <Text style={[styles.label, { marginBottom: 15 }]}>Itens exigidos ao vender 1 unidade deste produto:</Text>
-
-                    {itemComponents.map((c) => (
-                        <View key={c.id} style={styles.compItem}>
+                        <View style={{ flexDirection: 'row', gap: 15 }}>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.compNome}>{c.nome}</Text>
-                                <Text style={styles.compDetalhe}>Baixa: {c.qtd} {c.unidade} por venda</Text>
+                                <Text style={[styles.label, { color: colors.textMuted }]}>PREÇO (R$)</Text>
+                                <GlowInput
+                                    value={valor}
+                                    onChangeText={setValor}
+                                    keyboardType="numeric"
+                                    placeholder="0.00"
+                                />
                             </View>
-                            <TouchableOpacity onPress={() => removeComponent(c.id)} style={{ padding: 5 }}>
-                                <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                            </TouchableOpacity>
+                            <View style={{ flex: 1 }}>
+                                <Text style={[styles.label, { color: colors.textMuted }]}>ESTOQUE INICIAL</Text>
+                                <GlowInput
+                                    value={qtdInicial}
+                                    onChangeText={setQtdInicial}
+                                    keyboardType="numeric"
+                                    placeholder="0"
+                                />
+                            </View>
                         </View>
-                    ))}
-
-                    <TouchableOpacity style={styles.addCptBtn} onPress={() => setModalVisible(true)}>
-                        <Text style={styles.addCptTxt}>+ Adicionar Componente</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
-
-            {/* BOTÃO SALVAR */}
-            <TouchableOpacity
-                style={[styles.saveBtnGigante, loading && { backgroundColor: '#9CA3AF' }]}
-                onPress={handleSave}
-                disabled={loading}
-            >
-                {loading ? <ActivityIndicator size="large" color="#FFF" /> : (
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Ionicons name="checkmark-circle" size={26} color="#FFF" style={{ marginRight: 10 }} />
-                        <Text style={styles.saveBtnTxtGigante}>SALVAR CADASTRO</Text>
-                    </View>
+                    </GlowCard>
                 )}
-            </TouchableOpacity>
-            <View style={{ height: 50 }} />
-        </ScrollView>
 
-        {/* MODAL CATÁLOGO */}
-        <Modal visible={modalVisible} transparent={true} animationType="slide">
-            <View style={styles.modalBg}>
-                <View style={styles.modalCard}>
-                    {itemSelecionado ? (
+                {/* BLOCO 3 - CONFIGURAÇÕES OBRIGATÓRIAS */}
+                <GlowCard style={styles.card}>
+                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>COMPORTAMENTO DO ITEM</Text>
+                    <View style={[styles.divider, { backgroundColor: colors.glassBorder }]} />
+
+                    <View style={styles.toggleRow}>
                         <View>
-                            <Text style={styles.modalTitle}>Quantidade Exigida</Text>
-                            <Text style={styles.modalSub}>Quantos <Text style={{ fontWeight: 'bold' }}>{itemSelecionado.unidade}</Text> de {itemSelecionado.nome} usa?</Text>
-                            <TextInput
-                                style={styles.inputGrande}
-                                keyboardType="numeric"
-                                value={qtdComponente}
-                                onChangeText={setQtdComponente}
-                                autoFocus
-                            />
-                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
-                                <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#9CA3AF' }]} onPress={() => setItemSelecionado(null)}>
-                                    <Text style={styles.modalBtnTxt}>Voltar</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#1E8E5A' }]} onPress={confirmComponent}>
-                                    <Text style={styles.modalBtnTxt}>Confirmar</Text>
-                                </TouchableOpacity>
-                            </View>
+                            <Text style={[styles.toggleLabel, { color: colors.textPrimary }]}>CONTROLA ESTOQUE</Text>
+                            <Text style={[styles.toggleSub, { color: colors.textMuted }]}>Pode ser comprado e armazenado</Text>
                         </View>
-                    ) : (
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.modalTitle}>Vincular Insumo / Item</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Buscar item..."
-                                value={searchText}
-                                onChangeText={setSearchText}
-                            />
-                            <FlatList
-                                data={getFilteredCatalogo().filter(c => !itemComponents.some(ic => ic.uuid === c.uuid))}
-                                keyExtractor={i => i.uuid}
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity style={styles.catItem} onPress={() => setItemSelecionado(item)}>
-                                        <Text style={styles.catNome}>{item.nome}</Text>
-                                        <Text style={styles.catUnidade}>{item.unidade}</Text>
-                                    </TouchableOpacity>
-                                )}
-                            />
-                            <TouchableOpacity style={styles.modalClsBtn} onPress={() => setModalVisible(false)}>
-                                <Text style={styles.modalClsTxt}>Fechar</Text>
-                            </TouchableOpacity>
+                        <TouchableOpacity style={[styles.toggleBtn, { backgroundColor: colors.glassBorder }, estocavel && { backgroundColor: colors.primary }]} onPress={() => setEstocavel(!estocavel)}>
+                            <View style={[styles.toggleCircle, estocavel && styles.toggleCircleActive]} />
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.toggleRow}>
+                        <View>
+                            <Text style={[styles.toggleLabel, { color: colors.textPrimary }]}>PERMITIR VENDAS</Text>
+                            <Text style={[styles.toggleSub, { color: colors.textMuted }]}>Aparecerá na tela Registrar Venda</Text>
                         </View>
-                    )}
-                </View>
-            </View>
-        </Modal>
-    </View>
+                        <TouchableOpacity style={[styles.toggleBtn, { backgroundColor: colors.glassBorder }, vendavel && { backgroundColor: colors.primary }]} onPress={() => setVendavel(!vendavel)}>
+                            <View style={[styles.toggleCircle, vendavel && styles.toggleCircleActive]} />
+                        </TouchableOpacity>
+                    </View>
+                </GlowCard>
+
+
+                {/* BOTÃO SALVAR */}
+                <PrimaryButton
+                    title="SALVAR CADASTRO"
+                    icon="checkmark-circle"
+                    onPress={handleSave}
+                    loading={loading}
+                    style={{ marginTop: 10, height: 60 }}
+                />
+                <View style={{ height: 50 }} />
+            </ScrollView>
+
+        </AppContainer>
+    );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F5F7F9' },
-    header: { paddingTop: 50, paddingBottom: 20, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFF', letterSpacing: 0.5 },
-
-    card: { backgroundColor: '#FFF', borderRadius: 16, padding: 20, marginBottom: 20, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3 },
-    sectionTitle: { fontSize: 13, fontWeight: '900', color: '#6B7280', letterSpacing: 0.5 },
-    divider: { height: 1, backgroundColor: '#F3F4F6', marginVertical: 12 },
-
-    label: { fontSize: 12, fontWeight: 'bold', color: '#9CA3AF', marginBottom: 6 },
-    input: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, padding: 14, fontSize: 16, color: '#1F2937', marginBottom: 15 },
-    inputGrande: { backgroundColor: '#FFF', borderWidth: 1.5, borderColor: '#D1D5DB', borderRadius: 12, padding: 16, fontSize: 18, fontWeight: 'bold', color: '#1F2937', marginBottom: 15 },
-
-    segmentContainer: { flexDirection: 'row', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, overflow: 'hidden', marginBottom: 5 },
-    segmentBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', backgroundColor: '#FFF', borderRightWidth: 1, borderRightColor: '#E5E7EB' },
-    segmentBtnActive: { backgroundColor: '#1E8E5A' },
-    segmentTxt: { fontSize: 13, fontWeight: 'bold', color: '#6B7280' },
-    segmentTxtActive: { color: '#FFF' },
-
+    card: { marginBottom: 20 },
+    sectionTitle: { fontSize: 13, fontWeight: '900', letterSpacing: 0.5 },
+    divider: { height: 1, marginVertical: 12 },
+    label: { fontSize: 12, fontWeight: 'bold', marginBottom: 6 },
+    segmentContainer: { flexDirection: 'row', borderWidth: 1, borderRadius: 10, overflow: 'hidden', marginBottom: 5 },
+    segmentBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRightWidth: 1 },
+    segmentTxt: { fontSize: 13, fontWeight: 'bold' },
     toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 10 },
-    toggleLabel: { fontSize: 14, fontWeight: 'bold', color: '#374151' },
-    toggleSub: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
-    toggleBtn: { width: 50, height: 28, borderRadius: 15, backgroundColor: '#E5E7EB', padding: 2, justifyContent: 'center' },
-    toggleBtnActive: { backgroundColor: '#34A853' },
+    toggleLabel: { fontSize: 14, fontWeight: 'bold' },
+    toggleSub: { fontSize: 12, marginTop: 2 },
+    toggleBtn: { width: 50, height: 28, borderRadius: 15, padding: 2, justifyContent: 'center' },
     toggleCircle: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2 },
     toggleCircleActive: { transform: [{ translateX: 22 }] },
-
-    addComposicaoBtn: { flexDirection: 'row', backgroundColor: '#ECFDF5', padding: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#A7F3D0', marginBottom: 20 },
-    addComposicaoTxt: { color: '#1E8E5A', fontWeight: 'bold', fontSize: 14 },
-
-    compItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F9FAFB', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 10 },
-    compNome: { fontSize: 14, fontWeight: 'bold', color: '#1F2937' },
-    compDetalhe: { fontSize: 12, color: '#6B7280', marginTop: 2 },
-    addCptBtn: { alignItems: 'center', padding: 12, marginTop: 5 },
-    addCptTxt: { color: '#1A73E8', fontWeight: 'bold', fontSize: 14 },
-
-    saveBtnGigante: { backgroundColor: '#1E8E5A', padding: 20, borderRadius: 16, alignItems: 'center', elevation: 4, shadowColor: '#1E8E5A', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 },
-    saveBtnTxtGigante: { color: '#FFF', fontWeight: '900', fontSize: 16, letterSpacing: 1 },
-
-    modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
-    modalCard: { backgroundColor: '#FFF', borderRadius: 16, padding: 20, maxHeight: '80%' },
-    modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#1F2937', marginBottom: 5 },
-    modalSub: { fontSize: 14, color: '#6B7280', marginBottom: 15 },
-    modalBtn: { flex: 1, padding: 14, borderRadius: 10, alignItems: 'center' },
-    modalBtnTxt: { color: '#FFF', fontWeight: 'bold', fontSize: 15 },
-    catItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-    catNome: { fontSize: 15, fontWeight: 'bold', color: '#374151' },
-    catUnidade: { fontSize: 13, color: '#9CA3AF' },
-    modalClsBtn: { marginTop: 15, padding: 12, alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 10 },
-    modalClsTxt: { color: '#4B5563', fontWeight: 'bold' }
 });
