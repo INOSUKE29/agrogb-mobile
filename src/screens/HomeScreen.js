@@ -223,6 +223,7 @@ export default function HomeScreen({ navigation }) {
 
     // Calcula altura total necessária para o grid absoluto
     const totalRowsCount = Math.ceil(menuItems.length / NUM_COLS);
+    const containerHeight = totalRowsCount * (CARD_HEIGHT + CARD_GAP);
     // Sync Indicator Helpers
     const getSyncColor = () => {
         if (isOffline) return "#EF4444"; // Red
