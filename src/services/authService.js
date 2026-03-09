@@ -111,6 +111,15 @@ const checkSession = async () => {
     return await safeGet("session");
 };
 
+export const logout = async () => {
+    try {
+        console.log('[AuthService] Logging out...');
+        await safeRemove("session");
+    } catch (e) {
+        console.error("LOGOUT_ERROR:", e);
+    }
+};
+
 // --- PASSWORD RESET (v8.5) ---
 const requestPasswordReset = async (emailOrUser) => {
     // Simulação de envio para o MVP
@@ -127,7 +136,7 @@ const verifyResetToken = async (identifier, code) => {
     return { success: false, message: "Código inválido." };
 };
 
-const updatePassword = async (tokenId, newPassword) => {
+const updatePassword = async (tokenId) => {
     console.log(`[AuthService] Updating password for token: ${tokenId}`);
     return { success: true };
 };

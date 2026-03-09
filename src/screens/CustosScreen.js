@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator } from 'react-native';
-import { v4 as uuidv4 } from 'uuid';
+
 import { insertCost, getCostCategories, insertCostCategory, executeQuery } from '../database/database';
 import { Ionicons } from '@expo/vector-icons';
 import { showToast } from '../ui/Toast';
@@ -20,7 +20,7 @@ export default function CustosScreen({ navigation }) {
 
     const [newCatModalVisible, setNewCatModalVisible] = useState(false);
     const [newCatName, setNewCatName] = useState('');
-    const [newCatType, setNewCatType] = useState('VARIÁVEL');
+    const newCatType = 'VARIÁVEL';
 
     useEffect(() => { loadItems(); }, []);
 
@@ -61,7 +61,7 @@ export default function CustosScreen({ navigation }) {
             await insertCostCategory(newCatName, newCatType);
             setNewCatModalVisible(false); setNewCatName(''); loadItems();
             showToast('Categoria criada com sucesso!');
-        } catch (e) { Alert.alert('Erro', 'Não foi possível salvar a categoria.'); }
+        } catch { Alert.alert('Erro', 'Não foi possível salvar a categoria.'); }
     };
 
     const calcularTotal = () => {
@@ -85,7 +85,7 @@ export default function CustosScreen({ navigation }) {
             await insertCost(dados);
             showToast('Despesa registrada com sucesso!');
             navigation.goBack();
-        } catch (error) { Alert.alert('Erro', 'Não foi possível registrar o custo.'); }
+        } catch { Alert.alert('Erro', 'Não foi possível registrar o custo.'); }
     };
 
     return (
@@ -101,9 +101,9 @@ export default function CustosScreen({ navigation }) {
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
                 {/* RED GLOW HEADER CARD */}
-                <View style={[styles.costHeader, { backgroundColor: colors.danger + '20', borderColor: colors.danger + '40' }]}>
+                <View style={[styles.costHeader, { backgroundColor: (colors.danger || '#EF4444') + '20', borderColor: (colors.danger || '#EF4444') + '40' }]}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                        <View style={[styles.costIcon, { backgroundColor: colors.danger + '30' }]}>
+                        <View style={[styles.costIcon, { backgroundColor: (colors.danger || '#EF4444') + '30' }]}>
                             <Ionicons name="receipt-outline" size={24} color={colors.danger} />
                         </View>
                         <View>
@@ -134,14 +134,14 @@ export default function CustosScreen({ navigation }) {
                 </View>
 
                 <Text style={[styles.label, { color: colors.textSecondary }]}>VALOR TOTAL R$ (AUTOMÁTICO)</Text>
-                <View style={[styles.totalBox, { backgroundColor: colors.primary + '20', borderColor: colors.primary + '50' }]}>
+                <View style={[styles.totalBox, { backgroundColor: (colors.primary || '#1E8E5A') + '20', borderColor: (colors.primary || '#1E8E5A') + '50' }]}>
                     <Text style={[styles.totalValue, { color: colors.primaryDark }]}>R$ {calcularTotal()}</Text>
                 </View>
 
                 <Text style={[styles.label, { color: colors.textSecondary }]}>OBSERVAÇÕES (OPCIONAL)</Text>
                 <TextInput style={[styles.input, { height: 80, textAlignVertical: 'top', backgroundColor: colors.card, borderColor: colors.glassBorder, color: colors.textPrimary }]} value={observacao} onChangeText={t => up(t, setObservacao)} placeholder="NOTAS DE VÍNCULO..." placeholderTextColor={colors.textMuted} multiline />
 
-                <TouchableOpacity style={[styles.btn, { backgroundColor: colors.primary, shadowColor: colors.primary }]} onPress={salvar}>
+                <TouchableOpacity style={[styles.btn, { backgroundColor: colors.primary }]} onPress={salvar}>
                     <Ionicons name="checkmark-circle" size={20} color={colors.textOnPrimary} style={{ marginRight: 8 }} />
                     <Text style={[styles.btnText, { color: colors.textOnPrimary }]}>SALVAR E INTEGRAR</Text>
                 </TouchableOpacity>
@@ -203,7 +203,7 @@ export default function CustosScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    header: { paddingTop: 50, paddingBottom: 15, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#10B981' },
+    header: { paddingTop: 50, paddingBottom: 15, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     headerTitle: { fontSize: 18, fontWeight: '700' },
 
     costHeader: { borderRadius: 16, padding: 20, borderWidth: 1, marginBottom: 24, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },

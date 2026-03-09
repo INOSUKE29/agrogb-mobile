@@ -31,9 +31,8 @@ import ClienteFormScreen from '../screens/ClienteFormScreen';
 import CadastroFormScreen from '../screens/CadastroFormScreen';
 import MenuCadastrosScreen from '../screens/MenuCadastrosScreen';
 import ResetPasswordScreen from '../screens/ResetPasswordScreen';
-import VerifyCodeScreen from '../screens/VerifyCodeScreen';
-import ResetPasswordScreen from '../screens/ResetPasswordScreen';
 import CategoriasDespesaScreen from '../screens/CategoriasDespesaScreen';
+import VerifyCodeScreen from '../screens/VerifyCodeScreen';
 
 const Stack = createStackNavigator();
 

@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getCategoriasDespesa, insertCategoriaDespesa, deleteCategoriaDespesa } from '../database/database';
 import { useTheme } from '../theme/ThemeContext';
 
-export default function CategoriasDespesaScreen({ navigation }) {
+export default function CategoriasDespesaScreen() {
     const { colors } = useTheme();
     const [categorias, setCategorias] = useState([]);
     const [loading, setLoading] = useState(false);

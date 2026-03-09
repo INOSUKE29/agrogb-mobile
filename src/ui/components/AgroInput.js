@@ -12,9 +12,11 @@ export default function AgroInput({
     error,
     autoCapitalize = 'sentences',
     maxLength,
+    multiline = false,
+    numberOfLines = 1,
     style
 }) {
-    const { colors } = useTheme();
+    const { colors, isDark } = useTheme();
     const [isFocused, setIsFocused] = useState(false);
 
     const borderColor = error
@@ -30,7 +32,11 @@ export default function AgroInput({
             <TextInput
                 style={[
                     styles.input,
-                    { borderColor: borderColor }
+                    {
+                        borderColor: borderColor,
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : colors.surface,
+                        color: colors.text
+                    }
                 ]}
                 value={value}
                 onChangeText={onChangeText}
@@ -40,6 +46,8 @@ export default function AgroInput({
                 keyboardType={keyboardType}
                 autoCapitalize={autoCapitalize}
                 maxLength={maxLength}
+                multiline={multiline}
+                numberOfLines={numberOfLines}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
             />
@@ -49,29 +57,35 @@ export default function AgroInput({
     );
 }
 
+import { RADIUS } from '../theme/radius';
+import { TYPOGRAPHY } from '../theme/typography';
+import { SPACING } from '../theme/spacing';
+
 const styles = StyleSheet.create({
     container: {
-        marginBottom: 15,
+        marginBottom: SPACING.lg,
         width: '100%',
     },
     label: {
-        fontSize: 10,
-        fontWeight: 'bold',
-        color: '#6B7280',
-        marginBottom: 6,
-        letterSpacing: 0.5,
+        fontSize: TYPOGRAPHY.size.xxs,
+        fontWeight: TYPOGRAPHY.weight.black,
+        color: '#64748B', // Mantendo ardcoat por enquanto para labels secundários ou usando colors.textMuted
+        marginBottom: SPACING.sm,
+        letterSpacing: 1,
     },
     input: {
-        height: 50,
-        backgroundColor: '#FFF', // fallback, will be dynamic in style prop if needed
-        borderWidth: 1,
-        borderRadius: 12,
-        paddingHorizontal: 15,
-        fontSize: 16,
+        height: 54,
+        borderWidth: 1.5,
+        borderRadius: RADIUS.lg,
+        paddingHorizontal: SPACING.md,
+        paddingVertical: SPACING.sm,
+        fontSize: TYPOGRAPHY.size.sm,
+        fontWeight: TYPOGRAPHY.weight.semibold,
+        textAlignVertical: 'top',
     },
     errorText: {
-        color: '#EF4444',
-        fontSize: 12,
-        marginTop: 4,
+        fontSize: TYPOGRAPHY.size.xxs,
+        marginTop: SPACING.xs,
+        fontWeight: TYPOGRAPHY.weight.bold
     }
 });

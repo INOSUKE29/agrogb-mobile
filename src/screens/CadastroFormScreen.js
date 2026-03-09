@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image, Modal, FlatList, Animated, LayoutAnimation, Platform, UIManager } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform, UIManager } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
-import * as ImagePicker from 'expo-image-picker';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as DB from '../database/database';
 import { useTheme } from '../theme/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -22,9 +19,6 @@ export default function CadastroFormScreen({ route, navigation }) {
     const { tipo, title } = route.params || { tipo: 'PRODUTO', title: 'Novo Cadastro' };
     const [loading, setLoading] = useState(false);
 
-    // VISIBILIDADE CAMPO
-    const [mostrarAvancado, setMostrarAvancado] = useState(false);
-
     // SEÇÃO 1 - DADOS OBRIGATÓRIOS
     const [nome, setNome] = useState('');
     const [categoria, setCategoria] = useState(tipo);
@@ -38,10 +32,6 @@ export default function CadastroFormScreen({ route, navigation }) {
     const [estocavel, setEstocavel] = useState(true);
 
     // SEÇÃO 2 - DADOS TÉCNICOS (OPCIONAL)
-    const [principioA, setPrincipioA] = useState('');
-    const [classeT, setClasseT] = useState('');
-    const [conteudoE, setConteudoE] = useState('1');
-    const [composicao, setComposicao] = useState('');
     const [obs, setObs] = useState('');
 
 
@@ -71,7 +61,7 @@ export default function CadastroFormScreen({ route, navigation }) {
                         ]
                     );
                 }
-            } catch (e) { console.log('Draft error:', e); }
+            } catch { console.log('Draft error'); }
         };
         setTimeout(checkDraft, 600);
     }, [tipo]);
@@ -91,22 +81,14 @@ export default function CadastroFormScreen({ route, navigation }) {
 
 
     // SEÇÃO 3 - IMAGENS (100% OPCIONAL)
-    const [fotoPrincipal, setFotoPrincipal] = useState(null);
-    const [fotoRotulo, setFotoRotulo] = useState(null);
+    const [fotoPrincipal] = useState(null);
+    const [fotoRotulo] = useState(null);
 
     const safeNum = (val, fallback = 0) => {
         const p = parseFloat(val);
         return isNaN(p) ? fallback : p;
     };
 
-    const getImg = async (setter) => {
-        try {
-            const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.5 });
-            if (!res.canceled) setter(res.assets[0].uri);
-        } catch (e) {
-            console.warn('[AgroGB] Falha na imagem:', e);
-        }
-    };
 
     const handleSave = async () => {
         // Validação Estrita 1: Campos Obrigatórios
@@ -126,13 +108,13 @@ export default function CadastroFormScreen({ route, navigation }) {
                 nome: sanitizedNome,
                 tipo: categoria || 'INDIFERENTE',
                 unidade: unidade || 'UN',
-                fator_conversao: safeNum(conteudoE, 1),
+                fator_conversao: 1,
                 observacao: obs ? obs.trim() : '',
                 vendavel: vendavel ? 1 : 0,
                 estocavel: estocavel ? 1 : 0,
-                principio_ativo: principioA || '',
-                classe_toxicologica: classeT || '',
-                composicao: composicao || '',
+                principio_ativo: '',
+                classe_toxicologica: '',
+                composicao: '',
                 codigo: codigo ? codigo.trim().toUpperCase() : '',
                 preco_venda: safeNum(valor, 0)
             };

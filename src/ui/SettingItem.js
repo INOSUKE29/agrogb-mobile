@@ -9,10 +9,7 @@ export default function SettingItem({
     label,
     value,
     icon,
-    settingKey,
     options = [],
-    action,
-    route,
     danger = false,
     keyboardType = 'default',
     onValueChange,
@@ -83,7 +80,7 @@ export default function SettingItem({
                 );
 
             case 'theme':
-                const currentTheme = AVAILABLE_THEMES[theme] || {};
+                const currentTheme = AVAILABLE_THEMES.find(t => t.id === theme) || AVAILABLE_THEMES[0];
                 return (
                     <View style={styles.selectContainer}>
                         <View style={[styles.themeIndicator, { backgroundColor: currentTheme?.colors?.primary ?? '#1E7F5C' }]} />
@@ -133,13 +130,13 @@ export default function SettingItem({
                         <Ionicons
                             name={icon}
                             size={20}
-                            color={danger ? (colors.destructive ?? '#D64545') : colors.textSecondary}
+                            color={danger ? (colors.danger ?? '#D64545') : colors.textSecondary}
                             style={styles.icon}
                         />
                     )}
                     <Text style={[
                         styles.label,
-                        { color: danger ? (colors.destructive ?? '#D64545') : colors.text }
+                        { color: danger ? (colors.danger ?? '#D64545') : colors.text }
                     ]}>
                         {label}
                     </Text>
@@ -171,7 +168,7 @@ export default function SettingItem({
                                         style={[
                                             styles.optionItem,
                                             { borderBottomColor: colors.glassBorder ?? '#333' },
-                                            theme === key && { backgroundColor: colors.primary + '15' }
+                                            theme === key && { backgroundColor: (colors.primary || '#1E8E5A') + '15' }
                                         ]}
                                         onPress={() => handleSelectOption({ value: key })}
                                     >
@@ -194,7 +191,7 @@ export default function SettingItem({
                                             style={[
                                                 styles.optionItem,
                                                 { borderBottomColor: colors.glassBorder ?? '#333' },
-                                                isSelected && { backgroundColor: colors.primary + '15' }
+                                                isSelected && { backgroundColor: (colors.primary || '#1E8E5A') + '15' }
                                             ]}
                                             onPress={() => handleSelectOption(optionValue)}
                                         >

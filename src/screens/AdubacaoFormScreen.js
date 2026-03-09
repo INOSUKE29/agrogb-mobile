@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../styles/theme';
+
 import AgroInput from '../ui/components/AgroInput';
 import AgroButton from '../ui/components/AgroButton';
 import { insertPlanoAdubacao, updatePlanoAdubacao } from '../database/database';
@@ -106,13 +106,13 @@ export default function AdubacaoFormScreen({ route, navigation }) {
             <Text style={[styles.label, { color: colors.textSecondary }]}>TIPO DE APLICAÇÃO</Text>
             <View style={styles.pillContainer}>
                 <TouchableOpacity
-                    style={[styles.pill, { backgroundColor: colors.card, borderColor: colors.glassBorder }, tipo === 'GOTEJO' && { backgroundColor: colors.primary + '20', borderColor: colors.primary }]}
+                    style={[styles.pill, { backgroundColor: colors.card, borderColor: colors.glassBorder }, tipo === 'GOTEJO' && { backgroundColor: (colors.primary || '#1E8E5A') + '20', borderColor: colors.primary || '#1E8E5A' }]}
                     onPress={() => setTipo('GOTEJO')}
                 >
                     <Text style={[styles.pillText, { color: colors.textMuted }, tipo === 'GOTEJO' && { color: colors.primary }]}>💧 GOTEJO</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.pill, { backgroundColor: colors.card, borderColor: colors.glassBorder }, tipo === 'PULVERIZACAO' && { backgroundColor: colors.primary + '20', borderColor: colors.primary }]}
+                    style={[styles.pill, { backgroundColor: colors.card, borderColor: colors.glassBorder }, tipo === 'PULVERIZACAO' && { backgroundColor: (colors.primary || '#1E8E5A') + '20', borderColor: colors.primary || '#1E8E5A' }]}
                     onPress={() => setTipo('PULVERIZACAO')}
                 >
                     <Text style={[styles.pillText, { color: colors.textMuted }, tipo === 'PULVERIZACAO' && { color: colors.primary }]}>🌫️ PULVERIZAÇÃO</Text>

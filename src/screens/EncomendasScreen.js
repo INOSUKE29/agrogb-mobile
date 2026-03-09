@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 export default function EncomendasScreen() {
     const navigation = useNavigation();
-    const { colors } = useTheme();
+    useTheme();
     const [encomendas, setEncomendas] = useState([]);
 
     useEffect(() => {
@@ -20,7 +20,6 @@ export default function EncomendasScreen() {
 
     const loadEncomendas = async () => {
         try {
-            // Relacionando order com cliente e produto
             const query = `
                 SELECT o.*, c.nome as cliente_nome, p.nome as produto_nome
                 FROM orders o
@@ -42,19 +41,18 @@ export default function EncomendasScreen() {
                 data.push(result.rows.item(i));
             }
             setEncomendas(data);
-        } catch (error) {
-            console.error('Erro ao carregar encomendas:', error);
-            Alert.alert('Erro', 'Não foi possível carregar a lista de encomendas.');
+        } catch {
+            Alert.alert('Erro', 'Não foi possível carregar as listas.');
         }
     };
 
     const getStatusColor = (status) => {
         switch (status) {
-            case 'PENDENTE': return '#F59E0B'; // Amarelo/Laranja
-            case 'PARCIAL': return '#3B82F6'; // Azul
-            case 'CONCLUIDA': return '#10B981'; // Verde
-            case 'CANCELADA': return '#EF4444'; // Vermelho
-            default: return '#6B7280'; // Cinza
+            case 'PENDENTE': return '#F59E0B';
+            case 'PARCIAL': return '#3B82F6';
+            case 'CONCLUIDA': return '#10B981';
+            case 'CANCELADA': return '#EF4444';
+            default: return '#6B7280';
         }
     };
 
@@ -66,7 +64,6 @@ export default function EncomendasScreen() {
 
     const renderItem = ({ item }) => {
         const progress = getProgress(item.quantidade_restante, item.quantidade_total);
-
         return (
             <TouchableOpacity
                 style={styles.card}
@@ -88,7 +85,6 @@ export default function EncomendasScreen() {
                             <Text style={styles.progressText}>
                                 Restante: <Text style={{ fontWeight: 'bold' }}>{item.quantidade_restante} {item.unidade}</Text> / {item.quantidade_total} {item.unidade}
                             </Text>
-                            {/* Barra de Progresso */}
                             <View style={styles.progressBarBg}>
                                 <View style={[styles.progressBarFill, { width: `${progress}%`, backgroundColor: getStatusColor(item.status) }]} />
                             </View>

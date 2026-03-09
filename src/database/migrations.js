@@ -1,6 +1,6 @@
 import { executeQuery } from './core';
 
-const CURRENT_VERSION = 1;
+
 
 export const runMigrations = async () => {
     try {
@@ -121,13 +121,13 @@ export const runMigrations = async () => {
             try {
                 await executeQuery(`ALTER TABLE ${table} ADD COLUMN user_id INTEGER`);
                 console.log(`✅ [Migration] Coluna user_id adicionada em ${table}`);
-            } catch (e) {
+            } catch {
                 // Erro esperado se a coluna já existe
             }
             try {
                 await executeQuery(`ALTER TABLE ${table} ADD COLUMN is_deleted INTEGER DEFAULT 0`);
                 console.log(`✅ [Migration] Soft Delete suportado em ${table}`);
-            } catch (e) { }
+            } catch { }
         }
 
         // MIGRATION NOVO CHUNK: CUSTOS (Centro de Custos)
@@ -135,13 +135,13 @@ export const runMigrations = async () => {
             await executeQuery(`ALTER TABLE custos ADD COLUMN cultura TEXT`);
             await executeQuery(`ALTER TABLE custos ADD COLUMN frota_id TEXT`);
             console.log(`✅ [Migration] Colunas de centro de custos adicionadas`);
-        } catch (e) { }
+        } catch { }
 
         // MIGRATION NOVO CHUNK: COLHEITAS (Descarte Integrado)
         try {
             await executeQuery(`ALTER TABLE colheitas ADD COLUMN quantidade_descartada REAL DEFAULT 0`);
             console.log(`✅ [Migration] Coluna quantidade_descartada adicionada em colheitas`);
-        } catch (e) { }
+        } catch { }
 
         // 5. Índices para Performance (Audit Request)
         const indices = [
@@ -167,7 +167,7 @@ export const runMigrations = async () => {
             // but here we are in async function.
             // However, since we removed bcrypt import from this file to avoid build errors, 
             // we will use a HARDCODED valid bcrypt hash for 'admin' to be safe and dependency-free here.
-            // Hash for 'admin': $2a$10$X7vJk5.1.1.1.1.1.1.1.1 (Example or generate real one)
+            // Hash for 'admin': $2a$10$X7vJk5.1.1.1.1.1.1.1.1.1 (Example or generate real one)
             // Better: Use a known hash for 'admin'.
             // Hash for 'admin' with salt 10: $2a$10$DisplayHashForAdminPlaceHolder 
             // Actually, let's use the exact hash for 'admin': $2a$10$0d0j0j0j0j0j0j0j0j0j0u/B5.X5.X5.X5.X5.X5.X5

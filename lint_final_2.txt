@@ -1,0 +1,99 @@
+
+> agrogb-mobile@8.5.0 lint
+> eslint .
+
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\EstoqueScreen.js
+  2:99  warning  'Image' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\FrotaScreen.js
+  2:95  warning  'ScrollView' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\LoginScreen.js
+  3:29  warning  'Dimensions' is defined but never used         no-unused-vars
+  4:30  warning  'ActivityIndicator' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\MonitoramentoScreen.js
+  20:21  warning  'isDark' is assigned a value but never used   no-unused-vars
+  22:12  warning  'loading' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\ProfileScreen.js
+  36:12  warning  'loading' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\RegisterScreen.js
+   8:9   warning  'width' is assigned a value but never used   no-unused-vars
+   8:16  warning  'height' is assigned a value but never used  no-unused-vars
+  11:21  warning  'isDark' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\RelatoriosScreen.js
+   21:12  warning  'loading' is assigned a value but never used   no-unused-vars
+   31:17  warning  '_opacity' is assigned a value but never used  no-unused-vars
+   32:22  warning  '_opacity' is assigned a value but never used  no-unused-vars
+  215:64  warning  '_opacity' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\services\authService.js
+  139:40  warning  '_newPassword' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\services\logger.js
+  39:18  warning  'e' is defined but never used  no-unused-vars
+  79:18  warning  'e' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\services\supabase.js
+  243:14  warning  'e' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\PrimaryButton.js
+  8:84  warning  '_icon' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\Toast.js
+  2:58  warning  'Dimensions' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\cadastro\CadastroCustos.js
+   6:10  warning  'LinearGradient' is defined but never used  no-unused-vars
+  29:18  warning  'e' is defined but never used               no-unused-vars
+  59:18  warning  'error' is defined but never used           no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\cadastro\CadastroInsumos.js
+    2:47  warning  'FlatList' is defined but never used                        no-unused-vars
+    5:71  warning  'insertReceita' is defined but never used                   no-unused-vars
+    5:98  warning  'deleteItemReceita' is defined but never used               no-unused-vars
+   21:7   warning  'MARKET_STANDARDS' is assigned a value but never used       no-unused-vars
+   39:12  warning  'categoryModalVisible' is assigned a value but never used   no-unused-vars
+   40:12  warning  'obsModalVisible' is assigned a value but never used        no-unused-vars
+   40:29  warning  'setObsModalVisible' is assigned a value but never used     no-unused-vars
+   41:12  warning  'assistantVisible' is assigned a value but never used       no-unused-vars
+   41:30  warning  'setAssistantVisible' is assigned a value but never used    no-unused-vars
+   55:12  warning  'recipeModalVisible' is assigned a value but never used     no-unused-vars
+   55:32  warning  'setRecipeModalVisible' is assigned a value but never used  no-unused-vars
+   56:12  warning  'currentRecipe' is assigned a value but never used          no-unused-vars
+   57:12  warning  'addIngModal' is assigned a value but never used            no-unused-vars
+   57:25  warning  'setAddIngModal' is assigned a value but never used         no-unused-vars
+   58:12  warning  'selectedIng' is assigned a value but never used            no-unused-vars
+   58:25  warning  'setSelectedIng' is assigned a value but never used         no-unused-vars
+   59:12  warning  'qtdIng' is assigned a value but never used                 no-unused-vars
+   59:20  warning  'setQtdIng' is assigned a value but never used              no-unused-vars
+  129:11  warning  'selectCategory' is assigned a value but never used         no-unused-vars
+  264:20  warning  'loadRecipeData' is defined but never used                  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\cadastro\CadastroPlantios.js
+   2:99  warning  'ActivityIndicator' is defined but never used      no-unused-vars
+   8:7   warning  'up' is assigned a value but never used            no-unused-vars
+  20:12  warning  'loading' is assigned a value but never used       no-unused-vars
+  21:12  warning  'selectedUnit' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\components\AppCard.js
+  2:16  warning  'StyleSheet' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\components\AppInput.js
+  17:5  warning  'variant' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\components\QuickAction.js
+  5:10  warning  'RADIUS' is defined but never used   no-unused-vars
+  7:10  warning  'SPACING' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\plantio\NovoPlantioPanel.js
+  1:17  warning  'useState' is defined but never used        no-unused-vars
+  2:63  warning  'ScrollView' is defined but never used      no-unused-vars
+  5:7   warning  'THEME' is assigned a value but never used  no-unused-vars
+
+Ô£û 54 problems (0 errors, 54 warnings)
+

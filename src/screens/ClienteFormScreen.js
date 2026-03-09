@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, ActivityIndicator, StatusBar as RNStatusBar } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, StatusBar as RNStatusBar } from 'react-native';
+
 import { v4 as uuidv4 } from 'uuid';
 import { insertCliente, executeQuery } from '../database/database';
 import { AppInput } from '../ui/components/AppInput';
@@ -19,7 +18,7 @@ export default function ClienteFormScreen({ navigation, route }) {
 
     const getExtendedData = (obs) => {
         if (!obs) return { tipo: 'CLIENTE', ativo: true };
-        try { if (obs.startsWith('{')) return JSON.parse(obs); } catch (e) { }
+        try { if (obs.startsWith('{')) return JSON.parse(obs); } catch { }
         const match = obs.match(/\[TIPO:(.*?)\]/);
         return { tipo: match ? match[1] : 'CLIENTE', ativo: true };
     };
@@ -52,7 +51,7 @@ export default function ClienteFormScreen({ navigation, route }) {
             }
             if (returnTo === 'Vendas' && !isEditing) navigation.navigate('Vendas', { newClient: clientData });
             else navigation.goBack();
-        } catch (e) { console.error(e); Alert.alert('Erro', 'Falha ao salvar cliente.'); } finally { setLoading(false); }
+        } catch (err) { console.error(err); Alert.alert('Erro', 'Falha ao salvar cliente.'); } finally { setLoading(false); }
     };
 
     const TIPOS = ['CLIENTE', 'FORNECEDOR', 'PARCEIRO'];

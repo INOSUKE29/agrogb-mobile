@@ -7,3 +7,7 @@ dist/
 web-build/
 scripts/
 *.config.js
+*extracted/
+*.bak
+*.exe
+*.apk

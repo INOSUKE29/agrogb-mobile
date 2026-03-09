@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, ActivityIndicator, Switch } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, Switch } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { executeQuery, getAppSettings, updateAppSetting } from '../database/database';
 import * as Updates from 'expo-updates';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
 import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
 import GlowCard from '../ui/GlowCard';
@@ -35,7 +33,7 @@ export default function SyncScreen({ navigation }) {
             }
             const count = await syncAllMaster();
             showToast(`Sincronização concluída! ${count} tabelas processadas.`);
-        } catch (e) {
+        } catch {
             Alert.alert('Erro', 'Falha na sincronização em nuvem.');
         } finally {
             setLoading(false);
@@ -47,7 +45,7 @@ export default function SyncScreen({ navigation }) {
             setLoading(true);
             await BackupService.runLocalBackup();
             showToast('Backup local exportado!');
-        } catch (e) {
+        } catch {
             Alert.alert('Erro', 'Falha ao gerar backup local.');
         } finally {
             setLoading(false);
@@ -62,7 +60,7 @@ export default function SyncScreen({ navigation }) {
 
             await BackupService.runCloudBackup();
             showToast('Backup enviado para nuvem com sucesso!');
-        } catch (e) {
+        } catch {
             Alert.alert('Erro', 'Falha no backup em nuvem. Verifique o Storage.');
         } finally {
             setLoading(false);
@@ -85,7 +83,7 @@ export default function SyncScreen({ navigation }) {
                             Alert.alert('Sucesso', 'Dados restaurados. O app precisa ser reiniciado.', [
                                 { text: 'OK', onPress: () => Updates.reloadAsync() }
                             ]);
-                        } catch (e) {
+                        } catch {
                             Alert.alert('Erro', 'Falha ao restaurar dados.');
                         } finally {
                             setLoading(false);
@@ -106,13 +104,15 @@ export default function SyncScreen({ navigation }) {
     const countLixeira = async () => {
         try {
             let total = 0;
-            const tabelas = ['vendas', 'compras', 'colheitas', 'custos'];
+            const tabelas = ['vendas', 'compras', 'colheitas', 'custos', 'costs', 'monitoramento_entidade', 'cadastro', 'clientes', 'culturas', 'plantio', 'maquinas', 'caderno_notas'];
             for (const t of tabelas) {
-                const res = await executeQuery(`SELECT COUNT(*) as c FROM ${t} WHERE is_deleted = 1`);
-                total += res.rows.item(0).c;
+                try {
+                    const res = await executeQuery(`SELECT COUNT(*) as c FROM ${t} WHERE is_deleted = 1`);
+                    total += res.rows.item(0).c;
+                } catch { }
             }
             setLixeiraCount(total);
-        } catch (e) { }
+        } catch { }
     };
 
     const loadSettings = async () => {
@@ -142,37 +142,6 @@ export default function SyncScreen({ navigation }) {
         await updateAppSetting(key, val);
     };
 
-    const checkForUpdates = async () => {
-        try {
-            if (__DEV__) {
-                Alert.alert('Modo Dev', 'As atualizações OTA não funcionam no servidor local de desenvolvimento.');
-                return;
-            }
-            setLoading(true);
-            const update = await Updates.checkForUpdateAsync();
-            if (update.isAvailable) {
-                Alert.alert(
-                    'Nova Versão Disponível!',
-                    'Deseja atualizar agora?',
-                    [
-                        { text: 'Agora não', style: 'cancel' },
-                        {
-                            text: 'Atualizar', onPress: async () => {
-                                await Updates.fetchUpdateAsync();
-                                Alert.alert('Pronto', 'O app será reiniciado.', [
-                                    { text: 'OK', onPress: () => Updates.reloadAsync() }
-                                ]);
-                            }
-                        }
-                    ]
-                );
-            } else {
-                showToast('O aplicativo já está atualizado!');
-            }
-        } catch (error) {
-            Alert.alert('Falha', 'Não foi possível buscar atualizações.');
-        } finally { setLoading(false); }
-    };
 
     const ControlItem = ({ icon, label, description, onPress, adminOnly, danger, badge }) => {
         if (adminOnly && !isAdmin) return null;
@@ -182,16 +151,16 @@ export default function SyncScreen({ navigation }) {
                 onPress={onPress}
                 style={styles.itemWrapper}
             >
-                <GlowCard style={[styles.controlCard, { backgroundColor: colors.card, borderColor: danger ? colors.error + '40' : colors.glassBorder }]}>
-                    <View style={[styles.iconBox, { backgroundColor: danger ? colors.error + '15' : colors.primary + '15' }]}>
-                        <Ionicons name={icon} size={22} color={danger ? colors.error : colors.primary} />
+                <GlowCard style={[styles.controlCard, { backgroundColor: colors.card, borderColor: danger ? (colors.danger || '#EF4444') + '40' : colors.glassBorder }]}>
+                    <View style={[styles.iconBox, { backgroundColor: danger ? (colors.danger || '#EF4444') + '15' : (colors.primary || '#1E8E5A') + '15' }]}>
+                        <Ionicons name={icon} size={22} color={danger ? colors.danger : colors.primary} />
                     </View>
                     <View style={{ flex: 1, marginLeft: 15 }}>
                         <Text style={[styles.controlLabel, { color: colors.textPrimary }]}>{label}</Text>
                         <Text style={[styles.controlDesc, { color: colors.textMuted }]} numberOfLines={1}>{description}</Text>
                     </View>
                     {badge ? (
-                        <View style={[styles.badge, { backgroundColor: colors.error }]}>
+                        <View style={[styles.badge, { backgroundColor: colors.danger }]}>
                             <Text style={styles.badgeText}>{badge}</Text>
                         </View>
                     ) : (
@@ -247,7 +216,7 @@ export default function SyncScreen({ navigation }) {
                     onPress={() => setActiveModal('MEDIA')}
                 />
                 <ControlItem
-                    icon="cloud-sync-outline" label="Sincronização Master"
+                    icon="sync-outline" label="Sincronização Master"
                     description={loading ? "Sincronizando..." : "Sincronizar Cloud Supabase"}
                     onPress={handleSyncMaster}
                 />
@@ -368,7 +337,7 @@ export default function SyncScreen({ navigation }) {
                                             <TouchableOpacity
                                                 key={m}
                                                 onPress={() => setTheme(m)}
-                                                style={[styles.themeBtn, { backgroundColor: theme === m ? colors.primary + '20' : 'transparent', borderColor: theme === m ? colors.primary : colors.glassBorder }]}
+                                                style={[styles.themeBtn, { backgroundColor: theme === m ? (colors.primary || '#1E8E5A') + '20' : 'transparent', borderColor: theme === m ? colors.primary : colors.glassBorder }]}
                                             >
                                                 <Ionicons name={m === 'light' ? 'sunny' : m === 'dark' ? 'moon' : 'diamond'} size={20} color={theme === m ? colors.primary : colors.textMuted} />
                                                 <Text style={[styles.themeLabel, { color: theme === m ? colors.textPrimary : colors.textMuted }]}>{m.toUpperCase()}</Text>
@@ -429,7 +398,7 @@ export default function SyncScreen({ navigation }) {
                                             <TouchableOpacity
                                                 key={u}
                                                 onPress={() => handleUpdateSetting('unidade_padrao', u)}
-                                                style={[styles.miniBtn, { borderColor: settings.unidade_padrao === u ? colors.primary : colors.glassBorder, backgroundColor: settings.unidade_padrao === u ? colors.primary + '15' : 'transparent' }]}
+                                                style={[styles.miniBtn, { borderColor: settings.unidade_padrao === u ? colors.primary : colors.glassBorder, backgroundColor: settings.unidade_padrao === u ? (colors.primary || '#1E8E5A') + '15' : 'transparent' }]}
                                             >
                                                 <Text style={{ fontSize: 10, fontWeight: 'bold', color: settings.unidade_padrao === u ? colors.primary : colors.textMuted }}>{u}</Text>
                                             </TouchableOpacity>
@@ -444,7 +413,7 @@ export default function SyncScreen({ navigation }) {
                             <>
                                 <ModalHeader title="Lixeira Administrativa" onClose={() => setActiveModal(null)} />
                                 <View style={styles.lixeiraBody}>
-                                    <MaterialCommunityIcons name="trash-can-outline" size={60} color={colors.error} />
+                                    <MaterialCommunityIcons name="trash-can-outline" size={60} color={colors.danger} />
                                     <Text style={[styles.lixeiraCount, { color: colors.textPrimary }]}>{lixeiraCount} ITENS</Text>
                                     <Text style={[styles.lixeiraDesc, { color: colors.textMuted }]}>Itens removidos aguardando exclusão física definitiva do banco SQLite.</Text>
 
@@ -452,7 +421,7 @@ export default function SyncScreen({ navigation }) {
                                         <TouchableOpacity
                                             style={[styles.restoreBtn, { borderColor: colors.primary }]}
                                             onPress={async () => {
-                                                const tabelas = ['vendas', 'compras', 'colheitas', 'custos'];
+                                                const tabelas = ['vendas', 'compras', 'colheitas', 'custos', 'monitoramento_entidade', 'cadastro', 'clientes', 'culturas', 'plantio', 'maquinas', 'caderno_notas'];
                                                 for (const t of tabelas) { await executeQuery(`UPDATE ${t} SET is_deleted = 0 WHERE is_deleted = 1`); }
                                                 countLixeira(); showToast('Itens restaurados!'); setActiveModal(null);
                                             }}
@@ -461,15 +430,17 @@ export default function SyncScreen({ navigation }) {
                                         </TouchableOpacity>
 
                                         <TouchableOpacity
-                                            style={[styles.purgeBtn, { backgroundColor: colors.error }]}
+                                            style={[styles.purgeBtn, { backgroundColor: colors.danger }]}
                                             onPress={() => {
                                                 Alert.alert('AVISO', 'Esta ação é irreversível. Apagar definitivamente?', [
                                                     { text: 'Cancelar' },
                                                     {
                                                         text: 'ESVAZIAR', style: 'destructive',
                                                         onPress: async () => {
-                                                            const tabelas = ['vendas', 'compras', 'colheitas', 'custos'];
-                                                            for (const t of tabelas) { await executeQuery(`DELETE FROM ${t} WHERE is_deleted = 1`); }
+                                                            const tabelas = ['vendas', 'compras', 'colheitas', 'custos', 'costs', 'monitoramento_entidade', 'cadastro', 'clientes', 'culturas', 'plantio', 'maquinas', 'caderno_notas'];
+                                                            for (const t of tabelas) {
+                                                                try { await executeQuery(`DELETE FROM ${t} WHERE is_deleted = 1`); } catch { }
+                                                            }
                                                             countLixeira(); showToast('Lixeira limpa!'); setActiveModal(null);
                                                         }
                                                     }

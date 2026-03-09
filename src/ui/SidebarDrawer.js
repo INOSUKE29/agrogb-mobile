@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { executeQuery } from '../database/database';
 import { useTheme } from '../theme/ThemeContext';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const DRAWER_WIDTH = width * 0.75;
 
 export default function SidebarDrawer({ visible, onClose }) {

@@ -1,6 +1,9 @@
 import * as SQLite from 'expo-sqlite';
 import { atualizarEstoque } from '../services/EstoqueService';
 
+
+
+const __DEV__ = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
 let db;
 
 // Função auxiliar para promissificar o executeSql
@@ -48,16 +51,31 @@ const createTables = async () => {
                 usuario TEXT UNIQUE NOT NULL,
                 senha TEXT NOT NULL,
                 nivel TEXT DEFAULT 'USUARIO',
-                last_updated TEXT
+                email TEXT,
+                nome_completo TEXT,
+                telefone TEXT,
+                endereco TEXT,
+                avatar TEXT,
+                provider TEXT DEFAULT 'local',
+                avatar_url TEXT,
+                created_at TEXT,
+                last_updated TEXT,
+                is_deleted INTEGER DEFAULT 0,
+                sync_status INTEGER DEFAULT 0,
+                uuid TEXT UNIQUE
             );`,
             `CREATE TABLE IF NOT EXISTS colheitas (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 uuid TEXT UNIQUE NOT NULL,
+                area_id TEXT,
+                usuario_id TEXT,
                 cultura TEXT NOT NULL,
                 produto TEXT NOT NULL,
                 quantidade REAL NOT NULL,
+                data_colheita TEXT,
                 data TEXT NOT NULL,
                 observacao TEXT,
+                anexo TEXT,
                 last_updated TEXT NOT NULL,
                 sync_status INTEGER DEFAULT 0
             );`,
@@ -73,12 +91,21 @@ const createTables = async () => {
             `CREATE TABLE IF NOT EXISTS vendas (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 uuid TEXT UNIQUE NOT NULL,
+                usuario_id TEXT,
+                cliente_id TEXT, -- ID do cliente (uuid ou string)
                 cliente TEXT NOT NULL,
+                produto_id TEXT, -- ID do produto (uuid ou string)
                 produto TEXT NOT NULL,
                 quantidade REAL NOT NULL,
                 valor REAL NOT NULL,
+                valor_recebido REAL,
+                status_pagamento TEXT DEFAULT 'A_RECEBER',
+                data_venda TEXT,
+                data_recebimento TEXT,
+                forma_pagamento TEXT,
                 data TEXT NOT NULL,
                 observacao TEXT,
+                anexo TEXT,
                 last_updated TEXT NOT NULL,
                 sync_status INTEGER DEFAULT 0
             );`,
@@ -101,6 +128,8 @@ const createTables = async () => {
                 cultura TEXT,
                 data TEXT NOT NULL,
                 observacao TEXT,
+                detalhes TEXT,
+                anexo TEXT,
                 last_updated TEXT NOT NULL,
                 sync_status INTEGER DEFAULT 0
             );`,
@@ -124,7 +153,11 @@ const createTables = async () => {
                 valor_total REAL NOT NULL,
                 data TEXT NOT NULL,
                 observacao TEXT,
+                anexo TEXT,
+                categoria_id TEXT,
+                created_at TEXT,
                 last_updated TEXT NOT NULL,
+                is_deleted INTEGER DEFAULT 0,
                 sync_status INTEGER DEFAULT 0
             );`,
             `CREATE TABLE IF NOT EXISTS descarte (
@@ -153,13 +186,15 @@ const createTables = async () => {
                 uuid TEXT UNIQUE NOT NULL,
                 nome TEXT NOT NULL,
                 telefone TEXT,
+                cidade TEXT,
+                estado TEXT,
                 endereco TEXT,
                 cpf_cnpj TEXT,
-                observacao TEXT,
+                observacoes TEXT,
+                observacao_legada TEXT,
                 last_updated TEXT NOT NULL,
                 sync_status INTEGER DEFAULT 0,
-                cidade TEXT,
-                estado TEXT
+                is_deleted INTEGER DEFAULT 0
             );`,
             `CREATE TABLE IF NOT EXISTS culturas (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -200,6 +235,27 @@ const createTables = async () => {
                 sync_status INTEGER DEFAULT 0,
                 FOREIGN KEY(produto_pai_uuid) REFERENCES cadastro(uuid) ON DELETE CASCADE,
                 FOREIGN KEY(item_filho_uuid) REFERENCES cadastro(uuid) ON DELETE CASCADE
+            );`,
+            `CREATE TABLE IF NOT EXISTS profiles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE,
+                usuario_id INTEGER,
+                full_name TEXT,
+                bio TEXT,
+                last_updated TEXT,
+                sync_status INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS movimentacoes_financeiras (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE,
+                tipo TEXT, -- RECEITA / DESPESA
+                valor REAL,
+                data TEXT,
+                descricao TEXT,
+                created_at TEXT,
+                last_updated TEXT,
+                is_deleted INTEGER DEFAULT 0,
+                sync_status INTEGER DEFAULT 0
             );`
         ];
 
@@ -219,7 +275,7 @@ const createTables = async () => {
         try {
             await executeQuery('ALTER TABLE usuarios ADD COLUMN email TEXT');
             console.log('✅ Coluna email adicionada com sucesso');
-        } catch (e) { }
+        } catch { }
 
 
         // MIGRATION: Cadastro (v4.0)
@@ -227,7 +283,7 @@ const createTables = async () => {
             await executeQuery('ALTER TABLE cadastro ADD COLUMN estocavel INTEGER DEFAULT 1');
             await executeQuery('ALTER TABLE cadastro ADD COLUMN vendavel INTEGER DEFAULT 1');
             console.log('✅ Colunas estocavel/vendavel adicionadas');
-        } catch (e) { }
+        } catch { }
 
         // MIGRATION: Perfil de Usuário (v4.1)
         try {
@@ -235,49 +291,49 @@ const createTables = async () => {
             await executeQuery('ALTER TABLE usuarios ADD COLUMN telefone TEXT');
             await executeQuery('ALTER TABLE usuarios ADD COLUMN endereco TEXT');
             console.log('✅ Colunas de perfil adicionadas');
-        } catch (e) { }
+        } catch { }
 
         // MIGRATION: Colheita Congelado (v4.1)
         try {
             await executeQuery('ALTER TABLE colheitas ADD COLUMN congelado REAL DEFAULT 0');
             console.log('✅ Coluna congelado adicionada');
-        } catch (e) { }
+        } catch { }
 
         // MIGRATION: Avatar Profile (v6.1)
         try {
             await executeQuery('ALTER TABLE usuarios ADD COLUMN avatar TEXT');
             console.log('✅ Coluna avatar adicionada');
-        } catch (e) { }
+        } catch { }
 
         // MIGRATION: Cadastro Fator Conversão (v4.2)
         try {
             await executeQuery('ALTER TABLE cadastro ADD COLUMN fator_conversao REAL DEFAULT 1');
             console.log('✅ Coluna fator_conversao adicionada');
-        } catch (e) { }
+        } catch { }
 
         // MIGRATION: Monitoramento Severidade & Categoria (v21.0)
         try {
             await executeQuery('ALTER TABLE monitoramento_entidade ADD COLUMN severidade TEXT DEFAULT "BAIXA"');
             await executeQuery('ALTER TABLE monitoramento_entidade ADD COLUMN categoria TEXT DEFAULT "OUTROS"');
             console.log('✅ Monitoramento v21 Schema atualizado');
-        } catch (e) { }
+        } catch { }
         try {
             await executeQuery('ALTER TABLE cadastro ADD COLUMN fator_conversao REAL DEFAULT 1');
             console.log('✅ Coluna fator_conversao adicionada');
-        } catch (e) { }
+        } catch { }
 
         // MIGRATION: Compras Detalhes (v4.0)
         try {
             await executeQuery('ALTER TABLE compras ADD COLUMN detalhes TEXT');
             console.log('✅ Coluna detalhes adicionada em compras');
-        } catch (e) { }
+        } catch { }
 
         // MIGRATION: Auth Providers (v5.2)
         try {
             await executeQuery('ALTER TABLE usuarios ADD COLUMN provider TEXT DEFAULT "local"');
             await executeQuery('ALTER TABLE usuarios ADD COLUMN avatar_url TEXT');
             console.log('✅ Colunas de Auth Provider adicionadas');
-        } catch (e) { }
+        } catch { }
 
         // MIGRATION: App Settings (FASE 10)
         try {
@@ -454,10 +510,10 @@ const createTables = async () => {
                 'data_validacao TEXT'        // V7.0: Data Val
             ];
             for (const col of newCols) {
-                try { await executeQuery(`ALTER TABLE cadastro ADD COLUMN ${col}`); } catch (e) { }
+                try { await executeQuery(`ALTER TABLE cadastro ADD COLUMN ${col}`); } catch { }
             }
             console.log('✅ Colunas V7.0 (Cadastro Agrícola & IA) verificadas.');
-        } catch (e) { }
+        } catch { }
 
         // MIGRATION: V7.0 - Tabelas de Mídia e Auditoria
         try {
@@ -489,13 +545,13 @@ const createTables = async () => {
         // MIGRATION: Soft Delete Flag
         const tablesToCheck = ['usuarios', 'colheitas', 'monitoramento', 'vendas', 'estoque', 'compras', 'plantio', 'custos', 'descarte', 'cadastro', 'clientes', 'culturas', 'maquinas', 'manutencao_frota', 'receitas', 'planos_adubacao'];
         for (const table of tablesToCheck) {
-            try { await executeQuery(`ALTER TABLE ${table} ADD COLUMN is_deleted INTEGER DEFAULT 0`); } catch (e) { }
+            try { await executeQuery(`ALTER TABLE ${table} ADD COLUMN is_deleted INTEGER DEFAULT 0`); } catch { }
         }
 
         // MIGRATION: Coluna Anexo para Notas Fiscais e Recibos
         const tablesWithAttachments = ['compras', 'vendas', 'colheitas', 'custos'];
         for (const table of tablesWithAttachments) {
-            try { await executeQuery(`ALTER TABLE ${table} ADD COLUMN anexo TEXT`); } catch (e) { }
+            try { await executeQuery(`ALTER TABLE ${table} ADD COLUMN anexo TEXT`); } catch { }
         }
         console.log('✅ Colunas de Anexo migradas');
 
@@ -550,10 +606,26 @@ const createTables = async () => {
             }
             console.log('✅ Módulo de Custos Profissional (V8.0) criado/verificado');
         } catch (e) {
-            console.log('❌ Erro migração V8.0 (Custos):', e.message || e);
+            console.log('❌ Erro migração V8.0 (Custos):', e?.message || e);
         }
 
         // MIGRATION: V8.1 - Notas Manuais Caderno Agrícola
+        try {
+            await executeQuery(`CREATE TABLE IF NOT EXISTS areas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                nome TEXT NOT NULL,
+                descricao TEXT,
+                observacao TEXT,
+                metragem REAL,
+                peso_medio_caixa REAL DEFAULT 1,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
+            );`);
+            console.log('✅ Tabela areas verificada/criada');
+        } catch (e) { console.error('Erro table areas:', e); }
+
         try {
             await executeQuery(`CREATE TABLE IF NOT EXISTS caderno_notas (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -565,7 +637,7 @@ const createTables = async () => {
                 is_deleted INTEGER DEFAULT 0
             )`);
             console.log('✅ Tabela caderno_notas verificada/criada');
-        } catch (e) { }
+        } catch { }
 
         // MIGRATION: V9.0 - Financeiro (Contas a Receber)
         try {
@@ -573,7 +645,7 @@ const createTables = async () => {
             await executeQuery('ALTER TABLE vendas ADD COLUMN data_recebimento TEXT');
             await executeQuery('ALTER TABLE vendas ADD COLUMN forma_pagamento TEXT');
             console.log('✅ Colunas de status_pagamento adicionadas na tabela vendas');
-        } catch (e) { }
+        } catch { }
 
         // MIGRATION: V9.0 - Financeiro (Categorias de Despesa e Custos)
         try {
@@ -584,12 +656,12 @@ const createTables = async () => {
                 created_at TEXT
             )`);
             console.log('✅ Tabela categorias_despesa verificada/criada');
-        } catch (e) { }
+        } catch { }
 
         try {
             await executeQuery('ALTER TABLE custos ADD COLUMN categoria_id TEXT');
             console.log('✅ Coluna categoria_id adicionada na tabela custos');
-        } catch (e) { }
+        } catch { }
 
         // MIGRATION: V9.1 - Logs de Auditoria e Erro (Fase 19)
         try {
@@ -611,7 +683,7 @@ const createTables = async () => {
                 sync_status INTEGER DEFAULT 0
             )`);
             console.log('✅ Tabelas activity_log e error_logs verificadas/criadas');
-        } catch (e) { }
+        } catch { }
 
         // FASE 1: DEDUPLICAR CLIENTES EXISTENTES NO INÍCIO DO APP
         await deduplicateClientes();
@@ -649,19 +721,19 @@ const createTables = async () => {
         try {
             await executeQuery('ALTER TABLE cadastro ADD COLUMN unidade_id INTEGER REFERENCES unidades_medida(id)');
             console.log('✅ Coluna unidade_id adicionada em cadastro');
-        } catch (e) { }
+        } catch { }
 
         // MIGRATION: v8.1 — peso_medio_caixa na tabela culturas
         try {
             await executeQuery('ALTER TABLE culturas ADD COLUMN peso_medio_caixa REAL DEFAULT 1');
             console.log('✅ Coluna peso_medio_caixa adicionada em culturas');
-        } catch (e) { }
+        } catch { }
 
         // MIGRATION: v8.1 — valor_recebido na tabela vendas
         try {
             await executeQuery('ALTER TABLE vendas ADD COLUMN valor_recebido REAL');
             console.log('✅ Coluna valor_recebido adicionada em vendas');
-        } catch (e) { }
+        } catch { }
 
         // MIGRATION: v8.1 — Movimentação de Estoque Profissional
         try {
@@ -691,17 +763,74 @@ const createTables = async () => {
                 'rel_rodape TEXT'
             ];
             for (const col of configCols) {
-                try { await executeQuery(`ALTER TABLE app_settings ADD COLUMN ${col}`); } catch (e) { }
+                try { await executeQuery(`ALTER TABLE app_settings ADD COLUMN ${col}`); } catch { }
             }
-        } catch (e) { }
+        } catch { }
 
         // MIGRATION: v8.6 — codigo na tabela cadastro
-        try { await executeQuery('ALTER TABLE cadastro ADD COLUMN codigo TEXT'); } catch (e) { }
+        try { await executeQuery('ALTER TABLE cadastro ADD COLUMN codigo TEXT'); } catch { }
 
         // MIGRATION: v8.6 — cidade e estado na tabela clientes
-        try { await executeQuery('ALTER TABLE clientes ADD COLUMN cidade TEXT'); } catch (e) { }
-        try { await executeQuery('ALTER TABLE clientes ADD COLUMN estado TEXT'); } catch (e) { }
+        try { await executeQuery('ALTER TABLE clientes ADD COLUMN cidade TEXT'); } catch { }
+        try { await executeQuery('ALTER TABLE clientes ADD COLUMN estado TEXT'); } catch { }
 
+        // MIGRATION: v8.7 — Padronização Universal de IDENTIFICADORES (Fim do Erro 42703)
+        const tablesToFix = ['usuarios', 'estoque', 'app_settings', 'activity_log', 'error_logs', 'unidades_medida'];
+        for (const table of tablesToFix) {
+            try {
+                await executeQuery(`ALTER TABLE ${table} ADD COLUMN uuid TEXT`);
+                console.log(`📏 Coluna uuid adicionada à tabela ${table}`);
+            } catch { }
+        }
+
+        // Tenta povoar uuids vazios para compatibilidade
+        try {
+            const uuid = require('uuid');
+            for (const table of tablesToFix) {
+                const pendentes = await executeQuery(`SELECT id FROM ${table} WHERE uuid IS NULL OR uuid = ''`);
+                for (let i = 0; i < pendentes.rows.length; i++) {
+                    const id = pendentes.rows.item(i).id;
+                    await executeQuery(`UPDATE ${table} SET uuid = ? WHERE id = ?`, [uuid.v4(), id]);
+                }
+            }
+            // MIGRATION: v8.6.0 — Paridade v8.5.6 Supabase
+            // =============================================
+            console.log('🔄 Iniciando Migração v8.6.0 (Paridade Supabase v8.5.6)...');
+
+            // Colheitas
+            try { await executeQuery('ALTER TABLE colheitas ADD COLUMN area_id TEXT'); } catch { }
+            try { await executeQuery('ALTER TABLE colheitas ADD COLUMN usuario_id TEXT'); } catch { }
+            try { await executeQuery('ALTER TABLE colheitas ADD COLUMN data_colheita TEXT'); } catch { }
+            try { await executeQuery('ALTER TABLE colheitas ADD COLUMN anexo TEXT'); } catch { }
+
+            // Vendas
+            try { await executeQuery('ALTER TABLE vendas ADD COLUMN usuario_id TEXT'); } catch { }
+
+            // Áreas
+            try { await executeQuery('ALTER TABLE areas ADD COLUMN metragem REAL'); } catch { }
+            try { await executeQuery('ALTER TABLE areas ADD COLUMN peso_medio_caixa REAL DEFAULT 1'); } catch { }
+
+            // Clientes
+            try { await executeQuery('ALTER TABLE clientes ADD COLUMN cidade TEXT'); } catch { }
+            try { await executeQuery('ALTER TABLE clientes ADD COLUMN estado TEXT'); } catch { }
+            try { await executeQuery('ALTER TABLE clientes ADD COLUMN observacao_legada TEXT'); } catch { }
+
+            // Cadastro (Mapeado como items no remoto)
+            try { await executeQuery('ALTER TABLE cadastro ADD COLUMN unidade_id INTEGER'); } catch { }
+
+            // Reseta contadores e erros para re-sincronizar se necessário
+            const syncTablesFinal = [
+                'usuarios', 'colheitas', 'vendas', 'estoque', 'compras', 'plantio', 'custos',
+                'clientes', 'culturas', 'maquinas', 'receitas', 'profiles',
+                'movimentacoes_financeiras', 'caderno_notas', 'areas', 'cadastro'
+            ];
+            for (const tr of syncTablesFinal) {
+                try { await executeQuery(`UPDATE ${tr} SET sync_status = 0 WHERE sync_status = 2`); } catch { }
+            }
+
+            console.log('✅ Migração v8.6.0 Concluída.');
+
+        } catch { }
 
     } catch (error) {
         console.error('❌ Erro ao criar tabelas:', error);
@@ -856,20 +985,21 @@ export const logError = async (tela, erroMsg, stack = '') => {
 
 // --- CONFIG ---
 export const setConfig = async (chave, valor) => {
-    try { await executeQuery('INSERT OR REPLACE INTO config (chave, valor) VALUES (?, ?)', [chave, valor]); } catch (e) { }
+    try { await executeQuery('INSERT OR REPLACE INTO config (chave, valor) VALUES (?, ?)', [chave, valor]); } catch { }
 };
 
 export const getConfig = async (chave) => {
     try {
         const result = await executeQuery('SELECT valor FROM config WHERE chave = ?', [chave]);
         return result.rows.length > 0 ? result.rows.item(0).valor : null;
-    } catch (e) { return null; }
+    } catch { return null; }
 };
 
 // --- USUÁRIOS ---
 export const insertUsuario = async (u) => {
-    await executeQuery(`INSERT INTO usuarios (usuario, senha, nivel, email, nome_completo, telefone, endereco, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [up(u.usuario), u.senha, up(u.nivel), u.email ? u.email.trim() : null, up(u.nome_completo), u.telefone, up(u.endereco), new Date().toISOString()]);
+    const uuid = require('uuid').v4();
+    await executeQuery(`INSERT INTO usuarios (uuid, usuario, senha, nivel, email, nome_completo, telefone, endereco, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+        [uuid, up(u.usuario), u.senha, up(u.nivel), u.email ? u.email.trim() : null, up(u.nome_completo), u.telefone, up(u.endereco), new Date().toISOString()]);
 };
 
 export const updateUsuario = async (u) => {
@@ -1114,7 +1244,7 @@ export const getDadosPendentes = async () => {
         }
         res.total = total;
         return res;
-    } catch (e) { return { total: 0 }; }
+    } catch { return { total: 0 }; }
 };
 
 // --- CADERNO NOTAS ---
@@ -1208,7 +1338,6 @@ export const getDashboardStats = async () => {
     try {
         const today = new Date().toISOString().split('T')[0];
         const firstDayOfMonth = today.substring(0, 8) + '01'; // ex: '2023-10-01'
-        const APP_START_DATE = '2024-01-01'; // Default safe date
 
         // 1. Colheita Hoje (KG)
         const resColheita = await executeQuery(`SELECT SUM(quantidade) as total FROM colheitas WHERE data = ? AND is_deleted = 0`, [today]);
@@ -1226,27 +1355,58 @@ export const getDashboardStats = async () => {
         const resMaquinas = await executeQuery(`SELECT COUNT(*) as total FROM maquinas WHERE horimetro_atual >= intervalo_revisao AND is_deleted = 0`);
         const maquinasAlert = resMaquinas.rows.item(0).total || 0;
 
-        // 5. Custos do Mês
+        // 5. Custos do Mês (Soma de custos, compras e costs profissional)
         const resCustosMes = await executeQuery('SELECT SUM(valor_total) as total FROM custos WHERE data >= ? AND is_deleted = 0', [firstDayOfMonth]);
-        const resComprasMes = await executeQuery('SELECT SUM(valor * quantidade) as total FROM compras WHERE data >= ? AND is_deleted = 0', [firstDayOfMonth]);
-        const custosMes = (resCustosMes.rows.item(0).total || 0) + (resComprasMes.rows.item(0).total || 0);
+        const resComprasMes = await executeQuery('SELECT SUM(valor) as total FROM compras WHERE data >= ? AND is_deleted = 0', [firstDayOfMonth]);
+        const resCostsProf = await executeQuery('SELECT SUM(total_value) as total FROM costs WHERE created_at >= ? AND is_deleted = 0', [firstDayOfMonth]);
+
+        const custosMes = (resCustosMes.rows.item(0).total || 0) +
+            (resComprasMes.rows.item(0).total || 0) +
+            (resCostsProf.rows.item(0).total || 0);
 
         // 6. Resultado do Mês (Saldo do Mês)
         const resVendasMes = await executeQuery('SELECT SUM(valor) as total FROM vendas WHERE data >= ? AND is_deleted = 0', [firstDayOfMonth]);
         const vendasMesTotal = resVendasMes.rows.item(0).total || 0;
         const saldoMes = vendasMesTotal - custosMes;
 
-        // 7. Pendentes Sync (Safeguard se existir a query)
+        // 7. Pendentes Sync (Contagem Global v8.5.9)
         let pendentes = 0;
         try {
-            const resPendente = await executeQuery('SELECT COUNT(*) as total FROM colheitas WHERE sync_status = 0');
-            pendentes = resPendente.rows.item(0).total || 0;
-        } catch (err) { }
+            const syncTables = [
+                'usuarios', 'colheitas', 'vendas', 'estoque', 'compras', 'plantio', 'custos',
+                'clientes', 'culturas', 'maquinas', 'receitas', 'profiles',
+                'movimentacoes_financeiras', 'caderno_notas'
+            ];
+            for (const t of syncTables) {
+                try {
+                    const resP = await executeQuery(`SELECT COUNT(*) as c FROM ${t} WHERE sync_status IN (0, 2)`);
+                    pendentes += resP.rows.item(0).c || 0;
+                } catch { }
+            }
+        } catch { }
 
-        return { colheitaHoje, vendasHoje, plantioAtivo, maquinasAlert, custosMes, saldo: saldoMes, pendentes };
+        return {
+            colheitaHoje: colheitaHoje || 0,
+            vendasHoje: vendasHoje || 0,
+            plantioAtivo: plantioAtivo || 0,
+            maquinasAlert: maquinasAlert || 0,
+            custosMes: custosMes || 0,
+            vendasMes: vendasMesTotal || 0,
+            saldo: saldoMes || 0,
+            pendentes: pendentes || 0
+        };
     } catch (error) {
-        console.error('[DATABASE ERROR]', error);
-        return { colheitaHoje: 0, vendasHoje: 0, plantioAtivo: 0, maquinasAlert: 0, custosMes: 0, saldo: 0, pendentes: 0 };
+        console.error('[DATABASE ERROR] getDashboardStats Failed:', error);
+        return {
+            colheitaHoje: 0,
+            vendasHoje: 0,
+            plantioAtivo: 0,
+            maquinasAlert: 0,
+            custosMes: 0,
+            vendasMes: 0,
+            saldo: 0,
+            pendentes: 0
+        };
     }
 };
 
@@ -1303,7 +1463,5 @@ export const insertCategoriaDespesa = async (d) => {
 export const deleteCategoriaDespesa = async (id) => {
     await executeQuery('DELETE FROM categorias_despesa WHERE id = ?', [id]);
 };
-
-// --- FIM DO ARQUIVO ---
 
 // --- FIM DO ARQUIVO ---

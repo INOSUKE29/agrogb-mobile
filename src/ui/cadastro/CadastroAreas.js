@@ -16,7 +16,7 @@ export default function CadastroAreas() {
 
     const loadData = async () => {
         setLoading(true);
-        try { const data = await getCulturas(); setItems(data); } catch (e) { } finally { setLoading(false); }
+        try { const data = await getCulturas(); setItems(data); } catch { } finally { setLoading(false); }
     };
 
     const handleSave = async () => {
@@ -24,7 +24,7 @@ export default function CadastroAreas() {
         try {
             await insertCultura({ uuid: uuidv4(), nome, observacao });
             setModalVisible(false); setNome(''); setObservacao(''); loadData();
-        } catch (e) { Alert.alert('Erro', 'Não foi possível salvar.'); }
+        } catch { Alert.alert('Erro', 'Não foi possível salvar.'); }
     };
 
     const handleDelete = (id) => {
@@ -35,7 +35,6 @@ export default function CadastroAreas() {
 
     return (
         <View style={styles.container}>
-            {/* Header Removido Limpo */}
             {loading ? <ActivityIndicator size="large" color="#14B8A6" style={{ marginTop: 50 }} /> :
                 <FlatList
                     data={items}
@@ -84,9 +83,6 @@ export default function CadastroAreas() {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F9FAFB' },
-    header: { padding: 25, paddingTop: 50 },
-    title: { fontSize: 22, fontWeight: '900', color: '#1F2937' },
-    sub: { fontSize: 11, color: '#9CA3AF', letterSpacing: 1, marginTop: 5 },
     card: { backgroundColor: '#FFF', borderRadius: 24, padding: 20, marginBottom: 12, flexDirection: 'row', alignItems: 'center', elevation: 2 },
     icon: { width: 45, height: 45, borderRadius: 15, backgroundColor: '#CCFBF1', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
     iconTxt: { fontSize: 22 },
@@ -107,7 +103,3 @@ const styles = StyleSheet.create({
     btnText: { fontWeight: 'bold', fontSize: 12 },
     empty: { textAlign: 'center', marginTop: 100, color: '#9CA3AF' }
 });
-
-
-
-

@@ -1,5 +1,5 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator, Image } from 'react-native';
+﻿import React, { useState, useCallback } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertCompra, getCadastro, getComprasRecentes, updateCompra, deleteCompra, insertCadastro as insertCadastros } from '../database/database';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -45,7 +45,7 @@ export default function ComprasScreen({ navigation }) {
             const all = await getCadastro();
             const inputs = all.filter(i => ['INSUMO', 'EMBALAGEM'].includes(i.tipo));
             setItems(inputs);
-        } catch (e) { } finally { setLoading(false); }
+        } catch { } finally { setLoading(false); }
     };
 
     const loadHistory = async () => {
@@ -71,7 +71,7 @@ export default function ComprasScreen({ navigation }) {
             if (!result.canceled) {
                 setAnexoUri(result.assets[0].uri);
             }
-        } catch (error) {
+        } catch {
             Alert.alert('Erro', 'Não foi possível capturar a nota.');
         }
     };
@@ -100,7 +100,7 @@ export default function ComprasScreen({ navigation }) {
             setQuickAddModal(false);
             setNewItemName('');
             showToast('Novo insumo cadastrado!');
-        } catch (e) { Alert.alert('Erro', 'Falha ao criar item.'); }
+        } catch { Alert.alert('Erro', 'Falha ao criar item.'); }
     };
 
     const salvar = async () => {
@@ -133,7 +133,7 @@ export default function ComprasScreen({ navigation }) {
 
             setItem(''); setQuantidade(''); setValor(''); setObservacao(''); setDetalhes(''); setCultura(''); setAnexoUri(null);
             loadHistory();
-        } catch (error) {
+        } catch {
             Alert.alert('Erro', 'Falha ao salvar compra.');
         }
     };
@@ -195,8 +195,8 @@ export default function ComprasScreen({ navigation }) {
                     <Text style={[styles.actionText, { color: colors.textPrimary }]}>EDITAR</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleDelete(rec)} style={[styles.actionBtn, { borderColor: colors.glassBorder }]}>
-                    <Ionicons name="trash-outline" size={18} color={colors.error} />
-                    <Text style={[styles.actionText, { color: colors.error }]}>EXCLUIR</Text>
+                    <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                    <Text style={[styles.actionText, { color: colors.danger }]}>EXCLUIR</Text>
                 </TouchableOpacity>
             </View>
         </GlowCard>

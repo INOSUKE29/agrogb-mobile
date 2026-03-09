@@ -1,7 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function ScannerScreen({ navigation, route }) {
@@ -11,7 +10,6 @@ export default function ScannerScreen({ navigation, route }) {
     const [imgRotulo, setImgRotulo] = useState(null);
     const [processing, setProcessing] = useState(false);
 
-    const cameraRef = useRef(null);
 
     useEffect(() => {
         (async () => {
@@ -38,7 +36,7 @@ export default function ScannerScreen({ navigation, route }) {
                     setStep(3); // Próximo passo: Review/Análise
                 }
             }
-        } catch (error) {
+        } catch {
             Alert.alert('Erro', 'Não foi possível capturar a foto.');
         }
     };

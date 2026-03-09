@@ -24,7 +24,7 @@ export default class ErrorBoundary extends React.Component {
             // CRITICAL FIX: Limpar sessão para evitar loop de erro
             await AsyncStorage.multiRemove(['@user_session', '@user_profile', '@menu_config']);
             await Updates.reloadAsync();
-        } catch (e) {
+        } catch {
             Alert.alert("Erro", "Falha ao reiniciar. Feche o app manualmente.");
         }
     };

@@ -35,7 +35,7 @@ export default function ProcessamentoScreen({ navigation }) {
         try {
             await insertProcessamento(dados);
             Alert.alert('Sucesso', `${tipo === 'DESCARTE' ? 'Perda' : 'Congelamento'} registrado com sucesso!`, [{ text: 'OK', onPress: () => navigation.goBack() }]);
-        } catch (error) {
+        } catch {
             Alert.alert('Erro', `Não foi possível registrar o ${tipo.toLowerCase()}.`);
         }
     };
@@ -108,7 +108,7 @@ export default function ProcessamentoScreen({ navigation }) {
                     </View>
 
                     <PrimaryButton
-                        label={tipo === 'DESCARTE' ? "CONFIRMAR PERDA" : "CONFIRMAR CONGELAMENTO"}
+                        title={tipo === 'DESCARTE' ? "CONFIRMAR PERDA" : "CONFIRMAR CONGELAMENTO"}
                         onPress={salvar}
                         style={{ backgroundColor: tipo === 'DESCARTE' ? '#7F1D1D' : '#1E3A8A' }}
                     />

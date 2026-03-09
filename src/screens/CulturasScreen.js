@@ -16,7 +16,7 @@ export default function CulturasScreen() {
 
     const loadData = async () => {
         setLoading(true);
-        try { const data = await getCulturas(); setItems(data); } catch (e) { } finally { setLoading(false); }
+        try { const data = await getCulturas(); setItems(data); } catch { } finally { setLoading(false); }
     };
 
     const handleSave = async () => {
@@ -24,7 +24,7 @@ export default function CulturasScreen() {
         try {
             await insertCultura({ uuid: uuidv4(), nome, observacao });
             setModalVisible(false); setNome(''); setObservacao(''); loadData();
-        } catch (e) { Alert.alert('Erro', 'Não foi possível salvar.'); }
+        } catch { Alert.alert('Erro', 'Não foi possível salvar.'); }
     };
 
     const handleDelete = (id) => {

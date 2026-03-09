@@ -1,14 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar as RNStatusBar, ActivityIndicator, Modal, TextInput, Alert, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
-import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar as RNStatusBar, ActivityIndicator, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { executeQuery, insertCadernoNota } from '../database/database';
 import { useTheme } from '../theme/ThemeContext';
-import { SPACING } from '../design/spacing';
-import { TYPOGRAPHY } from '../design/typography';
-import { RADIUS } from '../design/radius';
-
-const { width } = Dimensions.get('window');
 
 export default function CadernoCampoScreen({ navigation }) {
     const { colors, isDark } = useTheme();

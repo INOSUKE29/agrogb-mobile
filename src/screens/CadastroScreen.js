@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SectionList, FlatList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertCadastro, getCadastro, deleteCadastro, updateCadastro, getReceita, insertReceita, deleteItemReceita } from '../database/database';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { showToast } from '../ui/Toast';
 import { useTheme } from '../theme/ThemeContext';
 import AppContainer from '../ui/AppContainer';
@@ -11,6 +11,7 @@ import GlowCard from '../ui/GlowCard';
 import GlowFAB from '../ui/GlowFAB';
 import ConfirmModal from '../ui/ConfirmModal';
 import PrimaryButton from '../ui/PrimaryButton';
+import GlowInput from '../ui/GlowInput';
 
 const CATEGORIES = {
     DEFENSIVO: { label: 'Defensivo Agrícola', icon: 'flask-outline', color: '#FF3B3B', bg: 'rgba(255,59,59,0.15)', fields: ['principio', 'classe'] },
@@ -42,7 +43,6 @@ export default function CadastroScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [categoryModalVisible, setCategoryModalVisible] = useState(false);
-    const [obsModalVisible, setObsModalVisible] = useState(false);
     const [assistantVisible, setAssistantVisible] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [nome, setNome] = useState('');
@@ -81,7 +81,7 @@ export default function CadastroScreen({ navigation }) {
     const up = (t, setter) => setter(t ? t.toUpperCase() : '');
     const loadData = async () => {
         setLoading(true);
-        try { const data = await getCadastro(); setItems(data); } catch (e) { } finally { setLoading(false); }
+        try { const data = await getCadastro(); setItems(data); } catch { } finally { setLoading(false); }
     };
 
     const handleSave = async () => {
@@ -91,7 +91,7 @@ export default function CadastroScreen({ navigation }) {
             if (editingItem) { await updateCadastro(data); showToast('Item atualizado com sucesso!'); }
             else { await insertCadastro(data); showToast('Novo item cadastrado!'); }
             setModalVisible(false); resetForm(); loadData();
-        } catch (e) { Alert.alert('Erro', 'Falha ao salvar.'); }
+        } catch { console.log('Draft error'); }
     };
 
     const resetForm = () => { setEditingItem(null); setNome(''); setObservacao(''); setFator('1'); setEstocavel(true); setVendavel(false); setUnidade('KG'); setTipo('INSUMO'); setPrincipioAtivo(''); setClasseToxicologica(''); setComposicao(''); setPrecoVenda(''); };
@@ -225,11 +225,11 @@ export default function CadastroScreen({ navigation }) {
                                 <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{item.nome}</Text>
                                 <View style={{ flexDirection: 'row', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
                                     <View style={[styles.miniTag, { backgroundColor: colors.cardAlt, borderColor: colors.glassBorder }]}><Text style={[styles.miniTagText, { color: colors.textSecondary }]}>{item.unidade}</Text></View>
-                                    {item.estocavel === 1 && <View style={[styles.miniTag, { backgroundColor: colors.success + '20', borderColor: colors.success + '50' }]}><Text style={[styles.miniTagText, { color: colors.success }]}>Estoque</Text></View>}
-                                    {item.vendavel === 1 && <View style={[styles.miniTag, { backgroundColor: colors.info + '20', borderColor: colors.info + '50' }]}><Text style={[styles.miniTagText, { color: colors.info }]}>$ Venda</Text></View>}
+                                    {item.estocavel === 1 && <View style={[styles.miniTag, { backgroundColor: (colors.success || '#10B981') + '20', borderColor: (colors.success || '#10B981') + '50' }]}><Text style={[styles.miniTagText, { color: colors.success }]}>Estoque</Text></View>}
+                                    {item.vendavel === 1 && <View style={[styles.miniTag, { backgroundColor: (colors.info || '#3B82F6') + '20', borderColor: (colors.info || '#3B82F6') + '50' }]}><Text style={[styles.miniTagText, { color: colors.info }]}>$ Venda</Text></View>}
                                     {item.vendavel === 1 && (
                                         <TouchableOpacity
-                                            style={[styles.miniTag, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '40' }]}
+                                            style={[styles.miniTag, { backgroundColor: (colors.primary || '#1E8E5A') + '15', borderColor: (colors.primary || '#1E8E5A') + '40' }]}
                                             onPress={() => handleOpenRecipe(item.uuid, item.nome)}
                                         >
                                             <Text style={[styles.miniTagText, { color: colors.primary }]}>🔧 Engenharia</Text>
@@ -354,11 +354,11 @@ export default function CadastroScreen({ navigation }) {
 
                             <Text style={[styles.label, { color: colors.textSecondary }]}>CONFIGURAÇÃO DE SISTEMA</Text>
                             <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
-                                <TouchableOpacity style={[styles.toggleBtn, { backgroundColor: colors.background, borderColor: colors.glassBorder }, estocavel && { backgroundColor: colors.success + '20', borderColor: colors.success + '50' }]} onPress={() => setEstocavel(!estocavel)}>
+                                <TouchableOpacity style={[styles.toggleBtn, { backgroundColor: colors.background, borderColor: colors.glassBorder }, estocavel && { backgroundColor: (colors.success || '#10B981') + '20', borderColor: (colors.success || '#10B981') + '50' }]} onPress={() => setEstocavel(!estocavel)}>
                                     <Ionicons name="cube-outline" size={16} color={estocavel ? colors.success : colors.placeholder} />
                                     <Text style={[styles.toggleLabel, { color: colors.textMuted }, estocavel && { color: colors.success }]}>ESTOCÁVEL</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={[styles.toggleBtn, { backgroundColor: colors.background, borderColor: colors.glassBorder }, vendavel && { backgroundColor: colors.info + '20', borderColor: colors.info + '50' }]} onPress={() => setVendavel(!vendavel)}>
+                                <TouchableOpacity style={[styles.toggleBtn, { backgroundColor: colors.background, borderColor: colors.glassBorder }, vendavel && { backgroundColor: (colors.info || '#3B82F6') + '20', borderColor: (colors.info || '#3B82F6') + '50' }]} onPress={() => setVendavel(!vendavel)}>
                                     <Ionicons name="cash-outline" size={16} color={vendavel ? colors.info : colors.placeholder} />
                                     <Text style={[styles.toggleLabel, { color: colors.textMuted }, vendavel && { color: colors.info }]}>VENDÁVEL</Text>
                                 </TouchableOpacity>

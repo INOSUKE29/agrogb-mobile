@@ -12,10 +12,10 @@ export default function ScreenHeader({ title, onBack, rightElement }) {
     const isLight = effectiveTheme === 'light';
 
     return (
-        <View style={[styles.header, { backgroundColor: isLight ? 'rgba(255,255,255,0.7)' : 'rgba(15,23,42,0.6)' }]}>
+        <View style={[styles.header, { backgroundColor: colors.glass || (isLight ? 'rgba(255,255,255,0.7)' : 'rgba(15,23,42,0.6)') }]}>
             <View style={styles.row}>
                 {onBack ? (
-                    <TouchableOpacity onPress={onBack} style={[styles.back, { backgroundColor: colors.glassBorder }]}>
+                    <TouchableOpacity onPress={onBack} style={[styles.back, { backgroundColor: (colors.border || '#1E8E5A') + '20' }]}>
                         <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
                     </TouchableOpacity>
                 ) : (

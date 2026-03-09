@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Dimensions, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { insertUsuario, getUsuarios, deleteUsuario, updateUsuario } from '../database/database';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
-const { width } = Dimensions.get('window');
+
 
 export default function UsuariosScreen() {
     const [items, setItems] = useState([]);
@@ -87,7 +87,7 @@ export default function UsuariosScreen() {
             }
             setModalVisible(false);
             loadData();
-        } catch (error) {
+        } catch {
             Alert.alert('Erro', 'Falha ao salvar dados. Tente outro login.');
         }
     };

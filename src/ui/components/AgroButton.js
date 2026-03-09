@@ -10,9 +10,7 @@ export default function AgroButton({
     disabled = false,
     style
 }) {
-    const { colors } = useTheme();
-    const isPrimary = variant === 'primary';
-    const isDanger = variant === 'danger';
+    const { colors, isDark } = useTheme();
 
     let bg = colors.primary;
     let txt = '#FFF';
@@ -21,16 +19,16 @@ export default function AgroButton({
     if (variant === 'secondary') {
         bg = 'transparent';
         txt = colors.primary;
-        border = colors.primary;
+        border = (colors.primary || '#1E8E5A') + '60';
     } else if (variant === 'danger') {
-        bg = colors.danger + '20';
+        bg = (colors.danger || '#EF4444') + '20';
         txt = colors.danger;
     }
 
     // Estado desativado
     if (disabled) {
-        bg = '#E5E7EB';
-        txt = '#9CA3AF';
+        bg = isDark ? '#1E293B' : '#E5E7EB';
+        txt = isDark ? '#475569' : '#9CA3AF';
         border = 'transparent';
     }
 
@@ -38,7 +36,12 @@ export default function AgroButton({
         <TouchableOpacity
             style={[
                 styles.container,
-                { backgroundColor: bg, borderColor: border, borderWidth: variant === 'secondary' ? 1 : 0 },
+                {
+                    backgroundColor: bg,
+                    borderColor: border,
+                    borderWidth: variant === 'secondary' ? 1 : 0,
+                    shadowColor: colors.primary, // Sombra dinâmica vindo do tema
+                },
                 style
             ]}
             onPress={onPress}
@@ -56,18 +59,22 @@ export default function AgroButton({
     );
 }
 
+import { RADIUS } from '../theme/radius';
+import { TYPOGRAPHY } from '../theme/typography';
+import { SPACING } from '../theme/spacing';
+
 const styles = StyleSheet.create({
     container: {
-        height: 50,
-        borderRadius: 12,
+        height: 54,
+        borderRadius: RADIUS.lg,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        marginVertical: 10,
+        paddingHorizontal: SPACING.lg,
+        marginVertical: SPACING.sm,
     },
     text: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        letterSpacing: 1,
+        fontSize: TYPOGRAPHY.size.sm,
+        fontWeight: TYPOGRAPHY.weight.black,
+        letterSpacing: 1.5,
     }
 });

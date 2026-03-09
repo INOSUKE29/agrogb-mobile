@@ -81,7 +81,7 @@ class AutoSyncService {
 
     _notify(status) {
         this._listeners.forEach(fn => {
-            try { fn(status); } catch (e) { }
+            try { fn(status); } catch { }
         });
     }
 
@@ -97,7 +97,7 @@ class AutoSyncService {
             this._notify('done');
             console.log('✅ AutoSync: concluído');
         } catch (e) {
-            console.log('❌ AutoSync: erro -', e.message || e);
+            console.log('❌ AutoSync: erro -', e?.message || e);
             this._notify('error');
         } finally {
             this._isSyncing = false;

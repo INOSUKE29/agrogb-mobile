@@ -22,7 +22,7 @@ export const WeatherProvider = ({ children }) => {
             } else {
                 setPermissionDenied(true);
             }
-        } catch (e) {
+        } catch {
             setError(true);
         } finally {
             setLoading(false);

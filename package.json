@@ -11,7 +11,9 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "build:android": "eas build --platform android"
+    "build:android": "eas build --platform android",
+    "lint": "eslint .",
+    "verify": "node scripts/prebuild-check.js"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^1.21.0",
@@ -62,7 +64,12 @@
   },
   "devDependencies": {
     "@babel/core": "^7.23.0",
-    "babel-preset-expo": "~10.0.0"
+    "babel-preset-expo": "~10.0.0",
+    "eslint": "^9.39.4",
+    "eslint-config-universe": "^15.0.3",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-native": "^5.0.0"
   },
   "private": true
 }

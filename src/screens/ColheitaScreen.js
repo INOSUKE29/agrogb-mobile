@@ -1,30 +1,28 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, Modal, FlatList, TouchableOpacity, Animated } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, Alert, Modal, FlatList, TouchableOpacity } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Database & Services
-import { getCadastro, getCulturas, insertCadastro } from '../database/database';
-import { insertColheita, getColheitasRecentes, updateColheita, deleteColheita } from '../services/ColheitaService';
+import { getCadastro, getCulturas } from '../database/database';
+import { insertColheita } from '../services/ColheitaService';
 import { insertDescarte, insertCongelamento } from '../services/EstoqueService';
 
 // UI Components
 import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
-import GlowCard from '../ui/GlowCard';
-import GlowInput from '../ui/GlowInput';
-import PrimaryButton from '../ui/PrimaryButton';
-import DangerButton from '../ui/DangerButton';
+import { Card } from '../ui/components/Card';
+import AgroInput from '../ui/components/AgroInput';
+import AgroButton from '../ui/components/AgroButton';
 import { showToast } from '../ui/Toast';
 import { useTheme } from '../theme/ThemeContext';
-import ConfirmModal from '../ui/ConfirmModal';
 
 const DRAFT_KEY = '@draft_ColheitaScreen_v2';
 
 export default function ColheitaScreen({ navigation }) {
-    const { colors } = useTheme();
+    const { colors, isDark } = useTheme();
 
     // Bloc 1: Operação
     const [tipoRegistro, setTipoRegistro] = useState('COLHEITA'); // COLHEITA, CONGELADO, DESCARTE
@@ -45,17 +43,10 @@ export default function ColheitaScreen({ navigation }) {
     // Modal Inputs
     const [modalProd, setModalProd] = useState(null);
     const [modalQty, setModalQty] = useState('');
-    const [modalUnit, setModalUnit] = useState('CX');
     const [modalMotivo, setModalMotivo] = useState('');
-
     // Database Data
     const [productsDB, setProductsDB] = useState([]);
     const [areasDB, setAreasDB] = useState([]);
-    const [history, setHistory] = useState([]);
-
-    // Confirmation
-    const [confirmVisible, setConfirmVisible] = useState(false);
-    const [itemToDelete, setItemToDelete] = useState(null);
 
     // Initial Load & Focus
     useFocusEffect(useCallback(() => {
@@ -67,9 +58,8 @@ export default function ColheitaScreen({ navigation }) {
             const allItems = await getCadastro();
             setProductsDB(allItems.filter(i => i.tipo === 'PRODUTO'));
             setAreasDB(await getCulturas());
-            setHistory(await getColheitasRecentes());
-        } catch (e) {
-            console.error(e);
+        } catch (err) {
+            console.error(err);
         }
     };
 
@@ -85,9 +75,7 @@ export default function ColheitaScreen({ navigation }) {
                             const d = JSON.parse(saved);
                             setDataOperacao(d.dataOperacao || dataOperacao);
                             setTalhao(d.talhao || '');
-                            setProducaoList(d.producaoList || []);
-                            setDestinoList(d.destinoList || []);
-                            setPerdaList(d.perdaList || []);
+                            setItensList(d.itensList || []);
                             setObservacao(d.observacao || '');
                         }
                     }
@@ -120,19 +108,12 @@ export default function ColheitaScreen({ navigation }) {
         return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : new Date().toISOString().split('T')[0];
     };
 
-    // Resumo
-    const resumo = useMemo(() => {
-        const totalCx = producaoList.reduce((acc, cur) => acc + (parseFloat(cur.quantidade) || 0), 0);
-        const totalCong = destinoList.reduce((acc, cur) => acc + (parseFloat(cur.quantidade) || 0), 0);
-        const totalDesc = perdaList.reduce((acc, cur) => acc + (parseFloat(cur.quantidade) || 0), 0);
-        return { totalCx, totalCong, totalDesc };
-    }, [producaoList, destinoList, perdaList]);
 
     // Actions
     const handleAddItem = () => {
         if (tipoRegistro === 'COLHEITA') {
             if (!modalProd || !modalQty) return;
-            setItensList([...itensList, { id: uuidv4(), produto: modalProd.nome, quantidade: modalQty, unidade: modalUnit, fator: modalProd.fator_conversao || 1 }]);
+            setItensList([...itensList, { id: uuidv4(), produto: modalProd.nome, quantidade: modalQty, unidade: 'CX', fator: modalProd.fator_conversao || 1 }]);
         } else if (tipoRegistro === 'CONGELAMENTO') {
             if (!modalQty) return;
             setItensList([...itensList, { id: uuidv4(), quantidade: modalQty, produto: modalProd?.nome || 'FRUTA GERAL' }]);
@@ -146,20 +127,6 @@ export default function ColheitaScreen({ navigation }) {
         setModalQty('');
     };
 
-    const handleAddDestino = () => {
-        if (!modalQty) return;
-        setDestinoList([...destinoList, { id: uuidv4(), quantidade: modalQty }]);
-        setDestinoModalVisible(false);
-        setModalQty('');
-    };
-
-    const handleAddPerda = () => {
-        if (!modalQty || !modalMotivo) return;
-        setPerdaList([...perdaList, { id: uuidv4(), quantidade: modalQty, motivo: modalMotivo }]);
-        setPerdaModalVisible(false);
-        setModalQty('');
-        setModalMotivo('');
-    };
 
     const handleSave = async () => {
         if (tipoRegistro === 'COLHEITA' && !talhao) return Alert.alert('Ops', 'Selecione o local/área.');
@@ -206,7 +173,7 @@ export default function ColheitaScreen({ navigation }) {
             showToast('✅ Registro salvo com sucesso!');
             await AsyncStorage.removeItem(DRAFT_KEY);
             navigation.goBack();
-        } catch (e) {
+        } catch {
             Alert.alert('Erro', 'Falha ao salvar registro.');
         } finally {
             setLoading(false);
@@ -220,56 +187,82 @@ export default function ColheitaScreen({ navigation }) {
             <ScrollView contentContainerStyle={styles.scroll}>
 
                 {/* SELETOR DE MODO */}
-                <View style={[styles.segmentContainer, { borderColor: colors.glassBorder }]}>
+                <View style={[styles.segmentContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.05)', borderColor: colors.border }]}>
                     {['COLHEITA', 'CONGELAMENTO', 'DESCARTE'].map(mode => (
                         <TouchableOpacity
                             key={mode}
-                            style={[styles.segmentBtn, tipoRegistro === mode && { backgroundColor: mode === 'COLHEITA' ? colors.primary : mode === 'CONGELAMENTO' ? '#3B82F6' : colors.danger }]}
+                            style={[
+                                styles.segmentBtn,
+                                tipoRegistro === mode && {
+                                    backgroundColor: mode === 'COLHEITA' ? colors.primary : mode === 'CONGELAMENTO' ? colors.info : colors.danger
+                                }
+                            ]}
                             onPress={() => { setTipoRegistro(mode); setItensList([]); }}
                         >
-                            <Text style={[styles.segmentText, { color: colors.textSecondary }, tipoRegistro === mode && { color: '#FFF' }]}>{mode}</Text>
+                            <Text style={[
+                                styles.segmentText,
+                                { color: colors.textSecondary },
+                                tipoRegistro === mode && { color: '#FFF' }
+                            ]}>
+                                {mode}
+                            </Text>
                         </TouchableOpacity>
                     ))}
                 </View>
 
                 {/* 1: Operação */}
-                <GlowCard style={styles.sectionCard}>
-                    <Text style={styles.sectionTitle}>1. INFORMAÇÕES DO REGISTRO</Text>
+                <Card style={styles.sectionCard}>
+                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>1. INFORMAÇÕES DO REGISTRO</Text>
                     <View style={styles.row}>
                         <View style={{ flex: 1, marginRight: 10 }}>
-                            <Text style={styles.label}>DATA DO EVENTO</Text>
-                            <GlowInput value={dataOperacao} onChangeText={formatData} placeholder="DD/MM/AAAA" keyboardType="numeric" maxLength={10} />
+                            <AgroInput
+                                label="DATA DO EVENTO"
+                                value={dataOperacao}
+                                onChangeText={formatData}
+                                placeholder="DD/MM/AAAA"
+                                keyboardType="numeric"
+                                maxLength={10}
+                            />
                         </View>
                         {tipoRegistro === 'COLHEITA' && (
                             <View style={{ flex: 1.5 }}>
-                                <Text style={styles.label}>TALHÃO / ÁREA</Text>
-                                <TouchableOpacity style={styles.selector} onPress={() => setAreaModalVisible(true)}>
-                                    <Text style={[styles.selectorText, !talhao && { color: colors.placeholder }]}>{talhao || 'Selecionar...'}</Text>
+                                <Text style={[styles.label, { color: colors.textSecondary }]}>TALHÃO / ÁREA</Text>
+                                <TouchableOpacity
+                                    style={[styles.selector, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', borderColor: colors.border }]}
+                                    onPress={() => setAreaModalVisible(true)}
+                                >
+                                    <Text style={[styles.selectorText, { color: colors.textPrimary }, !talhao && { color: colors.placeholder }]}>{talhao || 'Selecionar...'}</Text>
                                     <Ionicons name="location" size={18} color={colors.primary} />
                                 </TouchableOpacity>
                             </View>
                         )}
                     </View>
-                    <Text style={styles.label}>OBSERVAÇÃO GERAL (OPCIONAL)</Text>
-                    <GlowInput value={observacao} onChangeText={setObservacao} placeholder="Notas do dia..." multiline style={{ height: 60 }} />
-                </GlowCard>
+                    <AgroInput
+                        label="OBSERVAÇÃO GERAL (OPCIONAL)"
+                        value={observacao}
+                        onChangeText={setObservacao}
+                        placeholder="Notas do dia..."
+                        multiline
+                        style={{ height: 80 }}
+                    />
+                </Card>
 
                 {/* 2: LISTAGEM DE ITENS */}
-                <GlowCard style={styles.sectionCard}>
+                <Card style={styles.sectionCard}>
                     <View style={styles.cardHeader}>
                         <Ionicons
                             name={tipoRegistro === 'COLHEITA' ? "basket" : tipoRegistro === 'CONGELAMENTO' ? "snow" : "trash"}
                             size={20}
-                            color={tipoRegistro === 'COLHEITA' ? colors.primary : tipoRegistro === 'CONGELAMENTO' ? '#3B82F6' : colors.danger}
+                            color={tipoRegistro === 'COLHEITA' ? colors.primary : tipoRegistro === 'CONGELAMENTO' ? colors.info : colors.danger}
                         />
-                        <Text style={styles.sectionTitle}> ITENS PARA REGISTRO</Text>
+                        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}> ITENS PARA REGISTRO</Text>
                     </View>
 
                     {itensList.map(item => (
-                        <View key={item.id} style={styles.listItem}>
+                        <View key={item.id} style={[styles.listItem, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]}>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.itemMain}>{item.produto}</Text>
-                                <Text style={styles.itemSub}>{item.quantidade} {item.unidade || 'kg'} {item.motivo && ` - ${item.motivo}`}</Text>
+                                <Text style={[styles.itemMain, { color: colors.textPrimary }]}>{item.produto}</Text>
+                                <Text style={[styles.itemSub, { color: colors.textSecondary }]}>{item.quantidade} {item.unidade || 'kg'} {item.motivo && ` - ${item.motivo}`}</Text>
                             </View>
                             <TouchableOpacity onPress={() => setItensList(itensList.filter(i => i.id !== item.id))}>
                                 <Ionicons name="close-circle" size={20} color={colors.danger} />
@@ -278,7 +271,7 @@ export default function ColheitaScreen({ navigation }) {
                     ))}
 
                     <TouchableOpacity
-                        style={styles.addBtn}
+                        style={[styles.addBtn, { borderColor: colors.border }]}
                         onPress={() => {
                             if (tipoRegistro === 'COLHEITA') setProducaoModalVisible(true);
                             else if (tipoRegistro === 'CONGELAMENTO') setDestinoModalVisible(true);
@@ -288,97 +281,141 @@ export default function ColheitaScreen({ navigation }) {
                         <Ionicons
                             name="add-circle"
                             size={20}
-                            color={tipoRegistro === 'COLHEITA' ? colors.primary : tipoRegistro === 'CONGELAMENTO' ? '#3B82F6' : colors.danger}
+                            color={tipoRegistro === 'COLHEITA' ? colors.primary : tipoRegistro === 'CONGELAMENTO' ? colors.info : colors.danger}
                         />
-                        <Text style={[styles.addBtnText, { color: tipoRegistro === 'COLHEITA' ? colors.primary : tipoRegistro === 'CONGELAMENTO' ? '#3B82F6' : colors.danger }]}>
+                        <Text style={[styles.addBtnText, { color: tipoRegistro === 'COLHEITA' ? colors.primary : tipoRegistro === 'CONGELAMENTO' ? colors.info : colors.danger }]}>
                             ADICIONAR {tipoRegistro}
                         </Text>
                     </TouchableOpacity>
-                </GlowCard>
+                </Card>
 
-                <PrimaryButton title="SALVAR REGISTRO" onPress={handleSave} loading={loading} style={{ marginTop: 10, marginBottom: 30 }} />
+                <AgroButton title="SALVAR REGISTRO" onPress={handleSave} loading={loading} style={{ marginTop: 10, marginBottom: 30 }} />
 
             </ScrollView>
 
-            {/* MODAIS DE ADIÇÃO */}
             <Modal visible={producaoModalVisible} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { backgroundColor: colors.modal }]}>
-                        <Text style={styles.modalTitle}>Adicionar Produção</Text>
-                        <Text style={styles.label}>PRODUTO</Text>
-                        <TouchableOpacity style={styles.selector} onPress={() => setProducaoModalVisible(true) /* Reutiliza modal de busca caso queira, mas aqui p/ simplificar vou usar lista fixa ou picker se fosse o caso. Para AgroGB usamos FlatList p/ produtos. */}>
-                            <Text style={styles.selectorText}>{modalProd?.nome || 'Selecionar Produto...'}</Text>
-                        </TouchableOpacity>
+                    <Card style={[styles.modalContent, { backgroundColor: colors.card }]} noPadding>
+                        <View style={{ padding: 20 }}>
+                            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Adicionar Produção</Text>
 
-                        {/* Seletor simplificado de produtos p/ este modal */}
-                        <ScrollView style={{ maxHeight: 150, marginVertical: 10 }}>
-                            {productsDB.map(p => (
-                                <TouchableOpacity key={p.uuid} style={styles.pickItem} onPress={() => setModalProd(p)}>
-                                    <Text style={[styles.pickText, modalProd?.uuid === p.uuid && { color: colors.primary, fontWeight: 'bold' }]}>{p.nome}</Text>
+                            <Text style={[styles.label, { color: colors.textSecondary }]}>PRODUTO</Text>
+                            <TouchableOpacity
+                                style={[styles.selector, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', borderColor: colors.border }]}
+                                onPress={() => { }}
+                            >
+                                <Text style={[styles.selectorText, { color: colors.textPrimary }]}>{modalProd?.nome || 'Selecionar Produto...'}</Text>
+                            </TouchableOpacity>
+
+                            {/* Seletor simplificado de produtos p/ este modal */}
+                            <ScrollView style={{ maxHeight: 150, marginVertical: 10 }}>
+                                {productsDB.map(p => (
+                                    <TouchableOpacity key={p.uuid} style={[styles.pickItem, { borderBottomColor: colors.border }]} onPress={() => setModalProd(p)}>
+                                        <Text style={[styles.pickText, { color: colors.textPrimary }, modalProd?.uuid === p.uuid && { color: colors.primary, fontWeight: 'bold' }]}>{p.nome}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+
+                            <AgroInput
+                                label="QUANTIDADE (CX)"
+                                value={modalQty}
+                                onChangeText={setModalQty}
+                                keyboardType="decimal-pad"
+                                placeholder="0"
+                            />
+
+                            <View style={styles.modalActions}>
+                                <TouchableOpacity onPress={() => setProducaoModalVisible(false)}>
+                                    <Text style={{ color: colors.textSecondary, fontWeight: 'bold' }}>CANCELAR</Text>
                                 </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-
-                        <Text style={styles.label}>QUANTIDADE (CX)</Text>
-                        <GlowInput value={modalQty} onChangeText={setModalQty} keyboardType="decimal-pad" placeholder="0" />
-
-                        <View style={styles.modalActions}>
-                            <TouchableOpacity onPress={() => setProducaoModalVisible(false)}><Text style={{ color: colors.textSecondary }}>Cancelar</Text></TouchableOpacity>
-                            <PrimaryButton title="ADICIONAR" onPress={handleAddItem} style={{ width: 120, height: 40 }} />
+                                <AgroButton title="ADICIONAR" onPress={handleAddItem} style={{ width: 140 }} />
+                            </View>
                         </View>
-                    </View>
+                    </Card>
                 </View>
             </Modal>
 
             {/* Modal Destino */}
             <Modal visible={destinoModalVisible} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { backgroundColor: colors.modal }]}>
-                        <Text style={styles.modalTitle}>Registro de Destino</Text>
-                        <Text style={styles.label}>QUANTIDADE CONGELADA (KG)</Text>
-                        <GlowInput value={modalQty} onChangeText={setModalQty} keyboardType="decimal-pad" placeholder="0.00" autoFocus />
-                        <View style={styles.modalActions}>
-                            <TouchableOpacity onPress={() => setDestinoModalVisible(false)}><Text style={{ color: colors.textSecondary }}>Cancelar</Text></TouchableOpacity>
-                            <PrimaryButton title="ADICIONAR" onPress={handleAddItem} style={{ width: 120 }} />
+                    <Card style={[styles.modalContent, { backgroundColor: colors.card }]} noPadding>
+                        <View style={{ padding: 20 }}>
+                            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Registro de Destino</Text>
+
+                            <AgroInput
+                                label="QUANTIDADE CONGELADA (KG)"
+                                value={modalQty}
+                                onChangeText={setModalQty}
+                                keyboardType="decimal-pad"
+                                placeholder="0.00"
+                            />
+
+                            <View style={styles.modalActions}>
+                                <TouchableOpacity onPress={() => setDestinoModalVisible(false)}>
+                                    <Text style={{ color: colors.textSecondary, fontWeight: 'bold' }}>CANCELAR</Text>
+                                </TouchableOpacity>
+                                <AgroButton title="ADICIONAR" onPress={handleAddItem} style={{ width: 140 }} />
+                            </View>
                         </View>
-                    </View>
+                    </Card>
                 </View>
             </Modal>
 
             {/* Modal Perda */}
             <Modal visible={perdaModalVisible} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { backgroundColor: colors.modal }]}>
-                        <Text style={styles.modalTitle}>Registro de Descarte</Text>
-                        <Text style={styles.label}>MOTIVO</Text>
-                        <GlowInput value={modalMotivo} onChangeText={setModalMotivo} placeholder="Ex: Pássaros, Podridão..." />
-                        <Text style={styles.label}>QUANTIDADE DESCARTADA (KG)</Text>
-                        <GlowInput value={modalQty} onChangeText={setModalQty} keyboardType="decimal-pad" placeholder="0.00" />
-                        <View style={styles.modalActions}>
-                            <TouchableOpacity onPress={() => setPerdaModalVisible(false)}><Text style={{ color: colors.textSecondary }}>Cancelar</Text></TouchableOpacity>
-                            <PrimaryButton title="ADICIONAR" onPress={handleAddItem} style={{ width: 120 }} />
+                    <Card style={[styles.modalContent, { backgroundColor: colors.card }]} noPadding>
+                        <View style={{ padding: 20 }}>
+                            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Registro de Descarte</Text>
+
+                            <AgroInput
+                                label="MOTIVO"
+                                value={modalMotivo}
+                                onChangeText={setModalMotivo}
+                                placeholder="Ex: Pássaros, Podridão..."
+                            />
+
+                            <AgroInput
+                                label="QUANTIDADE DESCARTADA (KG)"
+                                value={modalQty}
+                                onChangeText={setModalQty}
+                                keyboardType="decimal-pad"
+                                placeholder="0.00"
+                            />
+
+                            <View style={styles.modalActions}>
+                                <TouchableOpacity onPress={() => setPerdaModalVisible(false)}>
+                                    <Text style={{ color: colors.textSecondary, fontWeight: 'bold' }}>CANCELAR</Text>
+                                </TouchableOpacity>
+                                <AgroButton title="ADICIONAR" onPress={handleAddItem} style={{ width: 140 }} />
+                            </View>
                         </View>
-                    </View>
+                    </Card>
                 </View>
             </Modal>
 
             {/* Modal de Áreas */}
             <Modal visible={areaModalVisible} transparent animationType="slide">
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { backgroundColor: colors.modal, height: '60%' }]}>
-                        <Text style={styles.modalTitle}>Selecione o Local</Text>
-                        <FlatList
-                            data={areasDB}
-                            keyExtractor={i => i.uuid}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity style={styles.pickItem} onPress={() => { setTalhao(item.nome); setAreaModalVisible(false); }}>
-                                    <Text style={styles.pickText}>{item.nome}</Text>
-                                    <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-                                </TouchableOpacity>
-                            )}
-                        />
-                        <PrimaryButton title="FECHAR" onPress={() => setAreaModalVisible(false)} />
-                    </View>
+                    <Card style={[styles.modalContent, { backgroundColor: colors.card, height: '60%' }]} noPadding>
+                        <View style={{ padding: 20, flex: 1 }}>
+                            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Selecione o Local</Text>
+                            <FlatList
+                                data={areasDB}
+                                keyExtractor={i => i.uuid}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        style={[styles.pickItem, { borderBottomColor: colors.border }]}
+                                        onPress={() => { setTalhao(item.nome); setAreaModalVisible(false); }}
+                                    >
+                                        <Text style={[styles.pickText, { color: colors.textPrimary }]}>{item.nome}</Text>
+                                        <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+                                    </TouchableOpacity>
+                                )}
+                            />
+                            <AgroButton title="FECHAR" onPress={() => setAreaModalVisible(false)} style={{ marginTop: 10 }} />
+                        </View>
+                    </Card>
                 </View>
             </Modal>
 
@@ -388,58 +425,50 @@ export default function ColheitaScreen({ navigation }) {
 
 const styles = StyleSheet.create({
     scroll: { padding: 16, paddingBottom: 100 },
-    segmentContainer: { flexDirection: 'row', gap: 8, marginBottom: 16, backgroundColor: 'rgba(0,0,0,0.05)', padding: 4, borderRadius: 14, borderWidth: 1 },
+    segmentContainer: { flexDirection: 'row', gap: 8, marginBottom: 16, padding: 4, borderRadius: 14, borderWidth: 1 },
     segmentBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 12 },
     segmentText: { fontSize: 10, fontWeight: '800' },
     sectionCard: { marginBottom: 16 },
-    sectionTitle: { fontSize: 11, fontWeight: '800', marginBottom: 14, color: '#6B7280', letterSpacing: 0.5 },
+    sectionTitle: { fontSize: 11, fontWeight: '800', marginBottom: 14, letterSpacing: 0.5 },
     cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
     row: { flexDirection: 'row', alignItems: 'center' },
-    label: { fontSize: 11, fontWeight: '700', color: '#9CA3AF', marginBottom: 6 },
+    label: { fontSize: 10, fontWeight: '900', marginBottom: 8, letterSpacing: 0.5 },
     selector: {
-        height: 48,
-        borderWidth: 1,
-        borderRadius: 12,
-        borderColor: 'rgba(0,0,0,0.1)',
+        height: 54,
+        borderWidth: 1.5,
+        borderRadius: 16,
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 12,
-        backgroundColor: '#F9FAFB',
-        marginBottom: 12
+        paddingHorizontal: 16,
+        marginBottom: 15
     },
-    selectorText: { flex: 1, fontSize: 15, fontWeight: '500' },
+    selectorText: { flex: 1, fontSize: 14, fontWeight: '700' },
     addBtn: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 12,
+        paddingVertical: 14,
         borderWidth: 1,
         borderStyle: 'dashed',
-        borderColor: '#D1D5DB',
-        borderRadius: 12,
+        borderRadius: 16,
         marginTop: 8
     },
-    addBtnText: { marginLeft: 8, fontSize: 12, fontWeight: '700', color: '#10B981' },
+    addBtnText: { marginLeft: 8, fontSize: 12, fontWeight: '900' },
     listItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.03)',
-        padding: 12,
-        borderRadius: 10,
-        marginBottom: 8
+        padding: 14,
+        borderRadius: 14,
+        marginBottom: 10
     },
-    itemMain: { flex: 1, fontSize: 13, fontWeight: '700' },
-    itemSub: { fontSize: 13, fontWeight: '600', marginRight: 10 },
-    resumoRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
-    resumoItem: { alignItems: 'center', flex: 1 },
-    resumoLabel: { fontSize: 9, fontWeight: '800', color: '#6B7280' },
-    resumoValue: { fontSize: 16, fontWeight: '900', color: '#111827' },
+    itemMain: { flex: 1, fontSize: 13, fontWeight: '800' },
+    itemSub: { fontSize: 12, fontWeight: '600', marginRight: 10 },
 
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
-    modalContent: { borderRadius: 20, padding: 20, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, elevation: 5 },
-    modalTitle: { fontSize: 18, fontWeight: '800', marginBottom: 20, textAlign: 'center' },
-    modalActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 },
-    pickItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
-    pickText: { fontSize: 15, fontWeight: '500' }
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 20 },
+    modalContent: { width: '100%', elevation: 10 },
+    modalTitle: { fontSize: 16, fontWeight: '900', marginBottom: 20, textAlign: 'center', letterSpacing: 1 },
+    modalActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
+    pickItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1 },
+    pickText: { fontSize: 14, fontWeight: '700' }
 });
 

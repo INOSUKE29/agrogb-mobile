@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
-import { getCadastro, getClientes, insertCliente } from '../database/database';
+import { getCadastro, getClientes } from '../database/database';
 import { insertVenda, getVendasRecentes, deleteVenda, updateVenda, marcarVendaRecebida } from '../services/VendaService';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -10,14 +10,15 @@ import { showToast } from '../ui/Toast';
 import { useTheme } from '../theme/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ConfirmModal from '../ui/ConfirmModal';
+// UI Components
 import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
-import GlowCard from '../ui/GlowCard';
-import GlowInput from '../ui/GlowInput';
-import PrimaryButton from '../ui/PrimaryButton';
+import { Card } from '../ui/components/Card';
+import AgroInput from '../ui/components/AgroInput';
+import AgroButton from '../ui/components/AgroButton';
 
 export default function VendasScreen({ navigation, route }) {
-    const { colors, theme } = useTheme();
+    const { colors, isDark } = useTheme();
     const [cliente, setCliente] = useState('');
     const [produto, setProduto] = useState('');
     const [quantidade, setQuantidade] = useState('');
@@ -29,7 +30,6 @@ export default function VendasScreen({ navigation, route }) {
     // Data State
     const [history, setHistory] = useState([]);
     const [filterStatus, setFilterStatus] = useState('TODAS');
-    const [refreshing, setRefreshing] = useState(false);
 
     // Modal States
     const [modalVisible, setModalVisible] = useState(false); // Product
@@ -47,7 +47,6 @@ export default function VendasScreen({ navigation, route }) {
     // Search
     const [searchText, setSearchText] = useState('');
     const [clientSearchText, setClientSearchText] = useState('');
-    const [loading, setLoading] = useState(false);
 
     // Delete State
     const [confirmVisible, setConfirmVisible] = useState(false);
@@ -55,7 +54,6 @@ export default function VendasScreen({ navigation, route }) {
 
     const DRAFT_KEY = '@draft_VendasScreen_v2';
 
-    const isDark = theme === 'dark' || theme === 'ultra_premium';
 
     // Rascunho - Recuperação
     useEffect(() => {
@@ -82,7 +80,7 @@ export default function VendasScreen({ navigation, route }) {
                         ]
                     );
                 }
-            } catch (e) { console.log('Draft error:', e); }
+            } catch { console.log('Draft error'); }
         };
         setTimeout(checkDraft, 600);
     }, []);
@@ -114,7 +112,6 @@ export default function VendasScreen({ navigation, route }) {
     }, [route?.params?.newClient]);
 
     const loadInitialData = async () => {
-        setLoading(true);
         try {
             const allItems = await getCadastro();
             const sellable = allItems.filter(i => i.vendavel === 1 || i.vendavel === true || i.vendavel === "1");
@@ -122,10 +119,8 @@ export default function VendasScreen({ navigation, route }) {
 
             const allClients = await getClientes();
             setClients(allClients);
-        } catch (e) {
-            console.error('[SCREEN ERROR]', e);
-        } finally {
-            setLoading(false);
+        } catch (err) {
+            console.error('[SCREEN ERROR]', err);
         }
     };
 
@@ -173,7 +168,7 @@ export default function VendasScreen({ navigation, route }) {
             await AsyncStorage.removeItem(DRAFT_KEY);
             loadHistory();
             AutoSyncService.trigger();
-        } catch (error) {
+        } catch {
             Alert.alert('Erro', 'Falha ao processar venda.');
         }
     };
@@ -231,7 +226,7 @@ export default function VendasScreen({ navigation, route }) {
             setValorRecebido('');
             loadHistory();
             Alert.alert('✅ Recebido!', `Venda de ${recebimentoItem.produto} marcada como recebida.`);
-        } catch (e) {
+        } catch {
             Alert.alert('Erro', 'Falha ao marcar como recebido.');
         }
     };
@@ -252,12 +247,12 @@ export default function VendasScreen({ navigation, route }) {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
                 {/* BLOCO DE ENTRADA */}
-                <GlowCard style={styles.card}>
-                    <Text style={[styles.sectionTitle, { color: colors.primary }]}>DADOS DA TRANSAÇÃO</Text>
+                <Card style={styles.card}>
+                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>DADOS DA TRANSAÇÃO</Text>
 
                     <Text style={[styles.label, { color: colors.textSecondary }]}>CLIENTE / PARCEIRO</Text>
                     <TouchableOpacity
-                        style={[styles.selectBtn, { backgroundColor: colors.cardAlt, borderColor: colors.glassBorder }]}
+                        style={[styles.selectBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', borderColor: colors.border }]}
                         onPress={() => setClientModalVisible(true)}
                     >
                         <Text style={[styles.selectText, { color: colors.textPrimary }, !cliente && { color: colors.placeholder }]}>
@@ -268,7 +263,7 @@ export default function VendasScreen({ navigation, route }) {
 
                     <Text style={[styles.label, { color: colors.textSecondary }]}>PRODUTO VENDIDO *</Text>
                     <TouchableOpacity
-                        style={[styles.selectBtn, { backgroundColor: colors.cardAlt, borderColor: colors.glassBorder }]}
+                        style={[styles.selectBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', borderColor: colors.border }]}
                         onPress={() => setModalVisible(true)}
                     >
                         <Text style={[styles.selectText, { color: colors.textPrimary }, !produto && { color: colors.placeholder }]}>
@@ -279,68 +274,66 @@ export default function VendasScreen({ navigation, route }) {
 
                     <View style={styles.row}>
                         <View style={{ flex: 1 }}>
-                            <Text style={[styles.label, { color: colors.textSecondary }]}>QTD *</Text>
-                            <GlowInput
+                            <AgroInput
+                                label="QTD *"
                                 placeholder="0.00"
                                 value={quantidade}
                                 onChangeText={setQuantidade}
                                 keyboardType="decimal-pad"
-                                style={{ marginBottom: 0 }}
                             />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={[styles.label, { color: colors.textSecondary }]}>VALOR TOTAL R$ *</Text>
-                            <GlowInput
+                            <AgroInput
+                                label="VALOR TOTAL R$ *"
                                 placeholder="0.00"
                                 value={valor}
                                 onChangeText={setValor}
                                 keyboardType="decimal-pad"
-                                style={{ marginBottom: 0 }}
                             />
                         </View>
                     </View>
 
-                    <Text style={[styles.label, { color: colors.textSecondary, marginTop: 15 }]}>OBSERVAÇÕES (OPCIONAL)</Text>
-                    <GlowInput
+                    <AgroInput
+                        label="OBSERVAÇÕES (OPCIONAL)"
                         placeholder="Detalhes adicionais..."
                         value={observacao}
                         onChangeText={(t) => up(t, setObservacao)}
                         multiline
-                        style={{ height: 80, textAlignVertical: 'top' }}
+                        style={{ height: 80 }}
                     />
 
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>STATUS FINANCEIRO</Text>
+                    <Text style={[styles.label, { color: colors.textSecondary, marginBottom: 10 }]}>STATUS FINANCEIRO</Text>
                     <View style={styles.radioGroup}>
                         <TouchableOpacity
                             style={[
                                 styles.radioBtn,
-                                { backgroundColor: colors.cardAlt, borderColor: colors.glassBorder },
-                                statusPagamento === 'A_RECEBER' && { borderColor: colors.warning, backgroundColor: colors.warning + '10' }
+                                { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', borderColor: colors.border },
+                                statusPagamento === 'A_RECEBER' && { borderColor: colors.warning, backgroundColor: (colors.warning || '#F59E0B') + '15' }
                             ]}
                             onPress={() => setStatusPagamento('A_RECEBER')}
                         >
-                            <View style={[styles.radioDot, { borderColor: colors.placeholder }, statusPagamento === 'A_RECEBER' && { borderColor: colors.warning, backgroundColor: colors.warning }]} />
-                            <Text style={[styles.radioText, { color: colors.textSecondary }, statusPagamento === 'A_RECEBER' && { color: colors.warningDark, fontWeight: '900' }]}>A RECEBER</Text>
+                            <View style={[styles.radioDot, { borderColor: colors.border }, statusPagamento === 'A_RECEBER' && { borderColor: colors.warning, backgroundColor: colors.warning }]} />
+                            <Text style={[styles.radioText, { color: colors.textSecondary }, statusPagamento === 'A_RECEBER' && { color: colors.warning, fontWeight: '900' }]}>A RECEBER</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
                             style={[
                                 styles.radioBtn,
-                                { backgroundColor: colors.cardAlt, borderColor: colors.glassBorder },
-                                statusPagamento === 'RECEBIDO' && { borderColor: colors.primary, backgroundColor: colors.primary + '10' }
+                                { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', borderColor: colors.border },
+                                statusPagamento === 'RECEBIDO' && { borderColor: colors.primary, backgroundColor: (colors.primary || '#1E8E5A') + '15' }
                             ]}
                             onPress={() => setStatusPagamento('RECEBIDO')}
                         >
-                            <View style={[styles.radioDot, { borderColor: colors.placeholder }, statusPagamento === 'RECEBIDO' && { borderColor: colors.primary, backgroundColor: colors.primary }]} />
+                            <View style={[styles.radioDot, { borderColor: colors.border }, statusPagamento === 'RECEBIDO' && { borderColor: colors.primary, backgroundColor: colors.primary }]} />
                             <Text style={[styles.radioText, { color: colors.textSecondary }, statusPagamento === 'RECEBIDO' && { color: colors.primary, fontWeight: '900' }]} >RECEBIDO</Text>
                         </TouchableOpacity>
                     </View>
 
                     <View style={{ marginTop: 20 }}>
-                        <PrimaryButton
-                            label={editingUuid ? 'ATUALIZAR VENDA' : 'CONFIRMAR VENDA'}
+                        <AgroButton
+                            title={editingUuid ? 'ATUALIZAR VENDA' : 'CONFIRMAR VENDA'}
                             onPress={salvar}
-                            icon={editingUuid ? "save-outline" : "checkmark-circle-outline"}
+                            icon={editingUuid ? "save" : "checkmark-circle"}
                         />
                         {editingUuid && (
                             <TouchableOpacity
@@ -351,7 +344,7 @@ export default function VendasScreen({ navigation, route }) {
                             </TouchableOpacity>
                         )}
                     </View>
-                </GlowCard>
+                </Card>
 
                 {/* HISTÓRICO */}
                 <View style={styles.historySection}>
@@ -363,7 +356,7 @@ export default function VendasScreen({ navigation, route }) {
                                 key={f}
                                 style={[
                                     styles.filterPill,
-                                    { backgroundColor: colors.card, borderColor: colors.glassBorder },
+                                    { backgroundColor: colors.card, borderColor: colors.border },
                                     filterStatus === f && { backgroundColor: colors.primary, borderColor: colors.primary }
                                 ]}
                                 onPress={() => setFilterStatus(f)}
@@ -378,17 +371,17 @@ export default function VendasScreen({ navigation, route }) {
                     {getFilteredHistory().map(item => {
                         const isReceived = item.status_pagamento === 'RECEBIDO';
                         return (
-                            <GlowCard key={item.uuid} style={styles.historyItem}>
+                            <Card key={item.uuid} style={styles.historyItem}>
                                 <View style={styles.historyInfo}>
                                     <View style={styles.historyHeaderRow}>
                                         <Text style={[styles.hProd, { color: colors.textPrimary }]}>{item.produto}</Text>
-                                        <View style={[styles.statusBadge, { backgroundColor: isReceived ? colors.primary + '15' : colors.warning + '15' }]}>
-                                            <Text style={[styles.statusBadgeText, { color: isReceived ? colors.primary : colors.warningDark }]}>
+                                        <View style={[styles.statusBadge, { backgroundColor: isReceived ? (colors.primary || '#1E8E5A') + '15' : (colors.warning || '#F59E0B') + '15' }]}>
+                                            <Text style={[styles.statusBadgeText, { color: isReceived ? colors.primary : colors.warning }]}>
                                                 {isReceived ? 'PAGO' : 'PENDENTE'}
                                             </Text>
                                         </View>
                                     </View>
-                                    <Text style={[styles.hSub, { color: colors.textMuted }]}>
+                                    <Text style={[styles.hSub, { color: colors.textSecondary }]}>
                                         {item.cliente} • {new Date(item.data).toLocaleDateString('pt-BR')}
                                     </Text>
                                     <Text style={[styles.hVal, { color: colors.primary }]}>
@@ -398,18 +391,18 @@ export default function VendasScreen({ navigation, route }) {
 
                                 <View style={styles.actions}>
                                     {!isReceived && (
-                                        <TouchableOpacity onPress={() => handleBaixar(item)} style={[styles.actionBtn, { backgroundColor: colors.primary + '10' }]}>
+                                        <TouchableOpacity onPress={() => handleBaixar(item)} style={[styles.actionBtn, { backgroundColor: (colors.primary || '#1E8E5A') + '10', borderColor: (colors.primary || '#1E8E5A') + '20' }]}>
                                             <Ionicons name="cash" size={18} color={colors.primary} />
                                         </TouchableOpacity>
                                     )}
-                                    <TouchableOpacity onPress={() => handleEdit(item)} style={[styles.actionBtn, { backgroundColor: colors.cardAlt }]}>
+                                    <TouchableOpacity onPress={() => handleEdit(item)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9FAFB', borderColor: colors.border }]}>
                                         <Ionicons name="create-outline" size={18} color={colors.textSecondary} />
                                     </TouchableOpacity>
-                                    <TouchableOpacity onPress={() => handleDelete(item)} style={[styles.actionBtn, { backgroundColor: colors.cardAlt }]}>
+                                    <TouchableOpacity onPress={() => handleDelete(item)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9FAFB', borderColor: colors.border }]}>
                                         <Ionicons name="trash-outline" size={18} color={colors.danger} />
                                     </TouchableOpacity>
                                 </View>
-                            </GlowCard>
+                            </Card>
                         );
                     })}
                 </View>
@@ -429,7 +422,7 @@ export default function VendasScreen({ navigation, route }) {
                 <AppContainer>
                     <ScreenHeader title="SELECIONAR PRODUTO" onBack={() => setModalVisible(false)} />
                     <View style={styles.modalContent}>
-                        <GlowInput
+                        <AgroInput
                             placeholder="Pesquisar produto..."
                             value={searchText}
                             onChangeText={t => up(t, setSearchText)}
@@ -440,7 +433,7 @@ export default function VendasScreen({ navigation, route }) {
                             keyExtractor={i => i.uuid || i.id.toString()}
                             renderItem={({ item }) => (
                                 <TouchableOpacity
-                                    style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.glassBorder }]}
+                                    style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.border }]}
                                     onPress={() => { setProduto(item.nome); setModalVisible(false); }}
                                 >
                                     <View>
@@ -467,7 +460,7 @@ export default function VendasScreen({ navigation, route }) {
                         }
                     />
                     <View style={styles.modalContent}>
-                        <GlowInput
+                        <AgroInput
                             placeholder="Filtrar por nome..."
                             value={clientSearchText}
                             onChangeText={t => up(t, setClientSearchText)}
@@ -478,7 +471,7 @@ export default function VendasScreen({ navigation, route }) {
                             keyExtractor={i => i.uuid || i.id.toString()}
                             ListHeaderComponent={
                                 <TouchableOpacity
-                                    style={[styles.listItem, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30' }]}
+                                    style={[styles.listItem, { backgroundColor: (colors.primary || '#1E8E5A') + '10', borderColor: (colors.primary || '#1E8E5A') + '30' }]}
                                     onPress={() => { setCliente('BALCÃO'); setClientModalVisible(false); }}
                                 >
                                     <View>
@@ -490,7 +483,7 @@ export default function VendasScreen({ navigation, route }) {
                             }
                             renderItem={({ item }) => (
                                 <TouchableOpacity
-                                    style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.glassBorder }]}
+                                    style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.border }]}
                                     onPress={() => { setCliente(item.nome); setClientModalVisible(false); }}
                                 >
                                     <View>
@@ -508,35 +501,39 @@ export default function VendasScreen({ navigation, route }) {
             {/* CONFIRMAR RECEBIMENTO MODAL */}
             <Modal visible={recebimentoModal} transparent animationType="fade">
                 <View style={styles.overlayCenter}>
-                    <GlowCard style={styles.miniModal}>
-                        <Text style={[styles.miniModalTitle, { color: colors.textPrimary }]}>CONFIRMAR RECEBIMENTO</Text>
-                        {recebimentoItem && (
-                            <View style={[styles.receivedSummary, { backgroundColor: colors.cardAlt }]}>
-                                <Text style={[styles.summaryText, { color: colors.textMuted }]}>Produto: <Text style={{ color: colors.textPrimary }}>{recebimentoItem.produto}</Text></Text>
-                                <Text style={[styles.summaryText, { color: colors.textMuted }]}>Valor Original: <Text style={{ color: colors.textPrimary }}>R$ {recebimentoItem.valor.toFixed(2)}</Text></Text>
+                    <Card style={styles.miniModal} noPadding>
+                        <View style={{ padding: 25 }}>
+                            <Text style={[styles.miniModalTitle, { color: colors.textPrimary }]}>CONFIRMAR RECEBIMENTO</Text>
+                            {recebimentoItem && (
+                                <View style={[styles.receivedSummary, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB' }]}>
+                                    <Text style={[styles.summaryText, { color: colors.textSecondary }]}>Produto: <Text style={{ color: colors.textPrimary, fontWeight: 'bold' }}>{recebimentoItem.produto}</Text></Text>
+                                    <Text style={[styles.summaryText, { color: colors.textSecondary }]}>Valor Original: <Text style={{ color: colors.textPrimary, fontWeight: 'bold' }}>R$ {recebimentoItem.valor.toFixed(2)}</Text></Text>
+                                </View>
+                            )}
+
+                            <AgroInput
+                                label="VALOR RECEBIDO"
+                                placeholder="0.00"
+                                value={valorRecebido}
+                                onChangeText={setValorRecebido}
+                                keyboardType="decimal-pad"
+                            />
+
+                            <View style={styles.modalActions}>
+                                <TouchableOpacity
+                                    style={[styles.modalBtnCancel, { borderColor: colors.border }]}
+                                    onPress={() => { setRecebimentoModal(false); setRecebimentoItem(null); }}
+                                >
+                                    <Text style={{ color: colors.textSecondary, fontWeight: 'bold' }}>VOLTAR</Text>
+                                </TouchableOpacity>
+                                <AgroButton
+                                    title="BAIXAR"
+                                    onPress={confirmarRecebimento}
+                                    style={{ flex: 1.5 }}
+                                />
                             </View>
-                        )}
-
-                        <Text style={[styles.label, { color: colors.textSecondary }]}>VALOR RECEBIDO</Text>
-                        <GlowInput
-                            placeholder="0.00"
-                            value={valorRecebido}
-                            onChangeText={setValorRecebido}
-                            keyboardType="decimal-pad"
-                        />
-
-                        <View style={styles.modalActions}>
-                            <TouchableOpacity
-                                style={[styles.modalBtnCancel, { borderColor: colors.glassBorder }]}
-                                onPress={() => { setRecebimentoModal(false); setRecebimentoItem(null); }}
-                            >
-                                <Text style={{ color: colors.textMuted, fontWeight: 'bold' }}>VOLTAR</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.modalBtnConfirm, { backgroundColor: colors.primary }]} onPress={confirmarRecebimento}>
-                                <Text style={{ color: '#FFF', fontWeight: 'bold' }}>BAIXAR PAGAMENTO</Text>
-                            </TouchableOpacity>
                         </View>
-                    </GlowCard>
+                    </Card>
                 </View>
             </Modal>
 
@@ -556,47 +553,46 @@ const styles = StyleSheet.create({
     card: { padding: 20, marginBottom: 25 },
     sectionTitle: { fontSize: 10, fontWeight: '900', letterSpacing: 1.5, marginBottom: 15 },
     label: { fontSize: 10, fontWeight: '900', letterSpacing: 1, marginBottom: 8 },
-    row: { flexDirection: 'row', gap: 12, marginBottom: 15 },
-    selectBtn: { height: 50, borderRadius: 14, borderWidth: 1, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 },
-    selectText: { fontSize: 15, fontWeight: '600' },
-    radioGroup: { flexDirection: 'row', gap: 10, marginTop: 5 },
-    radioBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 14, padding: 15, gap: 10 },
-    radioDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 1.5 },
-    radioText: { fontSize: 11 },
+    row: { flexDirection: 'row', gap: 12 },
+    selectBtn: { height: 54, borderRadius: 16, borderWidth: 1.5, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 },
+    selectText: { fontSize: 14, fontWeight: '700' },
+    radioGroup: { flexDirection: 'row', gap: 10 },
+    radioBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 16, padding: 15, gap: 10 },
+    radioDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 2 },
+    radioText: { fontSize: 11, fontWeight: '800' },
     cancelLink: { marginTop: 15, padding: 5, alignSelf: 'center' },
 
     historySection: { marginTop: 10 },
     historyTitle: { fontSize: 10, fontWeight: '900', letterSpacing: 1.5, marginBottom: 15, marginLeft: 5 },
     historyItem: { padding: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center' },
     historyInfo: { flex: 1 },
-    historyHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 },
+    historyHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
     hProd: { fontSize: 15, fontWeight: 'bold' },
     hSub: { fontSize: 11, marginBottom: 4 },
     hVal: { fontSize: 13, fontWeight: '900' },
 
-    statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
     statusBadgeText: { fontSize: 9, fontWeight: '900' },
 
     actions: { flexDirection: 'row', gap: 8 },
-    actionBtn: { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+    actionBtn: { width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
 
     filterBar: { flexDirection: 'row', gap: 8, marginBottom: 15 },
-    filterPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+    filterPill: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 24, borderWidth: 1 },
     filterPillText: { fontSize: 10, fontWeight: '900' },
 
     modalContent: { flex: 1, padding: 20 },
-    listItem: { padding: 16, borderRadius: 16, borderWidth: 1, marginBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    listItem: { padding: 16, borderRadius: 16, borderWidth: 1, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     listItemTitle: { fontSize: 15, fontWeight: 'bold' },
     listItemSub: { fontSize: 12, marginTop: 2 },
 
-    overlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 25 },
-    miniModal: { padding: 25, borderRadius: 24 },
-    miniModalTitle: { fontSize: 18, fontWeight: '900', marginBottom: 20, textAlign: 'center' },
-    receivedSummary: { padding: 15, borderRadius: 12, marginBottom: 20 },
+    overlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 25 },
+    miniModal: { width: '100%', elevation: 15 },
+    miniModalTitle: { fontSize: 16, fontWeight: '900', marginBottom: 20, textAlign: 'center', letterSpacing: 1 },
+    receivedSummary: { padding: 15, borderRadius: 14, marginBottom: 20 },
     summaryText: { fontSize: 13, marginBottom: 5 },
     modalActions: { flexDirection: 'row', gap: 12, marginTop: 10 },
-    modalBtnCancel: { flex: 1, height: 50, borderRadius: 14, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
-    modalBtnConfirm: { flex: 2, height: 50, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+    modalBtnCancel: { flex: 1, height: 54, borderRadius: 16, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
 
     emptyState: { alignItems: 'center', marginTop: 40, opacity: 0.5 },
     emptyText: { fontSize: 12, fontWeight: 'bold', marginTop: 10, textAlign: 'center' }

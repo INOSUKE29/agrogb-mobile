@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import { executeQuery, getAppSettings, updateAppSetting } from '../database/database';
+import { executeQuery, getAppSettings } from '../database/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const syncTables = [
@@ -67,7 +67,7 @@ export const pushLocalChanges = async () => {
                         totalsSynced += records.length;
                     }
                 }
-            } catch (err) {
+            } catch {
                 console.log(`Pular push ${tableName}, possivelmente inexistente ou sem sync_status.`);
             }
         }
@@ -131,7 +131,7 @@ export const pullServerChanges = async () => {
                     }
                     totalsPulled += data.length;
                 }
-            } catch (err) {
+            } catch {
                 console.log(`Pular pull ${tableName}.`);
             }
         }

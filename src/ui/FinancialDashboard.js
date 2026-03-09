@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
 import { executeQuery } from '../database/database';
@@ -49,7 +49,7 @@ export default function FinancialDashboard() {
             if (period === 'ALL') startDate = new Date(0); // Epoch
 
             const startStr = startDate.toISOString().split('T')[0];
-            const endStr = now.toISOString().split('T')[0]; // Today
+            // const endStr = now.toISOString().split('T')[0]; // Today
 
             // 2. Fetch Aggregated Totals (KPIs)
             // Note: Using broad queries for now. Ideally should filter by date in SQL.
@@ -124,9 +124,17 @@ export default function FinancialDashboard() {
 
             {/* 1. HEADER: PERIOD SELECTOR */}
             <View style={styles.periodSelector}>
-                <PeriodBtn title="Mês" value="MONTH" />
-                <PeriodBtn title="Trimestre" value="QUARTER" />
-                <PeriodBtn title="Ano" value="YEAR" />
+                {['MONTH', 'QUARTER', 'YEAR'].map((p) => (
+                    <TouchableOpacity
+                        key={p}
+                        style={[styles.periodBtn, period === p && styles.periodBtnActive]}
+                        onPress={() => setPeriod(p)}
+                    >
+                        <Text style={[styles.periodText, period === p && { color: colors.primary }]}>
+                            {p === 'MONTH' ? 'Mês' : p === 'QUARTER' ? 'Trimestre' : 'Ano'}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
             </View>
 
             {loading ? (
@@ -185,6 +193,7 @@ export default function FinancialDashboard() {
                             icon="cash-outline"
                             color={colors.primary}
                             trend="+4.5%"
+                            colors={colors}
                         />
                         <KpiCard
                             title="Custos Totais"
@@ -192,6 +201,7 @@ export default function FinancialDashboard() {
                             icon="alert-circle-outline"
                             color={colors.danger}
                             trend="-1.2%"
+                            colors={colors}
                         />
                         <KpiCard
                             title="Insumos"
@@ -199,6 +209,7 @@ export default function FinancialDashboard() {
                             icon="cart-outline"
                             color={colors.warning}
                             trend="Estável"
+                            colors={colors}
                         />
                         <KpiCard
                             title="Desp. Operac."
@@ -206,6 +217,7 @@ export default function FinancialDashboard() {
                             icon="construct-outline"
                             color="#6366F1"
                             trend="Variável"
+                            colors={colors}
                         />
                     </View>
                 </>
@@ -215,7 +227,7 @@ export default function FinancialDashboard() {
 }
 
 // --- SUB-COMPONENT: KpiCard ---
-const KpiCard = ({ title, value, icon, color, trend }) => (
+const KpiCard = ({ title, value, icon, color, trend, colors }) => (
     <View style={styles.kpiCard}>
         <View style={styles.kpiHeader}>
             <View style={[styles.iconBox, { backgroundColor: color + '20' }]}>

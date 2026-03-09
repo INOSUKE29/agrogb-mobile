@@ -1,0 +1,382 @@
+(node:17612) ESLintIgnoreWarning: The ".eslintignore" file is no longer supported. Switch to using the "ignores" property in "eslint.config.js": https://eslint.org/docs/latest/use/configure/migration-guide#ignoring-files
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\index.js
+  8:29  error  'ErrorUtils' is not defined  no-undef
+  9:1   error  'ErrorUtils' is not defined  no-undef
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\context\WeatherContext.js
+  25:18  warning  'e' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\database\database.js
+   275:18   warning  'e' is defined but never used                        no-unused-vars
+   283:18   warning  'e' is defined but never used                        no-unused-vars
+   291:18   warning  'e' is defined but never used                        no-unused-vars
+   297:18   warning  'e' is defined but never used                        no-unused-vars
+   303:18   warning  'e' is defined but never used                        no-unused-vars
+   309:18   warning  'e' is defined but never used                        no-unused-vars
+   316:18   warning  'e' is defined but never used                        no-unused-vars
+   320:18   warning  'e' is defined but never used                        no-unused-vars
+   326:18   warning  'e' is defined but never used                        no-unused-vars
+   333:18   warning  'e' is defined but never used                        no-unused-vars
+   510:94   warning  'e' is defined but never used                        no-unused-vars
+   513:18   warning  'e' is defined but never used                        no-unused-vars
+   545:112  warning  'e' is defined but never used                        no-unused-vars
+   551:94   warning  'e' is defined but never used                        no-unused-vars
+   637:18   warning  'e' is defined but never used                        no-unused-vars
+   645:18   warning  'e' is defined but never used                        no-unused-vars
+   656:18   warning  'e' is defined but never used                        no-unused-vars
+   661:18   warning  'e' is defined but never used                        no-unused-vars
+   683:18   warning  'e' is defined but never used                        no-unused-vars
+   721:18   warning  'e' is defined but never used                        no-unused-vars
+   727:18   warning  'e' is defined but never used                        no-unused-vars
+   733:18   warning  'e' is defined but never used                        no-unused-vars
+   763:98   warning  'e' is defined but never used                        no-unused-vars
+   765:18   warning  'e' is defined but never used                        no-unused-vars
+   768:91   warning  'e' is defined but never used                        no-unused-vars
+   771:91   warning  'e' is defined but never used                        no-unused-vars
+   772:91   warning  'e' is defined but never used                        no-unused-vars
+   780:22   warning  'e' is defined but never used                        no-unused-vars
+   798:97   warning  'e' is defined but never used                        no-unused-vars
+   799:100  warning  'e' is defined but never used                        no-unused-vars
+   800:103  warning  'e' is defined but never used                        no-unused-vars
+   801:95   warning  'e' is defined but never used                        no-unused-vars
+   804:97   warning  'e' is defined but never used                        no-unused-vars
+   807:94   warning  'e' is defined but never used                        no-unused-vars
+   808:112  warning  'e' is defined but never used                        no-unused-vars
+   811:95   warning  'e' is defined but never used                        no-unused-vars
+   812:95   warning  'e' is defined but never used                        no-unused-vars
+   813:106  warning  'e' is defined but never used                        no-unused-vars
+   816:102  warning  'e' is defined but never used                        no-unused-vars
+   825:110  warning  'e' is defined but never used                        no-unused-vars
+   830:18   warning  'e' is defined but never used                        no-unused-vars
+   985:118  warning  'e' is defined but never used                        no-unused-vars
+   992:14   warning  'e' is defined but never used                        no-unused-vars
+  1244:14   warning  'e' is defined but never used                        no-unused-vars
+  1338:15   warning  'APP_START_DATE' is assigned a value but never used  no-unused-vars
+  1378:26   warning  'e' is defined but never used                        no-unused-vars
+  1380:18   warning  'err' is defined but never used                      no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\database\migrations.js
+    3:7   warning  'CURRENT_VERSION' is assigned a value but never used  no-unused-vars
+  124:22  warning  'e' is defined but never used                         no-unused-vars
+  130:22  warning  'e' is defined but never used                         no-unused-vars
+  138:18  warning  'e' is defined but never used                         no-unused-vars
+  144:18  warning  'e' is defined but never used                         no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\navigation\AppNavigator.js
+  83:56  error  'VerifyCodeScreen' is not defined  no-undef
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\AdubacaoFormScreen.js
+  4:10  warning  'theme' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\CadastroFormScreen.js
+    2:22   warning  'TextInput' is defined but never used                    no-unused-vars
+    2:82   warning  'ActivityIndicator' is defined but never used            no-unused-vars
+    2:101  warning  'Image' is defined but never used                        no-unused-vars
+    2:108  warning  'Modal' is defined but never used                        no-unused-vars
+    2:115  warning  'FlatList' is defined but never used                     no-unused-vars
+    2:125  warning  'Animated' is defined but never used                     no-unused-vars
+    2:135  warning  'LayoutAnimation' is defined but never used              no-unused-vars
+    3:10   warning  'Ionicons' is defined but never used                     no-unused-vars
+    6:10   warning  'LinearGradient' is defined but never used               no-unused-vars
+   26:12   warning  'mostrarAvancado' is assigned a value but never used     no-unused-vars
+   26:29   warning  'setMostrarAvancado' is assigned a value but never used  no-unused-vars
+   41:24   warning  'setPrincipioA' is assigned a value but never used       no-unused-vars
+   42:21   warning  'setClasseT' is assigned a value but never used          no-unused-vars
+   43:23   warning  'setConteudoE' is assigned a value but never used        no-unused-vars
+   44:24   warning  'setComposicao' is assigned a value but never used       no-unused-vars
+   94:27   warning  'setFotoPrincipal' is assigned a value but never used    no-unused-vars
+   95:24   warning  'setFotoRotulo' is assigned a value but never used       no-unused-vars
+  102:11   warning  'getImg' is assigned a value but never used              no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\CadastroScreen.js
+   5:20  warning  'MaterialCommunityIcons' is defined but never used       no-unused-vars
+  45:12  warning  'obsModalVisible' is assigned a value but never used     no-unused-vars
+  45:29  warning  'setObsModalVisible' is assigned a value but never used  no-unused-vars
+  84:74  warning  'e' is defined but never used                            no-unused-vars
+  94:18  warning  'e' is defined but never used                            no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\CadernoCampoScreen.js
+   3:20  warning  'MaterialCommunityIcons' is defined but never used  no-unused-vars
+   3:44  warning  'FontAwesome5' is defined but never used            no-unused-vars
+   7:10  warning  'SPACING' is defined but never used                 no-unused-vars
+   8:10  warning  'TYPOGRAPHY' is defined but never used              no-unused-vars
+   9:10  warning  'RADIUS' is defined but never used                  no-unused-vars
+  11:9   warning  'width' is assigned a value but never used          no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\CategoriasDespesaScreen.js
+  8:51  warning  'navigation' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\ClienteFormScreen.js
+   2:71  warning  'ActivityIndicator' is defined but never used  no-unused-vars
+   3:10  warning  'Ionicons' is defined but never used           no-unused-vars
+   4:10  warning  'LinearGradient' is defined but never used     no-unused-vars
+  22:73  warning  'e' is defined but never used                  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\ClientesScreen.js
+   2:69  warning  'TextInput' is defined but never used  no-unused-vars
+  39:18  warning  'e' is defined but never used          no-unused-vars
+  58:13  error    'showToast' is not defined             no-undef
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\ColheitaScreen.js
+    2:88  warning  'Animated' is defined but never used                    no-unused-vars
+    4:20  warning  'MaterialCommunityIcons' is defined but never used      no-unused-vars
+    9:36  warning  'insertCadastro' is defined but never used              no-unused-vars
+   10:48  warning  'updateColheita' is defined but never used              no-unused-vars
+   10:64  warning  'deleteColheita' is defined but never used              no-unused-vars
+   19:8   warning  'DangerButton' is defined but never used                no-unused-vars
+   22:8   warning  'ConfirmModal' is defined but never used                no-unused-vars
+   48:23  warning  'setModalUnit' is assigned a value but never used       no-unused-vars
+   54:12  warning  'history' is assigned a value but never used            no-unused-vars
+   57:12  warning  'confirmVisible' is assigned a value but never used     no-unused-vars
+   57:28  warning  'setConfirmVisible' is assigned a value but never used  no-unused-vars
+   58:12  warning  'itemToDelete' is assigned a value but never used       no-unused-vars
+   58:26  warning  'setItemToDelete' is assigned a value but never used    no-unused-vars
+   88:29  error    'setProducaoList' is not defined                        no-undef
+   89:29  error    'setDestinoList' is not defined                         no-undef
+   90:29  error    'setPerdaList' is not defined                           no-undef
+  124:11  warning  'resumo' is assigned a value but never used             no-unused-vars
+  125:25  error    'producaoList' is not defined                           no-undef
+  126:27  error    'destinoList' is not defined                            no-undef
+  127:27  error    'perdaList' is not defined                              no-undef
+  129:9   error    'producaoList' is not defined                           no-undef
+  129:23  error    'destinoList' is not defined                            no-undef
+  129:36  error    'perdaList' is not defined                              no-undef
+  149:11  warning  'handleAddDestino' is assigned a value but never used   no-unused-vars
+  151:9   error    'setDestinoList' is not defined                         no-undef
+  151:28  error    'destinoList' is not defined                            no-undef
+  156:11  warning  'handleAddPerda' is assigned a value but never used     no-unused-vars
+  158:9   error    'setPerdaList' is not defined                           no-undef
+  158:26  error    'perdaList' is not defined                              no-undef
+  209:18  warning  'e' is defined but never used                           no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\ComprasScreen.js
+    1:27  warning  'useEffect' is defined but never used  no-unused-vars
+   48:18  warning  'e' is defined but never used          no-unused-vars
+   74:18  warning  'error' is defined but never used      no-unused-vars
+  103:18  warning  'e' is defined but never used          no-unused-vars
+  136:18  warning  'error' is defined but never used      no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\CulturasScreen.js
+  19:74  warning  'e' is defined but never used  no-unused-vars
+  27:18  warning  'e' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\CustosScreen.js
+   3:16  warning  'uuidv4' is defined but never used                  no-unused-vars
+  23:24  warning  'setNewCatType' is assigned a value but never used  no-unused-vars
+  64:18  warning  'e' is defined but never used                       no-unused-vars
+  88:18  warning  'error' is defined but never used                   no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\EncomendasScreen.js
+  11:13  warning  'colors' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\EstoqueScreen.js
+    2:62  warning  'ActivityIndicator' is defined but never used  no-unused-vars
+   18:21  warning  'theme' is assigned a value but never used     no-unused-vars
+   88:18  warning  'e' is defined but never used                  no-unused-vars
+  110:18  warning  'e' is defined but never used                  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\FrotaScreen.js
+   2:69   warning  'TextInput' is defined but never used                no-unused-vars
+   2:106  warning  'ScrollView' is defined but never used               no-unused-vars
+   4:98   warning  'getHistoricoManutencoes' is defined but never used  no-unused-vars
+  40:74   warning  'e' is defined but never used                        no-unused-vars
+  48:18   warning  'e' is defined but never used                        no-unused-vars
+  57:18   warning  'e' is defined but never used                        no-unused-vars
+  66:18   warning  'e' is defined but never used                        no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\HomeScreen.js
+   1:40  warning  'useEffect' is defined but never used       no-unused-vars
+  18:9   warning  'width' is assigned a value but never used  no-unused-vars
+  21:21  warning  'theme' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\LoginScreen.js
+  15:9  warning  'height' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\MonitoramentoScreen.js
+  33:12  warning  'loading' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\NovaEncomendaScreen.js
+   60:18  warning  'error' is defined but never used  no-unused-vars
+  168:30  warning  'e' is defined but never used      no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\PlantioScreen.js
+   1:27   warning  'useEffect' is defined but never used      no-unused-vars
+   2:118  warning  'Animated' is defined but never used       no-unused-vars
+   5:38   warning  'updatePlantio' is defined but never used  no-unused-vars
+   5:53   warning  'deletePlantio' is defined but never used  no-unused-vars
+  12:8    warning  'GlowFAB' is defined but never used        no-unused-vars
+  50:18   warning  'e' is defined but never used              no-unused-vars
+  83:18   warning  'error' is defined but never used          no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\ProcessamentoScreen.js
+  38:18  warning  'error' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\ProfileScreen.js
+    2:89  warning  'Animated' is defined but never used          no-unused-vars
+   18:12  warning  'loading' is assigned a value but never used  no-unused-vars
+  107:18  warning  'e' is defined but never used                 no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\RegisterScreen.js
+   2:22  warning  'TextInput' is defined but never used             no-unused-vars
+   2:70  warning  'KeyboardAvoidingView' is defined but never used  no-unused-vars
+   2:92  warning  'Platform' is defined but never used              no-unused-vars
+   4:10  warning  'AntDesign' is defined but never used             no-unused-vars
+   6:10  warning  'Link' is defined but never used                  no-unused-vars
+  10:9   warning  'width' is assigned a value but never used        no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\RelatoriosScreen.js
+    2:76  warning  'Share' is defined but never used             no-unused-vars
+   21:12  warning  'loading' is assigned a value but never used  no-unused-vars
+   27:11  warning  'isDark' is assigned a value but never used   no-unused-vars
+   32:17  warning  'opacity' is assigned a value but never used  no-unused-vars
+   33:22  warning  'opacity' is assigned a value but never used  no-unused-vars
+  214:64  warning  'opacity' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\ScannerScreen.js
+   4:10  warning  'LinearGradient' is defined but never used      no-unused-vars
+  14:11  warning  'cameraRef' is assigned a value but never used  no-unused-vars
+  41:18  warning  'error' is defined but never used               no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\SyncScreen.js
+    1:38  warning  'useCallback' is defined but never used               no-unused-vars
+    2:89  warning  'ActivityIndicator' is defined but never used         no-unused-vars
+    8:13  warning  'FileSystem' is defined but never used                no-unused-vars
+    9:13  warning  'Sharing' is defined but never used                   no-unused-vars
+   38:18  warning  'e' is defined but never used                         no-unused-vars
+   50:18  warning  'e' is defined but never used                         no-unused-vars
+   65:18  warning  'e' is defined but never used                         no-unused-vars
+   88:34  warning  'e' is defined but never used                         no-unused-vars
+  115:18  warning  'e' is defined but never used                         no-unused-vars
+  145:11  warning  'checkForUpdates' is assigned a value but never used  no-unused-vars
+  172:18  warning  'error' is defined but never used                     no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\UsuariosScreen.js
+   7:9   warning  'width' is assigned a value but never used  no-unused-vars
+  90:18  warning  'error' is defined but never used           no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\VendasScreen.js
+    2:22   warning  'TextInput' is defined but never used               no-unused-vars
+    2:99   warning  'ActivityIndicator' is defined but never used       no-unused-vars
+    2:118  warning  'Animated' is defined but never used                no-unused-vars
+    4:36   warning  'insertCliente' is defined but never used           no-unused-vars
+   32:12   warning  'refreshing' is assigned a value but never used     no-unused-vars
+   32:24   warning  'setRefreshing' is assigned a value but never used  no-unused-vars
+   50:12   warning  'loading' is assigned a value but never used        no-unused-vars
+   58:11   warning  'isDark' is assigned a value but never used         no-unused-vars
+  176:18   warning  'error' is defined but never used                   no-unused-vars
+  234:18   warning  'e' is defined but never used                       no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\services\AIService.js
+   1:10  warning  'Alert' is defined but never used                  no-unused-vars
+  46:61  warning  'mediaContent' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\services\AutoSyncService.js
+  84:40  warning  'e' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\services\BackupService.js
+  8:7  warning  'BACKUP_DIR' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\services\MenuService.js
+  33:14  warning  'e' is defined but never used  no-unused-vars
+  41:14  warning  'e' is defined but never used  no-unused-vars
+  78:14  warning  'e' is defined but never used  no-unused-vars
+  88:14  warning  'e' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\services\SyncService.js
+    2:40  warning  'updateAppSetting' is defined but never used  no-unused-vars
+   70:22  warning  'err' is defined but never used               no-unused-vars
+  134:22  warning  'err' is defined but never used               no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\services\authService.js
+  139:40  warning  'newPassword' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\services\logger.js
+  39:18  warning  'e' is defined but never used  no-unused-vars
+  79:18  warning  'e' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\services\supabase.js
+   83:14  warning  'e' is defined but never used                     no-unused-vars
+  102:25  warning  'id' is assigned a value but never used           no-unused-vars
+  102:29  warning  'sync_status' is assigned a value but never used  no-unused-vars
+  106:28  warning  'data' is assigned a value but never used         no-unused-vars
+  228:14  warning  'e' is defined but never used                     no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\AppContainer.js
+  2:10  warning  'View' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\ErrorBoundary.js
+  27:18  warning  'e' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\FinancialDashboard.js
+   1:38  warning  'useCallback' is defined but never used      no-unused-vars
+   2:83  warning  'ScrollView' is defined but never used       no-unused-vars
+  52:19  warning  'endStr' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\PrimaryButton.js
+  8:84  warning  'icon' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\SettingItem.js
+  12:5  warning  'settingKey' is defined but never used  no-unused-vars
+  14:5  warning  'action' is defined but never used      no-unused-vars
+  15:5  warning  'route' is defined but never used       no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\SidebarDrawer.js
+   8:10  warning  'logout' is defined but never used           no-unused-vars
+  10:16  warning  'height' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\SkeletonCard.js
+  2:32  warning  'View' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\Toast.js
+  5:9  warning  'height' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\WeatherWidget.js
+  9:31  warning  'error' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\cadastro\CadastroAreas.js
+  19:74  warning  'e' is defined but never used  no-unused-vars
+  27:18  warning  'e' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\cadastro\CadastroCustos.js
+   6:10  warning  'LinearGradient' is defined but never used  no-unused-vars
+  29:18  warning  'e' is defined but never used               no-unused-vars
+  59:18  warning  'error' is defined but never used           no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\cadastro\CadastroInsumos.js
+    2:131  warning  'Platform' is defined but never used                no-unused-vars
+    5:117  warning  'insertCadastroMidia' is defined but never used     no-unused-vars
+    5:138  warning  'getCadastroMidia' is defined but never used        no-unused-vars
+    6:10   warning  'LinearGradient' is defined but never used          no-unused-vars
+    7:20   warning  'MaterialCommunityIcons' is defined but never used  no-unused-vars
+   97:74   warning  'e' is defined but never used                       no-unused-vars
+  125:18   warning  'e' is defined but never used                       no-unused-vars
+  491:88   warning  'e' is defined but never used                       no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\cadastro\CadastroPlantios.js
+   1:27  warning  'useEffect' is defined but never used       no-unused-vars
+   5:38  warning  'updatePlantio' is defined but never used   no-unused-vars
+   5:53  warning  'deletePlantio' is defined but never used   no-unused-vars
+   7:10  warning  'LinearGradient' is defined but never used  no-unused-vars
+  11:44  warning  'navigation' is defined but never used      no-unused-vars
+  46:18  warning  'e' is defined but never used               no-unused-vars
+  98:18  warning  'error' is defined but never used           no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\components\AgroButton.js
+  14:11  warning  'isPrimary' is assigned a value but never used  no-unused-vars
+  15:11  warning  'isDanger' is assigned a value but never used   no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\components\AppCard.js
+  2:16  warning  'StyleSheet' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\components\AppInput.js
+  17:5  warning  'variant' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\plantio\NovoPlantioPanel.js
+  1:17  warning  'useState' is defined but never used        no-unused-vars
+  2:63  warning  'ScrollView' is defined but never used      no-unused-vars
+  5:7   warning  'THEME' is assigned a value but never used  no-unused-vars
+
+Ô£û 263 problems (17 errors, 246 warnings)
+

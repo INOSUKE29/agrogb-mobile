@@ -1,0 +1,11 @@
+(node:21204) ESLintIgnoreWarning: The ".eslintignore" file is no longer supported. Switch to using the "ignores" property in "eslint.config.js": https://eslint.org/docs/latest/use/configure/migration-guide#ignoring-files
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\ErrorBoundary.js
+  14:34  error  'error' is not defined  no-undef
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\WeatherWidget.js
+  6:10  error  Parsing error: Identifier 'useTheme' has already been declared
+
+Ô£û 2 problems (2 errors, 0 warnings)
+

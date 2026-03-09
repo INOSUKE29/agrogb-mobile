@@ -5,7 +5,7 @@ import { TouchableOpacity, Text, StyleSheet, Animated, ActivityIndicator } from 
  * PrimaryButton — Soft Shadow Moderno
  * Botão verde sólido #1F7A5A com micro‑animação de escala
  */
-export default function PrimaryButton({ title, onPress, loading, style, textStyle, icon }) {
+export default function PrimaryButton({ title, onPress, loading, style, textStyle }) {
     const scale = useRef(new Animated.Value(1)).current;
 
     const pressIn = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, friction: 6 }).start();

@@ -1,4 +1,4 @@
-import { Alert } from 'react-native';
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 3️⃣ PROMPT INTERNO DA IA
@@ -43,7 +43,7 @@ FORMATO PADRÃO DE RESPOSTA:
  * Simula (ou realiza) a análise de Inteligência Artificial.
  * No futuro, substituir o 'mock' pela chamada real à API OpenAI/Gemini.
  */
-export const analyzeContent = async (sourceUri, sourceType, mediaContent = null) => {
+export const analyzeContent = async (sourceUri, sourceType) => {
     // ---------------------------------------------------------
     // ROTEAMENTO DE EXECUÇÃO REAL VS SIMULAÇÃO
     // ---------------------------------------------------------

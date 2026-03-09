@@ -57,7 +57,7 @@ export default function NovaEncomendaScreen({ route }) {
             const dataProd = [];
             for (let i = 0; i < resProd.rows.length; i++) dataProd.push(resProd.rows.item(i));
             setProdutos(dataProd);
-        } catch (error) {
+        } catch {
             Alert.alert('Erro', 'Não foi possível carregar as listas.');
         }
     };
@@ -165,7 +165,7 @@ export default function NovaEncomendaScreen({ route }) {
                         await executeQuery(`UPDATE orders SET is_deleted = 1, sync_status = 0, last_updated = ? WHERE id = ?`, [new Date().toISOString(), editingId]);
                         Alert.alert('Sucesso', 'Encomenda apagada!');
                         navigation.goBack();
-                    } catch (e) {
+                    } catch {
                         Alert.alert('Erro', 'Falha ao apagar.');
                     }
                 }

@@ -57,6 +57,7 @@ export default function App() {
         // Inicializa banco de dados ANTES de renderizar qualquer contexto
         initDB()
             .then(() => {
+                console.log("DEBUG: DB IS READY");
                 setIsDbReady(true);
                 AutoSyncService.start();
             })
@@ -71,8 +72,8 @@ export default function App() {
 
     if (!isDbReady) {
         return (
-            <View style={{ flex: 1, backgroundColor: '#10B981', justifyContent: 'center', alignItems: 'center' }}>
-                <ActivityIndicator size="large" color="#ffffff" />
+            <View style={{ flex: 1, backgroundColor: '#0B121E', justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator size="large" color="#10B981" />
             </View>
         );
     }

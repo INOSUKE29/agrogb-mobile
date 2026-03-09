@@ -5,14 +5,18 @@ import * as DocumentPicker from 'expo-document-picker';
 import { executeQuery } from '../database/database';
 import { getSupabase } from './supabase';
 
-const BACKUP_DIR = `${FileSystem.documentDirectory}backups/`;
+
 
 // Tabelas para incluir no backup
 const TABLES = [
     'usuarios', 'culturas', 'cadastro', 'clientes', 'colheitas',
     'vendas', 'estoque', 'compras', 'plantio', 'custos',
     'descarte', 'maquinas', 'manutencao_frota', 'receitas',
-    'planos_adubacao', 'caderno_notas', 'movimentacao_estoque'
+    'planos_adubacao', 'caderno_notas', 'movimentacao_estoque',
+    'costs', 'cost_categories', 'areas', 'monitoramento_entidade',
+    'monitoramento_media', 'analise_ia', 'app_settings',
+    'profiles', 'movimentacoes_financeiras', 'categorias_despesa',
+    'unidades_medida', 'activity_log', 'error_logs'
 ];
 
 export const BackupService = {

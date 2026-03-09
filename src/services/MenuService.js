@@ -30,7 +30,7 @@ export const recordUsage = async (screenId) => {
         const stats = raw ? JSON.parse(raw) : {};
         stats[screenId] = (stats[screenId] || 0) + 1;
         await AsyncStorage.setItem(MENU_USAGE_KEY, JSON.stringify(stats));
-    } catch (e) { }
+    } catch { }
 };
 
 // === SAVE MANUAL ORDER (drag & drop) ===
@@ -38,7 +38,7 @@ export const saveManualOrder = async (order) => {
     try {
         await AsyncStorage.setItem(MENU_ORDER_KEY, JSON.stringify(order));
         await AsyncStorage.setItem(MENU_IS_MANUAL_KEY, 'true');
-    } catch (e) { }
+    } catch { }
 };
 
 // === GET ORDER ===
@@ -75,7 +75,7 @@ export const getMenuOrder = async () => {
 
         const sorted = [...BASE_MENU].sort((a, b) => (stats[b.id] || 0) - (stats[a.id] || 0));
         return sorted;
-    } catch (e) {
+    } catch {
         return BASE_MENU;
     }
 };
@@ -85,5 +85,5 @@ export const resetMenuOrder = async () => {
     try {
         await AsyncStorage.removeItem(MENU_ORDER_KEY);
         await AsyncStorage.removeItem(MENU_IS_MANUAL_KEY);
-    } catch (e) { }
+    } catch { }
 };

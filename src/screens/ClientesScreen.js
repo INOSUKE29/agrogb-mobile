@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Alert, ActivityIndicator } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertCliente, getClientes, deleteCliente } from '../database/database';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +12,7 @@ import GlowFAB from '../ui/GlowFAB';
 import { MODAL_OVERLAY } from '../styles/themes';
 import { useTheme } from '../theme/ThemeContext';
 import ConfirmModal from '../ui/ConfirmModal';
+import { showToast } from '../ui/Toast';
 
 export default function ClientesScreen({ navigation }) {
     const { colors } = useTheme();
@@ -36,7 +37,7 @@ export default function ClientesScreen({ navigation }) {
             const data = await getClientes();
             const uniqueData = [...new Map(data.map(item => [item.cpf_cnpj ? item.cpf_cnpj.trim() : item.nome.trim().toUpperCase(), item])).values()];
             setItems(uniqueData);
-        } catch (e) { } finally { setLoading(false); }
+        } catch { } finally { setLoading(false); }
     };
 
     const handleSave = async () => {
@@ -56,7 +57,7 @@ export default function ClientesScreen({ navigation }) {
             resetForm();
             loadData();
             showToast('Cliente cadastrado!');
-        } catch (e) { Alert.alert('Erro', e.message || 'Falha ao salvar cliente.'); }
+        } catch (e) { Alert.alert('Erro', e?.message || 'Falha ao salvar cliente.'); }
     };
 
     const resetForm = () => {
