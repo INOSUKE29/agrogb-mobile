@@ -1,4 +1,0 @@
-
-> agrogb-mobile@8.5.0 lint
-> eslint .
-
