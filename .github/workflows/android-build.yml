@@ -7,6 +7,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   build:
     name: Build Android APK
@@ -30,7 +33,11 @@ jobs:
 
       - name: 📦 Install Dependencies
         run: |
-          npm install --legacy-peer-deps
+          npm ci --legacy-peer-deps
+
+      - name: 🛡️ Super Audit (Build Guard)
+        run: |
+          npm run verify
 
       - name: ⚙️ Expo Prebuild
         run: npx expo prebuild --platform android --clean
@@ -50,14 +57,16 @@ jobs:
           echo "MYAPP_UPLOAD_STORE_PASSWORD=android" >> android/gradle.properties
           echo "MYAPP_UPLOAD_KEY_PASSWORD=android" >> android/gradle.properties
           
-          # 3. Add memory limits to avoid OOM in CI
-          echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m" >> android/gradle.properties
+          # 3. Increase memory significantly to avoid OOM
+          echo "org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError" >> android/gradle.properties
+          echo "org.gradle.daemon=false" >> android/gradle.properties
+          echo "org.gradle.parallel=true" >> android/gradle.properties
 
       - name: 🐘 Build APK
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --stacktrace
+          ./gradlew assembleRelease --stacktrace
 
       - name: 📤 Upload Artifact
         uses: actions/upload-artifact@v4
