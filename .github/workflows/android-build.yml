@@ -1,4 +1,4 @@
-name: Android Build
+name: Android Build (AgroGB)
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
       - name: 🏗 Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: 'npm'
 
       - name: 🏗 Setup Java
@@ -30,9 +30,7 @@ jobs:
 
       - name: 📦 Install Dependencies
         run: |
-          npm cache clean --force
-          npm install
-          npm install expo-modules-core
+          npm install --legacy-peer-deps
 
       - name: ⚙️ Expo Prebuild
         run: npx expo prebuild --platform android --clean
@@ -51,15 +49,18 @@ jobs:
           echo "MYAPP_UPLOAD_KEY_ALIAS=my-key-alias" >> android/gradle.properties
           echo "MYAPP_UPLOAD_STORE_PASSWORD=android" >> android/gradle.properties
           echo "MYAPP_UPLOAD_KEY_PASSWORD=android" >> android/gradle.properties
+          
+          # 3. Add memory limits to avoid OOM in CI
+          echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m" >> android/gradle.properties
 
       - name: 🐘 Build APK
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --stacktrace --info
+          ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: 📤 Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: agrogb-v7-release
+          name: agrogb-release-apk
           path: android/app/build/outputs/apk/release/app-release.apk
