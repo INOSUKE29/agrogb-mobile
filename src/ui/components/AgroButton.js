@@ -1,9 +1,13 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
+import { RADIUS } from '../theme/radius';
+import { TYPOGRAPHY } from '../theme/typography';
+import { SPACING } from '../theme/spacing';
 
 export default function AgroButton({
     title,
+    label,
     onPress,
     variant = 'primary', // primary, secondary, danger
     loading = false,
@@ -13,8 +17,10 @@ export default function AgroButton({
     const { colors, isDark } = useTheme();
 
     let bg = colors.primary;
-    let txt = '#FFF';
+    let txt = colors.textOnPrimary || '#FFF';
     let border = 'transparent';
+
+    const displayTitle = title || label || '';
 
     if (variant === 'secondary') {
         bg = 'transparent';
@@ -40,7 +46,7 @@ export default function AgroButton({
                     backgroundColor: bg,
                     borderColor: border,
                     borderWidth: variant === 'secondary' ? 1 : 0,
-                    shadowColor: colors.primary, // Sombra dinâmica vindo do tema
+                    shadowColor: colors.primary,
                 },
                 style
             ]}
@@ -52,7 +58,7 @@ export default function AgroButton({
                 <ActivityIndicator color={txt} />
             ) : (
                 <Text style={[styles.text, { color: txt }]}>
-                    {title.toUpperCase()}
+                    {displayTitle.toUpperCase()}
                 </Text>
             )}
         </TouchableOpacity>

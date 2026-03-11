@@ -4,7 +4,7 @@ import { useTheme } from '../../theme/ThemeContext';
 
 export function AppButton({
     title,
-    onPress,
+    label,
     loading = false,
     disabled = false,
     variant = 'primary', // primary, secondary, danger, glass, ghost
@@ -12,6 +12,8 @@ export function AppButton({
     textStyle
 }) {
     const { colors } = useTheme();
+
+    const displayTitle = title || label || '';
 
     const getBackgroundColor = () => {
         if (disabled) return colors.placeholder;
@@ -56,7 +58,7 @@ export function AppButton({
             {loading ? (
                 <ActivityIndicator color={getTextColor()} />
             ) : (
-                <Text style={[styles.text, { color: getTextColor() }, textStyle]}>{title}</Text>
+                <Text style={[styles.text, { color: getTextColor() }, textStyle]}>{displayTitle}</Text>
             )}
         </TouchableOpacity>
     );

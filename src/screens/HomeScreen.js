@@ -11,7 +11,7 @@ import { getDashboardStats } from '../database/database';
 import WeatherWidget from '../ui/WeatherWidget';
 import SidebarDrawer from '../ui/SidebarDrawer';
 import { MetricCard } from '../ui/components/MetricCard';
-import { QuickAction } from '../ui/components/QuickAction';
+import QuickAction from '../ui/components/QuickAction';
 
 const { width } = Dimensions.get('window');
 const isSmallDevice = width < 375;

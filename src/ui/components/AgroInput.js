@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { View, TextInput, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
+import { RADIUS } from '../theme/radius';
+import { TYPOGRAPHY } from '../theme/typography';
+import { SPACING } from '../theme/spacing';
 
 export default function AgroInput({
     label,
@@ -27,7 +30,7 @@ export default function AgroInput({
 
     return (
         <View style={[styles.container, style]}>
-            {label && <Text style={styles.label}>{label.toUpperCase()}</Text>}
+            {label && <Text style={[styles.label, { color: colors.textMuted || '#64748B' }]}>{label.toUpperCase()}</Text>}
 
             <TextInput
                 style={[
@@ -52,14 +55,10 @@ export default function AgroInput({
                 onBlur={() => setIsFocused(false)}
             />
 
-            {error && <Text style={styles.errorText}>{error}</Text>}
+            {error && <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>}
         </View>
     );
 }
-
-import { RADIUS } from '../theme/radius';
-import { TYPOGRAPHY } from '../theme/typography';
-import { SPACING } from '../theme/spacing';
 
 const styles = StyleSheet.create({
     container: {
@@ -69,7 +68,6 @@ const styles = StyleSheet.create({
     label: {
         fontSize: TYPOGRAPHY.size.xxs,
         fontWeight: TYPOGRAPHY.weight.black,
-        color: '#64748B', // Mantendo ardcoat por enquanto para labels secundários ou usando colors.textMuted
         marginBottom: SPACING.sm,
         letterSpacing: 1,
     },

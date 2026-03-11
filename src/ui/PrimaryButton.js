@@ -1,20 +1,24 @@
 import React, { useRef } from 'react';
 import { TouchableOpacity, Text, StyleSheet, Animated, ActivityIndicator } from 'react-native';
+import { useTheme } from '../theme/ThemeContext';
 
 /**
  * PrimaryButton — Soft Shadow Moderno
- * Botão verde sólido #1F7A5A com micro‑animação de escala
+ * Botão verde sólido com micro‑animação de escala
  */
-export default function PrimaryButton({ title, onPress, loading, style, textStyle }) {
+export default function PrimaryButton({ title, label, onPress, loading, style, textStyle }) {
+    const { colors } = useTheme();
     const scale = useRef(new Animated.Value(1)).current;
 
     const pressIn = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, friction: 6 }).start();
     const pressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 6 }).start();
 
+    const displayTitle = title || label;
+
     return (
         <Animated.View style={[{ transform: [{ scale }] }, style]}>
             <TouchableOpacity
-                style={styles.btn}
+                style={[styles.btn, { backgroundColor: colors.primary || '#1F7A5A' }]}
                 onPress={onPress}
                 onPressIn={pressIn}
                 onPressOut={pressOut}
@@ -23,7 +27,7 @@ export default function PrimaryButton({ title, onPress, loading, style, textStyl
             >
                 {loading
                     ? <ActivityIndicator color="#FFF" size="small" />
-                    : <Text style={[styles.label, textStyle]}>{title}</Text>
+                    : <Text style={[styles.label, { color: colors.textOnPrimary || '#FFF' }, textStyle]}>{displayTitle}</Text>
                 }
             </TouchableOpacity>
         </Animated.View>
@@ -32,7 +36,6 @@ export default function PrimaryButton({ title, onPress, loading, style, textStyl
 
 const styles = StyleSheet.create({
     btn: {
-        backgroundColor: '#1F7A5A',
         borderRadius: 14,
         paddingVertical: 14,
         paddingHorizontal: 20,
@@ -47,7 +50,6 @@ const styles = StyleSheet.create({
         elevation: 6,
     },
     label: {
-        color: '#FFFFFF',
         fontSize: 14,
         fontWeight: '700',
         letterSpacing: 0.5,

@@ -1,20 +1,24 @@
 import React, { useRef } from 'react';
 import { TouchableOpacity, Text, StyleSheet, Animated, ActivityIndicator } from 'react-native';
+import { useTheme } from '../theme/ThemeContext';
 
 /**
  * DangerButton — Soft Shadow Moderno
  * Botão vermelho sólido para ações críticas
  */
-export default function DangerButton({ title, onPress, loading, style, textStyle }) {
+export default function DangerButton({ title, label, onPress, loading, style, textStyle }) {
+    const { colors } = useTheme();
     const scale = useRef(new Animated.Value(1)).current;
 
     const pressIn = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, friction: 6 }).start();
     const pressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 6 }).start();
 
+    const displayTitle = title || label;
+
     return (
         <Animated.View style={[{ transform: [{ scale }] }, style]}>
             <TouchableOpacity
-                style={styles.btn}
+                style={[styles.btn, { backgroundColor: colors.danger || '#DC2626' }]}
                 onPress={onPress}
                 onPressIn={pressIn}
                 onPressOut={pressOut}
@@ -23,7 +27,7 @@ export default function DangerButton({ title, onPress, loading, style, textStyle
             >
                 {loading
                     ? <ActivityIndicator color="#FFF" size="small" />
-                    : <Text style={[styles.label, textStyle]}>{title}</Text>
+                    : <Text style={[styles.label, { color: colors.textOnPrimary || '#FFF' }, textStyle]}>{displayTitle}</Text>
                 }
             </TouchableOpacity>
         </Animated.View>
@@ -32,7 +36,6 @@ export default function DangerButton({ title, onPress, loading, style, textStyle
 
 const styles = StyleSheet.create({
     btn: {
-        backgroundColor: '#DC2626',
         borderRadius: 14,
         paddingVertical: 14,
         paddingHorizontal: 20,
@@ -45,7 +48,6 @@ const styles = StyleSheet.create({
         elevation: 6,
     },
     label: {
-        color: '#FFFFFF',
         fontSize: 14,
         fontWeight: '700',
         letterSpacing: 0.5,
