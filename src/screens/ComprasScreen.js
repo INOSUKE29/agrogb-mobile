@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertCompra, getCadastro, getComprasRecentes, updateCompra, deleteCompra, insertCadastro as insertCadastros } from '../database/database';
@@ -263,13 +263,12 @@ export default function ComprasScreen({ navigation }) {
                     <GlowInput placeholder="EX: NPK 04-14-08..." value={detalhes} onChangeText={t => setDetalhes(t.toUpperCase())} />
 
                     <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>OBSERVAÇÕES / FORNECEDOR</Text>
-                    <TextInput
-                        style={[styles.textArea, { backgroundColor: colors.background, borderColor: colors.glassBorder, color: colors.textPrimary }]}
+                    <GlowInput
                         placeholder="Notas adicionais..."
-                        placeholderTextColor={colors.placeholder}
                         value={observacao}
                         onChangeText={t => setObservacao(t.toUpperCase())}
                         multiline
+                        style={{ height: 80, textAlignVertical: 'top' }}
                     />
 
                     <View style={styles.buttonRow}>
