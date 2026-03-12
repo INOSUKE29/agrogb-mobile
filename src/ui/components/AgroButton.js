@@ -65,10 +65,6 @@ export default function AgroButton({
     );
 }
 
-import { RADIUS } from '../theme/radius';
-import { TYPOGRAPHY } from '../theme/typography';
-import { SPACING } from '../theme/spacing';
-
 const styles = StyleSheet.create({
     container: {
         height: 54,

@@ -35,9 +35,9 @@ jobs:
         run: |
           npm ci --legacy-peer-deps
 
-#      - name: 🛡️ Super Audit (Build Guard)
-#        run: |
-#          npm run verify
+      - name: 🛡️ Super Audit (Build Guard)
+        run: |
+          npm run verify
 
       - name: ⚙️ Expo Prebuild
         run: npx expo prebuild --platform android --clean

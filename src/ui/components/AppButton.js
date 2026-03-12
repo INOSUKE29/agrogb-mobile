@@ -5,6 +5,7 @@ import { useTheme } from '../../theme/ThemeContext';
 export function AppButton({
     title,
     label,
+    onPress,
     loading = false,
     disabled = false,
     variant = 'primary', // primary, secondary, danger, glass, ghost
