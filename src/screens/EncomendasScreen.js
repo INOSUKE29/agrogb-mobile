@@ -3,9 +3,8 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react
 import { useNavigation } from '@react-navigation/native';
 import { executeQuery } from '../database/database';
 import { Ionicons } from '@expo/vector-icons';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
+import { LinearGradient } from 'expo-linear-gradient'; // Added this import based on usage
 
 export default function EncomendasScreen() {
     const navigation = useNavigation();
