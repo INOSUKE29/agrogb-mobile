@@ -7,7 +7,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '../theme/ThemeContext';
-import { getDashboardStats } from '../database/database';
 import WeatherWidget from '../ui/WeatherWidget';
 import SidebarDrawer from '../ui/SidebarDrawer';
 import { MetricCard } from '../ui/components/MetricCard';

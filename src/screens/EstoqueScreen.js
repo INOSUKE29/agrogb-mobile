@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, Modal, View } from 'react-native';
+import AgroButton from '../ui/components/AgroButton';
 import { getEstoque, atualizarEstoque } from '../services/EstoqueService';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,7 +11,7 @@ import ScreenHeader from '../ui/ScreenHeader';
 import { Card } from '../ui/components/Card';
 
 export default function EstoqueScreen({ navigation }) {
-    const { colors } = useTheme();
+    const { colors, isDark } = useTheme();
     const [originalItems, setOriginalItems] = useState([]);
     const [filteredItems, setFilteredItems] = useState([]);
     const [filter] = useState('TODOS');
@@ -71,8 +72,8 @@ export default function EstoqueScreen({ navigation }) {
                     </View>
                 </View>
                 <View style={styles.actions}>
-                    <TouchableOpacity onPress={() => openModal(item, 'ENTRADA')} style={styles.miniBtn}><Ionicons name="add" size={20} color={colors.primary} /></TouchableOpacity>
-                    <TouchableOpacity onPress={() => openModal(item, 'SAIDA')} style={styles.miniBtn}><Ionicons name="remove" size={20} color={colors.danger} /></TouchableOpacity>
+                    <TouchableOpacity onPress={() => openModal(item, 'ENTRADA')} style={[styles.miniBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F7F6' }]}><Ionicons name="add" size={20} color={colors.primary} /></TouchableOpacity>
+                    <TouchableOpacity onPress={() => openModal(item, 'SAIDA')} style={[styles.miniBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F7F6' }]}><Ionicons name="remove" size={20} color={colors.danger} /></TouchableOpacity>
                 </View>
             </Card>
         );
@@ -87,13 +88,43 @@ export default function EstoqueScreen({ navigation }) {
                 renderItem={renderItem}
                 ListHeaderComponent={() => (
                     <View style={styles.header}>
-                        <TextInput style={styles.inputSearch} placeholder="Filtrar..." value={searchText} onChangeText={setSearchText} />
+                        <TextInput 
+                            style={[
+                                styles.inputSearch, 
+                                { 
+                                    backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F7F6',
+                                    borderColor: colors.border,
+                                    color: colors.textPrimary 
+                                }
+                            ]} 
+                            placeholder="Pesquisar estoque..." 
+                            placeholderTextColor={colors.placeholder}
+                            value={searchText} 
+                            onChangeText={setSearchText} 
+                        />
                     </View>
                 )}
                 contentContainerStyle={styles.listContent}
             />
             <Modal visible={modalVisible} transparent animationType="fade">
-                <View style={styles.overlay}><Card style={styles.miniModal}><TextInput style={styles.modalInput} value={qty} onChangeText={setQty} keyboardType="decimal-pad" /><TouchableOpacity onPress={confirmAction}><Text>CONFIRMAR</Text></TouchableOpacity><TouchableOpacity onPress={() => setModalVisible(false)}><Text>CANCELAR</Text></TouchableOpacity></Card></View>
+                <View style={styles.overlay}>
+                    <Card style={[styles.miniModal, { backgroundColor: colors.surface }]}>
+                        <Text style={{ textAlign: 'center', fontWeight: 'bold', fontSize: 16, color: colors.textPrimary, marginBottom: 20 }}>
+                            {actionType === 'ENTRADA' ? 'ENTRADA DE ESTOQUE' : 'BAIXA DE ESTOQUE'}
+                        </Text>
+                        <TextInput 
+                            style={[styles.modalInput, { borderBottomColor: colors.primary, color: colors.textPrimary }]} 
+                            value={qty} 
+                            onChangeText={setQty} 
+                            keyboardType="decimal-pad" 
+                            autoFocus
+                        />
+                        <View style={{ gap: 10 }}>
+                            <AgroButton title="CONFIRMAR" onPress={confirmAction} />
+                            <AgroButton title="VOLTAR" variant="secondary" onPress={() => setModalVisible(false)} />
+                        </View>
+                    </Card>
+                </View>
             </Modal>
         </AppContainer>
     );
@@ -101,7 +132,7 @@ export default function EstoqueScreen({ navigation }) {
 
 const styles = StyleSheet.create({
     header: { padding: 20 },
-    inputSearch: { backgroundColor: '#EEE', padding: 10, borderRadius: 10 },
+    inputSearch: { padding: 14, borderRadius: 16, borderWidth: 1 },
     listContent: { paddingBottom: 100 },
     itemCard: { marginHorizontal: 20, padding: 15, marginBottom: 10, flexDirection: 'row', alignItems: 'center' },
     itemInfo: { flex: 1 },
@@ -111,8 +142,8 @@ const styles = StyleSheet.create({
     statusText: { fontSize: 10, fontWeight: 'bold' },
     qtyLabel: { fontSize: 12 },
     actions: { flexDirection: 'row', gap: 5 },
-    miniBtn: { padding: 10, backgroundColor: '#F0F0F0', borderRadius: 8 },
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 30 },
-    miniModal: { backgroundColor: '#FFF', padding: 20, borderRadius: 20 },
-    modalInput: { fontSize: 30, textAlign: 'center', borderBottomWidth: 1, marginBottom: 20 }
+    miniBtn: { padding: 10, borderRadius: 8 },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 30 },
+    miniModal: { padding: 20, borderRadius: 20 },
+    modalInput: { fontSize: 30, textAlign: 'center', borderBottomWidth: 1.5, marginBottom: 20 }
 });

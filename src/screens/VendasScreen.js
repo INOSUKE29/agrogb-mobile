@@ -54,7 +54,6 @@ export default function VendasScreen({ navigation, route }) {
 
     const DRAFT_KEY = '@draft_VendasScreen_v2';
 
-
     // Rascunho - Recuperação
     useEffect(() => {
         const checkDraft = async () => {
@@ -109,7 +108,7 @@ export default function VendasScreen({ navigation, route }) {
             getClientes().then(setClients);
             navigation.setParams({ newClient: undefined });
         }
-    }, [route?.params?.newClient]);
+    }, [route?.params?.newClient, navigation]);
 
     const loadInitialData = async () => {
         try {
@@ -252,10 +251,10 @@ export default function VendasScreen({ navigation, route }) {
 
                     <Text style={[styles.label, { color: colors.textSecondary }]}>CLIENTE / PARCEIRO</Text>
                     <TouchableOpacity
-                        style={[styles.selectBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', borderColor: colors.border }]}
+                        style={[styles.selectBtn, { backgroundColor: isDark ? colors.input : '#F9FAFB', borderColor: colors.border }]}
                         onPress={() => setClientModalVisible(true)}
                     >
-                        <Text style={[styles.selectText, { color: colors.textPrimary }, !cliente && { color: colors.placeholder }]}>
+                        <Text style={[styles.selectText, { color: colors.textPrimary, opacity: cliente ? 1 : 0.5 }]}>
                             {cliente || 'SELECIONAR CLIENTE...'}
                         </Text>
                         <Ionicons name="people-outline" size={18} color={colors.primary} />
@@ -263,10 +262,10 @@ export default function VendasScreen({ navigation, route }) {
 
                     <Text style={[styles.label, { color: colors.textSecondary }]}>PRODUTO VENDIDO *</Text>
                     <TouchableOpacity
-                        style={[styles.selectBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', borderColor: colors.border }]}
+                        style={[styles.selectBtn, { backgroundColor: isDark ? colors.input : '#F9FAFB', borderColor: colors.border }]}
                         onPress={() => setModalVisible(true)}
                     >
-                        <Text style={[styles.selectText, { color: colors.textPrimary }, !produto && { color: colors.placeholder }]}>
+                        <Text style={[styles.selectText, { color: colors.textPrimary, opacity: produto ? 1 : 0.5 }]}>
                             {produto || 'SELECIONAR PRODUTO...'}
                         </Text>
                         <Ionicons name="cube-outline" size={18} color={colors.primary} />
@@ -307,7 +306,7 @@ export default function VendasScreen({ navigation, route }) {
                         <TouchableOpacity
                             style={[
                                 styles.radioBtn,
-                                { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', borderColor: colors.border },
+                                { backgroundColor: isDark ? colors.input : '#F9FAFB', borderColor: colors.border },
                                 statusPagamento === 'A_RECEBER' && { borderColor: colors.warning, backgroundColor: (colors.warning || '#F59E0B') + '15' }
                             ]}
                             onPress={() => setStatusPagamento('A_RECEBER')}
@@ -319,7 +318,7 @@ export default function VendasScreen({ navigation, route }) {
                         <TouchableOpacity
                             style={[
                                 styles.radioBtn,
-                                { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', borderColor: colors.border },
+                                { backgroundColor: isDark ? colors.input : '#F9FAFB', borderColor: colors.border },
                                 statusPagamento === 'RECEBIDO' && { borderColor: colors.primary, backgroundColor: (colors.primary || '#1E8E5A') + '15' }
                             ]}
                             onPress={() => setStatusPagamento('RECEBIDO')}
@@ -348,7 +347,7 @@ export default function VendasScreen({ navigation, route }) {
 
                 {/* HISTÓRICO */}
                 <View style={styles.historySection}>
-                    <Text style={[styles.historyTitle, { color: colors.textMuted }]}>ÚLTIMOS REGISTROS</Text>
+                    <Text style={[styles.historyTitle, { color: colors.textSecondary }]}>ÚLTIMOS REGISTROS</Text>
 
                     <View style={styles.filterBar}>
                         {['TODAS', 'A_RECEBER', 'RECEBIDAS'].map((f) => (
@@ -410,7 +409,7 @@ export default function VendasScreen({ navigation, route }) {
                 {getFilteredHistory().length === 0 && (
                     <View style={styles.emptyState}>
                         <Ionicons name="receipt-outline" size={48} color={colors.placeholder} />
-                        <Text style={[styles.emptyText, { color: colors.textMuted }]}>Nenhuma venda encontrada no filtro selecionado.</Text>
+                        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Nenhuma venda encontrada no filtro selecionado.</Text>
                     </View>
                 )}
 
@@ -438,7 +437,7 @@ export default function VendasScreen({ navigation, route }) {
                                 >
                                     <View>
                                         <Text style={[styles.listItemTitle, { color: colors.textPrimary }]}>{item.nome}</Text>
-                                        <Text style={[styles.listItemSub, { color: colors.textMuted }]}>{item.unidade}</Text>
+                                        <Text style={[styles.listItemSub, { color: colors.textSecondary }]}>{item.unidade}</Text>
                                     </View>
                                     <Ionicons name="chevron-forward" size={18} color={colors.primary} />
                                 </TouchableOpacity>
@@ -488,7 +487,7 @@ export default function VendasScreen({ navigation, route }) {
                                 >
                                     <View>
                                         <Text style={[styles.listItemTitle, { color: colors.textPrimary }]}>{item.nome}</Text>
-                                        <Text style={[styles.listItemSub, { color: colors.textMuted }]}>{item.telefone || 'Sem contato'}</Text>
+                                        <Text style={[styles.listItemSub, { color: colors.textSecondary }]}>{item.telefone || 'Sem contato'}</Text>
                                     </View>
                                     <Ionicons name="chevron-forward" size={18} color={colors.primary} />
                                 </TouchableOpacity>

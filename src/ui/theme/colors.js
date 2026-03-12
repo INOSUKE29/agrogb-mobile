@@ -33,13 +33,14 @@ export const COLORS = {
 
     // Dark Theme Palette
     dark: {
-        background: '#0F172A',
-        card: '#1E293B',
-        textPrimary: '#F9FAFB',
-        textSecondary: '#94A3B8',
+        background: '#0B1F35',
+        card: '#243447',
+        input: '#2E4257',
+        textPrimary: '#FFFFFF',
+        textSecondary: '#C2CCD8',
         primary: '#22C55E',
         border: '#334155',
-        shadow: 'rgba(0, 0, 0, 0.25)',
-        gradient: ['#0F172A', '#1E293B']
+        shadow: 'rgba(0, 0, 0, 0.45)',
+        gradient: ['#0B1F35', '#243447']
     }
 };

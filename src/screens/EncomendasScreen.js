@@ -3,12 +3,13 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react
 import { useNavigation } from '@react-navigation/native';
 import { executeQuery } from '../database/database';
 import { Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
-import { LinearGradient } from 'expo-linear-gradient';
 
 export default function EncomendasScreen() {
     const navigation = useNavigation();
-    useTheme();
+    const { colors, isDark } = useTheme();
     const [encomendas, setEncomendas] = useState([]);
 
     useEffect(() => {
@@ -66,31 +67,43 @@ export default function EncomendasScreen() {
         const progress = getProgress(item.quantidade_restante, item.quantidade_total);
         return (
             <TouchableOpacity
-                style={styles.card}
+                style={[
+                    styles.card,
+                    { 
+                        backgroundColor: colors.surface || colors.card,
+                        shadowColor: isDark ? 'transparent' : '#000',
+                        shadowOpacity: 0.10,
+                        shadowRadius: 8,
+                        shadowOffset: { width: 0, height: 4 },
+                        elevation: 4,
+                        borderWidth: isDark ? 1 : 0,
+                        borderColor: colors.border
+                    }
+                ]}
                 activeOpacity={0.7}
                 onPress={() => navigation.navigate('NovaEncomenda', { encomenda: item })}
             >
                 <View style={styles.cardHeader}>
-                    <Text style={styles.clientName}>{item.cliente_nome || 'Cliente Desconhecido'}</Text>
+                    <Text style={[styles.clientName, { color: colors.textPrimary }]}>{item.cliente_nome || 'Cliente Desconhecido'}</Text>
                     <View style={[styles.badge, { backgroundColor: getStatusColor(item.status) }]}>
                         <Text style={styles.badgeText}>{item.status}</Text>
                     </View>
                 </View>
                 <View style={styles.cardBody}>
-                    <Text style={styles.productName}><Ionicons name="cube-outline" size={16} /> {item.produto_nome || 'Produto Desconhecido'}</Text>
-                    <Text style={styles.detailText}>Previsto: {item.data_prevista || 'Sem data'}</Text>
+                    <Text style={[styles.productName, { color: colors.textPrimary }]}><Ionicons name="cube-outline" size={16} /> {item.produto_nome || 'Produto Desconhecido'}</Text>
+                    <Text style={[styles.detailText, { color: colors.textSecondary }]}>Previsto: {item.data_prevista || 'Sem data'}</Text>
 
-                    <View style={styles.progressContainer}>
+                    <View style={[styles.progressContainer, { backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : '#F4F6F5' }]}>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.progressText}>
+                            <Text style={[styles.progressText, { color: colors.textPrimary }]}>
                                 Restante: <Text style={{ fontWeight: 'bold' }}>{item.quantidade_restante} {item.unidade}</Text> / {item.quantidade_total} {item.unidade}
                             </Text>
-                            <View style={styles.progressBarBg}>
+                            <View style={[styles.progressBarBg, { backgroundColor: isDark ? '#1E293B' : '#D9D9D9' }]}>
                                 <View style={[styles.progressBarFill, { width: `${progress}%`, backgroundColor: getStatusColor(item.status) }]} />
                             </View>
                         </View>
                         {item.valor_unitario ? (
-                            <Text style={styles.valueText}>
+                            <Text style={[styles.valueText, { color: isDark ? colors.primary : '#1F8A5B' }]}>
                                 Total: R$ {(item.quantidade_total * item.valor_unitario).toFixed(2)}
                             </Text>
                         ) : null}
@@ -117,7 +130,7 @@ export default function EncomendasScreen() {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
             <FlatList
                 data={encomendas}
                 keyExtractor={(item) => item.id.toString()}
@@ -125,7 +138,7 @@ export default function EncomendasScreen() {
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
                         <Ionicons name="clipboard-outline" size={60} color="#CBD5E1" />
-                        <Text style={styles.emptyText}>Nenhuma encomenda registrada.</Text>
+                        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Nenhuma encomenda registrada.</Text>
                     </View>
                 }
                 contentContainerStyle={{ paddingBottom: 100 }}
@@ -148,33 +161,32 @@ export default function EncomendasScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F4F6F5', padding: 14 },
+    container: { flex: 1, padding: 14 },
     card: {
-        backgroundColor: '#FFF', borderRadius: 18, padding: 16, marginBottom: 14,
-        elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8,
+        borderRadius: 18, padding: 16, marginBottom: 14,
     },
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-    clientName: { fontSize: 16, fontWeight: '800', color: '#1E1E1E', flex: 1 },
+    clientName: { fontSize: 16, fontWeight: '800', flex: 1 },
     badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
     badgeText: { color: '#FFF', fontSize: 11, fontWeight: '800' },
     cardBody: { marginTop: 4 },
-    productName: { fontSize: 14, fontWeight: '600', color: '#1E1E1E', marginBottom: 4 },
-    detailText: { fontSize: 13, color: '#6E6E6E', marginBottom: 8 },
+    productName: { fontSize: 14, fontWeight: '600', marginBottom: 4 },
+    detailText: { fontSize: 13, marginBottom: 8 },
     progressContainer: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        backgroundColor: '#F4F6F5', padding: 10, borderRadius: 10, marginTop: 6,
+        padding: 10, borderRadius: 10, marginTop: 6,
     },
-    progressText: { fontSize: 13, color: '#1E1E1E' },
-    valueText: { fontSize: 13, color: '#1F8A5B', fontWeight: 'bold' },
+    progressText: { fontSize: 13 },
+    valueText: { fontSize: 13, fontWeight: 'bold' },
     emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100 },
-    emptyText: { marginTop: 10, fontSize: 15, color: '#6E6E6E' },
+    emptyText: { marginTop: 10, fontSize: 15 },
     fab: {
         position: 'absolute', right: 20, bottom: 24, borderRadius: 30, elevation: 8,
         shadowColor: '#176E46', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 12,
     },
     fabGradient: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, height: 56, borderRadius: 28 },
     fabText: { color: '#FFF', fontWeight: '700', fontSize: 15, marginLeft: 8 },
-    progressBarBg: { height: 6, backgroundColor: '#D9D9D9', borderRadius: 3, marginTop: 8, overflow: 'hidden' },
+    progressBarBg: { height: 6, borderRadius: 3, marginTop: 8, overflow: 'hidden' },
     progressBarFill: { height: '100%', borderRadius: 3 },
     actionButton: {
         flexDirection: 'row', backgroundColor: '#1F8A5B', paddingVertical: 10, paddingHorizontal: 14,
