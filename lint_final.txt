@@ -1,0 +1,12 @@
+
+> agrogb-mobile@8.5.0 lint
+> eslint .
+
+(node:13996) ESLintIgnoreWarning: The ".eslintignore" file is no longer supported. Switch to using the "ignores" property in "eslint.config.js": https://eslint.org/docs/latest/use/configure/migration-guide#ignoring-files
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\ComprasScreen.js
+  2:22  warning  'TextInput' is defined but never used  no-unused-vars
+
+Ô£û 1 problem (0 errors, 1 warning)
+

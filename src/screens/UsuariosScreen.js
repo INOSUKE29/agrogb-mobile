@@ -10,7 +10,6 @@ import ScreenHeader from '../ui/ScreenHeader';
 import GlowCard from '../ui/GlowCard';
 import GlowInput from '../ui/GlowInput';
 import PrimaryButton from '../ui/PrimaryButton';
-import { Card } from '../ui/components/Card';
 import GlowFAB from '../ui/GlowFAB';
 
 export default function UsuariosScreen({ navigation }) {

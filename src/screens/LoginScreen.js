@@ -12,7 +12,7 @@ import PrimaryButton from '../ui/PrimaryButton';
 const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen({ navigation }) {
-    const { colors, isDark } = useTheme();
+    const { isDark } = useTheme();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
