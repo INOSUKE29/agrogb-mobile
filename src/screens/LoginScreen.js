@@ -27,10 +27,9 @@ export default function LoginScreen({ navigation }) {
             } else {
                 Alert.alert('Acesso Negado', res.message || 'Credenciais inválidas.');
             }
-        } catch (error) {
-            Alert.alert('Erro de Conexão', 'Não foi possível conectar ao servidor.');
-        } finally {
+        } catch {
             setLoading(false);
+            Alert.alert('Erro', 'Falha ao autenticar.');
         }
     };
 
