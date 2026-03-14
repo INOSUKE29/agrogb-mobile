@@ -57,7 +57,7 @@ export default function SyncScreen({ navigation }) {
             } else {
                 showToast('Você já está na versão mais recente!');
             }
-        } catch (error) {
+        } catch {
             Alert.alert('Erro de Atualização', 'Não foi possível verificar atualizações no momento.');
         } finally {
             setLoading(false);

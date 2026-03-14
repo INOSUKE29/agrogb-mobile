@@ -9,14 +9,15 @@ import { getSupabase } from './supabase';
 
 // Tabelas para incluir no backup
 const TABLES = [
-    'usuarios', 'culturas', 'cadastro', 'clientes', 'colheitas',
-    'vendas', 'estoque', 'compras', 'plantio', 'custos',
-    'descarte', 'maquinas', 'manutencao_frota', 'receitas',
-    'planos_adubacao', 'caderno_notas', 'movimentacao_estoque',
-    'costs', 'cost_categories', 'areas', 'monitoramento_entidade',
-    'monitoramento_media', 'analise_ia', 'app_settings',
-    'profiles', 'movimentacoes_financeiras', 'categorias_despesa',
-    'unidades_medida', 'activity_log', 'error_logs'
+    'usuarios', 'colheitas', 'monitoramento', 'vendas', 'config', 'estoque', 
+    'compras', 'plantio', 'custos', 'descarte', 'cadastro', 'clientes', 
+    'culturas', 'maquinas', 'manutencao_frota', 'receitas', 'profiles', 
+    'movimentacoes_financeiras', 'app_settings', 'planos_adubacao', 
+    'monitoramento_entidade', 'monitoramento_media', 'analise_ia', 
+    'base_conhecimento_pro', 'cadastro_midia', 'auditoria_cadastro', 
+    'cost_categories', 'costs', 'areas', 'caderno_notas', 
+    'categorias_despesa', 'activity_log', 'error_logs', 'unidades_medida', 
+    'movimentacao_estoque'
 ];
 
 export const BackupService = {
@@ -75,15 +76,15 @@ export const BackupService = {
 
             // O Supabase JS espera um Blob ou ArrayBuffer no upload. 
             // Em React Native convertemos a string para Blob.
-            const { data, error } = await supabase.storage
+            const response = await supabase.storage
                 .from('backups do agrogb')
                 .upload(`backups/${fileName}`, JSON.stringify(dump), {
                     contentType: 'application/json',
                     upsert: true
                 });
 
-            if (error) throw error;
-            return { success: true, data };
+            if (response.error) throw response.error;
+            return { success: true, data: response.data };
         } catch (e) {
             console.error('Falha no Backup Nuvem:', e);
             throw e;
