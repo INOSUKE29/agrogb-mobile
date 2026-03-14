@@ -62,6 +62,7 @@ export default function HomeScreen({ navigation }) {
                 { id: 'clientes', label: 'Clientes', icon: 'people', route: 'Clientes' },
                 { id: 'encomendas', label: 'Encomendas', icon: 'gift-outline', route: 'Encomendas' },
                 { id: 'relatorios', label: 'Relatórios', icon: 'bar-chart', route: 'Relatorios' },
+                { id: 'graficos', label: 'Gráficos', icon: 'pie-chart', route: 'Graficos' },
             ]
         },
         {
@@ -179,11 +180,11 @@ export default function HomeScreen({ navigation }) {
 
             {/* BOTTOM TOOLBAR */}
             <View style={[styles.bottomBar, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-                <TouchableOpacity style={styles.tabBtn}>
+                <TouchableOpacity style={styles.tabBtn} onPress={() => navigation.navigate('Home')}>
                     <Ionicons name="home" size={24} color={colors.primary} />
                     <Text style={[styles.tabText, { color: colors.primary }]}>Home</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.tabBtn} onPress={() => navigation.navigate('Relatorios')}>
+                <TouchableOpacity style={styles.tabBtn} onPress={() => navigation.navigate('Graficos')}>
                     <Ionicons name="pie-chart-outline" size={24} color={colors.textSecondary} />
                     <Text style={[styles.tabText, { color: colors.textSecondary }]}>Gráficos</Text>
                 </TouchableOpacity>

@@ -15,7 +15,8 @@ const DEFAULT_CONFIG = {
         { id: "custos", label: "Custos", icon: "calculator-outline", screen: "Custos", color: "#F97316", enabled: true },
         { id: "processamento", label: "Processamento", icon: "snow-outline", screen: "Processamento", color: "#1E3A8A", enabled: true },
         { id: "frota", label: "Frota", icon: "car-sport-outline", screen: "Frota", color: "#2563EB", enabled: true },
-        { id: "relatorios", label: "Relatórios", icon: "pie-chart-outline", screen: "Relatorios", color: "#374151", enabled: true },
+        { id: "relatorios", label: "Relatórios", icon: "document-text-outline", screen: "Relatorios", color: "#374151", enabled: true },
+        { id: "graficos", label: "Gráficos", icon: "pie-chart-outline", screen: "Graficos", color: "#6366F1", enabled: true },
         // Secondary
         { id: "cadastros", label: "Cadastros", icon: "create-outline", screen: "Cadastro", color: "#374151", enabled: true },
         { id: "clientes", label: "Clientes", icon: "people-outline", screen: "Clientes", color: "#374151", enabled: true },

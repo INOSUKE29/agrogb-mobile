@@ -5,6 +5,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
+import * as Updates from 'expo-updates';
 import { StatusBar } from 'expo-status-bar';
 import { initDB } from './src/database/database';
 import AutoSyncService from './src/services/AutoSyncService';
@@ -54,6 +55,23 @@ export default function App() {
     const [isDbReady, setIsDbReady] = useState(false);
 
     useEffect(() => {
+        // Inicializa OTA Updates primeiro de tudo
+        async function checkUpdates() {
+            try {
+                if (!__DEV__) {
+                    const update = await Updates.checkForUpdateAsync();
+                    if (update.isAvailable) {
+                        console.log("Baixando atualização OTA...");
+                        await Updates.fetchUpdateAsync();
+                        await Updates.reloadAsync();
+                    }
+                }
+            } catch (err) {
+                console.log("Erro ao checar OTA Updates:", err);
+            }
+        }
+        checkUpdates();
+
         // Inicializa banco de dados ANTES de renderizar qualquer contexto
         initDB()
             .then(() => {

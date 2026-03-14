@@ -13,6 +13,7 @@ import ComprasScreen from '../screens/ComprasScreen';
 import PlantioScreen from '../screens/PlantioScreen';
 import CustosScreen from '../screens/CustosScreen';
 import RelatoriosScreen from '../screens/RelatoriosScreen';
+import GraficosScreen from '../screens/GraficosScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import MonitoramentoScreen from '../screens/MonitoramentoScreen';
 import CadastroScreen from '../screens/CadastroScreen';
@@ -69,6 +70,7 @@ export default function AppNavigator() {
             <Stack.Screen name="Clientes" component={ClientesScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Culturas" component={CulturasScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Relatorios" component={RelatoriosScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Graficos" component={GraficosScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Usuarios" component={UsuariosScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Monitoramento" component={MonitoramentoScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Ocr" component={OcrScreen} options={{ headerShown: false }} />
