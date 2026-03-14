@@ -8,6 +8,8 @@ on:
 jobs:
   backup-db:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
       
@@ -33,6 +35,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Create Storage Directory
+        run: mkdir -p backups/storage
       
       - name: Backup Supabase Storage
         uses: zerodays/supabase-storage-backup@v1
