@@ -40,6 +40,30 @@ export default function SyncScreen({ navigation }) {
         }
     };
 
+    const handleCheckUpdate = async () => {
+        try {
+            setLoading(true);
+            if (__DEV__) {
+                Alert.alert('Modo Dev', 'Atualizações OTA só funcionam em builds de produção (EAS).');
+                return;
+            }
+            const update = await Updates.checkForUpdateAsync();
+            if (update.isAvailable) {
+                Alert.alert('Atualização Disponível', 'Baixando e instalando nova versão do sistema AgroGB...');
+                await Updates.fetchUpdateAsync();
+                Alert.alert('Sucesso', 'Atualização concluída! O aplicativo será reiniciado.', [
+                    { text: 'OK', onPress: () => Updates.reloadAsync() }
+                ]);
+            } else {
+                showToast('Você já está na versão mais recente!');
+            }
+        } catch (error) {
+            Alert.alert('Erro de Atualização', 'Não foi possível verificar atualizações no momento.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleBackupLocal = async () => {
         try {
             setLoading(true);
@@ -217,8 +241,13 @@ export default function SyncScreen({ navigation }) {
                 />
                 <ControlItem
                     icon="sync-outline" label="Sincronização Master"
-                    description={loading ? "Sincronizando..." : "Sincronizar Cloud Supabase"}
+                    description={loading ? "Verificando..." : "Sincronizar Cloud Supabase"}
                     onPress={handleSyncMaster}
+                />
+                <ControlItem
+                    icon="cloud-download-outline" label="Atualização do Sistema (OTA)"
+                    description="Verificar pacotes e versões novas do app"
+                    onPress={handleCheckUpdate}
                 />
                 <ControlItem
                     icon="save-outline" label="Backup em Nuvem" description="Salvar no Supabase Storage"
