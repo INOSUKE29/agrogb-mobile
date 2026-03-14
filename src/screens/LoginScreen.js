@@ -1,24 +1,21 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, Image, KeyboardAvoidingView,
-    Platform, Alert, Dimensions, StatusBar, TouchableOpacity
+    Platform, Alert, Dimensions, StatusBar, TouchableOpacity,
+    TextInput
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../theme/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
 import { login } from '../services/authService';
-import GlowInput from '../ui/GlowInput';
-import PrimaryButton from '../ui/PrimaryButton';
-
-const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen({ navigation }) {
-    const { isDark } = useTheme();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [secureText, setSecureText] = useState(true);
 
     const handleLogin = async () => {
-        if (!email || !password) return Alert.alert('Premium Access', 'Por favor, informe suas credenciais.');
+        if (!email || !password) return Alert.alert('Acesso Restrito', 'Por favor, informe suas credenciais.');
         setLoading(true);
         try {
             const res = await login(email, password);
@@ -38,59 +35,92 @@ export default function LoginScreen({ navigation }) {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.container}
         >
-            <StatusBar barStyle="light-content" />
+            <StatusBar barStyle="light-content" backgroundColor="#0F3D2E" />
             <LinearGradient
-                colors={isDark ? ['#0F172A', '#1E293B'] : ['#10B981', '#059669']}
+                colors={['#0F3D2E', '#1F7A55', '#4CAF7A']}
                 style={styles.background}
             >
-                <View style={styles.topCircle} />
-                <View style={styles.bottomCircle} />
-
-                <View style={styles.inner}>
-                    <View style={styles.logoContainer}>
+                <View style={styles.content}>
+                    
+                    {/* 1 HEADER COM LOGO */}
+                    <View style={styles.headerContainer}>
                         <Image
                             source={{ uri: 'https://i.ibb.co/L6HhLp0/logo-agrogb.png' }}
                             style={styles.logo}
                             resizeMode="contain"
                         />
+                        <Text style={styles.title}>AgroGB</Text>
+                        <Text style={styles.subtitle}>Gestão Inteligente Rural</Text>
                     </View>
 
-                    <View style={styles.formContainer}>
-                        <Text style={styles.welcomeText}>AGROGB ELITE</Text>
-                        <Text style={styles.subtitle}>Gestão Rural de Alta Performance</Text>
+                    {/* 2 FORMULÁRIO DE LOGIN (CARD BRANCO) */}
+                    <View style={styles.card}>
+                        
+                        {/* Campo Telefone ou E-mail */}
+                        <View style={styles.inputWrapper}>
+                            <Ionicons name="mail-outline" size={20} color="#7F8C8D" style={styles.inputIcon} />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Telefone ou E-mail"
+                                placeholderTextColor="#95A5A6"
+                                value={email}
+                                onChangeText={setEmail}
+                                autoCapitalize="none"
+                                keyboardType="email-address"
+                            />
+                        </View>
 
-                        <GlowInput
-                            placeholder="Seu e-mail corporativo"
-                            value={email}
-                            onChangeText={setEmail}
-                            autoCapitalize="none"
-                            keyboardType="email-address"
-                            style={styles.input}
-                        />
+                        {/* Campo Senha com Toggle */}
+                        <View style={styles.inputWrapper}>
+                            <Ionicons name="lock-closed-outline" size={20} color="#7F8C8D" style={styles.inputIcon} />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Senha"
+                                placeholderTextColor="#95A5A6"
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry={secureText}
+                            />
+                            <TouchableOpacity 
+                                onPress={() => setSecureText(!secureText)}
+                                style={styles.eyeIcon}
+                            >
+                                <Ionicons 
+                                    name={secureText ? "eye-off-outline" : "eye-outline"} 
+                                    size={20} 
+                                    color="#7F8C8D" 
+                                />
+                            </TouchableOpacity>
+                        </View>
 
-                        <GlowInput
-                            placeholder="Sua senha segura"
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry
-                            style={styles.input}
-                        />
-
-                        <PrimaryButton
-                            title={loading ? 'AUTENTICANDO...' : 'ENTRAR NO SISTEMA'}
-                            onPress={handleLogin}
-                            loading={loading}
+                        {/* Botão Entrar */}
+                        <TouchableOpacity 
                             style={styles.loginBtn}
-                        />
-
-                        <TouchableOpacity
-                            onPress={() => navigation.navigate('Register')}
-                            style={styles.registerLink}
+                            onPress={handleLogin}
+                            disabled={loading}
                         >
-                            <Text style={styles.registerText}>
-                                Não tem conta? <Text style={styles.registerTextBold}>Cadastre sua Fazenda</Text>
+                            <Text style={styles.loginBtnText}>
+                                {loading ? 'Acessando...' : 'ENTRAR'}
                             </Text>
                         </TouchableOpacity>
+
+                        {/* 3 LINKS AUXILIARES */}
+                        <View style={styles.linksContainer}>
+                            <TouchableOpacity>
+                                <Text style={styles.linkText}>Esqueci minha senha</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.linkSeparator}>|</Text>
+                            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                                <Text style={styles.linkText}>Criar conta</Text>
+                            </TouchableOpacity>
+                        </View>
+                        
+                    </View>
+                    
+                    {/* 4 RODAPÉ DO APP */}
+                    <View style={styles.footerContainer}>
+                        <Text style={styles.footerText}>AgroGB Mobile</Text>
+                        <Text style={styles.footerText}>Feito para gestão rural</Text>
                     </View>
                 </View>
             </LinearGradient>
@@ -99,87 +129,102 @@ export default function LoginScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    background: { flex: 1, justifyContent: 'center' },
-    topCircle: {
-        position: 'absolute',
-        top: -height * 0.1,
-        right: -width * 0.2,
-        width: width * 0.8,
-        height: width * 0.8,
-        borderRadius: width * 0.4,
-        backgroundColor: 'rgba(255,255,255,0.05)',
-    },
-    bottomCircle: {
-        position: 'absolute',
-        bottom: -height * 0.15,
-        left: -width * 0.1,
-        width: width * 0.6,
-        height: width * 0.6,
-        borderRadius: width * 0.3,
-        backgroundColor: 'rgba(255,255,255,0.03)',
-    },
-    inner: {
+    container: {
         flex: 1,
-        justifyContent: 'center',
-        paddingHorizontal: 35,
     },
-    logoContainer: {
+    background: {
+        flex: 1,
+    },
+    content: {
+        flex: 1,
+        justifyContent: 'space-between',
+        paddingVertical: 50,
+    },
+    headerContainer: {
         alignItems: 'center',
-        marginBottom: 40,
+        marginTop: 20,
     },
     logo: {
         width: 120,
         height: 120,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 15,
+        marginBottom: 16,
     },
-    formContainer: {
-        backgroundColor: 'rgba(255,255,255,0.07)',
-        padding: 25,
-        borderRadius: 30,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
-        backdropFilter: 'blur(10px)',
-    },
-    welcomeText: {
+    title: {
         fontSize: 28,
-        fontWeight: '900',
-        color: '#FFF',
-        textAlign: 'center',
-        letterSpacing: 2,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+        letterSpacing: 1,
     },
     subtitle: {
-        fontSize: 12,
-        color: 'rgba(255,255,255,0.6)',
-        textAlign: 'center',
-        marginBottom: 30,
-        fontWeight: '600',
-        textTransform: 'uppercase',
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.85)',
+        marginTop: 4,
+    },
+    card: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 20,
+        padding: 24,
+        marginHorizontal: 24,
+        elevation: 6, // Android
+        shadowColor: '#000', // iOS
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 6 },
+    },
+    inputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F5F6F7',
+        borderRadius: 12,
+        marginBottom: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+    },
+    inputIcon: {
+        marginRight: 12,
     },
     input: {
-        marginBottom: 15,
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        color: '#FFF',
+        flex: 1,
+        fontSize: 16,
+        color: '#2C3E50',
+    },
+    eyeIcon: {
+        padding: 4,
     },
     loginBtn: {
-        marginTop: 10,
-        height: 56,
-        borderRadius: 16,
-    },
-    registerLink: {
-        marginTop: 20,
+        backgroundColor: '#27AE60',
+        borderRadius: 12,
+        paddingVertical: 16,
         alignItems: 'center',
+        marginTop: 8,
     },
-    registerText: {
-        color: 'rgba(255,255,255,0.7)',
-        fontSize: 13,
-    },
-    registerTextBold: {
-        color: '#FFF',
+    loginBtnText: {
+        color: '#FFFFFF',
+        fontSize: 16,
         fontWeight: 'bold',
-        textDecorationLine: 'underline',
+    },
+    linksContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 24,
+    },
+    linkText: {
+        fontSize: 14,
+        color: '#2C3E50',
+    },
+    linkSeparator: {
+        fontSize: 14,
+        color: '#BDC3C7',
+        marginHorizontal: 12,
+    },
+    footerContainer: {
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    footerText: {
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.8)',
+        marginTop: 2,
     }
 });
