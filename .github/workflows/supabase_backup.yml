@@ -6,7 +6,7 @@ on:
   workflow_dispatch: # Permite rodar manualmente pelo botão no GitHub
 
 jobs:
-  backup-db:
+  backup:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -25,17 +25,6 @@ jobs:
           supabase db dump --db-url "${{ secrets.SUPABASE_DB_URL }}" --role-only -f backups/db/roles.sql
           supabase db dump --db-url "${{ secrets.SUPABASE_DB_URL }}" --data-only -f backups/db/data.sql
           
-      - name: Commit and Push DB
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Automated Supabase DB Backup [skip ci]"
-
-  backup-storage:
-    needs: backup-db
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
       - name: Create Storage Directory
         run: mkdir -p backups/storage
       
@@ -46,7 +35,7 @@ jobs:
           SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE }}
           OUTPUT_ZIP_FILE_NAME: "backups/storage/storage_backup.zip"
           
-      - name: Commit Storage Backup
+      - name: Commit and Push All Backups
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Automated Supabase Storage Backup [skip ci]"
+          commit_message: "Automated Supabase Full Backup (DB & Storage) [skip ci]"
