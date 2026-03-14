@@ -43,6 +43,7 @@ import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 import VerifyCodeScreen from './src/screens/VerifyCodeScreen';
 import EncomendasScreen from './src/screens/EncomendasScreen';
 import NovaEncomendaScreen from './src/screens/NovaEncomendaScreen';
+import GraficosScreen from './src/screens/GraficosScreen';
 
 import ErrorBoundary from './src/ui/ErrorBoundary';
 import { WeatherProvider } from './src/context/WeatherContext';
@@ -213,6 +214,7 @@ export default function App() {
                                 <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} options={{ title: 'Verificar Código' }} />
                                 <Stack.Screen name="Encomendas" component={EncomendasScreen} options={{ title: 'Minhas Encomendas' }} />
                                 <Stack.Screen name="NovaEncomenda" component={NovaEncomendaScreen} options={{ title: 'Nova Encomenda' }} />
+                                <Stack.Screen name="Graficos" component={GraficosScreen} options={{ title: 'Resumo de Gráficos' }} />
 
                             </Stack.Navigator>
                         </NavigationContainer>

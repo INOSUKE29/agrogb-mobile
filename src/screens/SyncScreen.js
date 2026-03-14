@@ -76,16 +76,23 @@ export default function SyncScreen({ navigation }) {
         }
     };
 
-    const handleBackupCloud = async () => {
+    const handleFullBackup = async () => {
         try {
             setLoading(true);
+            showToast('Gerando Backup Local...');
+            await BackupService.runLocalBackup();
+            
             const isConnected = await testConnection();
-            if (!isConnected) throw new Error('Sem conexão');
-
+            if (!isConnected) {
+                Alert.alert('Backup Local OK', 'O backup foi salvo no celular, mas não foi possível enviar para a nuvem (sem internet).');
+                return;
+            }
+            
+            showToast('Sincronizando com a Nuvem...');
             await BackupService.runCloudBackup();
-            showToast('Backup enviado para nuvem com sucesso!');
+            showToast('Escudo de Segurança Ativado! ✅');
         } catch {
-            Alert.alert('Erro', 'Falha no backup em nuvem. Verifique o Storage.');
+            Alert.alert('Erro', 'Falha ao completar o backup total.');
         } finally {
             setLoading(false);
         }
@@ -240,22 +247,19 @@ export default function SyncScreen({ navigation }) {
                     onPress={() => setActiveModal('MEDIA')}
                 />
                 <ControlItem
-                    icon="sync-outline" label="Sincronização Master"
-                    description={loading ? "Verificando..." : "Sincronizar Cloud Supabase"}
-                    onPress={handleSyncMaster}
-                />
-                <ControlItem
-                    icon="cloud-download-outline" label="Atualização do Sistema (OTA)"
-                    description="Verificar pacotes e versões novas do app"
+                    icon="cloud-download-outline" label="Atualizar Minhas Telas"
+                    description="Puxar novas funções e correções do AgroGB"
                     onPress={handleCheckUpdate}
                 />
                 <ControlItem
-                    icon="save-outline" label="Backup em Nuvem" description="Salvar no Supabase Storage"
-                    onPress={handleBackupCloud}
+                    icon="sync-outline" label="Sincronizar Dados (Nuvem)"
+                    description={loading ? "Verificando..." : "Enviar colheitas e vendas para a nuvem"}
+                    onPress={handleSyncMaster}
                 />
                 <ControlItem
-                    icon="share-outline" label="Exportar Backup Local" description="Gerar arquivo JSON de segurança"
-                    onPress={handleBackupLocal}
+                    icon="shield-checkmark-outline" label="Backup de Segurança Total"
+                    description="Salva no celular e na nuvem de uma vez só"
+                    onPress={handleFullBackup}
                 />
                 <ControlItem
                     icon="refresh-outline" label="Restaurar Dados" description="Importar de arquivo de backup"
