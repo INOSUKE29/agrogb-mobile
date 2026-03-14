@@ -1,0 +1,47 @@
+name: Supabase Full Backup
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Roda diariamente à meia-noite
+  workflow_dispatch: # Permite rodar manualmente pelo botão no GitHub
+
+jobs:
+  backup-db:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+          
+      - name: Create Database Dumps
+        run: |
+          mkdir -p backups/db
+          # Exporta estrutura, dados e papéis separadamente para facilitar restauro
+          supabase db dump --db-url "${{ secrets.SUPABASE_DB_URL }}" -f backups/db/schema.sql
+          supabase db dump --db-url "${{ secrets.SUPABASE_DB_URL }}" --role-only -f backups/db/roles.sql
+          supabase db dump --db-url "${{ secrets.SUPABASE_DB_URL }}" --data-only -f backups/db/data.sql
+          
+      - name: Commit and Push DB
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Automated Supabase DB Backup [skip ci]"
+
+  backup-storage:
+    needs: backup-db
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Backup Supabase Storage
+        uses: zerodays/supabase-storage-backup@v1
+        with:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE }}
+          OUTPUT_ZIP_FILE_NAME: "backups/storage/storage_backup.zip"
+          
+      - name: Commit Storage Backup
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Automated Supabase Storage Backup [skip ci]"
