@@ -4,7 +4,7 @@ SET session_replication_role = replica;
 -- PostgreSQL database dump
 --
 
--- \restrict Utc61hdTntSQZGn4vcnT2rpzOxdd06GhxsJDIwAhh9eu9EdqPoJgW8e8Cc4WYBG
+-- \restrict S9Q9vXNePLRDJf29sKkI9BRavAI0NLFgUsPYufEcuqV5RwLR0pofpgsFMdpxGnL
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6
@@ -400,6 +400,6 @@ SELECT pg_catalog.setval('"public"."movimentacoes_financeiras_id_seq"', 1, false
 -- PostgreSQL database dump complete
 --
 
--- \unrestrict Utc61hdTntSQZGn4vcnT2rpzOxdd06GhxsJDIwAhh9eu9EdqPoJgW8e8Cc4WYBG
+-- \unrestrict S9Q9vXNePLRDJf29sKkI9BRavAI0NLFgUsPYufEcuqV5RwLR0pofpgsFMdpxGnL
 
 RESET ALL;
