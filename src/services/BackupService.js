@@ -27,8 +27,10 @@ export const BackupService = {
      */
     generateDump: async () => {
         const dump = {
-            version: '8.1',
+            version: '8.5.1',
             timestamp: new Date().toISOString(),
+            app_id: 'AgroGB_Mobile',
+            protection: 'SHA-256-Structure',
             data: {}
         };
 

@@ -47,7 +47,7 @@ export const analyzeContent = async (sourceUri, sourceType) => {
     // ---------------------------------------------------------
     // ROTEAMENTO DE EXECUÇÃO REAL VS SIMULAÇÃO
     // ---------------------------------------------------------
-    console.log(`[AI SERVICE] processando: ${sourceType} -> ${sourceUri}`);
+    if (__DEV__) console.log(`[AI SERVICE] processando: ${sourceType} -> ${sourceUri}`);
 
     // SIMULAÇÃO INTELIGENTE (Para demonstração do fluxo sem API Key)
     // Retorna uma análise estruturada baseada no "tipo" ou conteúdo mockado.

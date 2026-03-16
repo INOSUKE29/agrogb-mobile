@@ -188,6 +188,10 @@ export default function HomeScreen({ navigation }) {
                     <Ionicons name="pie-chart-outline" size={24} color={colors.textSecondary} />
                     <Text style={[styles.tabText, { color: colors.textSecondary }]}>Gráficos</Text>
                 </TouchableOpacity>
+                <TouchableOpacity style={styles.tabBtn} onPress={() => navigation.navigate('Intelligence')}>
+                    <Ionicons name="bulb-outline" size={24} color={colors.textSecondary} />
+                    <Text style={[styles.tabText, { color: colors.textSecondary }]}>Inteligência</Text>
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.tabBtn} onPress={() => navigation.navigate('Sync')}>
                     <Ionicons name="refresh-circle-outline" size={24} color={colors.textSecondary} />
                     <Text style={[styles.tabText, { color: colors.textSecondary }]}>Sync</Text>

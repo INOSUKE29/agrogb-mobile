@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import * as Updates from 'expo-updates';
+import { executeQuery } from '../database/database';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -14,9 +15,18 @@ export default class ErrorBoundary extends React.Component {
         return { hasError: true, error };
     }
 
-    componentDidCatch(error, errorInfo) {
+    async componentDidCatch(error, errorInfo) {
         console.error("Uncaught Error:", error, errorInfo);
         this.setState({ errorInfo });
+        
+        try {
+            await executeQuery(
+                `INSERT INTO error_logs (data, tela, erro, stack, sync_status) VALUES (?, ?, ?, ?, ?)`,
+                [new Date().toISOString(), 'ErrorBoundary', error.toString(), JSON.stringify(errorInfo), 0]
+            );
+        } catch (e) {
+            console.log("Erro ao salvar log de crash", e);
+        }
     }
 
     handleRestart = async () => {

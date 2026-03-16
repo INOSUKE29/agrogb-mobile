@@ -1,13 +1,25 @@
 import { executeQuery } from './core';
+import { SCHEMA_V10 } from './schema_v10';
 
 
 
 export const runMigrations = async () => {
     try {
-        console.log('🔄 [Migrations] Verificando esquema...');
+        if (__DEV__) console.log('🔄 [Migrations] Verificando esquema...');
 
         // 1. Tabela de Versão
         await executeQuery(`CREATE TABLE IF NOT EXISTS schema_version (version INTEGER)`);
+
+        // --- EVOLUÇÃO V2 (41 TABELAS) ---
+        if (__DEV__) console.log('🚀 [Migrations] Preparando Terreno para AgroGB V2...');
+        for (const query of SCHEMA_V10) {
+            try {
+                await executeQuery(query);
+            } catch (error) {
+                if (__DEV__) console.log("⚠️ Erro ao criar tabela V2: ", error.message);
+            }
+        }
+        if (__DEV__) console.log('✅ [Migrations] Schema ERP V2 Instalado (Silent Backup Mode)');
 
         // 2. Tabelas Core (Auth)
         await executeQuery(`CREATE TABLE IF NOT EXISTS usuarios (
@@ -106,6 +118,15 @@ export const runMigrations = async () => {
                 last_updated TEXT NOT NULL,
                 sync_status INTEGER DEFAULT 0,
                 is_deleted INTEGER DEFAULT 0
+            )`,
+            `CREATE TABLE IF NOT EXISTS v2_sync_conflicts (
+                id TEXT PRIMARY KEY,
+                table_name TEXT NOT NULL,
+                record_uuid TEXT NOT NULL,
+                local_data TEXT,
+                remote_data TEXT,
+                status TEXT DEFAULT 'Pendente',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
             )`
         ];
 
@@ -120,13 +141,13 @@ export const runMigrations = async () => {
         for (const table of tablesToCheck) {
             try {
                 await executeQuery(`ALTER TABLE ${table} ADD COLUMN user_id INTEGER`);
-                console.log(`✅ [Migration] Coluna user_id adicionada em ${table}`);
+                if (__DEV__) console.log(`✅ [Migration] Coluna user_id adicionada em ${table}`);
             } catch {
                 // Erro esperado se a coluna já existe
             }
             try {
                 await executeQuery(`ALTER TABLE ${table} ADD COLUMN is_deleted INTEGER DEFAULT 0`);
-                console.log(`✅ [Migration] Soft Delete suportado em ${table}`);
+                if (__DEV__) console.log(`✅ [Migration] Soft Delete suportado em ${table}`);
             } catch { }
         }
 
@@ -134,13 +155,13 @@ export const runMigrations = async () => {
         try {
             await executeQuery(`ALTER TABLE custos ADD COLUMN cultura TEXT`);
             await executeQuery(`ALTER TABLE custos ADD COLUMN frota_id TEXT`);
-            console.log(`✅ [Migration] Colunas de centro de custos adicionadas`);
+            if (__DEV__) console.log(`✅ [Migration] Colunas de centro de custos adicionadas`);
         } catch { }
 
         // MIGRATION NOVO CHUNK: COLHEITAS (Descarte Integrado)
         try {
             await executeQuery(`ALTER TABLE colheitas ADD COLUMN quantidade_descartada REAL DEFAULT 0`);
-            console.log(`✅ [Migration] Coluna quantidade_descartada adicionada em colheitas`);
+            if (__DEV__) console.log(`✅ [Migration] Coluna quantidade_descartada adicionada em colheitas`);
         } catch { }
 
         // 5. Índices para Performance (Audit Request)
@@ -222,13 +243,13 @@ export const runMigrations = async () => {
             // OK, I will Insert plain text 'admin' and modify LoginScreen to accept plain text 'admin' specifically as a failsafe.
 
             await executeQuery(`INSERT INTO usuarios (usuario, senha, nivel, nome_completo) VALUES ('admin', 'admin', 'ADMIN', 'Administrador')`);
-            console.log('✅ [Migration] Admin restaurado (Senha: admin)');
+            if (__DEV__) console.log('✅ [Migration] Admin restaurado (Senha: admin)');
         }
 
         // 6. Seed Admin (Recovery Mode)
 
 
-        console.log('✅ [Migrations] Banco atualizado com sucesso.');
+        if (__DEV__) console.log('✅ [Migrations] Banco atualizado com sucesso.');
 
     } catch (error) {
         console.error('❌ [Migrations] Falha crítica:', error);

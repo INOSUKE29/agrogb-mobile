@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
 import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
+import { register } from '../services/authService';
 
 export default function RegisterScreen() {
     const navigation = useNavigation();
@@ -14,7 +15,19 @@ export default function RegisterScreen() {
 
     const handleRegister = async () => {
         if (!nome || !email || !password) return Alert.alert('Ops', 'Preencha tudo.');
-        Alert.alert('Sucesso', 'Conta criada com sucesso!', [{ text: 'OK', onPress: () => navigation.navigate('Login') }]);
+        
+        try {
+            const res = await register(nome, email, password);
+            if (res.success) {
+                Alert.alert('Sucesso', 'Sua conta foi criada! Faça login para começar.', [
+                    { text: 'OK', onPress: () => navigation.navigate('Login') }
+                ]);
+            } else {
+                Alert.alert('Erro no Cadastro', res.message);
+            }
+        } catch (error) {
+            Alert.alert('Erro', 'Falha na conexão com o servidor.');
+        }
     };
 
     return (

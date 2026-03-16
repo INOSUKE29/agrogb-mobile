@@ -124,6 +124,36 @@ export default function SyncScreen({ navigation }) {
             ]
         );
     };
+
+    const handleDeepClean = async () => {
+        Alert.alert(
+            'Manutenção Avançada',
+            'Esta ação irá:\n1. Limpar cache de sincronismo\n2. Forçar re-envio de dados locais\n3. Reiniciar o aplicativo\n\nDeseja continuar?',
+            [
+                { text: 'Não', style: 'cancel' },
+                {
+                    text: 'LIMPAR TUDO',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            setLoading(true);
+                            await AsyncStorage.removeItem('last_pull_timestamp');
+                            const syncTables = ['colheitas', 'vendas', 'compras', 'custos', 'plantio', 'descarte', 'cadastro', 'clientes', 'culturas', 'maquinas', 'areas'];
+                            for (const table of syncTables) {
+                                try { await executeQuery(`UPDATE ${table} SET sync_status = 0`); } catch { }
+                            }
+                            showToast('Cache limpo! Reiniciando...');
+                            setTimeout(() => Updates.reloadAsync(), 2000);
+                        } catch {
+                            Alert.alert('Erro', 'Falha na limpeza profunda.');
+                        } finally {
+                            setLoading(false);
+                        }
+                    }
+                }
+            ]
+        );
+    };
     const [lixeiraCount, setLixeiraCount] = useState(0);
 
     useEffect(() => {
@@ -287,7 +317,7 @@ export default function SyncScreen({ navigation }) {
                         <ControlItem
                             icon="flash-outline" label="Manutenção Técnica" description="Limpeza de cache e banco"
                             danger
-                            onPress={() => Alert.alert('Avançado', 'Deseja limpar otimizações técnicas?')}
+                            onPress={handleDeepClean}
                         />
                     </>
                 )}

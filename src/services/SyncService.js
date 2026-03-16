@@ -59,7 +59,7 @@ export const pushLocalChanges = async () => {
                     const { error } = await supabase.from(tableName).upsert(records, { onConflict: pk });
 
                     if (error) {
-                        console.error(`Erro Push na tabela ${tableName}:`, error);
+                        if (__DEV__) console.error(`Erro Push na tabela ${tableName}:`, error);
                     } else {
                         // Marca como Sincronizado no SQLite
                         const ids = records.map(r => typeof r[pk] === 'string' ? `'${r[pk]}'` : r[pk]).join(',');
@@ -68,7 +68,7 @@ export const pushLocalChanges = async () => {
                     }
                 }
             } catch {
-                console.log(`Pular push ${tableName}, possivelmente inexistente ou sem sync_status.`);
+                if (__DEV__) console.log(`Pular push ${tableName}, possivelmente inexistente ou sem sync_status.`);
             }
         }
         return { success: true, pushed: totalsSynced };
@@ -101,38 +101,76 @@ export const pullServerChanges = async () => {
                     .gt('last_updated', lastSync);
 
                 if (error) {
-                    console.error(`Erro Pull na tabela ${tableName}:`, error);
+                    if (__DEV__) console.error(`Erro Pull na tabela ${tableName}:`, error);
                     continue;
                 }
 
                 if (data && data.length > 0) {
-                    for (const row of data) {
-                        const rowKeys = Object.keys(row);
-                        const rowValues = Object.values(row);
+                    for (const remoteRow of data) {
+                        const pkValue = remoteRow[pk];
+                        if (!pkValue) continue;
 
-                        // Insere Coluna Local
-                        rowKeys.push('sync_status');
-                        rowValues.push(1); // Veio de lá, então já ta syncado
+                        try {
+                            // Busca registro local para comparar timestamps
+                            const localRes = await executeQuery(`SELECT last_updated FROM ${tableName} WHERE ${pk} = ?`, [pkValue]);
+                            
+                            if (localRes.rows.length > 0) {
+                                const localRow = localRes.rows.item(0);
+                                const localTime = localRow.last_updated ? new Date(localRow.last_updated).getTime() : 0;
+                                const remoteTime = remoteRow.last_updated ? new Date(remoteRow.last_updated).getTime() : 0;
 
-                        const placeholders = rowKeys.map(() => '?').join(', ');
-                        const escapeKeys = rowKeys.map(k => `"${k}"`).join(', ');
+                                // Só atualiza se o remoto for estritamente mais recente
+                                if (remoteTime > localTime) {
+                                    // NOVO: Detecta se o dado local também foi alterado (sync_status = 0)
+                                    if (localRow.sync_status === 0) {
+                                        if (__DEV__) console.log(`[SYNC] ⚠️ CONFLITO DETECTADO em ${tableName}:${pkValue}. Salvando para resolução manual.`);
+                                        
+                                        const conflictId = Math.random().toString(36).substr(2, 9);
+                                        await executeQuery(
+                                            `INSERT INTO v2_sync_conflicts (id, table_name, record_uuid, local_data, remote_data, status) 
+                                             VALUES (?, ?, ?, ?, ?, ?)`,
+                                            [conflictId, tableName, String(pkValue), JSON.stringify(localRow), JSON.stringify(remoteRow), 'Pendente']
+                                        );
+                                        
+                                        // Também sobe o conflito para o Supabase para auditoria centralizada
+                                        await supabase.from('v2_sync_conflicts').insert({
+                                            table_name: tableName,
+                                            record_uuid: String(pkValue),
+                                            local_data: localRow,
+                                            remote_data: remoteRow,
+                                            status: 'Pendente'
+                                        });
 
-                        const updateAssignments = rowKeys
-                            .filter(k => k !== pk)
-                            .map(k => `"${k}" = excluded."${k}"`).join(', ');
+                                    } else {
+                                        const keys = Object.keys(remoteRow);
+                                        const sets = keys.map(k => `"${k}" = ?`).join(', ');
+                                        const values = [...Object.values(remoteRow), pkValue];
+                                        
+                                        await executeQuery(`UPDATE ${tableName} SET ${sets}, sync_status = 1 WHERE ${pk} = ?`, values);
+                                    }
+                                } else {
+                                    if (__DEV__) console.log(`[SYNC] Conflito evitado em ${tableName}:${pkValue}. Local(${localTime}) >= Remoto(${remoteTime})`);
+                                }
+                            } else {
+                                // Inserção simples
+                                const rowKeys = Object.keys(remoteRow);
+                                const rowValues = Object.values(remoteRow);
+                                rowKeys.push('sync_status');
+                                rowValues.push(1);
 
-                        // SQLite UPSERT Syntax (Conflict on PK)
-                        const upsertQuery = `
-                            INSERT INTO ${tableName} (${escapeKeys}) VALUES (${placeholders})
-                            ON CONFLICT(${pk}) DO UPDATE SET ${updateAssignments};
-                        `;
+                                const placeholders = rowKeys.map(() => '?').join(', ');
+                                const escapeKeys = rowKeys.map(k => `"${k}"`).join(', ');
 
-                        await executeQuery(upsertQuery, rowValues);
+                                await executeQuery(`INSERT INTO ${tableName} (${escapeKeys}) VALUES (${placeholders})`, rowValues);
+                            }
+                        } catch (e) {
+                            if (__DEV__) console.error(`[SYNC] Erro ao processar registro em ${tableName}:`, e);
+                        }
                     }
                     totalsPulled += data.length;
                 }
             } catch {
-                console.log(`Pular pull ${tableName}.`);
+                if (__DEV__) console.log(`Pular pull ${tableName}.`);
             }
         }
 

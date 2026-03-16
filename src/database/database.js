@@ -10,7 +10,7 @@ let db;
 export const executeQuery = (sql, params = []) => {
     return new Promise((resolve, reject) => {
         if (!db) {
-            console.error('❌ Banco de dados não inicializado');
+            if (__DEV__) console.error('❌ Banco de dados não inicializado');
             reject(new Error('Banco não inicializado'));
             return;
         }
@@ -34,7 +34,7 @@ export const executeQuery = (sql, params = []) => {
 export const initDB = async () => {
     try {
         db = SQLite.openDatabase('agrogb_mobile.db');
-        console.log('✅ Banco de dados aberto (SDK 50)');
+        if (__DEV__) console.log('✅ Banco de dados aberto (SDK 50)');
         await createTables();
         return db;
     } catch (error) {
@@ -274,7 +274,7 @@ const createTables = async () => {
         // MIGRATION: Adicionar email se não existir (v3.5)
         try {
             await executeQuery('ALTER TABLE usuarios ADD COLUMN email TEXT');
-            console.log('✅ Coluna email adicionada com sucesso');
+            if (__DEV__) console.log('✅ Coluna email adicionada com sucesso');
         } catch { }
 
 
@@ -282,7 +282,7 @@ const createTables = async () => {
         try {
             await executeQuery('ALTER TABLE cadastro ADD COLUMN estocavel INTEGER DEFAULT 1');
             await executeQuery('ALTER TABLE cadastro ADD COLUMN vendavel INTEGER DEFAULT 1');
-            console.log('✅ Colunas estocavel/vendavel adicionadas');
+            if (__DEV__) console.log('✅ Colunas estocavel/vendavel adicionadas');
         } catch { }
 
         // MIGRATION: Perfil de Usuário (v4.1)
@@ -290,19 +290,19 @@ const createTables = async () => {
             await executeQuery('ALTER TABLE usuarios ADD COLUMN nome_completo TEXT');
             await executeQuery('ALTER TABLE usuarios ADD COLUMN telefone TEXT');
             await executeQuery('ALTER TABLE usuarios ADD COLUMN endereco TEXT');
-            console.log('✅ Colunas de perfil adicionadas');
+            if (__DEV__) console.log('✅ Colunas de perfil adicionadas');
         } catch { }
 
         // MIGRATION: Colheita Congelado (v4.1)
         try {
             await executeQuery('ALTER TABLE colheitas ADD COLUMN congelado REAL DEFAULT 0');
-            console.log('✅ Coluna congelado adicionada');
+            if (__DEV__) console.log('✅ Coluna congelado adicionada');
         } catch { }
 
         // MIGRATION: Avatar Profile (v6.1)
         try {
             await executeQuery('ALTER TABLE usuarios ADD COLUMN avatar TEXT');
-            console.log('✅ Coluna avatar adicionada');
+            if (__DEV__) console.log('✅ Coluna avatar adicionada');
         } catch { }
 
         // MIGRATION: Cadastro Fator Conversão (v4.2)
@@ -315,7 +315,7 @@ const createTables = async () => {
         try {
             await executeQuery('ALTER TABLE monitoramento_entidade ADD COLUMN severidade TEXT DEFAULT "BAIXA"');
             await executeQuery('ALTER TABLE monitoramento_entidade ADD COLUMN categoria TEXT DEFAULT "OUTROS"');
-            console.log('✅ Monitoramento v21 Schema atualizado');
+            if (__DEV__) console.log('✅ Monitoramento v21 Schema atualizado');
         } catch { }
         try {
             await executeQuery('ALTER TABLE cadastro ADD COLUMN fator_conversao REAL DEFAULT 1');
@@ -325,14 +325,14 @@ const createTables = async () => {
         // MIGRATION: Compras Detalhes (v4.0)
         try {
             await executeQuery('ALTER TABLE compras ADD COLUMN detalhes TEXT');
-            console.log('✅ Coluna detalhes adicionada em compras');
+            if (__DEV__) console.log('✅ Coluna detalhes adicionada em compras');
         } catch { }
 
         // MIGRATION: Auth Providers (v5.2)
         try {
             await executeQuery('ALTER TABLE usuarios ADD COLUMN provider TEXT DEFAULT "local"');
             await executeQuery('ALTER TABLE usuarios ADD COLUMN avatar_url TEXT');
-            console.log('✅ Colunas de Auth Provider adicionadas');
+            if (__DEV__) console.log('✅ Colunas de Auth Provider adicionadas');
         } catch { }
 
         // MIGRATION: App Settings (FASE 10)
@@ -365,8 +365,8 @@ const createTables = async () => {
                 )
             `);
             await executeQuery(`INSERT OR IGNORE INTO app_settings (id, updated_at) VALUES (1, ?)`, [new Date().toISOString()]);
-            console.log('✅ Tabela app_settings verificada/criada com sucesso');
-        } catch (e) { console.error('❌ Erro app_settings', e); }
+            if (__DEV__) console.log('✅ Tabela app_settings verificada/criada com sucesso');
+        } catch (e) { if (__DEV__) console.error('❌ Erro app_settings', e); }
 
         // MIGRATION: Adubação (v5.4)
         try {
@@ -432,7 +432,7 @@ const createTables = async () => {
                 sync_status INTEGER DEFAULT 0,
                 last_updated TEXT NOT NULL
             )`);
-        } catch (e) { console.error('Erro table monitoramento_entidade', e); }
+        } catch (e) { if (__DEV__) console.error('Erro table monitoramento_entidade', e); }
 
         // 2. MONITORAMENTO MÍDIA
         try {
@@ -446,7 +446,7 @@ const createTables = async () => {
                 last_updated TEXT NOT NULL,
                 FOREIGN KEY(monitoramento_uuid) REFERENCES monitoramento_entidade(uuid)
             )`);
-        } catch (e) { console.error('Erro table monitoramento_media', e); }
+        } catch (e) { if (__DEV__) console.error('Erro table monitoramento_media', e); }
 
         // 3. ANÁLISE IA (Resultados)
         try {
@@ -470,7 +470,7 @@ const createTables = async () => {
                 last_updated TEXT NOT NULL,
                 FOREIGN KEY(monitoramento_uuid) REFERENCES monitoramento_entidade(uuid)
             )`);
-        } catch (e) { console.error('Erro table analise_ia', e); }
+        } catch (e) { if (__DEV__) console.error('Erro table analise_ia', e); }
 
         // 4. BASE DE CONHECIMENTO (Refinada)
         try {
@@ -512,7 +512,7 @@ const createTables = async () => {
             for (const col of newCols) {
                 try { await executeQuery(`ALTER TABLE cadastro ADD COLUMN ${col}`); } catch { }
             }
-            console.log('✅ Colunas V7.0 (Cadastro Agrícola & IA) verificadas.');
+            if (__DEV__) console.log('✅ Colunas V7.0 (Cadastro Agrícola & IA) verificadas.');
         } catch { }
 
         // MIGRATION: V7.0 - Tabelas de Mídia e Auditoria
@@ -538,8 +538,8 @@ const createTables = async () => {
                 alterado_por TEXT NOT NULL,
                 data_alteracao TEXT NOT NULL
             )`);
-            console.log('✅ Tabelas V7.0 (Mídia e Auditoria) criadas/verificadas');
-        } catch (e) { console.error('Erro migração V7.0', e); }
+            if (__DEV__) console.log('✅ Tabelas V7.0 (Mídia e Auditoria) criadas/verificadas');
+        } catch (e) { if (__DEV__) console.error('Erro migração V7.0', e); }
 
 
         // MIGRATION: Soft Delete Flag
@@ -553,11 +553,11 @@ const createTables = async () => {
         for (const table of tablesWithAttachments) {
             try { await executeQuery(`ALTER TABLE ${table} ADD COLUMN anexo TEXT`); } catch { }
         }
-        console.log('✅ Colunas de Anexo migradas');
+        if (__DEV__) console.log('✅ Colunas de Anexo migradas');
 
-        console.log('✅ Soft delete migrado');
+        if (__DEV__) console.log('✅ Soft delete migrado');
 
-        console.log('✅ Arquitetura Monitoramento v6.0 Implementada');
+        if (__DEV__) console.log('✅ Arquitetura Monitoramento v6.0 Implementada');
 
         // MIGRATION: V8.0 - Módulo de Centro de Custos Profissional
         try {
@@ -602,11 +602,11 @@ const createTables = async () => {
                         [cat.name, cat.type, 1, new Date().toISOString()]
                     );
                 }
-                console.log('✅ Categorias de Custos base criadas via Seed');
+                if (__DEV__) console.log('✅ Categorias de Custos base criadas via Seed');
             }
-            console.log('✅ Módulo de Custos Profissional (V8.0) criado/verificado');
+            if (__DEV__) console.log('✅ Módulo de Custos Profissional (V8.0) criado/verificado');
         } catch (e) {
-            console.log('❌ Erro migração V8.0 (Custos):', e?.message || e);
+            if (__DEV__) console.log('❌ Erro migração V8.0 (Custos):', e?.message || e);
         }
 
         // MIGRATION: V8.1 - Notas Manuais Caderno Agrícola
@@ -623,8 +623,8 @@ const createTables = async () => {
                 sync_status INTEGER DEFAULT 0,
                 is_deleted INTEGER DEFAULT 0
             );`);
-            console.log('✅ Tabela areas verificada/criada');
-        } catch (e) { console.error('Erro table areas:', e); }
+            if (__DEV__) console.log('✅ Tabela areas verificada/criada');
+        } catch (e) { if (__DEV__) console.error('Erro table areas:', e); }
 
         try {
             await executeQuery(`CREATE TABLE IF NOT EXISTS caderno_notas (
@@ -636,7 +636,7 @@ const createTables = async () => {
                 sync_status INTEGER DEFAULT 0,
                 is_deleted INTEGER DEFAULT 0
             )`);
-            console.log('✅ Tabela caderno_notas verificada/criada');
+            if (__DEV__) console.log('✅ Tabela caderno_notas verificada/criada');
         } catch { }
 
         // MIGRATION: V9.0 - Financeiro (Contas a Receber)
@@ -644,7 +644,7 @@ const createTables = async () => {
             await executeQuery('ALTER TABLE vendas ADD COLUMN status_pagamento TEXT DEFAULT "A_RECEBER"');
             await executeQuery('ALTER TABLE vendas ADD COLUMN data_recebimento TEXT');
             await executeQuery('ALTER TABLE vendas ADD COLUMN forma_pagamento TEXT');
-            console.log('✅ Colunas de status_pagamento adicionadas na tabela vendas');
+            if (__DEV__) console.log('✅ Colunas de status_pagamento adicionadas na tabela vendas');
         } catch { }
 
         // MIGRATION: V9.0 - Financeiro (Categorias de Despesa e Custos)
@@ -655,12 +655,12 @@ const createTables = async () => {
                 tipo TEXT,
                 created_at TEXT
             )`);
-            console.log('✅ Tabela categorias_despesa verificada/criada');
+            if (__DEV__) console.log('✅ Tabela categorias_despesa verificada/criada');
         } catch { }
 
         try {
             await executeQuery('ALTER TABLE custos ADD COLUMN categoria_id TEXT');
-            console.log('✅ Coluna categoria_id adicionada na tabela custos');
+            if (__DEV__) console.log('✅ Coluna categoria_id adicionada na tabela custos');
         } catch { }
 
         // MIGRATION: V9.1 - Logs de Auditoria e Erro (Fase 19)
@@ -682,7 +682,7 @@ const createTables = async () => {
                 stack TEXT,
                 sync_status INTEGER DEFAULT 0
             )`);
-            console.log('✅ Tabelas activity_log e error_logs verificadas/criadas');
+            if (__DEV__) console.log('✅ Tabelas activity_log e error_logs verificadas/criadas');
         } catch { }
 
         // FASE 1: DEDUPLICAR CLIENTES EXISTENTES NO INÍCIO DO APP
@@ -707,32 +707,32 @@ const createTables = async () => {
                 for (const [nome, sigla] of defaultUnits) {
                     await executeQuery('INSERT OR IGNORE INTO unidades_medida (nome, sigla) VALUES (?, ?)', [nome, sigla]);
                 }
-                console.log('✅ Seed unidades_medida concluído');
+                if (__DEV__) console.log('✅ Seed unidades_medida concluído');
             } else {
                 // MIGRATION: Adicionar ha, cbc e M se os outros já existirem
                 await executeQuery('INSERT OR IGNORE INTO unidades_medida (nome, sigla) VALUES (?, ?)', ['Hectare', 'HA']);
                 await executeQuery('INSERT OR IGNORE INTO unidades_medida (nome, sigla) VALUES (?, ?)', ['Cambuca', 'CBC']);
                 await executeQuery('INSERT OR IGNORE INTO unidades_medida (nome, sigla) VALUES (?, ?)', ['Metro', 'M']);
             }
-            console.log('✅ Tabela unidades_medida verificada/criada');
-        } catch (e) { console.error('Erro unidades_medida:', e); }
+            if (__DEV__) console.log('✅ Tabela unidades_medida verificada/criada');
+        } catch (e) { if (__DEV__) console.error('Erro unidades_medida:', e); }
 
         // MIGRATION: v8.1 — unidade_id na tabela cadastro
         try {
             await executeQuery('ALTER TABLE cadastro ADD COLUMN unidade_id INTEGER REFERENCES unidades_medida(id)');
-            console.log('✅ Coluna unidade_id adicionada em cadastro');
+            if (__DEV__) console.log('✅ Coluna unidade_id adicionada em cadastro');
         } catch { }
 
         // MIGRATION: v8.1 — peso_medio_caixa na tabela culturas
         try {
             await executeQuery('ALTER TABLE culturas ADD COLUMN peso_medio_caixa REAL DEFAULT 1');
-            console.log('✅ Coluna peso_medio_caixa adicionada em culturas');
+            if (__DEV__) console.log('✅ Coluna peso_medio_caixa adicionada em culturas');
         } catch { }
 
         // MIGRATION: v8.1 — valor_recebido na tabela vendas
         try {
             await executeQuery('ALTER TABLE vendas ADD COLUMN valor_recebido REAL');
-            console.log('✅ Coluna valor_recebido adicionada em vendas');
+            if (__DEV__) console.log('✅ Coluna valor_recebido adicionada em vendas');
         } catch { }
 
         // MIGRATION: v8.1 — Movimentação de Estoque Profissional
@@ -749,8 +749,8 @@ const createTables = async () => {
                 last_updated TEXT NOT NULL,
                 sync_status INTEGER DEFAULT 0
             )`);
-            console.log('✅ Tabela movimentacao_estoque verificada/criada');
-        } catch (e) { console.error('Erro movimentacao_estoque:', e); }
+            if (__DEV__) console.log('✅ Tabela movimentacao_estoque verificada/criada');
+        } catch (e) { if (__DEV__) console.error('Erro movimentacao_estoque:', e); }
 
         // MIGRATION: v8.5 — Configurações Unificadas (Fase 23)
         try {
@@ -779,7 +779,7 @@ const createTables = async () => {
         for (const table of tablesToFix) {
             try {
                 await executeQuery(`ALTER TABLE ${table} ADD COLUMN uuid TEXT`);
-                console.log(`📏 Coluna uuid adicionada à tabela ${table}`);
+                if (__DEV__) console.log(`📏 Coluna uuid adicionada à tabela ${table}`);
             } catch { }
         }
 
@@ -795,7 +795,7 @@ const createTables = async () => {
             }
             // MIGRATION: v8.6.0 — Paridade v8.5.6 Supabase
             // =============================================
-            console.log('🔄 Iniciando Migração v8.6.0 (Paridade Supabase v8.5.6)...');
+            if (__DEV__) console.log('🔄 Iniciando Migração v8.6.0 (Paridade Supabase v8.5.6)...');
 
             // Colheitas
             try { await executeQuery('ALTER TABLE colheitas ADD COLUMN area_id TEXT'); } catch { }

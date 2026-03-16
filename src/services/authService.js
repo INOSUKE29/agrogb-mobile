@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import CryptoJS from "crypto-js";
-import { checkLogin as checkDbLogin, insertUsuario } from '../database/database';
+import { supabase } from './supabaseClient';
+import { executeQuery } from '../database/database';
+import { SyncWorker } from './SyncWorker';
 
 const SECRET_KEY = "AGROGB_SECURE_KEY_V1";
 
@@ -35,75 +36,77 @@ const generateRecoveryCode = () => Math.floor(100000 + Math.random() * 900000).t
 
 // --- AUTH FUNCTIONS ---
 
-export const register = async (userData) => {
+export const register = async (nome, email, password) => {
     try {
-        console.log('[AuthService] Registering user:', userData.user);
+        if (__DEV__) console.log('[AuthService] Iniciando registro:', email);
 
-        // 1. Prepare Data for SQLite
-        const newUser = {
-            usuario: userData.user,
-            senha: userData.password,
-            nivel: 'USUARIO',
-            nome_completo: userData.nome || userData.user,
-            telefone: userData.telefone || '',
-            endereco: '',
-            provider: 'local'
+        // 1. Registro no Supabase Auth
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+            email,
+            password,
+        });
+
+        if (authError) throw authError;
+
+        const userId = authData.user.id;
+
+        // 2. Registro Local (Offline-First) no Schema V2
+        const producerData = {
+            id: userId,
+            nome,
+            email,
+            created_at: new Date().toISOString(),
+            sync_status: 'synced' // Já foi pro Supabase Auth
         };
 
-        // 2. Insert into SQLite
-        await insertUsuario(newUser);
+        await executeQuery(
+            `INSERT INTO v2_produtores (id, nome, email, created_at, sync_status) VALUES (?, ?, ?, ?, ?)`,
+            [userId, nome, email, producerData.created_at, 'synced']
+        );
 
-        // 3. Generate Recovery Code
-        return generateRecoveryCode();
+        return { success: true, user: authData.user };
 
     } catch (e) {
-        console.error("REGISTER_ERROR:", e);
-        throw e;
+        if (__DEV__) console.error("REGISTER_ERROR:", e.message);
+        return { success: false, message: e.message };
     }
 };
 
-export const login = async (user, password) => {
+export const login = async (email, password) => {
     try {
-        console.log(`[AuthService] Attempting login for: ${user}`);
+        if (__DEV__) console.log(`[AuthService] Tentativa de login para: ${email}`);
 
-        // 1. ADMIN BYPASS (Emergency)
-        if (user.toUpperCase() === 'ADMIN' && password === '1234') {
-            await safeSave("session", { user: 'ADMIN', role: 'ADMIN' });
-            return { success: true };
+        // 1. Login no Supabase Auth
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        if (error) throw error;
+
+        // 2. Salva Sessão localmente
+        const session = {
+            userId: data.user.id,
+            email: data.user.email,
+            token: data.session.access_token
+        };
+
+        await AsyncStorage.setItem('@user_session', JSON.stringify(session));
+
+        // 3. Verifica se o produtor existe localmente no V2, senão cria/puxa
+        const localCheck = await executeQuery(`SELECT id FROM v2_produtores WHERE id = ?`, [data.user.id]);
+        if (localCheck.rows.length === 0) {
+            await executeQuery(
+                `INSERT INTO v2_produtores (id, email, sync_status) VALUES (?, ?, ?)`,
+                [data.user.id, data.user.email, 'synced']
+            );
         }
 
-        // 2. CHECK SQLITE DATABASE (Primary)
-        try {
-            const dbUser = await checkDbLogin(user, password);
-            if (dbUser) {
-                await safeSave("session", {
-                    user: dbUser.usuario,
-                    role: dbUser.nivel,
-                    userId: dbUser.id
-                });
-                await safeSave("agro_user", { user: dbUser.usuario, locked: false, attempts: 0 }); // Offline Cache
-                return { success: true };
-            }
-        } catch (dbError) {
-            console.error('[AuthService] Database check failed:', dbError);
-        }
-
-        // 3. FALLBACK: LOCAL STORAGE (Legacy)
-        const data = await safeGet("agro_user");
-        if (data && data.user === user) {
-            const bytes = CryptoJS.AES.decrypt(data.password, SECRET_KEY);
-            const original = bytes.toString(CryptoJS.enc.Utf8);
-            if (original === password) {
-                await safeSave("session", { user });
-                return { success: true };
-            }
-        }
-
-        return { success: false, message: "Usuário ou senha incorretos." };
+        return { success: true, user: data.user };
 
     } catch (e) {
-        console.error("LOGIN_ERROR:", e);
-        return { success: false, message: "Erro interno no Login." };
+        if (__DEV__) console.error("LOGIN_ERROR:", e.message);
+        return { success: false, message: e.message };
     }
 };
 
@@ -120,25 +123,15 @@ export const logout = async () => {
     }
 };
 
-// --- PASSWORD RESET (v8.5) ---
-const requestPasswordReset = async (emailOrUser) => {
-    // Simulação de envio para o MVP
-    console.log(`[AuthService] Reset requested for: ${emailOrUser}`);
-    return { success: true, message: "Código enviado!" };
-};
-
-const verifyResetToken = async (identifier, code) => {
-    // Simulação: Aceitar qualquer código de 6 dígitos para o usuário cadastrado localmente
-    console.log(`[AuthService] Verifying code ${code} for ${identifier}`);
-    if (code.length === 6) {
-        return { success: true, tokenId: "temp_reset_token_" + Date.now() };
+// --- PASSWORD RESET (v10.0) ---
+const requestPasswordReset = async (email) => {
+    try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email);
+        if (error) throw error;
+        return { success: true, message: "Link de recuperação enviado para seu e-mail!" };
+    } catch (e) {
+        return { success: false, message: e.message };
     }
-    return { success: false, message: "Código inválido." };
-};
-
-const updatePassword = async (tokenId) => {
-    console.log(`[AuthService] Updating password for token: ${tokenId}`);
-    return { success: true };
 };
 
 export const AuthService = {
@@ -146,7 +139,5 @@ export const AuthService = {
     login,
     logout,
     checkSession,
-    requestPasswordReset,
-    verifyResetToken,
-    updatePassword
+    requestPasswordReset
 };

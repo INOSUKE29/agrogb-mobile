@@ -44,6 +44,8 @@ import VerifyCodeScreen from './src/screens/VerifyCodeScreen';
 import EncomendasScreen from './src/screens/EncomendasScreen';
 import NovaEncomendaScreen from './src/screens/NovaEncomendaScreen';
 import GraficosScreen from './src/screens/GraficosScreen';
+import IntelligenceScreen from './src/screens/IntelligenceScreen';
+import { SyncWorker } from './src/services/SyncWorker';
 
 import ErrorBoundary from './src/ui/ErrorBoundary';
 import { WeatherProvider } from './src/context/WeatherContext';
@@ -56,6 +58,9 @@ export default function App() {
     const [isDbReady, setIsDbReady] = useState(false);
 
     useEffect(() => {
+        // Inicia o motor de sincronização ao abrir o app
+        SyncWorker.run();
+
         // Inicializa OTA Updates primeiro de tudo
         async function checkUpdates() {
             try {
@@ -215,6 +220,7 @@ export default function App() {
                                 <Stack.Screen name="Encomendas" component={EncomendasScreen} options={{ title: 'Minhas Encomendas' }} />
                                 <Stack.Screen name="NovaEncomenda" component={NovaEncomendaScreen} options={{ title: 'Nova Encomenda' }} />
                                 <Stack.Screen name="Graficos" component={GraficosScreen} options={{ title: 'Resumo de Gráficos' }} />
+                                <Stack.Screen name="Intelligence" component={IntelligenceScreen} options={{ headerShown: false }} />
 
                             </Stack.Navigator>
                         </NavigationContainer>
