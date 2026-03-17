@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ErrorService } from '../services/ErrorService';
 
 // Database & Services
 import { getCadastro, getCulturas } from '../database/database';
@@ -129,41 +130,54 @@ export default function ColheitaScreen({ navigation }) {
 
 
     const handleSave = async () => {
-        if (tipoRegistro === 'COLHEITA' && !talhao) return Alert.alert('Ops', 'Selecione o local/área.');
-        if (itensList.length === 0) return Alert.alert('Ops', 'Adicione pelo menos um item ao registro.');
+        if (tipoRegistro === 'COLHEITA' && !talhao) {
+            return Alert.alert('Ops', 'Selecione o local/área.');
+        }
+        if (itensList.length === 0) {
+            return Alert.alert('Ops', 'Adicione pelo menos um item ao registro.');
+        }
 
         setLoading(true);
         try {
             const date = parseDate(dataOperacao);
 
+            // Validação de Dados Anti-Erro (Garantia de Tipos)
+            const validatedItens = itensList.map(p => {
+                const qty = parseFloat(p.quantidade);
+                if (isNaN(qty) || qty <= 0) {
+                    throw new Error(`Quantidade inválida para o produto ${p.produto}`);
+                }
+                return { ...p, numericQty: qty };
+            });
+
             if (tipoRegistro === 'COLHEITA') {
-                for (const p of itensList) {
+                for (const p of validatedItens) {
                     await insertColheita({
                         uuid: uuidv4(),
                         cultura: talhao,
                         produto: p.produto,
-                        quantidade: parseFloat(p.quantidade) * p.fator,
+                        quantidade: p.numericQty * p.fator,
                         congelado: 0,
                         data: date,
                         observacao: observacao
                     });
                 }
             } else if (tipoRegistro === 'CONGELAMENTO') {
-                for (const d of itensList) {
+                for (const d of validatedItens) {
                     await insertCongelamento({
                         uuid: uuidv4(),
                         produto: d.produto,
-                        quantidade_kg: parseFloat(d.quantidade),
+                        quantidade_kg: d.numericQty,
                         motivo: observacao || 'CONGELAMENTO MANUAL',
                         data: date
                     });
                 }
             } else {
-                for (const p of itensList) {
+                for (const p of validatedItens) {
                     await insertDescarte({
                         uuid: uuidv4(),
                         produto: p.produto,
-                        quantidade_kg: parseFloat(p.quantidade),
+                        quantidade_kg: p.numericQty,
                         motivo: p.motivo + (observacao ? ` - ${observacao}` : ''),
                         data: date
                     });
@@ -173,8 +187,9 @@ export default function ColheitaScreen({ navigation }) {
             showToast('✅ Registro salvo com sucesso!');
             await AsyncStorage.removeItem(DRAFT_KEY);
             navigation.goBack();
-        } catch {
-            Alert.alert('Erro', 'Falha ao salvar registro.');
+        } catch (error) {
+            ErrorService.logError('ColheitaScreen:handleSave', error);
+            Alert.alert('Erro ao Salvar', error.message || 'Falha ao processar registro.');
         } finally {
             setLoading(false);
         }

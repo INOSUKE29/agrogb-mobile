@@ -47,7 +47,7 @@ export const AnalyticsService = {
                 lucro: receita - despesa,
                 margem: receita > 0 ? ((receita - despesa) / receita) * 100 : 0
             };
-        } catch (error) {
+        } catch {
             return { receita: 0, despesa: 0, lucro: 0, margem: 0 };
         }
     },
@@ -97,7 +97,7 @@ export const AnalyticsService = {
                 }
             }
             return trends;
-        } catch (error) {
+        } catch {
             return [];
         }
     }

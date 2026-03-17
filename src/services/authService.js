@@ -1,38 +1,35 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from 'expo-secure-store';
 import { supabase } from './supabaseClient';
 import { executeQuery } from '../database/database';
 import { SyncWorker } from './SyncWorker';
 
-const SECRET_KEY = "AGROGB_SECURE_KEY_V1";
-
 // --- STORAGE HELPERS ---
 const safeSave = async (key, value) => {
     try {
-        await AsyncStorage.setItem(key, JSON.stringify(value));
+        await SecureStore.setItemAsync(key, JSON.stringify(value));
     } catch (e) {
-        console.error("SECURE_STORAGE_SAVE_ERROR:", e);
+        if (__DEV__) console.error("SECURE_STORAGE_SAVE_ERROR:", e);
     }
 };
 
 const safeGet = async (key) => {
     try {
-        const data = await AsyncStorage.getItem(key);
+        const data = await SecureStore.getItemAsync(key);
         return data ? JSON.parse(data) : null;
     } catch (e) {
-        console.error("SECURE_STORAGE_GET_ERROR:", e);
+        if (__DEV__) console.error("SECURE_STORAGE_GET_ERROR:", e);
         return null;
     }
 };
 
 const safeRemove = async (key) => {
     try {
-        await AsyncStorage.removeItem(key);
+        await SecureStore.deleteItemAsync(key);
     } catch (e) {
-        console.error("SECURE_STORAGE_REMOVE_ERROR:", e);
+        if (__DEV__) console.error("SECURE_STORAGE_REMOVE_ERROR:", e);
     }
 };
-
-const generateRecoveryCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 // --- AUTH FUNCTIONS ---
 
@@ -91,7 +88,7 @@ export const login = async (email, password) => {
             token: data.session.access_token
         };
 
-        await AsyncStorage.setItem('@user_session', JSON.stringify(session));
+        await safeSave('@user_session', session);
 
         // 3. Verifica se o produtor existe localmente no V2, senão cria/puxa
         const localCheck = await executeQuery(`SELECT id FROM v2_produtores WHERE id = ?`, [data.user.id]);

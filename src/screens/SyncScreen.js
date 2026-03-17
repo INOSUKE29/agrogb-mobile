@@ -12,6 +12,7 @@ import PrimaryButton from '../ui/PrimaryButton';
 import { showToast } from '../ui/Toast';
 import { syncAllMaster, testConnection } from '../services/supabase';
 import { BackupService } from '../services/BackupService';
+import { ErrorService } from '../services/ErrorService';
 
 export default function SyncScreen({ navigation }) {
     const { theme, colors, setTheme } = useTheme();
@@ -33,8 +34,9 @@ export default function SyncScreen({ navigation }) {
             }
             const count = await syncAllMaster();
             showToast(`Sincronização concluída! ${count} tabelas processadas.`);
-        } catch {
-            Alert.alert('Erro', 'Falha na sincronização em nuvem.');
+        } catch (error) {
+            ErrorService.logError('SyncScreen:handleSyncMaster', error);
+            Alert.alert('Erro', 'Falha na sincronização em nuvem. Verifique seu log no botão de inseto no topo.');
         } finally {
             setLoading(false);
         }
@@ -57,7 +59,8 @@ export default function SyncScreen({ navigation }) {
             } else {
                 showToast('Você já está na versão mais recente!');
             }
-        } catch {
+        } catch (error) {
+            ErrorService.logError('SyncScreen:handleCheckUpdate', error);
             Alert.alert('Erro de Atualização', 'Não foi possível verificar atualizações no momento.');
         } finally {
             setLoading(false);
@@ -69,7 +72,8 @@ export default function SyncScreen({ navigation }) {
             setLoading(true);
             await BackupService.runLocalBackup();
             showToast('Backup local exportado!');
-        } catch {
+        } catch (error) {
+            ErrorService.logError('SyncScreen:handleBackupLocal', error);
             Alert.alert('Erro', 'Falha ao gerar backup local.');
         } finally {
             setLoading(false);
@@ -91,8 +95,9 @@ export default function SyncScreen({ navigation }) {
             showToast('Sincronizando com a Nuvem...');
             await BackupService.runCloudBackup();
             showToast('Escudo de Segurança Ativado! ✅');
-        } catch {
-            Alert.alert('Erro', 'Falha ao completar o backup total.');
+        } catch (error) {
+            ErrorService.logError('SyncScreen:handleFullBackup', error);
+            Alert.alert('Erro', 'Falha ao completar o backup total. Um relatório técnico foi gerado.');
         } finally {
             setLoading(false);
         }

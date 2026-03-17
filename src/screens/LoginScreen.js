@@ -7,6 +7,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { login } from '../services/authService';
+import { ErrorService } from '../services/ErrorService';
 
 export default function LoginScreen({ navigation }) {
     const [email, setEmail] = useState('');
@@ -15,7 +16,20 @@ export default function LoginScreen({ navigation }) {
     const [secureText, setSecureText] = useState(true);
 
     const handleLogin = async () => {
-        if (!email || !password) return Alert.alert('Acesso Restrito', 'Por favor, informe suas credenciais.');
+        // 1. Validação de Dados (Anti-Erro)
+        if (!email || !password) {
+            return Alert.alert('Acesso Restrito', 'Por favor, informe suas credenciais.');
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+             return Alert.alert('E-mail Inválido', 'Por favor, insira um endereço de e-mail válido.');
+        }
+
+        if (password.length < 6) {
+            return Alert.alert('Segurança', 'A senha deve conter pelo menos 6 caracteres.');
+        }
+
         setLoading(true);
         try {
             const res = await login(email, password);
@@ -24,9 +38,12 @@ export default function LoginScreen({ navigation }) {
             } else {
                 Alert.alert('Acesso Negado', res.message || 'Credenciais inválidas.');
             }
-        } catch {
+        } catch (error) {
+            // 2. Sistema Global de Captura de Erros
+            ErrorService.logError('LoginScreen', error);
+            Alert.alert('Erro Inesperado', 'Ocorreu um erro ao tentar acessar. Nossa equipe técnica já foi notificada.');
+        } finally {
             setLoading(false);
-            Alert.alert('Erro', 'Falha ao autenticar.');
         }
     };
 

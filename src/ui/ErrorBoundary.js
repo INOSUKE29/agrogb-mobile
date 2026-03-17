@@ -1,42 +1,38 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import * as Updates from 'expo-updates';
-import { executeQuery } from '../database/database';
+import { ErrorService } from '../services/ErrorService';
+import { Ionicons } from '@expo/vector-icons';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-export default class ErrorBoundary extends React.Component {
+/**
+ * ErrorBoundary - AgroGB Resilience UI 🛡️
+ * Captura erros de renderização e oferece uma saída amigável ao usuário.
+ */
+class ErrorBoundary extends React.Component {
     constructor(props) {
         super(props);
-        this.state = { hasError: false, error: null, errorInfo: null };
+        this.state = { hasError: false, error: null };
     }
 
     static getDerivedStateFromError(error) {
         return { hasError: true, error };
     }
 
-    async componentDidCatch(error, errorInfo) {
-        console.error("Uncaught Error:", error, errorInfo);
-        this.setState({ errorInfo });
-        
-        try {
-            await executeQuery(
-                `INSERT INTO error_logs (data, tela, erro, stack, sync_status) VALUES (?, ?, ?, ?, ?)`,
-                [new Date().toISOString(), 'ErrorBoundary', error.toString(), JSON.stringify(errorInfo), 0]
-            );
-        } catch (e) {
-            console.log("Erro ao salvar log de crash", e);
-        }
+    componentDidCatch(error, errorInfo) {
+        // Envia para o serviço de monitoramento
+        ErrorService.logError('GlobalErrorBoundary', error, errorInfo.componentStack);
     }
 
     handleRestart = async () => {
         try {
-            // CRITICAL FIX: Limpar sessão para evitar loop de erro
-            await AsyncStorage.multiRemove(['@user_session', '@user_profile', '@menu_config']);
             await Updates.reloadAsync();
         } catch {
-            Alert.alert("Erro", "Falha ao reiniciar. Feche o app manualmente.");
+            this.setState({ hasError: false });
         }
+    };
+
+    handleReport = () => {
+        ErrorService.reportLatestError();
     };
 
     render() {
@@ -44,21 +40,29 @@ export default class ErrorBoundary extends React.Component {
             return (
                 <View style={styles.container}>
                     <View style={styles.card}>
-                        <Text style={styles.icon}>🐞</Text>
-                        <Text style={styles.title}>Opa! Algo deu errado.</Text>
+                        <Ionicons name="alert-circle" size={80} color="#EF4444" />
+                        <Text style={styles.title}>Ops! Algo deu errado.</Text>
                         <Text style={styles.subtitle}>
-                            O aplicativo encontrou um erro inesperado. Tente reiniciar.
+                            Ocorreu um erro inesperado na visualização. 
+                            Nossa equipe técnica já foi notificada para correção.
                         </Text>
 
-                        <ScrollView style={styles.errorBox}>
-                            <Text style={styles.errorText}>
-                                {this.state.error?.toString()}
-                            </Text>
-                        </ScrollView>
-
-                        <TouchableOpacity style={styles.button} onPress={this.handleRestart}>
-                            <Text style={styles.buttonText}>TENTAR REINICIAR</Text>
+                        <TouchableOpacity 
+                            style={styles.buttonPrimary} 
+                            onPress={this.handleRestart}
+                        >
+                            <Text style={styles.buttonText}>Recarregar Aplicativo</Text>
                         </TouchableOpacity>
+
+                        <TouchableOpacity 
+                            style={styles.buttonSecondary} 
+                            onPress={this.handleReport}
+                        >
+                            <Ionicons name="share-social-outline" size={20} color="#6B7280" />
+                            <Text style={styles.secondaryText}>Enviar Relatório de Erro</Text>
+                        </TouchableOpacity>
+
+                        <Text style={styles.footer}>AgroGB v8.5.0 • Sistema de Monitoramento Ativo</Text>
                     </View>
                 </View>
             );
@@ -69,13 +73,72 @@ export default class ErrorBoundary extends React.Component {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#FEE2E2', justifyContent: 'center', padding: 20 },
-    card: { backgroundColor: '#FFF', padding: 30, borderRadius: 20, alignItems: 'center', elevation: 10 },
-    icon: { fontSize: 50, marginBottom: 20 },
-    title: { fontSize: 20, fontWeight: 'bold', color: '#B91C1C', marginBottom: 10 },
-    subtitle: { textAlign: 'center', color: '#4B5563', marginBottom: 20 },
-    errorBox: { maxHeight: 150, width: '100%', backgroundColor: '#F3F4F6', padding: 10, borderRadius: 8, marginBottom: 20 },
-    errorText: { fontFamily: 'monospace', fontSize: 10, color: '#EF4444' },
-    button: { backgroundColor: '#B91C1C', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10, width: '100%', alignItems: 'center' },
-    buttonText: { color: '#FFF', fontWeight: 'bold' }
+    container: {
+        flex: 1,
+        backgroundColor: '#F3F4F6',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24
+    },
+    card: {
+        backgroundColor: '#FFF',
+        padding: 32,
+        borderRadius: 24,
+        alignItems: 'center',
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20
+    },
+    title: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#111827',
+        marginTop: 20,
+        marginBottom: 12
+    },
+    subtitle: {
+        fontSize: 14,
+        color: '#6B7280',
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 30
+    },
+    buttonPrimary: {
+        backgroundColor: '#15803D',
+        paddingVertical: 14,
+        paddingHorizontal: 32,
+        borderRadius: 16,
+        width: '100%',
+        alignItems: 'center',
+        marginBottom: 12
+    },
+    buttonText: {
+        color: '#FFF',
+        fontWeight: 'bold',
+        fontSize: 16
+    },
+    buttonSecondary: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        width: '100%',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: '#D1D5DB',
+        borderRadius: 16
+    },
+    secondaryText: {
+        marginLeft: 8,
+        color: '#4B5563',
+        fontWeight: '600'
+    },
+    footer: {
+        marginTop: 30,
+        fontSize: 10,
+        color: '#9CA3AF'
+    }
 });
+
+export default ErrorBoundary;

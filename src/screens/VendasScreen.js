@@ -9,6 +9,7 @@ import AutoSyncService from '../services/AutoSyncService';
 import { showToast } from '../ui/Toast';
 import { useTheme } from '../theme/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ErrorService } from '../services/ErrorService';
 import ConfirmModal from '../ui/ConfirmModal';
 // UI Components
 import AppContainer from '../ui/AppContainer';
@@ -131,17 +132,28 @@ export default function VendasScreen({ navigation, route }) {
     const up = (t, setter) => setter(t.toUpperCase());
 
     const salvar = async () => {
+        // Validação Anti-Erro (Garantia de Tipos e Campos)
         if (!produto || !quantidade || !valor) {
             Alert.alert('Atenção', 'Produto, Qtd e Valor são obrigatórios.');
             return;
+        }
+
+        const numQtd = parseFloat(quantidade);
+        const numVal = parseFloat(valor);
+
+        if (isNaN(numQtd) || numQtd <= 0) {
+            return Alert.alert('Campo Inválido', 'A quantidade deve ser um número positivo.');
+        }
+        if (isNaN(numVal) || numVal < 0) {
+            return Alert.alert('Campo Inválido', 'O valor deve ser um número positivo.');
         }
 
         const dados = {
             uuid: editingUuid || uuidv4(),
             cliente: (cliente || 'BALCÃO').toUpperCase(),
             produto: produto.toUpperCase(),
-            quantidade: parseFloat(quantidade),
-            valor: parseFloat(valor),
+            quantidade: numQtd,
+            valor: numVal,
             observacao: observacao.toUpperCase(),
             data: new Date().toISOString().split('T')[0],
             status_pagamento: statusPagamento,
@@ -167,8 +179,9 @@ export default function VendasScreen({ navigation, route }) {
             await AsyncStorage.removeItem(DRAFT_KEY);
             loadHistory();
             AutoSyncService.trigger();
-        } catch {
-            Alert.alert('Erro', 'Falha ao processar venda.');
+        } catch (error) {
+            ErrorService.logError('VendasScreen:salvar', error);
+            Alert.alert('Erro ao Salvar', 'Não foi possível registrar a venda. O erro foi logado para análise.');
         }
     };
 
@@ -225,8 +238,9 @@ export default function VendasScreen({ navigation, route }) {
             setValorRecebido('');
             loadHistory();
             Alert.alert('✅ Recebido!', `Venda de ${recebimentoItem.produto} marcada como recebida.`);
-        } catch {
-            Alert.alert('Erro', 'Falha ao marcar como recebido.');
+        } catch (error) {
+            ErrorService.logError('VendasScreen:confirmarRecebimento', error);
+            Alert.alert('Erro', 'Falha ao marcar como recebido. Tente novamente.');
         }
     };
 
