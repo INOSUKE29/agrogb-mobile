@@ -4,7 +4,7 @@ SET session_replication_role = replica;
 -- PostgreSQL database dump
 --
 
--- \restrict MUOd7j8kZlEzjxk5GkyTiEKVqjkocEZ4wnPc6MZO7NYWJ7f1A0r8e0VH9XsJNYN
+-- \restrict N2h3ELTtQBhWelgBthvpQtpRGT2XtJD5aaU3W2nHVk0pmoyG2Cshr9VtSWoE5Lg
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6
@@ -1046,12 +1046,6 @@ ALTER TABLE public.monitoramento_entidade RENAME COLUMN usuario_id_to_drop_bak_2
 
 
 --
--- Data for Name: v2_colheitas; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-
-
---
 -- Data for Name: v2_fazendas; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -1059,6 +1053,30 @@ ALTER TABLE public.monitoramento_entidade RENAME COLUMN usuario_id_to_drop_bak_2
 
 --
 -- Data for Name: v2_talhoes; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+
+
+--
+-- Data for Name: v2_analise_solo; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+
+
+--
+-- Data for Name: v2_colheitas; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+
+
+--
+-- Data for Name: v2_recomendacoes_tecnicas; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+
+
+--
+-- Data for Name: v2_sync_conflicts; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 
@@ -1147,6 +1165,6 @@ SELECT pg_catalog.setval('"public"."usuario_id_quarantine_id_seq"', 1, false);
 -- PostgreSQL database dump complete
 --
 
--- \unrestrict MUOd7j8kZlEzjxk5GkyTiEKVqjkocEZ4wnPc6MZO7NYWJ7f1A0r8e0VH9XsJNYN
+-- \unrestrict N2h3ELTtQBhWelgBthvpQtpRGT2XtJD5aaU3W2nHVk0pmoyG2Cshr9VtSWoE5Lg
 
 RESET ALL;

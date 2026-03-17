@@ -13,6 +13,12 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 
+CREATE SCHEMA IF NOT EXISTS "agro_admin";
+
+
+ALTER SCHEMA "agro_admin" OWNER TO "postgres";
+
+
 CREATE EXTENSION IF NOT EXISTS "pg_cron" WITH SCHEMA "pg_catalog";
 
 
@@ -96,6 +102,7 @@ ALTER FUNCTION "public"."get_my_financial_summary"() OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "public"."get_table_pkey_cols"("p_table" "text") RETURNS "text"
     LANGUAGE "sql" STABLE
+    SET "search_path" TO 'public', 'pg_temp'
     AS $$
   SELECT string_agg(attname, ',') FROM (
     SELECT a.attname
@@ -198,17 +205,11 @@ ALTER FUNCTION "public"."monitoramento_entidade_run_checks"() OWNER TO "postgres
 
 CREATE OR REPLACE FUNCTION "public"."try_text_to_uuid"("text") RETURNS "uuid"
     LANGUAGE "plpgsql" IMMUTABLE
-    SET "search_path" TO 'public'
+    SET "search_path" TO 'public', 'pg_temp'
     AS $_$
-DECLARE
-  v uuid;
+DECLARE v uuid;
 BEGIN
-  BEGIN
-    v := $1::uuid;
-    RETURN v;
-  EXCEPTION WHEN others THEN
-    RETURN NULL;
-  END;
+  BEGIN v := $1::uuid; RETURN v; EXCEPTION WHEN others THEN RETURN NULL; END;
 END;
 $_$;
 
@@ -218,6 +219,56 @@ ALTER FUNCTION "public"."try_text_to_uuid"("text") OWNER TO "postgres";
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
+
+
+CREATE TABLE IF NOT EXISTS "public"."v2_fazendas" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "produtor_id" "uuid",
+    "nome" "text" NOT NULL,
+    "area_total" numeric,
+    "cidade" "text",
+    "estado" "text",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone,
+    "is_deleted" integer DEFAULT 0,
+    "usuario_id_bak_20260315145412" "uuid",
+    "is_deleted_bool" boolean DEFAULT false,
+    "usuario_id" "uuid"
+);
+
+
+ALTER TABLE "public"."v2_fazendas" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."v2_talhoes" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "fazenda_id" "uuid",
+    "nome" "text" NOT NULL,
+    "area" numeric,
+    "tipo_solo" "text",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone,
+    "is_deleted" integer DEFAULT 0,
+    "usuario_id_bak_20260315145412" "uuid",
+    "is_deleted_bool" boolean DEFAULT false,
+    "usuario_id" "uuid"
+);
+
+
+ALTER TABLE "public"."v2_talhoes" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "agro_admin"."admin_usuario_integrity_report" AS
+ SELECT 'v2_fazendas'::"text" AS "table_name",
+    "count"(*) FILTER (WHERE ("v2_fazendas"."usuario_id" IS NULL)) AS "null_count"
+   FROM "public"."v2_fazendas"
+UNION ALL
+ SELECT 'v2_talhoes'::"text" AS "table_name",
+    "count"(*) FILTER (WHERE ("v2_talhoes"."usuario_id" IS NULL)) AS "null_count"
+   FROM "public"."v2_talhoes";
+
+
+ALTER VIEW "agro_admin"."admin_usuario_integrity_report" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."activity_log" (
@@ -541,6 +592,76 @@ CREATE TABLE IF NOT EXISTS "public"."estoque" (
 ALTER TABLE "public"."estoque" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."movimentacoes_financeiras" (
+    "id" bigint NOT NULL,
+    "user_id" "uuid" DEFAULT "auth"."uid"() NOT NULL,
+    "tipo" "text" NOT NULL,
+    "categoria" "text" NOT NULL,
+    "descricao" "text",
+    "valor" numeric DEFAULT 0 NOT NULL,
+    "data" "date" DEFAULT CURRENT_DATE,
+    "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
+    "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"(),
+    "last_updated" timestamp without time zone DEFAULT "now"(),
+    "is_deleted" integer DEFAULT 0,
+    "usuario_id_bak_20260315145412" "uuid",
+    "is_deleted_bool" boolean DEFAULT false,
+    "usuario_id" "uuid",
+    CONSTRAINT "movimentacoes_financeiras_tipo_check" CHECK (("tipo" = ANY (ARRAY['receita'::"text", 'custo'::"text"])))
+);
+
+
+ALTER TABLE "public"."movimentacoes_financeiras" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."financial_summary" WITH ("security_invoker"='true') AS
+ SELECT "user_id",
+    "sum"(
+        CASE
+            WHEN ("tipo" = 'receita'::"text") THEN "valor"
+            ELSE (0)::numeric
+        END) AS "faturamento",
+    "sum"(
+        CASE
+            WHEN ("tipo" = 'custo'::"text") THEN "valor"
+            ELSE (0)::numeric
+        END) AS "custos",
+    ("sum"(
+        CASE
+            WHEN ("tipo" = 'receita'::"text") THEN "valor"
+            ELSE (0)::numeric
+        END) - "sum"(
+        CASE
+            WHEN ("tipo" = 'custo'::"text") THEN "valor"
+            ELSE (0)::numeric
+        END)) AS "resultado_liquido",
+        CASE
+            WHEN ("sum"(
+            CASE
+                WHEN ("tipo" = 'receita'::"text") THEN "valor"
+                ELSE (0)::numeric
+            END) = (0)::numeric) THEN (0)::numeric
+            ELSE "round"(((("sum"(
+            CASE
+                WHEN ("tipo" = 'receita'::"text") THEN "valor"
+                ELSE (0)::numeric
+            END) - "sum"(
+            CASE
+                WHEN ("tipo" = 'custo'::"text") THEN "valor"
+                ELSE (0)::numeric
+            END)) / "sum"(
+            CASE
+                WHEN ("tipo" = 'receita'::"text") THEN "valor"
+                ELSE (0)::numeric
+            END)) * (100)::numeric), 2)
+        END AS "margem_percentual"
+   FROM "public"."movimentacoes_financeiras"
+  GROUP BY "user_id";
+
+
+ALTER VIEW "public"."financial_summary" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."items" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "codigo" "text",
@@ -703,26 +824,15 @@ CREATE TABLE IF NOT EXISTS "public"."monitoramento_media" (
 ALTER TABLE "public"."monitoramento_media" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."movimentacoes_financeiras" (
-    "id" bigint NOT NULL,
-    "user_id" "uuid" DEFAULT "auth"."uid"() NOT NULL,
-    "tipo" "text" NOT NULL,
-    "categoria" "text" NOT NULL,
-    "descricao" "text",
-    "valor" numeric DEFAULT 0 NOT NULL,
-    "data" "date" DEFAULT CURRENT_DATE,
-    "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
-    "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"(),
-    "last_updated" timestamp without time zone DEFAULT "now"(),
-    "is_deleted" integer DEFAULT 0,
-    "usuario_id_bak_20260315145412" "uuid",
-    "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid",
-    CONSTRAINT "movimentacoes_financeiras_tipo_check" CHECK (("tipo" = ANY (ARRAY['receita'::"text", 'custo'::"text"])))
+ALTER TABLE "public"."movimentacoes_financeiras" ALTER COLUMN "id" ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME "public"."movimentacoes_financeiras_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
 );
 
-
-ALTER TABLE "public"."movimentacoes_financeiras" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."movimentos_estoque" (
@@ -823,6 +933,33 @@ CREATE TABLE IF NOT EXISTS "public"."receitas" (
 ALTER TABLE "public"."receitas" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."schema_migrations" (
+    "id" integer NOT NULL,
+    "run_ts" timestamp with time zone DEFAULT "now"(),
+    "description" "text",
+    "script" "text"
+);
+
+
+ALTER TABLE "public"."schema_migrations" OWNER TO "postgres";
+
+
+CREATE SEQUENCE IF NOT EXISTS "public"."schema_migrations_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE "public"."schema_migrations_id_seq" OWNER TO "postgres";
+
+
+ALTER SEQUENCE "public"."schema_migrations_id_seq" OWNED BY "public"."schema_migrations"."id";
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."unidades_medida" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"(),
@@ -872,6 +1009,36 @@ CREATE TABLE IF NOT EXISTS "public"."usuario_id_quarantine" (
 ALTER TABLE "public"."usuario_id_quarantine" OWNER TO "postgres";
 
 
+CREATE SEQUENCE IF NOT EXISTS "public"."usuario_id_quarantine_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE "public"."usuario_id_quarantine_id_seq" OWNER TO "postgres";
+
+
+ALTER SEQUENCE "public"."usuario_id_quarantine_id_seq" OWNED BY "public"."usuario_id_quarantine"."id";
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."v2_analise_solo" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "talhao_id" "uuid",
+    "ph" numeric,
+    "fosforo" numeric,
+    "potassio" numeric,
+    "usuario_id" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."v2_analise_solo" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."v2_colheitas" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "plantio_id" "uuid",
@@ -892,25 +1059,6 @@ CREATE TABLE IF NOT EXISTS "public"."v2_colheitas" (
 ALTER TABLE "public"."v2_colheitas" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."v2_fazendas" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "produtor_id" "uuid",
-    "nome" "text" NOT NULL,
-    "area_total" numeric,
-    "cidade" "text",
-    "estado" "text",
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone,
-    "is_deleted" integer DEFAULT 0,
-    "usuario_id_bak_20260315145412" "uuid",
-    "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid"
-);
-
-
-ALTER TABLE "public"."v2_fazendas" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."v2_produtores" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "nome" "text" NOT NULL,
@@ -929,22 +1077,32 @@ CREATE TABLE IF NOT EXISTS "public"."v2_produtores" (
 ALTER TABLE "public"."v2_produtores" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."v2_talhoes" (
+CREATE TABLE IF NOT EXISTS "public"."v2_recomendacoes_tecnicas" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "fazenda_id" "uuid",
-    "nome" "text" NOT NULL,
-    "area" numeric,
-    "tipo_solo" "text",
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone,
-    "is_deleted" integer DEFAULT 0,
-    "usuario_id_bak_20260315145412" "uuid",
-    "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid"
+    "talhao_id" "uuid",
+    "tipo" "text",
+    "titulo" "text",
+    "descricao" "text",
+    "usuario_id" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"()
 );
 
 
-ALTER TABLE "public"."v2_talhoes" OWNER TO "postgres";
+ALTER TABLE "public"."v2_recomendacoes_tecnicas" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."v2_sync_conflicts" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "table_name" "text" NOT NULL,
+    "record_uuid" "uuid" NOT NULL,
+    "local_data" "jsonb",
+    "remote_data" "jsonb",
+    "status" "text" DEFAULT 'Pendente'::"text",
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."v2_sync_conflicts" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."vendas" (
@@ -968,347 +1126,6 @@ CREATE TABLE IF NOT EXISTS "public"."vendas" (
 ALTER TABLE "public"."vendas" OWNER TO "postgres";
 
 
-CREATE OR REPLACE VIEW "public"."admin_usuario_integrity_report" AS
- SELECT 'activity_log'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("activity_log"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("activity_log"."usuario_id" IS NOT NULL) AND (NOT ("activity_log"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."activity_log"
-UNION ALL
- SELECT 'analise_ia'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("analise_ia"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("analise_ia"."usuario_id" IS NOT NULL) AND (NOT ("analise_ia"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."analise_ia"
-UNION ALL
- SELECT 'app_settings'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("app_settings"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("app_settings"."usuario_id" IS NOT NULL) AND (NOT ("app_settings"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."app_settings"
-UNION ALL
- SELECT 'areas'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("areas"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("areas"."usuario_id" IS NOT NULL) AND (NOT ("areas"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."areas"
-UNION ALL
- SELECT 'caderno_notas'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("caderno_notas"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("caderno_notas"."usuario_id" IS NOT NULL) AND (NOT ("caderno_notas"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."caderno_notas"
-UNION ALL
- SELECT 'categorias_despesa'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("categorias_despesa"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("categorias_despesa"."usuario_id" IS NOT NULL) AND (NOT ("categorias_despesa"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."categorias_despesa"
-UNION ALL
- SELECT 'clientes'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("clientes"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("clientes"."usuario_id" IS NOT NULL) AND (NOT ("clientes"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."clientes"
-UNION ALL
- SELECT 'colheitas'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("colheitas"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("colheitas"."usuario_id" IS NOT NULL) AND (NOT ("colheitas"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."colheitas"
-UNION ALL
- SELECT 'compras'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("compras"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("compras"."usuario_id" IS NOT NULL) AND (NOT ("compras"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."compras"
-UNION ALL
- SELECT 'cost_categories'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("cost_categories"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("cost_categories"."usuario_id" IS NOT NULL) AND (NOT ("cost_categories"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."cost_categories"
-UNION ALL
- SELECT 'costs'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("costs"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("costs"."usuario_id" IS NOT NULL) AND (NOT ("costs"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."costs"
-UNION ALL
- SELECT 'culturas'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("culturas"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("culturas"."usuario_id" IS NOT NULL) AND (NOT ("culturas"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."culturas"
-UNION ALL
- SELECT 'custos'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("custos"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("custos"."usuario_id" IS NOT NULL) AND (NOT ("custos"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."custos"
-UNION ALL
- SELECT 'descarte'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("descarte"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("descarte"."usuario_id" IS NOT NULL) AND (NOT ("descarte"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."descarte"
-UNION ALL
- SELECT 'error_logs'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("error_logs"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("error_logs"."usuario_id" IS NOT NULL) AND (NOT ("error_logs"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."error_logs"
-UNION ALL
- SELECT 'estoque'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("estoque"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("estoque"."usuario_id" IS NOT NULL) AND (NOT ("estoque"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."estoque"
-UNION ALL
- SELECT 'items'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("items"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("items"."usuario_id" IS NOT NULL) AND (NOT ("items"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."items"
-UNION ALL
- SELECT 'manutencao_frota'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("manutencao_frota"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("manutencao_frota"."usuario_id" IS NOT NULL) AND (NOT ("manutencao_frota"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."manutencao_frota"
-UNION ALL
- SELECT 'maquinas'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("maquinas"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("maquinas"."usuario_id" IS NOT NULL) AND (NOT ("maquinas"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."maquinas"
-UNION ALL
- SELECT 'monitoramento_entidade'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("monitoramento_entidade"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("monitoramento_entidade"."usuario_id" IS NOT NULL) AND (NOT ("monitoramento_entidade"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."monitoramento_entidade"
-UNION ALL
- SELECT 'monitoramento_entidade_audit'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("monitoramento_entidade_audit"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("monitoramento_entidade_audit"."usuario_id" IS NOT NULL) AND (NOT ("monitoramento_entidade_audit"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."monitoramento_entidade_audit"
-UNION ALL
- SELECT 'monitoramento_entidade_audit_usuario_id_invalid_bak_20260315145'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("monitoramento_entidade_audit_usuario_id_invalid_bak_20260315145"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("monitoramento_entidade_audit_usuario_id_invalid_bak_20260315145"."usuario_id" IS NOT NULL) AND (NOT ("monitoramento_entidade_audit_usuario_id_invalid_bak_20260315145"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."monitoramento_entidade_audit_usuario_id_invalid_bak_20260315145"
-UNION ALL
- SELECT 'monitoramento_entidade_usuario_id_backup'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("monitoramento_entidade_usuario_id_backup"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("monitoramento_entidade_usuario_id_backup"."usuario_id" IS NOT NULL) AND (NOT ("monitoramento_entidade_usuario_id_backup"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."monitoramento_entidade_usuario_id_backup"
-UNION ALL
- SELECT 'monitoramento_entidade_usuario_id_backup_usuario_id_invalid_bak'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("monitoramento_entidade_usuario_id_backup_usuario_id_invalid_bak"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("monitoramento_entidade_usuario_id_backup_usuario_id_invalid_bak"."usuario_id" IS NOT NULL) AND (NOT ("monitoramento_entidade_usuario_id_backup_usuario_id_invalid_bak"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."monitoramento_entidade_usuario_id_backup_usuario_id_invalid_bak"
-UNION ALL
- SELECT 'monitoramento_media'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("monitoramento_media"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("monitoramento_media"."usuario_id" IS NOT NULL) AND (NOT ("monitoramento_media"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."monitoramento_media"
-UNION ALL
- SELECT 'movimentacoes_financeiras'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("movimentacoes_financeiras"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("movimentacoes_financeiras"."usuario_id" IS NOT NULL) AND (NOT ("movimentacoes_financeiras"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."movimentacoes_financeiras"
-UNION ALL
- SELECT 'movimentos_estoque'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("movimentos_estoque"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("movimentos_estoque"."usuario_id" IS NOT NULL) AND (NOT ("movimentos_estoque"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."movimentos_estoque"
-UNION ALL
- SELECT 'planos_adubacao'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("planos_adubacao"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("planos_adubacao"."usuario_id" IS NOT NULL) AND (NOT ("planos_adubacao"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."planos_adubacao"
-UNION ALL
- SELECT 'plantio'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("plantio"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("plantio"."usuario_id" IS NOT NULL) AND (NOT ("plantio"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."plantio"
-UNION ALL
- SELECT 'profiles'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("profiles"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("profiles"."usuario_id" IS NOT NULL) AND (NOT ("profiles"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."profiles"
-UNION ALL
- SELECT 'receitas'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("receitas"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("receitas"."usuario_id" IS NOT NULL) AND (NOT ("receitas"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."receitas"
-UNION ALL
- SELECT 'unidades_medida'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("unidades_medida"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("unidades_medida"."usuario_id" IS NOT NULL) AND (NOT ("unidades_medida"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."unidades_medida"
-UNION ALL
- SELECT 'users'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("users"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("users"."usuario_id" IS NOT NULL) AND (NOT ("users"."usuario_id" IN ( SELECT "users_1"."id"
-           FROM "auth"."users" "users_1"))))) AS "orphan_count"
-   FROM "public"."users"
-UNION ALL
- SELECT 'usuario_id_quarantine'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("usuario_id_quarantine"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("usuario_id_quarantine"."usuario_id" IS NOT NULL) AND (NOT ("usuario_id_quarantine"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."usuario_id_quarantine"
-UNION ALL
- SELECT 'v2_colheitas'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("v2_colheitas"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("v2_colheitas"."usuario_id" IS NOT NULL) AND (NOT ("v2_colheitas"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."v2_colheitas"
-UNION ALL
- SELECT 'v2_fazendas'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("v2_fazendas"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("v2_fazendas"."usuario_id" IS NOT NULL) AND (NOT ("v2_fazendas"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."v2_fazendas"
-UNION ALL
- SELECT 'v2_produtores'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("v2_produtores"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("v2_produtores"."usuario_id" IS NOT NULL) AND (NOT ("v2_produtores"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."v2_produtores"
-UNION ALL
- SELECT 'v2_talhoes'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("v2_talhoes"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("v2_talhoes"."usuario_id" IS NOT NULL) AND (NOT ("v2_talhoes"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."v2_talhoes"
-UNION ALL
- SELECT 'vendas'::"text" AS "table_name",
-    "count"(*) FILTER (WHERE ("vendas"."usuario_id" IS NULL)) AS "null_count",
-    "count"(*) FILTER (WHERE (("vendas"."usuario_id" IS NOT NULL) AND (NOT ("vendas"."usuario_id" IN ( SELECT "users"."id"
-           FROM "auth"."users"))))) AS "orphan_count"
-   FROM "public"."vendas";
-
-
-ALTER VIEW "public"."admin_usuario_integrity_report" OWNER TO "postgres";
-
-
-CREATE OR REPLACE VIEW "public"."financial_summary" WITH ("security_invoker"='true') AS
- SELECT "user_id",
-    "sum"(
-        CASE
-            WHEN ("tipo" = 'receita'::"text") THEN "valor"
-            ELSE (0)::numeric
-        END) AS "faturamento",
-    "sum"(
-        CASE
-            WHEN ("tipo" = 'custo'::"text") THEN "valor"
-            ELSE (0)::numeric
-        END) AS "custos",
-    ("sum"(
-        CASE
-            WHEN ("tipo" = 'receita'::"text") THEN "valor"
-            ELSE (0)::numeric
-        END) - "sum"(
-        CASE
-            WHEN ("tipo" = 'custo'::"text") THEN "valor"
-            ELSE (0)::numeric
-        END)) AS "resultado_liquido",
-        CASE
-            WHEN ("sum"(
-            CASE
-                WHEN ("tipo" = 'receita'::"text") THEN "valor"
-                ELSE (0)::numeric
-            END) = (0)::numeric) THEN (0)::numeric
-            ELSE "round"(((("sum"(
-            CASE
-                WHEN ("tipo" = 'receita'::"text") THEN "valor"
-                ELSE (0)::numeric
-            END) - "sum"(
-            CASE
-                WHEN ("tipo" = 'custo'::"text") THEN "valor"
-                ELSE (0)::numeric
-            END)) / "sum"(
-            CASE
-                WHEN ("tipo" = 'receita'::"text") THEN "valor"
-                ELSE (0)::numeric
-            END)) * (100)::numeric), 2)
-        END AS "margem_percentual"
-   FROM "public"."movimentacoes_financeiras"
-  GROUP BY "user_id";
-
-
-ALTER VIEW "public"."financial_summary" OWNER TO "postgres";
-
-
-ALTER TABLE "public"."movimentacoes_financeiras" ALTER COLUMN "id" ADD GENERATED BY DEFAULT AS IDENTITY (
-    SEQUENCE NAME "public"."movimentacoes_financeiras_id_seq"
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
-
-
-CREATE TABLE IF NOT EXISTS "public"."schema_migrations" (
-    "id" integer NOT NULL,
-    "run_ts" timestamp with time zone DEFAULT "now"(),
-    "description" "text",
-    "script" "text"
-);
-
-
-ALTER TABLE "public"."schema_migrations" OWNER TO "postgres";
-
-
-CREATE SEQUENCE IF NOT EXISTS "public"."schema_migrations_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE "public"."schema_migrations_id_seq" OWNER TO "postgres";
-
-
-ALTER SEQUENCE "public"."schema_migrations_id_seq" OWNED BY "public"."schema_migrations"."id";
-
-
-
-CREATE SEQUENCE IF NOT EXISTS "public"."usuario_id_quarantine_id_seq"
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE "public"."usuario_id_quarantine_id_seq" OWNER TO "postgres";
-
-
-ALTER SEQUENCE "public"."usuario_id_quarantine_id_seq" OWNED BY "public"."usuario_id_quarantine"."id";
-
-
-
 ALTER TABLE ONLY "public"."schema_migrations" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."schema_migrations_id_seq"'::"regclass");
 
 
@@ -1319,11 +1136,6 @@ ALTER TABLE ONLY "public"."usuario_id_quarantine" ALTER COLUMN "id" SET DEFAULT 
 
 ALTER TABLE ONLY "public"."activity_log"
     ADD CONSTRAINT "activity_log_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."activity_log"
-    ADD CONSTRAINT "activity_log_uuid_key" UNIQUE ("uuid");
 
 
 
@@ -1622,6 +1434,11 @@ ALTER TABLE ONLY "public"."usuario_id_quarantine"
 
 
 
+ALTER TABLE ONLY "public"."v2_analise_solo"
+    ADD CONSTRAINT "v2_analise_solo_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."v2_colheitas"
     ADD CONSTRAINT "v2_colheitas_pkey" PRIMARY KEY ("id");
 
@@ -1639,6 +1456,16 @@ ALTER TABLE ONLY "public"."v2_produtores"
 
 ALTER TABLE ONLY "public"."v2_produtores"
     ADD CONSTRAINT "v2_produtores_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."v2_recomendacoes_tecnicas"
+    ADD CONSTRAINT "v2_recomendacoes_tecnicas_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."v2_sync_conflicts"
+    ADD CONSTRAINT "v2_sync_conflicts_pkey" PRIMARY KEY ("id");
 
 
 
@@ -2316,6 +2143,16 @@ ALTER TABLE ONLY "public"."usuario_id_quarantine"
 
 
 
+ALTER TABLE ONLY "public"."v2_analise_solo"
+    ADD CONSTRAINT "v2_analise_solo_talhao_id_fkey" FOREIGN KEY ("talhao_id") REFERENCES "public"."v2_talhoes"("id");
+
+
+
+ALTER TABLE ONLY "public"."v2_analise_solo"
+    ADD CONSTRAINT "v2_analise_solo_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "public"."v2_produtores"("id");
+
+
+
 ALTER TABLE ONLY "public"."v2_colheitas"
     ADD CONSTRAINT "v2_colheitas_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "public"."v2_produtores"("id");
 
@@ -2333,6 +2170,16 @@ ALTER TABLE ONLY "public"."v2_fazendas"
 
 ALTER TABLE ONLY "public"."v2_produtores"
     ADD CONSTRAINT "v2_produtores_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."v2_recomendacoes_tecnicas"
+    ADD CONSTRAINT "v2_recomendacoes_tecnicas_talhao_id_fkey" FOREIGN KEY ("talhao_id") REFERENCES "public"."v2_talhoes"("id");
+
+
+
+ALTER TABLE ONLY "public"."v2_recomendacoes_tecnicas"
+    ADD CONSTRAINT "v2_recomendacoes_tecnicas_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "public"."v2_produtores"("id");
 
 
 
@@ -2461,18 +2308,6 @@ CREATE POLICY "Atualização para autenticados" ON "public"."users" FOR UPDATE T
 
 
 
-CREATE POLICY "Atualização para autenticados" ON "public"."vendas" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Exclusão para autenticados" ON "public"."activity_log" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Exclusão para autenticados" ON "public"."analise_ia" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "Exclusão para autenticados" ON "public"."app_settings" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
@@ -2502,10 +2337,6 @@ CREATE POLICY "Exclusão para autenticados" ON "public"."cost_categories" FOR DE
 
 
 CREATE POLICY "Exclusão para autenticados" ON "public"."costs" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Exclusão para autenticados" ON "public"."custos" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -2566,10 +2397,6 @@ CREATE POLICY "Exclusão para autenticados" ON "public"."users" FOR DELETE TO "a
 
 
 CREATE POLICY "Exclusão para autenticados" ON "public"."vendas" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Inserção para autenticados" ON "public"."activity_log" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -2676,22 +2503,10 @@ CREATE POLICY "Inserção para autenticados" ON "public"."vendas" FOR INSERT TO 
 ALTER TABLE "public"."activity_log" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "activity_log_admin_read" ON "public"."activity_log" FOR SELECT TO "authenticated" USING ((("auth"."jwt"() ->> 'role'::"text") = 'admin'::"text"));
-
-
-
-CREATE POLICY "activity_log_owner_full_access" ON "public"."activity_log" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
-
-
-
 ALTER TABLE "public"."analise_ia" ENABLE ROW LEVEL SECURITY;
 
 
 CREATE POLICY "analise_ia_admin_read" ON "public"."analise_ia" FOR SELECT TO "authenticated" USING ((("auth"."jwt"() ->> 'role'::"text") = 'admin'::"text"));
-
-
-
-CREATE POLICY "analise_ia_owner_full_access" ON "public"."analise_ia" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
 
 
 
@@ -2880,10 +2695,6 @@ CREATE POLICY "custos_admin_read" ON "public"."custos" FOR SELECT TO "authentica
 
 
 
-CREATE POLICY "custos_owner_full_access" ON "public"."custos" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
-
-
-
 ALTER TABLE "public"."descarte" ENABLE ROW LEVEL SECURITY;
 
 
@@ -2968,6 +2779,9 @@ CREATE POLICY "monitoramento_entidade_audit_owner_full_access" ON "public"."moni
 
 
 
+ALTER TABLE "public"."monitoramento_entidade_audit_usuario_id_invalid_bak_20260315145" ENABLE ROW LEVEL SECURITY;
+
+
 CREATE POLICY "monitoramento_entidade_audit_usuario_id_invalid_bak_20260315145" ON "public"."monitoramento_entidade_audit_usuario_id_invalid_bak_20260315145" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id"));
 
 
@@ -3001,6 +2815,9 @@ CREATE POLICY "monitoramento_entidade_usuario_id_backup_admin_read" ON "public".
 
 CREATE POLICY "monitoramento_entidade_usuario_id_backup_owner_full_access" ON "public"."monitoramento_entidade_usuario_id_backup" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id"));
 
+
+
+ALTER TABLE "public"."monitoramento_entidade_usuario_id_backup_usuario_id_invalid_bak" ENABLE ROW LEVEL SECURITY;
 
 
 CREATE POLICY "monitoramento_entidade_usuario_id_backup_usuario_id_invalid_bak" ON "public"."monitoramento_entidade_usuario_id_backup_usuario_id_invalid_bak" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id"));
@@ -3041,18 +2858,6 @@ CREATE POLICY "movimentos_estoque_owner_full_access" ON "public"."movimentos_est
 
 
 CREATE POLICY "owner_access_colheitas" ON "public"."colheitas" TO "authenticated" USING (((("usuario_id_bak_20260315145412")::"text" = (( SELECT "auth"."uid"() AS "uid"))::"text") OR (("auth"."jwt"() ->> 'user_role'::"text") = 'admin'::"text"))) WITH CHECK (((("usuario_id_bak_20260315145412")::"text" = (( SELECT "auth"."uid"() AS "uid"))::"text") OR (("auth"."jwt"() ->> 'user_role'::"text") = 'admin'::"text")));
-
-
-
-CREATE POLICY "owner_access_vendas" ON "public"."vendas" TO "authenticated" USING (((("usuario_id_bak_20260315145412")::"text" = (( SELECT "auth"."uid"() AS "uid"))::"text") OR (("auth"."jwt"() ->> 'user_role'::"text") = 'admin'::"text"))) WITH CHECK (((("usuario_id_bak_20260315145412")::"text" = (( SELECT "auth"."uid"() AS "uid"))::"text") OR (("auth"."jwt"() ->> 'user_role'::"text") = 'admin'::"text")));
-
-
-
-CREATE POLICY "owner_delete" ON "public"."activity_log" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "owner_delete" ON "public"."analise_ia" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -3104,87 +2909,167 @@ CREATE POLICY "owner_delete" ON "public"."vendas" FOR DELETE TO "authenticated" 
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."activity_log" TO "authenticated" USING (("usuario_id_bak_20260315145412" = "auth"."uid"())) WITH CHECK (("usuario_id_bak_20260315145412" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."activity_log" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."analise_ia" TO "authenticated" USING (("usuario_id_bak_20260315145412" = "auth"."uid"())) WITH CHECK (("usuario_id_bak_20260315145412" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."analise_ia" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."caderno_notas" TO "authenticated" USING (("usuario_id_bak_20260315145412" = "auth"."uid"())) WITH CHECK (("usuario_id_bak_20260315145412" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."app_settings" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."colheitas" TO "authenticated" USING (("usuario_id_bak_20260315145412" = "auth"."uid"())) WITH CHECK (("usuario_id_bak_20260315145412" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."areas" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."compras" TO "authenticated" USING (("usuario_id_bak_20260315145412" = "auth"."uid"())) WITH CHECK (("usuario_id_bak_20260315145412" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."caderno_notas" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."costs" TO "authenticated" USING (("usuario_id_bak_20260315145412" = "auth"."uid"())) WITH CHECK (("usuario_id_bak_20260315145412" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."categorias_despesa" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."custos" TO "authenticated" USING (("usuario_id_bak_20260315145412" = "auth"."uid"())) WITH CHECK (("usuario_id_bak_20260315145412" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."clientes" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."error_logs" TO "authenticated" USING (("usuario_id_bak_20260315145412" = "auth"."uid"())) WITH CHECK (("usuario_id_bak_20260315145412" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."colheitas" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."monitoramento_entidade" TO "authenticated" USING (("usuario_id_bak_20260315145412" = "auth"."uid"())) WITH CHECK (("usuario_id_bak_20260315145412" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."compras" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."monitoramento_media" TO "authenticated" USING (("usuario_id_bak_20260315145412" = "auth"."uid"())) WITH CHECK (("usuario_id_bak_20260315145412" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."cost_categories" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."movimentacoes_financeiras" TO "authenticated" USING (("usuario_id_bak_20260315145412" = "auth"."uid"())) WITH CHECK (("usuario_id_bak_20260315145412" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."costs" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."movimentos_estoque" TO "authenticated" USING (("usuario_id_bak_20260315145412" = "auth"."uid"())) WITH CHECK (("usuario_id_bak_20260315145412" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."culturas" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."plantio" TO "authenticated" USING (("usuario_id_bak_20260315145412" = "auth"."uid"())) WITH CHECK (("usuario_id_bak_20260315145412" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."custos" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."profiles" TO "authenticated" USING (("usuario_id_bak_20260315145412" = "auth"."uid"())) WITH CHECK (("usuario_id_bak_20260315145412" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."descarte" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."receitas" TO "authenticated" USING (("usuario_id_bak_20260315145412" = "auth"."uid"())) WITH CHECK (("usuario_id_bak_20260315145412" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."error_logs" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."users" TO "authenticated" USING (("id" = "auth"."uid"())) WITH CHECK (("id" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."estoque" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."v2_colheitas" TO "authenticated" USING (("usuario_id_bak_20260315145412" = "auth"."uid"())) WITH CHECK (("usuario_id_bak_20260315145412" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."items" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."v2_fazendas" TO "authenticated" USING (("usuario_id_bak_20260315145412" = "auth"."uid"())) WITH CHECK (("usuario_id_bak_20260315145412" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."manutencao_frota" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."v2_talhoes" TO "authenticated" USING (("usuario_id_bak_20260315145412" = "auth"."uid"())) WITH CHECK (("usuario_id_bak_20260315145412" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."maquinas" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."vendas" TO "authenticated" USING (("usuario_id_bak_20260315145412" = "auth"."uid"())) WITH CHECK (("usuario_id_bak_20260315145412" = "auth"."uid"()));
+CREATE POLICY "owner_full_access" ON "public"."monitoramento_entidade" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
-CREATE POLICY "owner_insert" ON "public"."activity_log" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
+CREATE POLICY "owner_full_access" ON "public"."monitoramento_entidade_audit" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."monitoramento_entidade_audit_usuario_id_invalid_bak_20260315145" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."monitoramento_entidade_usuario_id_backup" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."monitoramento_entidade_usuario_id_backup_usuario_id_invalid_bak" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."monitoramento_media" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."movimentacoes_financeiras" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."movimentos_estoque" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."planos_adubacao" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."plantio" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."profiles" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."receitas" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."unidades_medida" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."users" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."usuario_id_quarantine" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."v2_analise_solo" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."v2_colheitas" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."v2_fazendas" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."v2_produtores" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."v2_recomendacoes_tecnicas" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."v2_talhoes" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."vendas" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
@@ -3240,11 +3125,7 @@ CREATE POLICY "owner_insert" ON "public"."vendas" FOR INSERT TO "authenticated" 
 
 
 
-CREATE POLICY "owner_produtor_access" ON "public"."v2_produtores" TO "authenticated" USING (("id" = "auth"."uid"())) WITH CHECK (("id" = "auth"."uid"()));
-
-
-
-CREATE POLICY "owner_select" ON "public"."activity_log" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
+CREATE POLICY "owner_produtor_access" ON "public"."v2_produtores" TO "authenticated" USING (("id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
@@ -3293,10 +3174,6 @@ CREATE POLICY "owner_select" ON "public"."receitas" FOR SELECT TO "authenticated
 
 
 CREATE POLICY "owner_select" ON "public"."users" FOR SELECT TO "authenticated" USING ((("id")::"text" = (( SELECT "auth"."uid"() AS "uid"))::"text"));
-
-
-
-CREATE POLICY "owner_select" ON "public"."vendas" FOR SELECT TO "authenticated" USING (((("usuario_id_bak_20260315145412")::"text" = (( SELECT "auth"."uid"() AS "uid"))::"text") OR (("auth"."jwt"() ->> 'user_role'::"text") = 'admin'::"text")));
 
 
 
@@ -3349,10 +3226,6 @@ CREATE POLICY "owner_update" ON "public"."receitas" FOR UPDATE TO "authenticated
 
 
 CREATE POLICY "owner_update" ON "public"."users" FOR UPDATE TO "authenticated" USING ((("id")::"text" = (( SELECT "auth"."uid"() AS "uid"))::"text")) WITH CHECK ((("id")::"text" = (( SELECT "auth"."uid"() AS "uid"))::"text"));
-
-
-
-CREATE POLICY "owner_update" ON "public"."vendas" FOR UPDATE TO "authenticated" USING (((("usuario_id_bak_20260315145412")::"text" = (( SELECT "auth"."uid"() AS "uid"))::"text") OR (("auth"."jwt"() ->> 'user_role'::"text") = 'admin'::"text"))) WITH CHECK (((("usuario_id_bak_20260315145412")::"text" = (( SELECT "auth"."uid"() AS "uid"))::"text") OR (("auth"."jwt"() ->> 'user_role'::"text") = 'admin'::"text")));
 
 
 
@@ -3410,10 +3283,6 @@ CREATE POLICY "public_delete" ON "public"."cost_categories" FOR DELETE TO "authe
 
 
 CREATE POLICY "public_delete" ON "public"."costs" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_delete" ON "public"."custos" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -3640,6 +3509,9 @@ CREATE POLICY "receitas_owner_full_access" ON "public"."receitas" TO "authentica
 
 
 
+ALTER TABLE "public"."schema_migrations" ENABLE ROW LEVEL SECURITY;
+
+
 CREATE POLICY "schema_migrations_admin_read" ON "public"."schema_migrations" FOR SELECT TO "authenticated" USING ((("auth"."jwt"() ->> 'role'::"text") = 'admin'::"text"));
 
 
@@ -3664,6 +3536,12 @@ CREATE POLICY "users_admin_read" ON "public"."users" FOR SELECT TO "authenticate
 
 CREATE POLICY "users_owner_full_access" ON "public"."users" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
 
+
+
+ALTER TABLE "public"."usuario_id_quarantine" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."v2_analise_solo" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."v2_colheitas" ENABLE ROW LEVEL SECURITY;
@@ -3703,6 +3581,12 @@ CREATE POLICY "v2_produtores_owner_full_access" ON "public"."v2_produtores" TO "
 
 
 
+ALTER TABLE "public"."v2_recomendacoes_tecnicas" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."v2_sync_conflicts" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."v2_talhoes" ENABLE ROW LEVEL SECURITY;
 
 
@@ -3717,17 +3601,13 @@ CREATE POLICY "v2_talhoes_owner_full_access" ON "public"."v2_talhoes" TO "authen
 ALTER TABLE "public"."vendas" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "vendas_admin_read" ON "public"."vendas" FOR SELECT TO "authenticated" USING ((("auth"."jwt"() ->> 'role'::"text") = 'admin'::"text"));
-
-
-
-CREATE POLICY "vendas_owner_full_access" ON "public"."vendas" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
-
-
-
 
 
 ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
+
+
+GRANT USAGE ON SCHEMA "agro_admin" TO "service_role";
+
 
 
 
@@ -3954,6 +3834,22 @@ GRANT ALL ON FUNCTION "public"."try_text_to_uuid"("text") TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."v2_fazendas" TO "anon";
+GRANT ALL ON TABLE "public"."v2_fazendas" TO "authenticated";
+GRANT ALL ON TABLE "public"."v2_fazendas" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."v2_talhoes" TO "anon";
+GRANT ALL ON TABLE "public"."v2_talhoes" TO "authenticated";
+GRANT ALL ON TABLE "public"."v2_talhoes" TO "service_role";
+
+
+
+GRANT SELECT ON TABLE "agro_admin"."admin_usuario_integrity_report" TO "service_role";
+
+
+
 
 
 
@@ -4062,6 +3958,18 @@ GRANT ALL ON TABLE "public"."estoque" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."movimentacoes_financeiras" TO "anon";
+GRANT ALL ON TABLE "public"."movimentacoes_financeiras" TO "authenticated";
+GRANT ALL ON TABLE "public"."movimentacoes_financeiras" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."financial_summary" TO "anon";
+GRANT ALL ON TABLE "public"."financial_summary" TO "authenticated";
+GRANT ALL ON TABLE "public"."financial_summary" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."items" TO "anon";
 GRANT ALL ON TABLE "public"."items" TO "authenticated";
 GRANT ALL ON TABLE "public"."items" TO "service_role";
@@ -4116,9 +4024,9 @@ GRANT ALL ON TABLE "public"."monitoramento_media" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."movimentacoes_financeiras" TO "anon";
-GRANT ALL ON TABLE "public"."movimentacoes_financeiras" TO "authenticated";
-GRANT ALL ON TABLE "public"."movimentacoes_financeiras" TO "service_role";
+GRANT ALL ON SEQUENCE "public"."movimentacoes_financeiras_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."movimentacoes_financeiras_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."movimentacoes_financeiras_id_seq" TO "service_role";
 
 
 
@@ -4152,6 +4060,18 @@ GRANT ALL ON TABLE "public"."receitas" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."schema_migrations" TO "anon";
+GRANT ALL ON TABLE "public"."schema_migrations" TO "authenticated";
+GRANT ALL ON TABLE "public"."schema_migrations" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."schema_migrations_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."schema_migrations_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."schema_migrations_id_seq" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."unidades_medida" TO "anon";
 GRANT ALL ON TABLE "public"."unidades_medida" TO "authenticated";
 GRANT ALL ON TABLE "public"."unidades_medida" TO "service_role";
@@ -4170,15 +4090,21 @@ GRANT ALL ON TABLE "public"."usuario_id_quarantine" TO "service_role";
 
 
 
+GRANT ALL ON SEQUENCE "public"."usuario_id_quarantine_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."usuario_id_quarantine_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."usuario_id_quarantine_id_seq" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."v2_analise_solo" TO "anon";
+GRANT ALL ON TABLE "public"."v2_analise_solo" TO "authenticated";
+GRANT ALL ON TABLE "public"."v2_analise_solo" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."v2_colheitas" TO "anon";
 GRANT ALL ON TABLE "public"."v2_colheitas" TO "authenticated";
 GRANT ALL ON TABLE "public"."v2_colheitas" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."v2_fazendas" TO "anon";
-GRANT ALL ON TABLE "public"."v2_fazendas" TO "authenticated";
-GRANT ALL ON TABLE "public"."v2_fazendas" TO "service_role";
 
 
 
@@ -4188,51 +4114,21 @@ GRANT ALL ON TABLE "public"."v2_produtores" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."v2_talhoes" TO "anon";
-GRANT ALL ON TABLE "public"."v2_talhoes" TO "authenticated";
-GRANT ALL ON TABLE "public"."v2_talhoes" TO "service_role";
+GRANT ALL ON TABLE "public"."v2_recomendacoes_tecnicas" TO "anon";
+GRANT ALL ON TABLE "public"."v2_recomendacoes_tecnicas" TO "authenticated";
+GRANT ALL ON TABLE "public"."v2_recomendacoes_tecnicas" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."v2_sync_conflicts" TO "anon";
+GRANT ALL ON TABLE "public"."v2_sync_conflicts" TO "authenticated";
+GRANT ALL ON TABLE "public"."v2_sync_conflicts" TO "service_role";
 
 
 
 GRANT ALL ON TABLE "public"."vendas" TO "anon";
 GRANT ALL ON TABLE "public"."vendas" TO "authenticated";
 GRANT ALL ON TABLE "public"."vendas" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."admin_usuario_integrity_report" TO "anon";
-GRANT ALL ON TABLE "public"."admin_usuario_integrity_report" TO "authenticated";
-GRANT ALL ON TABLE "public"."admin_usuario_integrity_report" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."financial_summary" TO "anon";
-GRANT ALL ON TABLE "public"."financial_summary" TO "authenticated";
-GRANT ALL ON TABLE "public"."financial_summary" TO "service_role";
-
-
-
-GRANT ALL ON SEQUENCE "public"."movimentacoes_financeiras_id_seq" TO "anon";
-GRANT ALL ON SEQUENCE "public"."movimentacoes_financeiras_id_seq" TO "authenticated";
-GRANT ALL ON SEQUENCE "public"."movimentacoes_financeiras_id_seq" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."schema_migrations" TO "anon";
-GRANT ALL ON TABLE "public"."schema_migrations" TO "authenticated";
-GRANT ALL ON TABLE "public"."schema_migrations" TO "service_role";
-
-
-
-GRANT ALL ON SEQUENCE "public"."schema_migrations_id_seq" TO "anon";
-GRANT ALL ON SEQUENCE "public"."schema_migrations_id_seq" TO "authenticated";
-GRANT ALL ON SEQUENCE "public"."schema_migrations_id_seq" TO "service_role";
-
-
-
-GRANT ALL ON SEQUENCE "public"."usuario_id_quarantine_id_seq" TO "anon";
-GRANT ALL ON SEQUENCE "public"."usuario_id_quarantine_id_seq" TO "authenticated";
-GRANT ALL ON SEQUENCE "public"."usuario_id_quarantine_id_seq" TO "service_role";
 
 
 
