@@ -138,7 +138,11 @@ export default function SyncScreen({ navigation }) {
                         try {
                             setLoading(true);
                             await AsyncStorage.removeItem('last_pull_timestamp');
-                            const syncTables = ['colheitas', 'vendas', 'compras', 'custos', 'plantio', 'descarte', 'cadastro', 'clientes', 'culturas', 'maquinas', 'areas'];
+                            const syncTables = [
+                                'v2_colheitas', 'v2_vendas', 'v2_plantios', 
+                                'v2_custos', 'v2_analise_solo', 'v2_recomendacoes_tecnicas', 
+                                'areas', 'items', 'clientes', 'culturas', 'maquinas'
+                            ];
                             for (const table of syncTables) {
                                 try { await executeQuery(`UPDATE ${table} SET sync_status = 0`); } catch { }
                             }
