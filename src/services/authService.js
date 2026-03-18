@@ -63,6 +63,15 @@ export const register = async (nome, email, password) => {
 
     } catch (e) {
         if (__DEV__) console.error("REGISTER_ERROR:", e.message);
+        
+        // Mensagem Amigável para Senhas Vazadas (Supabase Auth Security)
+        if (e.message?.includes('leaked') || e.message?.includes('compromised')) {
+            return { 
+                success: false, 
+                message: "Esta senha foi encontrada em um vazamento de dados conhecido (Data Breach). Por favor, escolha uma senha mais forte e exclusiva para sua segurança." 
+            };
+        }
+
         return { success: false, message: e.message };
     }
 };

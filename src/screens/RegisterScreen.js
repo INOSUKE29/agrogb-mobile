@@ -37,6 +37,9 @@ export default function RegisterScreen() {
                 <TextInput style={[styles.input, { color: colors.textPrimary, borderColor: colors.border }]} placeholder="NOME COMPLETO" value={nome} onChangeText={setNome} />
                 <TextInput style={[styles.input, { color: colors.textPrimary, borderColor: colors.border }]} placeholder="E-MAIL" value={email} onChangeText={setEmail} autoCapitalize="none" />
                 <TextInput style={[styles.input, { color: colors.textPrimary, borderColor: colors.border }]} placeholder="SENHA" value={password} onChangeText={setPassword} secureTextEntry />
+                <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 15, marginTop: -10, paddingHorizontal: 5 }}>
+                    💡 Use uma senha forte (mín. 8 caracteres) para proteger sua fazenda.
+                </Text>
                 <TouchableOpacity style={styles.btn} onPress={handleRegister}><Text style={{ color: '#FFF', fontWeight: 'bold' }}>CADASTRAR</Text></TouchableOpacity>
             </ScrollView>
         </AppContainer>
