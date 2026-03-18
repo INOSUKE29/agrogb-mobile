@@ -4,7 +4,7 @@ SET session_replication_role = replica;
 -- PostgreSQL database dump
 --
 
--- \restrict N2h3ELTtQBhWelgBthvpQtpRGT2XtJD5aaU3W2nHVk0pmoyG2Cshr9VtSWoE5Lg
+-- \restrict 7bFkQoE82X8XZrtdYBbJhNT42lnKxwTM6L4h36cq9oMqydLUnZTU3NUjBL40ihv
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6
@@ -43,12 +43,18 @@ SET row_security = off;
 -- Data for Name: users; Type: TABLE DATA; Schema: auth; Owner: supabase_auth_admin
 --
 
+INSERT INTO "auth"."users" ("instance_id", "id", "aud", "role", "email", "encrypted_password", "email_confirmed_at", "invited_at", "confirmation_token", "confirmation_sent_at", "recovery_token", "recovery_sent_at", "email_change_token_new", "email_change", "email_change_sent_at", "last_sign_in_at", "raw_app_meta_data", "raw_user_meta_data", "is_super_admin", "created_at", "updated_at", "phone", "phone_confirmed_at", "phone_change", "phone_change_token", "phone_change_sent_at", "email_change_token_current", "email_change_confirm_status", "banned_until", "reauthentication_token", "reauthentication_sent_at", "is_sso_user", "deleted_at", "is_anonymous") VALUES
+	('00000000-0000-0000-0000-000000000000', 'e047eead-4fa3-47cf-aafd-31a2062b11f5', 'authenticated', 'authenticated', 'bruno.p.santos100@gmail.com', '$2a$10$0pKwOwvUwMrCSOzn7.K5ceXC3/.O.r.y19omd/qas7TA.bhY0LtJi', NULL, NULL, 'ced7116e5535e6f64a54f34c4d1a543d286834fbdb63fa47819c0f3a', '2026-03-18 01:41:43.709068+00', '', NULL, '', '', NULL, NULL, '{"provider": "email", "providers": ["email"]}', '{"sub": "e047eead-4fa3-47cf-aafd-31a2062b11f5", "email": "bruno.p.santos100@gmail.com", "email_verified": false, "phone_verified": false}', NULL, '2026-03-18 01:41:43.513606+00', '2026-03-18 01:41:44.31332+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false),
+	('00000000-0000-0000-0000-000000000000', 'df614ad3-40ec-44f1-86db-67f521042fdd', 'authenticated', 'authenticated', 'brunower2009@gmail.com', '$2a$10$S2J3f5/8ytXINd2ghbiY/.sjxaJC7EPYuecjq2q5/kZS6t/Q9IXc2', NULL, NULL, 'ed4665cd754f79ca9626540ccc23eeb9f5f3b26b824e41dfb0d8c175', '2026-03-18 01:42:32.32627+00', '', NULL, '', '', NULL, NULL, '{"provider": "email", "providers": ["email"]}', '{"sub": "df614ad3-40ec-44f1-86db-67f521042fdd", "email": "brunower2009@gmail.com", "email_verified": false, "phone_verified": false}', NULL, '2026-03-18 01:42:32.317734+00', '2026-03-18 01:42:32.432208+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false);
 
 
 --
 -- Data for Name: identities; Type: TABLE DATA; Schema: auth; Owner: supabase_auth_admin
 --
 
+INSERT INTO "auth"."identities" ("provider_id", "user_id", "identity_data", "provider", "last_sign_in_at", "created_at", "updated_at", "id") VALUES
+	('e047eead-4fa3-47cf-aafd-31a2062b11f5', 'e047eead-4fa3-47cf-aafd-31a2062b11f5', '{"sub": "e047eead-4fa3-47cf-aafd-31a2062b11f5", "email": "bruno.p.santos100@gmail.com", "email_verified": false, "phone_verified": false}', 'email', '2026-03-18 01:41:43.687558+00', '2026-03-18 01:41:43.687616+00', '2026-03-18 01:41:43.687616+00', 'bcc7f370-63b2-4e46-8efd-92f9aa3015c9'),
+	('df614ad3-40ec-44f1-86db-67f521042fdd', 'df614ad3-40ec-44f1-86db-67f521042fdd', '{"sub": "df614ad3-40ec-44f1-86db-67f521042fdd", "email": "brunower2009@gmail.com", "email_verified": false, "phone_verified": false}', 'email', '2026-03-18 01:42:32.324015+00', '2026-03-18 01:42:32.324068+00', '2026-03-18 01:42:32.324068+00', 'a037593b-6a71-4491-8f6a-6ce19bc3a08b');
 
 
 --
@@ -109,6 +115,9 @@ SET row_security = off;
 -- Data for Name: one_time_tokens; Type: TABLE DATA; Schema: auth; Owner: supabase_auth_admin
 --
 
+INSERT INTO "auth"."one_time_tokens" ("id", "user_id", "token_type", "token_hash", "relates_to", "created_at", "updated_at") VALUES
+	('0da7350e-0fab-4a80-ae50-e5a92f05eac7', 'e047eead-4fa3-47cf-aafd-31a2062b11f5', 'confirmation_token', 'ced7116e5535e6f64a54f34c4d1a543d286834fbdb63fa47819c0f3a', 'bruno.p.santos100@gmail.com', '2026-03-18 01:41:44.336907', '2026-03-18 01:41:44.336907'),
+	('6b26110e-e634-4bb8-8551-9368f07ef22e', 'df614ad3-40ec-44f1-86db-67f521042fdd', 'confirmation_token', 'ed4665cd754f79ca9626540ccc23eeb9f5f3b26b824e41dfb0d8c175', 'brunower2009@gmail.com', '2026-03-18 01:42:32.433752', '2026-03-18 01:42:32.433752');
 
 
 --
@@ -329,6 +338,9 @@ INSERT INTO "public"."items" ("id", "codigo", "nome", "categoria", "unidade", "t
 -- Data for Name: profiles; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
+INSERT INTO "public"."profiles" ("id", "nome", "email", "avatar_url", "created_at", "uuid", "last_updated", "is_deleted", "usuario_id_bak_20260315145412", "is_deleted_bool", "usuario_id") VALUES
+	('e047eead-4fa3-47cf-aafd-31a2062b11f5', NULL, 'bruno.p.santos100@gmail.com', NULL, '2026-03-18 01:41:43.510207+00', '5bfa70e0-925a-44fd-8e65-08c7e4d34e90', '2026-03-18 01:41:43.510207', 0, NULL, false, NULL),
+	('df614ad3-40ec-44f1-86db-67f521042fdd', NULL, 'brunower2009@gmail.com', NULL, '2026-03-18 01:42:32.317255+00', 'a9152e02-ba89-4851-828f-667e7357190a', '2026-03-18 01:42:32.317255', 0, NULL, false, NULL);
 
 
 --
@@ -1165,6 +1177,6 @@ SELECT pg_catalog.setval('"public"."usuario_id_quarantine_id_seq"', 1, false);
 -- PostgreSQL database dump complete
 --
 
--- \unrestrict N2h3ELTtQBhWelgBthvpQtpRGT2XtJD5aaU3W2nHVk0pmoyG2Cshr9VtSWoE5Lg
+-- \unrestrict 7bFkQoE82X8XZrtdYBbJhNT42lnKxwTM6L4h36cq9oMqydLUnZTU3NUjBL40ihv
 
 RESET ALL;
