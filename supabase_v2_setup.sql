@@ -139,28 +139,47 @@ CREATE TABLE IF NOT EXISTS public.v2_recomendacoes_tecnicas (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
--- 5) REPARO E COMPATIBILIDADE (Tabelas Legadas V1)
--- Mantemos as tabelas V1 para que a "Ponte de Dados" funcione sem erros.
-
-CREATE TABLE IF NOT EXISTS public.colheitas (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    uuid uuid DEFAULT uuid_generate_v4() UNIQUE,
-    cultura text,
-    produto text,
-    quantidade numeric,
-    data text,
-    last_updated timestamp DEFAULT now()
+-- 5) TABELAS BASE (SINCRONIZAÇÃO)
+CREATE TABLE IF NOT EXISTS public.areas (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    usuario_id UUID REFERENCES public.v2_produtores(id),
+    nome TEXT NOT NULL,
+    metragem DECIMAL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
-CREATE TABLE IF NOT EXISTS public.vendas (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    uuid uuid DEFAULT uuid_generate_v4() UNIQUE,
-    cliente text,
-    produto text,
-    quantidade numeric,
-    valor numeric,
-    data text,
-    last_updated timestamp DEFAULT now()
+CREATE TABLE IF NOT EXISTS public.items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    usuario_id UUID REFERENCES public.v2_produtores(id),
+    nome TEXT NOT NULL,
+    unidade TEXT,
+    tipo TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+CREATE TABLE IF NOT EXISTS public.clientes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    usuario_id UUID REFERENCES public.v2_produtores(id),
+    nome TEXT NOT NULL,
+    telefone TEXT,
+    cidade TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+CREATE TABLE IF NOT EXISTS public.culturas (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    usuario_id UUID REFERENCES public.v2_produtores(id),
+    nome TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+CREATE TABLE IF NOT EXISTS public.maquinas (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    usuario_id UUID REFERENCES public.v2_produtores(id),
+    nome TEXT NOT NULL,
+    tipo TEXT,
+    placa TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
 -- 6) SINCRONIZAÇÃO E LOGS
@@ -183,8 +202,10 @@ DECLARE
   -- Lista de tabelas que exigem usuario_id para segurança RLS
   owner_tables text[] := ARRAY[
     'v2_produtores', 'v2_fazendas', 'v2_talhoes', 'v2_colheitas',
+    'v2_vendas', 'v2_plantios', 'v2_custos',
     'v2_analise_solo', 'v2_recomendacoes_tecnicas',
-    'colheitas', 'vendas', 'error_logs'
+    'areas', 'items', 'clientes', 'culturas', 'maquinas',
+    'error_logs'
   ];
 BEGIN
   FOREACH t IN ARRAY owner_tables LOOP
@@ -211,8 +232,11 @@ DO $$
 DECLARE
   t text;
   owner_tables text[] := ARRAY[
-    'v2_fazendas', 'v2_talhoes', 'v2_colheitas', 'v2_analise_solo', 
-    'v2_recomendacoes_tecnicas', 'error_logs', 'colheitas', 'vendas'
+    'v2_fazendas', 'v2_talhoes', 'v2_colheitas', 
+    'v2_vendas', 'v2_plantios', 'v2_custos',
+    'v2_analise_solo', 'v2_recomendacoes_tecnicas', 
+    'areas', 'items', 'clientes', 'culturas', 'maquinas',
+    'error_logs'
   ];
 BEGIN
   FOREACH t IN ARRAY owner_tables LOOP
