@@ -16,7 +16,7 @@ export const Logger = {
                 `INSERT INTO error_logs (data, tela, erro, stack, sync_status) VALUES (?, ?, ?, ?, ?)`,
                 [new Date().toISOString(), 'Global', msg, stack, 0]
             );
-        } catch (e) {
+        } catch {
             log('Falha ao persistir log de erro');
         }
     },

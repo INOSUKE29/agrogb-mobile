@@ -25,7 +25,7 @@ export default function RegisterScreen() {
             } else {
                 Alert.alert('Erro no Cadastro', res.message);
             }
-        } catch (error) {
+        } catch {
             Alert.alert('Erro', 'Falha na conexão com o servidor.');
         }
     };

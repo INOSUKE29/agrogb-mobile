@@ -1,8 +1,7 @@
-import { Alert, Platform } from 'react-native';
+import { Alert } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import * as MailComposer from 'expo-mail-composer';
 import { captureScreen } from 'react-native-view-shot';
-import * as FileSystem from 'expo-file-system';
 import { executeQuery } from '../database/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 

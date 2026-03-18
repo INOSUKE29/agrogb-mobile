@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import * as Updates from 'expo-updates';
 import { ErrorService } from '../services/ErrorService';
 import { Ionicons } from '@expo/vector-icons';

@@ -67,18 +67,6 @@ export default function SyncScreen({ navigation }) {
         }
     };
 
-    const handleBackupLocal = async () => {
-        try {
-            setLoading(true);
-            await BackupService.runLocalBackup();
-            showToast('Backup local exportado!');
-        } catch (error) {
-            ErrorService.logError('SyncScreen:handleBackupLocal', error);
-            Alert.alert('Erro', 'Falha ao gerar backup local.');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleFullBackup = async () => {
         try {

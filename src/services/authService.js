@@ -1,8 +1,6 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from 'expo-secure-store';
 import { supabase } from './supabaseClient';
 import { executeQuery } from '../database/database';
-import { SyncWorker } from './SyncWorker';
 
 // --- STORAGE HELPERS ---
 const safeSave = async (key, value) => {

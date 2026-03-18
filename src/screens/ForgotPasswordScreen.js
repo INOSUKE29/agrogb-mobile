@@ -25,7 +25,7 @@ export default function ForgotPasswordScreen({ navigation }) {
             } else {
                 Alert.alert('Erro', res.message);
             }
-        } catch (error) {
+        } catch {
             Alert.alert('Erro', 'Ocorreu uma falha inesperada.');
         } finally {
             setLoading(false);

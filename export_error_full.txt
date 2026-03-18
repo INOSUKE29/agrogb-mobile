@@ -1,0 +1,30 @@
+Starting Metro Bundler
+
+Error: Unable to resolve module @react-native-community/netinfo from C:\Users\Bruno\Documents\AgroGB\mobile_app\src\services\SyncWorker.js: @react-native-community/netinfo could not be found within the project or in these directories:
+  node_modules
+  2 | import { supabase } from './supabaseClient';
+  3 | import { executeQuery } from '../database/database';
+> 4 | import NetInfo from '@react-native-community/netinfo';
+    |                      ^
+  5 |
+  6 | /**
+  7 |  * SyncWorker V2
+Error: Unable to resolve module @react-native-community/netinfo from C:\Users\Bruno\Documents\AgroGB\mobile_app\src\services\SyncWorker.js: @react-native-community/netinfo could not be found within the project or in these directories:
+  node_modules
+  2 | import { supabase } from './supabaseClient';
+  3 | import { executeQuery } from '../database/database';
+> 4 | import NetInfo from '@react-native-community/netinfo';
+    |                      ^
+  5 |
+  6 | /**
+  7 |  * SyncWorker V2
+    at ModuleResolver.resolveDependency (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\metro\src\node-haste\DependencyGraph\ModuleResolution.js:139:15)
+    at DependencyGraph.resolveDependency (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\metro\src\node-haste\DependencyGraph.js:232:43)
+    at C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\metro\src\lib\transformHelpers.js:156:21
+    at resolveDependencies (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\metro\src\DeltaBundler\buildSubgraph.js:42:25)
+    at visit (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\metro\src\DeltaBundler\buildSubgraph.js:83:30)
+    at async Promise.all (index 49)
+    at visit (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\metro\src\DeltaBundler\buildSubgraph.js:92:5)
+    at async Promise.all (index 4)
+    at visit (C:\Users\Bruno\Documents\AgroGB\mobile_app\node_modules\metro\src\DeltaBundler\buildSubgraph.js:92:5)
+    at async Promise.all (index 0)
