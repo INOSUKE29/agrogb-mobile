@@ -63,14 +63,46 @@ CREATE TABLE IF NOT EXISTS public.v2_talhoes (
 -- 4) TABELAS DE PRODUÇÃO V2 (EVOLUÍDAS)
 CREATE TABLE IF NOT EXISTS public.v2_colheitas (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    plantio_id UUID, -- Referência futura
-    data_colheita TIMESTAMP WITH TIME ZONE,
+    plantio_id UUID,
+    usuario_id UUID REFERENCES public.v2_produtores(id),
+    data_colheita TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
     quantidade_total DECIMAL,
     unidade TEXT DEFAULT 'KG',
     qualidade TEXT,
     observacao TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
     updated_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE TABLE IF NOT EXISTS public.v2_vendas (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    usuario_id UUID REFERENCES public.v2_produtores(id),
+    cliente TEXT,
+    produto TEXT,
+    quantidade DECIMAL,
+    valor DECIMAL,
+    data TEXT,
+    status_pagamento TEXT DEFAULT 'A_RECEBER',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+CREATE TABLE IF NOT EXISTS public.v2_plantios (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    usuario_id UUID REFERENCES public.v2_produtores(id),
+    cultura TEXT,
+    quantidade_pes INTEGER,
+    data TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+CREATE TABLE IF NOT EXISTS public.v2_custos (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    usuario_id UUID REFERENCES public.v2_produtores(id),
+    produto TEXT,
+    tipo TEXT,
+    valor_total DECIMAL,
+    data TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
 -- FASE V3: INTELIGÊNCIA E SOLO
@@ -135,6 +167,7 @@ CREATE TABLE IF NOT EXISTS public.vendas (
 CREATE TABLE IF NOT EXISTS public.error_logs (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     data timestamp with time zone DEFAULT now(),
+    created_at timestamp with time zone DEFAULT now(),
     tela text,
     erro text,
     stack text,
