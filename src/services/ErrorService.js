@@ -38,8 +38,8 @@ export const ErrorService = {
             // 2. Salva no banco local
             const userId = await AsyncStorage.getItem('user_id');
             await executeQuery(
-                `INSERT INTO error_logs (usuario_id, tela, erro, stack, created_at) VALUES (?, ?, ?, ?, ?)`,
-                [userId, screen, errorMessage, errorStack, timestamp]
+                `INSERT INTO error_logs (usuario_id, tela, erro, stack, created_at, data) VALUES (?, ?, ?, ?, ?, ?)`,
+                [userId, screen, errorMessage, errorStack, timestamp, timestamp]
             );
 
             // 3. Notifica o usuário de forma amigável (Toast/Alert leve)

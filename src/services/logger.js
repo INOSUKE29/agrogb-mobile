@@ -12,9 +12,10 @@ export const Logger = {
     error: async (msg, stack = '') => {
         console.error(`[AgroGB ERROR] ${msg}`);
         try {
+            const timestamp = new Date().toISOString();
             await executeQuery(
-                `INSERT INTO error_logs (data, tela, erro, stack, sync_status) VALUES (?, ?, ?, ?, ?)`,
-                [new Date().toISOString(), 'Global', msg, stack, 0]
+                `INSERT INTO error_logs (data, created_at, tela, erro, stack, sync_status) VALUES (?, ?, ?, ?, ?, ?)`,
+                [timestamp, timestamp, 'Global', msg, stack, 0]
             );
         } catch {
             log('Falha ao persistir log de erro');

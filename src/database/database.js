@@ -676,7 +676,10 @@ const createTables = async () => {
             )`);
             await executeQuery(`CREATE TABLE IF NOT EXISTS error_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE,
+                usuario_id TEXT,
                 data TEXT NOT NULL,
+                created_at TEXT,
                 tela TEXT,
                 erro TEXT,
                 stack TEXT,
@@ -773,6 +776,10 @@ const createTables = async () => {
         // MIGRATION: v8.6 — cidade e estado na tabela clientes
         try { await executeQuery('ALTER TABLE clientes ADD COLUMN cidade TEXT'); } catch { }
         try { await executeQuery('ALTER TABLE clientes ADD COLUMN estado TEXT'); } catch { }
+        
+        // MIGRATION: v8.8 — Profissionalização de Logs de Erro
+        try { await executeQuery('ALTER TABLE error_logs ADD COLUMN usuario_id TEXT'); } catch { }
+        try { await executeQuery('ALTER TABLE error_logs ADD COLUMN created_at TEXT'); } catch { }
 
         // MIGRATION: v8.7 — Padronização Universal de IDENTIFICADORES (Fim do Erro 42703)
         const tablesToFix = ['usuarios', 'estoque', 'app_settings', 'activity_log', 'error_logs', 'unidades_medida'];
