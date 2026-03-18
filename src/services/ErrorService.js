@@ -91,7 +91,7 @@ Stack: ${lastError.stack ? lastError.stack.substring(0, 500) : 'N/A'}
                     attachments: [uri],
                 });
             }
-        } catch (error) {
+        } catch {
             Alert.alert('Erro', 'Não foi possível gerar o relatório de compartilhamento.');
         }
     }
