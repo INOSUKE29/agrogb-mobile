@@ -134,8 +134,10 @@ export default function SidebarDrawer({ visible, onClose }) {
                         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>NAVEGAÇÃO</Text>
                         <MenuItem icon="home-outline" label="Painel / Início" screen="Home" />
                         <MenuItem icon="camera-outline" label="Monitoramento" screen="Monitoramento" />
+                        <MenuItem icon="list-circle-outline" label="Cadastros Gerais" screen="MenuCadastros" />
                         <MenuItem icon="cube-outline" label="Estoque" screen="Estoque" />
                         <MenuItem icon="cart-outline" label="Compras" screen="Compras" />
+                        <MenuItem icon="gift-outline" label="Encomendas" screen="Encomendas" />
                         <MenuItem icon="people-outline" label="Clientes" screen="Clientes" />
 
                         <View style={[styles.divider, { backgroundColor: colors.glassBorder }]} />

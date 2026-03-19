@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, Image, KeyboardAvoidingView,
     Platform, Alert, StatusBar, TouchableOpacity,
-    TextInput
+    TextInput, Dimensions, ActivityIndicator, ScrollView, useWindowDimensions
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { login } from '../services/authService';
 import { ErrorService } from '../services/ErrorService';
+
+const { height } = useWindowDimensions();
 
 export default function LoginScreen({ navigation }) {
     const [email, setEmail] = useState('');
@@ -16,18 +18,15 @@ export default function LoginScreen({ navigation }) {
     const [secureText, setSecureText] = useState(true);
 
     const handleLogin = async () => {
-        // 1. Validação de Dados (Anti-Erro)
         if (!email || !password) {
             return Alert.alert('Acesso Restrito', 'Por favor, informe suas credenciais.');
         }
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-             return Alert.alert('E-mail Inválido', 'Por favor, insira um endereço de e-mail válido.');
-        }
+        const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        const isAdmin = email.toLowerCase() === 'admin';
 
-        if (password.length < 6) {
-            return Alert.alert('Segurança', 'A senha deve conter pelo menos 6 caracteres.');
+        if (!isEmail && !isAdmin) {
+             return Alert.alert('E-mail Inválido', 'Por favor, insira um endereço de e-mail válido ou use o login principal.');
         }
 
         setLoading(true);
@@ -39,9 +38,8 @@ export default function LoginScreen({ navigation }) {
                 Alert.alert('Acesso Negado', res.message || 'Credenciais inválidas.');
             }
         } catch (error) {
-            // 2. Sistema Global de Captura de Erros
             ErrorService.logError('LoginScreen', error);
-            Alert.alert('Erro Inesperado', 'Ocorreu um erro ao tentar acessar. Nossa equipe técnica já foi notificada.');
+            Alert.alert('Erro Inesperado', 'Falha ao processar login.');
         } finally {
             setLoading(false);
         }
@@ -52,196 +50,144 @@ export default function LoginScreen({ navigation }) {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.container}
         >
-            <StatusBar barStyle="light-content" backgroundColor="#0F3D2E" />
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+            
             <LinearGradient
-                colors={['#0F3D2E', '#1F7A55', '#4CAF7A']}
+                colors={['#0B1F35', '#07121E']}
                 style={styles.background}
             >
-                <View style={styles.content}>
+                <View style={styles.topGlow} />
+                <View style={styles.bottomGlow} />
+
+                <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                     
-                    {/* 1 HEADER COM LOGO */}
                     <View style={styles.headerContainer}>
-                        <Image
-                            source={{ uri: 'https://i.ibb.co/L6HhLp0/logo-agrogb.png' }}
-                            style={styles.logo}
-                            resizeMode="contain"
-                        />
+                        <View style={styles.logoShadow}>
+                            <Image
+                                source={require('../../assets/logo.png')}
+                                style={styles.logo}
+                                resizeMode="contain"
+                            />
+                        </View>
                         <Text style={styles.title}>AgroGB</Text>
-                        <Text style={styles.subtitle}>Gestão Inteligente Rural</Text>
+                        <Text style={styles.subtitle}>SISTEMA DE GESTÃO PROFISSIONAL</Text>
                     </View>
 
-                    {/* 2 FORMULÁRIO DE LOGIN (CARD BRANCO) */}
-                    <View style={styles.card}>
+                    <View style={styles.formContainer}>
                         
-                        {/* Campo Telefone ou E-mail */}
-                        <View style={styles.inputWrapper}>
-                            <Ionicons name="mail-outline" size={20} color="#7F8C8D" style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Telefone ou E-mail"
-                                placeholderTextColor="#95A5A6"
-                                value={email}
-                                onChangeText={setEmail}
-                                autoCapitalize="none"
-                                keyboardType="email-address"
-                            />
-                        </View>
-
-                        {/* Campo Senha com Toggle */}
-                        <View style={styles.inputWrapper}>
-                            <Ionicons name="lock-closed-outline" size={20} color="#7F8C8D" style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Senha"
-                                placeholderTextColor="#95A5A6"
-                                value={password}
-                                onChangeText={setPassword}
-                                secureTextEntry={secureText}
-                            />
-                            <TouchableOpacity 
-                                onPress={() => setSecureText(!secureText)}
-                                style={styles.eyeIcon}
-                            >
-                                <Ionicons 
-                                    name={secureText ? "eye-off-outline" : "eye-outline"} 
-                                    size={20} 
-                                    color="#7F8C8D" 
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>E-MAIL OU USUÁRIO</Text>
+                            <View style={styles.inputWrapper}>
+                                <Ionicons name="person-outline" size={18} color="rgba(255,255,255,0.4)" />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="ex: admin@agrogb.com"
+                                    placeholderTextColor="rgba(255,255,255,0.2)"
+                                    value={email}
+                                    onChangeText={setEmail}
+                                    autoCapitalize="none"
                                 />
-                            </TouchableOpacity>
+                            </View>
                         </View>
 
-                        {/* Botão Entrar */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>SENHA DE ACESSO</Text>
+                            <View style={styles.inputWrapper}>
+                                <Ionicons name="lock-closed-outline" size={18} color="rgba(255,255,255,0.4)" />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="••••••••"
+                                    placeholderTextColor="rgba(255,255,255,0.2)"
+                                    value={password}
+                                    onChangeText={setPassword}
+                                    secureTextEntry={secureText}
+                                />
+                                <TouchableOpacity onPress={() => setSecureText(!secureText)}>
+                                    <Ionicons 
+                                        name={secureText ? "eye-off" : "eye"} 
+                                        size={18} 
+                                        color="rgba(255,255,255,0.4)" 
+                                    />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
                         <TouchableOpacity 
-                            style={styles.loginBtn}
+                            activeOpacity={0.8}
                             onPress={handleLogin}
                             disabled={loading}
+                            style={styles.loginBtnWrapper}
                         >
-                            <Text style={styles.loginBtnText}>
-                                {loading ? 'Acessando...' : 'ENTRAR'}
-                            </Text>
+                            <LinearGradient
+                                colors={['#22C55E', '#3B82F6']}
+                                start={{x: 0, y: 0}}
+                                end={{x: 1, y: 0}}
+                                style={styles.loginBtn}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator color="#FFF" />
+                                ) : (
+                                    <Text style={styles.loginBtnText}>ENTRAR NO SISTEMA</Text>
+                                )}
+                            </LinearGradient>
                         </TouchableOpacity>
 
-                        {/* 3 LINKS AUXILIARES */}
-                        <View style={styles.linksContainer}>
-                            <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-                                <Text style={styles.linkText}>Esqueci minha senha</Text>
-                            </TouchableOpacity>
-                            <Text style={styles.linkSeparator}>|</Text>
+                        <View style={styles.links}>
                             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                                <Text style={styles.linkText}>Criar conta</Text>
+                                <Text style={styles.linkText}>CRIAR NOVA CONTA</Text>
+                            </TouchableOpacity>
+                            <View style={styles.dot} />
+                            <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+                                <Text style={styles.linkText}>RECUPERAR SENHA</Text>
                             </TouchableOpacity>
                         </View>
                         
                     </View>
-                    
-                    {/* 4 RODAPÉ DO APP */}
-                    <View style={styles.footerContainer}>
-                        <Text style={styles.footerText}>AgroGB Mobile</Text>
-                        <Text style={styles.footerText}>Feito para gestão rural</Text>
+
+                    <View style={styles.footer}>
+                        <Text style={styles.footerText}>AGROGB ERP • VERSION 10.1</Text>
                     </View>
-                </View>
+                </ScrollView>
             </LinearGradient>
         </KeyboardAvoidingView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
+    container: { flex: 1 },
+    background: { flex: 1 },
+    topGlow: {
+        position: 'absolute', top: -100, right: -100, width: 300, height: 300,
+        borderRadius: 150, backgroundColor: 'rgba(34, 197, 94, 0.08)'
     },
-    background: {
-        flex: 1,
+    bottomGlow: {
+        position: 'absolute', bottom: -100, left: -100, width: 300, height: 300,
+        borderRadius: 150, backgroundColor: 'rgba(59, 130, 246, 0.08)'
     },
-    content: {
-        flex: 1,
-        justifyContent: 'space-between',
-        paddingVertical: 50,
+    content: { flexGrow: 1, justifyContent: 'center', padding: 30 },
+    headerContainer: { alignItems: 'center', marginBottom: 50 },
+    logoShadow: {
+        shadowColor: '#22C55E', shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3, shadowRadius: 20, elevation: 20
     },
-    headerContainer: {
-        alignItems: 'center',
-        marginTop: 20,
-    },
-    logo: {
-        width: 120,
-        height: 120,
-        marginBottom: 16,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#FFFFFF',
-        letterSpacing: 1,
-    },
-    subtitle: {
-        fontSize: 14,
-        color: 'rgba(255,255,255,0.85)',
-        marginTop: 4,
-    },
-    card: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 20,
-        padding: 24,
-        marginHorizontal: 24,
-        elevation: 6, // Android
-        shadowColor: '#000', // iOS
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 6 },
-    },
+    logo: { width: 140, height: 140 },
+    title: { fontSize: 32, fontWeight: '900', color: '#FFF', letterSpacing: 2, marginTop: 15 },
+    subtitle: { fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: 3, fontWeight: 'bold', marginTop: 5 },
+    formContainer: { gap: 20 },
+    inputGroup: { gap: 8 },
+    label: { fontSize: 10, fontWeight: '900', color: 'rgba(255,255,255,0.5)', letterSpacing: 1.5, marginLeft: 5 },
     inputWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F5F6F7',
-        borderRadius: 12,
-        marginBottom: 16,
-        paddingHorizontal: 16,
-        paddingVertical: 14,
+        flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.03)',
+        borderRadius: 18, borderHorizontal: 1, borderVertical: 1, borderColor: 'rgba(255,255,255,0.08)',
+        paddingHorizontal: 20, paddingVertical: 16, gap: 12, borderStyle: 'solid', borderWidth: 1
     },
-    inputIcon: {
-        marginRight: 12,
-    },
-    input: {
-        flex: 1,
-        fontSize: 16,
-        color: '#2C3E50',
-    },
-    eyeIcon: {
-        padding: 4,
-    },
-    loginBtn: {
-        backgroundColor: '#27AE60',
-        borderRadius: 12,
-        paddingVertical: 16,
-        alignItems: 'center',
-        marginTop: 8,
-    },
-    loginBtnText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    linksContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 24,
-    },
-    linkText: {
-        fontSize: 14,
-        color: '#2C3E50',
-    },
-    linkSeparator: {
-        fontSize: 14,
-        color: '#BDC3C7',
-        marginHorizontal: 12,
-    },
-    footerContainer: {
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    footerText: {
-        fontSize: 12,
-        color: 'rgba(255,255,255,0.8)',
-        marginTop: 2,
-    }
+    input: { flex: 1, color: '#FFF', fontSize: 16, fontWeight: '500' },
+    loginBtnWrapper: { marginTop: 20, borderRadius: 18, overflow: 'hidden', elevation: 10, shadowColor: '#3B82F6', shadowOpacity: 0.3, shadowRadius: 15 },
+    loginBtn: { paddingVertical: 20, alignItems: 'center' },
+    loginBtnText: { color: '#FFF', fontSize: 13, fontWeight: '900', letterSpacing: 2 },
+    links: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 15, marginTop: 20 },
+    linkText: { fontSize: 10, fontWeight: '900', color: 'rgba(255,255,255,0.4)', letterSpacing: 1 },
+    dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.1)' },
+    footer: { marginTop: 60, alignItems: 'center' },
+    footerText: { fontSize: 9, fontWeight: 'bold', color: 'rgba(255,255,255,0.2)', letterSpacing: 2 }
 });

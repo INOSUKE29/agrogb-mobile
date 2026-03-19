@@ -25,6 +25,7 @@ export default function HomeScreen({ navigation }) {
         custosMes: 0,
         vendasMes: 0,
         vendasHoje: 0,
+        perdasMes: 0,
     });
     const [drawerVisible, setDrawerVisible] = useState(false);
 
@@ -49,6 +50,7 @@ export default function HomeScreen({ navigation }) {
                 { id: 'plantio', label: 'Plantio', icon: 'rose-outline', route: 'Plantio' },
                 { id: 'monitorar', label: 'Monitorar', icon: 'eye-outline', route: 'Monitoramento' },
                 { id: 'estoque', label: 'Estoque', icon: 'cube', route: 'Estoque' },
+                { id: 'cadastro', label: 'Cadastros', icon: 'list-circle-outline', route: 'MenuCadastros' },
                 { id: 'adubacao', label: 'Adubação', icon: 'flask', route: 'AdubacaoList' },
             ]
         },
@@ -62,7 +64,6 @@ export default function HomeScreen({ navigation }) {
                 { id: 'clientes', label: 'Clientes', icon: 'people', route: 'Clientes' },
                 { id: 'encomendas', label: 'Encomendas', icon: 'gift-outline', route: 'Encomendas' },
                 { id: 'relatorios', label: 'Relatórios', icon: 'bar-chart', route: 'Relatorios' },
-                { id: 'graficos', label: 'Gráficos', icon: 'pie-chart', route: 'Graficos' },
             ]
         },
         {
@@ -103,11 +104,11 @@ export default function HomeScreen({ navigation }) {
                         <WeatherWidget />
                     </View>
 
-                    {/* FINANCIAL COMMAND CENTER (THE "ELITE" CARD) */}
+                    {/* FINANCIAL COMMAND CENTER */}
                     <View style={[styles.financialCard, { backgroundColor: isDark ? '#1E293B' : colors.primary }]}>
                         <View style={styles.finHeader}>
                             <Text style={styles.finTitle}>RESUMO MENSAL</Text>
-                            <Ionicons name="shield-checkmark" size={16} color="rgba(255,255,255,0.6)" />
+                            <Ionicons name="stats-chart" size={16} color="rgba(255,255,255,0.6)" />
                         </View>
 
                         <View style={styles.finRow}>
@@ -123,11 +124,18 @@ export default function HomeScreen({ navigation }) {
 
                             <View style={styles.finItem}>
                                 <View style={styles.finLabelRow}>
-                                    <View style={[styles.finDot, { backgroundColor: '#EF4444' }]} />
+                                    <View style={[styles.finDot, { backgroundColor: '#F87171' }]} />
                                     <Text style={styles.finLabel}>CUSTOS TOTAIS</Text>
                                 </View>
-                                <Text style={[styles.finValue, { color: '#FCA5A5' }]}>{formatBRL(stats.custosMes)}</Text>
+                                <Text style={[styles.finValue, { color: '#FEE2E2' }]}>{formatBRL(stats.custosMes)}</Text>
                             </View>
+                        </View>
+                        
+                        <View style={[styles.finDividerHoriz, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
+                        
+                        <View style={styles.finRowFooter}>
+                            <Text style={styles.finMiniLabel}>PERDAS (MES): </Text>
+                            <Text style={styles.finMiniValue}>{stats.perdasMes} KG</Text>
                         </View>
                     </View>
 
@@ -184,9 +192,9 @@ export default function HomeScreen({ navigation }) {
                     <Ionicons name="home" size={24} color={colors.primary} />
                     <Text style={[styles.tabText, { color: colors.primary }]}>Home</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.tabBtn} onPress={() => navigation.navigate('Graficos')}>
-                    <Ionicons name="pie-chart-outline" size={24} color={colors.textSecondary} />
-                    <Text style={[styles.tabText, { color: colors.textSecondary }]}>Gráficos</Text>
+                <TouchableOpacity style={styles.tabBtn} onPress={() => navigation.navigate('Relatorios')}>
+                    <Ionicons name="bar-chart-outline" size={24} color={colors.textSecondary} />
+                    <Text style={[styles.tabText, { color: colors.textSecondary }]}>Relatórios</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.tabBtn} onPress={() => navigation.navigate('Intelligence')}>
                     <Ionicons name="bulb-outline" size={24} color={colors.textSecondary} />
@@ -260,6 +268,10 @@ const styles = StyleSheet.create({
     finLabel: { color: 'rgba(255,255,255,0.6)', fontSize: scale(9), fontWeight: '900' },
     finValue: { color: '#FFFFFF', fontSize: scale(22), fontWeight: '900' },
     finDivider: { width: 1, height: scale(40), marginHorizontal: scale(15) },
+    finDividerHoriz: { height: 1, width: '100%', marginVertical: scale(15) },
+    finRowFooter: { flexDirection: 'row', alignItems: 'center', opacity: 0.8 },
+    finMiniLabel: { color: 'rgba(255,255,255,0.6)', fontSize: scale(9), fontWeight: '900' },
+    finMiniValue: { color: '#FDA4AF', fontSize: scale(12), fontWeight: '900' },
 
     metricsGrid: {
         flexDirection: 'row',

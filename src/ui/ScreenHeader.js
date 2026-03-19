@@ -2,12 +2,11 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
-import { ErrorService } from '../services/ErrorService';
 
 /**
  * ScreenHeader — Moderno e Dinâmico v8
  */
-export default function ScreenHeader({ title, onBack, rightElement, showReport = true }) {
+export default function ScreenHeader({ title, onBack, rightElement }) {
     const { colors, effectiveTheme } = useTheme();
 
     const isLight = effectiveTheme === 'light';
@@ -26,16 +25,8 @@ export default function ScreenHeader({ title, onBack, rightElement, showReport =
                 <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>{title}</Text>
 
                 <View style={styles.right}>
-                    {showReport && (
-                        <TouchableOpacity 
-                            onPress={() => ErrorService.reportLatestError()}
-                            style={{ marginRight: rightElement ? 15 : 0 }}
-                        >
-                            <Ionicons name="bug-outline" size={20} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                    )}
                     {rightElement}
-                    {!rightElement && !showReport && <View style={styles.backDim} />}
+                    {!rightElement && <View style={styles.backDim} />}
                 </View>
             </View>
         </View>

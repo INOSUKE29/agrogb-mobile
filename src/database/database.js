@@ -1,5 +1,7 @@
 import * as SQLite from 'expo-sqlite';
+import { v4 } from 'uuid';
 import { atualizarEstoque } from '../services/EstoqueService';
+import { SCHEMA_V10 } from './schema_v10';
 
 
 
@@ -264,7 +266,8 @@ const createTables = async () => {
                 senha TEXT,
                 created_at TEXT,
                 sync_status TEXT DEFAULT 'pending'
-            );`
+            );`,
+            ...SCHEMA_V10
         ];
 
         // Executar todas as queries de criação iniciais em sequência para evitar "database is locked"
@@ -277,7 +280,10 @@ const createTables = async () => {
         }
 
         // Inserir Admin padrão se não existir (Paridade com Desktop)
-        await executeQuery(`INSERT OR IGNORE INTO usuarios (usuario, senha, nivel) VALUES ('ADMIN', '1234', 'ADM')`);
+        await executeQuery(`INSERT OR IGNORE INTO usuarios (usuario, senha, nivel, email, nome_completo) VALUES ('ADMIN', '1234', 'ADM', 'admin@agrogb.com', 'ADMINISTRADOR MESTRE')`);
+
+        // MIGRATION: Forçar e-mail no admin existente se estiver vazio (Fix v10.1)
+        await executeQuery(`UPDATE usuarios SET email = 'admin@agrogb.com', nome_completo = 'ADMINISTRADOR MESTRE' WHERE usuario = 'ADMIN' AND (email IS NULL OR email = '')`);
 
         // FORÇAR CRIAÇÃO V2_PRODUTORES (Correção Crítica)
         try {
@@ -1027,14 +1033,14 @@ export const getConfig = async (chave) => {
 
 // --- USUÁRIOS ---
 export const insertUsuario = async (u) => {
-    const uuid = require('uuid').v4();
+    const uuid = v4();
     await executeQuery(`INSERT INTO usuarios (uuid, usuario, senha, nivel, email, nome_completo, telefone, endereco, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
         [uuid, up(u.usuario), u.senha, up(u.nivel), u.email ? u.email.trim() : null, up(u.nome_completo), u.telefone, up(u.endereco), new Date().toISOString()]);
 };
 
 export const updateUsuario = async (u) => {
-    await executeQuery(`UPDATE usuarios SET senha = ?, nivel = ?, email = ?, nome_completo = ?, telefone = ?, endereco = ?, last_updated = ? WHERE id = ?`,
-        [u.senha, up(u.nivel), u.email ? u.email.trim() : null, up(u.nome_completo), u.telefone, up(u.endereco), new Date().toISOString(), u.id]);
+    await executeQuery(`UPDATE usuarios SET usuario = ?, senha = ?, nivel = ?, email = ?, nome_completo = ?, telefone = ?, endereco = ?, last_updated = ?, sync_status = 0 WHERE id = ?`,
+        [up(u.usuario), u.senha, up(u.nivel), u.email ? u.email.trim() : null, up(u.nome_completo), u.telefone, up(u.endereco), new Date().toISOString(), u.id]);
 };
 
 export const getUsuarios = async () => {
@@ -1388,28 +1394,30 @@ export const getDashboardStats = async () => {
         // 5. Custos do Mês (Soma de custos, compras e costs profissional)
         const resCustosMes = await executeQuery('SELECT SUM(valor_total) as total FROM custos WHERE data >= ? AND is_deleted = 0', [firstDayOfMonth]);
         const resComprasMes = await executeQuery('SELECT SUM(valor) as total FROM compras WHERE data >= ? AND is_deleted = 0', [firstDayOfMonth]);
-        const resCostsProf = await executeQuery('SELECT SUM(total_value) as total FROM costs WHERE created_at >= ? AND is_deleted = 0', [firstDayOfMonth]);
-
+        
+        // v10: unificação de custos de diversas tabelas legadas e novas
         const custosMes = (resCustosMes.rows.item(0).total || 0) +
-            (resComprasMes.rows.item(0).total || 0) +
-            (resCostsProf.rows.item(0).total || 0);
+            (resComprasMes.rows.item(0).total || 0);
 
         // 6. Resultado do Mês (Saldo do Mês)
         const resVendasMes = await executeQuery('SELECT SUM(valor) as total FROM vendas WHERE data >= ? AND is_deleted = 0', [firstDayOfMonth]);
         const vendasMesTotal = resVendasMes.rows.item(0).total || 0;
         const saldoMes = vendasMesTotal - custosMes;
 
+        // 6b. Perdas Reais (Tabela descarte)
+        const resDescarte = await executeQuery('SELECT SUM(quantidade) as total FROM descarte WHERE data >= ? AND is_deleted = 0', [firstDayOfMonth]);
+        const perdasMes = resDescarte.rows.item(0).total || 0;
+
         // 7. Pendentes Sync (Contagem Global v8.5.9)
         let pendentes = 0;
         try {
             const syncTables = [
-                'usuarios', 'colheitas', 'vendas', 'estoque', 'compras', 'plantio', 'custos',
-                'clientes', 'culturas', 'maquinas', 'receitas', 'profiles',
-                'movimentacoes_financeiras', 'caderno_notas'
+                'usuarios', 'colheitas', 'vendas', 'compras', 'plantio', 'custos',
+                'clientes', 'culturas', 'maquinas', 'caderno_notas', 'areas'
             ];
             for (const t of syncTables) {
                 try {
-                    const resP = await executeQuery(`SELECT COUNT(*) as c FROM ${t} WHERE sync_status IN (0, 2)`);
+                    const resP = await executeQuery(`SELECT COUNT(*) as c FROM ${t} WHERE sync_status = 0`);
                     pendentes += resP.rows.item(0).c || 0;
                 } catch { }
             }
@@ -1423,7 +1431,8 @@ export const getDashboardStats = async () => {
             custosMes: custosMes || 0,
             vendasMes: vendasMesTotal || 0,
             saldo: saldoMes || 0,
-            pendentes: pendentes || 0
+            pendentes: pendentes || 0,
+            perdasMes: perdasMes || 0
         };
     } catch (error) {
         console.error('[DATABASE ERROR] getDashboardStats Failed:', error);
