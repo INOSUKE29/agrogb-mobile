@@ -256,6 +256,14 @@ const createTables = async () => {
                 last_updated TEXT,
                 is_deleted INTEGER DEFAULT 0,
                 sync_status INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS v2_produtores (
+                id TEXT PRIMARY KEY,
+                nome TEXT,
+                email TEXT UNIQUE,
+                senha TEXT,
+                created_at TEXT,
+                sync_status TEXT DEFAULT 'pending'
             );`
         ];
 
@@ -270,6 +278,21 @@ const createTables = async () => {
 
         // Inserir Admin padrão se não existir (Paridade com Desktop)
         await executeQuery(`INSERT OR IGNORE INTO usuarios (usuario, senha, nivel) VALUES ('ADMIN', '1234', 'ADM')`);
+
+        // FORÇAR CRIAÇÃO V2_PRODUTORES (Correção Crítica)
+        try {
+            await executeQuery(`CREATE TABLE IF NOT EXISTS v2_produtores (
+                id TEXT PRIMARY KEY,
+                nome TEXT,
+                email TEXT UNIQUE,
+                senha TEXT,
+                created_at TEXT,
+                sync_status TEXT DEFAULT 'pending'
+            )`);
+            if (__DEV__) console.log("✅ Tabela v2_produtores verificada/criada com sucesso");
+        } catch (e) {
+            console.error("Erro crítico ao criar v2_produtores:", e);
+        }
 
         // MIGRATION: Adicionar email se não existir (v3.5)
         try {
