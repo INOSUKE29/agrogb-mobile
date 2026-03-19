@@ -62,7 +62,7 @@ export default function MaquinaFormScreen({ navigation, route }) {
                 showToast('Máquina cadastrada com sucesso!');
             }
             navigation.goBack();
-        } catch (e) {
+        } catch {
             Alert.alert('Erro', 'Não foi possível salvar a máquina.');
         }
     };

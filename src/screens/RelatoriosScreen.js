@@ -93,7 +93,7 @@ export default function RelatoriosScreen() {
             else if (type === 'ESTOQUE') await generateEstoquePDF();
             else if (type === 'COLHEITA') await generateColheitaPDF();
             Alert.alert('Sucesso', 'PDF gerado com sucesso!');
-        } catch (e) {
+        } catch {
             Alert.alert('Erro', 'Não foi possível gerar o PDF.');
         } finally { setLoading(false); }
     };

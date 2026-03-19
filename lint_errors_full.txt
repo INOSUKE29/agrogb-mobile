@@ -1,0 +1,29 @@
+
+> agrogb-mobile@8.5.0 lint
+> eslint .
+
+(node:15300) ESLintIgnoreWarning: The ".eslintignore" file is no longer supported. Switch to using the "ignores" property in "eslint.config.js": https://eslint.org/docs/latest/use/configure/migration-guide#ignoring-files
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\FrotaScreen.js
+  2:81  warning  'Alert' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\LoginScreen.js
+  12:9  warning  'width' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\MaquinaFormScreen.js
+   5:10  warning  'Ionicons' is defined but never used  no-unused-vars
+  65:18  warning  'error' is defined but never used     no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\RelatoriosScreen.js
+   95:13  error    'showToast' is not defined                    no-undef
+   96:18  warning  'error' is defined but never used             no-unused-vars
+  104:17  warning  'opacity' is assigned a value but never used  no-unused-vars
+  105:22  warning  'opacity' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\ScreenHeader.js
+   5:10  warning  'ErrorService' is defined but never used         no-unused-vars
+  10:69  warning  'showReport' is assigned a value but never used  no-unused-vars
+
+Ô£û 10 problems (1 error, 9 warnings)
+

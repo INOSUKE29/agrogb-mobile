@@ -2,14 +2,13 @@ import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, Image, KeyboardAvoidingView,
     Platform, Alert, StatusBar, TouchableOpacity,
-    TextInput, Dimensions, ActivityIndicator, ScrollView, useWindowDimensions
+    TextInput, ActivityIndicator, ScrollView
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { login } from '../services/authService';
 import { ErrorService } from '../services/ErrorService';
 
-const { height } = useWindowDimensions();
 
 export default function LoginScreen({ navigation }) {
     const [email, setEmail] = useState('');

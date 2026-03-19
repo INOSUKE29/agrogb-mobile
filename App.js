@@ -30,6 +30,7 @@ import OcrScreen from './src/screens/OcrScreen';
 import ScannerScreen from './src/screens/ScannerScreen';
 import CadernoCampoScreen from './src/screens/CadernoCampoScreen';
 import FrotaScreen from './src/screens/FrotaScreen';
+import MaquinaFormScreen from './src/screens/MaquinaFormScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import AdubacaoListScreen from './src/screens/AdubacaoListScreen';
 import AdubacaoFormScreen from './src/screens/AdubacaoFormScreen';
@@ -203,6 +204,7 @@ export default function App() {
                                 <Stack.Screen name="Scanner" component={ScannerScreen} options={{ headerShown: false }} />
                                 <Stack.Screen name="CadernoCampo" component={CadernoCampoScreen} options={{ title: 'Caderno de Campo' }} />
                                 <Stack.Screen name="Frota" component={FrotaScreen} options={{ title: 'Gestão de Frota' }} />
+                                <Stack.Screen name="MaquinaForm" component={MaquinaFormScreen} options={{ title: 'Cadastro de Máquina' }} />
                                 <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Meu Perfil UltraPro' }} />
 
                                 {/* ADUBAÇÃO v5.4 */}
