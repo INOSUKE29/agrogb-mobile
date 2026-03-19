@@ -205,11 +205,17 @@ ALTER FUNCTION "public"."monitoramento_entidade_run_checks"() OWNER TO "postgres
 
 CREATE OR REPLACE FUNCTION "public"."try_text_to_uuid"("text") RETURNS "uuid"
     LANGUAGE "plpgsql" IMMUTABLE
-    SET "search_path" TO 'public', 'pg_temp'
+    SET "search_path" TO 'public'
     AS $_$
-DECLARE v uuid;
+DECLARE
+  v uuid;
 BEGIN
-  BEGIN v := $1::uuid; RETURN v; EXCEPTION WHEN others THEN RETURN NULL; END;
+  BEGIN
+    v := $1::uuid;
+    RETURN v;
+  EXCEPTION WHEN others THEN
+    RETURN NULL;
+  END;
 END;
 $_$;
 
@@ -1059,6 +1065,33 @@ CREATE TABLE IF NOT EXISTS "public"."v2_colheitas" (
 ALTER TABLE "public"."v2_colheitas" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."v2_custos" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "usuario_id" "uuid",
+    "produto" "text",
+    "tipo" "text",
+    "valor_total" numeric,
+    "data" "text",
+    "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"())
+);
+
+
+ALTER TABLE "public"."v2_custos" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."v2_plantios" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "usuario_id" "uuid",
+    "cultura" "text",
+    "quantidade_pes" integer,
+    "data" "text",
+    "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"())
+);
+
+
+ALTER TABLE "public"."v2_plantios" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."v2_produtores" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "nome" "text" NOT NULL,
@@ -1103,6 +1136,22 @@ CREATE TABLE IF NOT EXISTS "public"."v2_sync_conflicts" (
 
 
 ALTER TABLE "public"."v2_sync_conflicts" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."v2_vendas" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "usuario_id" "uuid",
+    "cliente" "text",
+    "produto" "text",
+    "quantidade" numeric,
+    "valor" numeric,
+    "data" "text",
+    "status_pagamento" "text" DEFAULT 'A_RECEBER'::"text",
+    "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"())
+);
+
+
+ALTER TABLE "public"."v2_vendas" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."vendas" (
@@ -1444,8 +1493,18 @@ ALTER TABLE ONLY "public"."v2_colheitas"
 
 
 
+ALTER TABLE ONLY "public"."v2_custos"
+    ADD CONSTRAINT "v2_custos_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."v2_fazendas"
     ADD CONSTRAINT "v2_fazendas_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."v2_plantios"
+    ADD CONSTRAINT "v2_plantios_pkey" PRIMARY KEY ("id");
 
 
 
@@ -1471,6 +1530,11 @@ ALTER TABLE ONLY "public"."v2_sync_conflicts"
 
 ALTER TABLE ONLY "public"."v2_talhoes"
     ADD CONSTRAINT "v2_talhoes_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."v2_vendas"
+    ADD CONSTRAINT "v2_vendas_pkey" PRIMARY KEY ("id");
 
 
 
@@ -2158,6 +2222,11 @@ ALTER TABLE ONLY "public"."v2_colheitas"
 
 
 
+ALTER TABLE ONLY "public"."v2_custos"
+    ADD CONSTRAINT "v2_custos_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "public"."v2_produtores"("id");
+
+
+
 ALTER TABLE ONLY "public"."v2_fazendas"
     ADD CONSTRAINT "v2_fazendas_produtor_id_fkey" FOREIGN KEY ("produtor_id") REFERENCES "public"."v2_produtores"("id");
 
@@ -2165,6 +2234,11 @@ ALTER TABLE ONLY "public"."v2_fazendas"
 
 ALTER TABLE ONLY "public"."v2_fazendas"
     ADD CONSTRAINT "v2_fazendas_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."v2_plantios"
+    ADD CONSTRAINT "v2_plantios_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "public"."v2_produtores"("id");
 
 
 
@@ -2190,6 +2264,11 @@ ALTER TABLE ONLY "public"."v2_talhoes"
 
 ALTER TABLE ONLY "public"."v2_talhoes"
     ADD CONSTRAINT "v2_talhoes_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."v2_vendas"
+    ADD CONSTRAINT "v2_vendas_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "public"."v2_produtores"("id");
 
 
 
@@ -2921,7 +3000,7 @@ CREATE POLICY "owner_full_access" ON "public"."app_settings" TO "authenticated" 
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."areas" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "owner_full_access" ON "public"."areas" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
 
@@ -2933,7 +3012,7 @@ CREATE POLICY "owner_full_access" ON "public"."categorias_despesa" TO "authentic
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."clientes" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "owner_full_access" ON "public"."clientes" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
 
@@ -2953,7 +3032,7 @@ CREATE POLICY "owner_full_access" ON "public"."costs" TO "authenticated" USING (
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."culturas" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "owner_full_access" ON "public"."culturas" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
 
@@ -2965,7 +3044,7 @@ CREATE POLICY "owner_full_access" ON "public"."descarte" TO "authenticated" USIN
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."error_logs" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "owner_full_access" ON "public"."error_logs" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
 
@@ -2973,7 +3052,7 @@ CREATE POLICY "owner_full_access" ON "public"."estoque" TO "authenticated" USING
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."items" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "owner_full_access" ON "public"."items" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
 
@@ -2981,7 +3060,7 @@ CREATE POLICY "owner_full_access" ON "public"."manutencao_frota" TO "authenticat
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."maquinas" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "owner_full_access" ON "public"."maquinas" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
 
@@ -3045,15 +3124,23 @@ CREATE POLICY "owner_full_access" ON "public"."usuario_id_quarantine" TO "authen
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."v2_analise_solo" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "owner_full_access" ON "public"."v2_analise_solo" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."v2_colheitas" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "owner_full_access" ON "public"."v2_colheitas" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."v2_fazendas" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "owner_full_access" ON "public"."v2_custos" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."v2_fazendas" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."v2_plantios" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
 
@@ -3061,11 +3148,15 @@ CREATE POLICY "owner_full_access" ON "public"."v2_produtores" TO "authenticated"
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."v2_recomendacoes_tecnicas" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "owner_full_access" ON "public"."v2_recomendacoes_tecnicas" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."v2_talhoes" TO "authenticated" USING (("usuario_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("usuario_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "owner_full_access" ON "public"."v2_talhoes" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "owner_full_access" ON "public"."v2_vendas" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
 
@@ -3125,7 +3216,7 @@ CREATE POLICY "owner_insert" ON "public"."vendas" FOR INSERT TO "authenticated" 
 
 
 
-CREATE POLICY "owner_produtor_access" ON "public"."v2_produtores" TO "authenticated" USING (("id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "owner_produtor_access" ON "public"."v2_produtores" TO "authenticated" USING (("id" = "auth"."uid"())) WITH CHECK (("id" = "auth"."uid"()));
 
 
 
@@ -3555,6 +3646,9 @@ CREATE POLICY "v2_colheitas_owner_full_access" ON "public"."v2_colheitas" TO "au
 
 
 
+ALTER TABLE "public"."v2_custos" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."v2_fazendas" ENABLE ROW LEVEL SECURITY;
 
 
@@ -3564,6 +3658,9 @@ CREATE POLICY "v2_fazendas_admin_read" ON "public"."v2_fazendas" FOR SELECT TO "
 
 CREATE POLICY "v2_fazendas_owner_full_access" ON "public"."v2_fazendas" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
 
+
+
+ALTER TABLE "public"."v2_plantios" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."v2_produtores" ENABLE ROW LEVEL SECURITY;
@@ -3596,6 +3693,9 @@ CREATE POLICY "v2_talhoes_admin_read" ON "public"."v2_talhoes" FOR SELECT TO "au
 
 CREATE POLICY "v2_talhoes_owner_full_access" ON "public"."v2_talhoes" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
 
+
+
+ALTER TABLE "public"."v2_vendas" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."vendas" ENABLE ROW LEVEL SECURITY;
@@ -4108,6 +4208,18 @@ GRANT ALL ON TABLE "public"."v2_colheitas" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."v2_custos" TO "anon";
+GRANT ALL ON TABLE "public"."v2_custos" TO "authenticated";
+GRANT ALL ON TABLE "public"."v2_custos" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."v2_plantios" TO "anon";
+GRANT ALL ON TABLE "public"."v2_plantios" TO "authenticated";
+GRANT ALL ON TABLE "public"."v2_plantios" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."v2_produtores" TO "anon";
 GRANT ALL ON TABLE "public"."v2_produtores" TO "authenticated";
 GRANT ALL ON TABLE "public"."v2_produtores" TO "service_role";
@@ -4123,6 +4235,12 @@ GRANT ALL ON TABLE "public"."v2_recomendacoes_tecnicas" TO "service_role";
 GRANT ALL ON TABLE "public"."v2_sync_conflicts" TO "anon";
 GRANT ALL ON TABLE "public"."v2_sync_conflicts" TO "authenticated";
 GRANT ALL ON TABLE "public"."v2_sync_conflicts" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."v2_vendas" TO "anon";
+GRANT ALL ON TABLE "public"."v2_vendas" TO "authenticated";
+GRANT ALL ON TABLE "public"."v2_vendas" TO "service_role";
 
 
 
