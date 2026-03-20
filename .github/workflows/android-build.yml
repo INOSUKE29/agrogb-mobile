@@ -10,6 +10,9 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build Android APK
@@ -73,3 +76,20 @@ jobs:
         with:
           name: agrogb-release-apk
           path: android/app/build/outputs/apk/release/app-release.apk
+
+      - name: 🚀 Create Release
+        uses: softprops/action-gh-release@v2
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          tag_name: v-apk-latest
+          name: AgroGB Build Atualizado (Download Direto)
+          body: |
+            ### 📦 AgroGB APK - Build de Alta Performance
+            Este APK contém as últimas atualizações de Banco de Dados (Master V10.4) e correções de segurança.
+            
+            **Instruções:** Clique no arquivo `app-release.apk` abaixo para baixar e instalar no seu Android.
+          draft: false
+          prerelease: false
+          files: android/app/build/outputs/apk/release/app-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
