@@ -7,7 +7,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '../theme/ThemeContext';
-import { getDashboardStats } from '../database/database';
+import { DashboardService } from '../services/DashboardService';
 import WeatherWidget from '../ui/WeatherWidget';
 import SidebarDrawer from '../ui/SidebarDrawer';
 import { MetricCard } from '../ui/components/MetricCard';
@@ -30,7 +30,7 @@ export default function HomeScreen({ navigation }) {
     const [drawerVisible, setDrawerVisible] = useState(false);
 
     const loadStats = async () => {
-        const data = await getDashboardStats();
+        const data = await DashboardService.getStats();
         setStats(prev => ({ ...prev, ...data }));
     };
 
@@ -195,10 +195,6 @@ export default function HomeScreen({ navigation }) {
                 <TouchableOpacity style={styles.tabBtn} onPress={() => navigation.navigate('Relatorios')}>
                     <Ionicons name="bar-chart-outline" size={24} color={colors.textSecondary} />
                     <Text style={[styles.tabText, { color: colors.textSecondary }]}>Relatórios</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.tabBtn} onPress={() => navigation.navigate('Intelligence')}>
-                    <Ionicons name="bulb-outline" size={24} color={colors.textSecondary} />
-                    <Text style={[styles.tabText, { color: colors.textSecondary }]}>Inteligência</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.tabBtn} onPress={() => navigation.navigate('Sync')}>
                     <Ionicons name="refresh-circle-outline" size={24} color={colors.textSecondary} />

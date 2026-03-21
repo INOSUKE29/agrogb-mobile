@@ -10,7 +10,8 @@ export const SCHEMA_V10 = [
     `CREATE TABLE IF NOT EXISTS v2_produtores (
         id TEXT PRIMARY KEY,
         nome TEXT NOT NULL,
-        email TEXT,
+        email TEXT UNIQUE,
+        senha TEXT,
         telefone TEXT,
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT,

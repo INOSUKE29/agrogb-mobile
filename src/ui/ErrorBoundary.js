@@ -43,9 +43,14 @@ class ErrorBoundary extends React.Component {
                         <Ionicons name="alert-circle" size={80} color="#EF4444" />
                         <Text style={styles.title}>Ops! Algo deu errado.</Text>
                         <Text style={styles.subtitle}>
-                            Ocorreu um erro inesperado na visualização. 
-                            Nossa equipe técnica já foi notificada para correção.
+                            Ocorreu um erro inesperado na visualização.
+                            {__DEV__ && this.state.error && `\n\nErro: ${this.state.error.message}`}
                         </Text>
+                        {__DEV__ && this.state.error && (
+                            <ScrollView style={{ maxHeight: 150, backgroundColor: '#EEE', padding: 10, borderRadius: 10, marginBottom: 20 }}>
+                                <Text style={{ fontSize: 10, color: '#333' }}>{this.state.error.stack}</Text>
+                            </ScrollView>
+                        )}
 
                         <TouchableOpacity 
                             style={styles.buttonPrimary} 

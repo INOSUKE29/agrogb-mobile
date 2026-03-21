@@ -259,14 +259,6 @@ const createTables = async () => {
                 is_deleted INTEGER DEFAULT 0,
                 sync_status INTEGER DEFAULT 0
             );`,
-            `CREATE TABLE IF NOT EXISTS v2_produtores (
-                id TEXT PRIMARY KEY,
-                nome TEXT,
-                email TEXT UNIQUE,
-                senha TEXT,
-                created_at TEXT,
-                sync_status TEXT DEFAULT 'pending'
-            );`,
             ...SCHEMA_V10
         ];
 
@@ -285,20 +277,7 @@ const createTables = async () => {
         // MIGRATION: Forçar e-mail no admin existente se estiver vazio (Fix v10.1)
         await executeQuery(`UPDATE usuarios SET email = 'admin@agrogb.com', nome_completo = 'ADMINISTRADOR MESTRE' WHERE usuario = 'ADMIN' AND (email IS NULL OR email = '')`);
 
-        // FORÇAR CRIAÇÃO V2_PRODUTORES (Correção Crítica)
-        try {
-            await executeQuery(`CREATE TABLE IF NOT EXISTS v2_produtores (
-                id TEXT PRIMARY KEY,
-                nome TEXT,
-                email TEXT UNIQUE,
-                senha TEXT,
-                created_at TEXT,
-                sync_status TEXT DEFAULT 'pending'
-            )`);
-            if (__DEV__) console.log("✅ Tabela v2_produtores verificada/criada com sucesso");
-        } catch (e) {
-            console.error("Erro crítico ao criar v2_produtores:", e);
-        }
+        if (__DEV__) console.log("✅ Ciclo de criação de tabelas concluído");
 
         // MIGRATION: Adicionar email se não existir (v3.5)
         try {
@@ -1369,85 +1348,10 @@ export const insertMonitoramentoCompleto = async (d) => {
     );
 };
 
-// --- DASHBOARD HELPERS (v3.9.2) ---
-export const getDashboardStats = async () => {
-    try {
-        const today = new Date().toISOString().split('T')[0];
-        const firstDayOfMonth = today.substring(0, 8) + '01'; // ex: '2023-10-01'
 
-        // 1. Colheita Hoje (KG)
-        const resColheita = await executeQuery(`SELECT SUM(quantidade) as total FROM colheitas WHERE data = ? AND is_deleted = 0`, [today]);
-        const colheitaHoje = resColheita.rows.item(0).total || 0;
+// --- SERVIÇOS DESACOPLADOS ---
+// getDashboardStats foi movido para src/services/DashboardService.js
 
-        // 2. Vendas Hoje (R$)
-        const resVendas = await executeQuery(`SELECT SUM(valor) as total FROM vendas WHERE data = ? AND is_deleted = 0`, [today]);
-        const vendasHoje = resVendas.rows.item(0).total || 0;
-
-        // 3. Plantio Ativo
-        const resPlantio = await executeQuery(`SELECT COUNT(*) as total FROM plantio WHERE is_deleted = 0`);
-        const plantioAtivo = resPlantio.rows.item(0).total || 0;
-
-        // 4. Máquinas Revisão
-        const resMaquinas = await executeQuery(`SELECT COUNT(*) as total FROM maquinas WHERE horimetro_atual >= intervalo_revisao AND is_deleted = 0`);
-        const maquinasAlert = resMaquinas.rows.item(0).total || 0;
-
-        // 5. Custos do Mês (Soma de custos, compras e costs profissional)
-        const resCustosMes = await executeQuery('SELECT SUM(valor_total) as total FROM custos WHERE data >= ? AND is_deleted = 0', [firstDayOfMonth]);
-        const resComprasMes = await executeQuery('SELECT SUM(valor) as total FROM compras WHERE data >= ? AND is_deleted = 0', [firstDayOfMonth]);
-        
-        // v10: unificação de custos de diversas tabelas legadas e novas
-        const custosMes = (resCustosMes.rows.item(0).total || 0) +
-            (resComprasMes.rows.item(0).total || 0);
-
-        // 6. Resultado do Mês (Saldo do Mês)
-        const resVendasMes = await executeQuery('SELECT SUM(valor) as total FROM vendas WHERE data >= ? AND is_deleted = 0', [firstDayOfMonth]);
-        const vendasMesTotal = resVendasMes.rows.item(0).total || 0;
-        const saldoMes = vendasMesTotal - custosMes;
-
-        // 6b. Perdas Reais (Tabela descarte)
-        const resDescarte = await executeQuery('SELECT SUM(quantidade) as total FROM descarte WHERE data >= ? AND is_deleted = 0', [firstDayOfMonth]);
-        const perdasMes = resDescarte.rows.item(0).total || 0;
-
-        // 7. Pendentes Sync (Contagem Global v8.5.9)
-        let pendentes = 0;
-        try {
-            const syncTables = [
-                'usuarios', 'colheitas', 'vendas', 'compras', 'plantio', 'custos',
-                'clientes', 'culturas', 'maquinas', 'caderno_notas', 'areas'
-            ];
-            for (const t of syncTables) {
-                try {
-                    const resP = await executeQuery(`SELECT COUNT(*) as c FROM ${t} WHERE sync_status = 0`);
-                    pendentes += resP.rows.item(0).c || 0;
-                } catch { }
-            }
-        } catch { }
-
-        return {
-            colheitaHoje: colheitaHoje || 0,
-            vendasHoje: vendasHoje || 0,
-            plantioAtivo: plantioAtivo || 0,
-            maquinasAlert: maquinasAlert || 0,
-            custosMes: custosMes || 0,
-            vendasMes: vendasMesTotal || 0,
-            saldo: saldoMes || 0,
-            pendentes: pendentes || 0,
-            perdasMes: perdasMes || 0
-        };
-    } catch (error) {
-        console.error('[DATABASE ERROR] getDashboardStats Failed:', error);
-        return {
-            colheitaHoje: 0,
-            vendasHoje: 0,
-            plantioAtivo: 0,
-            maquinasAlert: 0,
-            custosMes: 0,
-            vendasMes: 0,
-            saldo: 0,
-            pendentes: 0
-        };
-    }
-};
 
 // ==========================================
 // FUNÇÕES AUXILIARES - APP SETTINGS (FASE 10)
