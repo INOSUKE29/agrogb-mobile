@@ -21,7 +21,10 @@ const syncTables = [
     { name: 'costs', pk: 'id' },
     { name: 'caderno_notas', pk: 'uuid' },
     { name: 'orders', pk: 'id' },
-    { name: 'areas', pk: 'uuid' }
+    { name: 'areas', pk: 'uuid' },
+    { name: 'fertilization_recipes', pk: 'id' },
+    { name: 'fertilization_items', pk: 'id' },
+    { name: 'fertilization_applications', pk: 'id' }
 ];
 
 // O PUSH lê tudo com sync_status = 0

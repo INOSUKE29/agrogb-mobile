@@ -35,6 +35,10 @@ import ResetPasswordScreen from '../screens/ResetPasswordScreen';
 import CategoriasDespesaScreen from '../screens/CategoriasDespesaScreen';
 import VerifyCodeScreen from '../screens/VerifyCodeScreen';
 
+import FertilizationScreen from '../screens/FertilizationScreen';
+import RecipeFormScreen from '../screens/RecipeFormScreen';
+import ApplicationFormScreen from '../screens/ApplicationFormScreen';
+
 const Stack = createStackNavigator();
 
 export default function AppNavigator() {
@@ -78,7 +82,9 @@ export default function AppNavigator() {
             <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
             <Stack.Screen name="CadernoCampo" component={CadernoCampoScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Area" component={CulturasScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="AdubacaoList" component={AdubacaoListScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="AdubacaoList" component={FertilizationScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="RecipeForm" component={RecipeFormScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ApplicationForm" component={ApplicationFormScreen} options={{ headerShown: false }} />
             <Stack.Screen name="AdubacaoForm" component={AdubacaoFormScreen} options={{ headerShown: false }} />
             <Stack.Screen name="AdubacaoDetail" component={AdubacaoDetailScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ClienteForm" component={ClienteFormScreen} options={{ headerShown: false }} />

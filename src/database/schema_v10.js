@@ -313,5 +313,42 @@ export const SCHEMA_V10 = [
         created_at TEXT DEFAULT (datetime('now')),
         sync_status TEXT DEFAULT 'pending',
         FOREIGN KEY(talhao_id) REFERENCES v2_talhoes(id)
+    )`,
+    // --- 10. ADUBAÇÃO PROFISSIONAL ---
+    `CREATE TABLE IF NOT EXISTS fertilization_recipes (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT, -- foliar | gotejo
+        culture TEXT,
+        description TEXT,
+        user_id TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        last_updated TEXT DEFAULT (datetime('now')),
+        sync_status INTEGER DEFAULT 0,
+        is_deleted INTEGER DEFAULT 0
+    )`,
+    `CREATE TABLE IF NOT EXISTS fertilization_items (
+        id TEXT PRIMARY KEY,
+        recipe_id TEXT,
+        product_name TEXT,
+        quantity REAL,
+        unit TEXT,
+        last_updated TEXT DEFAULT (datetime('now')),
+        sync_status INTEGER DEFAULT 0,
+        is_deleted INTEGER DEFAULT 0,
+        FOREIGN KEY(recipe_id) REFERENCES fertilization_recipes(id)
+    )`,
+    `CREATE TABLE IF NOT EXISTS fertilization_applications (
+        id TEXT PRIMARY KEY,
+        recipe_id TEXT,
+        date TEXT,
+        culture TEXT,
+        notes TEXT,
+        user_id TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        last_updated TEXT DEFAULT (datetime('now')),
+        sync_status INTEGER DEFAULT 0,
+        is_deleted INTEGER DEFAULT 0,
+        FOREIGN KEY(recipe_id) REFERENCES fertilization_recipes(id)
     )`
 ];
