@@ -78,15 +78,20 @@ export const register = async (nome, email, password) => {
 
 export const login = async (email, password) => {
     try {
-        if (__DEV__) console.log(`[AuthService] Tentativa de login para: ${email}`);
-
+        if (__DEV__) console.log('[AuthService] Chamando Supabase signIn...');
+        
         // 1. Login no Supabase Auth
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password,
         });
 
-        if (error) throw error;
+        if (__DEV__) console.log('[AuthService] Resposta Supabase recebida:', { hasData: !!data, hasError: !!error });
+
+        if (error) {
+            if (__DEV__) console.log('[AuthService] Erro retornado pelo Supabase:', error.message);
+            throw error;
+        }
 
         // 2. Salva Sessão localmente
         const session = {
@@ -95,33 +100,38 @@ export const login = async (email, password) => {
             token: data.session.access_token
         };
 
+        if (__DEV__) console.log('[AuthService] Salvando sessão no SecureStore...');
         await safeSave('@user_session', session);
 
         // 3. Verifica se o produtor existe localmente no V2, senão cria/puxa
+        if (__DEV__) console.log('[AuthService] Verificando produtor local no SQLite...');
         const localCheck = await executeQuery(`SELECT id FROM v2_produtores WHERE id = ?`, [data.user.id]);
+        
         if (localCheck.rows.length === 0) {
+            if (__DEV__) console.log('[AuthService] Criando registro de produtor local...');
             await executeQuery(
                 `INSERT INTO v2_produtores (id, email, sync_status) VALUES (?, ?, ?)`,
                 [data.user.id, data.user.email, 'synced']
             );
         }
 
+        if (__DEV__) console.log('[AuthService] Login concluído com sucesso.');
         return { success: true, user: data.user };
 
     } catch (e) {
-        if (__DEV__) console.error("LOGIN_ERROR:", e.message);
-        return { success: false, message: e.message };
+        if (__DEV__) console.error("LOGIN_FATAL_ERROR:", e);
+        return { success: false, message: e.message || "Erro interno de autenticação" };
     }
 };
 
 const checkSession = async () => {
-    return await safeGet("session");
+    return await safeGet("@user_session");
 };
 
 export const logout = async () => {
     try {
-        console.log('[AuthService] Logging out...');
-        await safeRemove("session");
+        if (__DEV__) console.log('[AuthService] Logging out...');
+        await safeRemove("@user_session");
     } catch (e) {
         console.error("LOGOUT_ERROR:", e);
     }

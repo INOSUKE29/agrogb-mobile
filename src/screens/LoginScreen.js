@@ -37,9 +37,11 @@ export default function LoginScreen({ navigation }) {
                 Alert.alert('Acesso Negado', res.message || 'Credenciais inválidas.');
             }
         } catch (error) {
+            console.error('[LoginScreen] Ocorreu um erro fatal durante handleLogin:', error);
             ErrorService.logError('LoginScreen', error);
-            Alert.alert('Erro Inesperado', 'Falha ao processar login.');
+            Alert.alert('Erro no Aplicativo', `Não foi possível completar o login: ${error.message || 'Erro desconhecido'}`);
         } finally {
+            if (__DEV__) console.log('[LoginScreen] Finalizando estado de loading.');
             setLoading(false);
         }
     };
