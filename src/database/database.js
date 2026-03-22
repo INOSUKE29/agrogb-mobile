@@ -16,11 +16,11 @@ export const executeQuery = (sql, params = []) => {
             reject(new Error('Banco não inicializado'));
             return;
         }
-        // Timeout de segurança de 10s por query
+        // Timeout de segurança de 25s por query (aumentado v10.6.2)
         const queryTimeout = setTimeout(() => {
             console.warn('🕒 [SQL TIMEOUT CRÍTICO]:', sql.substring(0, 100));
             reject(new Error('Timeout de execução SQL'));
-        }, 10000);
+        }, 25000);
 
         try {
             db.transaction(tx => {

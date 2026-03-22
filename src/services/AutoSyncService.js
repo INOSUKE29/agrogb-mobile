@@ -33,10 +33,10 @@ class AutoSyncService {
 
         console.log('🔁 AutoSyncService: iniciado (Sync agendado para daqui a 15s)');
         
-        // Atrasar o sync inicial em 15 segundos para não travar o banco durante o login
+        // Atrasar o sync inicial em 25 segundos (v10.6.2) para não travar o banco durante o login
         setTimeout(() => {
             this._runSync();
-        }, 15000);
+        }, 25000);
 
         // Sync a cada 2 minutos
         this._interval = setInterval(() => {
