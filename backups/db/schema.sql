@@ -611,6 +611,56 @@ CREATE TABLE IF NOT EXISTS "public"."estoque" (
 ALTER TABLE "public"."estoque" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."fertilization_applications" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "usuario_id" "uuid",
+    "farm_id" "text",
+    "recipe_id" "uuid",
+    "date" "text" NOT NULL,
+    "culture" "text",
+    "notes" "text",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "last_updated" timestamp with time zone DEFAULT "now"(),
+    "is_deleted" integer DEFAULT 0,
+    "sync_status" integer DEFAULT 0
+);
+
+
+ALTER TABLE "public"."fertilization_applications" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."fertilization_items" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "recipe_id" "uuid",
+    "product_name" "text" NOT NULL,
+    "quantity" numeric DEFAULT 0,
+    "unit" "text",
+    "last_updated" timestamp with time zone DEFAULT "now"(),
+    "is_deleted" integer DEFAULT 0
+);
+
+
+ALTER TABLE "public"."fertilization_items" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."fertilization_recipes" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "usuario_id" "uuid",
+    "farm_id" "text",
+    "name" "text" NOT NULL,
+    "type" "text",
+    "culture" "text",
+    "description" "text",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "last_updated" timestamp with time zone DEFAULT "now"(),
+    "is_deleted" integer DEFAULT 0,
+    "sync_status" integer DEFAULT 0
+);
+
+
+ALTER TABLE "public"."fertilization_recipes" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."movimentacoes_financeiras" (
     "id" bigint NOT NULL,
     "user_id" "uuid" DEFAULT "auth"."uid"() NOT NULL,
@@ -1398,6 +1448,21 @@ ALTER TABLE ONLY "public"."estoque"
 
 
 
+ALTER TABLE ONLY "public"."fertilization_applications"
+    ADD CONSTRAINT "fertilization_applications_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."fertilization_items"
+    ADD CONSTRAINT "fertilization_items_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."fertilization_recipes"
+    ADD CONSTRAINT "fertilization_recipes_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."items"
     ADD CONSTRAINT "items_codigo_key" UNIQUE ("codigo");
 
@@ -2167,6 +2232,26 @@ ALTER TABLE ONLY "public"."estoque"
 
 
 
+ALTER TABLE ONLY "public"."fertilization_applications"
+    ADD CONSTRAINT "fertilization_applications_recipe_id_fkey" FOREIGN KEY ("recipe_id") REFERENCES "public"."fertilization_recipes"("id");
+
+
+
+ALTER TABLE ONLY "public"."fertilization_applications"
+    ADD CONSTRAINT "fertilization_applications_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."fertilization_items"
+    ADD CONSTRAINT "fertilization_items_recipe_id_fkey" FOREIGN KEY ("recipe_id") REFERENCES "public"."fertilization_recipes"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."fertilization_recipes"
+    ADD CONSTRAINT "fertilization_recipes_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "auth"."users"("id");
+
+
+
 ALTER TABLE ONLY "public"."items"
     ADD CONSTRAINT "items_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
 
@@ -2726,6 +2811,14 @@ CREATE POLICY "Owner Access" ON "public"."error_logs" USING (("usuario_id" = "au
 
 
 
+CREATE POLICY "Owner Access" ON "public"."fertilization_applications" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Owner Access" ON "public"."fertilization_recipes" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
+
+
+
 CREATE POLICY "Owner Access" ON "public"."manutencao_frota" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
@@ -3007,6 +3100,15 @@ CREATE POLICY "estoque_admin_read" ON "public"."estoque" FOR SELECT TO "authenti
 
 CREATE POLICY "estoque_owner_full_access" ON "public"."estoque" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
 
+
+
+ALTER TABLE "public"."fertilization_applications" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."fertilization_items" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."fertilization_recipes" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."items" ENABLE ROW LEVEL SECURITY;
@@ -3862,6 +3964,18 @@ ALTER TABLE "public"."vendas" ENABLE ROW LEVEL SECURITY;
 ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
 
 
+ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."fertilization_applications";
+
+
+
+ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."fertilization_items";
+
+
+
+ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."fertilization_recipes";
+
+
+
 GRANT USAGE ON SCHEMA "agro_admin" TO "service_role";
 
 
@@ -4217,6 +4331,24 @@ GRANT ALL ON TABLE "public"."error_logs" TO "service_role";
 GRANT ALL ON TABLE "public"."estoque" TO "anon";
 GRANT ALL ON TABLE "public"."estoque" TO "authenticated";
 GRANT ALL ON TABLE "public"."estoque" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."fertilization_applications" TO "anon";
+GRANT ALL ON TABLE "public"."fertilization_applications" TO "authenticated";
+GRANT ALL ON TABLE "public"."fertilization_applications" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."fertilization_items" TO "anon";
+GRANT ALL ON TABLE "public"."fertilization_items" TO "authenticated";
+GRANT ALL ON TABLE "public"."fertilization_items" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."fertilization_recipes" TO "anon";
+GRANT ALL ON TABLE "public"."fertilization_recipes" TO "authenticated";
+GRANT ALL ON TABLE "public"."fertilization_recipes" TO "service_role";
 
 
 
