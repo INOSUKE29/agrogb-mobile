@@ -82,802 +82,137 @@ export const initDB = async () => {
         return db;
     } catch (error) {
         console.error('[DATABASE ERROR] Erro ao abrir banco:', error);
-        throw error;
-    }
-};
-
-const createTables = async () => {
+ const createTables = async () => {
     try {
         const queries = [
-            `CREATE TABLE IF NOT EXISTS usuarios (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                usuario TEXT UNIQUE NOT NULL,
-                senha TEXT NOT NULL,
-                nivel TEXT DEFAULT 'USUARIO',
-                email TEXT,
-                nome_completo TEXT,
-                telefone TEXT,
-                endereco TEXT,
-                avatar TEXT,
-                provider TEXT DEFAULT 'local',
-                avatar_url TEXT,
-                created_at TEXT,
-                last_updated TEXT,
-                is_deleted INTEGER DEFAULT 0,
-                sync_status INTEGER DEFAULT 0,
-                uuid TEXT UNIQUE
-            );`,
-            `CREATE TABLE IF NOT EXISTS colheitas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE NOT NULL,
-                area_id TEXT,
-                usuario_id TEXT,
-                cultura TEXT NOT NULL,
-                produto TEXT NOT NULL,
-                quantidade REAL NOT NULL,
-                data_colheita TEXT,
-                data TEXT NOT NULL,
-                observacao TEXT,
-                anexo TEXT,
-                last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0
-            );`,
-            `CREATE TABLE IF NOT EXISTS monitoramento (
-                uuid TEXT PRIMARY KEY,
-                cultura TEXT,
-                data TEXT,
-                imagem_base64 TEXT,
-                observacao TEXT,
-                sync_status INTEGER DEFAULT 0,
-                last_updated TEXT NOT NULL
-            );`,
-            `CREATE TABLE IF NOT EXISTS vendas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE NOT NULL,
-                usuario_id TEXT,
-                cliente_id TEXT, -- ID do cliente (uuid ou string)
-                cliente TEXT NOT NULL,
-                produto_id TEXT, -- ID do produto (uuid ou string)
-                produto TEXT NOT NULL,
-                quantidade REAL NOT NULL,
-                valor REAL NOT NULL,
-                valor_recebido REAL,
-                status_pagamento TEXT DEFAULT 'A_RECEBER',
-                data_venda TEXT,
-                data_recebimento TEXT,
-                forma_pagamento TEXT,
-                data TEXT NOT NULL,
-                observacao TEXT,
-                anexo TEXT,
-                last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0
-            );`,
-            `CREATE TABLE IF NOT EXISTS config (
-                chave TEXT PRIMARY KEY,
-                valor TEXT
-            );`,
-            `CREATE TABLE IF NOT EXISTS estoque (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                produto TEXT UNIQUE NOT NULL,
-                quantidade REAL NOT NULL,
-                last_updated TEXT NOT NULL
-            );`,
-            `CREATE TABLE IF NOT EXISTS compras (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE NOT NULL,
-                item TEXT NOT NULL,
-                quantidade REAL NOT NULL,
-                valor REAL NOT NULL,
-                cultura TEXT,
-                data TEXT NOT NULL,
-                observacao TEXT,
-                detalhes TEXT,
-                anexo TEXT,
-                last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0
-            );`,
-            `CREATE TABLE IF NOT EXISTS plantio (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE NOT NULL,
-                cultura TEXT NOT NULL,
-                quantidade_pes INTEGER NOT NULL,
-                tipo_plantio TEXT,
-                data TEXT NOT NULL,
-                observacao TEXT,
-                last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0
-            );`,
-            `CREATE TABLE IF NOT EXISTS custos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE NOT NULL,
-                produto TEXT NOT NULL,
-                tipo TEXT,
-                quantidade REAL NOT NULL,
-                valor_total REAL NOT NULL,
-                data TEXT NOT NULL,
-                observacao TEXT,
-                anexo TEXT,
-                categoria_id TEXT,
-                created_at TEXT,
-                last_updated TEXT NOT NULL,
-                is_deleted INTEGER DEFAULT 0,
-                sync_status INTEGER DEFAULT 0
-            );`,
-            `CREATE TABLE IF NOT EXISTS descarte (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE NOT NULL,
-                produto TEXT NOT NULL,
-                quantidade_kg REAL NOT NULL,
-                motivo TEXT,
-                data TEXT NOT NULL,
-                last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0
-            );`,
-            `CREATE TABLE IF NOT EXISTS cadastro (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE NOT NULL,
-                nome TEXT NOT NULL,
-                unidade TEXT,
-                tipo TEXT,
-                observacao TEXT,
-                fator_conversao REAL DEFAULT 1,
-                last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0
-            );`,
-            `CREATE TABLE IF NOT EXISTS clientes (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE NOT NULL,
-                nome TEXT NOT NULL,
-                telefone TEXT,
-                cidade TEXT,
-                estado TEXT,
-                endereco TEXT,
-                cpf_cnpj TEXT,
-                observacoes TEXT,
-                observacao_legada TEXT,
-                last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0,
-                is_deleted INTEGER DEFAULT 0
-            );`,
-            `CREATE TABLE IF NOT EXISTS culturas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE NOT NULL,
-                nome TEXT NOT NULL,
-                observacao TEXT,
-                last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0
-            );`,
-            `CREATE TABLE IF NOT EXISTS maquinas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE NOT NULL,
-                nome TEXT NOT NULL,
-                tipo TEXT NOT NULL,
-                placa TEXT,
-                horimetro_atual REAL DEFAULT 0,
-                intervalo_revisao REAL DEFAULT 10000,
-                status TEXT DEFAULT 'OK',
-                last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0
-            );`,
-            `CREATE TABLE IF NOT EXISTS manutencao_frota (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE NOT NULL,
-                maquina_uuid TEXT NOT NULL,
-                data TEXT NOT NULL,
-                descricao TEXT NOT NULL,
-                valor REAL NOT NULL,
-                last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0
-            );`,
-            `CREATE TABLE IF NOT EXISTS receitas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                produto_pai_uuid TEXT NOT NULL,
-                item_filho_uuid TEXT NOT NULL,
-                quantidade REAL NOT NULL,
-                last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0,
-                FOREIGN KEY(produto_pai_uuid) REFERENCES cadastro(uuid) ON DELETE CASCADE,
-                FOREIGN KEY(item_filho_uuid) REFERENCES cadastro(uuid) ON DELETE CASCADE
-            );`,
-            `CREATE TABLE IF NOT EXISTS profiles (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE,
-                usuario_id INTEGER,
-                full_name TEXT,
-                bio TEXT,
-                last_updated TEXT,
-                sync_status INTEGER DEFAULT 0
-            );`,
-            `CREATE TABLE IF NOT EXISTS movimentacoes_financeiras (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE,
-                tipo TEXT, -- RECEITA / DESPESA
-                valor REAL,
-                data TEXT,
-                descricao TEXT,
-                created_at TEXT,
-                last_updated TEXT,
-                is_deleted INTEGER DEFAULT 0,
-                sync_status INTEGER DEFAULT 0
-            );`,
-            ...SCHEMA_V10
+            // --- TABELAS BASE ---
+            `CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, usuario TEXT UNIQUE NOT NULL, senha TEXT NOT NULL, nivel TEXT DEFAULT 'USUARIO', email TEXT, nome_completo TEXT, telefone TEXT, endereco TEXT, avatar TEXT, provider TEXT DEFAULT 'local', avatar_url TEXT, created_at TEXT, last_updated TEXT, is_deleted INTEGER DEFAULT 0, sync_status INTEGER DEFAULT 0, uuid TEXT UNIQUE);`,
+            `CREATE TABLE IF NOT EXISTS colheitas (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, area_id TEXT, usuario_id TEXT, cultura TEXT NOT NULL, produto TEXT NOT NULL, quantidade REAL NOT NULL, data_colheita TEXT, data TEXT NOT NULL, observacao TEXT, anexo TEXT, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
+            `CREATE TABLE IF NOT EXISTS monitoramento (uuid TEXT PRIMARY KEY, cultura TEXT, data TEXT, imagem_base64 TEXT, observacao TEXT, sync_status INTEGER DEFAULT 0, last_updated TEXT NOT NULL);`,
+            `CREATE TABLE IF NOT EXISTS vendas (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, usuario_id TEXT, cliente_id TEXT, cliente TEXT NOT NULL, produto_id TEXT, produto TEXT NOT NULL, quantidade REAL NOT NULL, valor REAL NOT NULL, valor_recebido REAL, status_pagamento TEXT DEFAULT 'A_RECEBER', data_venda TEXT, data_recebimento TEXT, forma_pagamento TEXT, data TEXT NOT NULL, observacao TEXT, anexo TEXT, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
+            `CREATE TABLE IF NOT EXISTS config (chave TEXT PRIMARY KEY, valor TEXT);`,
+            `CREATE TABLE IF NOT EXISTS estoque (id INTEGER PRIMARY KEY AUTOINCREMENT, produto TEXT UNIQUE NOT NULL, quantidade REAL NOT NULL, last_updated TEXT NOT NULL);`,
+            `CREATE TABLE IF NOT EXISTS compras (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, item TEXT NOT NULL, quantidade REAL NOT NULL, valor REAL NOT NULL, cultura TEXT, data TEXT NOT NULL, observacao TEXT, detalhes TEXT, anexo TEXT, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
+            `CREATE TABLE IF NOT EXISTS plantio (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, cultura TEXT NOT NULL, quantidade_pes INTEGER NOT NULL, tipo_plantio TEXT, data TEXT NOT NULL, observacao TEXT, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
+            `CREATE TABLE IF NOT EXISTS custos (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, produto TEXT NOT NULL, tipo TEXT, quantidade REAL NOT NULL, valor_total REAL NOT NULL, data TEXT NOT NULL, observacao TEXT, anexo TEXT, categoria_id TEXT, created_at TEXT, last_updated TEXT NOT NULL, is_deleted INTEGER DEFAULT 0, sync_status INTEGER DEFAULT 0);`,
+            `CREATE TABLE IF NOT EXISTS descarte (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, produto TEXT NOT NULL, quantidade_kg REAL NOT NULL, motivo TEXT, data TEXT NOT NULL, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
+            `CREATE TABLE IF NOT EXISTS cadastro (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, nome TEXT NOT NULL, unidade TEXT, tipo TEXT, observacao TEXT, fator_conversao REAL DEFAULT 1, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
+            `CREATE TABLE IF NOT EXISTS clientes (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, nome TEXT NOT NULL, telefone TEXT, cidade TEXT, estado TEXT, endereco TEXT, cpf_cnpj TEXT, observacoes TEXT, observacao_legada TEXT, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0, is_deleted INTEGER DEFAULT 0);`,
+            `CREATE TABLE IF NOT EXISTS culturas (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, nome TEXT NOT NULL, observacao TEXT, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
+            `CREATE TABLE IF NOT EXISTS maquinas (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, nome TEXT NOT NULL, tipo TEXT NOT NULL, placa TEXT, horimetro_atual REAL DEFAULT 0, intervalo_revisao REAL DEFAULT 10000, status TEXT DEFAULT 'OK', last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
+            `CREATE TABLE IF NOT EXISTS manutencao_frota (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, maquina_uuid TEXT NOT NULL, data TEXT NOT NULL, descricao TEXT NOT NULL, valor REAL NOT NULL, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
+            `CREATE TABLE IF NOT EXISTS receitas (id INTEGER PRIMARY KEY AUTOINCREMENT, produto_pai_uuid TEXT NOT NULL, item_filho_uuid TEXT NOT NULL, quantidade REAL NOT NULL, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
+            `CREATE TABLE IF NOT EXISTS profiles (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE, usuario_id INTEGER, full_name TEXT, bio TEXT, last_updated TEXT, sync_status INTEGER DEFAULT 0);`,
+            `CREATE TABLE IF NOT EXISTS movimentacoes_financeiras (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE, tipo TEXT, valor REAL, data TEXT, descricao TEXT, created_at TEXT, last_updated TEXT, is_deleted INTEGER DEFAULT 0, sync_status INTEGER DEFAULT 0);`,
+
+            // --- SCHEMA V10 (SUPABASE SYNC CORE) ---
+            ...SCHEMA_V10,
+
+            // --- MIGRATIONS CONSOLIDADAS (ALTER TABLES) ---
+            `ALTER TABLE usuarios ADD COLUMN email TEXT;`,
+            `ALTER TABLE cadastro ADD COLUMN estocavel INTEGER DEFAULT 1;`,
+            `ALTER TABLE cadastro ADD COLUMN vendavel INTEGER DEFAULT 1;`,
+            `ALTER TABLE usuarios ADD COLUMN nome_completo TEXT;`,
+            `ALTER TABLE usuarios ADD COLUMN telefone TEXT;`,
+            `ALTER TABLE usuarios ADD COLUMN endereco TEXT;`,
+            `ALTER TABLE colheitas ADD COLUMN congelado REAL DEFAULT 0;`,
+            `ALTER TABLE usuarios ADD COLUMN avatar TEXT;`,
+            `ALTER TABLE cadastro ADD COLUMN fator_conversao REAL DEFAULT 1;`,
+            `ALTER TABLE monitoramento_entidade ADD COLUMN severidade TEXT DEFAULT "BAIXA";`,
+            `ALTER TABLE monitoramento_entidade ADD COLUMN categoria TEXT DEFAULT "OUTROS";`,
+            `ALTER TABLE compras ADD COLUMN detalhes TEXT;`,
+            `ALTER TABLE usuarios ADD COLUMN provider TEXT DEFAULT "local";`,
+            `ALTER TABLE usuarios ADD COLUMN avatar_url TEXT;`,
+            `ALTER TABLE compras ADD COLUMN anexo TEXT;`,
+            `ALTER TABLE vendas ADD COLUMN anexo TEXT;`,
+            `ALTER TABLE colheitas ADD COLUMN anexo TEXT;`,
+            `ALTER TABLE custos ADD COLUMN anexo TEXT;`,
+
+            // App Settings
+            `CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), updated_at TEXT);`,
+            `ALTER TABLE app_settings ADD COLUMN primary_color TEXT DEFAULT '#059669';`,
+            `ALTER TABLE app_settings ADD COLUMN theme_mode TEXT DEFAULT 'system';`,
+            `ALTER TABLE app_settings ADD COLUMN fazenda_nome TEXT;`,
+            `ALTER TABLE app_settings ADD COLUMN fazenda_produtor TEXT;`,
+            `ALTER TABLE app_settings ADD COLUMN fazenda_documento TEXT;`,
+            `ALTER TABLE app_settings ADD COLUMN fazenda_telefone TEXT;`,
+            `ALTER TABLE app_settings ADD COLUMN fazenda_email TEXT;`,
+            `ALTER TABLE app_settings ADD COLUMN fazenda_logo TEXT;`,
+            `ALTER TABLE app_settings ADD COLUMN fin_moeda TEXT DEFAULT 'R$';`,
+            `ALTER TABLE app_settings ADD COLUMN fin_mes_fiscal INTEGER DEFAULT 1;`,
+            `ALTER TABLE app_settings ADD COLUMN fin_calc_margem INTEGER DEFAULT 0;`,
+            `ALTER TABLE app_settings ADD COLUMN fin_vinc_custo INTEGER DEFAULT 0;`,
+            `ALTER TABLE app_settings ADD COLUMN fin_meta_lucro REAL;`,
+            `ALTER TABLE app_settings ADD COLUMN clima_api_key TEXT;`,
+            `ALTER TABLE app_settings ADD COLUMN clima_cidade TEXT;`,
+            `ALTER TABLE app_settings ADD COLUMN clima_gps INTEGER DEFAULT 1;`,
+            `ALTER TABLE app_settings ADD COLUMN clima_ativo INTEGER DEFAULT 1;`,
+            `ALTER TABLE app_settings ADD COLUMN rel_incluir_logo INTEGER DEFAULT 1;`,
+            `ALTER TABLE app_settings ADD COLUMN rel_modelo TEXT DEFAULT 'resumido';`,
+            `ALTER TABLE app_settings ADD COLUMN img_qualidade REAL DEFAULT 0.8;`,
+            `ALTER TABLE app_settings ADD COLUMN img_limite INTEGER DEFAULT 3;`,
+            `ALTER TABLE app_settings ADD COLUMN fazenda_area REAL;`,
+            `ALTER TABLE app_settings ADD COLUMN fazenda_safra TEXT;`,
+            `ALTER TABLE app_settings ADD COLUMN unidade_padrao TEXT DEFAULT "KG";`,
+            `ALTER TABLE app_settings ADD COLUMN rel_graficos INTEGER DEFAULT 1;`,
+            `ALTER TABLE app_settings ADD COLUMN rel_auto_pdf INTEGER DEFAULT 0;`,
+            `ALTER TABLE app_settings ADD COLUMN rel_rodape TEXT;`,
+
+            // Adubação & Monitoramento Pro
+            `CREATE TABLE IF NOT EXISTS planos_adubacao (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, nome_plano TEXT NOT NULL, cultura TEXT, tipo_aplicacao TEXT, area_local TEXT, descricao_tecnica TEXT, status TEXT DEFAULT 'PLANEJADO', data_criacao TEXT NOT NULL, data_aplicacao TEXT, anexos_uri TEXT, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
+            `CREATE TABLE IF NOT EXISTS monitoramento_entidade (uuid TEXT PRIMARY KEY, usuario_id TEXT, area_id TEXT, cultura_id TEXT, data TEXT NOT NULL, observacao_usuario TEXT, status TEXT DEFAULT 'RASCUNHO', nivel_confianca TEXT DEFAULT 'TÉCNICO', severidade TEXT DEFAULT 'BAIXA', categoria TEXT DEFAULT 'OUTROS', criado_em TEXT NOT NULL, sync_status INTEGER DEFAULT 0, last_updated TEXT NOT NULL);`,
+            `CREATE TABLE IF NOT EXISTS monitoramento_media (uuid TEXT PRIMARY KEY, monitoramento_uuid TEXT NOT NULL, tipo TEXT NOT NULL, caminho_arquivo TEXT NOT NULL, criado_em TEXT NOT NULL, sync_status INTEGER DEFAULT 0, last_updated TEXT NOT NULL);`,
+            `CREATE TABLE IF NOT EXISTS analise_ia (uuid TEXT PRIMARY KEY, monitoramento_uuid TEXT NOT NULL, classificacao_principal TEXT, classificacoes_secundarias TEXT, sintomas TEXT, causa_provavel TEXT, tipo_problema TEXT, nutriente TEXT, sugestao_controle TEXT, produtos_citados TEXT, dosagem TEXT, forma_aplicacao TEXT, observacoes_tecnicas TEXT, fonte_informacao TEXT, criado_em TEXT NOT NULL, sync_status INTEGER DEFAULT 0, last_updated TEXT NOT NULL);`,
+            `CREATE TABLE IF NOT EXISTS base_conhecimento_pro (uuid TEXT PRIMARY KEY, tipo TEXT NOT NULL, cultura_id TEXT, titulo TEXT NOT NULL, descricao TEXT, sintomas TEXT, causas TEXT, controle TEXT, fonte TEXT, nivel_confianca TEXT, ativo INTEGER DEFAULT 1, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
+
+            // Cadastro Agrícola Avançado
+            `ALTER TABLE cadastro ADD COLUMN principio_ativo TEXT;`,
+            `ALTER TABLE cadastro ADD COLUMN classe_toxicologica TEXT;`,
+            `ALTER TABLE cadastro ADD COLUMN composicao TEXT;`,
+            `ALTER TABLE cadastro ADD COLUMN preco_venda REAL DEFAULT 0;`,
+            `ALTER TABLE cadastro ADD COLUMN descricao_ia TEXT;`,
+            `ALTER TABLE cadastro ADD COLUMN validado_por TEXT;`,
+            `ALTER TABLE cadastro ADD COLUMN data_validacao TEXT;`,
+            `ALTER TABLE cadastro ADD COLUMN codigo TEXT;`,
+            `ALTER TABLE cadastro ADD COLUMN unidade_id INTEGER;`,
+
+            // Financeiro Contas a Receber
+            `ALTER TABLE vendas ADD COLUMN status_pagamento TEXT DEFAULT "A_RECEBER";`,
+            `ALTER TABLE vendas ADD COLUMN data_recebimento TEXT;`,
+            `ALTER TABLE vendas ADD COLUMN forma_pagamento TEXT;`,
+            `ALTER TABLE vendas ADD COLUMN valor_recebido REAL;`,
+
+            // Areas & Clientes
+            `CREATE TABLE IF NOT EXISTS areas (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, nome TEXT NOT NULL, descricao TEXT, observacao TEXT, metragem REAL, peso_medio_caixa REAL DEFAULT 1, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0, is_deleted INTEGER DEFAULT 0);`,
+            `ALTER TABLE clientes ADD COLUMN cidade TEXT;`,
+            `ALTER TABLE clientes ADD COLUMN estado TEXT;`,
+            `ALTER TABLE clientes ADD COLUMN observacao_legada TEXT;`,
+
+            // Seeders & Admins (Sempre no final da transação)
+            `INSERT OR IGNORE INTO usuarios (usuario, senha, nivel, email, nome_completo) VALUES ('ADMIN', '1234', 'ADM', 'admin@agrogb.com', 'ADMINISTRADOR MESTRE');`,
+            `UPDATE usuarios SET email = 'admin@agrogb.com', nome_completo = 'ADMINISTRADOR MESTRE' WHERE usuario = 'ADMIN' AND (email IS NULL OR email = '');`,
+            `INSERT OR IGNORE INTO app_settings (id, updated_at) VALUES (1, '${new Date().toISOString()}');`
         ];
 
-        if (__DEV__) console.log(`🚀 v10.7 Gold: Iniciando transação atômica para ${queries.length} queries...`);
+        if (__DEV__) console.log(`💎 v1.1 DIAMOND: Iniciando transação ATÔMICA TOTAL para ${queries.length} comandos...`);
         const start = Date.now();
         await executeTransaction(queries);
-        if (__DEV__) console.log(`✨ Transação concluída em ${Date.now() - start}ms`);
+        if (__DEV__) console.log(`✨ DIAMOND SETUP concluído em ${Date.now() - start}ms`);
 
-        // Inserir Admin padrão se não existir (Paridade com Desktop)
-        await executeQuery(`INSERT OR IGNORE INTO usuarios (usuario, senha, nivel, email, nome_completo) VALUES ('ADMIN', '1234', 'ADM', 'admin@agrogb.com', 'ADMINISTRADOR MESTRE')`);
-
-        // MIGRATION: Forçar e-mail no admin existente se estiver vazio (Fix v10.1)
-        await executeQuery(`UPDATE usuarios SET email = 'admin@agrogb.com', nome_completo = 'ADMINISTRADOR MESTRE' WHERE usuario = 'ADMIN' AND (email IS NULL OR email = '')`);
-
-        if (__DEV__) console.log("✅ Ciclo de criação de tabelas concluído");
-
-        // MIGRATION: Adicionar email se não existir (v3.5)
-        try {
-            await executeQuery('ALTER TABLE usuarios ADD COLUMN email TEXT');
-            if (__DEV__) console.log('✅ Coluna email adicionada com sucesso');
-        } catch { }
-
-
-        // MIGRATION: Cadastro (v4.0)
-        try {
-            await executeQuery('ALTER TABLE cadastro ADD COLUMN estocavel INTEGER DEFAULT 1');
-            await executeQuery('ALTER TABLE cadastro ADD COLUMN vendavel INTEGER DEFAULT 1');
-            if (__DEV__) console.log('✅ Colunas estocavel/vendavel adicionadas');
-        } catch { }
-
-        // MIGRATION: Perfil de Usuário (v4.1)
-        try {
-            await executeQuery('ALTER TABLE usuarios ADD COLUMN nome_completo TEXT');
-            await executeQuery('ALTER TABLE usuarios ADD COLUMN telefone TEXT');
-            await executeQuery('ALTER TABLE usuarios ADD COLUMN endereco TEXT');
-            if (__DEV__) console.log('✅ Colunas de perfil adicionadas');
-        } catch { }
-
-        // MIGRATION: Colheita Congelado (v4.1)
-        try {
-            await executeQuery('ALTER TABLE colheitas ADD COLUMN congelado REAL DEFAULT 0');
-            if (__DEV__) console.log('✅ Coluna congelado adicionada');
-        } catch { }
-
-        // MIGRATION: Avatar Profile (v6.1)
-        try {
-            await executeQuery('ALTER TABLE usuarios ADD COLUMN avatar TEXT');
-            if (__DEV__) console.log('✅ Coluna avatar adicionada');
-        } catch { }
-
-        // MIGRATION: Cadastro Fator Conversão (v4.2)
-        try {
-            await executeQuery('ALTER TABLE cadastro ADD COLUMN fator_conversao REAL DEFAULT 1');
-            console.log('✅ Coluna fator_conversao adicionada');
-        } catch { }
-
-        // MIGRATION: Monitoramento Severidade & Categoria (v21.0)
-        try {
-            await executeQuery('ALTER TABLE monitoramento_entidade ADD COLUMN severidade TEXT DEFAULT "BAIXA"');
-            await executeQuery('ALTER TABLE monitoramento_entidade ADD COLUMN categoria TEXT DEFAULT "OUTROS"');
-            if (__DEV__) console.log('✅ Monitoramento v21 Schema atualizado');
-        } catch { }
-        try {
-            await executeQuery('ALTER TABLE cadastro ADD COLUMN fator_conversao REAL DEFAULT 1');
-            console.log('✅ Coluna fator_conversao adicionada');
-        } catch { }
-
-        // MIGRATION: Compras Detalhes (v4.0)
-        try {
-            await executeQuery('ALTER TABLE compras ADD COLUMN detalhes TEXT');
-            if (__DEV__) console.log('✅ Coluna detalhes adicionada em compras');
-        } catch { }
-
-        // MIGRATION: Auth Providers (v5.2)
-        try {
-            await executeQuery('ALTER TABLE usuarios ADD COLUMN provider TEXT DEFAULT "local"');
-            await executeQuery('ALTER TABLE usuarios ADD COLUMN avatar_url TEXT');
-            if (__DEV__) console.log('✅ Colunas de Auth Provider adicionadas');
-        } catch { }
-
-        // MIGRATION: App Settings (FASE 10)
-        try {
-            await executeQuery(`
-                CREATE TABLE IF NOT EXISTS app_settings (
-                    id INTEGER PRIMARY KEY CHECK (id = 1),
-                    primary_color TEXT DEFAULT '#059669',
-                    theme_mode TEXT DEFAULT 'system',
-                    fazenda_nome TEXT,
-                    fazenda_produtor TEXT,
-                    fazenda_documento TEXT,
-                    fazenda_telefone TEXT,
-                    fazenda_email TEXT,
-                    fazenda_logo TEXT,
-                    fin_moeda TEXT DEFAULT 'R$',
-                    fin_mes_fiscal INTEGER DEFAULT 1,
-                    fin_calc_margem INTEGER DEFAULT 0,
-                    fin_vinc_custo INTEGER DEFAULT 0,
-                    fin_meta_lucro REAL,
-                    clima_api_key TEXT,
-                    clima_cidade TEXT,
-                    clima_gps INTEGER DEFAULT 1,
-                    clima_ativo INTEGER DEFAULT 1,
-                    rel_incluir_logo INTEGER DEFAULT 1,
-                    rel_modelo TEXT DEFAULT 'resumido',
-                    img_qualidade REAL DEFAULT 0.8,
-                    img_limite INTEGER DEFAULT 3,
-                    updated_at TEXT
-                )
-            `);
-            await executeQuery(`INSERT OR IGNORE INTO app_settings (id, updated_at) VALUES (1, ?)`, [new Date().toISOString()]);
-            if (__DEV__) console.log('✅ Tabela app_settings verificada/criada com sucesso');
-        } catch (e) { if (__DEV__) console.error('❌ Erro app_settings', e); }
-
-        // MIGRATION: Adubação (v5.4)
-        try {
-            await executeQuery(`CREATE TABLE IF NOT EXISTS planos_adubacao (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE NOT NULL,
-                nome_plano TEXT NOT NULL,
-                cultura TEXT,
-                tipo_aplicacao TEXT,
-                area_local TEXT,
-                descricao_tecnica TEXT,
-                status TEXT DEFAULT 'PLANEJADO',
-                data_criacao TEXT NOT NULL,
-                data_aplicacao TEXT,
-                anexos_uri TEXT,
-                last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0
-            )`);
-            console.log('✅ Tabela planos_adubacao criada/verificada');
-        } catch (e) { console.error('Erro table planos_adubacao:', e); }
-
-        // MIGRATION: Adubação (v5.4)
-        try {
-            await executeQuery(`CREATE TABLE IF NOT EXISTS planos_adubacao (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE NOT NULL,
-                nome_plano TEXT NOT NULL,
-                cultura TEXT,
-                tipo_aplicacao TEXT,
-                area_local TEXT,
-                descricao_tecnica TEXT,
-                status TEXT DEFAULT 'PLANEJADO',
-                data_criacao TEXT NOT NULL,
-                data_aplicacao TEXT,
-                anexos_uri TEXT,
-                last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0
-            )`);
-            console.log('✅ Tabela planos_adubacao criada/verificada');
-        } catch (e) { console.error('Erro table planos_adubacao:', e); }
-
-        // --- ARQUITETURA PROFISSIONAL MONITORAMENTO v6.0 ---
-
-        // 1. MONITORAMENTO (Núcleo)
-        try {
-            // Se já existir a tabela antiga, podemos renomear ou apenas criar a nova se não existir.
-            // Para garantir a estrutura nova, vamos criar 'monitoramento_v6' ou alterar a estrutura.
-            // Dada a mudança radical, vou criar tabelas novas limpas para esta arquitetura e
-            // o app usará elas.
-
-            await executeQuery(`CREATE TABLE IF NOT EXISTS monitoramento_entidade (
-                uuid TEXT PRIMARY KEY,
-                usuario_id TEXT,
-                area_id TEXT,
-                cultura_id TEXT,
-                data TEXT NOT NULL,
-                observacao_usuario TEXT,
-                status TEXT DEFAULT 'RASCUNHO', -- RASCUNHO / CONFIRMADO
-                nivel_confianca TEXT DEFAULT 'TÉCNICO', -- INFORMATIVO / TÉCNICO / VALIDADO
-                severidade TEXT DEFAULT 'BAIXA', -- BAIXA / MEDIA / ALTA
-                categoria TEXT DEFAULT 'OUTROS', -- PRAGA / DOENCA / NUTRICAO / CLIMA / OUTROS
-                criado_em TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0,
-                last_updated TEXT NOT NULL
-            )`);
-        } catch (e) { if (__DEV__) console.error('Erro table monitoramento_entidade', e); }
-
-        // 2. MONITORAMENTO MÍDIA
-        try {
-            await executeQuery(`CREATE TABLE IF NOT EXISTS monitoramento_media (
-                uuid TEXT PRIMARY KEY,
-                monitoramento_uuid TEXT NOT NULL,
-                tipo TEXT NOT NULL, -- IMAGEM / PDF / TEXTO
-                caminho_arquivo TEXT NOT NULL,
-                criado_em TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0,
-                last_updated TEXT NOT NULL,
-                FOREIGN KEY(monitoramento_uuid) REFERENCES monitoramento_entidade(uuid)
-            )`);
-        } catch (e) { if (__DEV__) console.error('Erro table monitoramento_media', e); }
-
-        // 3. ANÁLISE IA (Resultados)
-        try {
-            await executeQuery(`CREATE TABLE IF NOT EXISTS analise_ia (
-                uuid TEXT PRIMARY KEY,
-                monitoramento_uuid TEXT NOT NULL,
-                classificacao_principal TEXT,
-                classificacoes_secundarias TEXT,
-                sintomas TEXT,
-                causa_provavel TEXT,
-                tipo_problema TEXT, -- DOENCA / PRAGA / DEFICIENCIA / MANEJO
-                nutriente TEXT,
-                sugestao_controle TEXT,
-                produtos_citados TEXT,
-                dosagem TEXT,
-                forma_aplicacao TEXT,
-                observacoes_tecnicas TEXT,
-                fonte_informacao TEXT,
-                criado_em TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0,
-                last_updated TEXT NOT NULL,
-                FOREIGN KEY(monitoramento_uuid) REFERENCES monitoramento_entidade(uuid)
-            )`);
-        } catch (e) { if (__DEV__) console.error('Erro table analise_ia', e); }
-
-        // 4. BASE DE CONHECIMENTO (Refinada)
-        try {
-            await executeQuery(`CREATE TABLE IF NOT EXISTS base_conhecimento_pro (
-                uuid TEXT PRIMARY KEY,
-                tipo TEXT NOT NULL,
-                cultura_id TEXT,
-                titulo TEXT NOT NULL,
-                descricao TEXT,
-                sintomas TEXT,
-                causas TEXT,
-                controle TEXT,
-                fonte TEXT,
-                nivel_confianca TEXT,
-                ativo INTEGER DEFAULT 1,
-                last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0
-            )`);
-
-            // Seed Inicial Pro
-            const count = await executeQuery('SELECT COUNT(*) as c FROM base_conhecimento_pro');
-            if (count.rows.item(0).c === 0) {
-                await seedKnowledgeBasePro();
-            }
-
-        } catch (e) { console.error('Erro table base_conhecimento_pro', e); }
-
-        // MIGRATION: Cadastro V7.0 (Campos Agrícolas Avançados)
-        try {
-            const newCols = [
-                'principio_ativo TEXT',
-                'classe_toxicologica TEXT',
-                'composicao TEXT',
-                'preco_venda REAL DEFAULT 0',
-                'descricao_ia TEXT',         // V7.0: IA Cache
-                'validado_por TEXT',         // V7.0: Validação
-                'data_validacao TEXT'        // V7.0: Data Val
-            ];
-            for (const col of newCols) {
-                try { await executeQuery(`ALTER TABLE cadastro ADD COLUMN ${col}`); } catch { }
-            }
-            if (__DEV__) console.log('✅ Colunas V7.0 (Cadastro Agrícola & IA) verificadas.');
-        } catch { }
-
-        // MIGRATION: V7.0 - Tabelas de Mídia e Auditoria
-        try {
-            await executeQuery(`CREATE TABLE IF NOT EXISTS cadastro_midia (
-                uuid TEXT PRIMARY KEY,
-                produto_uuid TEXT NOT NULL,
-                tipo TEXT NOT NULL,        -- 'FOTO_PRODUTO' ou 'ROTULO_BULA'
-                caminho_local TEXT,        -- Path no dispositivo
-                url_remota TEXT,           -- URL no Cloud/Storage
-                ocr_texto_bruto TEXT,      -- Texto extraído via OCR desta imagem
-                criado_em TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0,
-                FOREIGN KEY(produto_uuid) REFERENCES cadastro(uuid)
-            )`);
-
-            await executeQuery(`CREATE TABLE IF NOT EXISTS auditoria_cadastro (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                produto_uuid TEXT NOT NULL,
-                campo_alterado TEXT NOT NULL,
-                valor_antigo TEXT,
-                valor_novo TEXT,
-                alterado_por TEXT NOT NULL,
-                data_alteracao TEXT NOT NULL
-            )`);
-            if (__DEV__) console.log('✅ Tabelas V7.0 (Mídia e Auditoria) criadas/verificadas');
-        } catch (e) { if (__DEV__) console.error('Erro migração V7.0', e); }
-
-
-        // MIGRATION: Soft Delete Flag
-        const tablesToCheck = ['usuarios', 'colheitas', 'monitoramento', 'vendas', 'estoque', 'compras', 'plantio', 'custos', 'descarte', 'cadastro', 'clientes', 'culturas', 'maquinas', 'manutencao_frota', 'receitas', 'planos_adubacao'];
-        for (const table of tablesToCheck) {
-            try { await executeQuery(`ALTER TABLE ${table} ADD COLUMN is_deleted INTEGER DEFAULT 0`); } catch { }
-        }
-
-        // MIGRATION: Coluna Anexo para Notas Fiscais e Recibos
-        const tablesWithAttachments = ['compras', 'vendas', 'colheitas', 'custos'];
-        for (const table of tablesWithAttachments) {
-            try { await executeQuery(`ALTER TABLE ${table} ADD COLUMN anexo TEXT`); } catch { }
-        }
-        if (__DEV__) console.log('✅ Colunas de Anexo migradas');
-
-        if (__DEV__) console.log('✅ Soft delete migrado');
-
-        if (__DEV__) console.log('✅ Arquitetura Monitoramento v6.0 Implementada');
-
-        // MIGRATION: V8.0 - Módulo de Centro de Custos Profissional
-        try {
-            await executeQuery(`CREATE TABLE IF NOT EXISTS cost_categories (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                type TEXT,
-                is_default INTEGER DEFAULT 0,
-                is_deleted INTEGER DEFAULT 0,
-                created_at TEXT
-            )`);
-
-            await executeQuery(`CREATE TABLE IF NOT EXISTS costs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                category_id INTEGER NOT NULL,
-                culture_id INTEGER,
-                fleet_id INTEGER,
-                quantity REAL,
-                unit_value REAL,
-                total_value REAL,
-                notes TEXT,
-                created_at TEXT,
-                is_deleted INTEGER DEFAULT 0,
-                FOREIGN KEY(category_id) REFERENCES cost_categories(id)
-            )`);
-
-            // Seed das categorias padrão
-            const countCat = await executeQuery('SELECT COUNT(*) as c FROM cost_categories');
-            if (countCat.rows.item(0).c === 0) {
-                const defaultCategories = [
-                    { name: 'Mão de Obra', type: 'variavel' },
-                    { name: 'Combustível', type: 'variavel' },
-                    { name: 'Manutenção', type: 'variavel' },
-                    { name: 'Insumos', type: 'variavel' },
-                    { name: 'Energia', type: 'fixa' },
-                    { name: 'Frete', type: 'variavel' },
-                    { name: 'Outros', type: 'variavel' }
-                ];
-                for (const cat of defaultCategories) {
-                    await executeQuery(
-                        `INSERT INTO cost_categories (name, type, is_default, created_at) VALUES (?, ?, ?, ?)`,
-                        [cat.name, cat.type, 1, new Date().toISOString()]
-                    );
-                }
-                if (__DEV__) console.log('✅ Categorias de Custos base criadas via Seed');
-            }
-            if (__DEV__) console.log('✅ Módulo de Custos Profissional (V8.0) criado/verificado');
-        } catch (e) {
-            if (__DEV__) console.log('❌ Erro migração V8.0 (Custos):', e?.message || e);
-        }
-
-        // MIGRATION: V8.1 - Notas Manuais Caderno Agrícola
-        try {
-            await executeQuery(`CREATE TABLE IF NOT EXISTS areas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE NOT NULL,
-                nome TEXT NOT NULL,
-                descricao TEXT,
-                observacao TEXT,
-                metragem REAL,
-                peso_medio_caixa REAL DEFAULT 1,
-                last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0,
-                is_deleted INTEGER DEFAULT 0
-            );`);
-            if (__DEV__) console.log('✅ Tabela areas verificada/criada');
-        } catch (e) { if (__DEV__) console.error('Erro table areas:', e); }
-
-        try {
-            await executeQuery(`CREATE TABLE IF NOT EXISTS caderno_notas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE NOT NULL,
-                observacao TEXT NOT NULL,
-                data TEXT NOT NULL,
-                last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0,
-                is_deleted INTEGER DEFAULT 0
-            )`);
-            if (__DEV__) console.log('✅ Tabela caderno_notas verificada/criada');
-        } catch { }
-
-        // MIGRATION: V9.0 - Financeiro (Contas a Receber)
-        try {
-            await executeQuery('ALTER TABLE vendas ADD COLUMN status_pagamento TEXT DEFAULT "A_RECEBER"');
-            await executeQuery('ALTER TABLE vendas ADD COLUMN data_recebimento TEXT');
-            await executeQuery('ALTER TABLE vendas ADD COLUMN forma_pagamento TEXT');
-            if (__DEV__) console.log('✅ Colunas de status_pagamento adicionadas na tabela vendas');
-        } catch { }
-
-        // MIGRATION: V9.0 - Financeiro (Categorias de Despesa e Custos)
-        try {
-            await executeQuery(`CREATE TABLE IF NOT EXISTS categorias_despesa (
-                id TEXT PRIMARY KEY,
-                nome TEXT NOT NULL,
-                tipo TEXT,
-                created_at TEXT
-            )`);
-            if (__DEV__) console.log('✅ Tabela categorias_despesa verificada/criada');
-        } catch { }
-
-        try {
-            await executeQuery('ALTER TABLE custos ADD COLUMN categoria_id TEXT');
-            if (__DEV__) console.log('✅ Coluna categoria_id adicionada na tabela custos');
-        } catch { }
-
-        // MIGRATION: V9.1 - Logs de Auditoria e Erro (Fase 19)
-        try {
-            await executeQuery(`CREATE TABLE IF NOT EXISTS activity_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                data TEXT NOT NULL,
-                usuario TEXT,
-                acao TEXT NOT NULL,
-                entidade TEXT,
-                descricao TEXT,
-                sync_status INTEGER DEFAULT 0
-            )`);
-            await executeQuery(`CREATE TABLE IF NOT EXISTS error_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE,
-                usuario_id TEXT,
-                data TEXT NOT NULL,
-                created_at TEXT,
-                tela TEXT,
-                erro TEXT,
-                stack TEXT,
-                sync_status INTEGER DEFAULT 0
-            )`);
-            if (__DEV__) console.log('✅ Tabelas activity_log e error_logs verificadas/criadas');
-        } catch { }
-
-        // FASE 1: DEDUPLICAR CLIENTES EXISTENTES NO INÍCIO DO APP
+        // Tarefas pós-transação que exigem lógica JS (Deduplicação e Seeds pesados)
         await deduplicateClientes();
-
-        // =============================================
-        // MIGRATION: v8.1 — Unidades de Medida
-        // =============================================
-        try {
-            await executeQuery(`CREATE TABLE IF NOT EXISTS unidades_medida (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nome TEXT NOT NULL,
-                sigla TEXT NOT NULL UNIQUE
-            )`);
-            const countUn = await executeQuery('SELECT COUNT(*) as c FROM unidades_medida');
-            if (countUn.rows.item(0).c === 0) {
-                const defaultUnits = [
-                    ['Quilograma', 'KG'], ['Caixa', 'CX'], ['Unidade', 'UNI'],
-                    ['Metro', 'M'], ['Litro', 'LT'], ['Saco', 'SC'], ['Bandeja', 'BDJ'],
-                    ['Hectare', 'HA'], ['Cambuca', 'CBC']
-                ];
-                for (const [nome, sigla] of defaultUnits) {
-                    await executeQuery('INSERT OR IGNORE INTO unidades_medida (nome, sigla) VALUES (?, ?)', [nome, sigla]);
-                }
-                if (__DEV__) console.log('✅ Seed unidades_medida concluído');
-            } else {
-                // MIGRATION: Adicionar ha, cbc e M se os outros já existirem
-                await executeQuery('INSERT OR IGNORE INTO unidades_medida (nome, sigla) VALUES (?, ?)', ['Hectare', 'HA']);
-                await executeQuery('INSERT OR IGNORE INTO unidades_medida (nome, sigla) VALUES (?, ?)', ['Cambuca', 'CBC']);
-                await executeQuery('INSERT OR IGNORE INTO unidades_medida (nome, sigla) VALUES (?, ?)', ['Metro', 'M']);
-            }
-            if (__DEV__) console.log('✅ Tabela unidades_medida verificada/criada');
-        } catch (e) { if (__DEV__) console.error('Erro unidades_medida:', e); }
-
-        // MIGRATION: v8.1 — unidade_id na tabela cadastro
-        try {
-            await executeQuery('ALTER TABLE cadastro ADD COLUMN unidade_id INTEGER REFERENCES unidades_medida(id)');
-            if (__DEV__) console.log('✅ Coluna unidade_id adicionada em cadastro');
-        } catch { }
-
-        // MIGRATION: v8.1 — peso_medio_caixa na tabela culturas
-        try {
-            await executeQuery('ALTER TABLE culturas ADD COLUMN peso_medio_caixa REAL DEFAULT 1');
-            if (__DEV__) console.log('✅ Coluna peso_medio_caixa adicionada em culturas');
-        } catch { }
-
-        // MIGRATION: v8.1 — valor_recebido na tabela vendas
-        try {
-            await executeQuery('ALTER TABLE vendas ADD COLUMN valor_recebido REAL');
-            if (__DEV__) console.log('✅ Coluna valor_recebido adicionada em vendas');
-        } catch { }
-
-        // MIGRATION: v8.1 — Movimentação de Estoque Profissional
-        try {
-            await executeQuery(`CREATE TABLE IF NOT EXISTS movimentacao_estoque (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE NOT NULL,
-                produto_id TEXT NOT NULL,
-                tipo TEXT NOT NULL,
-                quantidade REAL NOT NULL,
-                origem TEXT,
-                data TEXT NOT NULL,
-                observacao TEXT,
-                last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0
-            )`);
-            if (__DEV__) console.log('✅ Tabela movimentacao_estoque verificada/criada');
-        } catch (e) { if (__DEV__) console.error('Erro movimentacao_estoque:', e); }
-
-        // MIGRATION: v8.5 — Configurações Unificadas (Fase 23)
-        try {
-            const configCols = [
-                'fazenda_area REAL',
-                'fazenda_safra TEXT',
-                'unidade_padrao TEXT DEFAULT "KG"',
-                'rel_graficos INTEGER DEFAULT 1',
-                'rel_auto_pdf INTEGER DEFAULT 0',
-                'rel_rodape TEXT'
-            ];
-            for (const col of configCols) {
-                try { await executeQuery(`ALTER TABLE app_settings ADD COLUMN ${col}`); } catch { }
-            }
-        } catch { }
-
-        // MIGRATION: v8.6 — codigo na tabela cadastro
-        try { await executeQuery('ALTER TABLE cadastro ADD COLUMN codigo TEXT'); } catch { }
-
-        // MIGRATION: v8.6 — cidade e estado na tabela clientes
-        try { await executeQuery('ALTER TABLE clientes ADD COLUMN cidade TEXT'); } catch { }
-        try { await executeQuery('ALTER TABLE clientes ADD COLUMN estado TEXT'); } catch { }
         
-        // MIGRATION: v8.8 — Profissionalização de Logs de Erro
-        try { await executeQuery('ALTER TABLE error_logs ADD COLUMN usuario_id TEXT'); } catch { }
-        try { await executeQuery('ALTER TABLE error_logs ADD COLUMN created_at TEXT'); } catch { }
-
-        // MIGRATION: v8.7 — Padronização Universal de IDENTIFICADORES (Fim do Erro 42703)
-        const tablesToFix = ['usuarios', 'estoque', 'app_settings', 'activity_log', 'error_logs', 'unidades_medida'];
-        for (const table of tablesToFix) {
-            try {
-                await executeQuery(`ALTER TABLE ${table} ADD COLUMN uuid TEXT`);
-                if (__DEV__) console.log(`📏 Coluna uuid adicionada à tabela ${table}`);
-            } catch { }
+        const countKnowledge = await executeQuery('SELECT COUNT(*) as c FROM base_conhecimento_pro');
+        if (countKnowledge.rows.item(0).c === 0) {
+            await seedKnowledgeBasePro();
         }
 
-        // Tenta povoar uuids vazios para compatibilidade
-        try {
-            const uuid = require('uuid');
-            for (const table of tablesToFix) {
-                const pendentes = await executeQuery(`SELECT id FROM ${table} WHERE uuid IS NULL OR uuid = ''`);
-                for (let i = 0; i < pendentes.rows.length; i++) {
-                    const id = pendentes.rows.item(i).id;
-                    await executeQuery(`UPDATE ${table} SET uuid = ? WHERE id = ?`, [uuid.v4(), id]);
-                }
-            }
-            // MIGRATION: v8.6.0 — Paridade v8.5.6 Supabase
-            // =============================================
-            if (__DEV__) console.log('🔄 Iniciando Migração v8.6.0 (Paridade Supabase v8.5.6)...');
+        if (__DEV__) console.log("✅ Ciclo de inicialização DIAMOND finalizado com sucesso.");
 
-            // Colheitas
-            try { await executeQuery('ALTER TABLE colheitas ADD COLUMN area_id TEXT'); } catch { }
-            try { await executeQuery('ALTER TABLE colheitas ADD COLUMN usuario_id TEXT'); } catch { }
-            try { await executeQuery('ALTER TABLE colheitas ADD COLUMN data_colheita TEXT'); } catch { }
-            try { await executeQuery('ALTER TABLE colheitas ADD COLUMN anexo TEXT'); } catch { }
-
-            // Vendas
-            try { await executeQuery('ALTER TABLE vendas ADD COLUMN usuario_id TEXT'); } catch { }
-
-            // Áreas
-            try { await executeQuery('ALTER TABLE areas ADD COLUMN metragem REAL'); } catch { }
-            try { await executeQuery('ALTER TABLE areas ADD COLUMN peso_medio_caixa REAL DEFAULT 1'); } catch { }
-
-            // Clientes
-            try { await executeQuery('ALTER TABLE clientes ADD COLUMN cidade TEXT'); } catch { }
-            try { await executeQuery('ALTER TABLE clientes ADD COLUMN estado TEXT'); } catch { }
-            try { await executeQuery('ALTER TABLE clientes ADD COLUMN observacao_legada TEXT'); } catch { }
-
-            // Cadastro (Mapeado como items no remoto)
-            try { await executeQuery('ALTER TABLE cadastro ADD COLUMN unidade_id INTEGER'); } catch { }
-
-            // Reseta contadores e erros para re-sincronizar se necessário
-            const syncTablesFinal = [
-                'usuarios', 'colheitas', 'vendas', 'estoque', 'compras', 'plantio', 'custos',
-                'clientes', 'culturas', 'maquinas', 'receitas', 'profiles',
-                'movimentacoes_financeiras', 'caderno_notas', 'areas', 'cadastro'
-            ];
-            for (const tr of syncTablesFinal) {
-                try { await executeQuery(`UPDATE ${tr} SET sync_status = 0 WHERE sync_status = 2`); } catch { }
+    } catch (error) {
+        console.error('❌ ERRO CRÍTICO DIAMOND SETUP:', error);
+    }
+};atch { }
             }
 
             console.log('✅ Migração v8.6.0 Concluída.');
