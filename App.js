@@ -59,8 +59,8 @@ export default function App() {
     const [isDbReady, setIsDbReady] = useState(false);
 
     useEffect(() => {
-        // Inicia o motor de sincronização ao abrir o app
-        SyncWorker.run();
+        // Inicializa o motor de sincronização ao abrir o app (Removido daqui para esperar o DB)
+        // SyncWorker.run(); 
 
         // Inicializa OTA Updates primeiro de tudo
         async function checkUpdates() {

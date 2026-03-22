@@ -79,8 +79,8 @@ export default function LoginScreen({ navigation }) {
 
                 <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                     
-                    <View style={{ backgroundColor: '#D4AF37', padding: 10, borderRadius: 10, marginBottom: 20 }}>
-                        <Text style={{ color: '#000000', fontWeight: 'bold', textAlign: 'center' }}>🔱 AGROGB V1.0 (OFFICIAL GOLD) 🔱</Text>
+                    <View style={{ backgroundColor: '#00FFFF', padding: 10, borderRadius: 10, marginBottom: 20 }}>
+                        <Text style={{ color: '#000000', fontWeight: 'bold', textAlign: 'center' }}>💎 AGROGB V1.1 (DIAMOND STABLE) 💎</Text>
                     </View>
 
                     <View style={styles.headerContainer}>

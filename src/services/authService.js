@@ -109,8 +109,8 @@ export const login = async (email, password) => {
         
         const localCheck = await promiseWithTimeout(
             executeQuery(`SELECT id FROM v2_produtores WHERE id = ?`, [data.user.id]),
-            5000,
-            "O banco de dados local não respondeu. Tente reiniciar o app."
+            30000,
+            "O banco de dados local está processando configurações iniciais. Aguarde um momento e tente novamente."
         );
         
         if (localCheck.rows.length === 0) {
