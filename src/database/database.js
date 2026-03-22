@@ -217,16 +217,8 @@ const createTables = async () => {
         console.error('❌ ERRO CRÍTICO DIAMOND SETUP:', error);
     }
 };
-            }
 
-            console.log('✅ Migração v8.6.0 Concluída.');
-
-        } catch { }
-
-    } catch (error) {
-        console.error('❌ Erro ao criar tabelas:', error);
-    }
-};
+export const deduplicateClientes = async () => {
 
 
 export const deduplicateClientes = async () => {
