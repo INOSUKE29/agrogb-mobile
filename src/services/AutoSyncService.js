@@ -13,7 +13,7 @@
  *   AutoSyncService.trigger(); // após salvar dados
  */
 
-import { syncAllMaster } from './supabase';
+import { pullServerChanges, pushLocalChanges } from './SyncService';
 
 const SYNC_INTERVAL_MS = 2 * 60 * 1000; // 2 minutos
 const DEBOUNCE_MS = 3000; // aguarda 3s após último trigger para evitar spam
@@ -94,10 +94,12 @@ class AutoSyncService {
         this._notify('syncing');
 
         try {
-            await syncAllMaster();
+            console.log('🔄 AutoSync: Iniciando Push/Pull...');
+            await pushLocalChanges();
+            await pullServerChanges();
             this._lastSync = Date.now();
             this._notify('done');
-            console.log('✅ AutoSync: concluído');
+            console.log('✅ AutoSync: Concluído com sucesso');
         } catch (e) {
             console.log('❌ AutoSync: erro -', e?.message || e);
             this._notify('error');
