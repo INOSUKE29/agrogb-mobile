@@ -16,20 +16,36 @@ export const executeQuery = (sql, params = []) => {
             reject(new Error('Banco não inicializado'));
             return;
         }
-        db.transaction(tx => {
-            tx.executeSql(
-                sql,
-                params,
-                (_, result) => resolve(result),
-                (_, error) => {
-                    // Silenciando o RedBox do React Native p/ erros triviais de Schema (Duplicate Column)
-                    if (__DEV__) {
-                        console.log('⚠️ Aviso SQL Interno:', sql, error.message);
+        // Timeout de segurança de 10s por query
+        const queryTimeout = setTimeout(() => {
+            if (__DEV__) console.warn('🕒 [Query Timeout] A query demorou demais:', sql);
+            reject(new Error('Timeout de execução SQL'));
+        }, 10000);
+
+        try {
+            db.transaction(tx => {
+                tx.executeSql(
+                    sql,
+                    params,
+                    (_, result) => {
+                        clearTimeout(queryTimeout);
+                        resolve(result);
+                    },
+                    (_, error) => {
+                        clearTimeout(queryTimeout);
+                        if (__DEV__) console.log('⚠️ Erro SQL:', sql, error.message);
+                        reject(error);
                     }
-                    reject(error);
-                }
-            );
-        });
+                );
+            }, (txError) => {
+                clearTimeout(queryTimeout);
+                if (__DEV__) console.error('❌ Erro de Transação SQLite:', txError.message);
+                reject(txError);
+            });
+        } catch (e) {
+            clearTimeout(queryTimeout);
+            reject(e);
+        }
     });
 };
 

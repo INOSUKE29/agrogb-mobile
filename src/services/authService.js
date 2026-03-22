@@ -78,13 +78,14 @@ export const register = async (nome, email, password) => {
 
 export const login = async (email, password) => {
     try {
-        if (__DEV__) console.log('[AuthService] Chamando Supabase signIn...');
+        if (__DEV__) console.log('[AuthService] Chamando Supabase signIn (com timeout de 15s)...');
         
-        // 1. Login no Supabase Auth
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+        // 1. Login no Supabase Auth com Timeout
+        const { data, error } = await promiseWithTimeout(
+            supabase.auth.signInWithPassword({ email, password }),
+            15000,
+            "Tempo de resposta do servidor excedido. Verifique sua conexão."
+        );
 
         if (__DEV__) console.log('[AuthService] Resposta Supabase recebida:', { hasData: !!data, hasError: !!error });
 
@@ -103,9 +104,14 @@ export const login = async (email, password) => {
         if (__DEV__) console.log('[AuthService] Salvando sessão no SecureStore...');
         await safeSave('@user_session', session);
 
-        // 3. Verifica se o produtor existe localmente no V2, senão cria/puxa
+        // 3. Verifica se o produtor existe localmente no V2, senão cria/puxa com Timeout
         if (__DEV__) console.log('[AuthService] Verificando produtor local no SQLite...');
-        const localCheck = await executeQuery(`SELECT id FROM v2_produtores WHERE id = ?`, [data.user.id]);
+        
+        const localCheck = await promiseWithTimeout(
+            executeQuery(`SELECT id FROM v2_produtores WHERE id = ?`, [data.user.id]),
+            5000,
+            "O banco de dados local não respondeu. Tente reiniciar o app."
+        );
         
         if (localCheck.rows.length === 0) {
             if (__DEV__) console.log('[AuthService] Criando registro de produtor local...');
@@ -122,6 +128,16 @@ export const login = async (email, password) => {
         if (__DEV__) console.error("LOGIN_FATAL_ERROR:", e);
         return { success: false, message: e.message || "Erro interno de autenticação" };
     }
+};
+
+/**
+ * Auxiliar para Timeout de Promessa
+ */
+const promiseWithTimeout = (promise, ms, message) => {
+    const timeout = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error(message)), ms);
+    });
+    return Promise.race([promise, timeout]);
 };
 
 const checkSession = async () => {

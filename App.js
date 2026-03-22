@@ -82,12 +82,14 @@ export default function App() {
         // Inicializa banco de dados ANTES de renderizar qualquer contexto
         initDB()
             .then(() => {
-                console.log("DEBUG: DB IS READY");
+                if (__DEV__) console.log("DEBUG: DB IS READY");
                 setIsDbReady(true);
                 AutoSyncService.start();
             })
             .catch(error => {
-                console.error("Falha fatal na inicialização do DB:", error);
+                if (__DEV__) console.error("Falha fatal na inicialização do DB:", error);
+                // Forçar aparecimento da tela mesmo com erro para debug?
+                // setIsDbReady(true); 
             });
 
         return () => {
