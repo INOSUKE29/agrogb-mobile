@@ -29,18 +29,35 @@ export default function LoginScreen({ navigation }) {
         }
 
         setLoading(true);
+        
+        // Monitor de Travamento (Fail-Safe UI)
+        const watchdog = setTimeout(() => {
+            setLoading(false);
+            if (__DEV__) console.warn('[LoginScreen] Monitor de travamento acionado após 20s.');
+            Alert.alert(
+                'Tempo de Resposta Excedido', 
+                'Não recebemos resposta do sistema. Verifique sua conexão ou a chave do Supabase.',
+                [{ text: 'Tentar Novamente' }]
+            );
+        }, 20000);
+
         try {
             const res = await login(email, password);
+            clearTimeout(watchdog);
+            
             if (res.success) {
+                if (__DEV__) console.log('[LoginScreen] Sucesso! Redirecionando...');
                 navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
             } else {
                 Alert.alert('Acesso Negado', res.message || 'Credenciais inválidas.');
             }
         } catch (error) {
+            clearTimeout(watchdog);
             console.error('[LoginScreen] Ocorreu um erro fatal durante handleLogin:', error);
             ErrorService.logError('LoginScreen', error);
             Alert.alert('Erro no Aplicativo', `Não foi possível completar o login: ${error.message || 'Erro desconhecido'}`);
         } finally {
+            clearTimeout(watchdog);
             if (__DEV__) console.log('[LoginScreen] Finalizando estado de loading.');
             setLoading(false);
         }
@@ -62,6 +79,10 @@ export default function LoginScreen({ navigation }) {
 
                 <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                     
+                    <View style={{ backgroundColor: '#FF0000', padding: 10, borderRadius: 10, marginBottom: 20 }}>
+                        <Text style={{ color: '#FFFFFF', fontWeight: 'bold', textAlign: 'center' }}>⚠️ AMBIENTE DE DEBUG ATIVO (v10.6) ⚠️</Text>
+                    </View>
+
                     <View style={styles.headerContainer}>
                         <View style={styles.logoShadow}>
                             <Image
@@ -146,7 +167,7 @@ export default function LoginScreen({ navigation }) {
                     </View>
 
                     <View style={styles.footer}>
-                        <Text style={styles.footerText}>AGROGB ERP • VERSION 10.1</Text>
+                        <Text style={styles.footerText}>AGROGB ERP • VERSION 10.6 (STABLE DEBUG)</Text>
                     </View>
                 </ScrollView>
             </LinearGradient>

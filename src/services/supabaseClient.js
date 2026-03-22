@@ -14,3 +14,10 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         detectSessionInUrl: false,
     },
 });
+
+if (__DEV__) {
+    console.log('[SupabaseClient] Configurado com URL:', SUPABASE_URL);
+    console.log('[SupabaseClient] Chave Anon (fragmento):', 
+        SUPABASE_ANON_KEY ? `${SUPABASE_ANON_KEY.substring(0, 6)}...${SUPABASE_ANON_KEY.substring(SUPABASE_ANON_KEY.length - 4)}` : 'NULL'
+    );
+}
