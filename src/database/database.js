@@ -18,17 +18,22 @@ export const executeQuery = (sql, params = []) => {
         }
         // Timeout de segurança de 10s por query
         const queryTimeout = setTimeout(() => {
-            if (__DEV__) console.warn('🕒 [Query Timeout] A query demorou demais:', sql);
+            console.warn('🕒 [SQL TIMEOUT CRÍTICO]:', sql.substring(0, 100));
             reject(new Error('Timeout de execução SQL'));
         }, 10000);
 
         try {
             db.transaction(tx => {
+                const start = Date.now();
                 tx.executeSql(
                     sql,
                     params,
                     (_, result) => {
                         clearTimeout(queryTimeout);
+                        const duration = Date.now() - start;
+                        if (__DEV__ && duration > 1000) {
+                            console.log(`⚠️ Query Lenta (${duration}ms):`, sql.substring(0, 100));
+                        }
                         resolve(result);
                     },
                     (_, error) => {
@@ -278,12 +283,12 @@ const createTables = async () => {
             ...SCHEMA_V10
         ];
 
-        // Executar todas as queries de criação iniciais em sequência para evitar "database is locked"
-        for (const query of queries) {
+        // Executar queries de criação com log de progresso
+        for (let i = 0; i < queries.length; i++) {
             try {
-                await executeQuery(query);
+                await executeQuery(queries[i]);
             } catch (error) {
-                if (__DEV__) console.log("Aviso ao criar tabela: ", error.message);
+                if (__DEV__) console.log(`Aviso ao criar tabela [${i}]:`, error.message);
             }
         }
 
