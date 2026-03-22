@@ -79,8 +79,8 @@ export default function LoginScreen({ navigation }) {
 
                 <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                     
-                    <View style={{ backgroundColor: '#FF8C00', padding: 10, borderRadius: 10, marginBottom: 20 }}>
-                        <Text style={{ color: '#FFFFFF', fontWeight: 'bold', textAlign: 'center' }}>⚠️ BUGFIX SQL ATIVO (v10.6.2 ORANGE) ⚠️</Text>
+                    <View style={{ backgroundColor: '#D4AF37', padding: 10, borderRadius: 10, marginBottom: 20 }}>
+                        <Text style={{ color: '#000000', fontWeight: 'bold', textAlign: 'center' }}>🔱 SOLUÇÃO DEFINITIVA (v10.7 GOLD) 🔱</Text>
                     </View>
 
                     <View style={styles.headerContainer}>
@@ -167,7 +167,7 @@ export default function LoginScreen({ navigation }) {
                     </View>
 
                     <View style={styles.footer}>
-                        <Text style={styles.footerText}>AGROGB ERP • VERSION 10.6.2 (ORANGE DEBUG)</Text>
+                        <Text style={styles.footerText}>AGROGB ERP • VERSION 10.7 (GOLD STABLE)</Text>
                     </View>
                 </ScrollView>
             </LinearGradient>

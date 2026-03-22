@@ -12,15 +12,15 @@ let db;
 export const executeQuery = (sql, params = []) => {
     return new Promise((resolve, reject) => {
         if (!db) {
-            if (__DEV__) console.error('❌ Banco de dados não inicializado');
             reject(new Error('Banco não inicializado'));
             return;
         }
-        // Timeout de segurança de 25s por query (aumentado v10.6.2)
+        
+        // Timeout de segurança de 30s por query (v10.7 Gold)
         const queryTimeout = setTimeout(() => {
             console.warn('🕒 [SQL TIMEOUT CRÍTICO]:', sql.substring(0, 100));
             reject(new Error('Timeout de execução SQL'));
-        }, 25000);
+        }, 30000);
 
         try {
             db.transaction(tx => {
@@ -31,7 +31,7 @@ export const executeQuery = (sql, params = []) => {
                     (_, result) => {
                         clearTimeout(queryTimeout);
                         const duration = Date.now() - start;
-                        if (__DEV__ && duration > 1000) {
+                        if (__DEV__ && duration > 2000) {
                             console.log(`⚠️ Query Lenta (${duration}ms):`, sql.substring(0, 100));
                         }
                         resolve(result);
@@ -44,13 +44,33 @@ export const executeQuery = (sql, params = []) => {
                 );
             }, (txError) => {
                 clearTimeout(queryTimeout);
-                if (__DEV__) console.error('❌ Erro de Transação SQLite:', txError.message);
                 reject(txError);
             });
         } catch (e) {
             clearTimeout(queryTimeout);
             reject(e);
         }
+    });
+};
+
+/**
+ * Executa múltiplas queries em uma ÚNICA transação atômica
+ * Essencial para evitar bloqueios de banco na inicialização
+ */
+export const executeTransaction = (queries) => {
+    return new Promise((resolve, reject) => {
+        if (!db) return reject(new Error('Banco não inicializado'));
+        
+        db.transaction(tx => {
+            queries.forEach(sql => {
+                tx.executeSql(sql, [], null, (_, err) => {
+                    console.warn('⚠️ Erro em lote:', sql.substring(0, 50), err.message);
+                    return false; // continua execução
+                });
+            });
+        }, 
+        (err) => reject(err), 
+        () => resolve());
     });
 };
 
@@ -283,14 +303,10 @@ const createTables = async () => {
             ...SCHEMA_V10
         ];
 
-        // Executar queries de criação com log de progresso
-        for (let i = 0; i < queries.length; i++) {
-            try {
-                await executeQuery(queries[i]);
-            } catch (error) {
-                if (__DEV__) console.log(`Aviso ao criar tabela [${i}]:`, error.message);
-            }
-        }
+        if (__DEV__) console.log(`🚀 v10.7 Gold: Iniciando transação atômica para ${queries.length} queries...`);
+        const start = Date.now();
+        await executeTransaction(queries);
+        if (__DEV__) console.log(`✨ Transação concluída em ${Date.now() - start}ms`);
 
         // Inserir Admin padrão se não existir (Paridade com Desktop)
         await executeQuery(`INSERT OR IGNORE INTO usuarios (usuario, senha, nivel, email, nome_completo) VALUES ('ADMIN', '1234', 'ADM', 'admin@agrogb.com', 'ADMINISTRADOR MESTRE')`);
