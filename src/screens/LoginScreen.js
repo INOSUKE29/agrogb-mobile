@@ -80,7 +80,7 @@ export default function LoginScreen({ navigation }) {
                 <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                     
                     <View style={{ backgroundColor: '#D4AF37', padding: 10, borderRadius: 10, marginBottom: 20 }}>
-                        <Text style={{ color: '#000000', fontWeight: 'bold', textAlign: 'center' }}>🔱 SOLUÇÃO DEFINITIVA (v10.7 GOLD) 🔱</Text>
+                        <Text style={{ color: '#000000', fontWeight: 'bold', textAlign: 'center' }}>🔱 AGROGB V1.0 (OFFICIAL GOLD) 🔱</Text>
                     </View>
 
                     <View style={styles.headerContainer}>
@@ -167,7 +167,7 @@ export default function LoginScreen({ navigation }) {
                     </View>
 
                     <View style={styles.footer}>
-                        <Text style={styles.footerText}>AGROGB ERP • VERSION 10.7 (GOLD STABLE)</Text>
+                        <Text style={styles.footerText}>AGROGB ERP • VERSION 1.0 (GOLD PRO)</Text>
                     </View>
                 </ScrollView>
             </LinearGradient>

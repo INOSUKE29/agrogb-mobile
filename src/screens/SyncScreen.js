@@ -320,8 +320,8 @@ export default function SyncScreen({ navigation }) {
                 )}
 
                 <View style={styles.footerInfo}>
-                    <Text style={[styles.versionText, { color: colors.textMuted }]}>AgroGB Intelligence Engine v8.5</Text>
-                    <Text style={[styles.buildText, { color: colors.textMuted }]}>Build: 2026.03.06 • Stable</Text>
+                    <Text style={[styles.versionText, { color: colors.textMuted }]}>AgroGB Intelligence Engine V1.0</Text>
+                    <Text style={[styles.buildText, { color: colors.textMuted }]}>Build: 2026.03.22 • PRO GOLD</Text>
                 </View>
             </ScrollView>
 
