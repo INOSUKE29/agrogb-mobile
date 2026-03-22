@@ -219,9 +219,6 @@ const createTables = async () => {
 };
 
 export const deduplicateClientes = async () => {
-
-
-export const deduplicateClientes = async () => {
     try {
         console.log('🧹 Iniciando deduplicação de clientes...');
         const res = await executeQuery('SELECT * FROM clientes WHERE is_deleted = 0 ORDER BY id ASC');
