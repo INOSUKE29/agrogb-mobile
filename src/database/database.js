@@ -82,10 +82,14 @@ export const initDB = async () => {
         return db;
     } catch (error) {
         console.error('[DATABASE ERROR] Erro ao abrir banco:', error);
- const createTables = async () => {
+        throw error;
+    }
+};
+
+const createTables = async () => {
     try {
         const queries = [
-            // --- TABELAS BASE ---
+            // --- TABELAS BASE (LEGADO) ---
             `CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, usuario TEXT UNIQUE NOT NULL, senha TEXT NOT NULL, nivel TEXT DEFAULT 'USUARIO', email TEXT, nome_completo TEXT, telefone TEXT, endereco TEXT, avatar TEXT, provider TEXT DEFAULT 'local', avatar_url TEXT, created_at TEXT, last_updated TEXT, is_deleted INTEGER DEFAULT 0, sync_status INTEGER DEFAULT 0, uuid TEXT UNIQUE);`,
             `CREATE TABLE IF NOT EXISTS colheitas (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, area_id TEXT, usuario_id TEXT, cultura TEXT NOT NULL, produto TEXT NOT NULL, quantidade REAL NOT NULL, data_colheita TEXT, data TEXT NOT NULL, observacao TEXT, anexo TEXT, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
             `CREATE TABLE IF NOT EXISTS monitoramento (uuid TEXT PRIMARY KEY, cultura TEXT, data TEXT, imagem_base64 TEXT, observacao TEXT, sync_status INTEGER DEFAULT 0, last_updated TEXT NOT NULL);`,
@@ -199,7 +203,7 @@ export const initDB = async () => {
         await executeTransaction(queries);
         if (__DEV__) console.log(`✨ DIAMOND SETUP concluído em ${Date.now() - start}ms`);
 
-        // Tarefas pós-transação que exigem lógica JS (Deduplicação e Seeds pesados)
+        // Tarefas pós-transação exigindo lógica (Deduplicação e Seeds)
         await deduplicateClientes();
         
         const countKnowledge = await executeQuery('SELECT COUNT(*) as c FROM base_conhecimento_pro');
@@ -212,7 +216,7 @@ export const initDB = async () => {
     } catch (error) {
         console.error('❌ ERRO CRÍTICO DIAMOND SETUP:', error);
     }
-};atch { }
+};
             }
 
             console.log('✅ Migração v8.6.0 Concluída.');
