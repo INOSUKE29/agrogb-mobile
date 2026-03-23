@@ -3,7 +3,7 @@ import { v4 } from 'uuid';
 import { atualizarEstoque } from '../services/EstoqueService';
 import { SCHEMA_V10 } from './schema_v10';
 
-
+import { V1_DIAMOND_PRO } from './migrations/v1_diamond_pro';
 
 const __DEV__ = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
 let db;
@@ -88,119 +88,14 @@ export const initDB = async () => {
 
 const createTables = async () => {
     try {
-        const queries = [
-            // --- TABELAS BASE (LEGADO) ---
-            `CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, usuario TEXT UNIQUE NOT NULL, senha TEXT NOT NULL, nivel TEXT DEFAULT 'USUARIO', email TEXT, nome_completo TEXT, telefone TEXT, endereco TEXT, avatar TEXT, provider TEXT DEFAULT 'local', avatar_url TEXT, created_at TEXT, last_updated TEXT, is_deleted INTEGER DEFAULT 0, sync_status INTEGER DEFAULT 0, uuid TEXT UNIQUE);`,
-            `CREATE TABLE IF NOT EXISTS colheitas (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, area_id TEXT, usuario_id TEXT, cultura TEXT NOT NULL, produto TEXT NOT NULL, quantidade REAL NOT NULL, data_colheita TEXT, data TEXT NOT NULL, observacao TEXT, anexo TEXT, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
-            `CREATE TABLE IF NOT EXISTS monitoramento (uuid TEXT PRIMARY KEY, cultura TEXT, data TEXT, imagem_base64 TEXT, observacao TEXT, sync_status INTEGER DEFAULT 0, last_updated TEXT NOT NULL);`,
-            `CREATE TABLE IF NOT EXISTS vendas (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, usuario_id TEXT, cliente_id TEXT, cliente TEXT NOT NULL, produto_id TEXT, produto TEXT NOT NULL, quantidade REAL NOT NULL, valor REAL NOT NULL, valor_recebido REAL, status_pagamento TEXT DEFAULT 'A_RECEBER', data_venda TEXT, data_recebimento TEXT, forma_pagamento TEXT, data TEXT NOT NULL, observacao TEXT, anexo TEXT, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
-            `CREATE TABLE IF NOT EXISTS config (chave TEXT PRIMARY KEY, valor TEXT);`,
-            `CREATE TABLE IF NOT EXISTS estoque (id INTEGER PRIMARY KEY AUTOINCREMENT, produto TEXT UNIQUE NOT NULL, quantidade REAL NOT NULL, last_updated TEXT NOT NULL);`,
-            `CREATE TABLE IF NOT EXISTS compras (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, item TEXT NOT NULL, quantidade REAL NOT NULL, valor REAL NOT NULL, cultura TEXT, data TEXT NOT NULL, observacao TEXT, detalhes TEXT, anexo TEXT, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
-            `CREATE TABLE IF NOT EXISTS plantio (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, cultura TEXT NOT NULL, quantidade_pes INTEGER NOT NULL, tipo_plantio TEXT, data TEXT NOT NULL, observacao TEXT, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
-            `CREATE TABLE IF NOT EXISTS custos (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, produto TEXT NOT NULL, tipo TEXT, quantidade REAL NOT NULL, valor_total REAL NOT NULL, data TEXT NOT NULL, observacao TEXT, anexo TEXT, categoria_id TEXT, created_at TEXT, last_updated TEXT NOT NULL, is_deleted INTEGER DEFAULT 0, sync_status INTEGER DEFAULT 0);`,
-            `CREATE TABLE IF NOT EXISTS descarte (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, produto TEXT NOT NULL, quantidade_kg REAL NOT NULL, motivo TEXT, data TEXT NOT NULL, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
-            `CREATE TABLE IF NOT EXISTS cadastro (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, nome TEXT NOT NULL, unidade TEXT, tipo TEXT, observacao TEXT, fator_conversao REAL DEFAULT 1, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
-            `CREATE TABLE IF NOT EXISTS clientes (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, nome TEXT NOT NULL, telefone TEXT, cidade TEXT, estado TEXT, endereco TEXT, cpf_cnpj TEXT, observacoes TEXT, observacao_legada TEXT, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0, is_deleted INTEGER DEFAULT 0);`,
-            `CREATE TABLE IF NOT EXISTS culturas (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, nome TEXT NOT NULL, observacao TEXT, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
-            `CREATE TABLE IF NOT EXISTS maquinas (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, nome TEXT NOT NULL, tipo TEXT NOT NULL, placa TEXT, horimetro_atual REAL DEFAULT 0, intervalo_revisao REAL DEFAULT 10000, status TEXT DEFAULT 'OK', last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
-            `CREATE TABLE IF NOT EXISTS manutencao_frota (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, maquina_uuid TEXT NOT NULL, data TEXT NOT NULL, descricao TEXT NOT NULL, valor REAL NOT NULL, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
-            `CREATE TABLE IF NOT EXISTS receitas (id INTEGER PRIMARY KEY AUTOINCREMENT, produto_pai_uuid TEXT NOT NULL, item_filho_uuid TEXT NOT NULL, quantidade REAL NOT NULL, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
-            `CREATE TABLE IF NOT EXISTS profiles (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE, usuario_id INTEGER, full_name TEXT, bio TEXT, last_updated TEXT, sync_status INTEGER DEFAULT 0);`,
-            `CREATE TABLE IF NOT EXISTS movimentacoes_financeiras (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE, tipo TEXT, valor REAL, data TEXT, descricao TEXT, created_at TEXT, last_updated TEXT, is_deleted INTEGER DEFAULT 0, sync_status INTEGER DEFAULT 0);`,
-
-            // --- SCHEMA V10 (SUPABASE SYNC CORE) ---
-            ...SCHEMA_V10,
-
-            // --- MIGRATIONS CONSOLIDADAS (ALTER TABLES) ---
-            `ALTER TABLE usuarios ADD COLUMN email TEXT;`,
-            `ALTER TABLE cadastro ADD COLUMN estocavel INTEGER DEFAULT 1;`,
-            `ALTER TABLE cadastro ADD COLUMN vendavel INTEGER DEFAULT 1;`,
-            `ALTER TABLE usuarios ADD COLUMN nome_completo TEXT;`,
-            `ALTER TABLE usuarios ADD COLUMN telefone TEXT;`,
-            `ALTER TABLE usuarios ADD COLUMN endereco TEXT;`,
-            `ALTER TABLE colheitas ADD COLUMN congelado REAL DEFAULT 0;`,
-            `ALTER TABLE usuarios ADD COLUMN avatar TEXT;`,
-            `ALTER TABLE cadastro ADD COLUMN fator_conversao REAL DEFAULT 1;`,
-            `ALTER TABLE monitoramento_entidade ADD COLUMN severidade TEXT DEFAULT "BAIXA";`,
-            `ALTER TABLE monitoramento_entidade ADD COLUMN categoria TEXT DEFAULT "OUTROS";`,
-            `ALTER TABLE compras ADD COLUMN detalhes TEXT;`,
-            `ALTER TABLE usuarios ADD COLUMN provider TEXT DEFAULT "local";`,
-            `ALTER TABLE usuarios ADD COLUMN avatar_url TEXT;`,
-            `ALTER TABLE compras ADD COLUMN anexo TEXT;`,
-            `ALTER TABLE vendas ADD COLUMN anexo TEXT;`,
-            `ALTER TABLE colheitas ADD COLUMN anexo TEXT;`,
-            `ALTER TABLE custos ADD COLUMN anexo TEXT;`,
-
-            // App Settings
-            `CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), updated_at TEXT);`,
-            `ALTER TABLE app_settings ADD COLUMN primary_color TEXT DEFAULT '#059669';`,
-            `ALTER TABLE app_settings ADD COLUMN theme_mode TEXT DEFAULT 'system';`,
-            `ALTER TABLE app_settings ADD COLUMN fazenda_nome TEXT;`,
-            `ALTER TABLE app_settings ADD COLUMN fazenda_produtor TEXT;`,
-            `ALTER TABLE app_settings ADD COLUMN fazenda_documento TEXT;`,
-            `ALTER TABLE app_settings ADD COLUMN fazenda_telefone TEXT;`,
-            `ALTER TABLE app_settings ADD COLUMN fazenda_email TEXT;`,
-            `ALTER TABLE app_settings ADD COLUMN fazenda_logo TEXT;`,
-            `ALTER TABLE app_settings ADD COLUMN fin_moeda TEXT DEFAULT 'R$';`,
-            `ALTER TABLE app_settings ADD COLUMN fin_mes_fiscal INTEGER DEFAULT 1;`,
-            `ALTER TABLE app_settings ADD COLUMN fin_calc_margem INTEGER DEFAULT 0;`,
-            `ALTER TABLE app_settings ADD COLUMN fin_vinc_custo INTEGER DEFAULT 0;`,
-            `ALTER TABLE app_settings ADD COLUMN fin_meta_lucro REAL;`,
-            `ALTER TABLE app_settings ADD COLUMN clima_api_key TEXT;`,
-            `ALTER TABLE app_settings ADD COLUMN clima_cidade TEXT;`,
-            `ALTER TABLE app_settings ADD COLUMN clima_gps INTEGER DEFAULT 1;`,
-            `ALTER TABLE app_settings ADD COLUMN clima_ativo INTEGER DEFAULT 1;`,
-            `ALTER TABLE app_settings ADD COLUMN rel_incluir_logo INTEGER DEFAULT 1;`,
-            `ALTER TABLE app_settings ADD COLUMN rel_modelo TEXT DEFAULT 'resumido';`,
-            `ALTER TABLE app_settings ADD COLUMN img_qualidade REAL DEFAULT 0.8;`,
-            `ALTER TABLE app_settings ADD COLUMN img_limite INTEGER DEFAULT 3;`,
-            `ALTER TABLE app_settings ADD COLUMN fazenda_area REAL;`,
-            `ALTER TABLE app_settings ADD COLUMN fazenda_safra TEXT;`,
-            `ALTER TABLE app_settings ADD COLUMN unidade_padrao TEXT DEFAULT "KG";`,
-            `ALTER TABLE app_settings ADD COLUMN rel_graficos INTEGER DEFAULT 1;`,
-            `ALTER TABLE app_settings ADD COLUMN rel_auto_pdf INTEGER DEFAULT 0;`,
-            `ALTER TABLE app_settings ADD COLUMN rel_rodape TEXT;`,
-
-            // Adubação & Monitoramento Pro
-            `CREATE TABLE IF NOT EXISTS planos_adubacao (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, nome_plano TEXT NOT NULL, cultura TEXT, tipo_aplicacao TEXT, area_local TEXT, descricao_tecnica TEXT, status TEXT DEFAULT 'PLANEJADO', data_criacao TEXT NOT NULL, data_aplicacao TEXT, anexos_uri TEXT, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
-            `CREATE TABLE IF NOT EXISTS monitoramento_entidade (uuid TEXT PRIMARY KEY, usuario_id TEXT, area_id TEXT, cultura_id TEXT, data TEXT NOT NULL, observacao_usuario TEXT, status TEXT DEFAULT 'RASCUNHO', nivel_confianca TEXT DEFAULT 'TÉCNICO', severidade TEXT DEFAULT 'BAIXA', categoria TEXT DEFAULT 'OUTROS', criado_em TEXT NOT NULL, sync_status INTEGER DEFAULT 0, last_updated TEXT NOT NULL);`,
-            `CREATE TABLE IF NOT EXISTS monitoramento_media (uuid TEXT PRIMARY KEY, monitoramento_uuid TEXT NOT NULL, tipo TEXT NOT NULL, caminho_arquivo TEXT NOT NULL, criado_em TEXT NOT NULL, sync_status INTEGER DEFAULT 0, last_updated TEXT NOT NULL);`,
-            `CREATE TABLE IF NOT EXISTS analise_ia (uuid TEXT PRIMARY KEY, monitoramento_uuid TEXT NOT NULL, classificacao_principal TEXT, classificacoes_secundarias TEXT, sintomas TEXT, causa_provavel TEXT, tipo_problema TEXT, nutriente TEXT, sugestao_controle TEXT, produtos_citados TEXT, dosagem TEXT, forma_aplicacao TEXT, observacoes_tecnicas TEXT, fonte_informacao TEXT, criado_em TEXT NOT NULL, sync_status INTEGER DEFAULT 0, last_updated TEXT NOT NULL);`,
-            `CREATE TABLE IF NOT EXISTS base_conhecimento_pro (uuid TEXT PRIMARY KEY, tipo TEXT NOT NULL, cultura_id TEXT, titulo TEXT NOT NULL, descricao TEXT, sintomas TEXT, causas TEXT, controle TEXT, fonte TEXT, nivel_confianca TEXT, ativo INTEGER DEFAULT 1, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0);`,
-
-            // Cadastro Agrícola Avançado
-            `ALTER TABLE cadastro ADD COLUMN principio_ativo TEXT;`,
-            `ALTER TABLE cadastro ADD COLUMN classe_toxicologica TEXT;`,
-            `ALTER TABLE cadastro ADD COLUMN composicao TEXT;`,
-            `ALTER TABLE cadastro ADD COLUMN preco_venda REAL DEFAULT 0;`,
-            `ALTER TABLE cadastro ADD COLUMN descricao_ia TEXT;`,
-            `ALTER TABLE cadastro ADD COLUMN validado_por TEXT;`,
-            `ALTER TABLE cadastro ADD COLUMN data_validacao TEXT;`,
-            `ALTER TABLE cadastro ADD COLUMN codigo TEXT;`,
-            `ALTER TABLE cadastro ADD COLUMN unidade_id INTEGER;`,
-
-            // Financeiro Contas a Receber
-            `ALTER TABLE vendas ADD COLUMN status_pagamento TEXT DEFAULT "A_RECEBER";`,
-            `ALTER TABLE vendas ADD COLUMN data_recebimento TEXT;`,
-            `ALTER TABLE vendas ADD COLUMN forma_pagamento TEXT;`,
-            `ALTER TABLE vendas ADD COLUMN valor_recebido REAL;`,
-
-            // Areas & Clientes
-            `CREATE TABLE IF NOT EXISTS areas (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, nome TEXT NOT NULL, descricao TEXT, observacao TEXT, metragem REAL, peso_medio_caixa REAL DEFAULT 1, last_updated TEXT NOT NULL, sync_status INTEGER DEFAULT 0, is_deleted INTEGER DEFAULT 0);`,
-            `ALTER TABLE clientes ADD COLUMN cidade TEXT;`,
-            `ALTER TABLE clientes ADD COLUMN estado TEXT;`,
-            `ALTER TABLE clientes ADD COLUMN observacao_legada TEXT;`,
-
-            // Seeders & Admins (Sempre no final da transação)
-            `INSERT OR IGNORE INTO usuarios (usuario, senha, nivel, email, nome_completo) VALUES ('ADMIN', '1234', 'ADM', 'admin@agrogb.com', 'ADMINISTRADOR MESTRE');`,
-            `UPDATE usuarios SET email = 'admin@agrogb.com', nome_completo = 'ADMINISTRADOR MESTRE' WHERE usuario = 'ADMIN' AND (email IS NULL OR email = '');`,
-            `INSERT OR IGNORE INTO app_settings (id, updated_at) VALUES (1, '${new Date().toISOString()}');`
-        ];
-
-        if (__DEV__) console.log(`💎 v1.1 DIAMOND: Iniciando transação ATÔMICA TOTAL para ${queries.length} comandos...`);
+        if (__DEV__) console.log(`💎 v1.1 DIAMOND: Iniciando transação ATÔMICA TOTAL para ${V1_DIAMOND_PRO.length} comandos...`);
         const start = Date.now();
-        await executeTransaction(queries);
+        
+        // Inclui SCHEMA_V10 se disponível
+        const allQueries = [...V1_DIAMOND_PRO, ...SCHEMA_V10];
+        
+        await executeTransaction(allQueries);
+        
         if (__DEV__) console.log(`✨ DIAMOND SETUP concluído em ${Date.now() - start}ms`);
 
         // Tarefas pós-transação exigindo lógica (Deduplicação e Seeds)
