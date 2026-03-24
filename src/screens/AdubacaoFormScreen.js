@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Image, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AgroInput from '../ui/components/AgroInput';

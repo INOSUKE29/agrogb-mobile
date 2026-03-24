@@ -13,7 +13,6 @@ import ComprasScreen from '../screens/ComprasScreen';
 import PlantioScreen from '../screens/PlantioScreen';
 import CustosScreen from '../screens/CustosScreen';
 import RelatoriosScreen from '../screens/RelatoriosScreen';
-import GraficosScreen from '../screens/GraficosScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import MonitoramentoScreen from '../screens/MonitoramentoScreen';
 import CadastroScreen from '../screens/CadastroScreen';
