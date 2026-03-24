@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert, Modal, FlatList, TouchableOpacity } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,9 +12,9 @@ import { useProduction } from '../modules/production/hooks/useProduction';
 import ProductModal from '../modules/inventory/components/ProductModal';
 import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
-import { Card } from '../ui/components/Card';
-import AgroInput from '../ui/components/AgroInput';
-import AgroButton from '../ui/components/AgroButton';
+import GlowCard from '../ui/GlowCard';
+import GlowInput from '../ui/GlowInput';
+import PrimaryButton from '../ui/PrimaryButton';
 import { showToast } from '../ui/Toast';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -49,11 +49,7 @@ export default function ColheitaScreen({ navigation }) {
     const [areasDB, setAreasDB] = useState([]);
 
     // Initial Load & Focus
-    useFocusEffect(useCallback(() => {
-        loadData();
-    }, []));
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
             const allItems = await getCadastro();
             setProductsDB(allItems.filter(i => i.tipo === 'PRODUTO'));
@@ -61,7 +57,11 @@ export default function ColheitaScreen({ navigation }) {
         } catch (err) {
             console.error(err);
         }
-    };
+    }, []);
+
+    useFocusEffect(useCallback(() => {
+        loadData();
+    }, [loadData]));
 
     // Rascunho
     useEffect(() => {
@@ -110,7 +110,7 @@ export default function ColheitaScreen({ navigation }) {
 
 
     // Actions
-    const handleAddItem = () => {
+    const handleAddItem = useCallback(() => {
         if (tipoRegistro === 'COLHEITA') {
             if (!modalProd || !modalQty) return;
             setItensList([...itensList, { id: uuidv4(), produto: modalProd.nome, quantidade: modalQty, unidade: 'CX', fator: modalProd.fator_conversao || 1 }]);
@@ -126,12 +126,12 @@ export default function ColheitaScreen({ navigation }) {
         setDestinoModalVisible(false);
         setPerdaModalVisible(false);
         setModalQty('');
-    };
+    }, [tipoRegistro, modalProd, modalQty, modalMotivo, itensList]);
 
 
     const { saveHarvest, saveFreezing, saveWaste, loading: productionLoading } = useProduction();
 
-    const handleSave = async () => {
+    const handleSave = useCallback(async () => {
         if (tipoRegistro === 'COLHEITA' && !talhao) {
             return Alert.alert('Ops', 'Selecione o local/área.');
         }
@@ -153,7 +153,7 @@ export default function ColheitaScreen({ navigation }) {
                 for (const p of validatedItens) {
                     await saveHarvest({
                         uuid: uuidv4(),
-                        area_id: talhao, // Note: No novo padrão usamos area_id, talhao é o nome vindo do seletor legado
+                        area_id: talhao, 
                         cultura_id: talhao, 
                         quantidade: p.numericQty * (p.fator || 1),
                         data_colheita: date,
@@ -188,23 +188,23 @@ export default function ColheitaScreen({ navigation }) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [tipoRegistro, talhao, itensList, dataOperacao, observacao, parseDate, saveHarvest, saveFreezing, saveWaste, navigation]);
 
     return (
         <AppContainer>
             <ScreenHeader title="REGISTRO DE COLHEITA" onBack={() => navigation.goBack()} />
 
             <ScrollView contentContainerStyle={styles.scroll}>
-
-                {/* SELETOR DE MODO */}
-                <View style={[styles.segmentContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.05)', borderColor: colors.border }]}>
+                <View style={[styles.segmentContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', borderColor: colors.border }]}>
                     {['COLHEITA', 'CONGELAMENTO', 'DESCARTE'].map(mode => (
                         <TouchableOpacity
                             key={mode}
                             style={[
                                 styles.segmentBtn,
                                 tipoRegistro === mode && {
-                                    backgroundColor: mode === 'COLHEITA' ? colors.primary : mode === 'CONGELAMENTO' ? colors.info : colors.danger
+                                    backgroundColor: mode === 'COLHEITA' ? colors.primary : mode === 'CONGELAMENTO' ? colors.info : colors.danger,
+                                    shadowColor: mode === 'COLHEITA' ? colors.primary : mode === 'CONGELAMENTO' ? colors.info : colors.danger,
+                                    shadowOpacity: 0.3, shadowRadius: 5, elevation: 5
                                 }
                             ]}
                             onPress={() => { setTipoRegistro(mode); setItensList([]); }}
@@ -220,13 +220,12 @@ export default function ColheitaScreen({ navigation }) {
                     ))}
                 </View>
 
-                {/* 1: Operação */}
-                <Card style={styles.sectionCard}>
+                <GlowCard style={styles.sectionCard}>
                     <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>1. INFORMAÇÕES DO REGISTRO</Text>
                     <View style={styles.row}>
                         <View style={{ flex: 1, marginRight: 10 }}>
-                            <AgroInput
-                                label="DATA DO EVENTO"
+                            <Text style={[styles.label, { color: colors.textSecondary }]}>DATA DO EVENTO</Text>
+                            <GlowInput
                                 value={dataOperacao}
                                 onChangeText={formatData}
                                 placeholder="DD/MM/AAAA"
@@ -241,47 +240,46 @@ export default function ColheitaScreen({ navigation }) {
                                     style={[styles.selector, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', borderColor: colors.border }]}
                                     onPress={() => setAreaModalVisible(true)}
                                 >
-                                    <Text style={[styles.selectorText, { color: colors.textPrimary }, !talhao && { color: colors.placeholder }]}>{talhao || 'Selecionar...'}</Text>
+                                    <Text style={[styles.selectorText, { color: colors.textPrimary }, !talhao && { color: colors.placeholder }]}>{talhao || 'Selecionar'}</Text>
                                     <Ionicons name="location" size={18} color={colors.primary} />
                                 </TouchableOpacity>
                             </View>
                         )}
                     </View>
-                    <AgroInput
-                        label="OBSERVAÇÃO GERAL (OPCIONAL)"
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>OBSERVAÇÃO GERAL (OPCIONAL)</Text>
+                    <GlowInput
                         value={observacao}
                         onChangeText={setObservacao}
                         placeholder="Notas do dia..."
                         multiline
-                        style={{ height: 80 }}
+                        style={{ height: 80, textAlignVertical: 'top' }}
                     />
-                </Card>
+                </GlowCard>
 
-                {/* 2: LISTAGEM DE ITENS */}
-                <Card style={styles.sectionCard}>
+                <GlowCard style={styles.sectionCard}>
                     <View style={styles.cardHeader}>
                         <Ionicons
                             name={tipoRegistro === 'COLHEITA' ? "basket" : tipoRegistro === 'CONGELAMENTO' ? "snow" : "trash"}
                             size={20}
                             color={tipoRegistro === 'COLHEITA' ? colors.primary : tipoRegistro === 'CONGELAMENTO' ? colors.info : colors.danger}
                         />
-                        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}> ITENS PARA REGISTRO</Text>
+                        <Text style={[styles.sectionTitle, { color: colors.textSecondary, marginLeft: 8, marginBottom: 0 }]}> ITENS PARA REGISTRO</Text>
                     </View>
 
                     {itensList.map(item => (
-                        <View key={item.id} style={[styles.listItem, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]}>
+                        <View key={item.id} style={[styles.listItem, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)', borderColor: colors.border, borderWidth: 1 }]}>
                             <View style={{ flex: 1 }}>
                                 <Text style={[styles.itemMain, { color: colors.textPrimary }]}>{item.produto}</Text>
                                 <Text style={[styles.itemSub, { color: colors.textSecondary }]}>{item.quantidade} {item.unidade || 'kg'} {item.motivo && ` - ${item.motivo}`}</Text>
                             </View>
                             <TouchableOpacity onPress={() => setItensList(itensList.filter(i => i.id !== item.id))}>
-                                <Ionicons name="close-circle" size={20} color={colors.danger} />
+                                <Ionicons name="close-circle" size={24} color={colors.danger} />
                             </TouchableOpacity>
                         </View>
                     ))}
 
                     <TouchableOpacity
-                        style={[styles.addBtn, { borderColor: colors.border }]}
+                        style={[styles.addBtn, { borderColor: colors.border, backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#F5F7F6' }]}
                         onPress={() => {
                             if (tipoRegistro === 'COLHEITA') setProducaoModalVisible(true);
                             else if (tipoRegistro === 'CONGELAMENTO') setDestinoModalVisible(true);
@@ -297,10 +295,9 @@ export default function ColheitaScreen({ navigation }) {
                             ADICIONAR {tipoRegistro}
                         </Text>
                     </TouchableOpacity>
-                </Card>
+                </GlowCard>
 
-                <AgroButton title="SALVAR REGISTRO" onPress={handleSave} loading={loading} style={{ marginTop: 10, marginBottom: 30 }} />
-
+                <PrimaryButton title="SALVAR REGISTRO" onPress={handleSave} style={{ marginTop: 10, marginBottom: 30 }} />
             </ScrollView>
 
             <ProductModal 
@@ -309,102 +306,94 @@ export default function ColheitaScreen({ navigation }) {
                 onCreated={(p) => { 
                     setModalProd(p);
                     setProducaoModalVisible(false);
-                    // Agora abrimos o modal de quantidade (reutilizando o estilo do mini-modal)
                     setQtdModalVisible(true);
                 }} 
             />
 
             <Modal visible={qtdModalVisible} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
-                    <Card style={[styles.modalContent, { backgroundColor: colors.card }]} noPadding>
-                        <View style={{ padding: 25 }}>
+                    <GlowCard style={styles.modalContent}>
+                        <View style={{ padding: 10 }}>
                             <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>INFORMAR QUANTIDADE</Text>
-                            <Text style={{ textAlign: 'center', color: colors.primary, fontWeight: 'bold', marginBottom: 15 }}>
+                            <Text style={{ textAlign: 'center', color: colors.primary, fontWeight: '900', marginBottom: 15, fontSize: 16 }}>
                                 {modalProd?.nome}
                             </Text>
-                            <AgroInput
-                                label="QUANTIDADE (CX)"
+                            <Text style={[styles.label, { color: colors.textSecondary }]}>QUANTIDADE (CX)</Text>
+                            <GlowInput
                                 value={modalQty}
                                 onChangeText={setModalQty}
                                 keyboardType="decimal-pad"
                                 autoFocus
+                                placeholder="0"
                             />
                             <View style={styles.modalActions}>
-                                <TouchableOpacity onPress={() => setQtdModalVisible(false)}>
+                                <TouchableOpacity onPress={() => setQtdModalVisible(false)} style={{ padding: 15 }}>
                                     <Text style={{ color: colors.textSecondary, fontWeight: 'bold' }}>CANCELAR</Text>
                                 </TouchableOpacity>
-                                <AgroButton title="ADICIONAR" onPress={handleAddItem} style={{ width: 140 }} />
+                                <PrimaryButton title="ADICIONAR" onPress={handleAddItem} style={{ flex: 1 }} />
                             </View>
                         </View>
-                    </Card>
+                    </GlowCard>
                 </View>
             </Modal>
 
-            {/* Modal Destino */}
             <Modal visible={destinoModalVisible} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
-                    <Card style={[styles.modalContent, { backgroundColor: colors.card }]} noPadding>
-                        <View style={{ padding: 20 }}>
-                            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Registro de Destino</Text>
-
-                            <AgroInput
-                                label="QUANTIDADE CONGELADA (KG)"
+                    <GlowCard style={styles.modalContent}>
+                        <View style={{ padding: 10 }}>
+                            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>REGISTRO DE DESTINO</Text>
+                            <Text style={[styles.label, { color: colors.textSecondary }]}>QUANTIDADE CONGELADA (KG)</Text>
+                            <GlowInput
                                 value={modalQty}
                                 onChangeText={setModalQty}
                                 keyboardType="decimal-pad"
                                 placeholder="0.00"
                             />
-
                             <View style={styles.modalActions}>
-                                <TouchableOpacity onPress={() => setDestinoModalVisible(false)}>
+                                <TouchableOpacity onPress={() => setDestinoModalVisible(false)} style={{ padding: 15 }}>
                                     <Text style={{ color: colors.textSecondary, fontWeight: 'bold' }}>CANCELAR</Text>
                                 </TouchableOpacity>
-                                <AgroButton title="ADICIONAR" onPress={handleAddItem} style={{ width: 140 }} />
+                                <PrimaryButton title="ADICIONAR" onPress={handleAddItem} style={{ flex: 1 }} />
                             </View>
                         </View>
-                    </Card>
+                    </GlowCard>
                 </View>
             </Modal>
 
-            {/* Modal Perda */}
             <Modal visible={perdaModalVisible} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
-                    <Card style={[styles.modalContent, { backgroundColor: colors.card }]} noPadding>
-                        <View style={{ padding: 20 }}>
-                            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Registro de Descarte</Text>
-
-                            <AgroInput
-                                label="MOTIVO"
+                    <GlowCard style={styles.modalContent}>
+                        <View style={{ padding: 10 }}>
+                            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>REGISTRO DE DESCARTE</Text>
+                            <Text style={[styles.label, { color: colors.textSecondary }]}>MOTIVO</Text>
+                            <GlowInput
                                 value={modalMotivo}
                                 onChangeText={setModalMotivo}
                                 placeholder="Ex: Pássaros, Podridão..."
                             />
-
-                            <AgroInput
-                                label="QUANTIDADE DESCARTADA (KG)"
+                            <Text style={[styles.label, { color: colors.textSecondary }]}>QUANTIDADE DESCARTADA (KG)</Text>
+                            <GlowInput
                                 value={modalQty}
                                 onChangeText={setModalQty}
                                 keyboardType="decimal-pad"
                                 placeholder="0.00"
                             />
-
                             <View style={styles.modalActions}>
-                                <TouchableOpacity onPress={() => setPerdaModalVisible(false)}>
+                                <TouchableOpacity onPress={() => setPerdaModalVisible(false)} style={{ padding: 15 }}>
                                     <Text style={{ color: colors.textSecondary, fontWeight: 'bold' }}>CANCELAR</Text>
                                 </TouchableOpacity>
-                                <AgroButton title="ADICIONAR" onPress={handleAddItem} style={{ width: 140 }} />
+                                <PrimaryButton title="ADICIONAR" onPress={handleAddItem} style={{ flex: 1 }} />
                             </View>
                         </View>
-                    </Card>
+                    </GlowCard>
                 </View>
             </Modal>
 
-            {/* Modal de Áreas */}
             <Modal visible={areaModalVisible} transparent animationType="slide">
                 <View style={styles.modalOverlay}>
-                    <Card style={[styles.modalContent, { backgroundColor: colors.card, height: '60%' }]} noPadding>
-                        <View style={{ padding: 20, flex: 1 }}>
-                            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Selecione o Local</Text>
+                    <GlowCard style={[styles.modalContent, { height: '60%' }]}>
+                        <View style={{ flex: 1, padding: 10 }}>
+                            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>SELECIONE O LOCAL</Text>
                             <FlatList
                                 data={areasDB}
                                 keyExtractor={i => i.uuid}
@@ -418,62 +407,60 @@ export default function ColheitaScreen({ navigation }) {
                                     </TouchableOpacity>
                                 )}
                             />
-                            <AgroButton title="FECHAR" onPress={() => setAreaModalVisible(false)} style={{ marginTop: 10 }} />
+                            <PrimaryButton title="FECHAR" onPress={() => setAreaModalVisible(false)} style={{ marginTop: 10 }} />
                         </View>
-                    </Card>
+                    </GlowCard>
                 </View>
             </Modal>
-
         </AppContainer>
     );
 }
 
 const styles = StyleSheet.create({
     scroll: { padding: 16, paddingBottom: 100 },
-    segmentContainer: { flexDirection: 'row', gap: 8, marginBottom: 16, padding: 4, borderRadius: 14, borderWidth: 1 },
-    segmentBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 12 },
-    segmentText: { fontSize: 10, fontWeight: '800' },
-    sectionCard: { marginBottom: 16 },
-    sectionTitle: { fontSize: 11, fontWeight: '800', marginBottom: 14, letterSpacing: 0.5 },
-    cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-    row: { flexDirection: 'row', alignItems: 'center' },
-    label: { fontSize: 10, fontWeight: '900', marginBottom: 8, letterSpacing: 0.5 },
+    segmentContainer: { flexDirection: 'row', gap: 8, marginBottom: 16, padding: 6, borderRadius: 18, borderWidth: 1.5 },
+    segmentBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 14 },
+    segmentText: { fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
+    sectionCard: { marginBottom: 16, padding: 20 },
+    sectionTitle: { fontSize: 11, fontWeight: '900', letterSpacing: 1 },
+    cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+    row: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
+    label: { fontSize: 10, fontWeight: '900', marginBottom: 8, letterSpacing: 1, marginTop: 10 },
     selector: {
-        height: 54,
+        height: 55,
         borderWidth: 1.5,
         borderRadius: 16,
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        marginBottom: 15
+        paddingHorizontal: 16
     },
     selectorText: { flex: 1, fontSize: 14, fontWeight: '700' },
     addBtn: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 14,
-        borderWidth: 1,
+        paddingVertical: 16,
+        borderWidth: 1.5,
         borderStyle: 'dashed',
         borderRadius: 16,
-        marginTop: 8
+        marginTop: 10
     },
-    addBtnText: { marginLeft: 8, fontSize: 12, fontWeight: '900' },
+    addBtnText: { marginLeft: 8, fontSize: 12, fontWeight: '900', letterSpacing: 0.5 },
     listItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 14,
-        borderRadius: 14,
-        marginBottom: 10
+        padding: 16,
+        borderRadius: 16,
+        marginBottom: 12
     },
-    itemMain: { flex: 1, fontSize: 13, fontWeight: '800' },
-    itemSub: { fontSize: 12, fontWeight: '600', marginRight: 10 },
+    itemMain: { flex: 1, fontSize: 14, fontWeight: '900' },
+    itemSub: { fontSize: 12, fontWeight: '700', marginRight: 10 },
 
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 20 },
-    modalContent: { width: '100%', elevation: 10 },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 25 },
+    modalContent: { width: '100%', elevation: 15 },
     modalTitle: { fontSize: 16, fontWeight: '900', marginBottom: 20, textAlign: 'center', letterSpacing: 1 },
-    modalActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
-    pickItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1 },
-    pickText: { fontSize: 14, fontWeight: '700' }
+    modalActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 15 },
+    pickItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 18, borderBottomWidth: 1 },
+    pickText: { fontSize: 14, fontWeight: '800' }
 });
 

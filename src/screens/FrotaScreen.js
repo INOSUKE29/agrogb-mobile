@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useFleet } from '../modules/farm/hooks/useFleet';
@@ -7,8 +7,8 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
-import { Card } from '../ui/components/Card';
-import AgroFAB from '../ui/components/AgroFAB';
+import GlowCard from '../ui/GlowCard';
+import GlowFAB from '../ui/GlowFAB';
 import ConfirmModal from '../ui/ConfirmModal';
 import { showToast } from '../ui/Toast';
 
@@ -23,26 +23,30 @@ export default function FrotaScreen() {
         fetchMachines(); 
     }, [fetchMachines]));
     
-    const handleDelete = (item) => {
+    const handleDelete = useCallback((item) => {
         setItemToDelete(item);
         setConfirmVisible(true);
-    };
+    }, []);
 
-    const confirmDelete = async () => {
+    const confirmDelete = useCallback(async () => {
         if (itemToDelete) {
-            await deleteMaquina(itemToDelete.uuid);
-            setConfirmVisible(false);
-            setItemToDelete(null);
-            showToast('Veículo removido com sucesso!');
-            fetchMachines();
+            try {
+                await deleteMaquina(itemToDelete.uuid);
+                setConfirmVisible(false);
+                setItemToDelete(null);
+                showToast('Veículo removido com sucesso!');
+                fetchMachines();
+            } catch (error) {
+                showToast('Erro ao remover veículo.');
+            }
         }
-    };
+    }, [itemToDelete, fetchMachines]);
 
-    const renderItem = ({ item }) => {
+    const renderItem = useCallback(({ item }) => {
         const needsRevision = item.horimetro_atual >= item.intervalo_revisao && item.intervalo_revisao > 0;
         
         return (
-            <Card style={styles.card}>
+            <GlowCard style={styles.card}>
                 <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9FAFB', borderColor: colors.border }]}>
                     <MaterialCommunityIcons 
                         name={item.tipo === 'TRATOR' ? 'tractor' : item.tipo === 'CAMINHAO' ? 'truck-outline' : 'car-outline'} 
@@ -88,9 +92,11 @@ export default function FrotaScreen() {
                         <Ionicons name="trash-outline" size={18} color={colors.danger} />
                     </TouchableOpacity>
                 </View>
-            </Card>
+            </GlowCard>
         );
-    };
+    }, [colors, isDark, navigation, handleDelete]);
+
+    const memoMachines = useMemo(() => machines, [machines]);
 
     return (
         <AppContainer>
@@ -100,10 +106,13 @@ export default function FrotaScreen() {
                 <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 50 }} />
             ) : (
                 <FlatList
-                    data={machines}
+                    data={memoMachines}
                     renderItem={renderItem}
                     keyExtractor={item => item.uuid}
                     contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
+                    initialNumToRender={10}
+                    maxToRenderPerBatch={5}
+                    windowSize={5}
                     ListEmptyComponent={
                         <View style={styles.emptyState}>
                             <MaterialCommunityIcons name="tractor-variant" size={64} color={colors.border} />
@@ -115,7 +124,7 @@ export default function FrotaScreen() {
                 />
             )}
 
-            <AgroFAB icon="add" onPress={() => navigation.navigate('MaquinaForm')} />
+            <GlowFAB icon="add" onPress={() => navigation.navigate('MaquinaForm')} />
 
             <ConfirmModal
                 visible={confirmVisible}

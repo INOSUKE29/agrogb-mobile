@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert, Modal, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getCadastro } from '../database/database';
@@ -7,9 +7,9 @@ import { showToast } from '../ui/Toast';
 import { useTheme } from '../theme/ThemeContext';
 import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
-import { Card } from '../ui/components/Card';
-import AgroInput from '../ui/components/AgroInput';
-import AgroButton from '../ui/components/AgroButton';
+import GlowCard from '../ui/GlowCard';
+import GlowInput from '../ui/GlowInput';
+import PrimaryButton from '../ui/PrimaryButton';
 import { usePlantio } from '../modules/production/hooks/usePlantio';
 import { useInventory } from '../modules/inventory/hooks/useInventory';
 
@@ -37,7 +37,7 @@ export default function PlantioScreen({ navigation }) {
         loadStock();
     }, [loadHistory, loadStock]));
 
-    const openSelector = async (type) => {
+    const openSelector = useCallback(async (type) => {
         setModalType(type);
         setLoading(true);
         setModalVisible(true);
@@ -50,9 +50,9 @@ export default function PlantioScreen({ navigation }) {
                 setItems(filtered);
             }
         } catch { } finally { setLoading(false); }
-    };
+    }, [stockItems]);
 
-    const handleSelect = (item) => {
+    const handleSelect = useCallback((item) => {
         if (modalType === 'AREA') {
             setTalhao(item.nome);
         } else if (modalType === 'SEMENTE') {
@@ -65,9 +65,9 @@ export default function PlantioScreen({ navigation }) {
             setSelectedSeed(null);
         }
         setModalVisible(false);
-    };
+    }, [modalType]);
 
-    const salvar = async () => {
+    const salvar = useCallback(async () => {
         if (!talhao || !quantidade || !variedade) {
             Alert.alert('Atenção', 'Área, Cultura e Quantidade são obrigatórios.');
             return;
@@ -83,29 +83,34 @@ export default function PlantioScreen({ navigation }) {
         try {
             await registerPlanting(dados, selectedSeed);
             setTalhao(''); setQuantidade(''); setVariedade(''); setPrevisao(''); setObservacao(''); setSelectedSeed(null);
+            showToast('🌱 Plantio registrado com sucesso!');
         } catch (err) {
             console.error(err);
+            Alert.alert('Erro', 'Falha ao registrar plantio.');
         }
-    };
+    }, [talhao, quantidade, variedade, previsao, observacao, selectedSeed, registerPlanting]);
 
-    const handleLongPress = (item) => {
+    const handleLongPress = useCallback((item) => {
         Alert.alert('Gerenciar Plantio', `Ação para: ${item.cultura} em ${item.tipo_plantio}`, [
             { text: 'Cancelar', style: 'cancel' },
             {
                 text: 'EXCLUIR',
                 style: 'destructive',
-                onPress: () => removePlanting(item.uuid)
+                onPress: async () => {
+                    await removePlanting(item.uuid);
+                    showToast('Registro removido.');
+                }
             }
         ]);
-    };
+    }, [removePlanting]);
 
-    const renderItem = ({ item }) => (
+    const renderItem = useCallback(({ item }) => (
         <TouchableOpacity
             activeOpacity={0.7}
             onLongPress={() => handleLongPress(item)}
             style={styles.histItemContainer}
         >
-            <Card style={styles.histCard}>
+            <GlowCard style={styles.histCard}>
                 <View style={styles.histHeader}>
                     <View style={[styles.iconBox, { backgroundColor: (colors.primary || '#1E8E5A') + '15', borderColor: (colors.primary || '#1E8E5A') + '30', borderWidth: 1 }]}>
                         <MaterialCommunityIcons name="sprout" size={24} color={colors.primary} />
@@ -124,7 +129,7 @@ export default function PlantioScreen({ navigation }) {
                 <View style={[styles.histFooter, { borderTopColor: colors.border }]}>
                     <View style={styles.statItem}>
                         <Ionicons name="apps-outline" size={14} color={colors.primary} />
-                        <Text style={[styles.statText, { color: colors.textPrimary }]}>{item.quantidade_pes} {selectedUnit}</Text>
+                        <Text style={[styles.statText, { color: colors.textPrimary }]}>{item.quantidade_pes} {item.unidade || 'PÉS'}</Text>
                     </View>
                     {item.observacao ? (
                         <Text style={[styles.obsText, { color: colors.textSecondary }]} numberOfLines={1}>
@@ -132,16 +137,18 @@ export default function PlantioScreen({ navigation }) {
                         </Text>
                     ) : null}
                 </View>
-            </Card>
+            </GlowCard>
         </TouchableOpacity>
-    );
+    ), [colors, handleLongPress]);
+
+    const memoHistory = useMemo(() => history, [history]);
 
     return (
         <AppContainer>
             <ScreenHeader title="PLANTIO & CULTURAS" onBack={() => navigation.goBack()} />
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                <Card style={styles.mainCard}>
+                <GlowCard style={styles.mainCard}>
                     <Text style={[styles.cardTitle, { color: colors.primary }]}>NOVO CICLO DE PLANTIO</Text>
 
                     <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>ÁREA DE PLANTIO</Text>
@@ -186,8 +193,8 @@ export default function PlantioScreen({ navigation }) {
 
                     <View style={styles.row}>
                         <View style={{ flex: 1 }}>
-                            <AgroInput
-                                label={`QTD(${selectedUnit})`}
+                            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>QUANTIDADE ({selectedUnit})</Text>
+                            <GlowInput
                                 placeholder="0"
                                 value={quantidade}
                                 onChangeText={setQuantidade}
@@ -195,8 +202,8 @@ export default function PlantioScreen({ navigation }) {
                             />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <AgroInput
-                                label="PREVISÃO COLHEITA"
+                            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>PREVISÃO COLHEITA</Text>
+                            <GlowInput
                                 placeholder="MÊS/ANO"
                                 value={previsao}
                                 onChangeText={t => setPrevisao(t.toUpperCase())}
@@ -204,30 +211,33 @@ export default function PlantioScreen({ navigation }) {
                         </View>
                     </View>
 
-                    <AgroInput
-                        label="OBSERVAÇÕES ADICIONAIS"
+                    <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>OBSERVAÇÕES ADICIONAIS</Text>
+                    <GlowInput
                         placeholder="Detalhes opcionais..."
                         value={observacao}
                         onChangeText={t => setObservacao(t.toUpperCase())}
                         multiline
-                        style={{ height: 100 }}
+                        style={{ height: 100, textAlignVertical: 'top' }}
                     />
 
-                    <AgroButton
+                    <PrimaryButton
                         title="CONFIRMAR PLANTIO"
-                        icon="leaf"
                         onPress={salvar}
+                        loading={loadingPlantio}
                         style={{ marginTop: 15 }}
                     />
-                </Card>
+                </GlowCard>
 
                 <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>REGISTROS RECENTES</Text>
 
                 <FlatList
-                    data={history}
+                    data={memoHistory}
                     keyExtractor={item => item.uuid}
                     renderItem={renderItem}
                     scrollEnabled={false}
+                    initialNumToRender={10}
+                    maxToRenderPerBatch={5}
+                    windowSize={5}
                     ListEmptyComponent={
                         <View style={styles.emptyBox}>
                             <MaterialCommunityIcons name="sprout-off" size={48} color={colors.border} />
@@ -246,6 +256,7 @@ export default function PlantioScreen({ navigation }) {
                             <FlatList
                                 data={items}
                                 keyExtractor={i => i.uuid || (i.id ? i.id.toString() : Math.random().toString())}
+                                initialNumToRender={15}
                                 renderItem={({ item }) => (
                                     <TouchableOpacity
                                         style={[styles.itemRow, { backgroundColor: colors.card, borderColor: colors.border }]}

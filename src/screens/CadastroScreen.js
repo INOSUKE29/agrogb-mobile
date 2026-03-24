@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, SectionList, FlatList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertCadastro, getCadastro, deleteCadastro, updateCadastro, getReceita, insertReceita, deleteItemReceita } from '../database/database';
@@ -79,56 +79,60 @@ export default function CadastroScreen({ navigation }) {
     }, [navigation.getState()]);
 
     const up = (t, setter) => setter(t ? t.toUpperCase() : '');
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
         try { const data = await getCadastro(); setItems(data); } catch { } finally { setLoading(false); }
-    };
+    }, []);
 
-    const handleSave = async () => {
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
+
+    const handleSave = useCallback(async () => {
         if (!nome.trim()) return Alert.alert('Ops!', 'Dê um nome ao item.');
         try {
-            const data = { uuid: editingItem ? editingItem.uuid : uuidv4(), nome, unidade, tipo, observacao, fator_conversao: parseFloat(fator) || 1, estocavel: estocavel ? 1 : 0, vendavel: vendavel ? 1 : 0, principio_ativo: principioAtivo, classe_toxicologica: classeToxicologica, composicao, preco_venda: parseFloat(precoVenda) || 0 };
+            const data = { uuid: editingItem ? editingItem.uuid : uuidv4(), nome, unidade, tipo, observacao, fator_conversao: parseFloat(fator) || 1, estocavel: estocavel ? 1 : 0, vendavel: vendavel ? 1 : 0, principio_ativo: principioAtivo, classe_toxicologica: classeToxicologica, composicao, preco_venda: parseFloat(preco_venda) || 0 };
             if (editingItem) { await updateCadastro(data); showToast('Item atualizado com sucesso!'); }
             else { await insertCadastro(data); showToast('Novo item cadastrado!'); }
             setModalVisible(false); resetForm(); loadData();
         } catch { console.log('Draft error'); }
-    };
+    }, [nome, unidade, tipo, observacao, fator, estocavel, vendavel, principioAtivo, classeToxicologica, composicao, precoVenda, editingItem, loadData]);
 
-    const resetForm = () => { setEditingItem(null); setNome(''); setObservacao(''); setFator('1'); setEstocavel(true); setVendavel(false); setUnidade('KG'); setTipo('INSUMO'); setPrincipioAtivo(''); setClasseToxicologica(''); setComposicao(''); setPrecoVenda(''); };
+    const resetForm = useCallback(() => { setEditingItem(null); setNome(''); setObservacao(''); setFator('1'); setEstocavel(true); setVendavel(false); setUnidade('KG'); setType('INSUMO'); setPrincipioAtivo(''); setClasseToxicologica(''); setComposicao(''); setPrecoVenda(''); }, []);
 
-    const handleEdit = (item) => {
+    const handleEdit = useCallback((item) => {
         setEditingItem(item); setNome(item.nome); setUnidade(item.unidade); setTipo(item.tipo); setObservacao(item.observacao || ''); setFator((item.fator_conversao || 1).toString()); setEstocavel(item.estocavel === 1); setVendavel(item.vendavel === 1); setPrincipioAtivo(item.principio_ativo || ''); setClasseToxicologica(item.classe_toxicologica || ''); setComposicao(item.composicao || ''); setPrecoVenda(item.preco_venda ? item.preco_venda.toString() : ''); setModalVisible(true);
-    };
+    }, []);
 
     const [confirmVisible, setConfirmVisible] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
 
-    const handleDelete = (id) => {
+    const handleDelete = useCallback((id) => {
         setItemToDelete(id);
         setConfirmVisible(true);
-    };
+    }, []);
 
-    const confirmDelete = async () => {
+    const confirmDelete = useCallback(async () => {
         if (itemToDelete) {
             await deleteCadastro(itemToDelete);
             setConfirmVisible(false);
             setItemToDelete(null);
             loadData();
         }
-    };
+    }, [itemToDelete, loadData]);
 
     const getCategoryConfig = (t) => CATEGORIES[t] || CATEGORIES['INSUMO'];
-    const selectCategory = (key) => { setTipo(key); setCategoryModalVisible(false); const cfg = CATEGORIES[key]; if (cfg.preCheck?.includes('vendavel')) setVendavel(true); };
+    const selectCategory = useCallback((key) => { setTipo(key); setCategoryModalVisible(false); const cfg = CATEGORIES[key]; if (cfg.preCheck?.includes('vendavel')) setVendavel(true); }, []);
 
     // FUNÇÕES DE RECEITA
-    const handleOpenRecipe = async (paiUuid, nomePai) => {
+    const handleOpenRecipe = useCallback(async (paiUuid, nomePai) => {
         setSelectedParent({ uuid: paiUuid, nome: nomePai });
         const rec = await getReceita(paiUuid);
         setRecipeItems(rec);
         setRecipeModalVisible(true);
-    };
+    }, []);
 
-    const handleAddRecipeItem = async (filho) => {
+    const handleAddRecipeItem = useCallback(async (filho) => {
         if (!qtdUso || parseFloat(qtdUso) <= 0) return Alert.alert('Aviso', 'Informe a quantidade de uso.');
         await insertReceita(selectedParent.uuid, filho.uuid, parseFloat(qtdUso));
         setSearchItemFilho('');
@@ -137,13 +141,29 @@ export default function CadastroScreen({ navigation }) {
         const rec = await getReceita(selectedParent.uuid);
         setRecipeItems(rec);
         showToast('Item adicionado à composição');
-    };
+    }, [qtdUso, selectedParent]);
 
-    const handleRemoveRecipeItem = async (id) => {
+    const handleRemoveRecipeItem = useCallback(async (id) => {
         await deleteItemReceita(id);
         const rec = await getReceita(selectedParent.uuid);
         setRecipeItems(rec);
-    };
+    }, [selectedParent]);
+
+    const memoSections = useMemo(() => {
+        const filtered = items.filter(it => {
+            const matchTermo = it.nome.toUpperCase().includes(termoBusca.toUpperCase()) || (it.codigo && it.codigo.toUpperCase().includes(termoBusca.toUpperCase()));
+            const matchCat = filtroCategoria === 'TODAS' || it.tipo.toUpperCase().includes(filtroCategoria);
+            return matchTermo && matchCat;
+        });
+
+        const grouped = filtered.reduce((acc, item) => {
+            if (!acc[item.tipo]) acc[item.tipo] = { title: item.tipo, data: [] };
+            acc[item.tipo].data.push(item);
+            return acc;
+        }, {});
+
+        return Object.values(grouped).sort((a, b) => a.title.localeCompare(b.title));
+    }, [items, termoBusca, filtroCategoria]);
 
     return (
         <AppContainer>
@@ -163,10 +183,10 @@ export default function CadastroScreen({ navigation }) {
             <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
                 <View style={[styles.searchBox, { backgroundColor: colors.card, borderColor: colors.glassBorder }]}>
                     <Ionicons name="search" size={18} color={colors.textMuted} />
-                    <TextInput
+                    <GlowInput
                         placeholder="Buscar item ou código..."
                         placeholderTextColor={colors.textMuted}
-                        style={[styles.searchInput, { color: colors.textPrimary }]}
+                        style={[styles.searchInput, { color: colors.textPrimary, marginBottom: 0, height: '100%', borderWidth: 0 }]}
                         value={termoBusca}
                         onChangeText={setTermoBusca}
                     />
@@ -195,18 +215,13 @@ export default function CadastroScreen({ navigation }) {
 
             {loading ? <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 50 }} /> :
                 <SectionList
-                    sections={Object.values(items
-                        .filter(it => {
-                            const matchTermo = it.nome.toUpperCase().includes(termoBusca.toUpperCase()) || (it.codigo && it.codigo.toUpperCase().includes(termoBusca.toUpperCase()));
-                            const matchCat = filtroCategoria === 'TODAS' || it.tipo.toUpperCase().includes(filtroCategoria);
-                            return matchTermo && matchCat;
-                        })
-                        .reduce((acc, item) => {
-                            if (!acc[item.tipo]) acc[item.tipo] = { title: item.tipo, data: [] };
-                            acc[item.tipo].data.push(item); return acc;
-                        }, {})).sort((a, b) => a.title.localeCompare(b.title))}
+                    sections={memoSections}
                     keyExtractor={item => item.id.toString()}
-                    renderSectionHeader={({ section: { title } }) => {
+                    stickySectionHeadersEnabled={false}
+                    initialNumToRender={10}
+                    maxToRenderPerBatch={5}
+                    windowSize={5}
+                    renderSectionHeader={useCallback(({ section: { title } }) => {
                         const cfg = getCategoryConfig(title);
                         return (
                             <View style={[styles.sectionHeader, { backgroundColor: cfg.bg }]}>
@@ -214,8 +229,8 @@ export default function CadastroScreen({ navigation }) {
                                 <Text style={[styles.sectionTitle, { color: cfg.color }]}>{cfg.label}</Text>
                             </View>
                         );
-                    }}
-                    renderItem={({ item }) => (
+                    }, [getCategoryConfig])}
+                    renderItem={useCallback(({ item }) => (
                         <GlowCard
                             style={styles.card}
                             onPress={() => handleEdit(item)}
@@ -241,7 +256,7 @@ export default function CadastroScreen({ navigation }) {
                                 <Ionicons name="trash-outline" size={20} color={colors.danger} />
                             </TouchableOpacity>
                         </GlowCard>
-                    )}
+                    ), [colors, handleEdit, handleOpenRecipe, handleDelete])}
                     contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
                     ListEmptyComponent={<Text style={[styles.empty, { color: colors.textMuted }]}>Nenhum item cadastrado no sistema.</Text>}
                 />
