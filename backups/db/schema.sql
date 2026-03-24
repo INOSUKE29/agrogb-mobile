@@ -65,6 +65,42 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
 
 
 
+CREATE OR REPLACE FUNCTION "public"."apply_fertilization_v2"("p_plano_uuid" "uuid", "p_user_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE item RECORD;
+BEGIN
+    FOR item IN 
+        SELECT produto_id, quantidade 
+        FROM public.production_fertilization_items 
+        WHERE plano_uuid = p_plano_uuid AND user_id = p_user_id 
+    LOOP
+        -- Baixa estoque
+        UPDATE public.estoque 
+        SET quantidade = quantidade - item.quantidade,
+            last_updated = now()
+        WHERE (produto_uuid::text = item.produto_id OR id::text = item.produto_id)
+        AND user_id = p_user_id;
+
+        -- Registra movimentação
+        INSERT INTO public.v2_movimentacoes_estoque (user_id, produto_uuid, tipo, quantidade, origem, data)
+        VALUES (p_user_id, NULL, 'SAÍDA', item.quantidade, 'ADUBAÇÃO', now());
+    END LOOP;
+
+    -- Conclui plano
+    UPDATE public.planos_adubacao 
+    SET status = 'CONCLUIDO', 
+        data_aplicacao = now(),
+        last_updated = now()
+    WHERE uuid = p_plano_uuid AND user_id = p_user_id;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."apply_fertilization_v2"("p_plano_uuid" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."fill_text_uuid"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public', 'pg_catalog'
@@ -122,11 +158,11 @@ ALTER FUNCTION "public"."get_table_pkey_cols"("p_table" "text") OWNER TO "postgr
 
 CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public', 'pg_temp'
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, nome)
-  VALUES (new.id, new.email, new.raw_user_meta_data->>'full_name');
+  INSERT INTO public.user_profiles (id, email, name)
+  VALUES (new.id, new.email, new.raw_user_meta_data->>'name');
   RETURN new;
 END;
 $$;
@@ -203,6 +239,31 @@ $$;
 ALTER FUNCTION "public"."monitoramento_entidade_run_checks"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."process_sale_v2"("p_user_id" "uuid", "p_produto_uuid" "uuid", "p_quantidade" real, "p_valor" real) RETURNS "uuid"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE v_uuid UUID := gen_random_uuid();
+BEGIN
+    INSERT INTO public.vendas (uuid, user_id, quantidade, valor, data_venda, last_updated)
+    VALUES (v_uuid, p_user_id, p_quantidade, p_valor, now(), now());
+
+    UPDATE public.estoque 
+    SET quantidade = quantidade - p_quantidade,
+        last_updated = now()
+    WHERE produto_uuid = p_produto_uuid AND user_id = p_user_id;
+
+    INSERT INTO public.v2_movimentacoes_estoque (user_id, produto_uuid, tipo, quantidade, origem, data)
+    VALUES (p_user_id, p_produto_uuid, 'SAÍDA', p_quantidade, 'VENDA', now());
+
+    RETURN v_uuid;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."process_sale_v2"("p_user_id" "uuid", "p_produto_uuid" "uuid", "p_quantidade" real, "p_valor" real) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."try_text_to_uuid"("text") RETURNS "uuid"
     LANGUAGE "plpgsql" IMMUTABLE
     SET "search_path" TO 'pg_catalog', 'public'
@@ -215,6 +276,20 @@ $_$;
 
 
 ALTER FUNCTION "public"."try_text_to_uuid"("text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."update_last_updated_column"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  NEW.last_updated = now();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."update_last_updated_column"() OWNER TO "postgres";
 
 SET default_tablespace = '';
 
@@ -354,7 +429,7 @@ CREATE TABLE IF NOT EXISTS "public"."areas" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid"
+    "user_id" "uuid"
 );
 
 
@@ -363,7 +438,7 @@ ALTER TABLE "public"."areas" OWNER TO "postgres";
 
 CREATE TABLE IF NOT EXISTS "public"."cadastro" (
     "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "usuario_id" "uuid",
+    "user_id" "uuid",
     "nome" "text" NOT NULL,
     "unidade" "text",
     "tipo" "text",
@@ -373,7 +448,8 @@ CREATE TABLE IF NOT EXISTS "public"."cadastro" (
     "fator_conversao" numeric DEFAULT 1,
     "preco_venda" numeric DEFAULT 0,
     "last_updated" timestamp with time zone DEFAULT "now"(),
-    "is_deleted" integer DEFAULT 0
+    "is_deleted" integer DEFAULT 0,
+    "categoria" "text"
 );
 
 
@@ -427,7 +503,7 @@ CREATE TABLE IF NOT EXISTS "public"."clientes" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid"
+    "user_id" "uuid"
 );
 
 
@@ -550,7 +626,7 @@ CREATE TABLE IF NOT EXISTS "public"."custos" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid"
+    "user_id" "uuid"
 );
 
 
@@ -596,7 +672,7 @@ ALTER TABLE "public"."error_logs" OWNER TO "postgres";
 
 CREATE TABLE IF NOT EXISTS "public"."estoque" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "item_id" "uuid",
+    "produto_uuid" "uuid",
     "quantidade" numeric,
     "updated_at" timestamp without time zone DEFAULT "now"(),
     "last_updated" timestamp without time zone DEFAULT "now"(),
@@ -604,7 +680,7 @@ CREATE TABLE IF NOT EXISTS "public"."estoque" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid"
+    "user_id" "uuid"
 );
 
 
@@ -961,7 +1037,7 @@ CREATE TABLE IF NOT EXISTS "public"."planos_adubacao" (
     "id" "uuid",
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid"
+    "user_id" "uuid"
 );
 
 
@@ -981,11 +1057,23 @@ CREATE TABLE IF NOT EXISTS "public"."plantio" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid"
+    "user_id" "uuid"
 );
 
 
 ALTER TABLE "public"."plantio" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."production_fertilization_items" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid",
+    "plano_uuid" "uuid",
+    "produto_id" "text",
+    "quantidade" real
+);
+
+
+ALTER TABLE "public"."production_fertilization_items" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."profiles" (
@@ -1064,6 +1152,19 @@ CREATE TABLE IF NOT EXISTS "public"."unidades_medida" (
 
 
 ALTER TABLE "public"."unidades_medida" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."user_profiles" (
+    "id" "uuid" DEFAULT "auth"."uid"() NOT NULL,
+    "email" "text",
+    "name" "text",
+    "role" "text" DEFAULT 'USUARIO'::"text",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "last_updated" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."user_profiles" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."users" (
@@ -1184,6 +1285,20 @@ CREATE TABLE IF NOT EXISTS "public"."v2_custos" (
 ALTER TABLE "public"."v2_custos" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."v2_movimentacoes_estoque" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid",
+    "produto_uuid" "uuid",
+    "tipo" "text",
+    "quantidade" real,
+    "origem" "text",
+    "data" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."v2_movimentacoes_estoque" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."v2_plantios" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "usuario_id" "uuid",
@@ -1273,11 +1388,52 @@ CREATE TABLE IF NOT EXISTS "public"."vendas" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid"
+    "user_id" "uuid"
 );
 
 
 ALTER TABLE "public"."vendas" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."view_culturas_resumo" WITH ("security_invoker"='true') AS
+ SELECT "user_id",
+    "cultura",
+    "count"(*) AS "total_plantios",
+    "sum"("quantidade_pes") AS "total_pes"
+   FROM "public"."plantio"
+  GROUP BY "user_id", "cultura";
+
+
+ALTER VIEW "public"."view_culturas_resumo" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."view_estoque_critico" WITH ("security_invoker"='true') AS
+ SELECT "e"."user_id",
+    "c"."nome" AS "produto",
+    "e"."quantidade",
+    "c"."unidade"
+   FROM ("public"."estoque" "e"
+     JOIN "public"."cadastro" "c" ON (("e"."produto_uuid" = "c"."uuid")))
+  WHERE ("e"."quantidade" <= (0)::numeric);
+
+
+ALTER VIEW "public"."view_estoque_critico" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."view_financeiro_resumo" WITH ("security_invoker"='true') AS
+ SELECT "v"."user_id",
+    COALESCE("sum"("v"."valor"), (0)::numeric) AS "total_vendas",
+    COALESCE("c"."total_custos", (0)::numeric) AS "total_custos",
+    (COALESCE("sum"("v"."valor"), (0)::numeric) - COALESCE("c"."total_custos", (0)::numeric)) AS "lucro_liquido"
+   FROM ("public"."vendas" "v"
+     LEFT JOIN ( SELECT "custos"."user_id",
+            "sum"("custos"."valor_total") AS "total_custos"
+           FROM "public"."custos"
+          GROUP BY "custos"."user_id") "c" ON (("c"."user_id" = "v"."user_id")))
+  GROUP BY "v"."user_id", "c"."total_custos";
+
+
+ALTER VIEW "public"."view_financeiro_resumo" OWNER TO "postgres";
 
 
 ALTER TABLE ONLY "public"."schema_migrations" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."schema_migrations_id_seq"'::"regclass");
@@ -1434,7 +1590,7 @@ ALTER TABLE ONLY "public"."error_logs"
 
 
 ALTER TABLE ONLY "public"."estoque"
-    ADD CONSTRAINT "estoque_item_id_key" UNIQUE ("item_id");
+    ADD CONSTRAINT "estoque_item_id_key" UNIQUE ("produto_uuid");
 
 
 
@@ -1558,6 +1714,11 @@ ALTER TABLE ONLY "public"."plantio"
 
 
 
+ALTER TABLE ONLY "public"."production_fertilization_items"
+    ADD CONSTRAINT "production_fertilization_items_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."profiles"
     ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
 
@@ -1590,6 +1751,16 @@ ALTER TABLE ONLY "public"."unidades_medida"
 
 ALTER TABLE ONLY "public"."unidades_medida"
     ADD CONSTRAINT "unidades_medida_uuid_key" UNIQUE ("uuid");
+
+
+
+ALTER TABLE ONLY "public"."user_profiles"
+    ADD CONSTRAINT "user_profiles_email_key" UNIQUE ("email");
+
+
+
+ALTER TABLE ONLY "public"."user_profiles"
+    ADD CONSTRAINT "user_profiles_pkey" PRIMARY KEY ("id");
 
 
 
@@ -1640,6 +1811,11 @@ ALTER TABLE ONLY "public"."v2_custos"
 
 ALTER TABLE ONLY "public"."v2_fazendas"
     ADD CONSTRAINT "v2_fazendas_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."v2_movimentacoes_estoque"
+    ADD CONSTRAINT "v2_movimentacoes_estoque_pkey" PRIMARY KEY ("id");
 
 
 
@@ -1960,7 +2136,7 @@ CREATE UNIQUE INDEX "uq_error_logs_uuid" ON "public"."error_logs" USING "btree" 
 
 
 
-CREATE UNIQUE INDEX "uq_estoque_item_id" ON "public"."estoque" USING "btree" ("item_id");
+CREATE UNIQUE INDEX "uq_estoque_item_id" ON "public"."estoque" USING "btree" ("produto_uuid");
 
 
 
@@ -2120,6 +2296,22 @@ CREATE OR REPLACE TRIGGER "receitas_set_uuid" BEFORE INSERT ON "public"."receita
 
 
 
+CREATE OR REPLACE TRIGGER "tr_update_last_updated_custos" BEFORE UPDATE ON "public"."custos" FOR EACH ROW EXECUTE FUNCTION "public"."update_last_updated_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "tr_update_last_updated_estoque" BEFORE UPDATE ON "public"."estoque" FOR EACH ROW EXECUTE FUNCTION "public"."update_last_updated_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "tr_update_last_updated_planos_adubacao" BEFORE UPDATE ON "public"."planos_adubacao" FOR EACH ROW EXECUTE FUNCTION "public"."update_last_updated_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "tr_update_last_updated_vendas" BEFORE UPDATE ON "public"."vendas" FOR EACH ROW EXECUTE FUNCTION "public"."update_last_updated_column"();
+
+
+
 CREATE OR REPLACE TRIGGER "unidades_medida_set_uuid" BEFORE INSERT ON "public"."unidades_medida" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
 
 
@@ -2158,7 +2350,7 @@ ALTER TABLE ONLY "public"."areas"
 
 
 ALTER TABLE ONLY "public"."cadastro"
-    ADD CONSTRAINT "cadastro_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "public"."usuarios"("id");
+    ADD CONSTRAINT "cadastro_usuario_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."usuarios"("id");
 
 
 
@@ -2223,7 +2415,7 @@ ALTER TABLE ONLY "public"."error_logs"
 
 
 ALTER TABLE ONLY "public"."estoque"
-    ADD CONSTRAINT "estoque_item_id_fkey" FOREIGN KEY ("item_id") REFERENCES "public"."items"("id");
+    ADD CONSTRAINT "estoque_item_id_fkey" FOREIGN KEY ("produto_uuid") REFERENCES "public"."items"("id");
 
 
 
@@ -2249,6 +2441,11 @@ ALTER TABLE ONLY "public"."fertilization_items"
 
 ALTER TABLE ONLY "public"."fertilization_recipes"
     ADD CONSTRAINT "fertilization_recipes_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."user_profiles"
+    ADD CONSTRAINT "fk_user" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 
 
@@ -2354,6 +2551,11 @@ ALTER TABLE ONLY "public"."planos_adubacao"
 
 ALTER TABLE ONLY "public"."plantio"
     ADD CONSTRAINT "plantio_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."production_fertilization_items"
+    ADD CONSTRAINT "production_fertilization_items_plano_uuid_fkey" FOREIGN KEY ("plano_uuid") REFERENCES "public"."planos_adubacao"("uuid");
 
 
 
@@ -2475,19 +2677,7 @@ CREATE POLICY "Atualização para autenticados" ON "public"."analise_ia" FOR UPD
 
 
 
-CREATE POLICY "Atualização para autenticados" ON "public"."app_settings" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Atualização para autenticados" ON "public"."areas" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "Atualização para autenticados" ON "public"."caderno_notas" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Atualização para autenticados" ON "public"."clientes" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -2507,15 +2697,7 @@ CREATE POLICY "Atualização para autenticados" ON "public"."costs" FOR UPDATE T
 
 
 
-CREATE POLICY "Atualização para autenticados" ON "public"."custos" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "Atualização para autenticados" ON "public"."error_logs" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Atualização para autenticados" ON "public"."estoque" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -2543,14 +2725,6 @@ CREATE POLICY "Atualização para autenticados" ON "public"."movimentos_estoque"
 
 
 
-CREATE POLICY "Atualização para autenticados" ON "public"."planos_adubacao" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Atualização para autenticados" ON "public"."plantio" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "Atualização para autenticados" ON "public"."profiles" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
@@ -2567,19 +2741,7 @@ CREATE POLICY "Atualização para autenticados" ON "public"."users" FOR UPDATE T
 
 
 
-CREATE POLICY "Exclusão para autenticados" ON "public"."app_settings" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Exclusão para autenticados" ON "public"."areas" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "Exclusão para autenticados" ON "public"."caderno_notas" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Exclusão para autenticados" ON "public"."clientes" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -2600,10 +2762,6 @@ CREATE POLICY "Exclusão para autenticados" ON "public"."costs" FOR DELETE TO "a
 
 
 CREATE POLICY "Exclusão para autenticados" ON "public"."error_logs" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Exclusão para autenticados" ON "public"."estoque" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -2631,14 +2789,6 @@ CREATE POLICY "Exclusão para autenticados" ON "public"."movimentos_estoque" FOR
 
 
 
-CREATE POLICY "Exclusão para autenticados" ON "public"."planos_adubacao" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Exclusão para autenticados" ON "public"."plantio" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "Exclusão para autenticados" ON "public"."profiles" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
@@ -2655,27 +2805,11 @@ CREATE POLICY "Exclusão para autenticados" ON "public"."users" FOR DELETE TO "a
 
 
 
-CREATE POLICY "Exclusão para autenticados" ON "public"."vendas" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "Inserção para autenticados" ON "public"."analise_ia" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
-CREATE POLICY "Inserção para autenticados" ON "public"."app_settings" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Inserção para autenticados" ON "public"."areas" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "Inserção para autenticados" ON "public"."caderno_notas" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Inserção para autenticados" ON "public"."clientes" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -2695,15 +2829,7 @@ CREATE POLICY "Inserção para autenticados" ON "public"."costs" FOR INSERT TO "
 
 
 
-CREATE POLICY "Inserção para autenticados" ON "public"."custos" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "Inserção para autenticados" ON "public"."error_logs" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Inserção para autenticados" ON "public"."estoque" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -2731,14 +2857,6 @@ CREATE POLICY "Inserção para autenticados" ON "public"."movimentos_estoque" FO
 
 
 
-CREATE POLICY "Inserção para autenticados" ON "public"."planos_adubacao" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Inserção para autenticados" ON "public"."plantio" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "Inserção para autenticados" ON "public"."profiles" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
@@ -2755,7 +2873,55 @@ CREATE POLICY "Inserção para autenticados" ON "public"."users" FOR INSERT TO "
 
 
 
-CREATE POLICY "Inserção para autenticados" ON "public"."vendas" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
+CREATE POLICY "Manage own app_settings" ON "public"."app_settings" USING (false);
+
+
+
+CREATE POLICY "Manage own areas" ON "public"."areas" USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Manage own cadastro" ON "public"."cadastro" USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Manage own clientes" ON "public"."clientes" USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Manage own culturas" ON "public"."culturas" USING (("auth"."uid"() = "id"));
+
+
+
+CREATE POLICY "Manage own custos" ON "public"."custos" USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Manage own estoque" ON "public"."estoque" USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Manage own planos_adubacao" ON "public"."planos_adubacao" USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Manage own plantio" ON "public"."plantio" USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Manage own production_fertilization_items" ON "public"."production_fertilization_items" USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Manage own user_profiles" ON "public"."user_profiles" USING (("auth"."uid"() = "id"));
+
+
+
+CREATE POLICY "Manage own v2_movimentacoes_estoque" ON "public"."v2_movimentacoes_estoque" USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Manage own vendas" ON "public"."vendas" USING (("auth"."uid"() = "user_id"));
 
 
 
@@ -2763,19 +2929,7 @@ CREATE POLICY "Owner Access" ON "public"."analise_ia" USING (("usuario_id" = "au
 
 
 
-CREATE POLICY "Owner Access" ON "public"."areas" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
-CREATE POLICY "Owner Access" ON "public"."cadastro" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
 CREATE POLICY "Owner Access" ON "public"."caderno_notas" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
-CREATE POLICY "Owner Access" ON "public"."clientes" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
 
@@ -2792,14 +2946,6 @@ CREATE POLICY "Owner Access" ON "public"."cost_categories" USING (("usuario_id" 
 
 
 CREATE POLICY "Owner Access" ON "public"."costs" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
-CREATE POLICY "Owner Access" ON "public"."culturas" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
-CREATE POLICY "Owner Access" ON "public"."custos" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
 
@@ -2839,10 +2985,6 @@ CREATE POLICY "Owner Access" ON "public"."orders" USING (("usuario_id" = "auth".
 
 
 
-CREATE POLICY "Owner Access" ON "public"."plantio" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
 CREATE POLICY "Owner Access" ON "public"."usuarios" USING (("id" = "auth"."uid"())) WITH CHECK (("id" = "auth"."uid"()));
 
 
@@ -2867,10 +3009,6 @@ CREATE POLICY "Owner Access" ON "public"."v2_talhoes" USING (("usuario_id" = "au
 
 
 
-CREATE POLICY "Owner Access" ON "public"."vendas" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
 ALTER TABLE "public"."activity_log" ENABLE ROW LEVEL SECURITY;
 
 
@@ -2884,23 +3022,7 @@ CREATE POLICY "analise_ia_admin_read" ON "public"."analise_ia" FOR SELECT TO "au
 ALTER TABLE "public"."app_settings" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "app_settings_admin_read" ON "public"."app_settings" FOR SELECT TO "authenticated" USING ((("auth"."jwt"() ->> 'role'::"text") = 'admin'::"text"));
-
-
-
-CREATE POLICY "app_settings_owner_full_access" ON "public"."app_settings" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
-
-
-
 ALTER TABLE "public"."areas" ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "areas_admin_read" ON "public"."areas" FOR SELECT TO "authenticated" USING ((("auth"."jwt"() ->> 'role'::"text") = 'admin'::"text"));
-
-
-
-CREATE POLICY "areas_owner_full_access" ON "public"."areas" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
-
 
 
 CREATE POLICY "authenticated_delete" ON "public"."monitoramento_entidade_audit" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
@@ -2915,19 +3037,7 @@ CREATE POLICY "authenticated_select" ON "public"."monitoramento_entidade_audit" 
 
 
 
-CREATE POLICY "authenticated_shared_access" ON "public"."app_settings" TO "authenticated" USING (("auth"."uid"() IS NOT NULL)) WITH CHECK (("auth"."uid"() IS NOT NULL));
-
-
-
-CREATE POLICY "authenticated_shared_access" ON "public"."areas" TO "authenticated" USING (("auth"."uid"() IS NOT NULL)) WITH CHECK (("auth"."uid"() IS NOT NULL));
-
-
-
 CREATE POLICY "authenticated_shared_access" ON "public"."categorias_despesa" TO "authenticated" USING (("auth"."uid"() IS NOT NULL)) WITH CHECK (("auth"."uid"() IS NOT NULL));
-
-
-
-CREATE POLICY "authenticated_shared_access" ON "public"."clientes" TO "authenticated" USING (("auth"."uid"() IS NOT NULL)) WITH CHECK (("auth"."uid"() IS NOT NULL));
 
 
 
@@ -2935,15 +3045,7 @@ CREATE POLICY "authenticated_shared_access" ON "public"."cost_categories" TO "au
 
 
 
-CREATE POLICY "authenticated_shared_access" ON "public"."culturas" TO "authenticated" USING (("auth"."uid"() IS NOT NULL)) WITH CHECK (("auth"."uid"() IS NOT NULL));
-
-
-
 CREATE POLICY "authenticated_shared_access" ON "public"."descarte" TO "authenticated" USING (("auth"."uid"() IS NOT NULL)) WITH CHECK (("auth"."uid"() IS NOT NULL));
-
-
-
-CREATE POLICY "authenticated_shared_access" ON "public"."estoque" TO "authenticated" USING (("auth"."uid"() IS NOT NULL)) WITH CHECK (("auth"."uid"() IS NOT NULL));
 
 
 
@@ -2956,10 +3058,6 @@ CREATE POLICY "authenticated_shared_access" ON "public"."manutencao_frota" TO "a
 
 
 CREATE POLICY "authenticated_shared_access" ON "public"."maquinas" TO "authenticated" USING (("auth"."uid"() IS NOT NULL)) WITH CHECK (("auth"."uid"() IS NOT NULL));
-
-
-
-CREATE POLICY "authenticated_shared_access" ON "public"."planos_adubacao" TO "authenticated" USING (("auth"."uid"() IS NOT NULL)) WITH CHECK (("auth"."uid"() IS NOT NULL));
 
 
 
@@ -2997,14 +3095,6 @@ CREATE POLICY "categorias_despesa_owner_full_access" ON "public"."categorias_des
 
 
 ALTER TABLE "public"."clientes" ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "clientes_admin_read" ON "public"."clientes" FOR SELECT TO "authenticated" USING ((("auth"."jwt"() ->> 'role'::"text") = 'admin'::"text"));
-
-
-
-CREATE POLICY "clientes_owner_full_access" ON "public"."clientes" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
-
 
 
 ALTER TABLE "public"."colheitas" ENABLE ROW LEVEL SECURITY;
@@ -3054,19 +3144,7 @@ CREATE POLICY "costs_owner_full_access" ON "public"."costs" TO "authenticated" U
 ALTER TABLE "public"."culturas" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "culturas_admin_read" ON "public"."culturas" FOR SELECT TO "authenticated" USING ((("auth"."jwt"() ->> 'role'::"text") = 'admin'::"text"));
-
-
-
-CREATE POLICY "culturas_owner_full_access" ON "public"."culturas" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
-
-
-
 ALTER TABLE "public"."custos" ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "custos_admin_read" ON "public"."custos" FOR SELECT TO "authenticated" USING ((("auth"."jwt"() ->> 'role'::"text") = 'admin'::"text"));
-
 
 
 ALTER TABLE "public"."descarte" ENABLE ROW LEVEL SECURITY;
@@ -3092,14 +3170,6 @@ CREATE POLICY "error_logs_owner_full_access" ON "public"."error_logs" TO "authen
 
 
 ALTER TABLE "public"."estoque" ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "estoque_admin_read" ON "public"."estoque" FOR SELECT TO "authenticated" USING ((("auth"."jwt"() ->> 'role'::"text") = 'admin'::"text"));
-
-
-
-CREATE POLICY "estoque_owner_full_access" ON "public"."estoque" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
-
 
 
 ALTER TABLE "public"."fertilization_applications" ENABLE ROW LEVEL SECURITY;
@@ -3255,10 +3325,6 @@ CREATE POLICY "owner_delete" ON "public"."error_logs" FOR DELETE TO "authenticat
 
 
 
-CREATE POLICY "owner_delete" ON "public"."estoque" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "owner_delete" ON "public"."monitoramento_entidade" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
@@ -3291,10 +3357,6 @@ CREATE POLICY "owner_delete" ON "public"."users" FOR DELETE TO "authenticated" U
 
 
 
-CREATE POLICY "owner_delete" ON "public"."vendas" FOR DELETE TO "authenticated" USING (((("usuario_id_bak_20260315145412")::"text" = (( SELECT "auth"."uid"() AS "uid"))::"text") OR (("auth"."jwt"() ->> 'user_role'::"text") = 'admin'::"text")));
-
-
-
 CREATE POLICY "owner_full_access" ON "public"."activity_log" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
@@ -3316,10 +3378,6 @@ CREATE POLICY "owner_full_access" ON "public"."compras" TO "authenticated" USING
 
 
 CREATE POLICY "owner_full_access" ON "public"."costs" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
-CREATE POLICY "owner_full_access" ON "public"."custos" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
 
@@ -3356,10 +3414,6 @@ CREATE POLICY "owner_full_access" ON "public"."movimentacoes_financeiras" TO "au
 
 
 CREATE POLICY "owner_full_access" ON "public"."movimentos_estoque" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
-CREATE POLICY "owner_full_access" ON "public"."plantio" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
 
@@ -3415,10 +3469,6 @@ CREATE POLICY "owner_full_access" ON "public"."v2_vendas" TO "authenticated" USI
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."vendas" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
 CREATE POLICY "owner_insert" ON "public"."analise_ia" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
@@ -3428,10 +3478,6 @@ CREATE POLICY "owner_insert" ON "public"."colheitas" FOR INSERT TO "authenticate
 
 
 CREATE POLICY "owner_insert" ON "public"."error_logs" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "owner_insert" ON "public"."estoque" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -3467,10 +3513,6 @@ CREATE POLICY "owner_insert" ON "public"."users" FOR INSERT TO "authenticated" W
 
 
 
-CREATE POLICY "owner_insert" ON "public"."vendas" FOR INSERT TO "authenticated" WITH CHECK (((("usuario_id_bak_20260315145412")::"text" = (( SELECT "auth"."uid"() AS "uid"))::"text") OR (("auth"."jwt"() ->> 'user_role'::"text") = 'admin'::"text")));
-
-
-
 CREATE POLICY "owner_produtor_access" ON "public"."v2_produtores" TO "authenticated" USING (("id" = "auth"."uid"())) WITH CHECK (("id" = "auth"."uid"()));
 
 
@@ -3484,10 +3526,6 @@ CREATE POLICY "owner_select" ON "public"."colheitas" FOR SELECT TO "authenticate
 
 
 CREATE POLICY "owner_select" ON "public"."error_logs" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "owner_select" ON "public"."estoque" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -3539,10 +3577,6 @@ CREATE POLICY "owner_update" ON "public"."error_logs" FOR UPDATE TO "authenticat
 
 
 
-CREATE POLICY "owner_update" ON "public"."estoque" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "owner_update" ON "public"."monitoramento_entidade" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
@@ -3578,23 +3612,10 @@ CREATE POLICY "owner_update" ON "public"."users" FOR UPDATE TO "authenticated" U
 ALTER TABLE "public"."planos_adubacao" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "planos_adubacao_admin_read" ON "public"."planos_adubacao" FOR SELECT TO "authenticated" USING ((("auth"."jwt"() ->> 'role'::"text") = 'admin'::"text"));
-
-
-
-CREATE POLICY "planos_adubacao_owner_full_access" ON "public"."planos_adubacao" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
-
-
-
 ALTER TABLE "public"."plantio" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "plantio_admin_read" ON "public"."plantio" FOR SELECT TO "authenticated" USING ((("auth"."jwt"() ->> 'role'::"text") = 'admin'::"text"));
-
-
-
-CREATE POLICY "plantio_owner_full_access" ON "public"."plantio" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
-
+ALTER TABLE "public"."production_fertilization_items" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
@@ -3605,18 +3626,6 @@ CREATE POLICY "profiles_admin_read" ON "public"."profiles" FOR SELECT TO "authen
 
 
 CREATE POLICY "profiles_owner_full_access" ON "public"."profiles" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
-
-
-
-CREATE POLICY "public_delete" ON "public"."app_settings" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_delete" ON "public"."areas" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_delete" ON "public"."clientes" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -3640,27 +3649,7 @@ CREATE POLICY "public_delete" ON "public"."maquinas" FOR DELETE TO "authenticate
 
 
 
-CREATE POLICY "public_delete" ON "public"."planos_adubacao" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_delete" ON "public"."plantio" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "public_delete" ON "public"."unidades_medida" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_insert" ON "public"."app_settings" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_insert" ON "public"."areas" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_insert" ON "public"."clientes" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -3676,10 +3665,6 @@ CREATE POLICY "public_insert" ON "public"."costs" FOR INSERT TO "authenticated" 
 
 
 
-CREATE POLICY "public_insert" ON "public"."custos" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "public_insert" ON "public"."items" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
@@ -3688,27 +3673,7 @@ CREATE POLICY "public_insert" ON "public"."maquinas" FOR INSERT TO "authenticate
 
 
 
-CREATE POLICY "public_insert" ON "public"."planos_adubacao" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_insert" ON "public"."plantio" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "public_insert" ON "public"."unidades_medida" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_select" ON "public"."app_settings" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_select" ON "public"."areas" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_select" ON "public"."clientes" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -3724,10 +3689,6 @@ CREATE POLICY "public_select" ON "public"."costs" FOR SELECT TO "authenticated" 
 
 
 
-CREATE POLICY "public_select" ON "public"."custos" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "public_select" ON "public"."items" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
@@ -3736,31 +3697,11 @@ CREATE POLICY "public_select" ON "public"."maquinas" FOR SELECT TO "authenticate
 
 
 
-CREATE POLICY "public_select" ON "public"."planos_adubacao" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_select" ON "public"."plantio" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "public_select" ON "public"."unidades_medida" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
-CREATE POLICY "public_standard_access" ON "public"."app_settings" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_standard_access" ON "public"."areas" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "public_standard_access" ON "public"."categorias_despesa" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_standard_access" ON "public"."clientes" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -3788,23 +3729,7 @@ CREATE POLICY "public_standard_access" ON "public"."maquinas" TO "authenticated"
 
 
 
-CREATE POLICY "public_standard_access" ON "public"."planos_adubacao" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "public_standard_access" ON "public"."unidades_medida" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_update" ON "public"."app_settings" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_update" ON "public"."areas" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_update" ON "public"."clientes" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -3820,23 +3745,11 @@ CREATE POLICY "public_update" ON "public"."costs" FOR UPDATE TO "authenticated" 
 
 
 
-CREATE POLICY "public_update" ON "public"."custos" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "public_update" ON "public"."items" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
 CREATE POLICY "public_update" ON "public"."maquinas" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_update" ON "public"."planos_adubacao" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_update" ON "public"."plantio" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -3871,6 +3784,9 @@ CREATE POLICY "unidades_medida_admin_read" ON "public"."unidades_medida" FOR SEL
 
 CREATE POLICY "unidades_medida_owner_full_access" ON "public"."unidades_medida" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
 
+
+
+ALTER TABLE "public"."user_profiles" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."users" ENABLE ROW LEVEL SECURITY;
@@ -3916,6 +3832,9 @@ CREATE POLICY "v2_fazendas_admin_read" ON "public"."v2_fazendas" FOR SELECT TO "
 
 CREATE POLICY "v2_fazendas_owner_full_access" ON "public"."v2_fazendas" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
 
+
+
+ALTER TABLE "public"."v2_movimentacoes_estoque" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."v2_plantios" ENABLE ROW LEVEL SECURITY;
@@ -4161,6 +4080,12 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."apply_fertilization_v2"("p_plano_uuid" "uuid", "p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."apply_fertilization_v2"("p_plano_uuid" "uuid", "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."apply_fertilization_v2"("p_plano_uuid" "uuid", "p_user_id" "uuid") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."fill_text_uuid"() TO "anon";
 GRANT ALL ON FUNCTION "public"."fill_text_uuid"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."fill_text_uuid"() TO "service_role";
@@ -4191,7 +4116,19 @@ GRANT ALL ON FUNCTION "public"."monitoramento_entidade_run_checks"() TO "service
 
 
 
+GRANT ALL ON FUNCTION "public"."process_sale_v2"("p_user_id" "uuid", "p_produto_uuid" "uuid", "p_quantidade" real, "p_valor" real) TO "anon";
+GRANT ALL ON FUNCTION "public"."process_sale_v2"("p_user_id" "uuid", "p_produto_uuid" "uuid", "p_quantidade" real, "p_valor" real) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."process_sale_v2"("p_user_id" "uuid", "p_produto_uuid" "uuid", "p_quantidade" real, "p_valor" real) TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."try_text_to_uuid"("text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."update_last_updated_column"() TO "anon";
+GRANT ALL ON FUNCTION "public"."update_last_updated_column"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."update_last_updated_column"() TO "service_role";
 
 
 
@@ -4448,6 +4385,12 @@ GRANT ALL ON TABLE "public"."plantio" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."production_fertilization_items" TO "anon";
+GRANT ALL ON TABLE "public"."production_fertilization_items" TO "authenticated";
+GRANT ALL ON TABLE "public"."production_fertilization_items" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."profiles" TO "anon";
 GRANT ALL ON TABLE "public"."profiles" TO "authenticated";
 GRANT ALL ON TABLE "public"."profiles" TO "service_role";
@@ -4475,6 +4418,12 @@ GRANT ALL ON SEQUENCE "public"."schema_migrations_id_seq" TO "service_role";
 GRANT ALL ON TABLE "public"."unidades_medida" TO "anon";
 GRANT ALL ON TABLE "public"."unidades_medida" TO "authenticated";
 GRANT ALL ON TABLE "public"."unidades_medida" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."user_profiles" TO "anon";
+GRANT ALL ON TABLE "public"."user_profiles" TO "authenticated";
+GRANT ALL ON TABLE "public"."user_profiles" TO "service_role";
 
 
 
@@ -4520,6 +4469,12 @@ GRANT ALL ON TABLE "public"."v2_custos" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."v2_movimentacoes_estoque" TO "anon";
+GRANT ALL ON TABLE "public"."v2_movimentacoes_estoque" TO "authenticated";
+GRANT ALL ON TABLE "public"."v2_movimentacoes_estoque" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."v2_plantios" TO "anon";
 GRANT ALL ON TABLE "public"."v2_plantios" TO "authenticated";
 GRANT ALL ON TABLE "public"."v2_plantios" TO "service_role";
@@ -4553,6 +4508,24 @@ GRANT ALL ON TABLE "public"."v2_vendas" TO "service_role";
 GRANT ALL ON TABLE "public"."vendas" TO "anon";
 GRANT ALL ON TABLE "public"."vendas" TO "authenticated";
 GRANT ALL ON TABLE "public"."vendas" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."view_culturas_resumo" TO "anon";
+GRANT ALL ON TABLE "public"."view_culturas_resumo" TO "authenticated";
+GRANT ALL ON TABLE "public"."view_culturas_resumo" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."view_estoque_critico" TO "anon";
+GRANT ALL ON TABLE "public"."view_estoque_critico" TO "authenticated";
+GRANT ALL ON TABLE "public"."view_estoque_critico" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."view_financeiro_resumo" TO "anon";
+GRANT ALL ON TABLE "public"."view_financeiro_resumo" TO "authenticated";
+GRANT ALL ON TABLE "public"."view_financeiro_resumo" TO "service_role";
 
 
 
