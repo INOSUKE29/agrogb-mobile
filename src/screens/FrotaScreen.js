@@ -22,6 +22,11 @@ export default function FrotaScreen() {
     useFocusEffect(useCallback(() => { 
         fetchMachines(); 
     }, [fetchMachines]));
+    
+    const handleDelete = (item) => {
+        setItemToDelete(item);
+        setConfirmVisible(true);
+    };
 
     const confirmDelete = async () => {
         if (itemToDelete) {

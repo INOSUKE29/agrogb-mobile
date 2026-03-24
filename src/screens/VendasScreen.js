@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, Fla
 import { v4 as uuidv4 } from 'uuid';
 import { getCadastro, getClientes } from '../database/database';
 import { FinanceService } from '../modules/finance/services/FinanceService';
+import { deleteVenda, marcarVendaRecebida } from '../services/VendaService';
 import { InventoryService } from '../modules/inventory/services/InventoryService';
 import ProductModal from '../modules/inventory/components/ProductModal';
 import ClientModal from '../modules/finance/components/ClientModal';
