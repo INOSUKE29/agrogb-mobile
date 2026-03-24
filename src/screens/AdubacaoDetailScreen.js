@@ -1,3 +1,8 @@
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, Text, ScrollView, StyleSheet, Alert, Image, Share } from 'react-native';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { useTheme } from '../theme/ThemeContext';
+import AgroButton from '../ui/components/AgroButton';
 import { ProductionService } from '../modules/production/services/ProductionService';
 import { executeQuery } from '../database/database';
 

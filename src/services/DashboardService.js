@@ -1,4 +1,5 @@
 import { executeQuery } from '../database/database';
+import { supabase } from './supabaseClient';
 
 /**
  * DashboardService - Camada de Lógica para a Home 🏛️📊
