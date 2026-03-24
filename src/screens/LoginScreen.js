@@ -163,7 +163,7 @@ export default function LoginScreen({ navigation }) {
                     </View>
 
                     <View style={styles.footer}>
-                        <Text style={styles.footerText}>AGROGB ERP • VERSION 1.0 (GOLD PRO)</Text>
+                        <Text style={styles.footerText}>AGROGB ERP • VERSION 1.1 (DIAMOND PRO)</Text>
                     </View>
                 </ScrollView>
             </LinearGradient>

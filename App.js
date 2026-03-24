@@ -82,8 +82,11 @@ export default function App() {
         // Inicializa banco de dados ANTES de renderizar qualquer contexto
         initDB()
             .then(() => {
-                if (__DEV__) console.log("DEBUG: DB IS READY");
+                if (__DEV__) console.log("DEBUG: DB IS READY - Starting Sync Services");
                 setIsDbReady(true);
+                
+                // Inicia serviços de sincronização de forma sequencial segura
+                SyncWorker.run(); 
                 AutoSyncService.start();
             })
             .catch(error => {

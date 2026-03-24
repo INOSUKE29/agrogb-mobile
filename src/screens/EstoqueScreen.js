@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, Modal, View } from 'react-native';
+import { Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, Modal, View, ActivityIndicator } from 'react-native';
 import AgroButton from '../ui/components/AgroButton';
-import { getEstoque, atualizarEstoque } from '../services/EstoqueService';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { showToast } from '../ui/Toast';
@@ -9,10 +8,11 @@ import { useTheme } from '../theme/ThemeContext';
 import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
 import { Card } from '../ui/components/Card';
+import { useInventory } from '../modules/inventory/hooks/useInventory';
 
 export default function EstoqueScreen({ navigation }) {
     const { colors, isDark } = useTheme();
-    const [originalItems, setOriginalItems] = useState([]);
+    const { items: originalItems, loading, error, fetchStock, adjustStock } = useInventory();
     const [filteredItems, setFilteredItems] = useState([]);
     const [filter] = useState('TODOS');
     const [searchText, setSearchText] = useState('');
@@ -21,20 +21,17 @@ export default function EstoqueScreen({ navigation }) {
     const [actionType, setActionType] = useState('ENTRADA');
     const [qty, setQty] = useState('');
 
-    const loadData = async () => {
-        try {
-            const data = await getEstoque();
-            const sorted = data.sort((a, b) => (a.produto < b.produto ? -1 : 1));
-            setOriginalItems(sorted);
-            applyFilter(sorted, filter, searchText);
-        } catch { }
-    };
+    useFocusEffect(useCallback(() => { 
+        fetchStock(); 
+    }, [fetchStock]));
 
-    useFocusEffect(useCallback(() => { loadData(); }, [filter, searchText]));
-    useEffect(() => { applyFilter(originalItems, filter, searchText); }, [filter, searchText]);
+    useEffect(() => { 
+        applyFilter(originalItems, filter, searchText); 
+    }, [originalItems, filter, searchText]);
 
     const applyFilter = (data, mode, text) => {
-        let res = data;
+        if (!data) return;
+        let res = [...data];
         if (mode === 'LOW') res = res.filter(i => i.quantidade > 0 && i.quantidade <= 10);
         if (mode === 'ZERO') res = res.filter(i => i.quantidade <= 0);
         if (text) res = res.filter(i => i.produto.toUpperCase().includes(text.toUpperCase()));
@@ -55,9 +52,12 @@ export default function EstoqueScreen({ navigation }) {
         if (!qty || isNaN(qty) || parseFloat(qty) <= 0) return Alert.alert('Erro', 'Valor inválido.');
         const delta = actionType === 'ENTRADA' ? parseFloat(qty) : -parseFloat(qty);
         try {
-            await atualizarEstoque(selectedItem.produto, delta);
-            setModalVisible(false); showToast('Estoque atualizado!'); loadData();
-        } catch { Alert.alert('Erro', 'Falha ao atualizar.'); }
+            await adjustStock(selectedItem.produto, delta);
+            setModalVisible(false); 
+            showToast('✅ Estoque atualizado!');
+        } catch (err) { 
+            Alert.alert('Erro', 'Falha ao atualizar estoque: ' + err.message); 
+        }
     };
 
     const renderItem = ({ item }) => {
@@ -82,30 +82,39 @@ export default function EstoqueScreen({ navigation }) {
     return (
         <AppContainer>
             <ScreenHeader title="ESTOQUE" onBack={() => navigation.goBack()} />
-            <FlatList
-                data={filteredItems}
-                keyExtractor={(item, index) => item.produto + index}
-                renderItem={renderItem}
-                ListHeaderComponent={() => (
-                    <View style={styles.header}>
-                        <TextInput 
-                            style={[
-                                styles.inputSearch, 
-                                { 
-                                    backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F7F6',
-                                    borderColor: colors.border,
-                                    color: colors.textPrimary 
-                                }
-                            ]} 
-                            placeholder="Pesquisar estoque..." 
-                            placeholderTextColor={colors.placeholder}
-                            value={searchText} 
-                            onChangeText={setSearchText} 
-                        />
-                    </View>
-                )}
-                contentContainerStyle={styles.listContent}
-            />
+            {loading && !originalItems.length ? (
+                <View style={{ flex: 1, justifyContent: 'center' }}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+            ) : (
+                <FlatList
+                    data={filteredItems}
+                    keyExtractor={(item, index) => item.produto + index}
+                    renderItem={renderItem}
+                    ListHeaderComponent={() => (
+                        <View style={styles.header}>
+                            <TextInput 
+                                style={[
+                                    styles.inputSearch, 
+                                    { 
+                                        backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F7F6',
+                                        borderColor: colors.border,
+                                        color: colors.textPrimary 
+                                    }
+                                ]} 
+                                placeholder="Pesquisar estoque..." 
+                                placeholderTextColor={colors.placeholder}
+                                value={searchText} 
+                                onChangeText={setSearchText} 
+                            />
+                            {error && <Text style={{ color: colors.danger, marginTop: 10, textAlign: 'center' }}>{error}</Text>}
+                        </View>
+                    )}
+                    contentContainerStyle={styles.listContent}
+                    refreshing={loading}
+                    onRefresh={fetchStock}
+                />
+            )}
             <Modal visible={modalVisible} transparent animationType="fade">
                 <View style={styles.overlay}>
                     <Card style={[styles.miniModal, { backgroundColor: colors.surface }]}>

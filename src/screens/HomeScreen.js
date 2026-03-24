@@ -27,11 +27,25 @@ export default function HomeScreen({ navigation }) {
         vendasHoje: 0,
         perdasMes: 0,
     });
+    const [userProfile, setUserProfile] = useState({ name: 'Produtor AgroGB' });
+    const [loadingStats, setLoadingStats] = useState(false);
     const [drawerVisible, setDrawerVisible] = useState(false);
 
     const loadStats = async () => {
-        const data = await DashboardService.getStats();
-        setStats(prev => ({ ...prev, ...data }));
+        if (loadingStats) return;
+        setLoadingStats(true);
+        try {
+            const data = await DashboardService.getStats();
+            setStats(prev => ({ ...prev, ...data }));
+            
+            // Carrega perfil simplificado (SQLite Paridade PRO)
+            const profileRes = await DashboardService.getUserProfile();
+            if (profileRes) setUserProfile(profileRes);
+        } catch (err) {
+            if (__DEV__) console.warn('[HomeScreen] Erro ao atualizar dashboard:', err);
+        } finally {
+            setLoadingStats(false);
+        }
     };
 
     useFocusEffect(useCallback(() => {
@@ -93,7 +107,7 @@ export default function HomeScreen({ navigation }) {
                     </TouchableOpacity>
                     <View>
                         <Text style={[styles.greeting, { color: colors.textSecondary }]}>Bom trabalho,</Text>
-                        <Text style={[styles.userName, { color: colors.textPrimary }]}>Produtor AgroGB 🌿</Text>
+                        <Text style={[styles.userName, { color: colors.textPrimary }]}>{userProfile.name} 🌿</Text>
                     </View>
                 </View>
 

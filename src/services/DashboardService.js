@@ -13,6 +13,13 @@ export const DashboardService = {
             const today = new Date().toISOString().split('T')[0];
             const firstDayOfMonth = today.substring(0, 8) + '01';
 
+            // 1. TENTA BUSCAR BI DO SUPABASE (NÍVEL ERP) 🚀
+            let biData = { total_vendas: 0, total_custos: 0, lucro_liquido: 0 };
+            try {
+                const { data } = await supabase.from('view_financeiro_resumo').select('*').limit(1);
+                if (data && data[0]) biData = data[0];
+            } catch (e) { console.log('[DashboardService] Fallback para SQLite para BI'); }
+
             const [
                 resColheita,
                 resVendas,
@@ -27,7 +34,7 @@ export const DashboardService = {
                 executeQuery(`SELECT SUM(quantidade) as total FROM colheitas WHERE data = ? AND is_deleted = 0`, [today]),
                 // 2. Vendas Hoje (R$)
                 executeQuery(`SELECT SUM(valor) as total FROM vendas WHERE data = ? AND is_deleted = 0`, [today]),
-                // 3. Plantio Ativo
+                // 3. Plantio Ativo-
                 executeQuery(`SELECT COUNT(*) as total FROM plantio WHERE is_deleted = 0`),
                 // 4. Máquinas em Alerta de Revisão
                 executeQuery(`SELECT COUNT(*) as total FROM maquinas WHERE horimetro_atual >= intervalo_revisao AND is_deleted = 0`),
@@ -46,8 +53,9 @@ export const DashboardService = {
             const plantioAtivo = resPlantio.rows.item(0).total || 0;
             const maquinasAlert = resMaquinas.rows.item(0).total || 0;
             
-            const custosTotalMes = (resCustosMes.rows.item(0).total || 0) + (resComprasMes.rows.item(0).total || 0);
-            const vendasMesTotal = resVendasMes.rows.item(0).total || 0;
+            // Lógica de saldo: BI se disponível, senão SQLite
+            const vendasMes = biData.total_vendas || resVendasMes.rows.item(0).total || 0;
+            const custosMes = biData.total_custos || (resCustosMes.rows.item(0).total || 0) + (resComprasMes.rows.item(0).total || 0);
             const perdasMes = resDescarte.rows.item(0).total || 0;
 
             const syncPendentes = await DashboardService.getSyncCount();
@@ -57,9 +65,9 @@ export const DashboardService = {
                 vendasHoje,
                 plantioAtivo,
                 maquinasAlert,
-                custosMes: custosTotalMes,
-                vendasMes: vendasMesTotal,
-                saldo: vendasMesTotal - custosTotalMes,
+                custosMes,
+                vendasMes,
+                saldo: biData.lucro_liquido || (vendasMes - custosMes),
                 perdasMes,
                 syncPendentes
             };
@@ -101,5 +109,28 @@ export const DashboardService = {
         }
 
         return total;
+    },
+
+    /**
+     * Obtém o perfil do usuário logado (SQLite Paridade PRO)
+     */
+    getUserProfile: async () => {
+        try {
+            const res = await executeQuery('SELECT name FROM user_profiles LIMIT 1');
+            if (res.rows.length > 0) {
+                return res.rows.item(0);
+            }
+
+            // Fallback para v2_produtores (Legado)
+            const resLegado = await executeQuery('SELECT nome as name FROM v2_produtores LIMIT 1');
+            if (resLegado.rows.length > 0) {
+                return resLegado.rows.item(0);
+            }
+
+            return { name: 'Produtor AgroGB' };
+        } catch (error) {
+            if (__DEV__) console.warn('[DashboardService] Erro ao buscar perfil:', error.message);
+            return { name: 'Produtor AgroGB' };
+        }
     }
 };

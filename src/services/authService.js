@@ -104,17 +104,31 @@ export const login = async (email, password) => {
         if (__DEV__) console.log('[AuthService] Salvando sessão no SecureStore...');
         await safeSave('@user_session', session);
 
-        // 3. Verifica se o produtor existe localmente no V2, senão cria/puxa com Timeout
-        if (__DEV__) console.log('[AuthService] Verificando produtor local no SQLite...');
-        
-        const localCheck = await promiseWithTimeout(
-            executeQuery(`SELECT id FROM v2_produtores WHERE id = ?`, [data.user.id]),
-            30000,
-            "O banco de dados local está processando configurações iniciais. Aguarde um momento e tente novamente."
-        );
-        
+        // 3. Busca Perfil do Usuário com Fail-Safe (Padrão Pro)
+        if (__DEV__) console.log('[AuthService] Buscando perfil user_profiles no Supabase...');
+        try {
+            const { data: profile, error: profileError } = await promiseWithTimeout(
+                supabase.from('user_profiles').select('*').eq('id', data.user.id).single(),
+                10000,
+                "Busca de perfil excedeu tempo limite."
+            );
+
+            if (!profileError && profile) {
+                if (__DEV__) console.log('[AuthService] Perfil encontrado, sincronizando SQLite...');
+                await executeQuery(
+                    `INSERT OR REPLACE INTO user_profiles (id, email, name, last_updated, sync_status) VALUES (?, ?, ?, ?, ?)`,
+                    [profile.id, profile.email, profile.name, new Date().toISOString(), 'synced']
+                );
+            } else {
+                if (__DEV__) console.warn('[AuthService] Perfil não retornado (possível RLS ou não criado):', profileError);
+            }
+        } catch (err) {
+            if (__DEV__) console.warn('[AuthService] Fallback: Perfil não disponível via rede, ignorando para evitar trava.', err.message);
+        }
+
+        // 4. Garante registro no v2_produtores (Legado/Compatibilidade)
+        const localCheck = await executeQuery(`SELECT id FROM v2_produtores WHERE id = ?`, [data.user.id]);
         if (localCheck.rows.length === 0) {
-            if (__DEV__) console.log('[AuthService] Criando registro de produtor local...');
             await executeQuery(
                 `INSERT INTO v2_produtores (id, email, sync_status) VALUES (?, ?, ?)`,
                 [data.user.id, data.user.email, 'synced']

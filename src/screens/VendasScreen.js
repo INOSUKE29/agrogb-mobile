@@ -2,7 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { getCadastro, getClientes } from '../database/database';
-import { insertVenda, getVendasRecentes, deleteVenda, updateVenda, marcarVendaRecebida } from '../services/VendaService';
+import { FinanceService } from '../modules/finance/services/FinanceService';
+import { InventoryService } from '../modules/inventory/services/InventoryService';
+import ProductModal from '../modules/inventory/components/ProductModal';
+import ClientModal from '../modules/finance/components/ClientModal';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import AutoSyncService from '../services/AutoSyncService';
@@ -125,7 +128,7 @@ export default function VendasScreen({ navigation, route }) {
     };
 
     const loadHistory = async () => {
-        const data = await getVendasRecentes();
+        const data = await FinanceService.getRecentSales();
         setHistory(data);
     };
 
@@ -141,11 +144,8 @@ export default function VendasScreen({ navigation, route }) {
         const numQtd = parseFloat(quantidade);
         const numVal = parseFloat(valor);
 
-        if (isNaN(numQtd) || numQtd <= 0) {
-            return Alert.alert('Campo Inválido', 'A quantidade deve ser um número positivo.');
-        }
-        if (isNaN(numVal) || numVal < 0) {
-            return Alert.alert('Campo Inválido', 'O valor deve ser um número positivo.');
+        if (isNaN(numQtd) || numQtd <= 0 || isNaN(numVal) || numVal < 0) {
+            return Alert.alert('Campo Inválido', 'Verifique quantidade e valor.');
         }
 
         const dados = {
@@ -161,27 +161,22 @@ export default function VendasScreen({ navigation, route }) {
         };
 
         try {
-            if (editingUuid) {
-                await updateVenda(editingUuid, dados);
-                showToast('Venda atualizada com sucesso!');
-                setEditingUuid(null);
-            } else {
-                await insertVenda(dados);
-                showToast('Venda registrada com sucesso!');
-            }
+            await FinanceService.recordSale(dados);
+            showToast(editingUuid ? 'Venda atualizada!' : 'Venda registrada!');
 
             setProduto('');
             setQuantidade('');
             setValor('');
             setObservacao('');
             setStatusPagamento('A_RECEBER');
+            setEditingUuid(null);
 
             await AsyncStorage.removeItem(DRAFT_KEY);
             loadHistory();
             AutoSyncService.trigger();
         } catch (error) {
             ErrorService.logError('VendasScreen:salvar', error);
-            Alert.alert('Erro ao Salvar', 'Não foi possível registrar a venda. O erro foi logado para análise.');
+            Alert.alert('Erro', 'Não foi possível salvar a venda.');
         }
     };
 
@@ -431,85 +426,17 @@ export default function VendasScreen({ navigation, route }) {
             </ScrollView>
 
             {/* MODALS */}
-            <Modal visible={modalVisible} animationType="slide">
-                <AppContainer>
-                    <ScreenHeader title="SELECIONAR PRODUTO" onBack={() => setModalVisible(false)} />
-                    <View style={styles.modalContent}>
-                        <AgroInput
-                            placeholder="Pesquisar produto..."
-                            value={searchText}
-                            onChangeText={t => up(t, setSearchText)}
-                            autoFocus
-                        />
-                        <FlatList
-                            data={getFilteredItems()}
-                            keyExtractor={i => i.uuid || i.id.toString()}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.border }]}
-                                    onPress={() => { setProduto(item.nome); setModalVisible(false); }}
-                                >
-                                    <View>
-                                        <Text style={[styles.listItemTitle, { color: colors.textPrimary }]}>{item.nome}</Text>
-                                        <Text style={[styles.listItemSub, { color: colors.textSecondary }]}>{item.unidade}</Text>
-                                    </View>
-                                    <Ionicons name="chevron-forward" size={18} color={colors.primary} />
-                                </TouchableOpacity>
-                            )}
-                        />
-                    </View>
-                </AppContainer>
-            </Modal>
+            <ProductModal 
+                visible={modalVisible} 
+                onClose={() => setModalVisible(false)} 
+                onCreated={(p) => { setProduto(p.nome); setModalVisible(false); }} 
+            />
 
-            <Modal visible={clientModalVisible} animationType="slide">
-                <AppContainer>
-                    <ScreenHeader
-                        title="CLIENTE / PARCEIRO"
-                        onBack={() => setClientModalVisible(false)}
-                        rightElement={
-                            <TouchableOpacity onPress={() => { setClientModalVisible(false); navigation.navigate('ClienteForm', { returnTo: 'Vendas' }); }}>
-                                <Ionicons name="person-add" size={22} color={colors.primary} />
-                            </TouchableOpacity>
-                        }
-                    />
-                    <View style={styles.modalContent}>
-                        <AgroInput
-                            placeholder="Filtrar por nome..."
-                            value={clientSearchText}
-                            onChangeText={t => up(t, setClientSearchText)}
-                            autoFocus
-                        />
-                        <FlatList
-                            data={getFilteredClients()}
-                            keyExtractor={i => i.uuid || i.id.toString()}
-                            ListHeaderComponent={
-                                <TouchableOpacity
-                                    style={[styles.listItem, { backgroundColor: (colors.primary || '#1E8E5A') + '10', borderColor: (colors.primary || '#1E8E5A') + '30' }]}
-                                    onPress={() => { setCliente('BALCÃO'); setClientModalVisible(false); }}
-                                >
-                                    <View>
-                                        <Text style={[styles.listItemTitle, { color: colors.primary }]}>BALCÃO / CONSUMIDOR FINAL</Text>
-                                        <Text style={[styles.listItemSub, { color: colors.primary }]}>Venda rápida sem identificação</Text>
-                                    </View>
-                                    <Ionicons name="flash-outline" size={18} color={colors.primary} />
-                                </TouchableOpacity>
-                            }
-                            renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.border }]}
-                                    onPress={() => { setCliente(item.nome); setClientModalVisible(false); }}
-                                >
-                                    <View>
-                                        <Text style={[styles.listItemTitle, { color: colors.textPrimary }]}>{item.nome}</Text>
-                                        <Text style={[styles.listItemSub, { color: colors.textSecondary }]}>{item.telefone || 'Sem contato'}</Text>
-                                    </View>
-                                    <Ionicons name="chevron-forward" size={18} color={colors.primary} />
-                                </TouchableOpacity>
-                            )}
-                        />
-                    </View>
-                </AppContainer>
-            </Modal>
+            <ClientModal 
+                visible={clientModalVisible} 
+                onClose={() => setClientModalVisible(false)} 
+                onCreated={(c) => { setCliente(c.nome); setClientModalVisible(false); }} 
+            />
 
             {/* CONFIRMAR RECEBIMENTO MODAL */}
             <Modal visible={recebimentoModal} transparent animationType="fade">

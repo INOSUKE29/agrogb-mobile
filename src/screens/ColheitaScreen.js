@@ -8,10 +8,8 @@ import { ErrorService } from '../services/ErrorService';
 
 // Database & Services
 import { getCadastro, getCulturas } from '../database/database';
-import { insertColheita } from '../services/ColheitaService';
-import { insertDescarte, insertCongelamento } from '../services/EstoqueService';
-
-// UI Components
+import { useProduction } from '../modules/production/hooks/useProduction';
+import ProductModal from '../modules/inventory/components/ProductModal';
 import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
 import { Card } from '../ui/components/Card';
@@ -38,6 +36,7 @@ export default function ColheitaScreen({ navigation }) {
     const [loading, setLoading] = useState(false);
     const [areaModalVisible, setAreaModalVisible] = useState(false);
     const [producaoModalVisible, setProducaoModalVisible] = useState(false);
+    const [qtdModalVisible, setQtdModalVisible] = useState(false);
     const [destinoModalVisible, setDestinoModalVisible] = useState(false);
     const [perdaModalVisible, setPerdaModalVisible] = useState(false);
 
@@ -123,11 +122,14 @@ export default function ColheitaScreen({ navigation }) {
             setItensList([...itensList, { id: uuidv4(), quantidade: modalQty, motivo: modalMotivo, produto: modalProd?.nome || 'FRUTA GERAL' }]);
         }
         setProducaoModalVisible(false);
+        setQtdModalVisible(false);
         setDestinoModalVisible(false);
         setPerdaModalVisible(false);
         setModalQty('');
     };
 
+
+    const { saveHarvest, saveFreezing, saveWaste, loading: productionLoading } = useProduction();
 
     const handleSave = async () => {
         if (tipoRegistro === 'COLHEITA' && !talhao) {
@@ -141,31 +143,26 @@ export default function ColheitaScreen({ navigation }) {
         try {
             const date = parseDate(dataOperacao);
 
-            // Validação de Dados Anti-Erro (Garantia de Tipos)
             const validatedItens = itensList.map(p => {
                 const qty = parseFloat(p.quantidade);
-                if (isNaN(qty) || qty <= 0) {
-                    throw new Error(`Quantidade inválida para o produto ${p.produto}`);
-                }
+                if (isNaN(qty) || qty <= 0) throw new Error(`Quantidade inválida para o produto ${p.produto}`);
                 return { ...p, numericQty: qty };
             });
 
             if (tipoRegistro === 'COLHEITA') {
                 for (const p of validatedItens) {
-                    await insertColheita({
+                    await saveHarvest({
                         uuid: uuidv4(),
-                        cultura: talhao,
-                        produto: p.produto,
-                        quantidade: p.numericQty * p.fator,
-                        congelado: 0,
-                        data: date,
+                        area_id: talhao, // Note: No novo padrão usamos area_id, talhao é o nome vindo do seletor legado
+                        cultura_id: talhao, 
+                        quantidade: p.numericQty * (p.fator || 1),
+                        data_colheita: date,
                         observacao: observacao
                     });
                 }
             } else if (tipoRegistro === 'CONGELAMENTO') {
                 for (const d of validatedItens) {
-                    await insertCongelamento({
-                        uuid: uuidv4(),
+                    await saveFreezing({
                         produto: d.produto,
                         quantidade_kg: d.numericQty,
                         motivo: observacao || 'CONGELAMENTO MANUAL',
@@ -174,8 +171,7 @@ export default function ColheitaScreen({ navigation }) {
                 }
             } else {
                 for (const p of validatedItens) {
-                    await insertDescarte({
-                        uuid: uuidv4(),
+                    await saveWaste({
                         produto: p.produto,
                         quantidade_kg: p.numericQty,
                         motivo: p.motivo + (observacao ? ` - ${observacao}` : ''),
@@ -188,7 +184,6 @@ export default function ColheitaScreen({ navigation }) {
             await AsyncStorage.removeItem(DRAFT_KEY);
             navigation.goBack();
         } catch (error) {
-            ErrorService.logError('ColheitaScreen:handleSave', error);
             Alert.alert('Erro ao Salvar', error.message || 'Falha ao processar registro.');
         } finally {
             setLoading(false);
@@ -308,39 +303,34 @@ export default function ColheitaScreen({ navigation }) {
 
             </ScrollView>
 
-            <Modal visible={producaoModalVisible} transparent animationType="fade">
+            <ProductModal 
+                visible={producaoModalVisible} 
+                onClose={() => setProducaoModalVisible(false)} 
+                onCreated={(p) => { 
+                    setModalProd(p);
+                    setProducaoModalVisible(false);
+                    // Agora abrimos o modal de quantidade (reutilizando o estilo do mini-modal)
+                    setQtdModalVisible(true);
+                }} 
+            />
+
+            <Modal visible={qtdModalVisible} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
                     <Card style={[styles.modalContent, { backgroundColor: colors.card }]} noPadding>
-                        <View style={{ padding: 20 }}>
-                            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Adicionar Produção</Text>
-
-                            <Text style={[styles.label, { color: colors.textSecondary }]}>PRODUTO</Text>
-                            <TouchableOpacity
-                                style={[styles.selector, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', borderColor: colors.border }]}
-                                onPress={() => { }}
-                            >
-                                <Text style={[styles.selectorText, { color: colors.textPrimary }]}>{modalProd?.nome || 'Selecionar Produto...'}</Text>
-                            </TouchableOpacity>
-
-                            {/* Seletor simplificado de produtos p/ este modal */}
-                            <ScrollView style={{ maxHeight: 150, marginVertical: 10 }}>
-                                {productsDB.map(p => (
-                                    <TouchableOpacity key={p.uuid} style={[styles.pickItem, { borderBottomColor: colors.border }]} onPress={() => setModalProd(p)}>
-                                        <Text style={[styles.pickText, { color: colors.textPrimary }, modalProd?.uuid === p.uuid && { color: colors.primary, fontWeight: 'bold' }]}>{p.nome}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-
+                        <View style={{ padding: 25 }}>
+                            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>INFORMAR QUANTIDADE</Text>
+                            <Text style={{ textAlign: 'center', color: colors.primary, fontWeight: 'bold', marginBottom: 15 }}>
+                                {modalProd?.nome}
+                            </Text>
                             <AgroInput
                                 label="QUANTIDADE (CX)"
                                 value={modalQty}
                                 onChangeText={setModalQty}
                                 keyboardType="decimal-pad"
-                                placeholder="0"
+                                autoFocus
                             />
-
                             <View style={styles.modalActions}>
-                                <TouchableOpacity onPress={() => setProducaoModalVisible(false)}>
+                                <TouchableOpacity onPress={() => setQtdModalVisible(false)}>
                                     <Text style={{ color: colors.textSecondary, fontWeight: 'bold' }}>CANCELAR</Text>
                                 </TouchableOpacity>
                                 <AgroButton title="ADICIONAR" onPress={handleAddItem} style={{ width: 140 }} />

@@ -1,37 +1,43 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Image, Alert, Share } from 'react-native';
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { useTheme } from '../theme/ThemeContext';
-import AgroButton from '../ui/components/AgroButton';
-import { updatePlanoAdubacao } from '../database/database';
+import { ProductionService } from '../modules/production/services/ProductionService';
+import { executeQuery } from '../database/database';
 
 export default function AdubacaoDetailScreen({ route, navigation }) {
-    const { colors } = useTheme();
+    const { colors, isDark } = useTheme();
     const { plano } = route.params;
     const [currentPlano, setCurrentPlano] = useState(plano);
+    const [itens, setItens] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    const isApplied = currentPlano.status === 'APLICADO';
+    const isApplied = currentPlano.status === 'APLICADO' || currentPlano.status === 'CONCLUIDO';
+
+    const loadItens = React.useCallback(async () => {
+        try {
+            const res = await executeQuery(`SELECT * FROM production_fertilization_items WHERE plano_uuid = ?`, [currentPlano.uuid]);
+            setItens(res.rows._array || []);
+        } catch (e) { console.error(e); }
+    }, [currentPlano.uuid]);
+
+    React.useEffect(() => { loadItens(); }, [loadItens]);
 
     const handleApply = async () => {
         Alert.alert(
-            'Confirmar Aplicação',
-            'Deseja marcar este plano como REALIZADO? Isso servirá como registro histórico.',
+            'Confirmar Aplicação Inteligente',
+            'Deseja aplicar esta receita agora? Isso dará BAIXA AUTOMÁTICA de todos os insumos no seu estoque.',
             [
-                { text: 'Cancelar', style: 'cancel' },
+                { text: 'Agora não', style: 'cancel' },
                 {
-                    text: 'Confirmar',
+                    text: 'Confirmar Aplicação',
                     onPress: async () => {
                         setLoading(true);
-                        const updated = {
-                            ...currentPlano,
-                            status: 'APLICADO',
-                            data_aplicacao: new Date().toISOString()
-                        };
-                        await updatePlanoAdubacao(currentPlano.uuid, updated);
-                        setCurrentPlano(updated);
-                        setLoading(false);
-                        Alert.alert('Sucesso', 'Plano marcado como APLICADO!');
+                        try {
+                            await ProductionService.applyFertilization(currentPlano.uuid);
+                            setCurrentPlano({ ...currentPlano, status: 'CONCLUIDO', data_aplicacao: new Date().toISOString() });
+                            Alert.alert('Sucesso', '✅ Adubação realizada e estoque atualizado!');
+                        } catch (err) {
+                            Alert.alert('Erro', 'Falha ao aplicar adubação: ' + err.message);
+                        } finally {
+                            setLoading(false);
+                        }
                     }
                 }
             ]
@@ -86,11 +92,27 @@ export default function AdubacaoDetailScreen({ route, navigation }) {
                     </View>
                 </View>
 
-                {/* RECEITA */}
+                {/* INSUMOS ESTRUTURADOS (DIAMOND PRO) */}
+                {itens.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>INSUMOS DA RECEITA</Text>
+                        <View style={[styles.itemsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                            {itens.map(item => (
+                                <View key={item.id} style={styles.itemRow}>
+                                    <View style={[styles.itemDot, { backgroundColor: colors.primary }]} />
+                                    <Text style={[styles.itemName, { color: colors.textPrimary }]}>{item.produto_id}</Text>
+                                    <Text style={[styles.itemValue, { color: colors.primary }]}>{item.quantidade} {item.unidade}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    </View>
+                )}
+
+                {/* RECEITA TEXTUAL (LEGACY/OBS) */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>ORIENTAÇÃO TÉCNICA</Text>
-                    <View style={styles.card}>
-                        <Text style={styles.description}>{currentPlano.descricao_tecnica}</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>ORIENTAÇÃO ADICIONAL</Text>
+                    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[styles.description, { color: colors.textPrimary }]}>{currentPlano.descricao_tecnica || 'Nenhuma observação adicional.'}</Text>
                     </View>
                 </View>
 
@@ -136,20 +158,25 @@ export default function AdubacaoDetailScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F9FAFB' },
+    container: { flex: 1 },
     content: { paddingBottom: 100 },
     statusBar: { padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
     bgPlanned: { backgroundColor: '#F59E0B' },
     bgApplied: { backgroundColor: '#10B981' },
     statusText: { color: '#FFF', fontWeight: 'bold', fontSize: 12 },
-    header: { padding: 20, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-    iconBox: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center', marginRight: 15 },
-    title: { fontSize: 20, fontWeight: 'bold', color: '#111827' },
-    subtitle: { fontSize: 14, color: '#6B7280' },
+    header: { padding: 25, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1 },
+    iconBox: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', marginRight: 15 },
+    title: { fontSize: 20, fontWeight: 'bold' },
+    subtitle: { fontSize: 14 },
     section: { padding: 20 },
-    sectionTitle: { fontSize: 12, fontWeight: 'bold', color: '#6B7280', marginBottom: 10, letterSpacing: 1 },
-    card: { backgroundColor: '#FFF', padding: 20, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', minHeight: 100 },
-    description: { fontSize: 16, color: '#374151', lineHeight: 24, fontFamily: 'System' }, // Monospaced? No, System is better for reading
-    image: { width: '100%', height: 300, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB' },
-    footer: { padding: 20, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#E5E7EB' }
+    sectionTitle: { fontSize: 11, fontWeight: 'bold', marginBottom: 10, letterSpacing: 1 },
+    card: { padding: 20, borderRadius: 16, borderWidth: 1, minHeight: 80 },
+    itemsCard: { padding: 15, borderRadius: 16, borderWidth: 1 },
+    itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+    itemDot: { width: 6, height: 6, borderRadius: 3, marginRight: 10 },
+    itemName: { flex: 1, fontSize: 14, fontWeight: 'bold' },
+    itemValue: { fontSize: 14, fontWeight: '900' },
+    description: { fontSize: 15, lineHeight: 22 },
+    image: { width: '100%', height: 300, borderRadius: 16, borderWidth: 1 },
+    footer: { padding: 20, borderTopWidth: 1 }
 });

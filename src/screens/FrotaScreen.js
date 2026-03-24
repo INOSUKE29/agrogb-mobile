@@ -1,7 +1,8 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { getMaquinas, deleteMaquina } from '../database/database';
+import { useFleet } from '../modules/farm/hooks/useFleet';
+import { deleteMaquina } from '../database/database';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import AppContainer from '../ui/AppContainer';
@@ -14,31 +15,13 @@ import { showToast } from '../ui/Toast';
 export default function FrotaScreen() {
     const navigation = useNavigation();
     const { colors, isDark } = useTheme();
-    const [veiculos, setVeiculos] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { machines, loading, fetchMachines } = useFleet();
     const [confirmVisible, setConfirmVisible] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
 
-    const loadVeiculos = async () => {
-        setLoading(true);
-        try {
-            const data = await getMaquinas();
-            setVeiculos(data);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     useFocusEffect(useCallback(() => { 
-        loadVeiculos(); 
-    }, []));
-
-    const handleDelete = (item) => {
-        setItemToDelete(item);
-        setConfirmVisible(true);
-    };
+        fetchMachines(); 
+    }, [fetchMachines]));
 
     const confirmDelete = async () => {
         if (itemToDelete) {
@@ -46,7 +29,7 @@ export default function FrotaScreen() {
             setConfirmVisible(false);
             setItemToDelete(null);
             showToast('Veículo removido com sucesso!');
-            loadVeiculos();
+            fetchMachines();
         }
     };
 
@@ -112,7 +95,7 @@ export default function FrotaScreen() {
                 <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 50 }} />
             ) : (
                 <FlatList
-                    data={veiculos}
+                    data={machines}
                     renderItem={renderItem}
                     keyExtractor={item => item.uuid}
                     contentContainerStyle={{ padding: 20, paddingBottom: 100 }}

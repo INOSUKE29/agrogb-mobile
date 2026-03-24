@@ -1,8 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert, Modal, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
-import { v4 as uuidv4 } from 'uuid';
 import { useFocusEffect } from '@react-navigation/native';
-import { insertPlantio, getCadastro, executeQuery } from '../database/database';
+import { getCadastro } from '../database/database';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { showToast } from '../ui/Toast';
 import { useTheme } from '../theme/ThemeContext';
@@ -11,15 +10,21 @@ import ScreenHeader from '../ui/ScreenHeader';
 import { Card } from '../ui/components/Card';
 import AgroInput from '../ui/components/AgroInput';
 import AgroButton from '../ui/components/AgroButton';
+import { usePlantio } from '../modules/production/hooks/usePlantio';
+import { useInventory } from '../modules/inventory/hooks/useInventory';
 
 export default function PlantioScreen({ navigation }) {
     const { colors, isDark } = useTheme();
+    const { history, loading: loadingPlantio, loadHistory, registerPlanting, removePlanting } = usePlantio();
+    const { stockItems, loadStock } = useInventory();
+
     const [talhao, setTalhao] = useState('');
     const [quantidade, setQuantidade] = useState('');
     const [variedade, setVariedade] = useState('');
     const [previsao, setPrevisao] = useState('');
     const [observacao, setObservacao] = useState('');
-    const [history, setHistory] = useState([]);
+    
+    const [selectedSeed, setSelectedSeed] = useState(null);
 
     const [modalVisible, setModalVisible] = useState(false);
     const [modalType, setModalType] = useState(null);
@@ -27,34 +32,37 @@ export default function PlantioScreen({ navigation }) {
     const [loading, setLoading] = useState(false);
     const [selectedUnit, setSelectedUnit] = useState('PÉS');
 
-    useFocusEffect(useCallback(() => { loadHistory(); }, []));
-
-    const loadHistory = async () => {
-        try {
-            const res = await executeQuery('SELECT * FROM plantio ORDER BY data DESC LIMIT 20');
-            const rows = [];
-            for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
-            setHistory(rows);
-        } catch (e) { console.error(e); }
-    };
+    useFocusEffect(useCallback(() => { 
+        loadHistory(); 
+        loadStock();
+    }, [loadHistory, loadStock]));
 
     const openSelector = async (type) => {
         setModalType(type);
         setLoading(true);
         setModalVisible(true);
         try {
-            const all = await getCadastro();
-            const filtered = all.filter(i => i.tipo === type);
-            setItems(filtered);
+            if (type === 'SEMENTE') {
+                setItems(stockItems.filter(i => i.quantidade > 0));
+            } else {
+                const all = await getCadastro();
+                const filtered = all.filter(i => i.tipo === type);
+                setItems(filtered);
+            }
         } catch { } finally { setLoading(false); }
     };
 
     const handleSelect = (item) => {
         if (modalType === 'AREA') {
             setTalhao(item.nome);
+        } else if (modalType === 'SEMENTE') {
+            setSelectedSeed(item);
+            setVariedade(item.produto);
+            setSelectedUnit(item.unidade || 'KG');
         } else {
             setVariedade(item.nome);
             setSelectedUnit(item.unidade || 'PÉS');
+            setSelectedSeed(null);
         }
         setModalVisible(false);
     };
@@ -66,21 +74,17 @@ export default function PlantioScreen({ navigation }) {
         }
 
         const dados = {
-            uuid: uuidv4(),
             cultura: variedade.toUpperCase(),
             tipo_plantio: talhao.toUpperCase(),
             quantidade_pes: parseInt(quantidade) || 0,
-            data: new Date().toISOString().split('T')[0],
             observacao: `PREV: ${previsao} | ${observacao}`.toUpperCase()
         };
 
         try {
-            await insertPlantio(dados);
-            showToast('Plantio registrado com sucesso!');
-            setTalhao(''); setQuantidade(''); setVariedade(''); setPrevisao(''); setObservacao('');
-            loadHistory();
-        } catch {
-            Alert.alert('Erro', 'Falha ao registrar.');
+            await registerPlanting(dados, selectedSeed);
+            setTalhao(''); setQuantidade(''); setVariedade(''); setPrevisao(''); setObservacao(''); setSelectedSeed(null);
+        } catch (err) {
+            console.error(err);
         }
     };
 
@@ -90,10 +94,7 @@ export default function PlantioScreen({ navigation }) {
             {
                 text: 'EXCLUIR',
                 style: 'destructive',
-                onPress: async () => {
-                    await executeQuery('DELETE FROM plantio WHERE uuid = ?', [item.uuid]);
-                    loadHistory();
-                }
+                onPress: () => removePlanting(item.uuid)
             }
         ]);
     };
@@ -155,14 +156,32 @@ export default function PlantioScreen({ navigation }) {
                     </TouchableOpacity>
 
                     <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>CULTURA / VARIEDADE</Text>
+                    <View style={styles.pillContainer}>
+                        <TouchableOpacity
+                            style={[styles.pill, { borderColor: modalType === 'CULTURA' ? colors.primary : colors.border, backgroundColor: modalType === 'CULTURA' ? colors.primary + '10' : 'transparent' }]}
+                            onPress={() => openSelector('CULTURA')}
+                        >
+                            <Ionicons name="leaf-outline" size={16} color={colors.primary} />
+                            <Text style={[styles.pillText, { color: colors.textPrimary }]}>CATÁLOGO</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity
+                            style={[styles.pill, { borderColor: modalType === 'SEMENTE' ? colors.primary : colors.border, backgroundColor: modalType === 'SEMENTE' ? colors.primary + '10' : 'transparent' }]}
+                            onPress={() => openSelector('SEMENTE')}
+                        >
+                            <Ionicons name="cube-outline" size={16} color={colors.primary} />
+                            <Text style={[styles.pillText, { color: colors.textPrimary }]}>DO ESTOQUE</Text>
+                        </TouchableOpacity>
+                    </View>
+
                     <TouchableOpacity
                         style={[styles.selectorBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', borderColor: colors.border }]}
-                        onPress={() => openSelector('CULTURA')}
+                        onPress={() => openSelector(selectedSeed ? 'SEMENTE' : 'CULTURA')}
                     >
                         <Text style={[styles.selectorText, { color: variedade ? colors.textPrimary : colors.placeholder }]}>
-                            {variedade || 'SELECIONAR CULTURA...'}
+                            {variedade || 'SELECIONAR...'}
                         </Text>
-                        <Ionicons name="leaf-outline" size={18} color={colors.primary} />
+                        <Ionicons name={selectedSeed ? "cube-outline" : "leaf-outline"} size={18} color={colors.primary} />
                     </TouchableOpacity>
 
                     <View style={styles.row}>
@@ -233,8 +252,10 @@ export default function PlantioScreen({ navigation }) {
                                         onPress={() => handleSelect(item)}
                                     >
                                         <View>
-                                            <Text style={[styles.itemText, { color: colors.textPrimary }]}>{item.nome}</Text>
-                                            <Text style={[styles.itemSub, { color: colors.textSecondary }]}>{item.unidade || 'UN'}</Text>
+                                            <Text style={[styles.itemText, { color: colors.textPrimary }]}>{item.nome || item.produto}</Text>
+                                            <Text style={[styles.itemSub, { color: colors.textSecondary }]}>
+                                                {item.unidade || 'UN'} {item.quantidade !== undefined ? `(Disp: ${item.quantidade})` : ''}
+                                            </Text>
                                         </View>
                                         <Ionicons name="chevron-forward" size={18} color={colors.primary} />
                                     </TouchableOpacity>
@@ -258,6 +279,9 @@ const styles = StyleSheet.create({
     selectorText: { fontSize: 14, fontWeight: '700' },
 
     row: { flexDirection: 'row', gap: 12 },
+    pillContainer: { flexDirection: 'row', gap: 10, marginBottom: 15 },
+    pill: { flex: 1, height: 44, borderRadius: 12, borderWidth: 1.5, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+    pillText: { fontSize: 11, fontWeight: '800' },
 
     sectionTitle: { fontSize: 11, fontWeight: '900', letterSpacing: 1, marginTop: 30, marginBottom: 15, marginLeft: 5 },
     histItemContainer: { marginBottom: 12 },
