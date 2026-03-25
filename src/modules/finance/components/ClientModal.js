@@ -13,7 +13,6 @@ import { useTheme } from '../../../theme/ThemeContext';
  * Cadastro ultra-rápido de clientes. 🚀
  */
 export default function ClientModal({ visible, onClose, onCreated }) {
-    const { colors } = useTheme();
     const [nome, setNome] = useState('');
     const [telefone, setTelefone] = useState('');
     const [loading, setLoading] = useState(false);

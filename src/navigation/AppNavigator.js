@@ -23,7 +23,6 @@ import OcrScreen from '../screens/OcrScreen';
 import ScannerScreen from '../screens/ScannerScreen';
 import FrotaScreen from '../screens/FrotaScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import AdubacaoListScreen from '../screens/AdubacaoListScreen';
 import AdubacaoFormScreen from '../screens/AdubacaoFormScreen';
 import AdubacaoDetailScreen from '../screens/AdubacaoDetailScreen';
 import CadernoCampoScreen from '../screens/CadernoCampoScreen';

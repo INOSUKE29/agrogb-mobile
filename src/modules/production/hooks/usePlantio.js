@@ -53,7 +53,7 @@ export function usePlantio() {
             await PlantioService.deletePlanting(uuid);
             showToast('Registro removido');
             await loadHistory();
-        } catch (e) {
+        } catch (error) {
             showToast('Erro ao excluir registro');
         }
     };

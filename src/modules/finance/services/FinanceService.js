@@ -1,7 +1,6 @@
 import { executeQuery } from '../../../database/database';
 import { supabase } from '../../../services/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
-import { InventoryService } from '../../inventory/services/InventoryService';
 
 /**
  * FinanceService (V1.1 DIAMOND PRO) 💎

@@ -91,14 +91,14 @@ export default function CadastroScreen({ navigation }) {
     const handleSave = useCallback(async () => {
         if (!nome.trim()) return Alert.alert('Ops!', 'Dê um nome ao item.');
         try {
-            const data = { uuid: editingItem ? editingItem.uuid : uuidv4(), nome, unidade, tipo, observacao, fator_conversao: parseFloat(fator) || 1, estocavel: estocavel ? 1 : 0, vendavel: vendavel ? 1 : 0, principio_ativo: principioAtivo, classe_toxicologica: classeToxicologica, composicao, preco_venda: parseFloat(preco_venda) || 0 };
+            const data = { uuid: editingItem ? editingItem.uuid : uuidv4(), nome, unidade, tipo, observacao, fator_conversao: parseFloat(fator) || 1, estocavel: estocavel ? 1 : 0, vendavel: vendavel ? 1 : 0, principio_ativo: principioAtivo, classe_toxicologica: classeToxicologica, composicao, preco_venda: parseFloat(precoVenda) || 0 };
             if (editingItem) { await updateCadastro(data); showToast('Item atualizado com sucesso!'); }
             else { await insertCadastro(data); showToast('Novo item cadastrado!'); }
             setModalVisible(false); resetForm(); loadData();
         } catch { console.log('Draft error'); }
     }, [nome, unidade, tipo, observacao, fator, estocavel, vendavel, principioAtivo, classeToxicologica, composicao, precoVenda, editingItem, loadData]);
 
-    const resetForm = useCallback(() => { setEditingItem(null); setNome(''); setObservacao(''); setFator('1'); setEstocavel(true); setVendavel(false); setUnidade('KG'); setType('INSUMO'); setPrincipioAtivo(''); setClasseToxicologica(''); setComposicao(''); setPrecoVenda(''); }, []);
+    const resetForm = useCallback(() => { setEditingItem(null); setNome(''); setObservacao(''); setFator('1'); setEstocavel(true); setVendavel(false); setUnidade('KG'); setTipo('INSUMO'); setPrincipioAtivo(''); setClasseToxicologica(''); setComposicao(''); setPrecoVenda(''); }, []);
 
     const handleEdit = useCallback((item) => {
         setEditingItem(item); setNome(item.nome); setUnidade(item.unidade); setTipo(item.tipo); setObservacao(item.observacao || ''); setFator((item.fator_conversao || 1).toString()); setEstocavel(item.estocavel === 1); setVendavel(item.vendavel === 1); setPrincipioAtivo(item.principio_ativo || ''); setClasseToxicologica(item.classe_toxicologica || ''); setComposicao(item.composicao || ''); setPrecoVenda(item.preco_venda ? item.preco_venda.toString() : ''); setModalVisible(true);

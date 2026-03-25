@@ -11,7 +11,6 @@ import { useTheme } from '../../../theme/ThemeContext';
  * Cadastro ultra-rápido de itens sem sair do fluxo. 🚀
  */
 export default function ProductModal({ visible, onClose, onCreated }) {
-    const { colors } = useTheme();
     const [nome, setNome] = useState('');
     const [unidade, setUnidade] = useState('KG');
     const [loading, setLoading] = useState(false);
