@@ -723,6 +723,44 @@ CREATE TABLE IF NOT EXISTS "public"."fertilization_recipes" (
 ALTER TABLE "public"."fertilization_recipes" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."financial_accounts" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid",
+    "type" "text",
+    "description" "text" NOT NULL,
+    "category" "text",
+    "total_amount" numeric(15,2) DEFAULT 0,
+    "due_date" "date",
+    "status" "text" DEFAULT 'pendente'::"text",
+    "payment_method" "text",
+    "origin_uuid" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "last_updated" timestamp with time zone DEFAULT "now"(),
+    "is_deleted" boolean DEFAULT false,
+    CONSTRAINT "financial_accounts_status_check" CHECK (("status" = ANY (ARRAY['pendente'::"text", 'pago'::"text", 'vencido'::"text"]))),
+    CONSTRAINT "financial_accounts_type_check" CHECK (("type" = ANY (ARRAY['PAGAR'::"text", 'RECEBER'::"text"])))
+);
+
+
+ALTER TABLE "public"."financial_accounts" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."financial_installments" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "account_id" "uuid",
+    "installment_number" integer NOT NULL,
+    "value" numeric(15,2) NOT NULL,
+    "due_date" "date" NOT NULL,
+    "status" "text" DEFAULT 'pendente'::"text",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "last_updated" timestamp with time zone DEFAULT "now"(),
+    "is_deleted" boolean DEFAULT false
+);
+
+
+ALTER TABLE "public"."financial_installments" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."movimentacoes_financeiras" (
     "id" bigint NOT NULL,
     "user_id" "uuid" DEFAULT "auth"."uid"() NOT NULL,
@@ -1605,6 +1643,16 @@ ALTER TABLE ONLY "public"."fertilization_recipes"
 
 
 
+ALTER TABLE ONLY "public"."financial_accounts"
+    ADD CONSTRAINT "financial_accounts_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."financial_installments"
+    ADD CONSTRAINT "financial_installments_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."items"
     ADD CONSTRAINT "items_codigo_key" UNIQUE ("codigo");
 
@@ -1947,6 +1995,18 @@ CREATE INDEX "idx_culturas_uuid" ON "public"."culturas" USING "btree" ("uuid");
 
 
 CREATE INDEX "idx_estoque_updated" ON "public"."estoque" USING "btree" ("last_updated");
+
+
+
+CREATE INDEX "idx_fin_acc_date" ON "public"."financial_accounts" USING "btree" ("due_date");
+
+
+
+CREATE INDEX "idx_fin_acc_user" ON "public"."financial_accounts" USING "btree" ("user_id");
+
+
+
+CREATE INDEX "idx_fin_inst_acc" ON "public"."financial_installments" USING "btree" ("account_id");
 
 
 
@@ -2335,6 +2395,16 @@ ALTER TABLE ONLY "public"."fertilization_items"
 
 ALTER TABLE ONLY "public"."fertilization_recipes"
     ADD CONSTRAINT "fertilization_recipes_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."financial_accounts"
+    ADD CONSTRAINT "financial_accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."financial_installments"
+    ADD CONSTRAINT "financial_installments_account_id_fkey" FOREIGN KEY ("account_id") REFERENCES "public"."financial_accounts"("id") ON DELETE CASCADE;
 
 
 
@@ -2903,6 +2973,16 @@ CREATE POLICY "Owner Access" ON "public"."v2_talhoes" USING (("usuario_id" = "au
 
 
 
+CREATE POLICY "Usuários acessam apenas seus próprios dados financeiros" ON "public"."financial_accounts" TO "authenticated" USING (("auth"."uid"() = "user_id")) WITH CHECK (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Usuários acessam parcelas de suas próprias contas" ON "public"."financial_installments" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."financial_accounts"
+  WHERE (("financial_accounts"."id" = "financial_installments"."account_id") AND ("financial_accounts"."user_id" = "auth"."uid"())))));
+
+
+
 ALTER TABLE "public"."activity_log" ENABLE ROW LEVEL SECURITY;
 
 
@@ -3073,6 +3153,12 @@ ALTER TABLE "public"."fertilization_items" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."fertilization_recipes" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."financial_accounts" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."financial_installments" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."items" ENABLE ROW LEVEL SECURITY;
@@ -4174,6 +4260,18 @@ GRANT ALL ON TABLE "public"."fertilization_items" TO "service_role";
 GRANT ALL ON TABLE "public"."fertilization_recipes" TO "anon";
 GRANT ALL ON TABLE "public"."fertilization_recipes" TO "authenticated";
 GRANT ALL ON TABLE "public"."fertilization_recipes" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."financial_accounts" TO "anon";
+GRANT ALL ON TABLE "public"."financial_accounts" TO "authenticated";
+GRANT ALL ON TABLE "public"."financial_accounts" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."financial_installments" TO "anon";
+GRANT ALL ON TABLE "public"."financial_installments" TO "authenticated";
+GRANT ALL ON TABLE "public"."financial_installments" TO "service_role";
 
 
 
