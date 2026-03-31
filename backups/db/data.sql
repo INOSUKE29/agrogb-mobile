@@ -4,7 +4,7 @@ SET session_replication_role = replica;
 -- PostgreSQL database dump
 --
 
--- \restrict KylEZWAHev6JCHUWsnj6BkdJQzfxlKRyZWysKmJfPhebMWBABKHebNHvgyuNVcN
+-- \restrict 61146DbpsDaqY27B3bkz0cIrRTRud4y4XCE22uOw1NQ98uDFUz58qSF5scfwF54
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6
@@ -45,7 +45,7 @@ SET row_security = off;
 
 INSERT INTO "auth"."users" ("instance_id", "id", "aud", "role", "email", "encrypted_password", "email_confirmed_at", "invited_at", "confirmation_token", "confirmation_sent_at", "recovery_token", "recovery_sent_at", "email_change_token_new", "email_change", "email_change_sent_at", "last_sign_in_at", "raw_app_meta_data", "raw_user_meta_data", "is_super_admin", "created_at", "updated_at", "phone", "phone_confirmed_at", "phone_change", "phone_change_token", "phone_change_sent_at", "email_change_token_current", "email_change_confirm_status", "banned_until", "reauthentication_token", "reauthentication_sent_at", "is_sso_user", "deleted_at", "is_anonymous") VALUES
 	('00000000-0000-0000-0000-000000000000', '44f3c0c7-772a-4931-a0f9-5566bc63a685', 'authenticated', 'authenticated', 'bruno.p.santos100@gmail.com', '$2a$10$oZz8sYnfqvhfwQ9GAQnOv.mVxsjTqItKfgAPWyT9ExOOQ2E0x.o76', NULL, NULL, '', NULL, '', NULL, '', '', NULL, NULL, '{"provider": "email", "providers": ["email"]}', '{}', NULL, '2026-03-25 23:35:34.200981+00', '2026-03-25 23:35:34.213052+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false),
-	('00000000-0000-0000-0000-000000000000', '405ea0d8-d937-4973-b6ae-23aac96f1b87', 'authenticated', 'authenticated', 'brunower2009@gmail.com', '$2a$10$2pLOkir68K.G9gZBkV3tR.Wwoc4kdm8iPF7WP/RtceaqxiIZDwrBm', '2026-03-25 23:33:17.828827+00', NULL, '', NULL, '', NULL, '', '', NULL, '2026-03-29 23:35:37.724303+00', '{"provider": "email", "providers": ["email"]}', '{"sub": "405ea0d8-d937-4973-b6ae-23aac96f1b87", "email": "brunower2009@gmail.com", "email_verified": true, "phone_verified": false}', NULL, '2026-03-25 23:33:17.824022+00', '2026-03-29 23:35:37.773355+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false);
+	('00000000-0000-0000-0000-000000000000', '405ea0d8-d937-4973-b6ae-23aac96f1b87', 'authenticated', 'authenticated', 'brunower2009@gmail.com', '$2a$10$2pLOkir68K.G9gZBkV3tR.Wwoc4kdm8iPF7WP/RtceaqxiIZDwrBm', '2026-03-25 23:33:17.828827+00', NULL, '', NULL, '', NULL, '', '', NULL, '2026-03-30 16:55:19.659923+00', '{"provider": "email", "providers": ["email"]}', '{"sub": "405ea0d8-d937-4973-b6ae-23aac96f1b87", "email": "brunower2009@gmail.com", "email_verified": true, "phone_verified": false}', NULL, '2026-03-25 23:33:17.824022+00', '2026-03-30 16:55:19.750707+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false);
 
 
 --
@@ -91,7 +91,8 @@ INSERT INTO "auth"."sessions" ("id", "user_id", "created_at", "updated_at", "fac
 	('5b85ffba-49c7-4c36-8d3c-721a945da8f6', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '2026-03-29 20:40:31.338442+00', '2026-03-29 21:50:24.420232+00', NULL, 'aal1', NULL, '2026-03-29 21:50:24.420123', 'okhttp/4.9.2', '186.193.211.229', NULL, NULL, NULL, NULL, NULL),
 	('35927dac-7fa5-4e78-9ba4-8f48a47c588e', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '2026-03-29 21:57:27.226597+00', '2026-03-29 21:57:27.226597+00', NULL, 'aal1', NULL, NULL, 'okhttp/4.9.2', '186.193.211.229', NULL, NULL, NULL, NULL, NULL),
 	('5a87a8d6-caf9-439d-b4bc-6d941e81b418', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '2026-03-29 22:46:12.050832+00', '2026-03-29 22:46:12.050832+00', NULL, 'aal1', NULL, NULL, 'okhttp/4.9.2', '186.193.211.229', NULL, NULL, NULL, NULL, NULL),
-	('a1840fd2-cec7-4d01-ae46-2aa339781efc', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '2026-03-29 23:35:37.725993+00', '2026-03-29 23:35:37.725993+00', NULL, 'aal1', NULL, NULL, 'okhttp/4.9.2', '186.193.211.229', NULL, NULL, NULL, NULL, NULL);
+	('a1840fd2-cec7-4d01-ae46-2aa339781efc', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '2026-03-29 23:35:37.725993+00', '2026-03-29 23:35:37.725993+00', NULL, 'aal1', NULL, NULL, 'okhttp/4.9.2', '186.193.211.229', NULL, NULL, NULL, NULL, NULL),
+	('a424edb3-de92-42bf-896a-e2e6b089781c', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '2026-03-30 16:55:19.66004+00', '2026-03-30 16:55:19.66004+00', NULL, 'aal1', NULL, NULL, 'okhttp/4.9.2', '186.193.212.133', NULL, NULL, NULL, NULL, NULL);
 
 
 --
@@ -116,7 +117,8 @@ INSERT INTO "auth"."mfa_amr_claims" ("session_id", "created_at", "updated_at", "
 	('5b85ffba-49c7-4c36-8d3c-721a945da8f6', '2026-03-29 20:40:31.44669+00', '2026-03-29 20:40:31.44669+00', 'password', '3233a3dd-50f3-456c-ae99-4bfd5adcbac5'),
 	('35927dac-7fa5-4e78-9ba4-8f48a47c588e', '2026-03-29 21:57:27.286023+00', '2026-03-29 21:57:27.286023+00', 'password', '3139740c-c0e8-4ed9-85ef-19206a16e0b3'),
 	('5a87a8d6-caf9-439d-b4bc-6d941e81b418', '2026-03-29 22:46:12.099643+00', '2026-03-29 22:46:12.099643+00', 'password', '9c6f835d-df54-46b3-acea-41768844fa25'),
-	('a1840fd2-cec7-4d01-ae46-2aa339781efc', '2026-03-29 23:35:37.780853+00', '2026-03-29 23:35:37.780853+00', 'password', 'f65c7d26-abc2-481a-aa11-6cb17ab2247e');
+	('a1840fd2-cec7-4d01-ae46-2aa339781efc', '2026-03-29 23:35:37.780853+00', '2026-03-29 23:35:37.780853+00', 'password', 'f65c7d26-abc2-481a-aa11-6cb17ab2247e'),
+	('a424edb3-de92-42bf-896a-e2e6b089781c', '2026-03-30 16:55:19.766139+00', '2026-03-30 16:55:19.766139+00', 'password', '7bc6c9b4-0575-4c07-b64b-a2af9b6d4c92');
 
 
 --
@@ -182,7 +184,8 @@ INSERT INTO "auth"."refresh_tokens" ("instance_id", "id", "token", "user_id", "r
 	('00000000-0000-0000-0000-000000000000', 48, '4aqgx37f3anw', '405ea0d8-d937-4973-b6ae-23aac96f1b87', false, '2026-03-29 21:50:24.388323+00', '2026-03-29 21:50:24.388323+00', 'obcztboovjya', '5b85ffba-49c7-4c36-8d3c-721a945da8f6'),
 	('00000000-0000-0000-0000-000000000000', 49, '26ob3kno42gq', '405ea0d8-d937-4973-b6ae-23aac96f1b87', false, '2026-03-29 21:57:27.260645+00', '2026-03-29 21:57:27.260645+00', NULL, '35927dac-7fa5-4e78-9ba4-8f48a47c588e'),
 	('00000000-0000-0000-0000-000000000000', 50, 'h35mdsrjklyr', '405ea0d8-d937-4973-b6ae-23aac96f1b87', false, '2026-03-29 22:46:12.078578+00', '2026-03-29 22:46:12.078578+00', NULL, '5a87a8d6-caf9-439d-b4bc-6d941e81b418'),
-	('00000000-0000-0000-0000-000000000000', 51, 'od5w6stf4mf7', '405ea0d8-d937-4973-b6ae-23aac96f1b87', false, '2026-03-29 23:35:37.759513+00', '2026-03-29 23:35:37.759513+00', NULL, 'a1840fd2-cec7-4d01-ae46-2aa339781efc');
+	('00000000-0000-0000-0000-000000000000', 51, 'od5w6stf4mf7', '405ea0d8-d937-4973-b6ae-23aac96f1b87', false, '2026-03-29 23:35:37.759513+00', '2026-03-29 23:35:37.759513+00', NULL, 'a1840fd2-cec7-4d01-ae46-2aa339781efc'),
+	('00000000-0000-0000-0000-000000000000', 52, 'me5ze2fsxphi', '405ea0d8-d937-4973-b6ae-23aac96f1b87', false, '2026-03-30 16:55:19.713867+00', '2026-03-30 16:55:19.713867+00', NULL, 'a424edb3-de92-42bf-896a-e2e6b089781c');
 
 
 --
@@ -1321,7 +1324,7 @@ INSERT INTO "storage"."buckets" ("id", "name", "owner", "created_at", "updated_a
 -- Name: refresh_tokens_id_seq; Type: SEQUENCE SET; Schema: auth; Owner: supabase_auth_admin
 --
 
-SELECT pg_catalog.setval('"auth"."refresh_tokens_id_seq"', 51, true);
+SELECT pg_catalog.setval('"auth"."refresh_tokens_id_seq"', 52, true);
 
 
 --
@@ -1349,6 +1352,6 @@ SELECT pg_catalog.setval('"public"."usuario_id_quarantine_id_seq"', 1, false);
 -- PostgreSQL database dump complete
 --
 
--- \unrestrict KylEZWAHev6JCHUWsnj6BkdJQzfxlKRyZWysKmJfPhebMWBABKHebNHvgyuNVcN
+-- \unrestrict 61146DbpsDaqY27B3bkz0cIrRTRud4y4XCE22uOw1NQ98uDFUz58qSF5scfwF54
 
 RESET ALL;
