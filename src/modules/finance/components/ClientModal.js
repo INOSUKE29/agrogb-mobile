@@ -6,7 +6,6 @@ import AgroButton from '../../../ui/components/AgroButton';
 import { executeQuery } from '../../../database/database';
 import { supabase } from '../../../services/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
-import { useTheme } from '../../../theme/ThemeContext';
 
 /**
  * ClientModal (V1.1 DIAMOND PRO) 💎
@@ -51,7 +50,7 @@ export default function ClientModal({ visible, onClose, onCreated }) {
             setNome('');
             setTelefone('');
             onClose();
-        } catch (err) {
+        } catch (_) {
             Alert.alert('Erro', 'Falha ao criar cliente rapidamente.');
         } finally {
             setLoading(false);

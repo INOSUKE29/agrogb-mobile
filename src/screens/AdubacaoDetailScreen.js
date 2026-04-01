@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Alert, Image, Share } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
@@ -19,7 +19,7 @@ export default function AdubacaoDetailScreen({ route, navigation }) {
         try {
             const res = await executeQuery(`SELECT * FROM production_fertilization_items WHERE plano_uuid = ?`, [currentPlano.uuid]);
             setItens(res.rows._array || []);
-        } catch (e) { console.error(e); }
+        } catch (_) { /* Error handled silently or via UI fallback */ }
     }, [currentPlano.uuid]);
 
     React.useEffect(() => { loadItens(); }, [loadItens]);
@@ -38,8 +38,8 @@ export default function AdubacaoDetailScreen({ route, navigation }) {
                             await ProductionService.applyFertilization(currentPlano.uuid);
                             setCurrentPlano({ ...currentPlano, status: 'CONCLUIDO', data_aplicacao: new Date().toISOString() });
                             Alert.alert('Sucesso', '✅ Adubação realizada e estoque atualizado!');
-                        } catch (err) {
-                            Alert.alert('Erro', 'Falha ao aplicar adubação: ' + err.message);
+                        } catch (_) {
+                            Alert.alert('Erro', 'Falha ao aplicar adubação.');
                         } finally {
                             setLoading(false);
                         }
@@ -63,8 +63,8 @@ export default function AdubacaoDetailScreen({ route, navigation }) {
             await Share.share({
                 message: message,
             });
-        } catch (error) {
-            alert(error.message);
+        } catch (_) {
+            alert('Falha ao compartilhar registro.');
         }
     };
 

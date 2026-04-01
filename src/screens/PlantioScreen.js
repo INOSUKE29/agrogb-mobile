@@ -16,7 +16,7 @@ import { useInventory } from '../modules/inventory/hooks/useInventory';
 export default function PlantioScreen({ navigation }) {
     const { colors, isDark } = useTheme();
     const { history, loading: loadingPlantio, loadHistory, registerPlanting, removePlanting } = usePlantio();
-    const { stockItems, loadStock } = useInventory();
+    const { items: stockItems, fetchStock: loadStock } = useInventory();
 
     const [talhao, setTalhao] = useState('');
     const [quantidade, setQuantidade] = useState('');

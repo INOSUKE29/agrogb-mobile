@@ -9,10 +9,12 @@ import { executeQuery } from '../database/database';
 import { useTheme } from '../theme/ThemeContext';
 import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
-import GlowCard from '../ui/GlowCard';
-import PrimaryButton from '../ui/PrimaryButton';
 import DangerButton from '../ui/DangerButton';
 import { showToast } from '../ui/Toast';
+import { AuthService } from '../services/authService';
+import * as LocalAuthentication from 'expo-local-authentication';
+import GlowCard from '../ui/GlowCard';
+import PrimaryButton from '../ui/PrimaryButton';
 
 export default function ProfileScreen({ navigation }) {
     const { colors, theme, setTheme } = useTheme();
@@ -33,12 +35,16 @@ export default function ProfileScreen({ navigation }) {
         avatar: null
     });
 
+    const [biometryInfo, setBiometryInfo] = useState({
+        available: false,
+        enrolled: false
+    });
+
     const loadProfile = async () => {
         try {
-            const jsonUser = await AsyncStorage.getItem('user_session');
-            if (jsonUser) {
-                const session = JSON.parse(jsonUser);
-                const res = await executeQuery('SELECT * FROM usuarios WHERE id = ?', [session.id]);
+            const session = await AuthService.checkSession();
+            if (session) {
+                const res = await executeQuery('SELECT * FROM usuarios WHERE id = ? OR uuid = ?', [session.userId, session.userId]);
                 if (res.rows.length > 0) {
                     const u = res.rows.item(0);
                     setUser({
@@ -59,7 +65,30 @@ export default function ProfileScreen({ navigation }) {
         } catch { }
     };
 
-    useFocusEffect(useCallback(() => { loadProfile(); }, []));
+    const checkBiometryStatus = async () => {
+        const hasHardware = await LocalAuthentication.hasHardwareAsync();
+        const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+        const asked = await AsyncStorage.getItem('@asked_biometrics');
+        setBiometryInfo({
+            available: hasHardware,
+            enrolled: asked === 'true' && isEnrolled
+        });
+    };
+
+    useFocusEffect(useCallback(() => { 
+        loadProfile(); 
+        checkBiometryStatus();
+    }, []));
+
+    const handleLogout = async () => {
+        Alert.alert('Sair', 'Deseja realmente sair?', [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Sim, Sair', onPress: async () => { 
+                await AuthService.logout(); 
+                // A troca de tela acontece automaticamente via App.js
+            } }
+        ]);
+    };
 
     const handleSave = async () => {
         setSaving(true);
@@ -97,11 +126,28 @@ export default function ProfileScreen({ navigation }) {
         if (!result.canceled) { setUser({ ...user, avatar: result.assets[0].uri }); }
     };
 
-    const handleLogout = async () => {
-        Alert.alert('Sair', 'Deseja realmente sair?', [
-            { text: 'Cancelar', style: 'cancel' },
-            { text: 'Sim, Sair', onPress: async () => { await AsyncStorage.removeItem('user_session'); navigation.reset({ index: 0, routes: [{ name: 'Login' }] }); } }
-        ]);
+    const handleToggleBiometry = async () => {
+        if (!biometryInfo.available) {
+            return Alert.alert('Não Disponível', 'Seu aparelho não possui suporte a biometria.');
+        }
+
+        if (biometryInfo.enrolled) {
+            await AsyncStorage.removeItem('@asked_biometrics');
+            showToast('Biometria desativada');
+            checkBiometryStatus();
+        } else {
+            // Tenta autenticar para confirmar
+            const result = await LocalAuthentication.authenticateAsync({
+                promptMessage: 'Confirme sua identidade para ativar o acesso rápido',
+                fallbackLabel: 'Usar Senha'
+            });
+
+            if (result.success) {
+                await AsyncStorage.setItem('@asked_biometrics', 'true');
+                showToast('Login por digital ativado!');
+                checkBiometryStatus();
+            }
+        }
     };
 
     const InfoRow = ({ label, value, icon, editing, onChange, keyboardType, autoCapitalize, secureTextEntry }) => (
@@ -134,10 +180,42 @@ export default function ProfileScreen({ navigation }) {
                     <InfoRow label="E-MAIL" value={user.email} icon="mail-outline" editing={isEditing} onChange={t => setUser({ ...user, email: t })} keyboardType="email-address" />
                 </GlowCard>
                 <GlowCard style={[styles.card, { backgroundColor: colors.card, borderColor: colors.glassBorder, marginTop: 20 }]}>
-                    <Text style={[styles.sectionTitle, { color: colors.primary }]}>TEMA</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.primary }]}>SEGURANÇA</Text>
+                    <View style={styles.securityRow}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>LOGIN POR BIOMETRIA</Text>
+                            <Text style={[styles.infoValue, { color: colors.textPrimary, fontSize: 12 }]}>
+                                {biometryInfo.available 
+                                    ? (biometryInfo.enrolled ? 'Ativado (Digital/Face)' : 'Desativado') 
+                                    : 'Recurso não suportado no aparelho'}
+                            </Text>
+                        </View>
+                        {biometryInfo.available && (
+                            <TouchableOpacity 
+                                onPress={handleToggleBiometry}
+                                style={[styles.toggleBtn, { backgroundColor: biometryInfo.enrolled ? colors.primary : colors.cardAlt }]}
+                            >
+                                <Ionicons 
+                                    name={biometryInfo.enrolled ? "checkmark-circle" : "ellipse-outline"} 
+                                    size={24} 
+                                    color={biometryInfo.enrolled ? "#FFF" : colors.textMuted} 
+                                />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </GlowCard>
+
+                <GlowCard style={[styles.card, { backgroundColor: colors.card, borderColor: colors.glassBorder, marginTop: 20 }]}>
+                    <Text style={[styles.sectionTitle, { color: colors.primary }]}>TEMA DO APLICATIVO</Text>
                     <View style={styles.themeSelectorContainer}>
-                        <TouchableOpacity onPress={() => setTheme('light')} style={[styles.themeOption, theme === 'light' && { backgroundColor: colors.primary + '10' }]}><Text style={{ color: colors.textPrimary }}>CLARO</Text></TouchableOpacity>
-                        <TouchableOpacity onPress={() => setTheme('dark')} style={[styles.themeOption, theme === 'dark' && { backgroundColor: colors.primary + '10' }]}><Text style={{ color: colors.textPrimary }}>ESCURO</Text></TouchableOpacity>
+                        <TouchableOpacity onPress={() => setTheme('light')} style={[styles.themeOption, theme === 'light' && { backgroundColor: colors.primary + '10', borderColor: colors.primary }]}>
+                            <Ionicons name="sunny-outline" size={20} color={theme === 'light' ? colors.primary : colors.textMuted} />
+                            <Text style={{ color: colors.textPrimary, marginLeft: 10, fontWeight: 'bold' }}>CLARO</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setTheme('dark')} style={[styles.themeOption, theme === 'dark' && { backgroundColor: colors.primary + '10', borderColor: colors.primary }]}>
+                            <Ionicons name="moon-outline" size={20} color={theme === 'dark' ? colors.primary : colors.textMuted} />
+                            <Text style={{ color: colors.textPrimary, marginLeft: 10, fontWeight: 'bold' }}>ESCURO</Text>
+                        </TouchableOpacity>
                     </View>
                 </GlowCard>
                 <View style={styles.actionsContainer}>
@@ -167,8 +245,10 @@ const styles = StyleSheet.create({
     infoLabel: { fontSize: 10, fontWeight: 'bold' },
     infoValue: { fontSize: 14 },
     input: { borderBottomWidth: 1, padding: 2 },
-    themeSelectorContainer: { flexDirection: 'row', gap: 10 },
-    themeOption: { flex: 1, padding: 10, borderRadius: 10, borderWidth: 1, alignItems: 'center' },
-    actionsContainer: { marginTop: 20 },
+    securityRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 10 },
+    toggleBtn: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    themeSelectorContainer: { flexDirection: 'row', gap: 15, marginTop: 10 },
+    themeOption: { flex: 1, padding: 15, borderRadius: 16, borderWidth: 1.5, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' },
+    actionsContainer: { marginTop: 40, paddingBottom: 20 },
     editBtnText: { fontWeight: 'bold' }
 });

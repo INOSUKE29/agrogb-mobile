@@ -2,22 +2,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Animated, Dimensions, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { executeQuery } from '../database/database';
 import { useTheme } from '../theme/ThemeContext';
+import { AuthService } from '../services/authService';
 
 const { width } = Dimensions.get('window');
 const DRAWER_WIDTH = width * 0.75;
 
-export default function SidebarDrawer({ visible, onClose }) {
-    const navigation = useNavigation();
+export default function SidebarDrawer({ visible, onClose, navigation: navigationProp }) {
+    const navigationInternal = useNavigation();
+    const navigation = navigationProp || navigationInternal;
     const { colors } = useTheme();
-    const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current; // Start hidden (left)
+    const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current; 
     const [user, setUser] = useState({ name: 'Usuário', email: 'agrogb@sistema.com' });
 
     useEffect(() => {
         if (visible) {
-            // Slide In
             Animated.timing(slideAnim, {
                 toValue: 0,
                 duration: 300,
@@ -25,7 +25,6 @@ export default function SidebarDrawer({ visible, onClose }) {
             }).start();
             loadProfile();
         } else {
-            // Slide Out
             Animated.timing(slideAnim, {
                 toValue: -DRAWER_WIDTH,
                 duration: 250,
@@ -36,10 +35,9 @@ export default function SidebarDrawer({ visible, onClose }) {
 
     const loadProfile = async () => {
         try {
-            const json = await AsyncStorage.getItem('user_session');
-            if (json) {
-                const session = JSON.parse(json);
-                const res = await executeQuery('SELECT * FROM usuarios WHERE id = ?', [session.id]);
+            const session = await AuthService.checkSession();
+            if (session) {
+                const res = await executeQuery('SELECT * FROM usuarios WHERE id = ? OR uuid = ?', [session.userId, session.userId]);
                 if (res.rows.length > 0) {
                     const u = res.rows.item(0);
                     setUser({
@@ -59,8 +57,10 @@ export default function SidebarDrawer({ visible, onClose }) {
     const handleNavigation = (screen, params = {}) => {
         onClose();
         setTimeout(() => {
-            navigation.navigate(screen, params);
-        }, 300);
+            if (navigation) {
+                navigation.navigate(screen, params);
+            }
+        }, 100);
     };
 
     const handleLogout = async () => {
@@ -74,15 +74,9 @@ export default function SidebarDrawer({ visible, onClose }) {
                     onPress: async () => {
                         onClose();
                         try {
-                            await AsyncStorage.multiRemove(['user_session', '@user_session', '@user_profile']);
-                            // Opcional: Limpar tudo exceto configurações importantes
-                            navigation.reset({
-                                index: 0,
-                                routes: [{ name: 'Login' }],
-                            });
+                            await AuthService.logout();
                         } catch (e) {
-                            console.log('Login error', e);
-                            navigation.replace('Login');
+                            console.log('Logout error', e);
                         }
                     }
                 }
@@ -93,25 +87,25 @@ export default function SidebarDrawer({ visible, onClose }) {
     const MenuItem = ({ icon, label, screen, badge }) => (
         <TouchableOpacity style={styles.menuItem} onPress={() => handleNavigation(screen)}>
             <View style={{ width: 30, alignItems: 'center' }}>
-                <Ionicons name={icon} size={22} color={colors.textPrimary} />
+                <Ionicons name={icon} size={ scale(22) } color={colors.textPrimary} />
             </View>
             <Text style={[styles.menuText, { color: colors.textPrimary }]}>{label}</Text>
             {badge && <View style={[styles.badge, { backgroundColor: colors.primary }]}><Text style={styles.badgeText}>{badge}</Text></View>}
         </TouchableOpacity>
     );
 
+    const isSmallDevice = width < 375;
+    const scale = (size) => isSmallDevice ? size * 0.9 : size;
+
     if (!visible) return null;
 
     return (
         <Modal transparent visible={visible} onRequestClose={onClose} animationType="fade">
             <View style={styles.overlay}>
-                {/* Backdrop (Click to close) */}
                 <TouchableOpacity style={styles.backdrop} onPress={onClose} activeOpacity={1} />
 
-                {/* Drawer Content */}
                 <Animated.View style={[styles.drawer, { backgroundColor: colors.card, transform: [{ translateX: slideAnim }] }]}>
 
-                    {/* Header: User Info */}
                     <View style={[styles.header, { backgroundColor: colors.primary }]}>
                         <View style={styles.avatar}>
                             {user.avatar ? (
@@ -129,32 +123,41 @@ export default function SidebarDrawer({ visible, onClose }) {
                         </TouchableOpacity>
                     </View>
 
-                    {/* Menu Items */}
                     <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-                        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>NAVEGAÇÃO</Text>
-                        <MenuItem icon="home-outline" label="Painel / Início" screen="Home" />
+                        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>GESTÃO OPERACIONAL</Text>
+                        <MenuItem icon="home-outline" label="Painel Inicial" screen="Dashboard" />
+                        <MenuItem icon="analytics-outline" label="Plantio" screen="Plantio" />
                         <MenuItem icon="camera-outline" label="Monitoramento" screen="Monitoramento" />
-                        <MenuItem icon="list-circle-outline" label="Cadastros Gerais" screen="MenuCadastros" />
+                        <MenuItem icon="book-outline" label="Caderno de Campo" screen="CadernoCampo" />
                         <MenuItem icon="cube-outline" label="Estoque" screen="Estoque" />
-                        <MenuItem icon="cart-outline" label="Compras" screen="Compras" />
+
+                        <View style={[styles.divider, { backgroundColor: colors.glassBorder }]} />
+
+                        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>COMERCIAL & FINANCEIRO</Text>
+                        <MenuItem icon="cart-outline" label="Vendas" screen="Vendas" />
+                        <MenuItem icon="basket-outline" label="Compras" screen="Compras" />
+                        <MenuItem icon="cash-outline" label="Contas" screen="FinancialAccounts" />
                         <MenuItem icon="gift-outline" label="Encomendas" screen="Encomendas" />
                         <MenuItem icon="people-outline" label="Clientes" screen="Clientes" />
+                        <MenuItem icon="bar-chart-outline" label="Relatórios" screen="Relatorios" />
 
                         <View style={[styles.divider, { backgroundColor: colors.glassBorder }]} />
 
                         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>SISTEMA</Text>
-                        <MenuItem icon="person-outline" label="Meu Perfil" screen="Profile" />
-                        <MenuItem icon="settings-outline" label="Configurações (Painel)" screen="Sync" />
-                        <MenuItem icon="information-circle-outline" label="Sobre" screen="Help" />
+                        <MenuItem icon="list-circle-outline" label="Cadastros Gerais" screen="MenuCadastros" />
+                        <MenuItem icon="flower-outline" label="Culturas" screen="Culturas" />
+                        <MenuItem icon="people-circle-outline" label="Equipe" screen="Usuarios" />
+                        <MenuItem icon="bus-outline" label="Gestão de Frota" screen="Frota" />
+                        <MenuItem icon="lock-closed-outline" label="Configurações" screen="Settings" />
+                        <MenuItem icon="settings-outline" label="Sincronização" screen="Sync" />
                     </ScrollView>
 
-                    {/* Footer: Logout */}
                     <View style={[styles.footer, { backgroundColor: colors.cardAlt, borderTopColor: colors.glassBorder }]}>
                         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
                             <Ionicons name="log-out-outline" size={24} color={colors.danger} />
                             <Text style={[styles.logoutText, { color: colors.danger }]}>Sair</Text>
                         </TouchableOpacity>
-                        <Text style={[styles.version, { color: colors.textMuted }]}>AgroGB v8.5 • Theme Professional</Text>
+                        <Text style={[styles.version, { color: colors.textMuted }]}>AgroGB v1.1.10 • Diamond Pro</Text>
                     </View>
 
                 </Animated.View>
@@ -199,12 +202,14 @@ const styles = StyleSheet.create({
     userName: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
     userEmail: { color: 'rgba(255,255,255,0.8)', fontSize: 12 },
     body: { flex: 1, paddingVertical: 10 },
-    sectionTitle: { fontSize: 12, fontWeight: 'bold', color: '#9CA3AF', marginLeft: 20, marginTop: 15, marginBottom: 5 },
+    sectionTitle: { fontSize: 11, fontWeight: '900', color: '#9CA3AF', marginLeft: 20, marginTop: 15, marginBottom: 5, letterSpacing: 1 },
     menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 20 },
     menuText: { fontSize: 15, color: '#374151', marginLeft: 15, fontWeight: '500' },
     divider: { height: 1, backgroundColor: '#E5E7EB', marginVertical: 10, marginHorizontal: 20 },
     footer: { padding: 20, borderTopWidth: 1, borderTopColor: '#E5E7EB', backgroundColor: '#F9FAFB' },
     logoutBtn: { flexDirection: 'row', alignItems: 'center' },
     logoutText: { color: '#EF4444', fontSize: 16, fontWeight: 'bold', marginLeft: 15 },
-    version: { marginTop: 10, fontSize: 10, color: '#9CA3AF', textAlign: 'center' }
+    version: { marginTop: 10, fontSize: 10, color: '#9CA3AF', textAlign: 'center' },
+    badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, marginLeft: 'auto' },
+    badgeText: { color: '#FFF', fontSize: 10, fontWeight: 'bold' }
 });

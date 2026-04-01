@@ -4,7 +4,6 @@ import BaseModal from '../../../components/modals/BaseModal';
 import AgroInput from '../../../ui/components/AgroInput';
 import AgroButton from '../../../ui/components/AgroButton';
 import { InventoryService } from '../services/InventoryService';
-import { useTheme } from '../../../theme/ThemeContext';
 
 /**
  * ProductModal (V1.1 DIAMOND PRO) 💎
@@ -29,7 +28,7 @@ export default function ProductModal({ visible, onClose, onCreated }) {
             if (onCreated) onCreated(newProduct);
             setNome('');
             onClose();
-        } catch (err) {
+        } catch (_) {
             Alert.alert('Erro', 'Falha ao criar produto rapidamente.');
         } finally {
             setLoading(false);

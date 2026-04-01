@@ -54,6 +54,16 @@ module.exports = [
                 FormData: "readonly",
                 XMLHttpRequest: "readonly",
                 __DEV__: "readonly",
+                // Testing Globals (Jest)
+                jest: "readonly",
+                describe: "readonly",
+                it: "readonly",
+                expect: "readonly",
+                beforeEach: "readonly",
+                afterEach: "readonly",
+                beforeAll: "readonly",
+                afterAll: "readonly",
+                test: "readonly",
             }
         },
         settings: {

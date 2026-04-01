@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import { executeQuery, getAppSettings } from '../database/database';
+import { executeQuery, getAppSettings, executeTransaction } from '../database/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const syncTables = [
@@ -94,9 +94,9 @@ export const pullServerChanges = async () => {
         for (const tableInfo of syncTables) {
             const tableName = tableInfo.name;
             const pk = tableInfo.pk;
+            const batchQueries = [];
 
             try {
-                // Puxa do Supabase dados baseados no last_updated (timestamp longo)
                 const { data, error } = await supabase
                     .from(tableName)
                     .select('*')
@@ -114,66 +114,52 @@ export const pullServerChanges = async () => {
                         if (!pkValue) continue;
 
                         try {
-                            // Busca registro local para comparar timestamps
-                            const localRes = await executeQuery(`SELECT last_updated FROM ${tableName} WHERE ${pk} = ?`, [pkValue]);
+                            const localRes = await executeQuery(`SELECT last_updated, sync_status FROM ${tableName} WHERE ${pk} = ?`, [pkValue]);
                             
                             if (localRes.rows.length > 0) {
                                 const localRow = localRes.rows.item(0);
                                 const localTime = localRow.last_updated ? new Date(localRow.last_updated).getTime() : 0;
                                 const remoteTime = remoteRow.last_updated ? new Date(remoteRow.last_updated).getTime() : 0;
 
-                                // Só atualiza se o remoto for estritamente mais recente
                                 if (remoteTime > localTime) {
-                                    // NOVO: Detecta se o dado local também foi alterado (sync_status = 0)
                                     if (localRow.sync_status === 0) {
-                                        if (__DEV__) console.log(`[SYNC] ⚠️ CONFLITO DETECTADO em ${tableName}:${pkValue}. Salvando para resolução manual.`);
-                                        
+                                        // Conflito: Mantém individual para maior segurança
                                         const conflictId = Math.random().toString(36).substr(2, 9);
                                         await executeQuery(
                                             `INSERT INTO v2_sync_conflicts (id, table_name, record_uuid, local_data, remote_data, status) 
                                              VALUES (?, ?, ?, ?, ?, ?)`,
                                             [conflictId, tableName, String(pkValue), JSON.stringify(localRow), JSON.stringify(remoteRow), 'Pendente']
                                         );
-                                        
-                                        // Também sobe o conflito para o Supabase para auditoria centralizada
-                                        await supabase.from('v2_sync_conflicts').insert({
-                                            table_name: tableName,
-                                            record_uuid: String(pkValue),
-                                            local_data: localRow,
-                                            remote_data: remoteRow,
-                                            status: 'Pendente'
-                                        });
-
                                     } else {
-                                        const keys = Object.keys(remoteRow);
-                                        const sets = keys.map(k => `"${k}" = ?`).join(', ');
-                                        const values = [...Object.values(remoteRow), pkValue];
-                                        
-                                        await executeQuery(`UPDATE ${tableName} SET ${sets}, sync_status = 1 WHERE ${pk} = ?`, values);
+                                        const sets = Object.keys(remoteRow).map(k => {
+                                            const v = remoteRow[k];
+                                            const val = v === null ? 'NULL' : `'${String(v).replace(/'/g, "''")}'`;
+                                            return `"${k}" = ${val}`;
+                                        }).join(', ');
+                                        batchQueries.push(`UPDATE ${tableName} SET ${sets}, sync_status = 1 WHERE ${pk} = '${String(pkValue).replace(/'/g, "''")}'`);
                                     }
-                                } else {
-                                    if (__DEV__) console.log(`[SYNC] Conflito evitado em ${tableName}:${pkValue}. Local(${localTime}) >= Remoto(${remoteTime})`);
                                 }
                             } else {
-                                // Inserção simples
                                 const rowKeys = Object.keys(remoteRow);
-                                const rowValues = Object.values(remoteRow);
+                                const rowValues = Object.values(remoteRow).map(v => v === null ? 'NULL' : `'${String(v).replace(/'/g, "''")}'`);
                                 rowKeys.push('sync_status');
                                 rowValues.push(1);
 
-                                const placeholders = rowKeys.map(() => '?').join(', ');
-                                const escapeKeys = rowKeys.map(k => `"${k}"`).join(', ');
-
-                                await executeQuery(`INSERT INTO ${tableName} (${escapeKeys}) VALUES (${placeholders})`, rowValues);
+                                batchQueries.push(`INSERT INTO ${tableName} (${rowKeys.map(k => `"${k}"`).join(', ')}) VALUES (${rowValues.join(', ')})`);
                             }
                         } catch (e) {
-                            if (__DEV__) console.error(`[SYNC] Erro ao processar registro em ${tableName}:`, e);
+                            if (__DEV__) console.error(`[SYNC] Preparação falhou em ${tableName}:`, e);
                         }
+                    }
+
+                    if (batchQueries.length > 0) {
+                        if (__DEV__) console.log(`[SYNC] Executando lote de ${batchQueries.length} comandos para ${tableName}`);
+                        await executeTransaction(batchQueries);
                     }
                     totalsPulled += data.length;
                 }
-            } catch {
-                if (__DEV__) console.log(`Pular pull ${tableName}.`);
+            } catch (e) {
+                if (__DEV__) console.log(`Erro ao processar tabela ${tableName}:`, e.message);
             }
         }
 

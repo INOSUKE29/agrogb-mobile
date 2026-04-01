@@ -31,7 +31,7 @@ export const executeQuery = (sql, params = []) => {
                     (_, result) => {
                         clearTimeout(queryTimeout);
                         const duration = Date.now() - start;
-                        if (__DEV__ && duration > 2000) {
+                        if (__DEV__ && duration > 1000) {
                             console.log(`⚠️ Query Lenta (${duration}ms):`, sql.substring(0, 100));
                         }
                         resolve(result);
@@ -77,7 +77,8 @@ export const executeTransaction = (queries) => {
 export const initDB = async () => {
     try {
         db = SQLite.openDatabase('agrogb_mobile.db');
-        if (__DEV__) console.log('✅ Banco de dados aberto (SDK 50)');
+        
+        if (__DEV__) console.log('✅ Banco de dados aberto modo padrão (SDK 50)');
         await createTables();
         return db;
     } catch (error) {
@@ -93,20 +94,25 @@ const createTables = async () => {
         
         // Inclui SCHEMA_V10 se disponível
         const allQueries = [...V1_DIAMOND_PRO, ...SCHEMA_V10];
-        
         await executeTransaction(allQueries);
-        
-        if (__DEV__) console.log(`✨ DIAMOND SETUP concluído em ${Date.now() - start}ms`);
+        if (__DEV__) console.log(`✨ DIAMOND SETUP em ${Date.now() - start}ms`);
 
-        // Tarefas pós-transação exigindo lógica (Deduplicação e Seeds)
-        await deduplicateClientes();
-        
-        const countKnowledge = await executeQuery('SELECT COUNT(*) as c FROM base_conhecimento_pro');
-        if (countKnowledge.rows.item(0).c === 0) {
-            await seedKnowledgeBasePro();
+        // --- TAREFAS PESADAS (RODAM APENAS UMA VEZ) ---
+        const lastCleanup = await getConfig('LAST_HEAVY_CLEANUP');
+        const today = new Date().toISOString().split('T')[0];
+
+        if (lastCleanup !== today) {
+            if (__DEV__) console.log('🚀 Executando manutenções pesadas diárias...');
+            await deduplicateClientes();
+            
+            const countKnowledge = await executeQuery('SELECT COUNT(*) as c FROM base_conhecimento_pro');
+            if (countKnowledge.rows.item(0).c === 0) {
+                await seedKnowledgeBasePro();
+            }
+            await setConfig('LAST_HEAVY_CLEANUP', today);
         }
 
-        if (__DEV__) console.log("✅ Ciclo de inicialização DIAMOND finalizado com sucesso.");
+        if (__DEV__) console.log("✅ Ciclo de inicialização DIAMOND finalizado.");
 
     } catch (error) {
         console.error('❌ ERRO CRÍTICO DIAMOND SETUP:', error);
@@ -115,22 +121,22 @@ const createTables = async () => {
 
 export const deduplicateClientes = async () => {
     try {
-        console.log('🧹 Iniciando deduplicação de clientes...');
-        const res = await executeQuery('SELECT * FROM clientes WHERE is_deleted = 0 ORDER BY id ASC');
-        const clientes = [];
-        for (let i = 0; i < res.rows.length; i++) clientes.push(res.rows.item(i));
+        if (__DEV__) console.log('🧹 Iniciando deduplicação OTIMIZADA de clientes (SQL Express)...');
+        
+        // Estratégia SQL: Marca como deletado todos os registros que tenham Nome/CPF duplicado, 
+        // mantendo apenas o ID mais antigo. Muito mais rápido que loop JS.
+        await executeQuery(`
+            UPDATE clientes 
+            SET is_deleted = 1, sync_status = 0 
+            WHERE id NOT IN (
+                SELECT MIN(id) 
+                FROM clientes 
+                WHERE is_deleted = 0 
+                GROUP BY UPPER(TRIM(nome)), COALESCE(TRIM(cpf_cnpj), '')
+            ) AND is_deleted = 0
+        `);
 
-        const map = new Map();
-        for (const c of clientes) {
-            const key = c.cpf_cnpj ? c.cpf_cnpj.trim() : c.nome.trim().toUpperCase();
-            if (map.has(key)) {
-                console.log(`🗑️ Removendo cliente duplicado: ${c.nome} (ID: ${c.id})`);
-                await executeQuery('UPDATE clientes SET is_deleted = 1, sync_status = 0 WHERE id = ?', [c.id]);
-            } else {
-                map.set(key, c);
-            }
-        }
-        console.log('✅ Deduplicação de clientes concluída.');
+        if (__DEV__) console.log('✅ Deduplicação concluída via SQL Unitário.');
     } catch (e) {
         console.error('❌ Erro na deduplicação de clientes:', e);
     }
@@ -527,6 +533,20 @@ export const insertCadernoNota = async (n) => {
     await executeQuery(
         `INSERT INTO caderno_notas (uuid, observacao, data, last_updated, sync_status, is_deleted) VALUES (?, ?, ?, ?, ?, ?)`,
         [require('uuid').v4(), up(n.observacao), n.data, new Date().toISOString(), 0, 0]
+    );
+};
+
+export const updateCadernoNota = async (uuid, observacao) => {
+    await executeQuery(
+        `UPDATE caderno_notas SET observacao = ?, last_updated = ?, sync_status = 0 WHERE uuid = ?`,
+        [up(observacao), new Date().toISOString(), uuid]
+    );
+};
+
+export const deleteCadernoNota = async (uuid) => {
+    await executeQuery(
+        `UPDATE caderno_notas SET is_deleted = 1, sync_status = 0 WHERE uuid = ?`,
+        [uuid]
     );
 };
 

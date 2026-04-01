@@ -44,7 +44,36 @@ export const InventoryService = {
 
     getAll: async () => {
         const res = await executeQuery('SELECT * FROM cadastro ORDER BY nome ASC');
-        return res.rows._array;
+        const rows = [];
+        for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+        return rows;
+    },
+
+    /**
+     * Busca o estoque consolidado (v1.0.1 Fix)
+     */
+    getStocks: async () => { // Nome alternativo se for plural, mas useInventory chama getStock()
+        const res = await executeQuery(`
+            SELECT e.id, e.produto, e.quantidade, e.last_updated, c.unidade
+            FROM estoque e
+            LEFT JOIN cadastro c ON UPPER(e.produto) = UPPER(c.nome)
+            ORDER BY e.produto ASC
+        `);
+        const rows = [];
+        for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+        return rows;
+    },
+
+    getStock: async () => { // Alias para compatibilidade com useInventory.js
+        const res = await executeQuery(`
+            SELECT e.id, e.produto, e.quantidade, e.last_updated, c.unidade
+            FROM estoque e
+            LEFT JOIN cadastro c ON UPPER(e.produto) = UPPER(c.nome)
+            ORDER BY e.produto ASC
+        `);
+        const rows = [];
+        for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+        return rows;
     },
 
     /**

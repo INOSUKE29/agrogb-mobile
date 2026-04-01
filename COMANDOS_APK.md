@@ -43,22 +43,14 @@ eas login
 
 ---
 
-## Passo 4: Gerar o APK
+## Passo 4: Localizar o APK (Caminho Diamond Pro)
 ```powershell
-eas build --platform android --profile preview
+explorer "C:\Users\Bruno\Documents\AgroGB\mobile_app\android\app\build\outputs\apk\release"
 ```
 
 **O que vai acontecer:**
-1. Vai perguntar se quer criar um projeto EAS → Digite **Y** (Yes)
-2. Vai fazer upload do código (1-2 minutos)
-3. Vai compilar na nuvem (5-10 minutos)
-4. Vai te dar um link para baixar o APK
-
-**Exemplo de saída:**
-```
-✔ Build finished
-📱 Download: https://expo.dev/artifacts/eas/abc123.apk
-```
+- Vai abrir a pasta oficial onde o APK sempre estará.
+- O arquivo principal será o `app-release.apk`.
 
 ---
 

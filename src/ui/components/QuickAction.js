@@ -1,19 +1,31 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
 
-const QuickAction = ({ icon, label, onPress, color }) => {
-    const { colors } = useTheme();
+const QuickAction = ({ icon, label, onPress, color, prefix }) => {
+    const { colors, isDark } = useTheme();
 
     return (
         <TouchableOpacity
-            style={[styles.container, { backgroundColor: colors.card }]}
+            style={[
+                styles.container, 
+                { 
+                    backgroundColor: isDark ? 'rgba(30, 41, 59, 0.7)' : '#FFFFFF',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0,0,0,0.05)',
+                    borderWidth: 1
+                }
+            ]}
             onPress={onPress}
             activeOpacity={0.7}
         >
-            <Ionicons name={icon} size={24} color={color || colors.primary} />
-            <Text style={[styles.label, { color: colors.textPrimary }]}>{label}</Text>
+            <View style={styles.iconWrapper}>
+                {prefix && (
+                    <Text style={[styles.prefix, { color: color || colors.primary }]}>{prefix} </Text>
+                )}
+                <Ionicons name={icon} size={28} color={color || colors.primary} />
+            </View>
+            <Text style={[styles.label, { color: isDark ? '#FFFFFF' : colors.textPrimary }]}>{label}</Text>
         </TouchableOpacity>
     );
 };
@@ -21,18 +33,34 @@ const QuickAction = ({ icon, label, onPress, color }) => {
 const styles = StyleSheet.create({
     container: {
         width: '48%',
+        aspectRatio: 1.2,
         padding: 16,
-        borderRadius: 16,
+        borderRadius: 24,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 16,
-        elevation: 2,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
-        shadowRadius: 2,
+        shadowRadius: 10,
+        elevation: 2,
     },
-    label: { marginTop: 8, fontSize: 14, fontWeight: '600', textAlign: 'center' }
+    iconWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 8
+    },
+    prefix: {
+        fontSize: 22,
+        fontWeight: '900',
+    },
+    label: { 
+        fontSize: 13, 
+        fontWeight: 'bold', 
+        textAlign: 'center',
+        letterSpacing: 0.3
+    }
 });
 
 export default QuickAction;

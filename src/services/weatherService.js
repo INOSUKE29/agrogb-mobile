@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { loadSetting } from './settingsService';
 import 'react-native-url-polyfill/auto';
 
-const DEFAULT_API_KEY = '5a6875971488c5d20775d7b8764b85c8';
+const DEFAULT_API_KEY = process.env.EXPO_PUBLIC_WEATHER_API_KEY;
 const BASE_URL = 'https://api.openweathermap.org/data/2.5/weather';
 const FORECAST_URL = 'https://api.openweathermap.org/data/2.5/forecast';
 

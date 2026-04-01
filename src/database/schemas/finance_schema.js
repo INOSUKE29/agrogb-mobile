@@ -76,5 +76,33 @@ export const FINANCE_SCHEMA = [
         data TEXT,
         created_at TEXT DEFAULT (datetime('now')),
         sync_status TEXT DEFAULT 'pending'
+    );`,
+    `CREATE TABLE IF NOT EXISTS financial_accounts (
+        id TEXT PRIMARY KEY,
+        user_id TEXT,
+        type TEXT NOT NULL, -- 'PAY' or 'RECEIVE'
+        category TEXT, -- 'COMPRA', 'VENDA', 'CUSTO', 'OUTROS'
+        description TEXT NOT NULL,
+        total_value REAL NOT NULL,
+        origin_uuid TEXT, -- Link para uuid da compra/venda
+        status TEXT DEFAULT 'PENDING', -- 'PENDING', 'PARTIAL', 'PAID', 'CANCELLED'
+        due_date TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        last_updated TEXT,
+        sync_status INTEGER DEFAULT 0,
+        is_deleted INTEGER DEFAULT 0
+    );`,
+    `CREATE TABLE IF NOT EXISTS financial_installments (
+        id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL,
+        installment_number INTEGER NOT NULL,
+        value REAL NOT NULL,
+        due_date TEXT NOT NULL,
+        status TEXT DEFAULT 'PENDING', -- 'PENDING', 'PAID'
+        payment_date TEXT,
+        last_updated TEXT,
+        sync_status INTEGER DEFAULT 0,
+        is_deleted INTEGER DEFAULT 0,
+        FOREIGN KEY(account_id) REFERENCES financial_accounts(id)
     );`
 ];

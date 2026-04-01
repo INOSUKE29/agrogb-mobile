@@ -3,27 +3,27 @@ import { COLORS } from '../ui/theme/colors';
 export const themeDark = {
     mode: 'dark',
     colors: {
-        primary: COLORS.dark.primary,
-        secondary: COLORS.dark.textSecondary,
-        background: COLORS.dark.background,
-        surface: COLORS.dark.card,
-        card: COLORS.dark.card,
-        text: COLORS.dark.textPrimary,
-        textPrimary: COLORS.dark.textPrimary,
-        textSecondary: COLORS.dark.textSecondary,
-        textMuted: COLORS.dark.textSecondary,
-        textOnPrimary: COLORS.white,
-        border: COLORS.dark.border,
-        glassBorder: COLORS.dark.border,
-        shadow: COLORS.dark.shadow,
-        success: COLORS.success,
-        warning: COLORS.warning,
-        danger: COLORS.danger,
-        error: COLORS.danger,
-        placeholder: COLORS.dark.textSecondary,
-        glass: 'rgba(30, 41, 59, 0.8)',
-        glow: COLORS.dark.primary,
-        bgGradient: COLORS.dark.gradient,
-        primaryDark: COLORS.darkPrimary
+        primary: '#10B981', // Consistent Emerald Green
+        secondary: '#94A3B8',
+        background: '#0F172A', // Deep Slate/Navy background
+        surface: '#1E293B',
+        card: '#1E293B', // Slightly lighter Slate for cards
+        text: '#F8FAFC',
+        textPrimary: '#F8FAFC',
+        textSecondary: '#CBD5E1',
+        textMuted: '#64748B',
+        textOnPrimary: '#FFFFFF',
+        border: '#334155',
+        glassBorder: 'rgba(51, 65, 85, 0.5)',
+        shadow: 'rgba(0, 0, 0, 0.4)',
+        success: '#10B981',
+        warning: '#F59E0B',
+        danger: '#EF4444',
+        error: '#EF4444',
+        placeholder: '#475569',
+        glass: 'rgba(30, 41, 59, 0.7)',
+        glow: '#10B981',
+        bgGradient: ['#0F172A', '#1E293B'],
+        primaryDark: '#059669'
     }
 };

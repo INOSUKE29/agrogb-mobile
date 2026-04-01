@@ -47,6 +47,14 @@ export default function MenuCadastrosScreen({ navigation }) {
             description: "Gerenciar classificação e tipos de contas e gastos gerais.",
             route: "CategoriasDespesa",
             color: "#DC2626" // Red 600
+        },
+        {
+            title: "CONTAS A PAGAR / RECEBER",
+            subtitle: "Financeiro, Fluxo de Caixa...",
+            icon: "cash-outline",
+            description: "Gerenciar pagamentos e recebimentos do agronegócio.",
+            route: "FinancialAccounts",
+            color: "#10B981" // Emerald 500
         }
     ];
 

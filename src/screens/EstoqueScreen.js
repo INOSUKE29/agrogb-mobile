@@ -25,8 +25,8 @@ export default function EstoqueScreen({ navigation }) {
     }, [fetchStock]));
 
     const filteredItems = useMemo(() => {
-        if (!originalItems) return [];
-        let res = [...originalItems];
+        const items = originalItems || [];
+        let res = [...items];
         if (searchText) {
             res = res.filter(i => i.produto.toUpperCase().includes(searchText.toUpperCase()));
         }
@@ -77,7 +77,7 @@ export default function EstoqueScreen({ navigation }) {
     return (
         <AppContainer>
             <ScreenHeader title="ESTOQUE" onBack={() => navigation.goBack()} />
-            {loading && !originalItems.length ? (
+            {loading && (!originalItems || !originalItems.length) ? (
                 <View style={{ flex: 1, justifyContent: 'center' }}>
                     <ActivityIndicator size="large" color={colors.primary} />
                 </View>

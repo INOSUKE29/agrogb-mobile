@@ -5,10 +5,10 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
 import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
-import { Card } from '../ui/components/Card';
 import { generateVendasPDF, generateEstoquePDF, generateColheitaPDF } from '../services/ReportService';
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
 import { executeQuery } from '../database/database';
+import GlowCard from '../ui/GlowCard';
 
 const { width } = Dimensions.get('window');
 
@@ -121,27 +121,43 @@ export default function RelatoriosScreen() {
         <AppContainer>
             <ScreenHeader title="INTELIGÊNCIA DE DADOS" onBack={() => navigation.goBack()} />
 
-            <View style={[styles.tabContainer, { borderBottomColor: colors.border }]}>
-                <TouchableOpacity onPress={() => setTab('DASHBOARD')} style={[styles.tab, tab === 'DASHBOARD' && { borderBottomColor: colors.primary, borderBottomWidth: 3 }]}>
-                    <Text style={[styles.tabText, { color: tab === 'DASHBOARD' ? colors.primary : colors.textMuted }]}>DASHBOARD</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setTab('PDF')} style={[styles.tab, tab === 'PDF' && { borderBottomColor: colors.primary, borderBottomWidth: 3 }]}>
-                    <Text style={[styles.tabText, { color: tab === 'PDF' ? colors.primary : colors.textMuted }]}>PDFS OFICIAIS</Text>
-                </TouchableOpacity>
+            <View style={[styles.segmentContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', borderColor: colors.border }]}>
+                {['DASHBOARD', 'PDF'].map(mode => (
+                    <TouchableOpacity
+                        key={mode}
+                        style={[
+                            styles.segmentBtn,
+                            tab === mode && {
+                                backgroundColor: colors.primary,
+                                shadowColor: colors.primary,
+                                shadowOpacity: 0.3, shadowRadius: 5, elevation: 5
+                            }
+                        ]}
+                        onPress={() => setTab(mode)}
+                    >
+                        <Text style={[
+                            styles.segmentText,
+                            { color: colors.textSecondary },
+                            tab === mode && { color: '#FFF' }
+                        ]}>
+                            {mode === 'PDF' ? 'PDFS OFICIAIS' : mode}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
             </View>
 
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
                 {tab === 'DASHBOARD' ? (
                     <View>
                         {!hasData && (
-                            <Card style={{ marginBottom: 20, padding: 20, backgroundColor: colors.primary + '10' }}>
+                            <GlowCard style={{ marginBottom: 20, padding: 20, backgroundColor: colors.primary + '10' }}>
                                 <Text style={{ color: colors.primary, fontWeight: 'bold', textAlign: 'center' }}>
                                     🚀 Comece a registrar suas atividades para visualizar as estatísticas aqui!
                                 </Text>
-                            </Card>
+                            </GlowCard>
                         )}
 
-                        <Card style={styles.chartCard}>
+                        <GlowCard style={styles.chartCard}>
                             <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>PRODUÇÃO ÚLTIMOS 7 DIAS (KG)</Text>
                             {prodSemanal.some(v => v > 0) ? (
                                 <LineChart
@@ -149,9 +165,9 @@ export default function RelatoriosScreen() {
                                     width={width - 40} height={200} chartConfig={chartConfig} bezier style={styles.chart}
                                 />
                             ) : <EmptyChart title="Produção" />}
-                        </Card>
+                        </GlowCard>
 
-                        <Card style={styles.chartCard}>
+                        <GlowCard style={styles.chartCard}>
                             <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>COMPARATIVO MENSAL (R$)</Text>
                             {finMensal.vendas > 0 || finMensal.custos > 0 ? (
                                 <BarChart
@@ -159,15 +175,15 @@ export default function RelatoriosScreen() {
                                     width={width - 40} height={200} chartConfig={chartConfig} style={styles.chart} yAxisLabel="R$"
                                 />
                             ) : <EmptyChart title="Financeiro" />}
-                        </Card>
+                        </GlowCard>
 
                         {custosCat.length > 0 ? (
-                            <Card style={styles.chartCard}>
+                            <GlowCard style={styles.chartCard}>
                                 <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>DISTRIBUIÇÃO DE CUSTOS</Text>
                                 <PieChart
                                     data={custosCat} width={width - 40} height={200} chartConfig={chartConfig} accessor="total" backgroundColor="transparent" paddingLeft="15" absolute
                                 />
-                            </Card>
+                            </GlowCard>
                         ) : null}
                     </View>
                 ) : (
@@ -190,12 +206,12 @@ export default function RelatoriosScreen() {
                             <Ionicons name="download-outline" size={20} color={colors.textMuted} style={{ marginLeft: 'auto' }} />
                         </TouchableOpacity>
 
-                        <Card style={{ padding: 20, marginTop: 10, borderStyle: 'dashed', borderWidth: 1 }}>
+                        <GlowCard style={{ padding: 20, marginTop: 10, borderStyle: 'dashed', borderWidth: 1.5 }}>
                             <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 }}>
                                 Os arquivos são gerados em formato PDF compatível com WhatsApp, E-mail e Impressão. 
                                 Certifique-se de que os dados foram sincronizados recentemente.
                             </Text>
-                        </Card>
+                        </GlowCard>
                     </View>
                 )}
                 <View style={{ height: 100 }} />
@@ -213,9 +229,9 @@ export default function RelatoriosScreen() {
 
 const styles = StyleSheet.create({
     container: { padding: 15 },
-    tabContainer: { flexDirection: 'row', height: 55, borderBottomWidth: 1 },
-    tab: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    tabText: { fontSize: 11, fontWeight: '900', letterSpacing: 1.2 },
+    segmentContainer: { flexDirection: 'row', gap: 8, margin: 15, padding: 6, borderRadius: 18, borderWidth: 1.5 },
+    segmentBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 14 },
+    segmentText: { fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
     chartCard: { padding: 15, marginBottom: 15, alignItems: 'center' },
     chartTitle: { fontSize: 11, fontWeight: '900', marginBottom: 20, alignSelf: 'flex-start', letterSpacing: 1 },
     chart: { borderRadius: 16, marginTop: 10 },

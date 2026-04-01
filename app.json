@@ -2,7 +2,7 @@
   "expo": {
     "name": "AgroGB Mobile",
     "slug": "agrogb-mobile",
-    "version": "1.1.0",
+    "version": "1.0.0",
     "scheme": "agrogb",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -32,7 +32,9 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.DETECT_SCREEN_CAPTURE"
+        "android.permission.DETECT_SCREEN_CAPTURE",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
       ]
     },
     "web": {
@@ -79,7 +81,8 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-local-authentication"
     ]
   }
 }

@@ -79,9 +79,22 @@ export default function CadastroScreen({ navigation }) {
     }, [navigation.getState()]);
 
     const up = (t, setter) => setter(t ? t.toUpperCase() : '');
-    const loadData = useCallback(async () => {
+    const loadData = useCallback(async (retries = 3) => {
         setLoading(true);
-        try { const data = await getCadastro(); setItems(data); } catch { } finally { setLoading(false); }
+        try { 
+            const data = await getCadastro(); 
+            setItems(data); 
+        } catch (error) {
+            console.error('[CadastroScreen] Erro ao carregar dados:', error);
+            if (retries > 0) {
+                if (__DEV__) console.log(`[CadastroScreen] Tentando carregar novamente... (${retries} restantes)`);
+                setTimeout(() => loadData(retries - 1), 1000);
+            } else {
+                Alert.alert('Erro de Conexão', 'O banco de dados está ocupado no momento. Por favor, tente novamente em alguns instantes.');
+            }
+        } finally { 
+            setLoading(false); 
+        }
     }, []);
 
     useEffect(() => {
@@ -151,14 +164,16 @@ export default function CadastroScreen({ navigation }) {
 
     const memoSections = useMemo(() => {
         const filtered = items.filter(it => {
+            if (!it || !it.nome) return false;
             const matchTermo = it.nome.toUpperCase().includes(termoBusca.toUpperCase()) || (it.codigo && it.codigo.toUpperCase().includes(termoBusca.toUpperCase()));
-            const matchCat = filtroCategoria === 'TODAS' || it.tipo.toUpperCase().includes(filtroCategoria);
+            const matchCat = filtroCategoria === 'TODAS' || (it.tipo && it.tipo.toUpperCase().includes(filtroCategoria));
             return matchTermo && matchCat;
         });
 
         const grouped = filtered.reduce((acc, item) => {
-            if (!acc[item.tipo]) acc[item.tipo] = { title: item.tipo, data: [] };
-            acc[item.tipo].data.push(item);
+            const tipo = item.tipo || 'OUTROS';
+            if (!acc[tipo]) acc[tipo] = { title: tipo, data: [] };
+            acc[tipo].data.push(item);
             return acc;
         }, {});
 
@@ -216,7 +231,7 @@ export default function CadastroScreen({ navigation }) {
             {loading ? <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 50 }} /> :
                 <SectionList
                     sections={memoSections}
-                    keyExtractor={item => item.id.toString()}
+                    keyExtractor={item => item.id?.toString() || item.uuid}
                     stickySectionHeadersEnabled={false}
                     initialNumToRender={10}
                     maxToRenderPerBatch={5}

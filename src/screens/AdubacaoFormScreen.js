@@ -3,7 +3,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Image, Mod
 import { Ionicons } from '@expo/vector-icons';
 import AgroInput from '../ui/components/AgroInput';
 import AgroButton from '../ui/components/AgroButton';
-import { insertPlanoAdubacao, updatePlanoAdubacao } from '../database/database';
+import { executeQuery } from '../database/database';
 import * as ImagePicker from 'expo-image-picker';
 import { v4 as uuidv4 } from 'uuid';
 import { useTheme } from '../theme/ThemeContext';
@@ -86,7 +86,7 @@ export default function AdubacaoFormScreen({ route, navigation }) {
             await savePlan(data);
             showToast('✅ Plano salvo com sucesso!');
             navigation.goBack();
-        } catch (error) {
+        } catch (_) {
             Alert.alert('Erro', 'Falha ao salvar plano.');
         }
     };

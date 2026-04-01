@@ -1,29 +1,54 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
 
 export const AppCard = ({ children, style, title, subtitle }) => {
-    const { colors } = useTheme();
+    const { colors, isDark } = useTheme();
 
     return (
-        <View style={[{
-            backgroundColor: colors.card,
-            borderRadius: 16,
-            padding: 16,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 3,
-            marginBottom: 16
-        }, style]}>
+        <View style={[
+            styles.card,
+            {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                shadowColor: isDark ? '#000' : colors.shadow,
+            },
+            style
+        ]}>
             {(title || subtitle) && (
-                <View style={{ marginBottom: 12 }}>
-                    {title && <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.textPrimary }}>{title}</Text>}
-                    {subtitle && <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 2 }}>{subtitle}</Text>}
+                <View style={styles.header}>
+                    {title && <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>}
+                    {subtitle && <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text>}
                 </View>
             )}
             {children}
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    card: {
+        borderRadius: 24, // Large, modern rounded corners
+        padding: 20,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 8,
+        marginBottom: 16,
+        borderWidth: 1.5, // Subtle border like premium dashboards
+    },
+    header: {
+        marginBottom: 16,
+    },
+    title: {
+        fontSize: 18,
+        fontWeight: '900',
+        letterSpacing: -0.5,
+    },
+    subtitle: {
+        fontSize: 12,
+        fontWeight: '700',
+        marginTop: 4,
+        letterSpacing: 0.5,
+    }
+});

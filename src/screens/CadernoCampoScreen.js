@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar as RNStatusBar, ActivityIndicator, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { executeQuery, insertCadernoNota } from '../database/database';
+import { executeQuery, insertCadernoNota, updateCadernoNota, deleteCadernoNota } from '../database/database';
 import { useTheme } from '../theme/ThemeContext';
 
 export default function CadernoCampoScreen({ navigation }) {
@@ -11,6 +11,7 @@ export default function CadernoCampoScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [notaTexto, setNotaTexto] = useState('');
+    const [editUuid, setEditUuid] = useState(null);
     const [filter, setFilter] = useState('TODOS');
 
     const FILTERS = ['TODOS', 'COLHEITA', 'VENDA', 'CUSTO', 'COMPRA', 'PLANTIO', 'ANOTAÇÃO'];
@@ -20,22 +21,22 @@ export default function CadernoCampoScreen({ navigation }) {
         try {
             // UNIFIED TIMELINE v8.5
             const query = `
-                SELECT 'COLHEITA' as tipo, data, cultura || ' - ' || produto || ' (' || quantidade || 'kg)' as descricao, observacao
+                SELECT 'COLHEITA' as tipo, uuid, data, cultura || ' - ' || produto || ' (' || quantidade || 'kg)' as descricao, observacao
                 FROM colheitas WHERE is_deleted = 0
                 UNION ALL
-                SELECT 'VENDA' as tipo, data, cliente || ' - ' || produto || ' (R$ ' || valor || ')' as descricao, observacao
+                SELECT 'VENDA' as tipo, uuid, data, cliente || ' - ' || produto || ' (R$ ' || valor || ')' as descricao, observacao
                 FROM vendas WHERE is_deleted = 0
                 UNION ALL
-                SELECT 'CUSTO' as tipo, data, tipo || ' - ' || produto || ' (R$ ' || valor_total || ')' as descricao, observacao
+                SELECT 'CUSTO' as tipo, uuid, data, tipo || ' - ' || produto || ' (R$ ' || valor_total || ')' as descricao, observacao
                 FROM custos WHERE is_deleted = 0
                 UNION ALL
-                SELECT 'COMPRA' as tipo, data, item || ' (R$ ' || valor || ')' as descricao, observacao
+                SELECT 'COMPRA' as tipo, uuid, data, item || ' (R$ ' || valor || ')' as descricao, observacao
                 FROM compras WHERE is_deleted = 0
                 UNION ALL
-                SELECT 'PLANTIO' as tipo, data, cultura || ' (' || quantidade_pes || ' area/pes)' as descricao, observacao
+                SELECT 'PLANTIO' as tipo, uuid, data, cultura || ' (' || quantidade_pes || ' area/pes)' as descricao, observacao
                 FROM plantio WHERE is_deleted = 0
                 UNION ALL
-                SELECT 'ANOTAÇÃO' as tipo, data, 'Nota Manual' as descricao, observacao
+                SELECT 'ANOTAÇÃO' as tipo, uuid, data, 'Nota Manual' as descricao, observacao
                 FROM caderno_notas WHERE is_deleted = 0
                 ORDER BY data DESC
                 LIMIT 50
@@ -76,16 +77,66 @@ export default function CadernoCampoScreen({ navigation }) {
             return;
         }
         try {
-            await insertCadernoNota({
-                observacao: notaTexto.trim(),
-                data: new Date().toISOString()
-            });
+            if (editUuid) {
+                await updateCadernoNota(editUuid, notaTexto.trim());
+            } else {
+                await insertCadernoNota({
+                    observacao: notaTexto.trim(),
+                    data: new Date().toISOString()
+                });
+            }
             setNotaTexto('');
+            setEditUuid(null);
             setModalVisible(false);
             loadTimeline();
         } catch (e) {
             console.error(e);
             Alert.alert('Erro', 'Não foi possível salvar a anotação.');
+        }
+    };
+
+    const handleDelete = async (item) => {
+        Alert.alert(
+            'Excluir Registro',
+            `Deseja realmente excluir este registro de ${item.tipo}?`,
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                { 
+                    text: 'EXCLUIR', 
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const tableMap = {
+                                'COLHEITA': 'colheitas',
+                                'VENDA': 'vendas',
+                                'CUSTO': 'custos',
+                                'COMPRA': 'compras',
+                                'PLANTIO': 'plantio',
+                                'ANOTAÇÃO': 'caderno_notas'
+                            };
+                            const tableName = tableMap[item.tipo];
+                            if (item.tipo === 'ANOTAÇÃO') {
+                                await deleteCadernoNota(item.uuid);
+                            } else {
+                                await executeQuery(`UPDATE ${tableName} SET is_deleted = 1, sync_status = 0 WHERE uuid = ?`, [item.uuid]);
+                            }
+                            loadTimeline();
+                        } catch (e) {
+                            Alert.alert('Erro', 'Falha ao excluir registro.');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleEdit = (item) => {
+        if (item.tipo === 'ANOTAÇÃO') {
+            setEditUuid(item.uuid);
+            setNotaTexto(item.observacao);
+            setModalVisible(true);
+        } else {
+            Alert.alert('Aviso', 'A edição de movimentações diretas será liberada na Camada 2. Por enquanto, exclua e crie uma nova para corrigir.');
         }
     };
 
@@ -157,6 +208,14 @@ export default function CadernoCampoScreen({ navigation }) {
                                                     <Text style={[styles.tipoBadge, { color: iconCfg.color }]}>
                                                         {iconCfg.emoji} {item.tipo}
                                                     </Text>
+                                                    <View style={styles.cardActions}>
+                                                        <TouchableOpacity onPress={() => handleEdit(item)} style={styles.actionIcon}>
+                                                            <Ionicons name="pencil" size={16} color={colors.textSecondary} />
+                                                        </TouchableOpacity>
+                                                        <TouchableOpacity onPress={() => handleDelete(item)} style={styles.actionIcon}>
+                                                            <Ionicons name="trash" size={16} color={colors.danger} />
+                                                        </TouchableOpacity>
+                                                    </View>
                                                 </View>
                                                 <Text style={[styles.descText, { color: colors.textPrimary }]}>{item.descricao}</Text>
                                                 {item.observacao ? (
@@ -180,8 +239,8 @@ export default function CadernoCampoScreen({ navigation }) {
                 <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
                     <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Anotação de Campo</Text>
-                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{editUuid ? 'Editar Anotação' : 'Anotação de Campo'}</Text>
+                            <TouchableOpacity onPress={() => { setModalVisible(false); setEditUuid(null); setNotaTexto(''); }}>
                                 <Ionicons name="close" size={24} color={colors.textSecondary} />
                             </TouchableOpacity>
                         </View>
@@ -229,7 +288,9 @@ const styles = StyleSheet.create({
     timelineContent: { flex: 1, paddingBottom: 25 },
     dateText: { fontSize: 12, fontWeight: 'bold', color: '#6B7280', marginBottom: 8 },
     card: { backgroundColor: '#FFF', borderRadius: 12, padding: 15, elevation: 1, borderWidth: 1, borderColor: '#F3F4F6' },
-    cardTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 },
+    cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
+    cardActions: { flexDirection: 'row', gap: 15 },
+    actionIcon: { padding: 5 },
     tipoBadge: { fontSize: 10, fontWeight: 'bold', letterSpacing: 0.5 },
     descText: { fontSize: 15, color: '#1F2937', fontWeight: '500' },
     obsText: { fontSize: 13, color: '#6B7280', marginTop: 8, fontStyle: 'italic', backgroundColor: '#F9FAFB', padding: 8, borderRadius: 6 },

@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
-import { insertCompra, getCadastro, getComprasRecentes, updateCompra, deleteCompra, insertCadastro as insertCadastros } from '../database/database';
+import { getCadastro, getComprasRecentes, updateCompra, deleteCompra, insertCadastro as insertCadastros } from '../database/database';
+import { FinanceService } from '../modules/finance/services/FinanceService';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
@@ -123,11 +124,11 @@ export default function ComprasScreen({ navigation }) {
 
         try {
             if (editingUuid) {
-                await updateCompra(editingUuid, dados);
+                await updateCompra(editingUuid, { ...dados, pago: true }); // Mock pago para update legado
                 showToast('Compra atualizada!');
                 setEditingUuid(null);
             } else {
-                await insertCompra(dados);
+                await FinanceService.recordPurchase({ ...dados, pago: true });
                 showToast('Entrada registrada!');
             }
 

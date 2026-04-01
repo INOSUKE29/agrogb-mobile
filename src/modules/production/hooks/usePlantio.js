@@ -17,7 +17,7 @@ export function usePlantio() {
         try {
             const data = await PlantioService.getHistory();
             setHistory(data);
-        } catch (e) {
+        } catch (_) {
             showToast('Erro ao carregar histórico de plantio');
         } finally {
             setLoading(false);
@@ -53,7 +53,7 @@ export function usePlantio() {
             await PlantioService.deletePlanting(uuid);
             showToast('Registro removido');
             await loadHistory();
-        } catch (error) {
+        } catch (_) {
             showToast('Erro ao excluir registro');
         }
     };

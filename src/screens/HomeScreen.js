@@ -12,6 +12,7 @@ import WeatherWidget from '../ui/WeatherWidget';
 import SidebarDrawer from '../ui/SidebarDrawer';
 import { MetricCard } from '../ui/components/MetricCard';
 import QuickAction from '../ui/components/QuickAction';
+import AnalyticsDashboard from '../ui/components/AnalyticsDashboard';
 
 const { width } = Dimensions.get('window');
 const isSmallDevice = width < 375;
@@ -26,6 +27,7 @@ export default function HomeScreen({ navigation }) {
         vendasMes: 0,
         vendasHoje: 0,
         perdasMes: 0,
+        performanceData: [], // Dashboard v1.1
     });
     const [userProfile, setUserProfile] = useState({ name: 'Produtor AgroGB' });
     const [loadingStats, setLoadingStats] = useState(false);
@@ -56,40 +58,40 @@ export default function HomeScreen({ navigation }) {
 
     const categories = [
         {
-            title: 'Gestão Operacional',
+            title: 'GESTÃO OPERACIONAL',
             color: colors.primary,
             actions: [
-                { id: 'caderno', label: 'Caderno', icon: 'book', route: 'CadernoCampo' },
-                { id: 'colheita', label: 'Colheita', icon: 'leaf', route: 'Colheita' },
-                { id: 'plantio', label: 'Plantio', icon: 'rose-outline', route: 'Plantio' },
-                { id: 'monitorar', label: 'Monitorar', icon: 'eye-outline', route: 'Monitoramento' },
-                { id: 'estoque', label: 'Estoque', icon: 'cube', route: 'Estoque' },
-                { id: 'cadastro', label: 'Cadastros', icon: 'list-circle-outline', route: 'MenuCadastros' },
-                { id: 'adubacao', label: 'Adubação', icon: 'flask', route: 'AdubacaoList' },
+                { id: 'plantio', label: 'Plantio', icon: 'analytics', route: 'Plantio', color: '#10B981' },
+                { id: 'monitoramento', label: 'Monitoramento', icon: 'camera', route: 'Monitoramento', color: '#10B981' },
+                { id: 'colheita', label: 'Colheita', icon: 'leaf', route: 'Colheita', color: '#10B981' },
+                { id: 'adubacao', label: 'Adubação', icon: 'flask', route: 'AdubacaoList', color: '#10B981' },
+                { id: 'estoque', label: 'Estoque', icon: 'cube', route: 'Estoque', color: '#10B981' },
+                { id: 'caderno', label: 'Caderno', icon: 'book', route: 'CadernoCampo', color: '#10B981' },
             ]
         },
         {
-            title: 'Comercial & Vendas',
+            title: 'COMERCIAL & FINANCEIRO',
             color: '#3B82F6',
             actions: [
-                { id: 'vendas', label: 'Vendas', icon: 'cart', route: 'Vendas' },
-                { id: 'compras', label: 'Compras', icon: 'basket', route: 'Compras' },
-                { id: 'custos', label: 'Custos', icon: 'wallet-outline', route: 'Custos' },
-                { id: 'clientes', label: 'Clientes', icon: 'people', route: 'Clientes' },
-                { id: 'encomendas', label: 'Encomendas', icon: 'gift-outline', route: 'Encomendas' },
-                { id: 'relatorios', label: 'Relatórios', icon: 'bar-chart', route: 'Relatorios' },
+                { id: 'vendas', label: 'Vendas', icon: 'cart', route: 'Vendas', color: '#3B82F6' },
+                { id: 'compras', label: 'Compras', icon: 'basket', route: 'Compras', color: '#3B82F6' },
+                { id: 'custos', label: 'Custos', icon: 'wallet', route: 'Custos', color: '#EF4444' },
+                { id: 'contas', label: 'Contas', icon: 'cash', route: 'FinancialAccounts', color: '#10B981', prefix: '$' },
+                { id: 'clientes', label: 'Clientes', icon: 'people', route: 'Clientes', color: '#6366F1' },
+                { id: 'encomendas', label: 'Encomendas', icon: 'gift', route: 'Encomendas', color: '#14B8A6' },
+                { id: 'relatorios', label: 'Relatórios', icon: 'bar-chart', route: 'Relatorios', color: '#3B82F6' },
             ]
         },
         {
-            title: 'Sistema & Frota',
-            color: '#6366F1',
+            title: 'SISTEMA',
+            color: '#94A3B8',
             actions: [
-                { id: 'frota', label: 'Frota', icon: 'bus-outline', route: 'Frota' },
-                { id: 'ocr', label: 'Scanner', icon: 'camera', route: 'Scanner' },
-                { id: 'culturas', label: 'Culturas', icon: 'map-outline', route: 'Culturas' },
-                { id: 'usuarios', label: 'Equipe', icon: 'people-circle-outline', route: 'Usuarios' },
-                { id: 'sync', label: 'Sincronizar', icon: 'sync', route: 'Sync' },
-                { id: 'perfil', label: 'Ajustes', icon: 'settings-outline', route: 'Profile' },
+                { id: 'cadastros', label: 'Cadastros', icon: 'list-circle', route: 'MenuCadastros', color: '#94A3B8' },
+                { id: 'culturas', label: 'Culturas', icon: 'flower', route: 'Culturas', color: '#94A3B8' },
+                { id: 'equipe', label: 'Equipe', icon: 'people-circle', route: 'Usuarios', color: '#94A3B8' },
+                { id: 'frota', label: 'Frota', icon: 'bus', route: 'Frota', color: '#64748B' },
+                { id: 'sync', label: 'Sincronização', icon: 'refresh-circle', route: 'Sync', color: '#3B82F6' },
+                { id: 'config', label: 'Ajustes', icon: 'settings', route: 'Profile', color: '#94A3B8' },
             ]
         }
     ];
@@ -112,68 +114,18 @@ export default function HomeScreen({ navigation }) {
                 </View>
 
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+                    {/* NEW DIAMOND PRO DASHBOARD HEADER */}
+                    <AnalyticsDashboard 
+                        productivityData={stats.performanceData}
+                        financialData={{
+                            receita: stats.vendasMes,
+                            despesa: stats.custosMes
+                        }}
+                    />
 
-                    {/* WEATHER BADGE (FLOATING STYLE) */}
-                    <View style={styles.weatherWrapper}>
-                        <WeatherWidget />
-                    </View>
-
-                    {/* FINANCIAL COMMAND CENTER */}
-                    <View style={[styles.financialCard, { backgroundColor: isDark ? '#1E293B' : colors.primary }]}>
-                        <View style={styles.finHeader}>
-                            <Text style={styles.finTitle}>RESUMO MENSAL</Text>
-                            <Ionicons name="stats-chart" size={16} color="rgba(255,255,255,0.6)" />
-                        </View>
-
-                        <View style={styles.finRow}>
-                            <View style={styles.finItem}>
-                                <View style={styles.finLabelRow}>
-                                    <View style={styles.finDot} />
-                                    <Text style={styles.finLabel}>TOTAL VENDAS</Text>
-                                </View>
-                                <Text style={styles.finValue}>{formatBRL(stats.vendasMes)}</Text>
-                            </View>
-
-                            <View style={[styles.finDivider, { backgroundColor: 'rgba(255,255,255,0.15)' }]} />
-
-                            <View style={styles.finItem}>
-                                <View style={styles.finLabelRow}>
-                                    <View style={[styles.finDot, { backgroundColor: '#F87171' }]} />
-                                    <Text style={styles.finLabel}>CUSTOS TOTAIS</Text>
-                                </View>
-                                <Text style={[styles.finValue, { color: '#FEE2E2' }]}>{formatBRL(stats.custosMes)}</Text>
-                            </View>
-                        </View>
-                        
-                        <View style={[styles.finDividerHoriz, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
-                        
-                        <View style={styles.finRowFooter}>
-                            <Text style={styles.finMiniLabel}>PERDAS (MES): </Text>
-                            <Text style={styles.finMiniValue}>{stats.perdasMes} KG</Text>
-                        </View>
-                    </View>
-
-                    {/* QUICK METRICS GRID */}
-                    <View style={styles.metricsGrid}>
-                        <MetricCard
-                            icon="leaf"
-                            label="PRODUÇÃO"
-                            value={`${stats.colheitaHoje}kg`}
-                            color={colors.primary}
-                        />
-                        <MetricCard
-                            icon="wallet"
-                            label="SALDO"
-                            value={formatBRL(stats.saldo)}
-                            color="#10B981"
-                        />
-                        <MetricCard
-                            icon="trending-up"
-                            label="RESULTADO"
-                            value="82%"
-                            color="#F59E0B"
-                        />
-                    </View>
+                    {/* FINANCIAL & PERFORMANCE SUMMARY (TRANSITIONED TO DASHBOARD) */}
+                    {/* Mantemos apenas os métricas rápidas que não estão no dashboard principal se necessário,
+                        mas para estética limpa, vamos focar nos QuickActions logo abaixo agora. */}
 
                     {/* CATEGORIZED ACTIONS */}
                     {categories.map((cat, idx) => (
@@ -188,7 +140,8 @@ export default function HomeScreen({ navigation }) {
                                         key={action.id}
                                         icon={action.icon}
                                         label={action.label}
-                                        color={cat.color}
+                                        color={action.color}
+                                        prefix={action.prefix}
                                         onPress={() => navigation.navigate(action.route)}
                                     />
                                 ))}
@@ -202,7 +155,7 @@ export default function HomeScreen({ navigation }) {
 
             {/* BOTTOM TOOLBAR */}
             <View style={[styles.bottomBar, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-                <TouchableOpacity style={styles.tabBtn} onPress={() => navigation.navigate('Home')}>
+                <TouchableOpacity style={styles.tabBtn} onPress={() => navigation.navigate('Dashboard')}>
                     <Ionicons name="home" size={24} color={colors.primary} />
                     <Text style={[styles.tabText, { color: colors.primary }]}>Home</Text>
                 </TouchableOpacity>
@@ -225,28 +178,16 @@ export default function HomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
+    scrollContent: { paddingBottom: 100 },
     topHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: scale(20),
-        paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight || 0) + scale(10) : scale(15),
-        paddingBottom: scale(10),
+        paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight || 0) + scale(10) : scale(50), // Ajustado para não sobrepor relógio
+        paddingBottom: scale(15),
+        zIndex: 10,
+        backgroundColor: 'transparent'
     },
-    greeting: { fontSize: scale(12), fontWeight: '700', textTransform: 'uppercase', opacity: 0.6 },
-    userName: { fontSize: scale(20), fontWeight: '900', marginTop: 2 },
-    menuToggle: {
-        width: scale(48),
-        height: scale(48),
-        borderRadius: 15,
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3
-    },
-    scrollContent: { paddingHorizontal: scale(20) },
     weatherWrapper: {
         marginBottom: scale(20),
         borderRadius: 24,

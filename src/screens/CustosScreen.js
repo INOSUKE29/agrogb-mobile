@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator } from 'react-native';
 
-import { insertCost, getCostCategories, insertCostCategory, executeQuery } from '../database/database';
+import { getCostCategories, insertCostCategory, executeQuery } from '../database/database';
+import { FinanceService } from '../modules/finance/services/FinanceService';
 import { Ionicons } from '@expo/vector-icons';
 import { showToast } from '../ui/Toast';
 import { useTheme } from '../theme/ThemeContext';
@@ -80,9 +81,13 @@ export default function CustosScreen({ navigation }) {
             quantity: parseFloat(quantidade) || 0,
             unit_value: parseFloat(valorUnitario) || 0,
             notes: observacao.toUpperCase(),
+            produto: categoria.name, // Usando nome da categoria como produto para o financeiro
+            tipo: categoria.type || 'GERAL',
+            data: new Date().toISOString().split('T')[0],
+            pago: true // Assumindo pago no MVP de custos
         };
         try {
-            await insertCost(dados);
+            await FinanceService.recordCost(dados);
             showToast('Despesa registrada com sucesso!');
             navigation.goBack();
         } catch { Alert.alert('Erro', 'Não foi possível registrar o custo.'); }

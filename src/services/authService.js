@@ -1,22 +1,43 @@
 import * as SecureStore from 'expo-secure-store';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { supabase } from './supabaseClient';
 import { executeQuery } from '../database/database';
+
+/**
+ * Auxiliar para Timeout de Promessa (v1.1.4+)
+ */
+const promiseWithTimeout = (promise, ms, message) => {
+    const timeout = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error(message)), ms);
+    });
+    return Promise.race([promise, timeout]);
+};
 
 // --- STORAGE HELPERS ---
 const safeSave = async (key, value) => {
     try {
-        await SecureStore.setItemAsync(key, JSON.stringify(value));
+        // v1.1.4: Timeout de 5s no SecureStore para evitar hangs nativos
+        await promiseWithTimeout(
+            SecureStore.setItemAsync(key, JSON.stringify(value)),
+            5000,
+            "Erro ao persistir dados locais."
+        );
     } catch (e) {
-        if (__DEV__) console.error("SECURE_STORAGE_SAVE_ERROR:", e);
+        if (__DEV__) console.error(`[AuthService] SECURE_STORAGE_SAVE_ERROR (${key}):`, e.message);
     }
 };
 
 const safeGet = async (key) => {
     try {
-        const data = await SecureStore.getItemAsync(key);
+        // v1.1.4: Timeout de 5s no SecureStore
+        const data = await promiseWithTimeout(
+            SecureStore.getItemAsync(key),
+            5000,
+            "Erro ao recuperar dados locais."
+        );
         return data ? JSON.parse(data) : null;
     } catch (e) {
-        if (__DEV__) console.error("SECURE_STORAGE_GET_ERROR:", e);
+        if (__DEV__) console.error(`[AuthService] SECURE_STORAGE_GET_ERROR (${key}):`, e.message);
         return null;
     }
 };
@@ -104,36 +125,39 @@ export const login = async (email, password) => {
         if (__DEV__) console.log('[AuthService] Salvando sessão no SecureStore...');
         await safeSave('@user_session', session);
 
-        // 3. Busca Perfil do Usuário com Fail-Safe (Padrão Pro)
-        if (__DEV__) console.log('[AuthService] Buscando perfil user_profiles no Supabase...');
-        try {
-            const { data: profile, error: profileError } = await promiseWithTimeout(
-                supabase.from('user_profiles').select('*').eq('id', data.user.id).single(),
-                10000,
-                "Busca de perfil excedeu tempo limite."
-            );
-
+        // 3. Busca Perfil do Usuário (v1.1.4: Background / Non-blocking)
+        if (__DEV__) console.log('[AuthService] Iniciando busca de perfil em background...');
+        
+        // Chamada sem 'await' intencional para não bloquear a entrada na Home
+        promiseWithTimeout(
+            supabase.from('user_profiles').select('*').eq('id', data.user.id).single(),
+            10000,
+            "Background: Busca de perfil excedeu tempo limite."
+        ).then(async ({ data: profile, error: profileError }) => {
             if (!profileError && profile) {
-                if (__DEV__) console.log('[AuthService] Perfil encontrado, sincronizando SQLite...');
+                if (__DEV__) console.log('[AuthService] Perfil sincronizado em background.');
                 await executeQuery(
                     `INSERT OR REPLACE INTO user_profiles (id, email, name, last_updated, sync_status) VALUES (?, ?, ?, ?, ?)`,
                     [profile.id, profile.email, profile.name, new Date().toISOString(), 'synced']
-                );
-            } else {
-                if (__DEV__) console.warn('[AuthService] Perfil não retornado (possível RLS ou não criado):', profileError);
+                ).catch(e => console.warn('[AuthService] Erro ao gravar perfil SQLite:', e.message));
             }
-        } catch (err) {
-            if (__DEV__) console.warn('[AuthService] Fallback: Perfil não disponível via rede, ignorando para evitar trava.', err.message);
-        }
+        }).catch(err => {
+            if (__DEV__) console.warn('[AuthService] Profile Sync Background failed:', err.message);
+        });
 
-        // 4. Garante registro no v2_produtores (Legado/Compatibilidade)
-        const localCheck = await executeQuery(`SELECT id FROM v2_produtores WHERE id = ?`, [data.user.id]);
-        if (localCheck.rows.length === 0) {
-            await executeQuery(
-                `INSERT INTO v2_produtores (id, email, sync_status) VALUES (?, ?, ?)`,
-                [data.user.id, data.user.email, 'synced']
-            );
-        }
+        // 4. Garante registro no v2_produtores (Legado/Background)
+        executeQuery(`SELECT id FROM v2_produtores WHERE id = ?`, [data.user.id])
+          .then(async (localCheck) => {
+            if (localCheck.rows.length === 0) {
+                await executeQuery(
+                    `INSERT INTO v2_produtores (id, email, sync_status) VALUES (?, ?, ?)`,
+                    [data.user.id, data.user.email, 'synced']
+                );
+            }
+          }).catch(e => console.warn('[AuthService] sync v2_produtores failed:', e.message));
+
+        // 5. NOVO: Salva credenciais para Biometria (v1.1.2)
+        await safeSave('@user_credentials', { email, password });
 
         if (__DEV__) console.log('[AuthService] Login concluído com sucesso.');
         return { success: true, user: data.user };
@@ -145,17 +169,85 @@ export const login = async (email, password) => {
 };
 
 /**
- * Auxiliar para Timeout de Promessa
+ * Autenticação por Biometria (Digital/Face)
  */
-const promiseWithTimeout = (promise, ms, message) => {
-    const timeout = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error(message)), ms);
-    });
-    return Promise.race([promise, timeout]);
+export const loginWithBiometrics = async () => {
+    try {
+        // 1. Verifica se o hardware suporta
+        const compatible = await LocalAuthentication.hasHardwareAsync();
+        if (!compatible) throw new Error('Hardware de biometria não encontrado');
+
+        const enrolled = await LocalAuthentication.isEnrolledAsync();
+        if (!enrolled) throw new Error('Nenhuma biometria cadastrada no dispositivo');
+
+        // 2. Solicita Autenticação
+        const result = await LocalAuthentication.authenticateAsync({
+            promptMessage: 'Acesse o AgroGB com sua Digital',
+            fallbackLabel: 'Usar Senha',
+            disableDeviceFallback: false,
+        });
+
+        if (!result.success) return { success: false, message: 'Autenticação biométrica falhou' };
+
+        // 3. Recupera credenciais salvas
+        const creds = await safeGet('@user_credentials');
+        if (!creds || !creds.email || !creds.password) {
+            return { success: false, message: 'Por favor, faça login com senha uma vez antes de usar biometria.' };
+        }
+
+        // 4. Executa Login real (em background)
+        return await login(creds.email, creds.password);
+
+    } catch (e) {
+        if (__DEV__) console.error("BIOMETRIC_LOGIN_ERROR:", e.message);
+        return { success: false, message: e.message };
+    }
 };
 
+// Mover promiseWithTimeout para cima (v1.1.5)
+
 const checkSession = async () => {
-    return await safeGet("@user_session");
+    try {
+        // 1. Tenta recuperar sessão local do SecureStore
+        const localSession = await safeGet("@user_session");
+        
+        // 2. Sincroniza com Supabase Auth (Garante que o token não expirou)
+        const sessionResult = await promiseWithTimeout(
+            supabase.auth.getSession(),
+            10000,
+            "Timeout ao verificar sessão no servidor."
+        );
+        const { data: { session }, error } = sessionResult;
+        
+        if (error || !session) {
+            if (localSession) {
+                if (__DEV__) console.log('[AuthService] Sessão local expirada ou inválida no Supabase. Limpando...');
+                await safeRemove("@user_session");
+            }
+            return null;
+        }
+
+        // 3. Se temos sessão no Supabase mas não local (ou vice-versa), harmoniza
+        if (!localSession || localSession.userId !== session.user.id) {
+            const newSession = {
+                userId: session.user.id,
+                email: session.user.email,
+                token: session.access_token
+            };
+            await safeSave('@user_session', newSession);
+            return newSession;
+        }
+
+        return localSession;
+    } catch (e) {
+        if (__DEV__) console.error('[AuthService] Erro crítico no checkSession (Timeout/Rede):', e.message);
+        const localSession = await safeGet("@user_session");
+        if (localSession) {
+            if (__DEV__) console.log('[AuthService] Salvando sessão com base no cache local (Modo Offline).');
+            return localSession;
+        }
+        return null;
+    }
 };
 
 export const logout = async () => {
@@ -181,6 +273,7 @@ const requestPasswordReset = async (email) => {
 export const AuthService = {
     register,
     login,
+    loginWithBiometrics,
     logout,
     checkSession,
     requestPasswordReset

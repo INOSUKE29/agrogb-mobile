@@ -26,7 +26,7 @@ export default function AgroInput({
         ? colors.danger
         : isFocused
             ? colors.primary
-            : colors.glassBorder;
+            : colors.border; // Use standard border for non-focused
 
     return (
         <View style={[styles.container, style]}>
@@ -37,8 +37,9 @@ export default function AgroInput({
                     styles.input,
                     {
                         borderColor: borderColor,
-                        backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : colors.surface,
-                        color: colors.text
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9', // Softer background
+                        color: colors.text,
+                        borderWidth: isFocused ? 2 : 1.5,
                     }
                 ]}
                 value={value}

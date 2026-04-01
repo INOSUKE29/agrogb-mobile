@@ -45,20 +45,25 @@ export default function AgroButton({
                 {
                     backgroundColor: bg,
                     borderColor: border,
-                    borderWidth: variant === 'secondary' ? 1 : 0,
-                    shadowColor: colors.primary,
+                    borderWidth: variant === 'secondary' ? 1.5 : 0,
+                    // Modern shadow for primary buttons
+                    shadowColor: variant === 'primary' ? colors.primary : colors.shadow,
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: isDark ? 0.3 : 0.1,
+                    shadowRadius: 8,
+                    elevation: variant === 'primary' ? 4 : 0,
                 },
                 style
             ]}
             onPress={onPress}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
             disabled={disabled || loading}
         >
             {loading ? (
-                <ActivityIndicator color={txt} />
+                <ActivityIndicator color={txt} size="small" />
             ) : (
                 <Text style={[styles.text, { color: txt }]}>
-                    {displayTitle.toUpperCase()}
+                    {displayTitle}
                 </Text>
             )}
         </TouchableOpacity>
@@ -75,8 +80,8 @@ const styles = StyleSheet.create({
         marginVertical: SPACING.sm,
     },
     text: {
-        fontSize: TYPOGRAPHY.size.sm,
-        fontWeight: TYPOGRAPHY.weight.black,
-        letterSpacing: 1.5,
+        fontSize: 16,
+        fontWeight: 'bold',
+        letterSpacing: 0.5,
     }
 });

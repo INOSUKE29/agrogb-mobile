@@ -67,7 +67,7 @@ class ErrorBoundary extends React.Component {
                             <Text style={styles.secondaryText}>Enviar Relatório de Erro</Text>
                         </TouchableOpacity>
 
-                        <Text style={styles.footer}>AgroGB v8.5.0 • Sistema de Monitoramento Ativo</Text>
+                        <Text style={styles.footer}>AgroGB v1.0 • Sistema de Monitoramento Ativo</Text>
                     </View>
                 </View>
             );

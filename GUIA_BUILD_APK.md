@@ -46,16 +46,10 @@ eas build:configure
 Responda:
 - "Would you like to automatically create an EAS project?" → **Yes**
 
-### 6. Iniciar o Build do APK
+### 6. Localizar o APK (Caminho Oficial)
 
-```bash
-eas build --platform android --profile preview
-```
-
-**O que vai acontecer:**
-1. O Expo vai fazer upload do código
-2. Build será executado na nuvem (5-10 minutos)
-3. Você receberá um link para download do APK
+Após o sucesso do comando, o seu instalador estará sempre em:
+`C:\Users\Bruno\Documents\AgroGB\mobile_app\android\app\build\outputs\apk\release\app-release.apk`
 
 ### 7. Baixar o APK
 

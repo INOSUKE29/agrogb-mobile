@@ -112,20 +112,18 @@ export const DashboardService = {
         return total;
     },
 
-    /**
-     * Obtém o perfil do usuário logado (SQLite Paridade PRO)
-     */
     getUserProfile: async () => {
         try {
+            // 1. Tenta buscar da tabela principal de usuários (v1.0.1 fix)
+            const resUser = await executeQuery('SELECT nome_completo as name FROM usuarios WHERE nome_completo IS NOT NULL LIMIT 1');
+            if (resUser.rows.length > 0) {
+                return resUser.rows.item(0);
+            }
+
+            // 2. Fallback para user_profiles
             const res = await executeQuery('SELECT name FROM user_profiles LIMIT 1');
             if (res.rows.length > 0) {
                 return res.rows.item(0);
-            }
-
-            // Fallback para v2_produtores (Legado)
-            const resLegado = await executeQuery('SELECT nome as name FROM v2_produtores LIMIT 1');
-            if (resLegado.rows.length > 0) {
-                return resLegado.rows.item(0);
             }
 
             return { name: 'Produtor AgroGB' };
