@@ -101,24 +101,6 @@ $$;
 ALTER FUNCTION "public"."apply_fertilization_v2"("p_plano_uuid" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."fill_text_uuid"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public', 'pg_catalog'
-    AS $$
-BEGIN
-  IF TG_OP = 'INSERT' THEN
-    IF NEW.uuid IS NULL OR NEW.uuid = '' THEN
-      NEW.uuid := (public.uuid_generate_v4())::text;
-    END IF;
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."fill_text_uuid"() OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."get_my_financial_summary"() RETURNS TABLE("faturamento" numeric, "custos" numeric, "resultado_liquido" numeric, "margem_percentual" numeric)
     LANGUAGE "sql" SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'
@@ -158,11 +140,15 @@ ALTER FUNCTION "public"."get_table_pkey_cols"("p_table" "text") OWNER TO "postgr
 
 CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
     AS $$
 BEGIN
-  INSERT INTO public.user_profiles (id, email, name)
-  VALUES (new.id, new.email, new.raw_user_meta_data->>'name');
+  INSERT INTO public.user_profiles (id, name, email, role)
+  VALUES (
+    new.id, 
+    new.raw_user_meta_data->>'full_name', 
+    new.email, 
+    'PRODUTOR' -- Define um cargo padrão
+  );
   RETURN new;
 END;
 $$;
@@ -437,7 +423,7 @@ ALTER TABLE "public"."areas" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."cadastro" (
-    "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "uuid" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid",
     "nome" "text" NOT NULL,
     "unidade" "text",
@@ -499,7 +485,7 @@ CREATE TABLE IF NOT EXISTS "public"."clientes" (
     "observacoes" "text",
     "created_at" timestamp without time zone DEFAULT "now"(),
     "last_updated" timestamp without time zone DEFAULT "now"(),
-    "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"(),
+    "uuid" "uuid" DEFAULT "gen_random_uuid"(),
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
@@ -612,7 +598,7 @@ ALTER TABLE "public"."culturas" OWNER TO "postgres";
 
 CREATE TABLE IF NOT EXISTS "public"."custos" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"(),
+    "uuid" "uuid" DEFAULT "gen_random_uuid"(),
     "produto" "text",
     "tipo" "text",
     "quantidade" numeric,
@@ -735,6 +721,44 @@ CREATE TABLE IF NOT EXISTS "public"."fertilization_recipes" (
 
 
 ALTER TABLE "public"."fertilization_recipes" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."financial_accounts" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid",
+    "type" "text",
+    "description" "text" NOT NULL,
+    "category" "text",
+    "total_amount" numeric(15,2) DEFAULT 0,
+    "due_date" "date",
+    "status" "text" DEFAULT 'pendente'::"text",
+    "payment_method" "text",
+    "origin_uuid" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "last_updated" timestamp with time zone DEFAULT "now"(),
+    "is_deleted" boolean DEFAULT false,
+    CONSTRAINT "financial_accounts_status_check" CHECK (("status" = ANY (ARRAY['pendente'::"text", 'pago'::"text", 'vencido'::"text"]))),
+    CONSTRAINT "financial_accounts_type_check" CHECK (("type" = ANY (ARRAY['PAGAR'::"text", 'RECEBER'::"text"])))
+);
+
+
+ALTER TABLE "public"."financial_accounts" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."financial_installments" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "account_id" "uuid",
+    "installment_number" integer NOT NULL,
+    "value" numeric(15,2) NOT NULL,
+    "due_date" "date" NOT NULL,
+    "status" "text" DEFAULT 'pendente'::"text",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "last_updated" timestamp with time zone DEFAULT "now"(),
+    "is_deleted" boolean DEFAULT false
+);
+
+
+ALTER TABLE "public"."financial_installments" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."movimentacoes_financeiras" (
@@ -1384,7 +1408,7 @@ CREATE TABLE IF NOT EXISTS "public"."vendas" (
     "data_venda" "date",
     "created_at" timestamp without time zone DEFAULT "now"(),
     "last_updated" timestamp without time zone DEFAULT "now"(),
-    "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"(),
+    "uuid" "uuid" DEFAULT "gen_random_uuid"(),
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
@@ -1616,6 +1640,16 @@ ALTER TABLE ONLY "public"."fertilization_items"
 
 ALTER TABLE ONLY "public"."fertilization_recipes"
     ADD CONSTRAINT "fertilization_recipes_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."financial_accounts"
+    ADD CONSTRAINT "financial_accounts_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."financial_installments"
+    ADD CONSTRAINT "financial_installments_pkey" PRIMARY KEY ("id");
 
 
 
@@ -1964,6 +1998,18 @@ CREATE INDEX "idx_estoque_updated" ON "public"."estoque" USING "btree" ("last_up
 
 
 
+CREATE INDEX "idx_fin_acc_date" ON "public"."financial_accounts" USING "btree" ("due_date");
+
+
+
+CREATE INDEX "idx_fin_acc_user" ON "public"."financial_accounts" USING "btree" ("user_id");
+
+
+
+CREATE INDEX "idx_fin_inst_acc" ON "public"."financial_installments" USING "btree" ("account_id");
+
+
+
 CREATE INDEX "idx_items_last_updated" ON "public"."items" USING "btree" ("last_updated");
 
 
@@ -2216,86 +2262,6 @@ CREATE INDEX "vendas_usuario_id_idx" ON "public"."vendas" USING "btree" ("usuari
 
 
 
-CREATE OR REPLACE TRIGGER "activity_log_set_uuid" BEFORE INSERT ON "public"."activity_log" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "analise_ia_set_uuid" BEFORE INSERT ON "public"."analise_ia" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "app_settings_set_uuid" BEFORE INSERT ON "public"."app_settings" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "areas_set_uuid" BEFORE INSERT ON "public"."areas" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "caderno_notas_set_uuid" BEFORE INSERT ON "public"."caderno_notas" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "clientes_set_uuid" BEFORE INSERT ON "public"."clientes" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "colheitas_set_uuid" BEFORE INSERT ON "public"."colheitas" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "compras_set_uuid" BEFORE INSERT ON "public"."compras" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "cost_categories_set_uuid" BEFORE INSERT ON "public"."cost_categories" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "costs_set_uuid" BEFORE INSERT ON "public"."costs" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "custos_set_uuid" BEFORE INSERT ON "public"."custos" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "error_logs_set_uuid" BEFORE INSERT ON "public"."error_logs" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "estoque_set_uuid" BEFORE INSERT ON "public"."estoque" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "items_set_uuid" BEFORE INSERT ON "public"."items" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "maquinas_set_uuid" BEFORE INSERT ON "public"."maquinas" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "monitoramento_entidade_set_uuid" BEFORE INSERT ON "public"."monitoramento_entidade" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "monitoramento_media_set_uuid" BEFORE INSERT ON "public"."monitoramento_media" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "movimentos_estoque_set_uuid" BEFORE INSERT ON "public"."movimentos_estoque" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "plantio_set_uuid" BEFORE INSERT ON "public"."plantio" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "receitas_set_uuid" BEFORE INSERT ON "public"."receitas" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
 CREATE OR REPLACE TRIGGER "tr_update_last_updated_custos" BEFORE UPDATE ON "public"."custos" FOR EACH ROW EXECUTE FUNCTION "public"."update_last_updated_column"();
 
 
@@ -2309,18 +2275,6 @@ CREATE OR REPLACE TRIGGER "tr_update_last_updated_planos_adubacao" BEFORE UPDATE
 
 
 CREATE OR REPLACE TRIGGER "tr_update_last_updated_vendas" BEFORE UPDATE ON "public"."vendas" FOR EACH ROW EXECUTE FUNCTION "public"."update_last_updated_column"();
-
-
-
-CREATE OR REPLACE TRIGGER "unidades_medida_set_uuid" BEFORE INSERT ON "public"."unidades_medida" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "users_set_uuid" BEFORE INSERT ON "public"."users" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
-
-
-
-CREATE OR REPLACE TRIGGER "vendas_set_uuid" BEFORE INSERT ON "public"."vendas" FOR EACH ROW EXECUTE FUNCTION "public"."fill_text_uuid"();
 
 
 
@@ -2441,6 +2395,16 @@ ALTER TABLE ONLY "public"."fertilization_items"
 
 ALTER TABLE ONLY "public"."fertilization_recipes"
     ADD CONSTRAINT "fertilization_recipes_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."financial_accounts"
+    ADD CONSTRAINT "financial_accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."financial_installments"
+    ADD CONSTRAINT "financial_installments_account_id_fkey" FOREIGN KEY ("account_id") REFERENCES "public"."financial_accounts"("id") ON DELETE CASCADE;
 
 
 
@@ -3009,6 +2973,16 @@ CREATE POLICY "Owner Access" ON "public"."v2_talhoes" USING (("usuario_id" = "au
 
 
 
+CREATE POLICY "Usuários acessam apenas seus próprios dados financeiros" ON "public"."financial_accounts" TO "authenticated" USING (("auth"."uid"() = "user_id")) WITH CHECK (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Usuários acessam parcelas de suas próprias contas" ON "public"."financial_installments" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."financial_accounts"
+  WHERE (("financial_accounts"."id" = "financial_installments"."account_id") AND ("financial_accounts"."user_id" = "auth"."uid"())))));
+
+
+
 ALTER TABLE "public"."activity_log" ENABLE ROW LEVEL SECURITY;
 
 
@@ -3179,6 +3153,12 @@ ALTER TABLE "public"."fertilization_items" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."fertilization_recipes" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."financial_accounts" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."financial_installments" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."items" ENABLE ROW LEVEL SECURITY;
@@ -4086,12 +4066,6 @@ GRANT ALL ON FUNCTION "public"."apply_fertilization_v2"("p_plano_uuid" "uuid", "
 
 
 
-GRANT ALL ON FUNCTION "public"."fill_text_uuid"() TO "anon";
-GRANT ALL ON FUNCTION "public"."fill_text_uuid"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."fill_text_uuid"() TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."get_my_financial_summary"() TO "anon";
 GRANT ALL ON FUNCTION "public"."get_my_financial_summary"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_my_financial_summary"() TO "service_role";
@@ -4286,6 +4260,18 @@ GRANT ALL ON TABLE "public"."fertilization_items" TO "service_role";
 GRANT ALL ON TABLE "public"."fertilization_recipes" TO "anon";
 GRANT ALL ON TABLE "public"."fertilization_recipes" TO "authenticated";
 GRANT ALL ON TABLE "public"."fertilization_recipes" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."financial_accounts" TO "anon";
+GRANT ALL ON TABLE "public"."financial_accounts" TO "authenticated";
+GRANT ALL ON TABLE "public"."financial_accounts" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."financial_installments" TO "anon";
+GRANT ALL ON TABLE "public"."financial_installments" TO "authenticated";
+GRANT ALL ON TABLE "public"."financial_installments" TO "service_role";
 
 
 
