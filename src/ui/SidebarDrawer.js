@@ -157,7 +157,7 @@ export default function SidebarDrawer({ visible, onClose, navigation: navigation
                             <Ionicons name="log-out-outline" size={24} color={colors.danger} />
                             <Text style={[styles.logoutText, { color: colors.danger }]}>Sair</Text>
                         </TouchableOpacity>
-                        <Text style={[styles.version, { color: colors.textMuted }]}>AgroGB v1.1.10 • Diamond Pro</Text>
+                        <Text style={[styles.version, { color: colors.textMuted }]}>AgroGB v1.1.10</Text>
                     </View>
 
                 </Animated.View>

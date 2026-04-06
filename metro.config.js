@@ -8,6 +8,7 @@ const config = getDefaultConfig(__dirname);
 config.resolver.extraNodeModules = {
     ...config.resolver.extraNodeModules,
     'node:sea': require.resolve('./mock-sea.js'),
+    'crypto': require.resolve('./mock-crypto.js'),
 };
 
 module.exports = config;

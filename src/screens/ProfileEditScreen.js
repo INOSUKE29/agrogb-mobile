@@ -1,24 +1,22 @@
 import React, { useState, useCallback } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, Alert, 
-    TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform 
+    TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform,
+    StatusBar 
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { useTheme } from '../theme/ThemeContext';
 import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
-import GlowCard from '../ui/GlowCard';
-import PrimaryButton from '../ui/PrimaryButton';
 import { showToast } from '../ui/Toast';
 import { AuthService } from '../services/authService';
 import { executeQuery } from '../database/database';
 
 export default function ProfileEditScreen({ navigation }) {
-    const { colors } = useTheme();
+    const { colors, theme, setTheme } = useTheme();
     const [loading, setLoading] = useState(false);
     const [user, setUser] = useState({
         id: null,
@@ -53,7 +51,7 @@ export default function ProfileEditScreen({ navigation }) {
                 }
             }
         } catch (e) {
-            console.error('[ProfileEdit] Erro ao carregar dados:', e);
+            console.error('[ProfileEdit] Erro:', e);
         }
     };
 
@@ -61,7 +59,7 @@ export default function ProfileEditScreen({ navigation }) {
 
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') return Alert.alert('Permissão', 'Precisamos acessar sua galeria para mudar a foto.');
+        if (status !== 'granted') return Alert.alert('Permissão', 'Acesso à galeria é necessário para mudar a foto.');
 
         let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -92,128 +90,162 @@ export default function ProfileEditScreen({ navigation }) {
                     [user.nome.toUpperCase(), user.email.toLowerCase(), user.telefone, user.endereco.toUpperCase(), user.avatar, now, user.id]
                 );
             }
-            showToast('Dados atualizados com sucesso!');
+            showToast('Perfil atualizado com sucesso!');
             navigation.goBack();
         } catch (e) {
             Alert.alert('Erro', 'Não foi possível salvar as alterações.');
         } finally {
-            setLoading(true);
+            setLoading(false);
         }
     };
 
-    const InputField = ({ label, icon, value, onChange, placeholder, keyboardType, secureTextEntry, autoCapitalize = "words" }) => (
-        <View style={styles.inputContainer}>
-            <View style={styles.labelRow}>
-                <Ionicons name={icon} size={14} color={colors.primary} />
-                <Text style={[styles.label, { color: colors.textMuted }]}>{label}</Text>
+    const InputBlock = ({ label, icon, value, onChange, placeholder, keyboardType, secureTextEntry, autoCapitalize = "words" }) => (
+        <View style={styles.inputBlock}>
+            <View style={styles.inputLabelRow}>
+                <Ionicons name={icon} size={14} color="#10B981" />
+                <Text style={styles.inputLabel}>{label}</Text>
             </View>
             <TextInput 
-                style={[styles.input, { color: colors.textPrimary, backgroundColor: colors.cardAlt }]} 
+                style={styles.textInput} 
                 value={value}
                 onChangeText={onChange}
                 placeholder={placeholder}
-                placeholderTextColor={colors.textMuted + '80'}
+                placeholderTextColor="rgba(255,255,255,0.1)"
                 keyboardType={keyboardType}
                 secureTextEntry={secureTextEntry}
                 autoCapitalize={autoCapitalize}
+                selectionColor="#10B981"
             />
+        </View>
+    );
+
+    const SectionCard = ({ title, children, style }) => (
+        <View style={[styles.sectionCard, style]}>
+            <Text style={styles.sectionTitle}>{title}</Text>
+            {children}
         </View>
     );
 
     return (
         <AppContainer>
-            <ScreenHeader title="Minha Conta" onBack={() => navigation.goBack()} />
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+            
+            {/* Background Color Solid #050914 as seen in mockup */}
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: '#050914' }]} />
+            
+            <ScreenHeader title="Minha Conta" onBack={() => navigation.goBack()} transparent />
             
             <KeyboardAvoidingView 
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={{ flex: 1 }}
             >
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+                <ScrollView 
+                    showsVerticalScrollIndicator={false} 
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                >
                     
-                    {/* AVATAR UPLOADER */}
-                    <View style={styles.avatarSection}>
-                        <TouchableOpacity onPress={pickImage} activeOpacity={0.8}>
-                            <View style={[styles.avatarBox, { borderColor: colors.primary }]}>
+                    {/* AVATAR CENTERED (Fiel ao Mockup Image 1) */}
+                    <View style={styles.avatarContainer}>
+                        <TouchableOpacity onPress={pickImage} activeOpacity={0.8} style={styles.avatarWrapper}>
+                            <View style={styles.avatarBox}>
                                 {user.avatar ? (
-                                    <Image source={{ uri: user.avatar }} style={styles.avatarImage} />
+                                    <Image source={{ uri: user.avatar }} style={styles.avatarImg} />
                                 ) : (
-                                    <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
+                                    <View style={styles.avatarPlaceholder}>
                                         <Text style={styles.avatarLetter}>{user.nome?.charAt(0).toUpperCase() || 'P'}</Text>
                                     </View>
                                 )}
-                                <LinearGradient 
-                                    colors={[colors.primary, colors.primaryDark]} 
-                                    style={styles.editIconBadge}
-                                >
-                                    <Ionicons name="camera" size={14} color="#FFF" />
-                                </LinearGradient>
+                                <View style={styles.cameraBadge}>
+                                    <Ionicons name="camera" size={12} color="#FFF" />
+                                </View>
                             </View>
                         </TouchableOpacity>
-                        <Text style={[styles.userName, { color: colors.textPrimary }]}>{user.nome || user.usuario}</Text>
-                        <Text style={[styles.userLevel, { color: colors.primary }]}>
-                            {user.nivel === 'ADM' ? 'GESTOR DIAMOND' : 'COLABORADOR'}
+                        <Text style={styles.roleText}>
+                            {user.nivel === 'ADM' ? 'GESTOR MASTER' : 'COLABORADOR'}
                         </Text>
                     </View>
 
-                    {/* FORM CARDS */}
-                    <GlowCard style={styles.card}>
-                        <Text style={[styles.sectionTitle, { color: colors.primary }]}>DADOS PESSOAIS</Text>
-                        
-                        <InputField 
-                            label="NOME COMPLETO" 
-                            icon="person-outline"
-                            value={user.nome}
-                            onChange={v => setUser({ ...user, nome: v })}
+                    {/* DADOS DE CONTATO */}
+                    <SectionCard title="INFORMAÇÕES DE CONTATO">
+                        <InputBlock 
+                            label="NOME COMPLETO" icon="person-outline"
+                            value={user.nome} onChange={v => setUser({ ...user, nome: v })}
                         />
-
-                        <InputField 
-                            label="E-MAIL DE CONTATO" 
-                            icon="mail-outline"
-                            value={user.email}
-                            onChange={v => setUser({ ...user, email: v })}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                        />
-
-                        <InputField 
-                            label="TELEFONE" 
-                            icon="call-outline"
-                            value={user.telefone}
-                            onChange={v => setUser({ ...user, telefone: v })}
+                        <InputBlock 
+                            label="TELEFONE" icon="call-outline"
+                            value={user.telefone} onChange={v => setUser({ ...user, telefone: v })}
                             keyboardType="phone-pad"
                         />
-
-                        <InputField 
-                            label="ENDEREÇO / BASE" 
-                            icon="location-outline"
-                            value={user.endereco}
-                            onChange={v => setUser({ ...user, endereco: v })}
+                        <InputBlock 
+                            label="ENDEREÇO / BASE" icon="location-outline"
+                            value={user.endereco} onChange={v => setUser({ ...user, endereco: v })}
                         />
-                    </GlowCard>
+                    </SectionCard>
 
-                    <GlowCard style={[styles.card, { marginTop: 20 }]}>
-                        <Text style={[styles.sectionTitle, { color: colors.primary }]}>SEGURANÇA</Text>
-                        <InputField 
-                            label="NOVA SENHA" 
-                            icon="lock-closed-outline"
-                            value={user.nova_senha}
-                            onChange={v => setUser({ ...user, nova_senha: v })}
-                            placeholder="Deixe em branco para não alterar"
-                            secureTextEntry={true}
-                            autoCapitalize="none"
+                    {/* SEGURANÇA */}
+                    <SectionCard title="SEGURANÇA" style={{ marginTop: 16 }}>
+                        <InputBlock 
+                            label="NOVA SENHA" icon="lock-closed-outline"
+                            value={user.nova_senha} onChange={v => setUser({ ...user, nova_senha: v })}
+                            placeholder="Deixe em branco para manter"
+                            secureTextEntry={true} autoCapitalize="none"
                         />
-                        <Text style={[styles.securityTip, { color: colors.textMuted }]}>
+                        <Text style={styles.infoNote}>
                             A senha deve ser mantida em sigilo. Se alterar, sua sessão será mantida no aparelho local.
                         </Text>
-                    </GlowCard>
+                    </SectionCard>
 
-                    <View style={styles.actionBox}>
-                        <PrimaryButton 
-                            title={loading ? "PROCESSANDO..." : "SALVAR ALTERAÇÕES"} 
-                            onPress={handleSave} 
-                            disabled={loading}
-                        />
-                    </View>
+                    {/* APARÊNCIA */}
+                    <SectionCard title="APARÊNCIA DO APLICATIVO" style={{ marginTop: 16 }}>
+                        <View style={styles.appearanceGrid}>
+                            {[
+                                { id: 'system', label: 'Auto', icon: 'settings-outline' },
+                                { id: 'light', label: 'Claro', icon: 'sunny-outline' },
+                                { id: 'dark', label: 'Escuro', icon: 'moon-outline' },
+                            ].map(t => (
+                                <TouchableOpacity 
+                                    key={t.id}
+                                    style={[
+                                        styles.themeBtn, 
+                                        theme === t.id && styles.themeBtnActive
+                                    ]}
+                                    onPress={() => setTheme(t.id)}
+                                >
+                                    <View style={[
+                                        styles.themeIconBox,
+                                        theme === t.id ? { backgroundColor: '#042F2E' } : { backgroundColor: 'transparent' }
+                                    ]}>
+                                        <Ionicons 
+                                            name={t.icon} 
+                                            size={20} 
+                                            color={theme === t.id ? '#10B981' : 'rgba(255,255,255,0.3)'} 
+                                        />
+                                    </View>
+                                    <Text style={[
+                                        styles.themeBtnText, 
+                                        theme === t.id && { color: '#FFF' }
+                                    ]}>
+                                        {t.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </SectionCard>
+
+                    {/* SAVE BUTTON (Fiel ao Mockup Image 2) */}
+                    <TouchableOpacity 
+                        style={styles.saveBtn} 
+                        onPress={handleSave}
+                        disabled={loading}
+                        activeOpacity={0.8}
+                    >
+                        <View style={styles.saveSolid}>
+                            <Text style={styles.saveBtnText}>
+                                {loading ? 'AGUARDE...' : 'SALVAR ALTERAÇÕES'}
+                            </Text>
+                        </View>
+                    </TouchableOpacity>
 
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -222,100 +254,78 @@ export default function ProfileEditScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    scrollContent: {
-        padding: 20,
-        paddingBottom: 40,
+    scrollContent: { padding: 20, paddingBottom: 60 },
+    
+    avatarContainer: { alignItems: 'center', marginBottom: 28, marginTop: 10 },
+    avatarWrapper: {
+        width: 100, height: 100, borderRadius: 50,
+        backgroundColor: 'transparent',
+        borderWidth: 1, borderColor: '#0f4c39', // Dark greenish border
+        justifyContent: 'center', alignItems: 'center',
     },
-    avatarSection: {
-        alignItems: 'center',
-        marginBottom: 25,
+    avatarBox: { 
+        width: 86, height: 86, borderRadius: 43, 
+        overflow: 'hidden', backgroundColor: '#0B111A' 
     },
-    avatarBox: {
-        width: 100,
-        height: 100,
-        borderRadius: 35,
-        borderWidth: 2.5,
-        padding: 4,
-        position: 'relative',
+    avatarImg: { width: '100%', height: '100%' },
+    avatarPlaceholder: { 
+        width: '100%', height: '100%', 
+        justifyContent: 'center', alignItems: 'center', 
+        backgroundColor: '#0B111A' 
     },
-    avatarImage: {
-        width: '100%',
-        height: '100%',
-        borderRadius: 30,
+    avatarLetter: { color: '#10B981', fontSize: 36, fontWeight: '900' },
+    cameraBadge: {
+        position: 'absolute', bottom: 0, right: 0,
+        width: 26, height: 26, borderRadius: 13,
+        backgroundColor: '#10B981', justifyContent: 'center', alignItems: 'center',
+        borderWidth: 2, borderColor: '#050914'
     },
-    avatarPlaceholder: {
-        width: '100%',
-        height: '100%',
-        borderRadius: 30,
-        justifyContent: 'center',
-        alignItems: 'center',
+    roleText: { 
+        color: '#10B981', fontSize: 11, fontWeight: '900', 
+        letterSpacing: 2, marginTop: 18 
     },
-    avatarLetter: {
-        fontSize: 38,
-        fontWeight: 'bold',
-        color: '#FFF',
+
+    sectionCard: {
+        borderRadius: 20, padding: 20,
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.02)',
+        backgroundColor: '#0A0F1C', 
     },
-    editIconBadge: {
-        position: 'absolute',
-        bottom: -5,
-        right: -5,
-        width: 30,
-        height: 30,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 2,
-        borderColor: '#FFF',
+    sectionTitle: { color: '#10B981', fontSize: 12, fontWeight: '800', letterSpacing: 1.5, marginBottom: 20 },
+    
+    inputBlock: { marginBottom: 18 },
+    inputLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
+    inputLabel: { color: '#94A3B8', fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
+    textInput: {
+        height: 54, borderRadius: 12, backgroundColor: '#03050B', // Very dark deep blue
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.02)',
+        paddingHorizontal: 16, color: '#FFF', fontSize: 15, fontWeight: '600'
     },
-    userName: {
-        marginTop: 15,
-        fontSize: 18,
-        fontWeight: '900',
+    infoNote: { color: '#475569', fontSize: 11, marginTop: 4, lineHeight: 16 },
+
+    appearanceGrid: { flexDirection: 'row', gap: 12 },
+    themeBtn: {
+        flex: 1, height: 86, borderRadius: 18,
+        backgroundColor: '#0A0F1C', 
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
+        justifyContent: 'center', alignItems: 'center', gap: 6,
     },
-    userLevel: {
-        fontSize: 11,
-        fontWeight: '800',
-        letterSpacing: 1,
-        marginTop: 2,
+    themeBtnActive: { 
+        backgroundColor: '#061A15', // Dark deep emerald tint
+        borderColor: '#10B981',
+        borderWidth: 1.5
     },
-    card: {
-        padding: 20,
-        borderRadius: 24,
+    themeIconBox: { 
+        width: 32, height: 32, borderRadius: 8, 
+        justifyContent: 'center', alignItems: 'center' 
     },
-    sectionTitle: {
-        fontSize: 11,
-        fontWeight: '900',
-        letterSpacing: 2,
-        marginBottom: 20,
+    themeBtnText: { color: '#64748B', fontSize: 12, fontWeight: '700' },
+
+    saveBtn: { 
+        marginTop: 24, borderRadius: 16, overflow: 'hidden'
     },
-    inputContainer: {
-        marginBottom: 20,
+    saveSolid: { 
+        height: 56, justifyContent: 'center', alignItems: 'center',
+        backgroundColor: '#10B981'
     },
-    labelRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 8,
-        marginLeft: 4,
-    },
-    label: {
-        fontSize: 10,
-        fontWeight: 'bold',
-        marginLeft: 6,
-    },
-    input: {
-        height: 50,
-        borderRadius: 15,
-        paddingHorizontal: 15,
-        fontSize: 15,
-        fontWeight: '600',
-    },
-    securityTip: {
-        fontSize: 11,
-        lineHeight: 16,
-        paddingHorizontal: 5,
-    },
-    actionBox: {
-        marginTop: 30,
-        paddingBottom: 20,
-    }
+    saveBtnText: { color: '#FFF', fontSize: 15, fontWeight: '800', letterSpacing: 1 }
 });

@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { TouchableOpacity, StyleSheet, Animated, Vibration, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
 
@@ -29,7 +29,10 @@ export default function AgroFAB({ onPress, icon = 'add', style }) {
         <Animated.View style={[styles.wrap, { transform: [{ scale }] }, style]}>
             <TouchableOpacity
                 style={[styles.btn, { backgroundColor: colors.primary }]}
-                onPress={onPress}
+                onPress={(e) => {
+                    if (Platform.OS !== 'web') Vibration.vibrate(25);
+                    if (onPress) onPress(e);
+                }}
                 onPressIn={pressIn}
                 onPressOut={pressOut}
                 activeOpacity={0.9}

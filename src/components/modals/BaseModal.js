@@ -49,6 +49,9 @@ const styles = StyleSheet.create({
         maxHeight: height * 0.85,
         borderWidth: 1,
         borderBottomWidth: 0,
+        width: '100%',
+        maxWidth: 500,
+        alignSelf: 'center',
     },
     header: {
         flexDirection: 'row',

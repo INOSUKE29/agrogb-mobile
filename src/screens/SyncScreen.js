@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, Switch } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import SafeBlurView from '../ui/SafeBlurView';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { executeQuery, getAppSettings, updateAppSetting } from '../database/database';
@@ -10,8 +12,10 @@ import ScreenHeader from '../ui/ScreenHeader';
 import GlowCard from '../ui/GlowCard';
 import PrimaryButton from '../ui/PrimaryButton';
 import { showToast } from '../ui/Toast';
-import { syncAllMaster, testConnection } from '../services/supabase';
+import { testConnection } from '../services/supabaseClient';
+import { syncAllMaster } from '../services/SyncService';
 import { BackupService } from '../services/BackupService';
+import { WeatherService } from '../services/weatherService';
 import { ErrorService } from '../services/ErrorService';
 
 export default function SyncScreen({ navigation }) {
@@ -209,9 +213,9 @@ export default function SyncScreen({ navigation }) {
                 onPress={onPress}
                 style={styles.itemWrapper}
             >
-                <GlowCard style={[styles.controlCard, { backgroundColor: colors.card, borderColor: danger ? (colors.danger || '#EF4444') + '40' : colors.glassBorder }]}>
-                    <View style={[styles.iconBox, { backgroundColor: danger ? (colors.danger || '#EF4444') + '15' : (colors.primary || '#1E8E5A') + '15' }]}>
-                        <Ionicons name={icon} size={22} color={danger ? colors.danger : colors.primary} />
+                <View style={styles.controlContent}>
+                    <View style={[styles.iconBox, { backgroundColor: danger ? (colors.danger || '#EF4444') + '15' : (colors.primary || '#10B981') + '15' }]}>
+                        <Ionicons name={icon} size={22} color={danger ? (colors.danger || '#EF4444') : (colors.primary || '#10B981')} />
                     </View>
                     <View style={{ flex: 1, marginLeft: 15 }}>
                         <Text style={[styles.controlLabel, { color: colors.textPrimary }]}>{label}</Text>
@@ -222,9 +226,9 @@ export default function SyncScreen({ navigation }) {
                             <Text style={styles.badgeText}>{badge}</Text>
                         </View>
                     ) : (
-                        <Ionicons name="chevron-forward" size={18} color={colors.glassBorder} />
+                        <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.2)" />
                     )}
-                </GlowCard>
+                </View>
             </TouchableOpacity>
         );
     };
@@ -243,118 +247,136 @@ export default function SyncScreen({ navigation }) {
             <ScreenHeader title="Painel de Controle" onBack={() => navigation.goBack()} />
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+                {/* 🌀 AMBIENT LIGHTING */}
+                <View style={[styles.orb, { top: 0, right: -40, backgroundColor: '#10B981', opacity: 0.15 }]} />
+                <View style={[styles.orb, { top: 400, left: -60, backgroundColor: '#3B82F6', opacity: 0.1 }]} />
 
-                <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>SISTEMA & PREFERÊNCIAS</Text>
+                <Text style={styles.sectionHeader}>SISTEMA & PREFERÊNCIAS</Text>
+                <SafeBlurView intensity={20} tint="dark" style={styles.sectionGlass}>
+                    <ControlItem
+                        icon="business-outline" label="Dados da Propriedade" description="Fazenda, CNPJ e contatos"
+                        onPress={() => setActiveModal('PROPRIEDADE')}
+                    />
+                    <View style={styles.divider} />
+                    <ControlItem
+                        icon="color-palette-outline" label="Aparência Visual" description="Cores e modo escuro"
+                        onPress={() => setActiveModal('APARENCIA')}
+                    />
+                    <View style={styles.divider} />
+                    <ControlItem
+                        icon="wallet-outline" label="Regras Financeiras" description="Moeda e metas de lucro"
+                        onPress={() => setActiveModal('FINANCEIRO')}
+                    />
+                </SafeBlurView>
 
-                <ControlItem
-                    icon="business-outline" label="Dados da Propriedade" description="Fazenda, CNPJ e contatos"
-                    onPress={() => setActiveModal('PROPRIEDADE')}
-                />
-                <ControlItem
-                    icon="color-palette-outline" label="Aparência Visual" description="Cores e modo escuro"
-                    onPress={() => setActiveModal('APARENCIA')}
-                />
-                <ControlItem
-                    icon="wallet-outline" label="Regras Financeiras" description="Moeda e metas de lucro"
-                    onPress={() => setActiveModal('FINANCEIRO')}
-                />
-
-                <Text style={[styles.sectionTitle, { color: colors.textMuted, marginTop: 25 }]}>MOTOR DA PLATAFORMA</Text>
-
-                <ControlItem
-                    icon="cloudy-night-outline" label="Serviços & Clima" description="API Key e geolocalização"
-                    onPress={() => setActiveModal('CLIMA')}
-                />
-                <ControlItem
-                    icon="document-text-outline" label="Modelos de Relatório" description="Configurações de PDF"
-                    onPress={() => setActiveModal('RELATORIO')}
-                />
-                <ControlItem
-                    icon="image-outline" label="Qualidade de Fotos" description="Compressão e limites"
-                    onPress={() => setActiveModal('MEDIA')}
-                />
-                <ControlItem
-                    icon="cloud-download-outline" label="Atualizar Minhas Telas"
-                    description="Puxar novas funções e correções do AgroGB"
-                    onPress={handleCheckUpdate}
-                />
-                <ControlItem
-                    icon="sync-outline" label="Sincronizar Dados (Nuvem)"
-                    description={loading ? "Verificando..." : "Enviar colheitas e vendas para a nuvem"}
-                    onPress={handleSyncMaster}
-                />
-                <ControlItem
-                    icon="shield-checkmark-outline" label="Backup de Segurança Total"
-                    description="Salva no celular e na nuvem de uma vez só"
-                    onPress={handleFullBackup}
-                />
-                <ControlItem
-                    icon="refresh-outline" label="Restaurar Dados" description="Importar de arquivo de backup"
-                    onPress={handleRestore}
-                />
-
+                <Text style={styles.sectionHeader}>MOTOR DA PLATAFORMA</Text>
+                <SafeBlurView intensity={20} tint="dark" style={styles.sectionGlass}>
+                    <ControlItem
+                        icon="cloudy-night-outline" label="Serviços & Clima" description="API Key e geolocalização"
+                        onPress={() => setActiveModal('CLIMA')}
+                    />
+                    <View style={styles.divider} />
+                    <ControlItem
+                        icon="document-text-outline" label="Modelos de Relatório" description="Configurações de PDF"
+                        onPress={() => setActiveModal('RELATORIO')}
+                    />
+                    <View style={styles.divider} />
+                    <ControlItem
+                        icon="image-outline" label="Qualidade de Fotos" description="Compressão e limites"
+                        onPress={() => setActiveModal('MEDIA')}
+                    />
+                    <View style={styles.divider} />
+                    <ControlItem
+                        icon="cloud-download-outline" label="Atualizar Minhas Telas"
+                        description="Puxar novas funções e correções do AgroGB"
+                        onPress={handleCheckUpdate}
+                    />
+                    <View style={styles.divider} />
+                    <ControlItem
+                        icon="sync-outline" label="Sincronizar Dados (Nuvem)"
+                        description={loading ? "Verificando..." : "Enviar colheitas e vendas para a nuvem"}
+                        onPress={handleSyncMaster}
+                    />
+                    <View style={styles.divider} />
+                    <ControlItem
+                        icon="shield-checkmark-outline" label="Backup de Segurança Total"
+                        description="Salva no celular e na nuvem de uma vez só"
+                        onPress={handleFullBackup}
+                    />
+                    <View style={styles.divider} />
+                    <ControlItem
+                        icon="refresh-outline" label="Restaurar Dados" description="Importar de arquivo de backup"
+                        onPress={handleRestore}
+                    />
+                </SafeBlurView>
 
                 {isAdmin && (
                     <>
-                        <Text style={[styles.sectionTitle, { color: colors.textMuted, marginTop: 25 }]}>GESTÃO & SEGURANÇA</Text>
-                        <ControlItem
-                            icon="people-outline" label="Gerenciar Equipe" description="Controle de usuários e acessos"
-                            onPress={() => navigation.navigate('Usuarios')}
-                        />
-                        <ControlItem
-                            icon="pricetags-outline" label="Tabelas do Sistema" description="Categorias mestres e unidades"
-                            onPress={() => navigation.navigate('Cadastro')}
-                        />
-                        <ControlItem
-                            icon="trash-bin-outline" label="Lixeira de Registros"
-                            description="Itens aguardando limpeza"
-                            badge={lixeiraCount > 0 ? lixeiraCount : null}
-                            onPress={() => setActiveModal('LIXEIRA')}
-                        />
-                        <ControlItem
-                            icon="flash-outline" label="Manutenção Técnica" description="Limpeza de cache e banco"
-                            danger
-                            onPress={handleDeepClean}
-                        />
+                        <Text style={styles.sectionHeader}>GESTÃO & SEGURANÇA</Text>
+                        <SafeBlurView intensity={20} tint="dark" style={styles.sectionGlass}>
+                            <ControlItem
+                                icon="people-outline" label="Gerenciar Equipe" description="Controle de usuários e acessos"
+                                onPress={() => navigation.navigate('Usuarios')}
+                            />
+                            <View style={styles.divider} />
+                            <ControlItem
+                                icon="pricetags-outline" label="Tabelas do Sistema" description="Categorias mestres e unidades"
+                                onPress={() => navigation.navigate('Cadastro')}
+                            />
+                            <View style={styles.divider} />
+                            <ControlItem
+                                icon="trash-bin-outline" label="Lixeira de Registros"
+                                description="Itens aguardando limpeza"
+                                badge={lixeiraCount > 0 ? lixeiraCount : null}
+                                onPress={() => setActiveModal('LIXEIRA')}
+                            />
+                            <View style={styles.divider} />
+                            <ControlItem
+                                icon="flash-outline" label="Manutenção Técnica" description="Limpeza de cache e banco"
+                                danger
+                                onPress={handleDeepClean}
+                            />
+                        </SafeBlurView>
                     </>
                 )}
 
-                <View style={styles.footerInfo}>
-                    <Text style={[styles.versionText, { color: colors.textMuted }]}>AgroGB Intelligence Engine V1.0</Text>
-                    <Text style={[styles.buildText, { color: colors.textMuted }]}>Build: 2026.03.22 • PRO GOLD</Text>
+                <View style={styles.footerContainer}>
+                    <Text style={[styles.versionText, { color: colors.textMuted }]}>AGROGB DIAMOND • build 2026.04.1.2</Text>
+                    <Text style={[styles.legalText, { color: colors.textMuted }]}>2026 © AGROGB TECNOLOGIA LTDA</Text>
                 </View>
             </ScrollView>
 
             {/* --- MODALS --- */}
 
-            <Modal visible={!!activeModal} animationType="slide" transparent={true}>
-                <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
-                    <GlowCard style={[styles.modalInner, { backgroundColor: colors.card, borderColor: colors.glassBorder }]}>
-
+            <Modal visible={!!activeModal} animationType="fade" transparent={true}>
+                <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+                    <SafeBlurView intensity={80} tint="dark" style={styles.modalGlass}>
                         {activeModal === 'PROPRIEDADE' && (
                             <>
                                 <ModalHeader title="Dados da Propriedade" onClose={() => setActiveModal(null)} />
-                                <ScrollView style={{ marginTop: 15 }}>
-                                    <Text style={[styles.inputLabel, { color: colors.textMuted }]}>NOME DA FAZENDA</Text>
-                                    <TextInput
-                                        style={[styles.modalInput, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.glassBorder }]}
-                                        value={settings.fazenda_nome}
-                                        onChangeText={t => handleUpdateSetting('fazenda_nome', t.toUpperCase())}
-                                    />
+                                <ScrollView style={{ marginTop: 15 }} showsVerticalScrollIndicator={false}>
+                                    <View style={styles.inputBox}>
+                                        <Text style={styles.inputLabel}>NOME DA FAZENDA</Text>
+                                        <TextInput
+                                            style={[styles.modalInput, { backgroundColor: 'rgba(255,255,255,0.05)', color: colors.textPrimary, borderColor: 'rgba(255,255,255,0.1)' }]}
+                                            value={settings.fazenda_nome}
+                                            onChangeText={t => handleUpdateSetting('fazenda_nome', t.toUpperCase())}
+                                        />
+                                    </View>
                                     <View style={styles.row}>
                                         <View style={{ flex: 1 }}>
-                                            <Text style={[styles.inputLabel, { color: colors.textMuted }]}>CPF / CNPJ</Text>
+                                            <Text style={styles.inputLabel}>CPF / CNPJ</Text>
                                             <TextInput
-                                                style={[styles.modalInput, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.glassBorder }]}
+                                                style={[styles.modalInput, { backgroundColor: 'rgba(255,255,255,0.05)', color: colors.textPrimary, borderColor: 'rgba(255,255,255,0.1)' }]}
                                                 value={settings.fazenda_documento}
                                                 keyboardType="numeric"
                                                 onChangeText={t => handleUpdateSetting('fazenda_documento', t)}
                                             />
                                         </View>
                                         <View style={{ flex: 1 }}>
-                                            <Text style={[styles.inputLabel, { color: colors.textMuted }]}>TELEFONE</Text>
+                                            <Text style={styles.inputLabel}>TELEFONE</Text>
                                             <TextInput
-                                                style={[styles.modalInput, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.glassBorder }]}
+                                                style={[styles.modalInput, { backgroundColor: 'rgba(255,255,255,0.05)', color: colors.textPrimary, borderColor: 'rgba(255,255,255,0.1)' }]}
                                                 value={settings.fazenda_telefone}
                                                 keyboardType="phone-pad"
                                                 onChangeText={t => handleUpdateSetting('fazenda_telefone', t)}
@@ -363,49 +385,56 @@ export default function SyncScreen({ navigation }) {
                                     </View>
                                     <View style={styles.row}>
                                         <View style={{ flex: 1 }}>
-                                            <Text style={[styles.inputLabel, { color: colors.textMuted }]}>ÁREA TOTAL (HA)</Text>
+                                            <Text style={styles.inputLabel}>ÁREA TOTAL (HA)</Text>
                                             <TextInput
-                                                style={[styles.modalInput, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.glassBorder }]}
+                                                style={[styles.modalInput, { backgroundColor: 'rgba(255,255,255,0.05)', color: colors.textPrimary, borderColor: 'rgba(255,255,255,0.1)' }]}
                                                 value={String(settings.fazenda_area || '')}
                                                 keyboardType="numeric"
                                                 onChangeText={t => handleUpdateSetting('fazenda_area', t)}
                                             />
                                         </View>
                                         <View style={{ flex: 1 }}>
-                                            <Text style={[styles.inputLabel, { color: colors.textMuted }]}>SAFRA ATUAL</Text>
+                                            <Text style={styles.inputLabel}>SAFRA ATUAL</Text>
                                             <TextInput
-                                                style={[styles.modalInput, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.glassBorder }]}
+                                                style={[styles.modalInput, { backgroundColor: 'rgba(255,255,255,0.05)', color: colors.textPrimary, borderColor: 'rgba(255,255,255,0.1)' }]}
                                                 value={settings.fazenda_safra}
                                                 placeholder="Ex: 2025/2026"
+                                                placeholderTextColor="rgba(255,255,255,0.3)"
                                                 onChangeText={t => handleUpdateSetting('fazenda_safra', t)}
                                             />
                                         </View>
                                     </View>
-                                    <PrimaryButton label="SALVAR DADOS" onPress={() => { setActiveModal(null); showToast('Dados atualizados!'); }} style={{ marginTop: 20 }} />
+                                    <TouchableOpacity 
+                                        style={styles.saveBtn} 
+                                        onPress={() => { setActiveModal(null); showToast('Dados salvos!'); }}
+                                    >
+                                        <LinearGradient colors={['#10B981', '#059669']} style={styles.saveGradient}>
+                                            <Text style={styles.saveText}>SALVAR ALTERAÇÕES</Text>
+                                        </LinearGradient>
+                                    </TouchableOpacity>
                                 </ScrollView>
                             </>
                         )}
-
 
                         {activeModal === 'APARENCIA' && (
                             <>
                                 <ModalHeader title="Aparência & Temas" onClose={() => setActiveModal(null)} />
                                 <View style={{ marginTop: 25 }}>
-                                    <Text style={[styles.inputLabel, { color: colors.textMuted }]}>MODO DE COR</Text>
+                                    <Text style={styles.inputLabel}>MODO DE COR</Text>
                                     <View style={styles.themeRow}>
                                         {['light', 'dark', 'ultra_premium'].map(m => (
                                             <TouchableOpacity
                                                 key={m}
                                                 onPress={() => setTheme(m)}
-                                                style={[styles.themeBtn, { backgroundColor: theme === m ? (colors.primary || '#1E8E5A') + '20' : 'transparent', borderColor: theme === m ? colors.primary : colors.glassBorder }]}
+                                                style={[styles.themeBtn, { backgroundColor: theme === m ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.03)', borderColor: theme === m ? '#10B981' : 'rgba(255,255,255,0.1)' }]}
                                             >
-                                                <Ionicons name={m === 'light' ? 'sunny' : m === 'dark' ? 'moon' : 'diamond'} size={20} color={theme === m ? colors.primary : colors.textMuted} />
-                                                <Text style={[styles.themeLabel, { color: theme === m ? colors.textPrimary : colors.textMuted }]}>{m.toUpperCase()}</Text>
+                                                <Ionicons name={m === 'light' ? 'sunny' : m === 'dark' ? 'moon' : 'diamond'} size={20} color={theme === m ? '#10B981' : 'rgba(255,255,255,0.4)'} />
+                                                <Text style={[styles.themeLabel, { color: theme === m ? '#FFF' : 'rgba(255,255,255,0.4)' }]}>{m.toUpperCase()}</Text>
                                             </TouchableOpacity>
                                         ))}
                                     </View>
 
-                                    <Text style={[styles.inputLabel, { color: colors.textMuted, marginTop: 30 }]}>PALETA PRIMÁRIA</Text>
+                                    <Text style={[styles.inputLabel, { marginTop: 30 }]}>PALETA PRIMÁRIA</Text>
                                     <View style={styles.colorRow}>
                                         {['#10B981', '#2563EB', '#D97706', '#7C3AED', '#EF4444'].map(c => (
                                             <TouchableOpacity
@@ -425,18 +454,18 @@ export default function SyncScreen({ navigation }) {
                                 <View style={{ marginTop: 20 }}>
                                     <View style={styles.row}>
                                         <View style={{ flex: 1 }}>
-                                            <Text style={[styles.inputLabel, { color: colors.textMuted }]}>MOEDA PADRÃO</Text>
+                                            <Text style={styles.inputLabel}>MOEDA PADRÃO</Text>
                                             <TextInput
-                                                style={[styles.modalInput, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.glassBorder }]}
+                                                style={[styles.modalInput, { backgroundColor: 'rgba(255,255,255,0.05)', color: colors.textPrimary, borderColor: 'rgba(255,255,255,0.1)' }]}
                                                 value={settings.fin_moeda}
                                                 maxLength={3}
                                                 onChangeText={t => handleUpdateSetting('fin_moeda', t.toUpperCase())}
                                             />
                                         </View>
                                         <View style={{ flex: 2 }}>
-                                            <Text style={[styles.inputLabel, { color: colors.textMuted }]}>META LUCRO MENSAL</Text>
+                                            <Text style={styles.inputLabel}>META LUCRO MENSAL</Text>
                                             <TextInput
-                                                style={[styles.modalInput, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.glassBorder }]}
+                                                style={[styles.modalInput, { backgroundColor: 'rgba(255,255,255,0.05)', color: colors.textPrimary, borderColor: 'rgba(255,255,255,0.1)' }]}
                                                 value={String(settings.fin_meta_lucro || '')}
                                                 keyboardType="numeric"
                                                 onChangeText={t => handleUpdateSetting('fin_meta_lucro', t)}
@@ -448,19 +477,19 @@ export default function SyncScreen({ navigation }) {
                                         <Switch
                                             value={!!settings.fin_calc_margem}
                                             onValueChange={v => handleUpdateSetting('fin_calc_margem', v ? 1 : 0)}
-                                            trackColor={{ false: '#767577', true: colors.primary }}
+                                            trackColor={{ false: '#767577', true: '#10B981' }}
                                         />
                                     </View>
 
-                                    <Text style={[styles.inputLabel, { color: colors.textMuted, marginTop: 20 }]}>UNIDADES DE MEDIDA</Text>
+                                    <Text style={[styles.inputLabel, { marginTop: 20 }]}>UNIDADES DE MEDIDA</Text>
                                     <View style={styles.row}>
                                         {['KG', 'SC', 'CX', 'LT'].map(u => (
                                             <TouchableOpacity
                                                 key={u}
                                                 onPress={() => handleUpdateSetting('unidade_padrao', u)}
-                                                style={[styles.miniBtn, { borderColor: settings.unidade_padrao === u ? colors.primary : colors.glassBorder, backgroundColor: settings.unidade_padrao === u ? (colors.primary || '#1E8E5A') + '15' : 'transparent' }]}
+                                                style={[styles.miniBtn, { borderColor: settings.unidade_padrao === u ? '#10B981' : 'rgba(255,255,255,0.1)', backgroundColor: settings.unidade_padrao === u ? 'rgba(16,185,129,0.1)' : 'transparent' }]}
                                             >
-                                                <Text style={{ fontSize: 10, fontWeight: 'bold', color: settings.unidade_padrao === u ? colors.primary : colors.textMuted }}>{u}</Text>
+                                                <Text style={{ fontSize: 10, fontWeight: 'bold', color: settings.unidade_padrao === u ? '#10B981' : 'rgba(255,255,255,0.4)' }}>{u}</Text>
                                             </TouchableOpacity>
                                         ))}
                                     </View>
@@ -468,40 +497,125 @@ export default function SyncScreen({ navigation }) {
                             </>
                         )}
 
+                        {activeModal === 'RELATORIO' && (
+                            <>
+                                <ModalHeader title="Preferências de Relatório" onClose={() => setActiveModal(null)} />
+                                <ScrollView style={{ marginTop: 20 }} showsVerticalScrollIndicator={false}>
+                                    <View style={styles.switchRow}>
+                                        <Text style={[styles.switchLabel, { color: colors.textPrimary }]}>Exibir Gráficos Prontos</Text>
+                                        <Switch
+                                            value={!!settings.rel_graficos}
+                                            onValueChange={v => handleUpdateSetting('rel_graficos', v ? 1 : 0)}
+                                            trackColor={{ false: '#767577', true: '#10B981' }}
+                                        />
+                                    </View>
+                                    <View style={styles.switchRow}>
+                                        <Text style={[styles.switchLabel, { color: colors.textPrimary }]}>Exportar PDF Automaticamente</Text>
+                                        <Switch
+                                            value={!!settings.rel_auto_pdf}
+                                            onValueChange={v => handleUpdateSetting('rel_auto_pdf', v ? 1 : 0)}
+                                            trackColor={{ false: '#767577', true: '#10B981' }}
+                                        />
+                                    </View>
+
+                                    <View style={{ marginTop: 20 }}>
+                                        <Text style={styles.inputLabel}>RODAPÉ DOS DOCUMENTOS</Text>
+                                        <TextInput
+                                            style={[styles.modalInput, { backgroundColor: 'rgba(255,255,255,0.05)', color: colors.textPrimary, borderColor: 'rgba(255,255,255,0.1)', height: 100 }]}
+                                            value={settings.rel_rodape}
+                                            multiline
+                                            placeholder="Ex: AgroGB - Tecnologia Field"
+                                            placeholderTextColor="rgba(255,255,255,0.3)"
+                                            onChangeText={t => handleUpdateSetting('rel_rodape', t)}
+                                        />
+                                    </View>
+                                    <TouchableOpacity 
+                                        style={styles.saveBtn} 
+                                        onPress={() => { setActiveModal(null); showToast('Layout de relatório salvo!'); }}
+                                    >
+                                        <LinearGradient colors={['#10B981', '#059669']} style={styles.saveGradient}>
+                                            <Text style={styles.saveText}>ATUALIZAR LAYOUT</Text>
+                                        </LinearGradient>
+                                    </TouchableOpacity>
+                                </ScrollView>
+                            </>
+                        )}
+
+                        {activeModal === 'MEDIA' && (
+                            <>
+                                <ModalHeader title="Qualidade & Mídia" onClose={() => setActiveModal(null)} />
+                                <View style={{ marginTop: 20 }}>
+                                    <Text style={styles.inputLabel}>QUALIDADE DAS FOTOS</Text>
+                                    <View style={styles.row}>
+                                        {['BAIXA', 'MÉDIA', 'HD'].map(q => (
+                                            <TouchableOpacity
+                                                key={q}
+                                                onPress={() => handleUpdateSetting('media_qualidade', q)}
+                                                style={[styles.miniBtn, { borderColor: settings.media_qualidade === q ? '#10B981' : 'rgba(255,255,255,0.1)', backgroundColor: settings.media_qualidade === q ? 'rgba(16,185,129,0.1)' : 'transparent' }]}
+                                            >
+                                                <Text style={{ fontSize: 10, fontWeight: 'bold', color: settings.media_qualidade === q ? '#10B981' : 'rgba(255,255,255,0.4)' }}>{q}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                    <View style={styles.switchRow}>
+                                        <Text style={[styles.switchLabel, { color: colors.textPrimary }]}>Salvar Cópia na Galeria</Text>
+                                        <Switch
+                                            value={!!settings.media_save_gallery}
+                                            onValueChange={v => handleUpdateSetting('media_save_gallery', v ? 1 : 0)}
+                                            trackColor={{ false: '#767577', true: '#10B981' }}
+                                        />
+                                    </View>
+                                    <View style={styles.switchRow}>
+                                        <Text style={[styles.switchLabel, { color: colors.textPrimary }]}>Geotag nas Imagens</Text>
+                                        <Switch
+                                            value={!!settings.media_geotag}
+                                            onValueChange={v => handleUpdateSetting('media_geotag', v ? 1 : 0)}
+                                            trackColor={{ false: '#767577', true: '#10B981' }}
+                                        />
+                                    </View>
+                                    <Text style={[styles.lixeiraDesc, { marginTop: 20, fontSize: 11 }]}>
+                                        Fotos em HD consomem mais dados na sincronização em nuvem.
+                                    </Text>
+                                </View>
+                            </>
+                        )}
 
                         {activeModal === 'LIXEIRA' && (
                             <>
                                 <ModalHeader title="Lixeira Administrativa" onClose={() => setActiveModal(null)} />
                                 <View style={styles.lixeiraBody}>
-                                    <MaterialCommunityIcons name="trash-can-outline" size={60} color={colors.danger} />
-                                    <Text style={[styles.lixeiraCount, { color: colors.textPrimary }]}>{lixeiraCount} ITENS</Text>
-                                    <Text style={[styles.lixeiraDesc, { color: colors.textMuted }]}>Itens removidos aguardando exclusão física definitiva do banco SQLite.</Text>
+                                    <MaterialCommunityIcons name="trash-can-outline" size={80} color={colors.danger} />
+                                    <Text style={[styles.lixeiraCount, { color: '#FFF' }]}>{lixeiraCount} ITENS</Text>
+                                    <Text style={[styles.lixeiraDesc, { color: 'rgba(255,255,255,0.6)' }]}>
+                                        Registros apagados que ainda ocupam espaço no seu dispositivo. 
+                                        A limpeza física é definitiva.
+                                    </Text>
 
                                     <View style={styles.lixeiraActions}>
                                         <TouchableOpacity
-                                            style={[styles.restoreBtn, { borderColor: colors.primary }]}
+                                            style={[styles.restoreBtn, { borderColor: '#10B981' }]}
                                             onPress={async () => {
                                                 const tabelas = ['vendas', 'compras', 'colheitas', 'custos', 'monitoramento_entidade', 'cadastro', 'clientes', 'culturas', 'plantio', 'maquinas', 'caderno_notas'];
-                                                for (const t of tabelas) { await executeQuery(`UPDATE ${t} SET is_deleted = 0 WHERE is_deleted = 1`); }
-                                                countLixeira(); showToast('Itens restaurados!'); setActiveModal(null);
+                                                for (const t of tabelas) { try { await executeQuery(`UPDATE ${t} SET is_deleted = 0 WHERE is_deleted = 1`); } catch (e) { } }
+                                                countLixeira(); showToast('Itens restaurados com sucesso!'); setActiveModal(null);
                                             }}
                                         >
-                                            <Text style={[styles.restoreText, { color: colors.primary }]}>RESTAURAR TUDO</Text>
+                                            <Text style={[styles.restoreText, { color: '#10B981' }]}>RESTAURAR TUDO</Text>
                                         </TouchableOpacity>
 
                                         <TouchableOpacity
                                             style={[styles.purgeBtn, { backgroundColor: colors.danger }]}
                                             onPress={() => {
-                                                Alert.alert('AVISO', 'Esta ação é irreversível. Apagar definitivamente?', [
-                                                    { text: 'Cancelar' },
+                                                Alert.alert('AVISO CRÍTICO', 'Deseja apagar permanentemente todos os itens da lixeira? Esta ação não pode ser desfeita.', [
+                                                    { text: 'Cancelar', style: 'cancel' },
                                                     {
-                                                        text: 'ESVAZIAR', style: 'destructive',
+                                                        text: 'APAGAR PARA SEMPRE', style: 'destructive',
                                                         onPress: async () => {
                                                             const tabelas = ['vendas', 'compras', 'colheitas', 'custos', 'costs', 'monitoramento_entidade', 'cadastro', 'clientes', 'culturas', 'plantio', 'maquinas', 'caderno_notas'];
                                                             for (const t of tabelas) {
-                                                                try { await executeQuery(`DELETE FROM ${t} WHERE is_deleted = 1`); } catch { }
+                                                                try { await executeQuery(`DELETE FROM ${t} WHERE is_deleted = 1`); } catch (e) { }
                                                             }
-                                                            countLixeira(); showToast('Lixeira limpa!'); setActiveModal(null);
+                                                            countLixeira(); showToast('Lixeira esvaziada!'); setActiveModal(null);
                                                         }
                                                     }
                                                 ]);
@@ -513,78 +627,7 @@ export default function SyncScreen({ navigation }) {
                                 </View>
                             </>
                         )}
-
-                        {activeModal === 'CLIMA' && (
-                            <>
-                                <ModalHeader title="Ajustes de Clima" onClose={() => setActiveModal(null)} />
-                                <View style={{ marginTop: 20 }}>
-                                    <View style={styles.switchRow}>
-                                        <Text style={[styles.switchLabel, { color: colors.textPrimary }]}>Usar GPS Automático</Text>
-                                        <Switch
-                                            value={!!settings.clima_gps}
-                                            onValueChange={v => handleUpdateSetting('clima_gps', v ? 1 : 0)}
-                                            trackColor={{ false: '#767577', true: colors.primary }}
-                                        />
-                                    </View>
-
-                                    {!settings.clima_gps && (
-                                        <>
-                                            <Text style={[styles.inputLabel, { color: colors.textMuted }]}>CIDADE PADRÃO</Text>
-                                            <TextInput
-                                                style={[styles.modalInput, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.glassBorder }]}
-                                                value={settings.clima_cidade}
-                                                onChangeText={t => handleUpdateSetting('clima_cidade', t)}
-                                            />
-                                        </>
-                                    )}
-
-                                    <Text style={[styles.inputLabel, { color: colors.textMuted }]}>API KEY (OPENWEATHERMAP)</Text>
-                                    <TextInput
-                                        style={[styles.modalInput, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.glassBorder }]}
-                                        value={settings.clima_api_key}
-                                        secureTextEntry
-                                        onChangeText={t => handleUpdateSetting('clima_api_key', t)}
-                                    />
-                                    <PrimaryButton label="TESTAR CONEXÃO" onPress={() => showToast('Conexão OK!')} style={{ marginTop: 15 }} />
-                                </View>
-                            </>
-                        )}
-
-                        {activeModal === 'RELATORIO' && (
-                            <>
-                                <ModalHeader title="Preferências de Relatório" onClose={() => setActiveModal(null)} />
-                                <View style={{ marginTop: 20 }}>
-                                    <View style={styles.switchRow}>
-                                        <Text style={[styles.switchLabel, { color: colors.textPrimary }]}>Exibir Gráficos Prontos</Text>
-                                        <Switch
-                                            value={!!settings.rel_graficos}
-                                            onValueChange={v => handleUpdateSetting('rel_graficos', v ? 1 : 0)}
-                                            trackColor={{ false: '#767577', true: colors.primary }}
-                                        />
-                                    </View>
-                                    <View style={styles.switchRow}>
-                                        <Text style={[styles.switchLabel, { color: colors.textPrimary }]}>Exportar PDF Automaticamente</Text>
-                                        <Switch
-                                            value={!!settings.rel_auto_pdf}
-                                            onValueChange={v => handleUpdateSetting('rel_auto_pdf', v ? 1 : 0)}
-                                            trackColor={{ false: '#767577', true: colors.primary }}
-                                        />
-                                    </View>
-
-                                    <View style={{ marginTop: 20 }}>
-                                        <Text style={[styles.inputLabel, { color: colors.textMuted }]}>RODAPÉ DOS DOCUMENTOS</Text>
-                                        <TextInput
-                                            style={[styles.modalInput, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.glassBorder, height: 80 }]}
-                                            value={settings.rel_rodape}
-                                            multiline
-                                            onChangeText={t => handleUpdateSetting('rel_rodape', t)}
-                                        />
-                                    </View>
-                                </View>
-                            </>
-                        )}
-
-                    </GlowCard>
+                    </SafeBlurView>
                 </View>
             </Modal>
         </AppContainer>
@@ -592,48 +635,286 @@ export default function SyncScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    scrollContent: { padding: 20, paddingBottom: 60 },
-    sectionTitle: { fontSize: 10, fontWeight: '900', letterSpacing: 1.5, marginBottom: 15, marginLeft: 5 },
-    itemWrapper: { marginBottom: 12 },
-    controlCard: { padding: 18, borderRadius: 24, borderWidth: 1, flexDirection: 'row', alignItems: 'center' },
-    iconBox: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-    controlLabel: { fontSize: 15, fontWeight: 'bold' },
-    controlDesc: { fontSize: 12, marginTop: 2 },
-    badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10, minWidth: 24, alignItems: 'center' },
-    badgeText: { color: '#FFF', fontSize: 10, fontWeight: '900' },
+    scrollContent: {
+        padding: 18,
+        paddingBottom: 60,
+    },
+    
+    // 🌀 Ambient Lighting
+    orb: {
+        position: 'absolute',
+        width: 250,
+        height: 250,
+        borderRadius: 125,
+        shadowColor: '#10B981', shadowRadius: 30, shadowOpacity: 0.1,
+        zIndex: -1
+    },
 
-    modalOverlay: { flex: 1, justifyContent: 'center', padding: 20 },
-    modalInner: { padding: 25, borderRadius: 32, borderWidth: 1, maxHeight: '80%' },
-    modalSubHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-    modalTitle: { fontSize: 18, fontWeight: '900' },
-    closeBtn: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+    // 📋 Sections Header Design
+    sectionHeader: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: '#10B981',
+        letterSpacing: 2,
+        marginLeft: 10,
+        marginBottom: 12,
+        marginTop: 25
+    },
+    sectionGlass: {
+        borderRadius: 24,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        paddingHorizontal: 10,
+        marginBottom: 10
+    },
+    divider: {
+        height: 1,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        marginHorizontal: 15,
+    },
 
-    inputLabel: { fontSize: 10, fontWeight: '900', letterSpacing: 1, marginBottom: 8, marginTop: 15 },
-    modalInput: { height: 50, borderRadius: 14, borderWidth: 1, paddingHorizontal: 15, fontSize: 15, fontWeight: '600', marginBottom: 5 },
-    row: { flexDirection: 'row', gap: 12 },
+    // 🔘 Control Item Integration
+    itemWrapper: {
+        width: '100%',
+    },
+    controlContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 16,
+        paddingHorizontal: 10,
+    },
+    iconBox: {
+        width: 42,
+        height: 42,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    controlLabel: {
+        fontSize: 15,
+        fontWeight: '800',
+        letterSpacing: 0.3
+    },
+    controlDesc: {
+        fontSize: 11,
+        marginTop: 2,
+        opacity: 0.6
+    },
+    badge: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+        minWidth: 22,
+        alignItems: 'center'
+    },
+    badgeText: {
+        color: '#FFF',
+        fontSize: 10,
+        fontWeight: '900'
+    },
 
-    miniBtn: { flex: 1, height: 36, borderRadius: 10, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
+    // 🚩 Footer
+    footerContainer: {
+        marginTop: 30,
+        alignItems: 'center',
+        paddingBottom: 30
+    },
+    versionText: {
+        fontSize: 11,
+        fontWeight: '900',
+        letterSpacing: 1.5,
+        opacity: 0.6
+    },
+    legalText: {
+        fontSize: 9,
+        fontWeight: '800',
+        marginTop: 6,
+        letterSpacing: 0.5,
+        opacity: 0.4
+    },
 
-    themeRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
-    themeBtn: { flex: 1, padding: 15, borderRadius: 16, borderWidth: 1, alignItems: 'center', gap: 6 },
-    themeLabel: { fontSize: 9, fontWeight: '900' },
-
-    colorRow: { flexDirection: 'row', justifyContent: 'center', gap: 15, marginTop: 15 },
-    colorCircle: { width: 40, height: 40, borderRadius: 20 },
-
-    switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 15, marginTop: 15, borderBottomWidth: 1 },
-    switchLabel: { fontSize: 14, fontWeight: 'bold' },
-
-    lixeiraBody: { alignItems: 'center', paddingVertical: 20 },
-    lixeiraCount: { fontSize: 32, fontWeight: '900', marginVertical: 15 },
-    lixeiraDesc: { textAlign: 'center', fontSize: 13, lineHeight: 18 },
-    lixeiraActions: { flexDirection: 'row', gap: 12, marginTop: 30, width: '100%' },
-    restoreBtn: { flex: 1, height: 50, borderRadius: 16, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
-    restoreText: { fontSize: 11, fontWeight: '900' },
-    purgeBtn: { flex: 1, height: 50, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-    purgeText: { color: '#FFF', fontSize: 11, fontWeight: '900' },
-
-    footerInfo: { marginTop: 40, alignItems: 'center', gap: 4 },
-    versionText: { fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
-    buildText: { fontSize: 10, fontWeight: '600' }
+    // 🔲 Modal Design
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        padding: 20
+    },
+    modalGlass: {
+        padding: 24,
+        borderRadius: 32,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.12)',
+        maxHeight: '85%'
+    },
+    modalSubHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 15
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '900',
+        letterSpacing: 0.5
+    },
+    closeBtn: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    inputBox: {
+        marginBottom: 15
+    },
+    inputLabel: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#10B981',
+        letterSpacing: 1,
+        marginBottom: 8,
+        marginTop: 10
+    },
+    modalInput: {
+        height: 52,
+        borderRadius: 14,
+        borderWidth: 1,
+        paddingHorizontal: 15,
+        fontSize: 15,
+        fontWeight: '600'
+    },
+    row: {
+        flexDirection: 'row',
+        gap: 12,
+        marginBottom: 10
+    },
+    saveBtn: {
+        marginTop: 25,
+        borderRadius: 16,
+        overflow: 'hidden'
+    },
+    saveGradient: {
+        paddingVertical: 18,
+        alignItems: 'center'
+    },
+    saveText: {
+        color: '#FFF',
+        fontWeight: '900',
+        fontSize: 13,
+        letterSpacing: 1
+    },
+    themeRow: {
+        flexDirection: 'row',
+        gap: 10,
+        marginTop: 5
+    },
+    themeBtn: {
+        flex: 1,
+        paddingVertical: 18,
+        borderRadius: 16,
+        borderWidth: 1,
+        alignItems: 'center',
+        gap: 8
+    },
+    themeLabel: {
+        fontSize: 9,
+        fontWeight: '900',
+        letterSpacing: 0.5
+    },
+    colorRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 15,
+        marginTop: 10
+    },
+    colorCircle: {
+        width: 38,
+        height: 38,
+        borderRadius: 19
+    },
+    switchRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 18,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.05)'
+    },
+    switchLabel: {
+        fontSize: 14,
+        fontWeight: '700'
+    },
+    miniBtn: {
+        flex: 1,
+        height: 40,
+        borderRadius: 12,
+        borderWidth: 1,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    testBtn: {
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderWidth: 1,
+        borderColor: 'rgba(59, 130, 246, 0.3)',
+        paddingVertical: 15,
+        borderRadius: 14,
+        alignItems: 'center',
+        marginTop: 20
+    },
+    testBtnText: {
+        color: '#3B82F6',
+        fontWeight: '900',
+        fontSize: 11,
+        letterSpacing: 1
+    },
+    lixeiraBody: {
+        alignItems: 'center',
+        paddingVertical: 20
+    },
+    lixeiraCount: {
+        fontSize: 32,
+        fontWeight: '900',
+        marginVertical: 15
+    },
+    lixeiraDesc: {
+        textAlign: 'center',
+        fontSize: 13,
+        lineHeight: 18,
+        opacity: 0.6
+    },
+    lixeiraActions: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 30,
+        width: '100%'
+    },
+    restoreBtn: {
+        flex: 1,
+        height: 52,
+        borderRadius: 16,
+        borderWidth: 1,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    restoreText: {
+        fontSize: 11,
+        fontWeight: '900',
+        letterSpacing: 0.5
+    },
+    purgeBtn: {
+        flex: 1,
+        height: 52,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    purgeText: {
+        color: '#FFF',
+        fontSize: 11,
+        fontWeight: '900',
+        letterSpacing: 0.5
+    }
 });

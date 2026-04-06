@@ -90,23 +90,38 @@ export const ProductionService = {
 
     applyFertilization: async (planoUuid) => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('Usuário não autenticado');
+            const { atualizarEstoque } = require('../../../database/database'); // Lazy import para evitar Require Cycle
+            
+            // 1. Pega os itens da receita salvos localmente
+            const res = await executeQuery(`SELECT * FROM production_fertilization_items WHERE plano_uuid = ?`, [planoUuid]);
+            
+            for (let i = 0; i < res.rows.length; i++) {
+                const item = res.rows.item(i);
+                // 2. Abate do estoque local
+                await atualizarEstoque(item.produto_id, -item.quantidade);
+                
+                // 3. Registra movimentação de saída (Consumo)
+                await executeQuery(
+                    `INSERT INTO movimentacao_estoque (uuid, produto_id, tipo, quantidade, origem, data, observacao, last_updated, sync_status) VALUES (?,?,?,?,?,?,?,?,0)`,
+                    [uuidv4(), item.produto_id, 'CONSUMO', item.quantidade, 'ADUBACAO', new Date().toISOString(), 'Consumo Plano ' + planoUuid, new Date().toISOString()]
+                );
+            }
 
-            // 1. CHAMA A LÓGICA NO BANCO (Nível ERP Diamond Pro) 🚀
-            const { error } = await supabase.rpc('apply_fertilization_v2', {
-                p_plano_uuid: planoUuid,
-                p_user_id: user.id
-            });
-
-            if (error) throw error;
-
-            // 2. Sincroniza estado local (opcional, para refletir no SQLite se necessário)
+            // 4. Marca plano como concluído
             const timestamp = new Date().toISOString();
             await executeQuery(
                 `UPDATE planos_adubacao SET status = 'CONCLUIDO', data_aplicacao = ?, last_updated = ? WHERE uuid = ?`,
                 [timestamp, timestamp, planoUuid]
             );
+
+            // 5. Tentativa de Sincronização Server-Side (Não quebra se offline)
+            supabase.auth.getUser().then(({ data: { user } }) => {
+                if (user) {
+                    supabase.rpc('apply_fertilization_v2', {
+                        p_plano_uuid: planoUuid, p_user_id: user.id
+                    }).catch(() => console.log('RPC Supabase falou em background (Offline mode)'));
+                }
+            }).catch(() => {});
 
             return { success: true };
         } catch (error) {

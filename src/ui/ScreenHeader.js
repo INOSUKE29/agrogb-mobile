@@ -6,13 +6,16 @@ import { useTheme } from '../theme/ThemeContext';
 /**
  * ScreenHeader — Moderno e Dinâmico v8
  */
-export default function ScreenHeader({ title, onBack, rightElement }) {
+export default function ScreenHeader({ title, onBack, rightElement, transparent }) {
     const { colors, effectiveTheme } = useTheme();
 
     const isLight = effectiveTheme === 'light';
 
     return (
-        <View style={[styles.header, { backgroundColor: colors.glass || (isLight ? 'rgba(255,255,255,0.7)' : 'rgba(15,23,42,0.6)') }]}>
+        <View style={[
+            styles.header, 
+            { backgroundColor: transparent ? 'transparent' : (colors.glass || (isLight ? 'rgba(255,255,255,0.7)' : 'rgba(15,23,42,0.6)')) }
+        ]}>
             <View style={styles.row}>
                 {onBack ? (
                     <TouchableOpacity onPress={onBack} style={[styles.back, { backgroundColor: (colors.border || '#1E8E5A') + '20' }]}>

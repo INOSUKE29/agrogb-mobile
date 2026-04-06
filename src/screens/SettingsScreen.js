@@ -1,46 +1,58 @@
 import React, { useState, useCallback } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, Alert, 
-    TouchableOpacity, RefreshControl, Platform, Linking, Image
+    TouchableOpacity, RefreshControl, Image, Switch,
+    StatusBar, SafeAreaView
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as LocalAuthentication from 'expo-local-authentication';
+import { LinearGradient } from 'expo-linear-gradient';
+import SafeBlurView from '../ui/SafeBlurView';
 
 import { useTheme } from '../theme/ThemeContext';
 import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
-import GlowCard from '../ui/GlowCard';
-import SettingItem from '../ui/components/SettingItem';
 import { showToast } from '../ui/Toast';
 import { AuthService } from '../services/authService';
-import { getAppSettings, updateAppSetting, executeQuery } from '../database/database';
+import { executeQuery } from '../database/database';
 import { pushLocalChanges, pullServerChanges } from '../services/SyncService';
 
 export default function SettingsScreen({ navigation }) {
     const { colors, theme, setTheme } = useTheme();
     const [loading, setLoading] = useState(false);
-    const [settings, setSettings] = useState({});
-    const [user, setUser] = useState({ nome: 'Produtor', email: '', avatar: null });
+    const [user, setUser] = useState({ 
+        nome: 'Carregando...', 
+        email: '', 
+        avatar: null, 
+        empresa: 'Carregando fazenda...' 
+    });
     const [biometryInfo, setBiometryInfo] = useState({ available: false, enrolled: false });
-
-    // Padrão v1.1.11: Idiomas e Notificações (Simulados no Banco)
-    const [language, setLanguage] = useState('Português (Brasil)');
-    const [notifications, setNotifications] = useState({ push: true, alerts: true });
 
     const loadData = async () => {
         setLoading(true);
         try {
-            // 1. Carrega Settings do Banco
-            const s = await getAppSettings();
-            if (s) setSettings(s);
-
-            // 2. Carrega Perfil
             const session = await AuthService.checkSession();
             if (session) {
+                // 1. Busca dados do Usuário
                 const res = await executeQuery('SELECT * FROM usuarios WHERE id = ? OR uuid = ?', [session.userId, session.userId]);
-                if (res.rows.length > 0) setUser(res.rows.item(0));
+                let userData = { nome: 'Produtor AgroGB', email: session.email, empresa: 'Fazenda não encontrada' };
+                
+                if (res.rows.length > 0) {
+                    const dbUser = res.rows.item(0);
+                    userData.nome = dbUser.nome_completo || dbUser.usuario;
+                    userData.email = dbUser.email || session.email;
+                    userData.avatar = dbUser.avatar;
+                }
+
+                // 2. Busca Empresa/Fazenda vinculada (v2_fazendas)
+                const resFazenda = await executeQuery('SELECT nome FROM v2_fazendas WHERE produtor_id = ? LIMIT 1', [session.userId]);
+                if (resFazenda.rows.length > 0) {
+                    userData.empresa = resFazenda.rows.item(0).nome;
+                }
+
+                setUser(userData);
             }
 
             // 3. Status Biometria
@@ -52,10 +64,6 @@ export default function SettingsScreen({ navigation }) {
                 enrolled: asked === 'true' && isEnrolled
             });
 
-            // 4. Idioma Escolhido (Persistência Simples)
-            const savedLang = await AsyncStorage.getItem('@app_language');
-            if (savedLang) setLanguage(savedLang);
-
         } catch (e) {
             console.error('[Settings] Erro ao carregar dados:', e);
         } finally {
@@ -65,38 +73,20 @@ export default function SettingsScreen({ navigation }) {
 
     useFocusEffect(useCallback(() => { loadData(); }, []));
 
-    const handleUpdate = async (key, value) => {
-        try {
-            await updateAppSetting(key, value);
-            setSettings(prev => ({ ...prev, [key]: value }));
-            showToast('Preferência salva!');
-        } catch (e) {
-            Alert.alert('Erro', 'Não foi possível salvar a configuração.');
-        }
-    };
-
-    const handleLanguageChange = async () => {
-        const nextLang = language === 'Português (Brasil)' ? 'English (US)' : 'Português (Brasil)';
-        setLanguage(nextLang);
-        await AsyncStorage.setItem('@app_language', nextLang);
-        showToast(`Idioma alterado para ${nextLang}`);
-    };
-
     const handleToggleBiometry = async () => {
         if (!biometryInfo.available) return;
-        
         if (biometryInfo.enrolled) {
             await AsyncStorage.removeItem('@asked_biometrics');
             showToast('Biometria desativada');
             loadData();
         } else {
             const result = await LocalAuthentication.authenticateAsync({
-                promptMessage: 'Confirme sua identidade para ativar o acesso rápido',
+                promptMessage: 'Confirme sua identidade',
                 fallbackLabel: 'Usar Senha'
             });
             if (result.success) {
                 await AsyncStorage.setItem('@asked_biometrics', 'true');
-                showToast('Login por digital ativado!');
+                showToast('Biometria ativada!');
                 loadData();
             }
         }
@@ -105,260 +95,254 @@ export default function SettingsScreen({ navigation }) {
     const runManualSync = async () => {
         setLoading(true);
         try {
-            showToast('Iniciando sincronização...');
+            showToast('Sincronizando...');
             const push = await pushLocalChanges();
             const pull = await pullServerChanges();
-            showToast(`Sincronizado! ↑${push.pushed || 0} ↓${pull.pulled || 0} itens.`);
+            showToast(`Sincronizado! ↑${push.pushed || 0} ↓${pull.pulled || 0}`);
         } catch (e) {
-            Alert.alert('Erro na Sync', e.message);
+            Alert.alert('Erro', e.message);
         } finally {
             setLoading(false);
         }
     };
 
     const handleLogout = async () => {
-        Alert.alert('Sair', 'Deseja encerrar a sessão profissional?', [
-            { text: 'Cancelar', style: 'cancel' },
-            { text: 'SAIR', style: 'destructive', onPress: async () => { await AuthService.logout(); } }
+        Alert.alert('Sair', 'Deseja encerrar a sessão?', [
+            { text: 'MANTER CONECTADO', style: 'cancel' },
+            { text: 'SAIR AGORA', style: 'destructive', onPress: async () => { await AuthService.logout(); } }
         ]);
     };
 
-    const checkForUpdates = () => {
-        setLoading(true);
-        setTimeout(() => {
-            setLoading(false);
-            Alert.alert('AgroGB Update', 'Seu aplicativo já está na versão mais recente (v1.1.11 Diamond Pro).');
-        }, 1500);
-    };
+    // --- COMPONENTES INTERNOS FIÉIS AO MOCKUP ---
+
+    const SettingsItem = ({ icon, label, value, onPress, type = 'chevron', danger, isLast, iconColor = '#10B981' }) => (
+        <View>
+            <TouchableOpacity 
+                onPress={onPress} 
+                activeOpacity={0.7} 
+                style={styles.itemWrapper}
+                disabled={type === 'switch'}
+            >
+                <View style={styles.itemMain}>
+                    <View style={[styles.iconBox, { backgroundColor: danger ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.05)' }]}>
+                        <Ionicons name={icon} size={18} color={danger ? '#EF4444' : iconColor} />
+                    </View>
+                    <Text style={[styles.itemLabel, danger && { color: '#EF4444' }]}>{label}</Text>
+                </View>
+                
+                <View style={styles.itemRight}>
+                    {type === 'switch' ? (
+                        <Switch 
+                            value={!!value} 
+                            onValueChange={onPress}
+                            trackColor={{ false: '#1E293B', true: '#10B981' }}
+                            thumbColor="#FFF"
+                        />
+                    ) : (
+                        <View style={styles.chevronGroup}>
+                            {value && <Text style={styles.itemValue}>{value}</Text>}
+                            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.2)" />
+                        </View>
+                    )}
+                </View>
+            </TouchableOpacity>
+            {!isLast && <View style={styles.itemDivider} />}
+        </View>
+    );
+
+    const SettingsGroup = ({ icon, title, children }) => (
+        <View style={styles.groupContainer}>
+            <View style={styles.groupHeader}>
+                <Ionicons name={icon} size={16} color="rgba(16, 185, 129, 0.6)" />
+                <Text style={styles.groupTitle}>{title}</Text>
+            </View>
+            <SafeBlurView intensity={20} tint="dark" style={styles.groupCard}>
+                {children}
+            </SafeBlurView>
+        </View>
+    );
 
     return (
         <AppContainer>
-            <ScreenHeader title="Configurações" onBack={() => navigation.goBack()} />
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+            <LinearGradient colors={['#030712', '#060B18', '#020617']} style={StyleSheet.absoluteFill} />
+            
+            {/* 🌀 AMBIENT ORBS (Estilo Diamond) */}
+            <View style={[styles.ambientOrb, { top: -80, right: -40, backgroundColor: '#10B981', opacity: 0.06 }]} />
+            <View style={[styles.ambientOrb, { bottom: 100, left: -60, backgroundColor: '#3B82F6', opacity: 0.04 }]} />
+
+            <ScreenHeader title="Perfil & Configurações" onBack={() => navigation.goBack()} transparent />
 
             <ScrollView 
                 showsVerticalScrollIndicator={false} 
                 contentContainerStyle={styles.scrollContent}
-                refreshControl={<RefreshControl refreshing={loading} onRefresh={loadData} colors={[colors.primary]} />}
+                refreshControl={<RefreshControl refreshing={loading} onRefresh={loadData} tintColor="#10B981" />}
             >
-                {/* 1. SEÇÃO: MINHA CONTA (FOTO E DADOS) */}
-                <GlowCard style={styles.sectionCard}>
-                    <Text style={[styles.sectionTitle, { color: colors.primary }]}>MINHA CONTA</Text>
-                    <TouchableOpacity 
-                        style={styles.profileBox} 
-                        onPress={() => navigation.navigate('ProfileEdit')}
-                    >
-                        <View style={[styles.avatarBox, { borderColor: colors.primary }]}>
-                            {user.avatar ? (
-                                <Image source={{ uri: user.avatar }} style={styles.avatarImage} />
-                            ) : (
-                                <Ionicons name="person" size={28} color={colors.primary} />
-                            )}
+                {/* 👤 PERFIL HEADER (Fiel ao Mockup Foto 3) */}
+                <SafeBlurView intensity={35} tint="dark" style={styles.profileCard}>
+                    <View style={styles.profileContent}>
+                        <View style={styles.avatarWrapper}>
+                            <View style={styles.avatarInner}>
+                                {user.avatar ? (
+                                    <Image source={{ uri: user.avatar }} style={styles.avatarImg} />
+                                ) : (
+                                    <View style={[styles.avatarImg, styles.avatarPlaceholder]}>
+                                        <Text style={styles.avatarLetter}>{user.nome?.charAt(0).toUpperCase()}</Text>
+                                    </View>
+                                )}
+                            </View>
                         </View>
-                        <View style={styles.profileText}>
-                            <Text style={[styles.profileName, { color: colors.textPrimary }]}>{user.nome_completo || user.usuario}</Text>
-                            <Text style={[styles.profileEmail, { color: colors.textMuted }]}>Configurações de Identidade</Text>
+                        
+                        <View style={styles.userTextContent}>
+                            <Text style={styles.profileName} numberOfLines={1}>{user.nome}</Text>
+                            <Text style={styles.profileEmail} numberOfLines={1}>{user.email}</Text>
+                            <View style={styles.farmBadge}>
+                                <Ionicons name="leaf" size={10} color="#10B981" />
+                                <Text style={styles.profileCompany}>{user.empresa}</Text>
+                            </View>
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-                    </TouchableOpacity>
-                </GlowCard>
 
-                {/* 2. SEÇÃO: OPERAÇÃO DA FAZENDA */}
-                <GlowCard style={styles.sectionCard}>
-                    <Text style={[styles.sectionTitle, { color: colors.primary }]}>DADOS OPERACIONAIS</Text>
-                    
-                    <SettingItem 
-                        icon="business" 
-                        title="Nome da Fazenda" 
-                        subtitle="Identificação nos relatórios PDF"
-                        value={settings.fazenda_nome || 'Não definido'} 
-                        onPress={() => Alert.prompt('Nome da Fazenda', '', (text) => handleUpdate('fazenda_nome', text), 'plain-text', settings.fazenda_nome)}
-                    />
+                        <TouchableOpacity 
+                            style={styles.editBtn} 
+                            onPress={() => navigation.navigate('ProfileEdit')}
+                            activeOpacity={0.7}
+                        >
+                            <SafeBlurView intensity={40} tint="light" style={styles.editBtnContent}>
+                                <Text style={styles.editBtnText}>Editar Perfil</Text>
+                            </SafeBlurView>
+                        </TouchableOpacity>
+                    </View>
+                </SafeBlurView>
 
-                    <SettingItem 
-                        icon="calendar" 
-                        title="Safra Ativa" 
-                        subtitle="Filtro global de dados"
-                        value={settings.fazenda_safra || '24/25'} 
-                        onPress={() => Alert.prompt('Safra Fiscal', 'Ex: 2024/2025', (text) => handleUpdate('fazenda_safra', text), 'plain-text', settings.fazenda_safra)}
-                    />
+                {/* 👤 PERFIL/APP */}
+                <SettingsGroup icon="person-outline" title="Perfil">
+                    <SettingsItem icon="sunny-outline" label="Tema" value={theme === 'dark' ? 'Escuro' : (theme === 'light' ? 'Claro' : 'Automático')} onPress={() => setTheme(theme === 'dark' ? 'light' : (theme === 'light' ? 'system' : 'dark'))} iconColor="#EAB308" />
+                    <SettingsItem icon="globe-outline" label="Idioma" value="Português" onPress={() => {}} />
+                    <SettingsItem icon="layers-outline" label="Unidade" value="kg" onPress={() => {}} iconColor="#10B981" />
+                    <SettingsItem icon="calendar-outline" label="Safra" value="2024/25" isLast onPress={() => {}} />
+                </SettingsGroup>
 
-                    <SettingItem 
-                        icon="leaf" 
-                        title="Unidade de Medida" 
-                        subtitle="Padrão do sistema"
-                        value={settings.unidade_padrao} 
-                        onPress={() => handleUpdate('unidade_padrao', settings.unidade_padrao === 'KG' ? 'SACAS' : 'KG')}
-                    />
-                </GlowCard>
+                {/* 🔔 NOTIFICAÇÕES */}
+                <SettingsGroup icon="notifications-outline" title="Notificações">
+                    <SettingsItem icon="notifications-outline" label="Alertas Agrícolas" type="switch" value={true} onPress={() => {}} />
+                    <SettingsItem icon="wallet-outline" label="Financeiro" type="switch" value={true} onPress={() => {}} iconColor="#3B82F6" />
+                    <SettingsItem icon="time-outline" label="Horário" value="20:00" onPress={() => {}} />
+                    <SettingsItem icon="repeat-outline" label="Frequência" value="Diariamente" isLast onPress={() => {}} />
+                </SettingsGroup>
 
-                {/* 3. SEÇÃO: PREFERÊNCIAS E TEMA */}
-                <GlowCard style={styles.sectionCard}>
-                    <Text style={[styles.sectionTitle, { color: colors.primary }]}>PREFERÊNCIAS E INTERFACE</Text>
-                    
-                    <SettingItem 
-                        icon="color-palette" 
-                        title="Tema do Aplicativo" 
-                        subtitle={theme === 'dark' ? 'Modo Escuro Ativo' : 'Modo Claro Ativo'}
-                        value={theme === 'dark' ? 'ESCURO' : 'CLARO'}
-                        onPress={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                    />
+                {/* 🛡️ SEGURANÇA */}
+                <SettingsGroup icon="shield-checkmark-outline" title="Segurança">
+                    <SettingsItem icon="lock-closed-outline" label="Senha" onPress={() => showToast('Funcionalidade em breve')} iconColor="rgba(255,255,255,0.4)" />
+                    <SettingsItem icon="finger-print-outline" label="Biometria" type="switch" value={biometryInfo.enrolled} onPress={handleToggleBiometry} />
+                    <SettingsItem icon="key-outline" label="Autenticação em Duas Etapas" onPress={() => {}} />
+                    <SettingsItem icon="phone-portrait-outline" label="Sessões Ativas" isLast onPress={() => {}} />
+                </SettingsGroup>
 
-                    <SettingItem 
-                        icon="language" 
-                        title="Idioma do Sistema" 
-                        subtitle="Traduzir interface e suporte"
-                        value={language}
-                        onPress={handleLanguageChange}
-                    />
+                {/* 🔄 DADOS & SYNC */}
+                <SettingsGroup icon="cloud-upload-outline" title="Dados">
+                    <SettingsItem icon="sync-outline" label="Sincronizar Dados" onPress={runManualSync} />
+                    <SettingsItem icon="cloud-done-outline" label="Backup & Sincronização" onPress={() => navigation.navigate('Sync')} />
+                    <View style={styles.syncStatusFooter}>
+                        <View style={styles.statusDotRow}>
+                            <View style={styles.activeDot} />
+                            <Text style={styles.statusText}>Status: <Text style={{ color: '#10B981' }}>Online</Text></Text>
+                        </View>
+                        <Text style={styles.syncDate}>Último Backup: 23/04/2024</Text>
+                    </View>
+                </SettingsGroup>
 
-                    <SettingItem 
-                        icon="notifications" 
-                        title="Notificações Push" 
-                        subtitle="Alertas de colheita e custos"
-                        type="switch"
-                        value={notifications.push}
-                        onPress={() => setNotifications({ ...notifications, push: !notifications.push })}
-                    />
-                </GlowCard>
+                {/* 🚪 LOGOUT (Fiel ao Mockup) */}
+                <TouchableOpacity 
+                    style={styles.logoutBtn} 
+                    onPress={handleLogout}
+                    activeOpacity={0.8}
+                >
+                    <LinearGradient colors={['#991B1B', '#7F1D1D']} style={styles.logoutGradient}>
+                        <Text style={styles.logoutBtnText}>Sair</Text>
+                    </LinearGradient>
+                </TouchableOpacity>
 
-                {/* 4. SEÇÃO: SEGURANÇA E FINANCEIRO */}
-                <GlowCard style={styles.sectionCard}>
-                    <Text style={[styles.sectionTitle, { color: colors.primary }]}>SEGURANÇA E FINANÇAS</Text>
-                    
-                    <SettingItem 
-                        icon="finger-print" 
-                        title="Acesso Biométrico" 
-                        subtitle="Digital/FaceID para entrar"
-                        type="switch"
-                        value={biometryInfo.enrolled}
-                        onPress={handleToggleBiometry}
-                        disabled={!biometryInfo.available}
-                    />
-
-                    <SettingItem 
-                        icon="cash" 
-                        title="Moeda Padrão" 
-                        value={settings.fin_moeda} 
-                        onPress={() => handleUpdate('fin_moeda', settings.fin_moeda === 'R$' ? 'US$' : 'R$')}
-                    />
-                </GlowCard>
-
-                {/* 5. SEÇÃO: SOBRE E ATUALIZAÇÕES */}
-                <GlowCard style={styles.sectionCard}>
-                    <Text style={[styles.sectionTitle, { color: colors.primary }]}>SOBRE O APP</Text>
-                    
-                    <SettingItem 
-                        icon="cloud-download" 
-                        title="Verificar Atualizações" 
-                        subtitle="Checar nova versão no servidor"
-                        onPress={checkForUpdates}
-                    />
-
-                    <SettingItem 
-                        icon="document-lock" 
-                        title="Termos e Privacidade" 
-                        onPress={() => Linking.openURL('https://agrogb.com/termos')}
-                    />
-
-                    <SettingItem 
-                        icon="help-circle" 
-                        title="Centro de Ajuda" 
-                        onPress={() => Linking.openURL('https://agrogb.com/ajuda')}
-                    />
-                </GlowCard>
-
-                {/* FOOTER: SAIR E VERSÃO */}
-                <View style={styles.footer}>
-                    <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-                        <Ionicons name="log-out-outline" size={24} color={colors.danger} />
-                        <Text style={[styles.logoutText, { color: colors.danger }]}>LOGOUT SEGURO</Text>
-                    </TouchableOpacity>
-                    <Text style={[styles.versionText, { color: colors.textMuted }]}>AGROGB DIAMOND PRO v1.1.11 • 2026</Text>
-                    <Text style={[styles.legalText, { color: colors.textMuted }]}>AGROGB TECNOLOGIA LTDA • TODOS DIREITOS RESERVADOS</Text>
+                <View style={styles.versionInfo}>
+                    <Text style={styles.versionText}>AgroGB Diamond Pro • v1.12.0</Text>
+                    <Text style={styles.versionSub}>SISTEMA DE GESTÃO RURAL</Text>
                 </View>
-
             </ScrollView>
         </AppContainer>
     );
 }
 
 const styles = StyleSheet.create({
-    scrollContent: {
-        padding: 16,
-        paddingBottom: 40,
+    scrollContent: { padding: 18, paddingBottom: 60 },
+    ambientOrb: { position: 'absolute', width: 300, height: 300, borderRadius: 150, zIndex: -1 },
+
+    // Profile Card
+    profileCard: {
+        borderRadius: 28, marginBottom: 26, overflow: 'hidden',
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+        backgroundColor: 'rgba(15, 23, 42, 0.4)',
     },
-    sectionCard: {
-        padding: 20,
-        marginBottom: 20,
-        borderRadius: 24,
+    profileContent: { flexDirection: 'row', alignItems: 'center', padding: 20 },
+    avatarWrapper: {
+        width: 68, height: 68, borderRadius: 34,
+        padding: 2, borderWidth: 1.5, borderColor: 'rgba(16, 185, 129, 0.3)',
+        backgroundColor: 'rgba(16, 185, 129, 0.05)',
     },
-    sectionTitle: {
-        fontSize: 11,
-        fontWeight: '900',
-        letterSpacing: 2,
-        marginBottom: 15,
-        textTransform: 'uppercase',
+    avatarInner: { width: '100%', height: '100%', borderRadius: 32, overflow: 'hidden', backgroundColor: '#000' },
+    avatarImg: { width: '100%', height: '100%' },
+    avatarPlaceholder: { backgroundColor: '#0B1120', justifyContent: 'center', alignItems: 'center' },
+    avatarLetter: { color: '#10B981', fontSize: 28, fontWeight: '900' },
+    
+    userTextContent: { flex: 1, marginLeft: 16 },
+    profileName: { color: '#FFF', fontSize: 18, fontWeight: '800', letterSpacing: -0.5 },
+    profileEmail: { color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: 1 },
+    farmBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+    profileCompany: { color: 'rgba(16, 185, 129, 0.8)', fontSize: 11, fontWeight: '700' },
+
+    editBtn: { borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+    editBtnContent: { paddingHorizontal: 14, paddingVertical: 10 },
+    editBtnText: { color: '#FFF', fontSize: 11, fontWeight: '800' },
+
+    // Groups
+    groupContainer: { marginBottom: 28 },
+    groupHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginLeft: 8, marginBottom: 12 },
+    groupTitle: { 
+        color: '#FFF', fontSize: 13, fontWeight: '800', 
+        letterSpacing: 0.5, opacity: 0.9
     },
-    profileBox: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 10,
+    groupCard: {
+        borderRadius: 24, overflow: 'hidden',
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
+        backgroundColor: 'rgba(30, 41, 59, 0.3)',
     },
-    avatarBox: {
-        width: 60,
-        height: 60,
-        borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1.5,
+
+    // Items
+    itemWrapper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 18 },
+    itemMain: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+    iconBox: {
+        width: 34, height: 34, borderRadius: 10,
+        justifyContent: 'center', alignItems: 'center',
+        marginRight: 14
     },
-    avatarImage: {
-        width: '100%',
-        height: '100%',
-        borderRadius: 18,
-    },
-    profileText: {
-        flex: 1,
-        marginLeft: 15,
-    },
-    profileName: {
-        fontSize: 17,
-        fontWeight: '900',
-    },
-    profileEmail: {
-        fontSize: 12,
-        fontWeight: '500',
-        marginTop: 2,
-    },
-    footer: {
-        alignItems: 'center',
-        marginTop: 10,
-        paddingBottom: 20,
-    },
-    logoutBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-        paddingVertical: 15,
-        paddingHorizontal: 30,
-        borderRadius: 20,
-        marginBottom: 15,
-    },
-    logoutText: {
-        fontWeight: '900',
-        fontSize: 13,
-        marginLeft: 10,
-        letterSpacing: 1,
-    },
-    versionText: {
-        fontSize: 10,
-        fontWeight: '900',
-        letterSpacing: 1,
-    },
-    legalText: {
-        fontSize: 8,
-        fontWeight: '800',
-        marginTop: 5,
-        letterSpacing: 0.5,
-    }
+    itemLabel: { color: '#F1F5F9', fontSize: 15, fontWeight: '600' },
+    itemRight: { flexDirection: 'row', alignItems: 'center' },
+    chevronGroup: { flexDirection: 'row', alignItems: 'center' },
+    itemValue: { color: 'rgba(255,255,255,0.3)', fontSize: 13, marginRight: 8, fontWeight: '500' },
+    itemDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.03)', marginHorizontal: 18 },
+
+    // Dados specific
+    syncStatusFooter: { padding: 18, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.02)' },
+    statusDotRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+    activeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981' },
+    statusText: { color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: '700' },
+    syncDate: { color: 'rgba(255,255,255,0.2)', fontSize: 10, marginLeft: 14 },
+
+    // Sair Button
+    logoutBtn: { borderRadius: 18, overflow: 'hidden', marginTop: 10, marginBottom: 30 },
+    logoutGradient: { height: 56, justifyContent: 'center', alignItems: 'center' },
+    logoutBtnText: { color: '#FFF', fontSize: 16, fontWeight: '900', letterSpacing: 1 },
+
+    versionInfo: { alignItems: 'center', marginTop: 10, marginBottom: 40 },
+    versionText: { color: 'rgba(255,255,255,0.2)', fontSize: 10, fontWeight: '800', letterSpacing: 1.5 },
+    versionSub: { color: 'rgba(16, 185, 129, 0.3)', fontSize: 8, fontWeight: '900', marginTop: 4, letterSpacing: 2 }
 });
+

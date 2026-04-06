@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, Vibration, Platform } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { RADIUS } from '../theme/radius';
 import { TYPOGRAPHY } from '../theme/typography';
@@ -55,7 +55,12 @@ export default function AgroButton({
                 },
                 style
             ]}
-            onPress={onPress}
+            onPress={(e) => {
+                if (!disabled && !loading) {
+                    if (Platform.OS !== 'web') Vibration.vibrate(30); // Micro-vibração
+                    if (onPress) onPress(e);
+                }
+            }}
             activeOpacity={0.7}
             disabled={disabled || loading}
         >

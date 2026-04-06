@@ -1,42 +1,7 @@
-import { executeQuery } from '../database/database';
+import { executeQuery, atualizarEstoque } from '../database/database';
 
 const up = (t) => (t ? t.toUpperCase() : null);
-const APP_START_DATE = '2026-01-01'; // Data de Corte
 
-export const atualizarEstoque = async (produto, quantidadeDelta, dataReferencia = null) => {
-    try {
-        // REGRA DE HISTÓRICO: Se a data for antiga, não mexe no estoque atual
-        if (dataReferencia) {
-            if (new Date(dataReferencia) < new Date(APP_START_DATE)) {
-                console.log(`📜 Registro histórico (${dataReferencia}): Estoque inalterado.`);
-                return;
-            }
-        }
-
-        const prodUp = up(produto);
-        const result = await executeQuery('SELECT * FROM estoque WHERE produto = ?', [prodUp]);
-        const timestamp = new Date().toISOString();
-
-        if (result.rows.length > 0) {
-            const current = result.rows.item(0);
-            let novaQuantidade = current.quantidade + quantidadeDelta;
-
-            // REGRA DE NEGATIVO: Se for ficar negativo, zera.
-            if (novaQuantidade < 0) {
-                console.warn(`⚠️ Estoque insuficiente de ${produto}. Ajustando de ${current.quantidade} para 0.`);
-                novaQuantidade = 0;
-            }
-
-            await executeQuery('UPDATE estoque SET quantidade = ?, last_updated = ? WHERE produto = ?', [novaQuantidade, timestamp, prodUp]);
-        } else {
-            // Se não existe e delta é negativo, começa com 0 (não cria negativo)
-            const inicial = quantidadeDelta < 0 ? 0 : quantidadeDelta;
-            await executeQuery('INSERT INTO estoque (produto, quantidade, last_updated) VALUES (?, ?, ?)', [prodUp, inicial, timestamp]);
-        }
-    } catch (e) {
-        console.error('Erro Estoque:', e);
-    }
-};
 
 export const getEstoque = async () => {
     // JOIN com cadastro para pegar unidade e tipo

@@ -1,6 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 import { v4 } from 'uuid';
-import { atualizarEstoque } from '../services/EstoqueService';
+import { Platform } from 'react-native';
+
 import { SCHEMA_V10 } from './schema_v10';
 
 import { V1_DIAMOND_PRO } from './migrations/v1_diamond_pro';
@@ -76,6 +77,25 @@ export const executeTransaction = (queries) => {
 
 export const initDB = async () => {
     try {
+        if (Platform.OS === 'web') {
+            console.log('🌐 Web mode detected. Using Mock DB to prevent crashes.');
+            db = {
+                transaction: (txFn, errFn, successFn) => {
+                    try {
+                        txFn({
+                            executeSql: (sql, params, succ, err) => {
+                                if (succ) succ(null, { rows: { length: 0, item: () => null, _array: [] } });
+                            }
+                        });
+                        if (successFn) successFn();
+                    } catch (e) {
+                        if (errFn) errFn(e);
+                    }
+                }
+            };
+            return db;
+        }
+
         db = SQLite.openDatabase('agrogb_mobile.db');
         
         if (__DEV__) console.log('✅ Banco de dados aberto modo padrão (SDK 50)');
@@ -247,6 +267,43 @@ export const getSaldoEstoque = async (produto_id) => {
 
 // --- HELPER PARA MAIÚSCULAS ---
 const up = (text) => text ? text.toString().toUpperCase().trim() : '';
+
+const APP_START_DATE = '2026-01-01'; // Data de Corte
+
+export const atualizarEstoque = async (produto, quantidadeDelta, dataReferencia = null) => {
+    try {
+        // REGRA DE HISTÓRICO: Se a data for antiga, não mexe no estoque atual
+        if (dataReferencia) {
+            if (new Date(dataReferencia) < new Date(APP_START_DATE)) {
+                console.log(`📜 Registro histórico (${dataReferencia}): Estoque inalterado.`);
+                return;
+            }
+        }
+
+        const prodUp = up(produto);
+        const result = await executeQuery('SELECT * FROM estoque WHERE produto = ?', [prodUp]);
+        const timestamp = new Date().toISOString();
+
+        if (result.rows.length > 0) {
+            const current = result.rows.item(0);
+            let novaQuantidade = current.quantidade + quantidadeDelta;
+
+            // REGRA DE NEGATIVO: Se for ficar negativo, zera.
+            if (novaQuantidade < 0) {
+                console.warn(`⚠️ Estoque insuficiente de ${produto}. Ajustando de ${current.quantidade} para 0.`);
+                novaQuantidade = 0;
+            }
+
+            await executeQuery('UPDATE estoque SET quantidade = ?, last_updated = ? WHERE produto = ?', [novaQuantidade, timestamp, prodUp]);
+        } else {
+            // Se não existe e delta é negativo, começa com 0 (não cria negativo)
+            const inicial = quantidadeDelta < 0 ? 0 : quantidadeDelta;
+            await executeQuery('INSERT INTO estoque (produto, quantidade, last_updated) VALUES (?, ?, ?)', [prodUp, inicial, timestamp]);
+        }
+    } catch (e) {
+        console.error('Erro Estoque:', e);
+    }
+};
 
 // --- LOGGING / AUDITORIA (Fase 19) ---
 export const logActivity = async (acao, entidade, descricao, usuario = 'SISTEMA') => {

@@ -1,459 +1,457 @@
+/**
+ * VendasScreen.js — AgroGB OS
+ * Estilo Premium Forest Green & Gold (Mockup Real "Nova Venda")
+ */
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList } from 'react-native';
+import { 
+    View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, 
+    Modal, TextInput, Platform, SafeAreaView, StatusBar, 
+    ActivityIndicator, Switch 
+} from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { getCadastro, getClientes } from '../database/database';
 import { FinanceService } from '../modules/finance/services/FinanceService';
 import { deleteVenda, marcarVendaRecebida } from '../services/VendaService';
-import { InventoryService } from '../modules/inventory/services/InventoryService';
 import ProductModal from '../modules/inventory/components/ProductModal';
 import ClientModal from '../modules/finance/components/ClientModal';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import AutoSyncService from '../services/AutoSyncService';
-import { showToast } from '../ui/Toast';
-import { useTheme } from '../theme/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ErrorService } from '../services/ErrorService';
 import ConfirmModal from '../ui/ConfirmModal';
-import AppContainer from '../ui/AppContainer';
-import ScreenHeader from '../ui/ScreenHeader';
-import GlowCard from '../ui/GlowCard';
-import GlowInput from '../ui/GlowInput';
-import PrimaryButton from '../ui/PrimaryButton';
+import { showToast } from '../ui/Toast';
+import { LinearGradient } from 'expo-linear-gradient';
+import SafeBlurView from '../ui/SafeBlurView';
 
 export default function VendasScreen({ navigation, route }) {
-    const { colors, isDark } = useTheme();
     const [cliente, setCliente] = useState('');
     const [produto, setProduto] = useState('');
     const [quantidade, setQuantidade] = useState('');
-    const [valor, setValor] = useState('');
-    const [observacao, setObservacao] = useState('');
-    const [statusPagamento, setStatusPagamento] = useState('A_RECEBER');
-    const [editingUuid, setEditingUuid] = useState(null);
+    const [precoKg, setPrecoKg] = useState('');
+    
+    const [formaPagamento, setFormaPagamento] = useState('PIX');
+    const [contasReceber, setContasReceber] = useState(true);
+    const [dataVenda, setDataVenda] = useState(new Date().toLocaleDateString('pt-BR'));
 
+    const [editingUuid, setEditingUuid] = useState(null);
     const [history, setHistory] = useState([]);
-    const [filterStatus, setFilterStatus] = useState('TODAS');
+    
     const [modalVisible, setModalVisible] = useState(false);
     const [clientModalVisible, setClientModalVisible] = useState(false);
     const [recebimentoModal, setRecebimentoModal] = useState(false);
     const [recebimentoItem, setRecebimentoItem] = useState(null);
     const [valorRecebido, setValorRecebido] = useState('');
+    
     const [items, setItems] = useState([]);
     const [clients, setClients] = useState([]);
-    const [searchText, setSearchText] = useState('');
-    const [clientSearchText, setClientSearchText] = useState('');
+    
     const [confirmVisible, setConfirmVisible] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
+    const [saving, setSaving] = useState(false);
 
-    const DRAFT_KEY = '@draft_VendasScreen_v2';
+    const DRAFT_KEY = '@draft_VendasScreen_Diamond_v1';
 
     useEffect(() => {
         const checkDraft = async () => {
             try {
                 const saved = await AsyncStorage.getItem(DRAFT_KEY);
                 if (saved) {
-                    Alert.alert(
-                        'Rascunho Encontrado',
-                        'Existe uma venda não finalizada. Deseja continuá-la?',
-                        [
-                            { text: 'Descartar', style: 'destructive', onPress: () => AsyncStorage.removeItem(DRAFT_KEY) },
-                            {
-                                text: 'Continuar', onPress: () => {
-                                    const draft = JSON.parse(saved);
-                                    setCliente(draft.cliente || '');
-                                    setProduto(draft.produto || '');
-                                    setQuantidade(draft.quantidade || '');
-                                    setValor(draft.valor || '');
-                                    setObservacao(draft.observacao || '');
-                                    setStatusPagamento(draft.statusPagamento || 'A_RECEBER');
-                                }
-                            }
-                        ]
-                    );
+                    const draft = JSON.parse(saved);
+                    setCliente(draft.cliente || '');
+                    setProduto(draft.produto || '');
+                    setQuantidade(draft.quantidade || '');
+                    setPrecoKg(draft.precoKg || '');
+                    setFormaPagamento(draft.formaPagamento || 'PIX');
                 }
-            } catch { console.log('Draft error'); }
+            } catch { }
         };
-        setTimeout(checkDraft, 600);
+        checkDraft();
     }, []);
 
     useEffect(() => {
         const saveDraft = async () => {
-            if (!editingUuid && (cliente || produto || quantidade || valor)) {
-                await AsyncStorage.setItem(DRAFT_KEY, JSON.stringify({ cliente, produto, quantidade, valor, observacao, statusPagamento }));
-            } else if (!editingUuid && !cliente && !produto && !quantidade && !valor) {
-                await AsyncStorage.removeItem(DRAFT_KEY);
+            if (!editingUuid && (cliente || produto || quantidade || precoKg)) {
+                await AsyncStorage.setItem(DRAFT_KEY, JSON.stringify({ cliente, produto, quantidade, precoKg, formaPagamento }));
             }
         };
         const timer = setTimeout(saveDraft, 1000);
         return () => clearTimeout(timer);
-    }, [cliente, produto, quantidade, valor, observacao, statusPagamento, editingUuid]);
+    }, [cliente, produto, quantidade, precoKg, formaPagamento, editingUuid]);
 
     const loadInitialData = useCallback(async () => {
         try {
             const allItems = await getCadastro();
-            const sellable = allItems.filter(i => i.vendavel === 1 || i.vendavel === true || i.vendavel === "1");
-            setItems(sellable);
+            setItems(allItems.filter(i => i.vendavel === 1 || i.vendavel === true || i.vendavel === "1"));
             const allClients = await getClientes();
             setClients(allClients);
-        } catch (err) {
-            console.error('[SCREEN ERROR]', err);
-        }
+        } catch (err) { }
     }, []);
 
     const loadHistory = useCallback(async () => {
-        const data = await FinanceService.getRecentSales();
-        setHistory(data);
+        try {
+            const data = await FinanceService.getRecentSales();
+            setHistory(data || []);
+        } catch (e) {
+            setHistory([]);
+        }
     }, []);
 
-    useFocusEffect(useCallback(() => {
-        loadInitialData();
-        loadHistory();
-    }, [loadInitialData, loadHistory]));
+    useFocusEffect(useCallback(() => { loadInitialData(); loadHistory(); }, [loadInitialData, loadHistory]));
 
-    useEffect(() => {
-        if (route?.params?.newClient) {
-            setCliente(route.params.newClient.nome.toUpperCase());
-            getClientes().then(setClients);
-            navigation.setParams({ newClient: undefined });
-        }
-    }, [route?.params?.newClient, navigation]);
+    const parseDate = (dStr) => {
+        const p = dStr.split('/');
+        return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : new Date().toISOString().split('T')[0];
+    };
 
-    const up = (t, setter) => setter(t.toUpperCase());
+    const valorTotalCalc = useMemo(() => {
+        const q = parseFloat(quantidade) || 0;
+        const p = parseFloat(precoKg) || 0;
+        return q * p;
+    }, [quantidade, precoKg]);
 
-    const salvar = useCallback(async () => {
-        if (!produto || !quantidade || !valor) {
-            Alert.alert('Atenção', 'Produto, Qtd e Valor são obrigatórios.');
-            return;
-        }
-        const numQtd = parseFloat(quantidade);
-        const numVal = parseFloat(valor);
-        if (isNaN(numQtd) || numQtd <= 0 || isNaN(numVal) || numVal < 0) {
-            return Alert.alert('Campo Inválido', 'Verifique quantidade e valor.');
-        }
+    const handleSalvar = useCallback(async (isSaveAndNew = false) => {
+        if (!produto || !quantidade || !precoKg) return Alert.alert('Atenção', 'Informe Produto, Quantidade e Preço.');
+        if (valorTotalCalc <= 0) return Alert.alert('Atenção', 'Valor total inválido.');
+
+        setSaving(true);
+        const stPgto = (formaPagamento === 'PRAZO' || contasReceber) ? 'A_RECEBER' : 'RECEBIDO';
+
         const dados = {
             uuid: editingUuid || uuidv4(),
             cliente: (cliente || 'BALCÃO').toUpperCase(),
             produto: produto.toUpperCase(),
-            quantidade: numQtd,
-            valor: numVal,
-            observacao: observacao.toUpperCase(),
-            data: new Date().toISOString().split('T')[0],
-            status_pagamento: statusPagamento,
-            data_recebimento: statusPagamento === 'RECEBIDO' ? new Date().toISOString() : null
+            quantidade: parseFloat(quantidade),
+            valor: valorTotalCalc,
+            observacao: `FORMA: ${formaPagamento}`,
+            data: parseDate(dataVenda),
+            status_pagamento: stPgto,
+            data_recebimento: stPgto === 'RECEBIDO' ? new Date().toISOString() : null
         };
+        
         try {
             await FinanceService.recordSale(dados);
-            showToast(editingUuid ? 'Venda atualizada!' : 'Venda registrada!');
-            setProduto(''); setQuantidade(''); setValor(''); setObservacao(''); setStatusPagamento('A_RECEBER'); setEditingUuid(null);
+            showToast(editingUuid ? '✨ Venda atualizada!' : '✅ Venda registrada!');
+            
+            if (isSaveAndNew) {
+                setProduto(''); setQuantidade(''); setPrecoKg(''); 
+            } else {
+                setCliente(''); setProduto(''); setQuantidade(''); setPrecoKg(''); setFormaPagamento('PIX'); setEditingUuid(null);
+            }
+
             await AsyncStorage.removeItem(DRAFT_KEY);
             loadHistory();
-            AutoSyncService.trigger();
+            try { AutoSyncService.trigger(); } catch {}
         } catch (error) {
             ErrorService.logError('VendasScreen:salvar', error);
             Alert.alert('Erro', 'Não foi possível salvar a venda.');
+        } finally {
+            setSaving(false);
         }
-    }, [produto, quantidade, valor, cliente, observacao, statusPagamento, editingUuid, loadHistory]);
-
-    const handleEdit = useCallback((item) => {
-        setEditingUuid(item.uuid);
-        setCliente(item.cliente);
-        setProduto(item.produto);
-        setQuantidade(item.quantidade.toString());
-        setValor(item.valor.toString());
-        setObservacao(item.observacao || '');
-        setStatusPagamento(item.status_pagamento || 'A_RECEBER');
-    }, []);
-
-    const handleDelete = useCallback((item) => {
-        setItemToDelete(item);
-        setConfirmVisible(true);
-    }, []);
-
+    }, [produto, quantidade, precoKg, valorTotalCalc, cliente, formaPagamento, contasReceber, dataVenda, editingUuid, loadHistory]);
     const confirmDelete = useCallback(async () => {
-        if (itemToDelete) {
+        if (!itemToDelete) return;
+        try {
             await deleteVenda(itemToDelete.uuid);
             setConfirmVisible(false);
             setItemToDelete(null);
-            showToast('Venda excluída com sucesso!');
+            showToast('🗑️ Venda excluída!');
             loadHistory();
+            try { AutoSyncService.trigger(); } catch {}
+        } catch (error) {
+            ErrorService.logError('VendasScreen:confirmDelete', error);
+            Alert.alert('Erro', 'Não foi possível excluir a venda.');
         }
     }, [itemToDelete, loadHistory]);
 
-    const handleBaixar = useCallback((item) => {
-        setRecebimentoItem(item);
-        setValorRecebido(item.valor ? item.valor.toString() : '');
-        setRecebimentoModal(true);
-    }, []);
-
-    const confirmarRecebimento = useCallback(async () => {
-        if (!valorRecebido || isNaN(parseFloat(valorRecebido))) {
-            Alert.alert('Atenção', 'Informe o valor recebido.');
-            return;
-        }
-        try {
-            await marcarVendaRecebida(recebimentoItem.uuid, parseFloat(valorRecebido));
-            setRecebimentoModal(false);
-            setRecebimentoItem(null);
-            setValorRecebido('');
-            loadHistory();
-            Alert.alert('✅ Recebido!', `Venda de ${recebimentoItem.produto} marcada como recebida.`);
-        } catch (error) {
-            ErrorService.logError('VendasScreen:confirmarRecebimento', error);
-            Alert.alert('Erro', 'Falha ao marcar como recebido.');
-        }
-    }, [valorRecebido, recebimentoItem, loadHistory]);
-
-    const memoHistory = useMemo(() => {
-        if (filterStatus === 'TODAS') return history;
-        if (filterStatus === 'A_RECEBER') return history.filter(h => h.status_pagamento !== 'RECEBIDO');
-        return history.filter(h => h.status_pagamento === 'RECEBIDO');
-    }, [history, filterStatus]);
-
     return (
-        <AppContainer>
-            <ScreenHeader title="VENDAS & SAÍDAS" onBack={() => navigation.goBack()} />
+        <View style={styles.webContainer}>
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+            <LinearGradient colors={['#020617', '#0A0F1C', '#030712']} style={StyleSheet.absoluteFill} />
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                <GlowCard style={styles.card}>
-                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>DADOS DA TRANSAÇÃO</Text>
+            {/* 🌀 AMBIENT ORBS */}
+            <View style={[styles.ambientOrb, { top: -40, right: -60, backgroundColor: '#10B981', opacity: 0.12 }]} />
+            <View style={[styles.ambientOrb, { bottom: 100, left: -80, backgroundColor: '#D4AF37', opacity: 0.08 }]} />
 
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>CLIENTE / PARCEIRO</Text>
-                    <TouchableOpacity
-                        style={[styles.selectBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', borderColor: colors.border }]}
-                        onPress={() => setClientModalVisible(true)}
-                    >
-                        <Text style={[styles.selectText, { color: colors.textPrimary, opacity: cliente ? 1 : 0.5 }]}>
-                            {cliente || 'SELECIONAR CLIENTE...'}
-                        </Text>
-                        <Ionicons name="people-outline" size={18} color={colors.primary} />
+            <SafeAreaView style={{ flex: 1, width: '100%', maxWidth: 520, alignSelf: 'center' }}>
+                
+                {/* ── HEADER ── */}
+                <View style={styles.header}>
+                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation?.goBack?.()}>
+                        <Ionicons name="chevron-back" size={24} color="#F8FAFC" />
                     </TouchableOpacity>
-
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>PRODUTO VENDIDO *</Text>
-                    <TouchableOpacity
-                        style={[styles.selectBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', borderColor: colors.border }]}
-                        onPress={() => setModalVisible(true)}
-                    >
-                        <Text style={[styles.selectText, { color: colors.textPrimary, opacity: produto ? 1 : 0.5 }]}>
-                            {produto || 'SELECIONAR PRODUTO...'}
-                        </Text>
-                        <Ionicons name="cube-outline" size={18} color={colors.primary} />
+                    <Text style={styles.headerTitle}>{editingUuid ? 'EDITAR VENDA' : 'NOVA VENDA'}</Text>
+                    <TouchableOpacity style={styles.headerRightBtn} onPress={() => handleSalvar(false)}>
+                        <Text style={styles.headerRightBtnText}>SALVAR</Text>
                     </TouchableOpacity>
-
-                    <View style={styles.row}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={[styles.label, { color: colors.textSecondary }]}>QTD *</Text>
-                            <GlowInput
-                                placeholder="0.00"
-                                value={quantidade}
-                                onChangeText={setQuantidade}
-                                keyboardType="decimal-pad"
-                            />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={[styles.label, { color: colors.textSecondary }]}>VALOR TOTAL R$ *</Text>
-                            <GlowInput
-                                placeholder="0.00"
-                                value={valor}
-                                onChangeText={setValor}
-                                keyboardType="decimal-pad"
-                            />
-                        </View>
-                    </View>
-
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>OBSERVAÇÕES (OPCIONAL)</Text>
-                    <GlowInput
-                        placeholder="Detalhes adicionais..."
-                        value={observacao}
-                        onChangeText={(t) => up(t, setObservacao)}
-                        multiline
-                        style={{ height: 80, textAlignVertical: 'top' }}
-                    />
-
-                    <Text style={[styles.label, { color: colors.textSecondary, marginBottom: 10 }]}>STATUS FINANCEIRO</Text>
-                    <View style={styles.radioGroup}>
-                        <TouchableOpacity
-                            style={[
-                                styles.radioBtn,
-                                { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', borderColor: colors.border },
-                                statusPagamento === 'A_RECEBER' && { borderColor: colors.warning, backgroundColor: (colors.warning || '#F59E0B') + '15' }
-                            ]}
-                            onPress={() => setStatusPagamento('A_RECEBER')}
-                        >
-                            <View style={[styles.radioDot, { borderColor: colors.border }, statusPagamento === 'A_RECEBER' && { borderColor: colors.warning, backgroundColor: colors.warning }]} />
-                            <Text style={[styles.radioText, { color: colors.textSecondary }, statusPagamento === 'A_RECEBER' && { color: colors.warning, fontWeight: '900' }]}>A RECEBER</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[
-                                styles.radioBtn,
-                                { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', borderColor: colors.border },
-                                statusPagamento === 'RECEBIDO' && { borderColor: colors.primary, backgroundColor: (colors.primary || '#1E8E5A') + '15' }
-                            ]}
-                            onPress={() => setStatusPagamento('RECEBIDO')}
-                        >
-                            <View style={[styles.radioDot, { borderColor: colors.border }, statusPagamento === 'RECEBIDO' && { borderColor: colors.primary, backgroundColor: colors.primary }]} />
-                            <Text style={[styles.radioText, { color: colors.textSecondary }, statusPagamento === 'RECEBIDO' && { color: colors.primary, fontWeight: '900' }]} >RECEBIDO</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={{ marginTop: 20 }}>
-                        <PrimaryButton
-                            title={editingUuid ? 'ATUALIZAR VENDA' : 'CONFIRMAR VENDA'}
-                            onPress={salvar}
-                        />
-                        {editingUuid && (
-                            <TouchableOpacity
-                                style={styles.cancelLink}
-                                onPress={() => { setEditingUuid(null); setProduto(''); setQuantidade(''); setValor(''); setObservacao(''); setStatusPagamento('A_RECEBER'); }}
-                            >
-                                <Text style={{ color: colors.danger, fontWeight: 'bold', fontSize: 12 }}>CANCELAR EDIÇÃO</Text>
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                </GlowCard>
-
-                <View style={styles.historySection}>
-                    <Text style={[styles.historyTitle, { color: colors.textSecondary }]}>ÚLTIMOS REGISTROS</Text>
-
-                    <View style={styles.filterBar}>
-                        {['TODAS', 'A_RECEBER', 'RECEBIDAS'].map((f) => (
-                            <TouchableOpacity
-                                key={f}
-                                style={[
-                                    styles.filterPill,
-                                    { backgroundColor: colors.card, borderColor: colors.border },
-                                    filterStatus === f && { backgroundColor: colors.primary, borderColor: colors.primary }
-                                ]}
-                                onPress={() => setFilterStatus(f)}
-                            >
-                                <Text style={[styles.filterPillText, { color: colors.textSecondary }, filterStatus === f && { color: '#FFF' }]}>
-                                    {f === 'RECEBIDAS' ? 'PAGAS' : f.replace('_', ' ')}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-
-                    {memoHistory.map(item => {
-                        const isReceived = item.status_pagamento === 'RECEBIDO';
-                        return (
-                            <GlowCard key={item.uuid} style={styles.historyItem}>
-                                <View style={styles.historyInfo}>
-                                    <View style={styles.historyHeaderRow}>
-                                        <Text style={[styles.hProd, { color: colors.textPrimary }]}>{item.produto}</Text>
-                                        <View style={[styles.statusBadge, { backgroundColor: isReceived ? (colors.primary || '#1E8E5A') + '15' : (colors.warning || '#F59E0B') + '15' }]}>
-                                            <Text style={[styles.statusBadgeText, { color: isReceived ? colors.primary : colors.warning }]}>
-                                                {isReceived ? 'PAGO' : 'PENDENTE'}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                    <Text style={[styles.hSub, { color: colors.textSecondary }]}>
-                                        {item.cliente} • {new Date(item.data).toLocaleDateString('pt-BR')}
-                                    </Text>
-                                    <Text style={[styles.hVal, { color: colors.primary }]}>
-                                        {item.quantidade} un • R$ {item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                    </Text>
-                                </View>
-
-                                <View style={styles.actions}>
-                                    {!isReceived && (
-                                        <TouchableOpacity onPress={() => handleBaixar(item)} style={[styles.actionBtn, { backgroundColor: (colors.primary || '#1E8E5A') + '10', borderColor: (colors.primary || '#1E8E5A') + '20' }]}>
-                                            <Ionicons name="cash" size={18} color={colors.primary} />
-                                        </TouchableOpacity>
-                                    )}
-                                    <TouchableOpacity onPress={() => handleEdit(item)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9FAFB', borderColor: colors.border }]}>
-                                        <Ionicons name="create-outline" size={18} color={colors.textSecondary} />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity onPress={() => handleDelete(item)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9FAFB', borderColor: colors.border }]}>
-                                        <Ionicons name="trash-outline" size={18} color={colors.danger} />
-                                    </TouchableOpacity>
-                                </View>
-                            </GlowCard>
-                        );
-                    })}
                 </View>
 
-                {memoHistory.length === 0 && (
-                    <View style={styles.emptyState}>
-                        <Ionicons name="receipt-outline" size={48} color={colors.placeholder} />
-                        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Nenhuma venda encontrada no filtro selecionado.</Text>
-                    </View>
-                )}
-                <View style={{ height: 40 }} />
-            </ScrollView>
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
-            <ProductModal visible={modalVisible} onClose={() => setModalVisible(false)} onCreated={(p) => { setProduto(p.nome); setModalVisible(false); }} />
-            <ClientModal visible={clientModalVisible} onClose={() => setClientModalVisible(false)} onCreated={(c) => { setCliente(c.nome); setClientModalVisible(false); }} />
-
-            <Modal visible={recebimentoModal} transparent animationType="fade">
-                <View style={styles.overlayCenter}>
-                    <GlowCard style={styles.miniModal}>
-                        <View style={{ padding: 10 }}>
-                            <Text style={[styles.miniModalTitle, { color: colors.textPrimary }]}>CONFIRMAR RECEBIMENTO</Text>
-                            {recebimentoItem && (
-                                <View style={[styles.receivedSummary, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', borderColor: colors.border, borderWidth: 1 }]}>
-                                    <Text style={[styles.summaryText, { color: colors.textSecondary }]}>Produto: <Text style={{ color: colors.textPrimary, fontWeight: 'bold' }}>{recebimentoItem.produto}</Text></Text>
-                                    <Text style={[styles.summaryText, { color: colors.textSecondary }]}>Valor Original: <Text style={{ color: colors.textPrimary, fontWeight: 'bold' }}>R$ {recebimentoItem.valor.toFixed(2)}</Text></Text>
-                                </View>
-                            )}
-                            <Text style={[styles.label, { color: colors.textSecondary }]}>VALOR RECEBIDO</Text>
-                            <GlowInput placeholder="0.00" value={valorRecebido} onChangeText={setValorRecebido} keyboardType="decimal-pad" />
-                            <View style={styles.modalActions}>
-                                <TouchableOpacity style={[styles.modalBtnCancel, { borderColor: colors.border }]} onPress={() => { setRecebimentoModal(false); setRecebimentoItem(null); }}>
-                                    <Text style={{ color: colors.textSecondary, fontWeight: 'bold' }}>VOLTAR</Text>
-                                </TouchableOpacity>
-                                <PrimaryButton title="BAIXAR" onPress={confirmarRecebimento} style={{ flex: 1.5 }} />
+                    {/* CLIENTE */}
+                    <Text style={styles.sectionTitle}>CLIENTE</Text>
+                    <SafeBlurView intensity={20} style={styles.glassCard} webFallbackColor="rgba(255,255,255,0.03)">
+                        <TouchableOpacity style={styles.cardActionRow} onPress={() => setClientModalVisible(true)}>
+                            <View style={[styles.iconBox, { backgroundColor: 'rgba(212, 175, 55, 0.1)' }]}>
+                                <Ionicons name="person" size={20} color="#D4AF37" />
                             </View>
-                        </View>
-                    </GlowCard>
-                </View>
-            </Modal>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.mainValue}>{cliente || 'Selecionar cliente...'}</Text>
+                                {cliente && <Text style={styles.subValue}>CLIENTE PARCEIRO</Text>}
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.4)" />
+                        </TouchableOpacity>
+                    </SafeBlurView>
 
-            <ConfirmModal visible={confirmVisible} title="EXCLUIR REGISTRO" message="Deseja realmente apagar esta venda? Esta ação não pode ser desfeita." onConfirm={confirmDelete} onCancel={() => setConfirmVisible(false)} />
-        </AppContainer>
+                    {/* CULTURA / PRODUTO */}
+                    <Text style={[styles.sectionTitle, { marginTop: 20 }]}>PRODUTO / CULTURA</Text>
+                    <SafeBlurView intensity={20} style={styles.glassCard} webFallbackColor="rgba(255,255,255,0.03)">
+                        <TouchableOpacity style={styles.cardActionRow} onPress={() => setModalVisible(true)}>
+                            <View style={[styles.iconBox, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+                                <Ionicons name="leaf" size={20} color="#10B981" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.mainValue}>{produto || 'Selecionar produto...'}</Text>
+                                {produto && <Text style={styles.subValue}>CATEGORIA: PRODUÇÃO PRÓPRIA</Text>}
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.4)" />
+                        </TouchableOpacity>
+                    </SafeBlurView>
+
+                    {/* ENCOMENDAS ATIVAS */}
+                    {cliente && produto && (
+                        <SafeBlurView intensity={40} style={styles.goldenGlassCard} webFallbackColor="rgba(251, 191, 36, 0.1)">
+                            <LinearGradient colors={['rgba(253, 230, 138, 0.15)', 'rgba(251, 191, 36, 0.05)']} style={StyleSheet.absoluteFill} />
+                            <View style={styles.goldenHeader}>
+                                <Ionicons name="cart" size={14} color="#FBBF24" />
+                                <Text style={styles.goldenTitle}>ENCOMENDAS EM ABERTO</Text>
+                            </View>
+                            <View style={styles.goldenBody}>
+                                <View style={styles.goldenUserRow}>
+                                    <View style={styles.goldenAvatar}>
+                                        <Text style={{color: '#78350F', fontWeight: '900', fontSize: 12}}>
+                                            {cliente.charAt(0)}
+                                        </Text>
+                                    </View>
+                                    <View>
+                                        <Text style={styles.goldenMainText}>{cliente}</Text>
+                                        <Text style={styles.goldenSubText}>100 kg pendente</Text>
+                                    </View>
+                                </View>
+                                <Switch value={true} onValueChange={() => {}} trackColor={{ true: '#10B981', false: '#334155' }} thumbColor="#FFF" />
+                            </View>
+                        </SafeBlurView>
+                    )}
+
+                    {/* QUANTIDADE E PREÇO */}
+                    <View style={styles.formGrid}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.sectionTitle}>QUANTIDADE</Text>
+                            <SafeBlurView intensity={20} style={styles.inputPill} webFallbackColor="rgba(255,255,255,0.02)">
+                                <TextInput
+                                    style={styles.inputText}
+                                    placeholder="0"
+                                    placeholderTextColor="rgba(255,255,255,0.2)"
+                                    value={quantidade}
+                                    onChangeText={setQuantidade}
+                                    keyboardType="decimal-pad"
+                                />
+                                <Text style={styles.inputSuffix}>kg</Text>
+                            </SafeBlurView>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={[styles.sectionTitle, { textAlign: 'right' }]}>PREÇO/KG (R$)</Text>
+                            <SafeBlurView intensity={20} style={styles.inputPill} webFallbackColor="rgba(255,255,255,0.02)">
+                                <TextInput
+                                    style={[styles.inputText, { textAlign: 'right' }]}
+                                    placeholder="0,00"
+                                    placeholderTextColor="rgba(255,255,255,0.2)"
+                                    value={precoKg}
+                                    onChangeText={setPrecoKg}
+                                    keyboardType="decimal-pad"
+                                />
+                            </SafeBlurView>
+                        </View>
+                    </View>
+
+                    {/* TOTAL BOX DIAMOND */}
+                    <SafeBlurView intensity={50} style={styles.totalGlassBox} webFallbackColor="rgba(212, 175, 55, 0.05)">
+                        <LinearGradient colors={['rgba(212, 175, 55, 0.08)', 'transparent']} style={StyleSheet.absoluteFill} />
+                        <View style={styles.totalRow}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                <View style={styles.totalIconBg}>
+                                    <Ionicons name="cash" size={18} color="#D4AF37" />
+                                </View>
+                                <Text style={styles.totalLabel}>VALOR TOTAL</Text>
+                            </View>
+                            <Text style={styles.totalValue}>R$ {valorTotalCalc.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+                        </View>
+                    </SafeBlurView>
+
+                    {/* PAGAMENTO */}
+                    <Text style={[styles.sectionTitle, { marginTop: 25 }]}>FORMA DE PAGAMENTO</Text>
+                    <View style={styles.segmentContainer}>
+                        {[
+                            { id: 'PIX', label: 'PIX', sub: 'Instantâneo', icon: 'flash' },
+                            { id: 'DINHEIRO', label: 'Dinheiro', sub: 'À vista', icon: 'wallet' },
+                            { id: 'PRAZO', label: 'Prazo', sub: '+30 dias', icon: 'calendar' }
+                        ].map(opt => {
+                            const active = formaPagamento === opt.id;
+                            return (
+                                <TouchableOpacity 
+                                    key={opt.id}
+                                    style={[styles.segmentBtn, active && styles.segmentBtnActive]}
+                                    onPress={() => setFormaPagamento(opt.id)}
+                                >
+                                    <Ionicons name={opt.icon} size={14} color={active ? '#10B981' : 'rgba(255,255,255,0.3)'} />
+                                    <Text style={[styles.segmentLabel, active && { color: '#FFF' }]}>{opt.label.toUpperCase()}</Text>
+                                    <Text style={[styles.segmentSub, active && { color: '#10B981' }]}>{opt.sub}</Text>
+                                </TouchableOpacity>
+                            )
+                        })}
+                    </View>
+
+                    {/* DATA E OPÇÕES EXTRAS */}
+                    <View style={{ marginTop: 10 }}>
+                        <Text style={styles.sectionTitle}>DATA DA OPERAÇÃO</Text>
+                        <SafeBlurView intensity={15} style={styles.glassCard} webFallbackColor="rgba(255,255,255,0.02)">
+                            <View style={styles.cardActionRow}>
+                                <TextInput
+                                    style={[styles.mainValue, { flex: 1, outline: 'none' }]}
+                                    placeholder="DD/MM/AAAA"
+                                    placeholderTextColor="rgba(255,255,255,0.2)"
+                                    value={dataVenda}
+                                    onChangeText={setDataVenda}
+                                />
+                                <Ionicons name="calendar-clear" size={18} color="rgba(255,255,255,0.4)" />
+                            </View>
+                        </SafeBlurView>
+                    </View>
+
+                    <View style={styles.switchRow}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.switchTitle}>GERAR CONTAS A RECEBER</Text>
+                            <Text style={styles.switchSub}>Lançamento automático no fluxo de caixa.</Text>
+                        </View>
+                        <Switch 
+                            value={contasReceber} 
+                            onValueChange={setContasReceber} 
+                            trackColor={{ true: '#10B981', false: '#334155' }} 
+                            thumbColor="#FFF" 
+                        />
+                    </View>
+
+                    {/* BOTÕES DIAMOND */}
+                    <TouchableOpacity style={styles.btnPrimary} onPress={() => handleSalvar(false)} disabled={saving}>
+                        <LinearGradient colors={['#10B981', '#059669']} style={styles.btnGradient}>
+                            {saving ? <ActivityIndicator color="#FFF" /> : (
+                                <>
+                                    <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                                    <Text style={styles.btnPrimaryText}>EFETIVAR VENDA</Text>
+                                </>
+                            )}
+                        </LinearGradient>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.btnSecondary} onPress={() => handleSalvar(true)} disabled={saving}>
+                        <Text style={styles.btnSecondaryText}>SALVAR E NOVA</Text>
+                    </TouchableOpacity>
+
+                    {editingUuid && (
+                        <TouchableOpacity style={styles.discardBtn} onPress={() => setEditingUuid(null)}>
+                            <Text style={styles.discardText}>DESCARTAR EDIÇÃO</Text>
+                        </TouchableOpacity>
+                    )}
+
+                </ScrollView>
+
+                {/* MODAIS */}
+                <ProductModal visible={modalVisible} onClose={() => setModalVisible(false)} onCreated={(p) => { setProduto(p.nome); setModalVisible(false); }} />
+                <ClientModal visible={clientModalVisible} onClose={() => setClientModalVisible(false)} onCreated={(c) => { setCliente(c.nome); setClientModalVisible(false); }} />
+                <ConfirmModal visible={confirmVisible} title="EXCLUIR VENDA" message="Isso não poderá ser desfeito. Continuar?" onConfirm={confirmDelete} onCancel={() => setConfirmVisible(false)} />
+
+            </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    scrollContent: { padding: 20 },
-    card: { padding: 20, marginBottom: 25 },
-    sectionTitle: { fontSize: 10, fontWeight: '900', letterSpacing: 1.5, marginBottom: 15 },
-    label: { fontSize: 10, fontWeight: '900', letterSpacing: 1, marginBottom: 8, marginTop: 10 },
-    row: { flexDirection: 'row', gap: 12 },
-    selectBtn: { height: 54, borderRadius: 16, borderWidth: 1.5, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 },
-    selectText: { fontSize: 14, fontWeight: '700' },
-    radioGroup: { flexDirection: 'row', gap: 10 },
-    radioBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 16, padding: 15, gap: 10 },
-    radioDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 2 },
-    radioText: { fontSize: 11, fontWeight: '800' },
-    cancelLink: { marginTop: 15, padding: 5, alignSelf: 'center' },
+    webContainer: { flex: 1, backgroundColor: '#020617' },
+    ambientOrb: { position: 'absolute', width: 280, height: 280, borderRadius: 140, zIndex: -1 },
+    
+    header: { 
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', 
+        paddingHorizontal: 22, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 20 : 20, 
+        paddingBottom: 20 
+    },
+    backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
+    headerTitle: { fontSize: 13, fontWeight: '900', color: '#F8FAFC', letterSpacing: 2 },
+    headerRightBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.2)' },
+    headerRightBtnText: { color: '#10B981', fontSize: 11, fontWeight: '900', letterSpacing: 1 },
 
-    historySection: { marginTop: 10 },
-    historyTitle: { fontSize: 10, fontWeight: '900', letterSpacing: 1.5, marginBottom: 15, marginLeft: 5 },
-    historyItem: { padding: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center' },
-    historyInfo: { flex: 1 },
-    historyHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
-    hProd: { fontSize: 15, fontWeight: 'bold' },
-    hSub: { fontSize: 11, marginBottom: 4 },
-    hVal: { fontSize: 13, fontWeight: '900' },
+    scrollContent: { paddingHorizontal: 22, paddingBottom: 60 },
 
-    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-    statusBadgeText: { fontSize: 9, fontWeight: '900' },
+    sectionTitle: { color: 'rgba(255,255,255,0.35)', fontSize: 9, fontWeight: '900', letterSpacing: 2, marginBottom: 12 },
+    
+    glassCard: { borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginBottom: 10 },
+    cardActionRow: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
+    iconBox: { width: 42, height: 42, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+    mainValue: { color: '#F8FAFC', fontSize: 16, fontWeight: '700' },
+    subValue: { color: 'rgba(255,255,255,0.4)', fontSize: 10, marginTop: 4, fontWeight: '600', letterSpacing: 0.5 },
 
-    actions: { flexDirection: 'row', gap: 8 },
-    actionBtn: { width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
+    goldenGlassCard: { borderRadius: 22, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(212, 175, 55, 0.3)', marginBottom: 20, padding: 18 },
+    goldenHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 15 },
+    goldenTitle: { color: '#FBBF24', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
+    goldenBody: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    goldenUserRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    goldenAvatar: { width: 32, height: 32, borderRadius: 10, backgroundColor: '#FBBF24', justifyContent: 'center', alignItems: 'center' },
+    goldenMainText: { color: '#FFF', fontSize: 15, fontWeight: '800' },
+    goldenSubText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '500' },
 
-    filterBar: { flexDirection: 'row', gap: 8, marginBottom: 15 },
-    filterPill: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 24, borderWidth: 1 },
-    filterPillText: { fontSize: 10, fontWeight: '900' },
+    formGrid: { flexDirection: 'row', gap: 15, marginBottom: 20 },
+    inputPill: { 
+        flexDirection: 'row', alignItems: 'center', borderRadius: 18, 
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', height: 62, paddingHorizontal: 20 
+    },
+    inputText: { flex: 1, color: '#FFF', fontSize: 20, fontWeight: '700' },
+    inputSuffix: { color: 'rgba(255,255,255,0.3)', fontSize: 14, fontWeight: '800', marginLeft: 10 },
 
-    overlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 25 },
-    miniModal: { width: '100%', elevation: 15 },
-    miniModalTitle: { fontSize: 16, fontWeight: '900', marginBottom: 20, textAlign: 'center', letterSpacing: 1 },
-    receivedSummary: { padding: 15, borderRadius: 14, marginBottom: 20 },
-    summaryText: { fontSize: 13, marginBottom: 5 },
-    modalActions: { flexDirection: 'row', gap: 12, marginTop: 10 },
-    modalBtnCancel: { flex: 1, height: 54, borderRadius: 16, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+    totalGlassBox: { borderRadius: 24, paddingVertical: 22, paddingHorizontal: 24, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(212, 175, 55, 0.25)', overflow: 'hidden' },
+    totalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    totalIconBg: { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(212, 175, 55, 0.15)', justifyContent: 'center', alignItems: 'center' },
+    totalLabel: { color: '#D4AF37', fontSize: 11, fontWeight: '900', letterSpacing: 1.5 },
+    totalValue: { color: '#FFF', fontSize: 24, fontWeight: '900', letterSpacing: -0.5 },
 
-    emptyState: { alignItems: 'center', marginTop: 40, opacity: 0.5 },
-    emptyText: { fontSize: 12, fontWeight: 'bold', marginTop: 10, textAlign: 'center' }
+    segmentContainer: { flexDirection: 'row', gap: 8, marginBottom: 25 },
+    segmentBtn: { 
+        flex: 1, alignItems: 'center', justifyContent: 'center', 
+        paddingVertical: 14, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.03)',
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' 
+    },
+    segmentBtnActive: { backgroundColor: 'rgba(16, 185, 129, 0.08)', borderColor: '#10B981' },
+    segmentLabel: { color: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: '900', marginTop: 8, letterSpacing: 1 },
+    segmentSub: { color: 'rgba(255,255,255,0.2)', fontSize: 9, marginTop: 2, fontWeight: '600' },
+
+    switchRow: { 
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', 
+        padding: 20, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.02)', 
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', marginTop: 20, marginBottom: 30 
+    },
+    switchTitle: { color: '#F8FAFC', fontSize: 11, fontWeight: '900', letterSpacing: 1 },
+    switchSub: { color: 'rgba(255,255,255,0.4)', fontSize: 10, marginTop: 4 },
+
+    btnPrimary: { borderRadius: 20, overflow: 'hidden', marginBottom: 15 },
+    btnGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 68, gap: 12 },
+    btnPrimaryText: { color: '#FFF', fontSize: 15, fontWeight: '900', letterSpacing: 1.5 },
+    
+    btnSecondary: { 
+        height: 64, borderRadius: 20, justifyContent: 'center', alignItems: 'center', 
+        borderWidth: 1.5, borderColor: 'rgba(16, 185, 129, 0.3)', marginBottom: 20 
+    },
+    btnSecondaryText: { color: '#10B981', fontSize: 13, fontWeight: '900', letterSpacing: 1 },
+
+    discardBtn: { alignSelf: 'center', padding: 12 },
+    discardText: { color: '#EF4444', fontSize: 11, fontWeight: '900', letterSpacing: 1 }
 });
+

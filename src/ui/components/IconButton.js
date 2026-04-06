@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, View } from 'react-native'; // v10.3-fresh-sync
+import { TouchableOpacity, Text, StyleSheet, View, Vibration, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
 import { RADIUS } from '../theme/radius';
@@ -12,7 +12,10 @@ export const IconButton = ({ icon, label, onPress, size = 56 }) => {
 
     return (
         <TouchableOpacity
-            onPress={onPress}
+            onPress={(e) => {
+                if (Platform.OS !== 'web') Vibration.vibrate(20);
+                if (onPress) onPress(e);
+            }}
             activeOpacity={0.8}
             style={styles.wrapper}
         >

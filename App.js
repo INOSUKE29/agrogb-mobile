@@ -1,11 +1,10 @@
 import 'react-native-get-random-values';
 import 'react-native-gesture-handler';
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, Text } from 'react-native';
+import { View, ActivityIndicator, Text, Platform, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
-import * as Updates from 'expo-updates';
 import { StatusBar } from 'expo-status-bar';
 import { initDB } from './src/database/database';
 import AutoSyncService from './src/services/AutoSyncService';
@@ -67,23 +66,7 @@ export default function App() {
     const [initError, setInitError] = useState(null);
 
     useEffect(() => {
-        async function checkUpdates() {
-            try {
-                if (!__DEV__) {
-                    const update = await Updates.checkForUpdateAsync();
-                    if (update.isAvailable) {
-                        console.log("Baixando atualização OTA...");
-                        await Updates.fetchUpdateAsync();
-                        // Comentado para evitar loops infinitos em builds locais/pessoais (v1.1.6)
-                        // await Updates.reloadAsync(); 
-                    }
-                }
-            } catch (err) {
-                console.log("Erro ao checar OTA Updates:", err);
-            }
-        }
-        // checkUpdates(); // Desativado até confirmação de estabilidade no APK local
-
+        // initDB inicia o sistema e a sessão do usuário
         initDB()
             .then(async () => {
                 const session = await AuthService.checkSession();
@@ -139,7 +122,9 @@ export default function App() {
     }
 
     return (
-        <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={styles.webRoot}>
+            <View style={styles.appContainer}>
+                <GestureHandlerRootView style={{ flex: 1 }}>
             <ErrorBoundary>
                 <ThemeProvider>
                     <WeatherProvider>
@@ -147,6 +132,7 @@ export default function App() {
                         <NavigationContainer>
                             <Stack.Navigator
                                 screenOptions={{
+                                    headerShown: false,
                                     headerStyle: { backgroundColor: '#10B981' },
                                     headerTintColor: '#fff',
                                     headerTitleStyle: { fontWeight: 'bold' },
@@ -217,6 +203,23 @@ export default function App() {
                     </WeatherProvider>
                 </ThemeProvider>
             </ErrorBoundary>
-        </GestureHandlerRootView>
+                </GestureHandlerRootView>
+            </View>
+        </View>
     );
 }
+
+const styles = StyleSheet.create({
+    webRoot: {
+        flex: 1,
+        backgroundColor: '#050a0a',
+        alignItems: Platform.OS === 'web' ? 'center' : 'stretch',
+    },
+    appContainer: {
+        flex: 1,
+        width: '100%',
+        maxWidth: Platform.OS === 'web' ? 480 : '100%',
+        backgroundColor: '#f8fafc',
+        overflow: 'hidden',
+    }
+});

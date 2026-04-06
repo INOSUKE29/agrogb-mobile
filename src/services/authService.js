@@ -1,7 +1,7 @@
-import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { supabase } from './supabaseClient';
 import { executeQuery } from '../database/database';
+import { StorageHelper } from './storageHelper';
 
 /**
  * Auxiliar para Timeout de Promessa (v1.1.4+)
@@ -16,37 +16,34 @@ const promiseWithTimeout = (promise, ms, message) => {
 // --- STORAGE HELPERS ---
 const safeSave = async (key, value) => {
     try {
-        // v1.1.4: Timeout de 5s no SecureStore para evitar hangs nativos
         await promiseWithTimeout(
-            SecureStore.setItemAsync(key, JSON.stringify(value)),
+            StorageHelper.save(key, value),
             5000,
             "Erro ao persistir dados locais."
         );
     } catch (e) {
-        if (__DEV__) console.error(`[AuthService] SECURE_STORAGE_SAVE_ERROR (${key}):`, e.message);
+        if (__DEV__) console.error(`[AuthService] STORAGE_SAVE_ERROR (${key}):`, e.message);
     }
 };
 
 const safeGet = async (key) => {
     try {
-        // v1.1.4: Timeout de 5s no SecureStore
-        const data = await promiseWithTimeout(
-            SecureStore.getItemAsync(key),
+        return await promiseWithTimeout(
+            StorageHelper.get(key),
             5000,
             "Erro ao recuperar dados locais."
         );
-        return data ? JSON.parse(data) : null;
     } catch (e) {
-        if (__DEV__) console.error(`[AuthService] SECURE_STORAGE_GET_ERROR (${key}):`, e.message);
+        if (__DEV__) console.error(`[AuthService] STORAGE_GET_ERROR (${key}):`, e.message);
         return null;
     }
 };
 
 const safeRemove = async (key) => {
     try {
-        await SecureStore.deleteItemAsync(key);
+        await StorageHelper.remove(key);
     } catch (e) {
-        if (__DEV__) console.error("SECURE_STORAGE_REMOVE_ERROR:", e);
+        if (__DEV__) console.error("STORAGE_REMOVE_ERROR:", e);
     }
 };
 
@@ -123,7 +120,7 @@ export const login = async (email, password) => {
         };
 
         if (__DEV__) console.log('[AuthService] Salvando sessão no SecureStore...');
-        await safeSave('@user_session', session);
+        await safeSave('user_session_v1', session);
 
         // 3. Busca Perfil do Usuário (v1.1.4: Background / Non-blocking)
         if (__DEV__) console.log('[AuthService] Iniciando busca de perfil em background...');
@@ -157,7 +154,7 @@ export const login = async (email, password) => {
           }).catch(e => console.warn('[AuthService] sync v2_produtores failed:', e.message));
 
         // 5. NOVO: Salva credenciais para Biometria (v1.1.2)
-        await safeSave('@user_credentials', { email, password });
+        await safeSave('user_credentials_v1', { email, password });
 
         if (__DEV__) console.log('[AuthService] Login concluído com sucesso.');
         return { success: true, user: data.user };
@@ -190,7 +187,7 @@ export const loginWithBiometrics = async () => {
         if (!result.success) return { success: false, message: 'Autenticação biométrica falhou' };
 
         // 3. Recupera credenciais salvas
-        const creds = await safeGet('@user_credentials');
+        const creds = await safeGet('user_credentials_v1');
         if (!creds || !creds.email || !creds.password) {
             return { success: false, message: 'Por favor, faça login com senha uma vez antes de usar biometria.' };
         }
@@ -209,7 +206,7 @@ export const loginWithBiometrics = async () => {
 const checkSession = async () => {
     try {
         // 1. Tenta recuperar sessão local do SecureStore
-        const localSession = await safeGet("@user_session");
+        const localSession = await safeGet("user_session_v1");
         
         // 2. Sincroniza com Supabase Auth (Garante que o token não expirou)
         const sessionResult = await promiseWithTimeout(
@@ -222,7 +219,7 @@ const checkSession = async () => {
         if (error || !session) {
             if (localSession) {
                 if (__DEV__) console.log('[AuthService] Sessão local expirada ou inválida no Supabase. Limpando...');
-                await safeRemove("@user_session");
+                await safeRemove("user_session_v1");
             }
             return null;
         }
@@ -234,14 +231,14 @@ const checkSession = async () => {
                 email: session.user.email,
                 token: session.access_token
             };
-            await safeSave('@user_session', newSession);
+            await safeSave('user_session_v1', newSession);
             return newSession;
         }
 
         return localSession;
     } catch (e) {
         if (__DEV__) console.error('[AuthService] Erro crítico no checkSession (Timeout/Rede):', e.message);
-        const localSession = await safeGet("@user_session");
+        const localSession = await safeGet("user_session_v1");
         if (localSession) {
             if (__DEV__) console.log('[AuthService] Salvando sessão com base no cache local (Modo Offline).');
             return localSession;
@@ -253,7 +250,7 @@ const checkSession = async () => {
 export const logout = async () => {
     try {
         if (__DEV__) console.log('[AuthService] Logging out...');
-        await safeRemove("@user_session");
+        await safeRemove("user_session_v1");
     } catch (e) {
         console.error("LOGOUT_ERROR:", e);
     }

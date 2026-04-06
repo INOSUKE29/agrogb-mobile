@@ -1,225 +1,276 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TextInput, TouchableOpacity, Image } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+import { 
+    View, Text, StyleSheet, ScrollView, Alert, 
+    TouchableOpacity, RefreshControl, Image, Switch,
+    StatusBar, SafeAreaView
+} from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { executeQuery } from '../database/database';
+import * as LocalAuthentication from 'expo-local-authentication';
+import { LinearGradient } from 'expo-linear-gradient';
+import SafeBlurView from '../ui/SafeBlurView';
+
 import { useTheme } from '../theme/ThemeContext';
 import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
-import DangerButton from '../ui/DangerButton';
 import { showToast } from '../ui/Toast';
 import { AuthService } from '../services/authService';
-import * as LocalAuthentication from 'expo-local-authentication';
-import GlowCard from '../ui/GlowCard';
-import PrimaryButton from '../ui/PrimaryButton';
+import { executeQuery } from '../database/database';
+import { pushLocalChanges, pullServerChanges } from '../services/SyncService';
 
+/**
+ * ProfileScreen - Versão Diamond Pro (Royal Hub)
+ * Unificada com as configurações para garantir consistência visual.
+ */
 export default function ProfileScreen({ navigation }) {
     const { colors, theme, setTheme } = useTheme();
-    const [isEditing, setIsEditing] = useState(false);
-    const [saving, setSaving] = useState(false);
-
-    const [user, setUser] = useState({
-        id: null,
-        nome: '',
-        usuario: '',
-        email: '',
-        telefone: '',
-        endereco: '',
-        nivel: '',
-        provider: 'local',
-        senha_atual: '',
-        nova_senha: '',
-        avatar: null
+    const [loading, setLoading] = useState(false);
+    const [user, setUser] = useState({ 
+        nome: 'Carregando...', 
+        email: '', 
+        avatar: null, 
+        empresa: 'Carregando fazenda...',
+        nivel: 'USUARIO'
     });
+    const [biometryInfo, setBiometryInfo] = useState({ available: false, enrolled: false });
 
-    const [biometryInfo, setBiometryInfo] = useState({
-        available: false,
-        enrolled: false
-    });
-
-    const loadProfile = async () => {
+    const loadData = async () => {
+        setLoading(true);
         try {
             const session = await AuthService.checkSession();
             if (session) {
                 const res = await executeQuery('SELECT * FROM usuarios WHERE id = ? OR uuid = ?', [session.userId, session.userId]);
+                let userData = { nome: 'Produtor AgroGB', email: session.email, empresa: 'Fazenda não encontrada', nivel: 'USUARIO' };
+                
                 if (res.rows.length > 0) {
-                    const u = res.rows.item(0);
-                    setUser({
-                        id: u.id,
-                        nome: u.nome_completo || u.usuario,
-                        usuario: u.usuario,
-                        email: u.email || '',
-                        telefone: u.telefone || '',
-                        endereco: u.endereco || '',
-                        nivel: u.nivel || 'USUARIO',
-                        provider: u.provider || 'local',
-                        senha_atual: '',
-                        nova_senha: '',
-                        avatar: u.avatar || null
-                    });
+                    const dbUser = res.rows.item(0);
+                    userData.nome = dbUser.nome_completo || dbUser.usuario;
+                    userData.email = dbUser.email || session.email;
+                    userData.avatar = dbUser.avatar;
+                    userData.nivel = dbUser.nivel || 'USUARIO';
                 }
-            }
-        } catch { }
-    };
 
-    const checkBiometryStatus = async () => {
-        const hasHardware = await LocalAuthentication.hasHardwareAsync();
-        const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-        const asked = await AsyncStorage.getItem('@asked_biometrics');
-        setBiometryInfo({
-            available: hasHardware,
-            enrolled: asked === 'true' && isEnrolled
-        });
-    };
-
-    useFocusEffect(useCallback(() => { 
-        loadProfile(); 
-        checkBiometryStatus();
-    }, []));
-
-    const handleLogout = async () => {
-        Alert.alert('Sair', 'Deseja realmente sair?', [
-            { text: 'Cancelar', style: 'cancel' },
-            { text: 'Sim, Sair', onPress: async () => { 
-                await AuthService.logout(); 
-                // A troca de tela acontece automaticamente via App.js
-            } }
-        ]);
-    };
-
-    const handleSave = async () => {
-        setSaving(true);
-        try {
-            if (user.nova_senha && user.nova_senha.length > 0) {
-                if (user.nova_senha.length < 3) {
-                    setSaving(false);
-                    return Alert.alert('Atenção', 'A nova senha deve ter pelo menos 3 caracteres.');
+                const resFazenda = await executeQuery('SELECT nome FROM v2_fazendas WHERE produtor_id = ? LIMIT 1', [session.userId]);
+                if (resFazenda.rows.length > 0) {
+                    userData.empresa = resFazenda.rows.item(0).nome;
                 }
-                await executeQuery(
-                    `UPDATE usuarios SET nome_completo = ?, email = ?, telefone = ?, endereco = ?, senha = ?, avatar = ?, last_updated = ? WHERE id = ?`,
-                    [user.nome.toUpperCase(), user.email.toLowerCase(), user.telefone, user.endereco.toUpperCase(), user.nova_senha, user.avatar, new Date().toISOString(), user.id]
-                );
-            } else {
-                await executeQuery(
-                    `UPDATE usuarios SET nome_completo = ?, email = ?, telefone = ?, endereco = ?, avatar = ?, last_updated = ? WHERE id = ?`,
-                    [user.nome.toUpperCase(), user.email.toLowerCase(), user.telefone, user.endereco.toUpperCase(), user.avatar, new Date().toISOString(), user.id]
-                );
+
+                setUser(userData);
             }
-            showToast('Perfil atualizado!');
-            setIsEditing(false);
-            loadProfile();
-        } catch {
-            Alert.alert('Erro', 'Falha ao salvar perfil.');
-        } finally { setSaving(false); }
+
+            const hasHardware = await LocalAuthentication.hasHardwareAsync();
+            const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+            const asked = await AsyncStorage.getItem('@asked_biometrics');
+            setBiometryInfo({
+                available: hasHardware,
+                enrolled: asked === 'true' && isEnrolled
+            });
+
+        } catch (e) {
+            console.error('[Profile] Erro ao carregar dados:', e);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const pickAvatar = async () => {
-        let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.5,
-        });
-        if (!result.canceled) { setUser({ ...user, avatar: result.assets[0].uri }); }
-    };
+    useFocusEffect(useCallback(() => { loadData(); }, []));
 
     const handleToggleBiometry = async () => {
-        if (!biometryInfo.available) {
-            return Alert.alert('Não Disponível', 'Seu aparelho não possui suporte a biometria.');
-        }
-
+        if (!biometryInfo.available) return;
         if (biometryInfo.enrolled) {
             await AsyncStorage.removeItem('@asked_biometrics');
             showToast('Biometria desativada');
-            checkBiometryStatus();
+            loadData();
         } else {
-            // Tenta autenticar para confirmar
             const result = await LocalAuthentication.authenticateAsync({
-                promptMessage: 'Confirme sua identidade para ativar o acesso rápido',
+                promptMessage: 'Confirme sua identidade',
                 fallbackLabel: 'Usar Senha'
             });
-
             if (result.success) {
                 await AsyncStorage.setItem('@asked_biometrics', 'true');
-                showToast('Login por digital ativado!');
-                checkBiometryStatus();
+                showToast('Biometria ativada!');
+                loadData();
             }
         }
     };
 
-    const InfoRow = ({ label, value, icon, editing, onChange, keyboardType, autoCapitalize, secureTextEntry }) => (
-        <View style={styles.infoRowContainer}>
-            <View style={[styles.iconBox, { backgroundColor: (colors.primary) + '10' }]}><Ionicons name={icon} size={18} color={colors.primary} /></View>
-            <View style={{ flex: 1, marginLeft: 15 }}>
-                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>{label}</Text>
-                {editing ? <TextInput style={[styles.input, { color: colors.textPrimary, borderBottomColor: colors.glassBorder }]} value={value} onChangeText={onChange} keyboardType={keyboardType} autoCapitalize={autoCapitalize} secureTextEntry={secureTextEntry} placeholderTextColor={colors.placeholder} /> : <Text style={[styles.infoValue, { color: colors.textPrimary }]}>{value || '-'}</Text>}
+    const runManualSync = async () => {
+        setLoading(true);
+        try {
+            showToast('Sincronizando...');
+            const push = await pushLocalChanges();
+            const pull = await pullServerChanges();
+            showToast(`Sincronizado! ↑${push.pushed || 0} ↓${pull.pulled || 0}`);
+        } catch (e) {
+            Alert.alert('Erro', e.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLogout = async () => {
+        Alert.alert('Sair', 'Deseja encerrar a sessão?', [
+            { text: 'MANTER CONECTADO', style: 'cancel' },
+            { text: 'SAIR AGORA', style: 'destructive', onPress: async () => { await AuthService.logout(); } }
+        ]);
+    };
+
+    // --- COMPONENTES INTERNOS DIAMOND PRO ---
+
+    const SettingsItem = ({ icon, label, value, onPress, type = 'chevron', danger, isLast, iconColor = '#10B981' }) => (
+        <View>
+            <TouchableOpacity 
+                onPress={onPress} 
+                activeOpacity={0.7} 
+                style={styles.itemWrapper}
+                disabled={type === 'switch'}
+            >
+                <View style={styles.itemMain}>
+                    <View style={[styles.iconBox, { backgroundColor: danger ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.05)' }]}>
+                        <Ionicons name={icon} size={18} color={danger ? '#EF4444' : iconColor} />
+                    </View>
+                    <Text style={[styles.itemLabel, danger && { color: '#EF4444' }]}>{label}</Text>
+                </View>
+                
+                <View style={styles.itemRight}>
+                    {type === 'switch' ? (
+                        <Switch 
+                            value={!!value} 
+                            onValueChange={onPress}
+                            trackColor={{ false: '#1E293B', true: '#10B981' }}
+                            thumbColor="#FFF"
+                        />
+                    ) : (
+                        <View style={styles.chevronGroup}>
+                            {value && <Text style={styles.itemValue}>{value}</Text>}
+                            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.2)" />
+                        </View>
+                    )}
+                </View>
+            </TouchableOpacity>
+            {!isLast && <View style={styles.itemDivider} />}
+        </View>
+    );
+
+    const SettingsGroup = ({ icon, title, children }) => (
+        <View style={styles.groupContainer}>
+            <View style={styles.groupHeader}>
+                <Ionicons name={icon} size={16} color="rgba(16, 185, 129, 0.6)" />
+                <Text style={styles.groupTitle}>{title}</Text>
             </View>
+            <SafeBlurView intensity={20} tint="dark" style={styles.groupCard}>
+                {children}
+            </SafeBlurView>
         </View>
     );
 
     return (
         <AppContainer>
-            <ScreenHeader title="Meu Perfil" onBack={() => navigation.goBack()} rightElement={<TouchableOpacity onPress={() => setIsEditing(!isEditing)}><Text style={[styles.editBtnText, { color: colors.primary }]}>{isEditing ? 'CANCELAR' : 'EDITAR'}</Text></TouchableOpacity>} />
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                <View style={styles.headerSection}>
-                    <TouchableOpacity onPress={isEditing ? pickAvatar : null} activeOpacity={0.8}>
-                        <View style={[styles.avatarWrapper, { borderColor: colors.primary }]}>
-                            {user.avatar ? <Image source={{ uri: user.avatar }} style={styles.avatarImage} /> : <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}><Text style={styles.avatarLetter}>{user.nome?.charAt(0).toUpperCase()}</Text></View>}
-                        </View>
-                    </TouchableOpacity>
-                    <Text style={[styles.userName, { color: colors.textPrimary }]}>{user.nome}</Text>
-                    <View style={[styles.levelBadge, { backgroundColor: (colors.primary) + '20' }]}><MaterialCommunityIcons name="shield-check" size={14} color={colors.primary} /><Text style={[styles.levelText, { color: colors.primary }]}>{user.nivel === 'ADM' ? 'ADMINISTRADOR' : 'COLABORADOR'}</Text></View>
-                    <LinearGradient colors={[colors.primary, colors.primaryDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.planBadge}><Ionicons name="diamond" size={12} color="#FFF" /><Text style={styles.planText}>PLANO ULTRAPRO</Text></LinearGradient>
-                </View>
-                <GlowCard style={[styles.card, { backgroundColor: colors.card, borderColor: colors.glassBorder }]}>
-                    <Text style={[styles.sectionTitle, { color: colors.primary }]}>DADOS DA CONTA</Text>
-                    <InfoRow label="NOME COMPLETO" value={user.nome} icon="person-outline" editing={isEditing} onChange={t => setUser({ ...user, nome: t })} />
-                    <InfoRow label="E-MAIL" value={user.email} icon="mail-outline" editing={isEditing} onChange={t => setUser({ ...user, email: t })} keyboardType="email-address" />
-                </GlowCard>
-                <GlowCard style={[styles.card, { backgroundColor: colors.card, borderColor: colors.glassBorder, marginTop: 20 }]}>
-                    <Text style={[styles.sectionTitle, { color: colors.primary }]}>SEGURANÇA</Text>
-                    <View style={styles.securityRow}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>LOGIN POR BIOMETRIA</Text>
-                            <Text style={[styles.infoValue, { color: colors.textPrimary, fontSize: 12 }]}>
-                                {biometryInfo.available 
-                                    ? (biometryInfo.enrolled ? 'Ativado (Digital/Face)' : 'Desativado') 
-                                    : 'Recurso não suportado no aparelho'}
-                            </Text>
-                        </View>
-                        {biometryInfo.available && (
-                            <TouchableOpacity 
-                                onPress={handleToggleBiometry}
-                                style={[styles.toggleBtn, { backgroundColor: biometryInfo.enrolled ? colors.primary : colors.cardAlt }]}
-                            >
-                                <Ionicons 
-                                    name={biometryInfo.enrolled ? "checkmark-circle" : "ellipse-outline"} 
-                                    size={24} 
-                                    color={biometryInfo.enrolled ? "#FFF" : colors.textMuted} 
-                                />
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                </GlowCard>
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+            <LinearGradient colors={['#030712', '#060B18', '#020617']} style={StyleSheet.absoluteFill} />
+            
+            <View style={[styles.ambientOrb, { top: -80, right: -40, backgroundColor: '#10B981', opacity: 0.06 }]} />
+            <View style={[styles.ambientOrb, { bottom: 100, left: -60, backgroundColor: '#3B82F6', opacity: 0.04 }]} />
 
-                <GlowCard style={[styles.card, { backgroundColor: colors.card, borderColor: colors.glassBorder, marginTop: 20 }]}>
-                    <Text style={[styles.sectionTitle, { color: colors.primary }]}>TEMA DO APLICATIVO</Text>
-                    <View style={styles.themeSelectorContainer}>
-                        <TouchableOpacity onPress={() => setTheme('light')} style={[styles.themeOption, theme === 'light' && { backgroundColor: colors.primary + '10', borderColor: colors.primary }]}>
-                            <Ionicons name="sunny-outline" size={20} color={theme === 'light' ? colors.primary : colors.textMuted} />
-                            <Text style={{ color: colors.textPrimary, marginLeft: 10, fontWeight: 'bold' }}>CLARO</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setTheme('dark')} style={[styles.themeOption, theme === 'dark' && { backgroundColor: colors.primary + '10', borderColor: colors.primary }]}>
-                            <Ionicons name="moon-outline" size={20} color={theme === 'dark' ? colors.primary : colors.textMuted} />
-                            <Text style={{ color: colors.textPrimary, marginLeft: 10, fontWeight: 'bold' }}>ESCURO</Text>
+            <ScreenHeader title="Perfil & Configurações" onBack={() => navigation.goBack()} transparent />
+
+            <ScrollView 
+                showsVerticalScrollIndicator={false} 
+                contentContainerStyle={styles.scrollContent}
+                refreshControl={<RefreshControl refreshing={loading} onRefresh={loadData} tintColor="#10B981" />}
+            >
+                {/* 👤 PERFIL HEADER (Fiel ao Mockup Diamond Pro) */}
+                <SafeBlurView intensity={35} tint="dark" style={styles.profileCard}>
+                    <View style={styles.profileContent}>
+                        <View style={styles.avatarWrapper}>
+                            <View style={styles.avatarInner}>
+                                {user.avatar ? (
+                                    <Image source={{ uri: user.avatar }} style={styles.avatarImg} />
+                                ) : (
+                                    <View style={[styles.avatarImg, styles.avatarPlaceholder]}>
+                                        <Text style={styles.avatarLetter}>{user.nome?.charAt(0).toUpperCase()}</Text>
+                                    </View>
+                                )}
+                            </View>
+                        </View>
+                        
+                        <View style={styles.userTextContent}>
+                            <View style={styles.nameRow}>
+                                <Text style={styles.profileName} numberOfLines={1}>{user.nome}</Text>
+                                <View style={styles.roleBadge}>
+                                    <Text style={styles.roleText}>{user.nivel === 'ADM' ? 'GESTOR' : 'COLABORADOR'}</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.profileEmail} numberOfLines={1}>{user.email}</Text>
+                            <View style={styles.farmBadge}>
+                                <Ionicons name="leaf" size={10} color="#10B981" />
+                                <Text style={styles.profileCompany}>{user.empresa}</Text>
+                            </View>
+                        </View>
+
+                        <TouchableOpacity 
+                            style={styles.editBtn} 
+                            onPress={() => navigation.navigate('ProfileEdit')}
+                            activeOpacity={0.7}
+                        >
+                            <SafeBlurView intensity={40} tint="light" style={styles.editBtnContent}>
+                                <Text style={styles.editBtnText}>Editar</Text>
+                            </SafeBlurView>
                         </TouchableOpacity>
                     </View>
-                </GlowCard>
-                <View style={styles.actionsContainer}>
-                    {isEditing ? <PrimaryButton title={saving ? 'SALVANDO...' : 'CONFIRMAR'} onPress={handleSave} /> : <DangerButton label="SAIR DA CONTA" onPress={handleLogout} />}
+                </SafeBlurView>
+
+                {/* 👤 PERFIL/APP */}
+                <SettingsGroup icon="person-outline" title="Perfil">
+                    <SettingsItem icon="sunny-outline" label="Tema" value={theme === 'dark' ? 'Escuro' : (theme === 'light' ? 'Claro' : 'Automático')} onPress={() => setTheme(theme === 'dark' ? 'light' : (theme === 'light' ? 'system' : 'dark'))} iconColor="#EAB308" />
+                    <SettingsItem icon="globe-outline" label="Idioma" value="Português" onPress={() => {}} />
+                    <SettingsItem icon="layers-outline" label="Unidade" value="kg" onPress={() => {}} iconColor="#10B981" />
+                    <SettingsItem icon="calendar-outline" label="Safra" value="2024/25" isLast onPress={() => {}} />
+                </SettingsGroup>
+
+                {/* 🔔 NOTIFICAÇÕES */}
+                <SettingsGroup icon="notifications-outline" title="Notificações">
+                    <SettingsItem icon="notifications-outline" label="Alertas Agrícolas" type="switch" value={true} onPress={() => {}} />
+                    <SettingsItem icon="wallet-outline" label="Financeiro" type="switch" value={true} onPress={() => {}} iconColor="#3B82F6" />
+                    <SettingsItem icon="time-outline" label="Horário" value="20:00" onPress={() => {}} />
+                    <SettingsItem icon="repeat-outline" label="Frequência" value="Diariamente" isLast onPress={() => {}} />
+                </SettingsGroup>
+
+                {/* 🛡️ SEGURANÇA */}
+                <SettingsGroup icon="shield-checkmark-outline" title="Segurança">
+                    <SettingsItem icon="lock-closed-outline" label="Senha" onPress={() => showToast('Funcionalidade em breve')} iconColor="rgba(255,255,255,0.4)" />
+                    <SettingsItem icon="finger-print-outline" label="Biometria" type="switch" value={biometryInfo.enrolled} onPress={handleToggleBiometry} />
+                    <SettingsItem icon="key-outline" label="Autenticação em Duas Etapas" onPress={() => {}} />
+                    <SettingsItem icon="phone-portrait-outline" label="Sessões Ativas" isLast onPress={() => {}} />
+                </SettingsGroup>
+
+                {/* 🔄 DADOS & SYNC */}
+                <SettingsGroup icon="cloud-upload-outline" title="Dados">
+                    <SettingsItem icon="sync-outline" label="Sincronizar Dados" onPress={runManualSync} />
+                    <SettingsItem icon="cloud-done-outline" label="Backup & Sincronização" onPress={() => navigation.navigate('Sync')} />
+                    <View style={styles.syncStatusFooter}>
+                        <View style={styles.statusDotRow}>
+                            <View style={styles.activeDot} />
+                            <Text style={styles.statusText}>Status: <Text style={{ color: '#10B981' }}>Online</Text></Text>
+                        </View>
+                        <Text style={styles.syncDate}>Último Backup: {new Date().toLocaleDateString()}</Text>
+                    </View>
+                </SettingsGroup>
+
+                {/* 🚪 LOGOUT */}
+                <TouchableOpacity 
+                    style={styles.logoutBtn} 
+                    onPress={handleLogout}
+                    activeOpacity={0.8}
+                >
+                    <LinearGradient colors={['#991B1B', '#7F1D1D']} style={styles.logoutGradient}>
+                        <Text style={styles.logoutBtnText}>Encerrar Sessão</Text>
+                    </LinearGradient>
+                </TouchableOpacity>
+
+                <View style={styles.versionInfo}>
+                    <Text style={styles.versionText}>AgroGB Diamond Pro • v1.12.0</Text>
                 </View>
             </ScrollView>
         </AppContainer>
@@ -227,28 +278,75 @@ export default function ProfileScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    scrollContent: { padding: 20, paddingBottom: 60 },
-    headerSection: { alignItems: 'center', marginBottom: 25 },
-    avatarWrapper: { width: 100, height: 100, borderRadius: 50, borderWidth: 2, padding: 2, marginBottom: 10 },
-    avatarImage: { width: '100%', height: '100%', borderRadius: 50 },
-    avatarPlaceholder: { width: '100%', height: '100%', borderRadius: 50, justifyContent: 'center', alignItems: 'center' },
-    avatarLetter: { fontSize: 40, fontWeight: 'bold', color: '#FFF' },
-    userName: { fontSize: 20, fontWeight: 'bold' },
-    levelBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, padding: 5, borderRadius: 10 },
-    levelText: { fontSize: 10, fontWeight: 'bold' },
-    planBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, padding: 10, borderRadius: 20, marginTop: 10 },
-    planText: { color: '#FFF', fontSize: 10, fontWeight: 'bold' },
-    card: { padding: 20, borderRadius: 20 },
-    sectionTitle: { fontSize: 12, fontWeight: 'bold', marginBottom: 15 },
-    infoRowContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
-    iconBox: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-    infoLabel: { fontSize: 10, fontWeight: 'bold' },
-    infoValue: { fontSize: 14 },
-    input: { borderBottomWidth: 1, padding: 2 },
-    securityRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 10 },
-    toggleBtn: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-    themeSelectorContainer: { flexDirection: 'row', gap: 15, marginTop: 10 },
-    themeOption: { flex: 1, padding: 15, borderRadius: 16, borderWidth: 1.5, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' },
-    actionsContainer: { marginTop: 40, paddingBottom: 20 },
-    editBtnText: { fontWeight: 'bold' }
+    scrollContent: { padding: 18, paddingBottom: 60 },
+    ambientOrb: { position: 'absolute', width: 300, height: 300, borderRadius: 150, zIndex: -1 },
+
+    // Profile Card
+    profileCard: {
+        borderRadius: 28, marginBottom: 26, overflow: 'hidden',
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+        backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    },
+    profileContent: { flexDirection: 'row', alignItems: 'center', padding: 20 },
+    avatarWrapper: {
+        width: 62, height: 62, borderRadius: 31,
+        padding: 2, borderWidth: 1.5, borderColor: 'rgba(16, 185, 129, 0.3)',
+        backgroundColor: 'rgba(16, 185, 129, 0.05)',
+    },
+    avatarInner: { width: '100%', height: '100%', borderRadius: 29, overflow: 'hidden', backgroundColor: '#000' },
+    avatarImg: { width: '100%', height: '100%' },
+    avatarPlaceholder: { backgroundColor: '#0B1120', justifyContent: 'center', alignItems: 'center' },
+    avatarLetter: { color: '#10B981', fontSize: 24, fontWeight: '900' },
+    
+    userTextContent: { flex: 1, marginLeft: 16 },
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    profileName: { color: '#FFF', fontSize: 17, fontWeight: '800', letterSpacing: -0.5 },
+    roleBadge: { backgroundColor: 'rgba(16, 185, 129, 0.1)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+    roleText: { color: '#10B981', fontSize: 8, fontWeight: '900' },
+    profileEmail: { color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 1 },
+    farmBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+    profileCompany: { color: 'rgba(16, 185, 129, 0.8)', fontSize: 10, fontWeight: '700' },
+
+    editBtn: { borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+    editBtnContent: { paddingHorizontal: 12, paddingVertical: 8 },
+    editBtnText: { color: '#FFF', fontSize: 10, fontWeight: '800' },
+
+    // Groups
+    groupContainer: { marginBottom: 28 },
+    groupHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginLeft: 8, marginBottom: 12 },
+    groupTitle: { color: '#FFF', fontSize: 13, fontWeight: '800', letterSpacing: 0.5, opacity: 0.9 },
+    groupCard: {
+        borderRadius: 24, overflow: 'hidden',
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
+        backgroundColor: 'rgba(30, 41, 59, 0.3)',
+    },
+
+    // Items
+    itemWrapper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 18 },
+    itemMain: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+    iconBox: {
+        width: 32, height: 32, borderRadius: 10,
+        justifyContent: 'center', alignItems: 'center',
+        marginRight: 14
+    },
+    itemLabel: { color: '#F1F5F9', fontSize: 15, fontWeight: '600' },
+    itemRight: { flexDirection: 'row', alignItems: 'center' },
+    chevronGroup: { flexDirection: 'row', alignItems: 'center' },
+    itemValue: { color: 'rgba(255,255,255,0.3)', fontSize: 13, marginRight: 8, fontWeight: '500' },
+    itemDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.03)', marginHorizontal: 18 },
+
+    // Status footer
+    syncStatusFooter: { padding: 18, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.02)' },
+    statusDotRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+    activeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981' },
+    statusText: { color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: '700' },
+    syncDate: { color: 'rgba(255,255,255,0.2)', fontSize: 10, marginLeft: 14 },
+
+    // Logout
+    logoutBtn: { borderRadius: 18, overflow: 'hidden', marginTop: 10, marginBottom: 30 },
+    logoutGradient: { height: 56, justifyContent: 'center', alignItems: 'center' },
+    logoutBtnText: { color: '#FFF', fontSize: 15, fontWeight: '900', letterSpacing: 1 },
+
+    versionInfo: { alignItems: 'center', marginBottom: 40 },
+    versionText: { color: 'rgba(255,255,255,0.15)', fontSize: 10, fontWeight: '800', letterSpacing: 1.5 }
 });

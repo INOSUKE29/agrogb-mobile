@@ -1,257 +1,295 @@
-import React, { useState, useCallback } from 'react';
-import {
-    View, Text, StyleSheet, StatusBar as RNStatusBar,
-    ScrollView, TouchableOpacity, SafeAreaView, Dimensions, Platform
-} from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Dimensions, StatusBar, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
+import { LinearGradient } from 'expo-linear-gradient';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
-import { DashboardService } from '../services/DashboardService';
-import WeatherWidget from '../ui/WeatherWidget';
-import SidebarDrawer from '../ui/SidebarDrawer';
-import { MetricCard } from '../ui/components/MetricCard';
-import QuickAction from '../ui/components/QuickAction';
-import AnalyticsDashboard from '../ui/components/AnalyticsDashboard';
 
 const { width } = Dimensions.get('window');
-const isSmallDevice = width < 375;
-const scale = (size) => isSmallDevice ? size * 0.9 : size;
 
-export default function HomeScreen({ navigation }) {
-    const { colors, isDark } = useTheme();
-    const [stats, setStats] = useState({
-        saldo: 0,
-        colheitaHoje: 0,
-        custosMes: 0,
-        vendasMes: 0,
-        vendasHoje: 0,
-        perdasMes: 0,
-        performanceData: [], // Dashboard v1.1
-    });
-    const [userProfile, setUserProfile] = useState({ name: 'Produtor AgroGB' });
-    const [loadingStats, setLoadingStats] = useState(false);
-    const [drawerVisible, setDrawerVisible] = useState(false);
-
-    const loadStats = async () => {
-        if (loadingStats) return;
-        setLoadingStats(true);
-        try {
-            const data = await DashboardService.getStats();
-            setStats(prev => ({ ...prev, ...data }));
-            
-            // Carrega perfil simplificado (SQLite Paridade PRO)
-            const profileRes = await DashboardService.getUserProfile();
-            if (profileRes) setUserProfile(profileRes);
-        } catch (err) {
-            if (__DEV__) console.warn('[HomeScreen] Erro ao atualizar dashboard:', err);
-        } finally {
-            setLoadingStats(false);
-        }
-    };
-
-    useFocusEffect(useCallback(() => {
-        loadStats();
-    }, []));
-
-    const formatBRL = (v) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-    const categories = [
-        {
-            title: 'GESTÃO OPERACIONAL',
-            color: colors.primary,
-            actions: [
-                { id: 'plantio', label: 'Plantio', icon: 'analytics', route: 'Plantio', color: '#10B981' },
-                { id: 'monitoramento', label: 'Monitoramento', icon: 'camera', route: 'Monitoramento', color: '#10B981' },
-                { id: 'colheita', label: 'Colheita', icon: 'leaf', route: 'Colheita', color: '#10B981' },
-                { id: 'adubacao', label: 'Adubação', icon: 'flask', route: 'AdubacaoList', color: '#10B981' },
-                { id: 'estoque', label: 'Estoque', icon: 'cube', route: 'Estoque', color: '#10B981' },
-                { id: 'caderno', label: 'Caderno', icon: 'book', route: 'CadernoCampo', color: '#10B981' },
-            ]
-        },
-        {
-            title: 'COMERCIAL & FINANCEIRO',
-            color: '#3B82F6',
-            actions: [
-                { id: 'vendas', label: 'Vendas', icon: 'cart', route: 'Vendas', color: '#3B82F6' },
-                { id: 'compras', label: 'Compras', icon: 'basket', route: 'Compras', color: '#3B82F6' },
-                { id: 'custos', label: 'Custos', icon: 'wallet', route: 'Custos', color: '#EF4444' },
-                { id: 'contas', label: 'Contas', icon: 'cash', route: 'FinancialAccounts', color: '#10B981', prefix: '$' },
-                { id: 'clientes', label: 'Clientes', icon: 'people', route: 'Clientes', color: '#6366F1' },
-                { id: 'encomendas', label: 'Encomendas', icon: 'gift', route: 'Encomendas', color: '#14B8A6' },
-                { id: 'relatorios', label: 'Relatórios', icon: 'bar-chart', route: 'Relatorios', color: '#3B82F6' },
-            ]
-        },
-        {
-            title: 'SISTEMA',
-            color: '#94A3B8',
-            actions: [
-                { id: 'cadastros', label: 'Cadastros', icon: 'list-circle', route: 'MenuCadastros', color: '#94A3B8' },
-                { id: 'culturas', label: 'Culturas', icon: 'flower', route: 'Culturas', color: '#94A3B8' },
-                { id: 'equipe', label: 'Equipe', icon: 'people-circle', route: 'Usuarios', color: '#94A3B8' },
-                { id: 'frota', label: 'Frota', icon: 'bus', route: 'Frota', color: '#64748B' },
-                { id: 'sync', label: 'Sincronização', icon: 'refresh-circle', route: 'Sync', color: '#3B82F6' },
-                { id: 'config', label: 'Ajustes', icon: 'settings', route: 'Profile', color: '#94A3B8' },
-            ]
-        }
-    ];
+export default function HomeScreen() {
+    const navigation = useNavigation();
+    const { isDark, setTheme } = useTheme();
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <RNStatusBar barStyle={isDark ? "light-content" : "dark-content"} />
-            <SidebarDrawer visible={drawerVisible} onClose={() => setDrawerVisible(false)} navigation={navigation} />
+        <View style={styles.webContainer}>
+            <LinearGradient 
+                colors={['#1c2921', '#111b15', '#09100c']} 
+                style={StyleSheet.absoluteFill}
+            />
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
-            <SafeAreaView style={{ flex: 1 }}>
-                {/* TOP BAR / GREETING */}
-                <View style={styles.topHeader}>
-                    <TouchableOpacity onPress={() => setDrawerVisible(true)} style={[styles.menuToggle, { backgroundColor: colors.card, marginRight: scale(15) }]}>
-                        <Ionicons name="menu-outline" size={scale(26)} color={colors.primary} />
-                    </TouchableOpacity>
-                    <View>
-                        <Text style={[styles.greeting, { color: colors.textSecondary }]}>Bom trabalho,</Text>
-                        <Text style={[styles.userName, { color: colors.textPrimary }]}>{userProfile.name} 🌿</Text>
-                    </View>
-                </View>
-
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                    {/* NEW DIAMOND PRO DASHBOARD HEADER */}
-                    <AnalyticsDashboard 
-                        productivityData={stats.performanceData}
-                        financialData={{
-                            receita: stats.vendasMes,
-                            despesa: stats.custosMes
-                        }}
-                    />
-
-                    {/* FINANCIAL & PERFORMANCE SUMMARY (TRANSITIONED TO DASHBOARD) */}
-                    {/* Mantemos apenas os métricas rápidas que não estão no dashboard principal se necessário,
-                        mas para estética limpa, vamos focar nos QuickActions logo abaixo agora. */}
-
-                    {/* CATEGORIZED ACTIONS */}
-                    {categories.map((cat, idx) => (
-                        <View key={idx} style={styles.section}>
-                            <View style={styles.sectionHeader}>
-                                <View style={[styles.sectionIndicator, { backgroundColor: cat.color }]} />
-                                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{cat.title}</Text>
-                            </View>
-                            <View style={styles.actionGrid}>
-                                {cat.actions.map((action) => (
-                                    <QuickAction
-                                        key={action.id}
-                                        icon={action.icon}
-                                        label={action.label}
-                                        color={action.color}
-                                        prefix={action.prefix}
-                                        onPress={() => navigation.navigate(action.route)}
-                                    />
-                                ))}
+            <View style={styles.mobileFrame}>
+                <SafeAreaView style={{ flex: 1 }}>
+                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollArea}>
+                        
+                        {/* HEADER */}
+                        <View style={styles.header}>
+                            <View style={styles.headerTop}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Image source={require('../../assets/logo.png')} style={{width: 32, height: 32, marginRight: 10}} resizeMode="contain" />
+                                    <View>
+                                        <Text style={styles.greeting}>Olá, Bruno</Text>
+                                        <Text style={styles.subtext}>SISTEMA DE GESTÃO</Text>
+                                    </View>
+                                </View>
+                                <View style={{ flexDirection: 'row', gap: 15, alignItems: 'center' }}>
+                                    <TouchableOpacity onPress={() => setTheme(isDark ? 'light' : 'dark')}>
+                                        <Ionicons name={isDark ? "sunny" : "moon"} size={26} color="#D1FAE5" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+                                        <Ionicons name="menu-outline" size={30} color="#D1FAE5" />
+                                    </TouchableOpacity>
+                                </View>
                             </View>
                         </View>
-                    ))}
 
-                    <View style={{ height: 100 }} />
-                </ScrollView>
-            </SafeAreaView>
+                        {/* RESUMO MENSAL CARD */}
+                        <View style={styles.glassCard}>
+                            <View style={styles.cardTop}>
+                                <Text style={styles.glassTitle}>RESUMO MENSAL</Text>
+                                <Ionicons name="stats-chart" size={16} color="#A7F3D0" />
+                            </View>
 
-            {/* BOTTOM TOOLBAR */}
-            <View style={[styles.bottomBar, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-                <TouchableOpacity style={styles.tabBtn} onPress={() => navigation.navigate('Dashboard')}>
-                    <Ionicons name="home" size={24} color={colors.primary} />
-                    <Text style={[styles.tabText, { color: colors.primary }]}>Home</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.tabBtn} onPress={() => navigation.navigate('Relatorios')}>
-                    <Ionicons name="bar-chart-outline" size={24} color={colors.textSecondary} />
-                    <Text style={[styles.tabText, { color: colors.textSecondary }]}>Relatórios</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.tabBtn} onPress={() => navigation.navigate('Sync')}>
-                    <Ionicons name="refresh-circle-outline" size={24} color={colors.textSecondary} />
-                    <Text style={[styles.tabText, { color: colors.textSecondary }]}>Sync</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.tabBtn} onPress={() => navigation.navigate('Profile')}>
-                    <Ionicons name="person-outline" size={24} color={colors.textSecondary} />
-                    <Text style={[styles.tabText, { color: colors.textSecondary }]}>Perfil</Text>
-                </TouchableOpacity>
+                            <View style={styles.statsRow}>
+                                <View style={styles.statCol}>
+                                    <View style={styles.statLabelRow}>
+                                        <View style={[styles.dot, { backgroundColor: '#34D399' }]} />
+                                        <Text style={styles.statLabel}>TOTAL VENDAS</Text>
+                                    </View>
+                                    <Text style={styles.statValuePositive}>R$ 5.000</Text>
+                                </View>
+                                <View style={styles.statCol}>
+                                    <View style={styles.statLabelRow}>
+                                        <View style={[styles.dot, { backgroundColor: '#F87171' }]} />
+                                        <Text style={styles.statLabel}>CUSTOS TOTAIS</Text>
+                                    </View>
+                                    <Text style={styles.statValueNegative}>R$ 3.000</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.cardFooter}>PERDAS (MÊS): <Text style={styles.cardFooterBold}>0 kg</Text></Text>
+                        </View>
+
+                        {/* 3 RETÂNGULOS DE AÇÃO (REGISTRAR) */}
+                        <View style={styles.actionRow}>
+                            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#224a32' }]} onPress={() => navigation.navigate('Vendas')}>
+                                <Text style={styles.actionBtnText}>+ Registrar{"\n"}Venda</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#4a4422' }]} onPress={() => navigation.navigate('Custos')}>
+                                <Text style={styles.actionBtnText}>+ Registrar{"\n"}Custo</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#2d3b32' }]} onPress={() => navigation.navigate('Colheita')}>
+                                <Text style={styles.actionBtnText}>+ Registrar{"\n"}Colheita</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* SECTIONS & GRID COM BOTÕES PÍLULA */}
+                        {/* GESTÃO OPERACIONAL */}
+                        <View style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <View style={styles.verticalBar} />
+                                <Text style={styles.sectionTitle}>GESTÃO OPERACIONAL</Text>
+                            </View>
+                            <View style={styles.grid}>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('CadernoCampo')}>
+                                    <Ionicons name="book-outline" size={18} color="#15803d" />
+                                    <Text style={styles.pillText}>Caderno</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('Colheita')}>
+                                    <Ionicons name="leaf-outline" size={18} color="#15803d" />
+                                    <Text style={styles.pillText}>Colheita</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('Plantio')}>
+                                    <Ionicons name="flower-outline" size={18} color="#15803d" />
+                                    <Text style={styles.pillText}>Plantio</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('Monitoramento')}>
+                                    <Ionicons name="eye-outline" size={18} color="#15803d" />
+                                    <Text style={styles.pillText}>Monitorar</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('Estoque')}>
+                                    <Ionicons name="cube-outline" size={18} color="#15803d" />
+                                    <Text style={styles.pillText}>Estoque</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('MenuCadastros')}>
+                                    <Ionicons name="list-outline" size={18} color="#15803d" />
+                                    <Text style={styles.pillText}>Cadastros</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('AdubacaoList')}>
+                                    <Ionicons name="flask-outline" size={18} color="#15803d" />
+                                    <Text style={styles.pillText}>Adubação</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        {/* COMERCIAL & FINANÇAS */}
+                        <View style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <View style={[styles.verticalBar, {backgroundColor: '#60A5FA'}]} />
+                                <Text style={styles.sectionTitle}>FINANÇAS & COMERCIAL</Text>
+                            </View>
+                            <View style={styles.grid}>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('Vendas')}>
+                                    <Ionicons name="cart-outline" size={18} color="#1d4ed8" />
+                                    <Text style={[styles.pillText, {color: '#1e3a8a'}]}>Vendas</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('Compras')}>
+                                    <Ionicons name="basket-outline" size={18} color="#1d4ed8" />
+                                    <Text style={[styles.pillText, {color: '#1e3a8a'}]}>Compras</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('Custos')}>
+                                    <Ionicons name="wallet-outline" size={18} color="#1d4ed8" />
+                                    <Text style={[styles.pillText, {color: '#1e3a8a'}]}>Lançar Custo</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('CategoriasDespesa')}>
+                                    <Ionicons name="pricetags-outline" size={18} color="#1d4ed8" />
+                                    <Text style={[styles.pillText, {color: '#1e3a8a'}]}>Categorias</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('FinancialAccounts')}>
+                                    <Ionicons name="business-outline" size={18} color="#1d4ed8" />
+                                    <Text style={[styles.pillText, {color: '#1e3a8a'}]}>Contas / Bancos</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('Clientes')}>
+                                    <Ionicons name="people-outline" size={18} color="#1d4ed8" />
+                                    <Text style={[styles.pillText, {color: '#1e3a8a'}]}>Clientes</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('Encomendas')}>
+                                    <Ionicons name="gift-outline" size={18} color="#1d4ed8" />
+                                    <Text style={[styles.pillText, {color: '#1e3a8a'}]}>Encomendas</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('Relatorios')}>
+                                    <Ionicons name="bar-chart-outline" size={18} color="#1d4ed8" />
+                                    <Text style={[styles.pillText, {color: '#1e3a8a'}]}>Relatórios</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        {/* SISTEMA & FROTA */}
+                        <View style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <View style={[styles.verticalBar, {backgroundColor: '#A78BFA'}]} />
+                                <Text style={styles.sectionTitle}>SISTEMA & FROTA</Text>
+                            </View>
+                            <View style={styles.grid}>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('Frota')}>
+                                    <Ionicons name="bus-outline" size={18} color="#4c1d95" />
+                                    <Text style={[styles.pillText, {color: '#4c1d95'}]}>Frota</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('Scanner')}>
+                                    <Ionicons name="camera-outline" size={18} color="#4c1d95" />
+                                    <Text style={[styles.pillText, {color: '#4c1d95'}]}>Scanner</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('Culturas')}>
+                                    <Ionicons name="map-outline" size={18} color="#4c1d95" />
+                                    <Text style={[styles.pillText, {color: '#4c1d95'}]}>Culturas</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('Usuarios')}>
+                                    <Ionicons name="people-circle-outline" size={18} color="#4c1d95" />
+                                    <Text style={[styles.pillText, {color: '#4c1d95'}]}>Equipe</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('Sync')}>
+                                    <Ionicons name="sync-outline" size={18} color="#4c1d95" />
+                                    <Text style={[styles.pillText, {color: '#4c1d95'}]}>Sincronizar</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.pillBtn} onPress={() => navigation.navigate('Settings')}>
+                                    <Ionicons name="settings-outline" size={18} color="#4c1d95" />
+                                    <Text style={[styles.pillText, {color: '#4c1d95'}]}>Ajustes</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                    </ScrollView>
+
+                    {/* BOTTOM NAVIGATION FIXED */}
+                    <View style={styles.bottomNav}>
+                        <TouchableOpacity style={styles.navItem} onPress={() => {}}>
+                            <Ionicons name="home" size={24} color="#A3E635" />
+                            <Text style={[styles.navText, { color: '#A3E635' }]}>Home</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Relatorios')}>
+                            <Ionicons name="bar-chart-outline" size={24} color="#9CA3AF" />
+                            <Text style={styles.navText}>Relatórios</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Sync')}>
+                            <Ionicons name="refresh-outline" size={24} color="#9CA3AF" />
+                            <Text style={styles.navText}>Sync</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Profile')}>
+                            <Ionicons name="person-outline" size={24} color="#9CA3AF" />
+                            <Text style={styles.navText}>Perfil</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                </SafeAreaView>
             </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    scrollContent: { paddingBottom: 100 },
-    topHeader: {
-        flexDirection: 'row',
+    webContainer: {
+        flex: 1,
         alignItems: 'center',
-        paddingHorizontal: scale(20),
-        paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight || 0) + scale(10) : scale(50), // Ajustado para não sobrepor relógio
-        paddingBottom: scale(15),
-        zIndex: 10,
-        backgroundColor: 'transparent'
+        backgroundColor: '#000',
     },
-    weatherWrapper: {
-        marginBottom: scale(20),
-        borderRadius: 24,
-        overflow: 'hidden',
+    mobileFrame: {
+        flex: 1,
+        width: '100%',
+        maxWidth: 480, 
+        position: 'relative',
+    },
+    scrollArea: {
+        paddingHorizontal: 20,
+        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 20 : 60,
+        paddingBottom: 120,
+    },
+    header: { marginBottom: 25 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    greeting: { fontSize: 24, fontWeight: '700', color: '#FFF' },
+    subtext: { fontSize: 10, color: '#34D399', fontWeight: 'bold', letterSpacing: 1.5, marginTop: 2 },
+
+    glassCard: {
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
         borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.05)'
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderRadius: 20,
+        padding: 20,
+        marginBottom: 20,
     },
-    financialCard: {
-        padding: scale(24),
-        borderRadius: 28,
-        marginBottom: scale(20),
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.2,
-        shadowRadius: 15,
-        elevation: 8,
-    },
-    finHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: scale(20),
-    },
-    finTitle: { color: 'rgba(255,255,255,0.7)', fontSize: scale(10), fontWeight: '900', letterSpacing: 1.5 },
-    finRow: { flexDirection: 'row', alignItems: 'center' },
-    finItem: { flex: 1 },
-    finLabelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-    finDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ADE80', marginRight: 6 },
-    finLabel: { color: 'rgba(255,255,255,0.6)', fontSize: scale(9), fontWeight: '900' },
-    finValue: { color: '#FFFFFF', fontSize: scale(22), fontWeight: '900' },
-    finDivider: { width: 1, height: scale(40), marginHorizontal: scale(15) },
-    finDividerHoriz: { height: 1, width: '100%', marginVertical: scale(15) },
-    finRowFooter: { flexDirection: 'row', alignItems: 'center', opacity: 0.8 },
-    finMiniLabel: { color: 'rgba(255,255,255,0.6)', fontSize: scale(9), fontWeight: '900' },
-    finMiniValue: { color: '#FDA4AF', fontSize: scale(12), fontWeight: '900' },
+    cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    glassTitle: { color: '#A7F3D0', fontSize: 11, fontWeight: 'bold', letterSpacing: 1.5 },
+    
+    statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
+    statCol: { flex: 1 },
+    statLabelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
+    dot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
+    statLabel: { color: '#D1FAE5', fontSize: 10, fontWeight: 'bold' },
+    statValuePositive: { color: '#FFF', fontSize: 26, fontWeight: 'bold' },
+    statValueNegative: { color: '#FCD34D', fontSize: 26, fontWeight: 'bold' },
+    
+    cardFooter: { color: '#9CA3AF', fontSize: 11, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)', paddingTop: 15 },
+    cardFooterBold: { color: '#FFF', fontWeight: 'bold' },
 
-    metricsGrid: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: scale(25),
-    },
+    actionRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 30, gap: 8 },
+    actionBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    actionBtnText: { color: '#FFF', fontSize: 12, fontWeight: '600', textAlign: 'center', lineHeight: 18 },
 
-    section: { marginBottom: scale(30) },
-    sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: scale(15) },
-    sectionIndicator: { width: 4, height: 18, borderRadius: 2, marginRight: 10 },
-    sectionTitle: { fontSize: scale(15), fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
-    actionGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-    },
+    section: { marginBottom: 25 },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
+    verticalBar: { width: 4, height: 16, backgroundColor: '#86EFAC', borderRadius: 2, marginRight: 10 },
+    sectionTitle: { color: '#D1FAE5', fontSize: 12, fontWeight: 'bold', letterSpacing: 1 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10 },
+    pillBtn: { width: '48%', backgroundColor: '#D1FAE5', paddingVertical: 14, paddingHorizontal: 15, borderRadius: 15, flexDirection: 'row', alignItems: 'center', gap: 10 },
+    pillText: { color: '#064E3B', fontSize: 14, fontWeight: 'bold' },
 
-    bottomBar: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: isSmallDevice ? 70 : 85,
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        paddingTop: 10,
-        paddingBottom: isSmallDevice ? 15 : 25,
-        borderTopWidth: 1,
+    bottomNav: {
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        backgroundColor: '#0a100d',
+        flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center',
+        paddingVertical: Platform.OS === 'android' ? 15 : 25,
+        borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)',
+        borderTopLeftRadius: 25, borderTopRightRadius: 25
     },
-    tabBtn: { alignItems: 'center' },
-    tabText: { fontSize: scale(10), fontWeight: '800', marginTop: 4 }
+    navItem: { alignItems: 'center', justifyContent: 'center', flex: 1 },
+    navText: { color: '#9CA3AF', fontSize: 10, marginTop: 5, fontWeight: '600' }
 });

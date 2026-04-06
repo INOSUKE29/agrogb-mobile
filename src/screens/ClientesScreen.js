@@ -1,71 +1,60 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Alert, ActivityIndicator } from 'react-native';
-import { v4 as uuidv4 } from 'uuid';
-import { insertCliente, getClientes, deleteCliente } from '../database/database';
+import { 
+    View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, 
+    ActivityIndicator, TextInput, SafeAreaView, StatusBar, Platform, KeyboardAvoidingView
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AppContainer from '../ui/AppContainer';
-import ScreenHeader from '../ui/ScreenHeader';
-import GlowCard from '../ui/GlowCard';
-import GlowInput from '../ui/GlowInput';
-import PrimaryButton from '../ui/PrimaryButton';
-import GlowFAB from '../ui/GlowFAB';
-import { MODAL_OVERLAY } from '../styles/themes';
-import { useTheme } from '../theme/ThemeContext';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useIsFocused } from '@react-navigation/native';
+
+import { getClientes, deleteCliente } from '../database/database';
 import ConfirmModal from '../ui/ConfirmModal';
-import { showToast } from '../ui/Toast';
 
 export default function ClientesScreen({ navigation }) {
-    const { colors } = useTheme();
     const [items, setItems] = useState([]);
+    const [filteredItems, setFilteredItems] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [nome, setNome] = useState('');
-    const [telefone, setTelefone] = useState('');
-    const [endereco, setEndereco] = useState('');
-    const [cpf, setCpf] = useState('');
-    const [cidade, setCidade] = useState('');
-    const [estado, setEstado] = useState('');
-    const [obs, setObs] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    
+    const [confirmVisible, setConfirmVisible] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState(null);
 
-    useEffect(() => { loadData(); }, []);
+    const isFocused = useIsFocused();
 
-    const up = (t, setter) => setter(t.toUpperCase());
+    useEffect(() => { 
+        if (isFocused) loadData(); 
+    }, [isFocused]);
 
     const loadData = async () => {
         setLoading(true);
         try {
             const data = await getClientes();
+            // Deduplicate logic existing from original code
             const uniqueData = [...new Map(data.map(item => [item.cpf_cnpj ? item.cpf_cnpj.trim() : item.nome.trim().toUpperCase(), item])).values()];
             setItems(uniqueData);
-        } catch { } finally { setLoading(false); }
+            setFilteredItems(uniqueData);
+        } catch (e) {
+            console.error('Erro ao carregar clientes:', e);
+        } finally { 
+            setLoading(false); 
+        }
     };
 
-    const handleSave = async () => {
-        if (!nome.trim()) return Alert.alert('Erro', 'Nome do cliente é obrigatório.');
-        try {
-            await insertCliente({
-                uuid: uuidv4(),
-                nome,
-                telefone,
-                endereco,
-                cpf_cnpj: cpf,
-                cidade,
-                estado,
-                observacao: obs
-            });
-            setModalVisible(false);
-            resetForm();
-            loadData();
-            showToast('Cliente cadastrado!');
-        } catch (e) { Alert.alert('Erro', e?.message || 'Falha ao salvar cliente.'); }
+    const handleSearch = (text) => {
+        setSearchQuery(text);
+        if (!text.trim()) {
+            setFilteredItems(items);
+            return;
+        }
+        const str = text.toLowerCase();
+        const filtered = items.filter(i => 
+            i.nome?.toLowerCase().includes(str) || 
+            i.cpf_cnpj?.includes(str) || 
+            i.cidade?.toLowerCase().includes(str)
+        );
+        setFilteredItems(filtered);
     };
-
-    const resetForm = () => {
-        setNome(''); setTelefone(''); setEndereco(''); setCpf(''); setCidade(''); setEstado(''); setObs('');
-    };
-
-    const [confirmVisible, setConfirmVisible] = useState(false);
-    const [itemToDelete, setItemToDelete] = useState(null);
 
     const handleDelete = (id) => {
         setItemToDelete(id);
@@ -81,117 +70,178 @@ export default function ClientesScreen({ navigation }) {
         }
     };
 
-    return (
-        <AppContainer>
-            <ScreenHeader title="Clientes e Parceiros" onBack={navigation?.goBack ? () => navigation.goBack() : null} />
+    // Card Renderer
+    const renderItem = ({ item }) => {
+        const isFornecedor = item.observacao?.includes('FORNECEDOR');
+        const badgeColor = isFornecedor ? '#F59E0B' : '#3B82F6';
+        const typeLabel = isFornecedor ? 'FORNECEDOR' : 'CLIENTE';
 
-            {loading ? <ActivityIndicator size="large" color={colors.glow} style={{ marginTop: 50 }} /> :
-                <FlatList
-                    data={items}
-                    keyExtractor={item => item.id.toString()}
-                    contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
-                    renderItem={({ item }) => (
-                        <GlowCard style={styles.card}>
-                            <View style={[styles.avatar, { borderColor: colors.glassBorder, backgroundColor: colors.cardAlt }]}>
-                                <Text style={[styles.avatarTxt, { color: colors.primary }]}>{item.nome.charAt(0)}</Text>
+        return (
+            <TouchableOpacity 
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('ClienteForm', { cliente: item })}
+                style={styles.cardContainer}
+            >
+                <View style={styles.cardContent}>
+                    {/* Linha 1 */}
+                    <View style={styles.cardHeader}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                            <View style={[styles.avatar, { borderColor: badgeColor }]}>
+                                <Text style={[styles.avatarTxt, { color: badgeColor }]}>{item.nome.charAt(0)}</Text>
                             </View>
-                            <View style={styles.cardBody}>
-                                <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{item.nome}</Text>
-                                <Text style={[styles.cardSub, { color: colors.textSecondary }]}>{item.telefone || 'SEM TELEFONE'}</Text>
-                                {item.cpf_cnpj ? <Text style={[styles.cardMeta, { color: colors.textMuted }]}>{item.cpf_cnpj}</Text> : null}
-                            </View>
-                            <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.deleteBtn}>
-                                <Ionicons name="trash-outline" size={18} color={colors.danger} />
-                            </TouchableOpacity>
-                        </GlowCard>
-                    )}
-                    ListEmptyComponent={
-                        <View style={styles.empty}>
-                            <Ionicons name="people-outline" size={60} color={colors.glassBorder || '#94A3B8'} />
-                            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Nenhum cliente cadastrado.</Text>
-                            <Text style={[styles.emptySub, { color: colors.textMuted }]}>Toque no + para adicionar.</Text>
-                        </View>
-                    }
-                />
-            }
-
-            <GlowFAB onPress={() => setModalVisible(true)} />
-
-            <Modal visible={modalVisible} transparent animationType="slide">
-                <View style={[styles.overlay, { backgroundColor: MODAL_OVERLAY }]}>
-                    <View style={[styles.modal, { backgroundColor: colors.modal, borderColor: colors.glassBorder }]}>
-                        <View style={styles.modalHeader}>
-                            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>NOVO PARCEIRO</Text>
-                            <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <Ionicons name="close" size={24} color={colors.textMuted} />
-                            </TouchableOpacity>
-                        </View>
-                        <Text style={[styles.label, { color: colors.textMuted }]}>NOME COMPLETO / EMPRESA</Text>
-                        <GlowInput value={nome} onChangeText={t => up(t, setNome)} placeholder="Ex: JOÃO SILVA" />
-                        <Text style={[styles.label, { color: colors.textMuted }]}>TELEFONE / WHATSAPP</Text>
-                        <GlowInput value={telefone} onChangeText={setTelefone} placeholder="(11) 99999-9999" keyboardType="phone-pad" />
-
-                        <View style={{ flexDirection: 'row', gap: 10 }}>
-                            <View style={{ flex: 1 }}>
-                                <Text style={[styles.label, { color: colors.textMuted }]}>CIDADE</Text>
-                                <GlowInput value={cidade} onChangeText={t => up(t, setCidade)} placeholder="Ex: ITATIBA" />
-                            </View>
-                            <View style={{ width: 80 }}>
-                                <Text style={[styles.label, { color: colors.textMuted }]}>UF</Text>
-                                <GlowInput value={estado} onChangeText={t => up(t, setEstado)} placeholder="SP" maxLength={2} />
+                            <View style={{ marginLeft: 12, flex: 1 }}>
+                                <Text style={styles.cardTitle} numberOfLines={1}>{item.nome}</Text>
+                                <Text style={styles.cardCpf}>{item.cpf_cnpj || 'Sem CPF/CNPJ Cadastrado'}</Text>
                             </View>
                         </View>
+                        <TouchableOpacity onPress={(e) => { e.stopPropagation(); handleDelete(item.id); }} style={styles.deleteBtn}>
+                            <Ionicons name="trash-outline" size={18} color="#F87171" />
+                        </TouchableOpacity>
+                    </View>
 
-                        <Text style={[styles.label, { color: colors.textMuted }]}>ENDEREÇO COMPLETO</Text>
-                        <GlowInput value={endereco} onChangeText={t => up(t, setEndereco)} placeholder="Rua, Bairro..." />
+                    {/* Linha 2 */}
+                    <View style={styles.cardFooter}>
+                        <View style={styles.infoTag}>
+                            <Ionicons name="call" size={12} color="#94A3B8" />
+                            <Text style={styles.infoTagText}>{item.telefone || 'Sem contato'}</Text>
+                        </View>
 
-                        <Text style={[styles.label, { color: colors.textMuted }]}>CPF / CNPJ (OPCIONAL)</Text>
-                        <GlowInput value={cpf} onChangeText={setCpf} placeholder="000.000.000-00" keyboardType="numeric" />
+                        {item.cidade ? (
+                            <View style={styles.infoTag}>
+                                <Ionicons name="location" size={12} color="#94A3B8" />
+                                <Text style={styles.infoTagText}>{item.cidade}</Text>
+                            </View>
+                        ) : null}
 
-                        <Text style={[styles.label, { color: colors.textMuted }]}>OBSERVAÇÕES</Text>
-                        <GlowInput value={obs} onChangeText={t => up(t, setObs)} placeholder="Detalhes do cliente..." multiline style={{ height: 60 }} />
-                        <View style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}>
-                            <TouchableOpacity style={[styles.cancelBtn, { borderColor: colors.glassBorder, backgroundColor: colors.cardAlt }]} onPress={() => setModalVisible(false)}>
-                                <Text style={{ color: colors.textMuted, fontWeight: 'bold' }}>CANCELAR</Text>
-                            </TouchableOpacity>
-                            <PrimaryButton label="SALVAR" onPress={handleSave} style={{ flex: 1 }} />
+                        <View style={{ flex: 1 }} />
+
+                        <View style={[styles.typeBadge, { backgroundColor: badgeColor + '15', borderColor: badgeColor + '30' }]}>
+                            <Text style={[styles.typeBadgeText, { color: badgeColor }]}>{typeLabel}</Text>
                         </View>
                     </View>
                 </View>
-            </Modal>
+            </TouchableOpacity>
+        );
+    };
+
+    return (
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+            <LinearGradient colors={['#040914', '#081222']} style={StyleSheet.absoluteFill} />
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+
+            <SafeAreaView style={{ flex: 1 }}>
+                {/* Header Premium */}
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                        <Ionicons name="chevron-back" size={28} color="#FFF" />
+                    </TouchableOpacity>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.headerTitle}>CRM & Contatos</Text>
+                        <Text style={styles.headerSub}>{items.length} REGISTROS CARREGADOS</Text>
+                    </View>
+                    <TouchableOpacity 
+                        style={styles.addBtnHeader}
+                        onPress={() => navigation.navigate('ClienteForm')}
+                    >
+                        <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.addBtnGradient}>
+                            <Ionicons name="add" size={22} color="#FFF" />
+                        </LinearGradient>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Barra de Busca Glassmorphism */}
+                <View style={styles.searchWrapper}>
+                    <View style={styles.searchBox}>
+                        <Ionicons name="search" size={20} color="#64748B" />
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Buscar nome, CPF, cidade..."
+                            placeholderTextColor="#64748B"
+                            value={searchQuery}
+                            onChangeText={handleSearch}
+                        />
+                        {searchQuery.length > 0 && (
+                            <TouchableOpacity onPress={() => handleSearch('')}>
+                                <Ionicons name="close-circle" size={20} color="#64748B" />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+
+                {/* Lista */}
+                {loading ? (
+                    <ActivityIndicator size="large" color="#3B82F6" style={{ marginTop: 100 }} />
+                ) : (
+                    <FlatList
+                        data={filteredItems}
+                        keyExtractor={item => item.uuid || Math.random().toString()}
+                        contentContainerStyle={styles.listContent}
+                        showsVerticalScrollIndicator={false}
+                        renderItem={renderItem}
+                        ListEmptyComponent={
+                            <View style={styles.empty}>
+                                <View style={styles.emptyIconBox}>
+                                    <Ionicons name="people" size={40} color="#3B82F6" />
+                                </View>
+                                <Text style={styles.emptyText}>Nenhum registro encontrado</Text>
+                                <Text style={styles.emptySub}>Cadastre novos clientes, parceiros ou fornecedores para gerenciar.</Text>
+                                
+                                <TouchableOpacity style={styles.emptyBtn} onPress={() => navigation.navigate('ClienteForm')}>
+                                    <Text style={styles.emptyBtnText}>CRIAR NOVO CADASTRO</Text>
+                                </TouchableOpacity>
+                            </View>
+                        }
+                    />
+                )}
+            </SafeAreaView>
 
             <ConfirmModal
                 visible={confirmVisible}
-                title="Excluir Contato"
-                message={`Tem certeza que deseja remover este parceiro da base de dados? Esta ação não pode ser desfeita.`}
-                confirmText="Excluir"
+                title="Excluir Registro"
+                message="Tem certeza que deseja apagar este contato? Históricos atrelados a ele podem perder a referência direta."
+                confirmText="APAGAR"
                 isDestructive={true}
                 onCancel={() => { setConfirmVisible(false); setItemToDelete(null); }}
                 onConfirm={confirmDelete}
             />
-
-        </AppContainer >
+        </KeyboardAvoidingView>
     );
 }
 
 const styles = StyleSheet.create({
-    card: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, padding: 16 },
-    avatar: { width: 46, height: 46, borderRadius: 23, borderWidth: 1, justifyContent: 'center', alignItems: 'center', marginRight: 14 },
+    container: { flex: 1 },
+    header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 20 : 30, paddingBottom: 15 },
+    backButton: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', marginRight: 15 },
+    headerTitle: { color: '#FFF', fontSize: 22, fontWeight: '900', letterSpacing: 0.5 },
+    headerSub: { color: '#3B82F6', fontSize: 11, fontWeight: '800', letterSpacing: 1, marginTop: 2 },
+    addBtnHeader: { shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 5 },
+    addBtnGradient: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+
+    searchWrapper: { paddingHorizontal: 20, marginBottom: 15, zIndex: 10 },
+    searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(15, 23, 42, 0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: 16, height: 50, paddingHorizontal: 15 },
+    searchInput: { flex: 1, color: '#FFF', fontSize: 14, marginLeft: 10, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) },
+
+    listContent: { paddingHorizontal: 20, paddingBottom: 120 },
+    
+    cardContainer: { marginBottom: 15 },
+    cardContent: { backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', padding: 16 },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
+    avatar: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(15, 23, 42, 0.5)' },
     avatarTxt: { fontSize: 18, fontWeight: '900' },
-    cardBody: { flex: 1 },
-    cardTitle: { fontSize: 15, fontWeight: '700' },
-    cardSub: { fontSize: 11, marginTop: 2 },
-    cardMeta: { fontSize: 10, marginTop: 2 },
-    deleteBtn: { padding: 8 },
+    cardTitle: { color: '#F8FAFC', fontSize: 16, fontWeight: '800' },
+    cardCpf: { color: '#64748B', fontSize: 12, marginTop: 4, fontWeight: '600' },
+    deleteBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(248, 113, 113, 0.1)', justifyContent: 'center', alignItems: 'center' },
 
-    empty: { alignItems: 'center', marginTop: 80 },
-    emptyText: { marginTop: 16, fontSize: 16, fontWeight: 'bold' },
-    emptySub: { marginTop: 5, fontSize: 13 },
+    cardFooter: { flexDirection: 'row', alignItems: 'center', paddingTop: 14, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.05)', gap: 10 },
+    infoTag: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    infoTagText: { color: '#94A3B8', fontSize: 11, fontWeight: '600' },
+    typeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1 },
+    typeBadgeText: { fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
 
-    overlay: { flex: 1, justifyContent: 'flex-end' },
-    modal: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 40, borderWidth: 1 },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-    modalTitle: { fontSize: 16, fontWeight: '900' },
-    label: { fontSize: 10, fontWeight: '900', letterSpacing: 1.2, marginBottom: 8, marginTop: 4 },
-    cancelBtn: { flex: 1, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+    empty: { alignItems: 'center', marginTop: 80, paddingHorizontal: 30 },
+    emptyIconBox: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(59, 130, 246, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+    emptyText: { color: '#FFF', fontSize: 18, fontWeight: '800', marginBottom: 8 },
+    emptySub: { color: '#64748B', fontSize: 13, textAlign: 'center', lineHeight: 20, marginBottom: 30 },
+    emptyBtn: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#3B82F6', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14 },
+    emptyBtnText: { color: '#3B82F6', fontSize: 12, fontWeight: '900', letterSpacing: 1 }
 });
