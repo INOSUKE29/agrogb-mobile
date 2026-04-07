@@ -27,7 +27,7 @@ export default function AdubacaoDetailScreen({ route, navigation }) {
             } else {
                 setItens(res.rows._array);
             }
-        } catch (_) { 
+        } catch { 
             setItens([{ id: 1, produto_id: 'Fertilizante Premium', quantidade: 100, unidade: 'KG' }]);
         }
     }, [currentPlano.uuid]);
@@ -48,7 +48,7 @@ export default function AdubacaoDetailScreen({ route, navigation }) {
                             await ProductionService.applyFertilization(currentPlano.uuid);
                             setCurrentPlano({ ...currentPlano, status: 'CONCLUIDO', data_aplicacao: new Date().toISOString() });
                             Alert.alert('Sucesso', 'Estoque atualizado e Adubação registrada com sucesso!');
-                        } catch (_) {
+                        } catch {
                             Alert.alert('Erro', 'Houve uma falha na transação.');
                         } finally { setLoading(false); }
                     }

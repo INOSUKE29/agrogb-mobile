@@ -74,7 +74,7 @@ export default function AdubacaoFormScreen({ route, navigation }) {
             await savePlan(data);
             showToast('✅ Plano de adubação salvo com sucesso!');
             navigation.goBack();
-        } catch (error) {
+        } catch {
             Alert.alert('Erro', 'Falha ao salvar plano.');
         }
     };

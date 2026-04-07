@@ -83,7 +83,7 @@ export const initDB = async () => {
                 transaction: (txFn, errFn, successFn) => {
                     try {
                         txFn({
-                            executeSql: (sql, params, succ, err) => {
+                            executeSql: (sql, params, succ) => {
                                 if (succ) succ(null, { rows: { length: 0, item: () => null, _array: [] } });
                             }
                         });

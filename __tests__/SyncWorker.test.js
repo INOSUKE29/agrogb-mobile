@@ -38,7 +38,7 @@ describe('SyncWorker Audit', () => {
     executeQuery.mockResolvedValue({
       rows: {
         length: 1,
-        item: (_) => ({
+        item: () => ({
           id: '1',
           table_name: 'test_table',
           operation: 'INSERT',
