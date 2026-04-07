@@ -140,15 +140,12 @@ ALTER FUNCTION "public"."get_table_pkey_cols"("p_table" "text") OWNER TO "postgr
 
 CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
     AS $$
 BEGIN
-  INSERT INTO public.user_profiles (id, name, email, role)
-  VALUES (
-    new.id, 
-    new.raw_user_meta_data->>'full_name', 
-    new.email, 
-    'PRODUTOR' -- Define um cargo padrão
-  );
+  -- Usamos public. para referenciar a tabela com precisão
+  INSERT INTO public.user_profiles (id, full_name, email)
+  VALUES (new.id, new.raw_user_meta_data->>'full_name', new.email);
   RETURN new;
 END;
 $$;
@@ -415,7 +412,8 @@ CREATE TABLE IF NOT EXISTS "public"."areas" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "user_id" "uuid"
+    "user_id" "uuid",
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
 );
 
 
@@ -435,7 +433,8 @@ CREATE TABLE IF NOT EXISTS "public"."cadastro" (
     "preco_venda" numeric DEFAULT 0,
     "last_updated" timestamp with time zone DEFAULT "now"(),
     "is_deleted" integer DEFAULT 0,
-    "categoria" "text"
+    "categoria" "text",
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
 );
 
 
@@ -452,7 +451,8 @@ CREATE TABLE IF NOT EXISTS "public"."caderno_notas" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid"
+    "usuario_id" "uuid",
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
 );
 
 
@@ -489,7 +489,8 @@ CREATE TABLE IF NOT EXISTS "public"."clientes" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "user_id" "uuid"
+    "user_id" "uuid",
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
 );
 
 
@@ -509,7 +510,8 @@ CREATE TABLE IF NOT EXISTS "public"."colheitas" (
     "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"(),
     "is_deleted" integer DEFAULT 0,
     "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid"
+    "usuario_id" "uuid",
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
 );
 
 
@@ -532,7 +534,8 @@ CREATE TABLE IF NOT EXISTS "public"."compras" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid"
+    "usuario_id" "uuid",
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
 );
 
 
@@ -550,7 +553,8 @@ CREATE TABLE IF NOT EXISTS "public"."cost_categories" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid"
+    "usuario_id" "uuid",
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
 );
 
 
@@ -572,7 +576,8 @@ CREATE TABLE IF NOT EXISTS "public"."costs" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid"
+    "usuario_id" "uuid",
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
 );
 
 
@@ -589,7 +594,8 @@ CREATE TABLE IF NOT EXISTS "public"."culturas" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid"
+    "usuario_id" "uuid",
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
 );
 
 
@@ -612,7 +618,8 @@ CREATE TABLE IF NOT EXISTS "public"."custos" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "user_id" "uuid"
+    "user_id" "uuid",
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
 );
 
 
@@ -630,7 +637,8 @@ CREATE TABLE IF NOT EXISTS "public"."descarte" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid"
+    "usuario_id" "uuid",
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
 );
 
 
@@ -666,7 +674,8 @@ CREATE TABLE IF NOT EXISTS "public"."estoque" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "user_id" "uuid"
+    "user_id" "uuid",
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
 );
 
 
@@ -698,7 +707,8 @@ CREATE TABLE IF NOT EXISTS "public"."fertilization_items" (
     "quantity" numeric DEFAULT 0,
     "unit" "text",
     "last_updated" timestamp with time zone DEFAULT "now"(),
-    "is_deleted" integer DEFAULT 0
+    "is_deleted" integer DEFAULT 0,
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
 );
 
 
@@ -865,7 +875,8 @@ CREATE TABLE IF NOT EXISTS "public"."manutencao_frota" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid"
+    "usuario_id" "uuid",
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
 );
 
 
@@ -886,7 +897,8 @@ CREATE TABLE IF NOT EXISTS "public"."maquinas" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid"
+    "usuario_id" "uuid",
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
 );
 
 
@@ -1038,7 +1050,8 @@ CREATE TABLE IF NOT EXISTS "public"."orders" (
     "observacao" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "last_updated" timestamp with time zone DEFAULT "now"(),
-    "is_deleted" integer DEFAULT 0
+    "is_deleted" integer DEFAULT 0,
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
 );
 
 
@@ -1061,7 +1074,8 @@ CREATE TABLE IF NOT EXISTS "public"."planos_adubacao" (
     "id" "uuid",
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "user_id" "uuid"
+    "user_id" "uuid",
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
 );
 
 
@@ -1081,7 +1095,8 @@ CREATE TABLE IF NOT EXISTS "public"."plantio" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "user_id" "uuid"
+    "user_id" "uuid",
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
 );
 
 
@@ -1184,7 +1199,9 @@ CREATE TABLE IF NOT EXISTS "public"."user_profiles" (
     "name" "text",
     "role" "text" DEFAULT 'USUARIO'::"text",
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "last_updated" timestamp with time zone DEFAULT "now"()
+    "last_updated" timestamp with time zone DEFAULT "now"(),
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text",
+    "is_deleted" boolean DEFAULT false
 );
 
 
@@ -1240,25 +1257,19 @@ ALTER SEQUENCE "public"."usuario_id_quarantine_id_seq" OWNED BY "public"."usuari
 
 
 
-CREATE TABLE IF NOT EXISTS "public"."usuarios" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "usuario" "text" NOT NULL,
-    "senha" "text" NOT NULL,
-    "nivel" "text" DEFAULT 'USUARIO'::"text",
-    "email" "text",
-    "nome_completo" "text",
-    "telefone" "text",
-    "endereco" "text",
-    "avatar" "text",
-    "provider" "text" DEFAULT 'local'::"text",
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "last_updated" timestamp with time zone DEFAULT "now"(),
-    "is_deleted" integer DEFAULT 0,
-    "sync_status" integer DEFAULT 0
-);
+CREATE OR REPLACE VIEW "public"."usuarios" WITH ("security_invoker"='true') AS
+ SELECT "id",
+    "email",
+    "name",
+    "role",
+    "created_at",
+    "last_updated",
+    "farm_id",
+    "is_deleted"
+   FROM "public"."user_profiles";
 
 
-ALTER TABLE "public"."usuarios" OWNER TO "postgres";
+ALTER VIEW "public"."usuarios" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."v2_analise_solo" (
@@ -1412,7 +1423,8 @@ CREATE TABLE IF NOT EXISTS "public"."vendas" (
     "is_deleted" integer DEFAULT 0,
     "usuario_id_bak_20260315145412" "uuid",
     "is_deleted_bool" boolean DEFAULT false,
-    "user_id" "uuid"
+    "user_id" "uuid",
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
 );
 
 
@@ -1815,16 +1827,6 @@ ALTER TABLE ONLY "public"."users"
 
 ALTER TABLE ONLY "public"."usuario_id_quarantine"
     ADD CONSTRAINT "usuario_id_quarantine_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."usuarios"
-    ADD CONSTRAINT "usuarios_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."usuarios"
-    ADD CONSTRAINT "usuarios_usuario_key" UNIQUE ("usuario");
 
 
 
@@ -2303,11 +2305,6 @@ ALTER TABLE ONLY "public"."areas"
 
 
 
-ALTER TABLE ONLY "public"."cadastro"
-    ADD CONSTRAINT "cadastro_usuario_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."usuarios"("id");
-
-
-
 ALTER TABLE ONLY "public"."caderno_notas"
     ADD CONSTRAINT "caderno_notas_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
 
@@ -2500,11 +2497,6 @@ ALTER TABLE ONLY "public"."orders"
 
 ALTER TABLE ONLY "public"."orders"
     ADD CONSTRAINT "orders_produto_id_fkey" FOREIGN KEY ("produto_id") REFERENCES "public"."cadastro"("uuid");
-
-
-
-ALTER TABLE ONLY "public"."orders"
-    ADD CONSTRAINT "orders_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "public"."usuarios"("id");
 
 
 
@@ -2849,7 +2841,19 @@ CREATE POLICY "Manage own cadastro" ON "public"."cadastro" USING (("auth"."uid"(
 
 
 
+CREATE POLICY "Manage own caderno_notas" ON "public"."caderno_notas" USING (("auth"."uid"() = "usuario_id")) WITH CHECK (("auth"."uid"() = "usuario_id"));
+
+
+
 CREATE POLICY "Manage own clientes" ON "public"."clientes" USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Manage own colheitas" ON "public"."colheitas" USING (("auth"."uid"() = "usuario_id")) WITH CHECK (("auth"."uid"() = "usuario_id"));
+
+
+
+CREATE POLICY "Manage own compras" ON "public"."compras" USING (("auth"."uid"() = "usuario_id")) WITH CHECK (("auth"."uid"() = "usuario_id"));
 
 
 
@@ -2861,7 +2865,31 @@ CREATE POLICY "Manage own custos" ON "public"."custos" USING (("auth"."uid"() = 
 
 
 
+CREATE POLICY "Manage own descarte" ON "public"."descarte" USING (("auth"."uid"() = "usuario_id")) WITH CHECK (("auth"."uid"() = "usuario_id"));
+
+
+
 CREATE POLICY "Manage own estoque" ON "public"."estoque" USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Manage own fertilization_applications" ON "public"."fertilization_applications" USING (("auth"."uid"() = "usuario_id")) WITH CHECK (("auth"."uid"() = "usuario_id"));
+
+
+
+CREATE POLICY "Manage own fertilization_recipes" ON "public"."fertilization_recipes" USING (("auth"."uid"() = "usuario_id")) WITH CHECK (("auth"."uid"() = "usuario_id"));
+
+
+
+CREATE POLICY "Manage own manutencao_frota" ON "public"."manutencao_frota" USING (("auth"."uid"() = "usuario_id")) WITH CHECK (("auth"."uid"() = "usuario_id"));
+
+
+
+CREATE POLICY "Manage own maquinas" ON "public"."maquinas" USING (("auth"."uid"() = "usuario_id")) WITH CHECK (("auth"."uid"() = "usuario_id"));
+
+
+
+CREATE POLICY "Manage own orders" ON "public"."orders" USING (("auth"."uid"() = "usuario_id")) WITH CHECK (("auth"."uid"() = "usuario_id"));
 
 
 
@@ -2949,10 +2977,6 @@ CREATE POLICY "Owner Access" ON "public"."orders" USING (("usuario_id" = "auth".
 
 
 
-CREATE POLICY "Owner Access" ON "public"."usuarios" USING (("id" = "auth"."uid"())) WITH CHECK (("id" = "auth"."uid"()));
-
-
-
 CREATE POLICY "Owner Access" ON "public"."v2_analise_solo" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
@@ -2973,13 +2997,19 @@ CREATE POLICY "Owner Access" ON "public"."v2_talhoes" USING (("usuario_id" = "au
 
 
 
-CREATE POLICY "Usuários acessam apenas seus próprios dados financeiros" ON "public"."financial_accounts" TO "authenticated" USING (("auth"."uid"() = "user_id")) WITH CHECK (("auth"."uid"() = "user_id"));
+CREATE POLICY "Public access for authenticated users" ON "public"."fertilization_items" USING (("auth"."role"() = 'authenticated'::"text"));
+
+
+
+CREATE POLICY "Usuários acessam apenas seus próprios dados financeiros" ON "public"."financial_accounts" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
 
 
 CREATE POLICY "Usuários acessam parcelas de suas próprias contas" ON "public"."financial_installments" TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."financial_accounts"
-  WHERE (("financial_accounts"."id" = "financial_installments"."account_id") AND ("financial_accounts"."user_id" = "auth"."uid"())))));
+  WHERE (("financial_accounts"."id" = "financial_installments"."account_id") AND ("financial_accounts"."user_id" = ( SELECT "auth"."uid"() AS "uid")))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."financial_accounts"
+  WHERE (("financial_accounts"."id" = "financial_installments"."account_id") AND ("financial_accounts"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))));
 
 
 
@@ -3781,9 +3811,6 @@ CREATE POLICY "users_owner_full_access" ON "public"."users" TO "authenticated" U
 
 
 ALTER TABLE "public"."usuario_id_quarantine" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."usuarios" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."v2_analise_solo" ENABLE ROW LEVEL SECURITY;

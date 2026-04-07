@@ -4,7 +4,7 @@ SET session_replication_role = replica;
 -- PostgreSQL database dump
 --
 
--- \restrict wOnSVbaPvnJOSqm1mYSzgcoOytUaeGtTqaMBRE08oGOU34bhXoJhA73nInzED9T
+-- \restrict zUTkaQrqts7FM7Ns5tDyF7hhjNJ2y1sUACsbDVH6u3kOzR5Q0WmLjIdSJRqf6Ou
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6
@@ -44,8 +44,7 @@ SET row_security = off;
 --
 
 INSERT INTO "auth"."users" ("instance_id", "id", "aud", "role", "email", "encrypted_password", "email_confirmed_at", "invited_at", "confirmation_token", "confirmation_sent_at", "recovery_token", "recovery_sent_at", "email_change_token_new", "email_change", "email_change_sent_at", "last_sign_in_at", "raw_app_meta_data", "raw_user_meta_data", "is_super_admin", "created_at", "updated_at", "phone", "phone_confirmed_at", "phone_change", "phone_change_token", "phone_change_sent_at", "email_change_token_current", "email_change_confirm_status", "banned_until", "reauthentication_token", "reauthentication_sent_at", "is_sso_user", "deleted_at", "is_anonymous") VALUES
-	('00000000-0000-0000-0000-000000000000', '405ea0d8-d937-4973-b6ae-23aac96f1b87', 'authenticated', 'authenticated', 'brunower2009@gmail.com', '$2a$10$2pLOkir68K.G9gZBkV3tR.Wwoc4kdm8iPF7WP/RtceaqxiIZDwrBm', '2026-03-25 23:33:17.828827+00', NULL, '', NULL, '', NULL, '', '', NULL, '2026-04-05 17:25:19.261716+00', '{"provider": "email", "providers": ["email"]}', '{"sub": "405ea0d8-d937-4973-b6ae-23aac96f1b87", "email": "brunower2009@gmail.com", "email_verified": true, "phone_verified": false}', NULL, '2026-03-25 23:33:17.824022+00', '2026-04-05 20:43:27.402509+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false),
-	('00000000-0000-0000-0000-000000000000', '44f3c0c7-772a-4931-a0f9-5566bc63a685', 'authenticated', 'authenticated', 'bruno.p.santos100@gmail.com', '$2a$10$oZz8sYnfqvhfwQ9GAQnOv.mVxsjTqItKfgAPWyT9ExOOQ2E0x.o76', NULL, NULL, '', NULL, '', NULL, '', '', NULL, NULL, '{"provider": "email", "providers": ["email"]}', '{}', NULL, '2026-03-25 23:35:34.200981+00', '2026-03-25 23:35:34.213052+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false);
+	('00000000-0000-0000-0000-000000000000', '405ea0d8-d937-4973-b6ae-23aac96f1b87', 'authenticated', 'authenticated', 'brunower2009@gmail.com', '$2a$10$2pLOkir68K.G9gZBkV3tR.Wwoc4kdm8iPF7WP/RtceaqxiIZDwrBm', '2026-03-25 23:33:17.828827+00', NULL, '', NULL, '', NULL, '', '', NULL, '2026-04-06 20:59:09.54381+00', '{"provider": "email", "providers": ["email"]}', '{"sub": "405ea0d8-d937-4973-b6ae-23aac96f1b87", "email": "brunower2009@gmail.com", "email_verified": true, "phone_verified": false}', NULL, '2026-03-25 23:33:17.824022+00', '2026-04-06 22:51:44.19375+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false);
 
 
 --
@@ -53,8 +52,7 @@ INSERT INTO "auth"."users" ("instance_id", "id", "aud", "role", "email", "encryp
 --
 
 INSERT INTO "auth"."identities" ("provider_id", "user_id", "identity_data", "provider", "last_sign_in_at", "created_at", "updated_at", "id") VALUES
-	('405ea0d8-d937-4973-b6ae-23aac96f1b87', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '{"sub": "405ea0d8-d937-4973-b6ae-23aac96f1b87", "email": "brunower2009@gmail.com", "email_verified": false, "phone_verified": false}', 'email', '2026-03-25 23:33:17.826685+00', '2026-03-25 23:33:17.82673+00', '2026-03-25 23:33:17.82673+00', 'd0ffb25f-7e47-4ff9-b6eb-efb1e3dd4635'),
-	('44f3c0c7-772a-4931-a0f9-5566bc63a685', '44f3c0c7-772a-4931-a0f9-5566bc63a685', '{"sub": "44f3c0c7-772a-4931-a0f9-5566bc63a685", "email": "bruno.p.santos100@gmail.com", "email_verified": false, "phone_verified": false}', 'email', '2026-03-25 23:35:34.210385+00', '2026-03-25 23:35:34.210439+00', '2026-03-25 23:35:34.210439+00', 'e2d3217f-30c9-4fb1-b069-a472d20ecb47');
+	('405ea0d8-d937-4973-b6ae-23aac96f1b87', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '{"sub": "405ea0d8-d937-4973-b6ae-23aac96f1b87", "email": "brunower2009@gmail.com", "email_verified": false, "phone_verified": false}', 'email', '2026-03-25 23:33:17.826685+00', '2026-03-25 23:33:17.82673+00', '2026-03-25 23:33:17.82673+00', 'd0ffb25f-7e47-4ff9-b6eb-efb1e3dd4635');
 
 
 --
@@ -98,7 +96,10 @@ INSERT INTO "auth"."sessions" ("id", "user_id", "created_at", "updated_at", "fac
 	('a424edb3-de92-42bf-896a-e2e6b089781c', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '2026-03-30 16:55:19.66004+00', '2026-04-01 09:32:01.043847+00', NULL, 'aal1', NULL, '2026-04-01 09:32:01.043205', 'okhttp/4.9.2', '186.193.211.229', NULL, NULL, NULL, NULL, NULL),
 	('77973c34-5e8b-4c11-98ad-352dd4496e31', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '2026-04-01 12:19:36.198704+00', '2026-04-01 12:19:36.198704+00', NULL, 'aal1', NULL, NULL, 'okhttp/4.9.2', '186.193.212.133', NULL, NULL, NULL, NULL, NULL),
 	('49381fc3-53d5-4cac-a86d-df678a34d983', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '2026-04-05 11:55:23.303649+00', '2026-04-05 11:55:23.303649+00', NULL, 'aal1', NULL, NULL, 'okhttp/4.9.2', '179.84.149.197', NULL, NULL, NULL, NULL, NULL),
-	('4c6e61bc-85e1-49f5-bbb4-0548c19f2c62', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '2026-04-05 17:25:19.261821+00', '2026-04-05 20:43:28.616743+00', NULL, 'aal1', NULL, '2026-04-05 20:43:28.616652', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '186.193.211.229', NULL, NULL, NULL, NULL, NULL);
+	('4c6e61bc-85e1-49f5-bbb4-0548c19f2c62', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '2026-04-05 17:25:19.261821+00', '2026-04-05 20:43:28.616743+00', NULL, 'aal1', NULL, '2026-04-05 20:43:28.616652', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '186.193.211.229', NULL, NULL, NULL, NULL, NULL),
+	('9deb1527-968c-4a7d-bb5c-536bde0c1efa', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '2026-04-06 09:59:45.49392+00', '2026-04-06 10:58:29.017575+00', NULL, 'aal1', NULL, '2026-04-06 10:58:29.017471', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '186.193.211.229', NULL, NULL, NULL, NULL, NULL),
+	('08365e96-de84-443f-ae41-4887f62b13d5', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '2026-04-06 11:35:30.909671+00', '2026-04-06 11:35:30.909671+00', NULL, 'aal1', NULL, NULL, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '186.193.211.229', NULL, NULL, NULL, NULL, NULL),
+	('399cafc5-b50b-47a0-946d-a878b740cbb1', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '2026-04-06 20:59:09.543936+00', '2026-04-06 22:51:44.206062+00', NULL, 'aal1', NULL, '2026-04-06 22:51:44.205952', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '186.193.211.229', NULL, NULL, NULL, NULL, NULL);
 
 
 --
@@ -130,7 +131,10 @@ INSERT INTO "auth"."mfa_amr_claims" ("session_id", "created_at", "updated_at", "
 	('4879ce3d-26e6-4aaf-9302-529fa0163d9b', '2026-04-03 17:26:19.65947+00', '2026-04-03 17:26:19.65947+00', 'password', '401c2048-9ed3-4ac9-bd3e-1b3553304715'),
 	('80998024-b8d9-4fe9-8313-11e168c76090', '2026-04-04 19:00:38.84152+00', '2026-04-04 19:00:38.84152+00', 'password', '9d1d1704-1a57-46d1-83b6-f3bd9172b0c3'),
 	('49381fc3-53d5-4cac-a86d-df678a34d983', '2026-04-05 11:55:23.401441+00', '2026-04-05 11:55:23.401441+00', 'password', 'a769230e-dfa8-4553-8a8a-7f02d467a7e7'),
-	('4c6e61bc-85e1-49f5-bbb4-0548c19f2c62', '2026-04-05 17:25:19.310781+00', '2026-04-05 17:25:19.310781+00', 'password', '5e1e7ef0-d6b5-4b97-88bf-e76c2d1fc090');
+	('4c6e61bc-85e1-49f5-bbb4-0548c19f2c62', '2026-04-05 17:25:19.310781+00', '2026-04-05 17:25:19.310781+00', 'password', '5e1e7ef0-d6b5-4b97-88bf-e76c2d1fc090'),
+	('9deb1527-968c-4a7d-bb5c-536bde0c1efa', '2026-04-06 09:59:45.590602+00', '2026-04-06 09:59:45.590602+00', 'password', 'fe75c1c2-4e9f-4ae5-9f4e-a603e8ce42a2'),
+	('08365e96-de84-443f-ae41-4887f62b13d5', '2026-04-06 11:35:30.97508+00', '2026-04-06 11:35:30.97508+00', 'password', '1889d6fb-0633-40ba-a8df-b13a731eeccd'),
+	('399cafc5-b50b-47a0-946d-a878b740cbb1', '2026-04-06 20:59:09.599413+00', '2026-04-06 20:59:09.599413+00', 'password', 'e21adbd7-1b5f-463c-abeb-d31b2ee438a1');
 
 
 --
@@ -217,7 +221,12 @@ INSERT INTO "auth"."refresh_tokens" ("instance_id", "id", "token", "user_id", "r
 	('00000000-0000-0000-0000-000000000000', 69, 'v4kpyyscdndo', '405ea0d8-d937-4973-b6ae-23aac96f1b87', true, '2026-04-05 17:25:19.294783+00', '2026-04-05 18:28:27.806974+00', NULL, '4c6e61bc-85e1-49f5-bbb4-0548c19f2c62'),
 	('00000000-0000-0000-0000-000000000000', 70, 'htc32wzwin5h', '405ea0d8-d937-4973-b6ae-23aac96f1b87', true, '2026-04-05 18:28:27.832149+00', '2026-04-05 19:32:18.601038+00', 'v4kpyyscdndo', '4c6e61bc-85e1-49f5-bbb4-0548c19f2c62'),
 	('00000000-0000-0000-0000-000000000000', 71, 'jolv4jnii7qi', '405ea0d8-d937-4973-b6ae-23aac96f1b87', true, '2026-04-05 19:32:18.617171+00', '2026-04-05 20:43:27.374408+00', 'htc32wzwin5h', '4c6e61bc-85e1-49f5-bbb4-0548c19f2c62'),
-	('00000000-0000-0000-0000-000000000000', 72, 'p47nn3oq3tko', '405ea0d8-d937-4973-b6ae-23aac96f1b87', false, '2026-04-05 20:43:27.393839+00', '2026-04-05 20:43:27.393839+00', 'jolv4jnii7qi', '4c6e61bc-85e1-49f5-bbb4-0548c19f2c62');
+	('00000000-0000-0000-0000-000000000000', 72, 'p47nn3oq3tko', '405ea0d8-d937-4973-b6ae-23aac96f1b87', false, '2026-04-05 20:43:27.393839+00', '2026-04-05 20:43:27.393839+00', 'jolv4jnii7qi', '4c6e61bc-85e1-49f5-bbb4-0548c19f2c62'),
+	('00000000-0000-0000-0000-000000000000', 73, 'oqwsokqeiu6a', '405ea0d8-d937-4973-b6ae-23aac96f1b87', true, '2026-04-06 09:59:45.541607+00', '2026-04-06 10:58:28.956077+00', NULL, '9deb1527-968c-4a7d-bb5c-536bde0c1efa'),
+	('00000000-0000-0000-0000-000000000000', 74, '5jghgfjz4lgh', '405ea0d8-d937-4973-b6ae-23aac96f1b87', false, '2026-04-06 10:58:28.989494+00', '2026-04-06 10:58:28.989494+00', 'oqwsokqeiu6a', '9deb1527-968c-4a7d-bb5c-536bde0c1efa'),
+	('00000000-0000-0000-0000-000000000000', 75, '2xzwtf2lsflg', '405ea0d8-d937-4973-b6ae-23aac96f1b87', false, '2026-04-06 11:35:30.947201+00', '2026-04-06 11:35:30.947201+00', NULL, '08365e96-de84-443f-ae41-4887f62b13d5'),
+	('00000000-0000-0000-0000-000000000000', 76, 'am5vsr4ewfs4', '405ea0d8-d937-4973-b6ae-23aac96f1b87', true, '2026-04-06 20:59:09.574487+00', '2026-04-06 22:51:44.169233+00', NULL, '399cafc5-b50b-47a0-946d-a878b740cbb1'),
+	('00000000-0000-0000-0000-000000000000', 77, 'vxg7b4jobswt', '405ea0d8-d937-4973-b6ae-23aac96f1b87', false, '2026-04-06 22:51:44.188654+00', '2026-04-06 22:51:44.188654+00', 'am5vsr4ewfs4', '399cafc5-b50b-47a0-946d-a878b740cbb1');
 
 
 --
@@ -287,25 +296,25 @@ INSERT INTO "auth"."refresh_tokens" ("instance_id", "id", "token", "user_id", "r
 
 
 --
--- Data for Name: usuarios; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-
-
---
 -- Data for Name: cadastro; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO "public"."cadastro" ("uuid", "user_id", "nome", "unidade", "tipo", "observacao", "estocavel", "vendavel", "fator_conversao", "preco_venda", "last_updated", "is_deleted", "categoria") VALUES
-	('d556b9df-2c78-4b50-8660-7aa40df99ece', NULL, 'Fertilizante NPK 10-10-10', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:06:52.611646+00', 0, 'INSUMO'),
-	('a4da9694-a61f-41db-a26f-36472254c93c', NULL, 'Ureia Agrícola', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:06:52.611646+00', 0, 'INSUMO'),
-	('2e66a0e7-6cea-444a-802f-0e892ac13a23', NULL, 'Semente de Milho Tradicional', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:06:52.611646+00', 0, 'SEMENTE'),
-	('497d7c68-0c2f-4620-bd29-fc9a28b179b8', NULL, 'Fertilizante NPK 10-10-10', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:09:02.57158+00', 0, 'INSUMO'),
-	('0a9259c4-8de1-4ddc-a3a3-59f3941d60b5', NULL, 'Ureia Agrícola', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:09:02.57158+00', 0, 'INSUMO'),
-	('65496cf6-c419-4841-8f82-07f9380a8bad', NULL, 'Semente de Milho Tradicional', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:09:02.57158+00', 0, 'SEMENTE'),
-	('9748d9a5-9292-4909-abba-228894b0f3d5', NULL, 'Fertilizante NPK 10-10-10', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:11:25.838525+00', 0, 'INSUMO'),
-	('c901c8c4-b77f-415f-a6c5-b51ee4697d05', NULL, 'Ureia Agrícola', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:11:25.838525+00', 0, 'INSUMO'),
-	('66e81b6b-fd96-4239-9252-b8a0053eab57', NULL, 'Semente de Milho Tradicional', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:11:25.838525+00', 0, 'SEMENTE');
+INSERT INTO "public"."cadastro" ("uuid", "user_id", "nome", "unidade", "tipo", "observacao", "estocavel", "vendavel", "fator_conversao", "preco_venda", "last_updated", "is_deleted", "categoria", "farm_id") VALUES
+	('d556b9df-2c78-4b50-8660-7aa40df99ece', NULL, 'Fertilizante NPK 10-10-10', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:06:52.611646+00', 0, 'INSUMO', 'fazenda_padrao'),
+	('a4da9694-a61f-41db-a26f-36472254c93c', NULL, 'Ureia Agrícola', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:06:52.611646+00', 0, 'INSUMO', 'fazenda_padrao'),
+	('2e66a0e7-6cea-444a-802f-0e892ac13a23', NULL, 'Semente de Milho Tradicional', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:06:52.611646+00', 0, 'SEMENTE', 'fazenda_padrao'),
+	('497d7c68-0c2f-4620-bd29-fc9a28b179b8', NULL, 'Fertilizante NPK 10-10-10', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:09:02.57158+00', 0, 'INSUMO', 'fazenda_padrao'),
+	('0a9259c4-8de1-4ddc-a3a3-59f3941d60b5', NULL, 'Ureia Agrícola', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:09:02.57158+00', 0, 'INSUMO', 'fazenda_padrao'),
+	('65496cf6-c419-4841-8f82-07f9380a8bad', NULL, 'Semente de Milho Tradicional', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:09:02.57158+00', 0, 'SEMENTE', 'fazenda_padrao'),
+	('9748d9a5-9292-4909-abba-228894b0f3d5', NULL, 'Fertilizante NPK 10-10-10', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:11:25.838525+00', 0, 'INSUMO', 'fazenda_padrao'),
+	('c901c8c4-b77f-415f-a6c5-b51ee4697d05', NULL, 'Ureia Agrícola', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:11:25.838525+00', 0, 'INSUMO', 'fazenda_padrao'),
+	('66e81b6b-fd96-4239-9252-b8a0053eab57', NULL, 'Semente de Milho Tradicional', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:11:25.838525+00', 0, 'SEMENTE', 'fazenda_padrao'),
+	('ce0a3a8c-c2f7-4dc6-bc4a-bf63f13e5d30', NULL, 'Fertilizante NPK 10-10-10', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-04-06 22:35:51.025997+00', 0, 'INSUMO', 'fazenda_padrao'),
+	('e81e1d2d-da0c-4d32-b6db-b26c5d22be3a', NULL, 'Ureia Agrícola', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-04-06 22:35:51.025997+00', 0, 'INSUMO', 'fazenda_padrao'),
+	('9b1de500-86a4-4b5b-9328-bd6f7fc5a4d7', NULL, 'Semente de Milho Tradicional', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-04-06 22:35:51.025997+00', 0, 'SEMENTE', 'fazenda_padrao'),
+	('746fbfc6-8af0-47bb-8085-24ccd79a6c2b', NULL, 'Fertilizante NPK 10-10-10', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-04-06 23:04:22.066463+00', 0, 'INSUMO', 'fazenda_padrao'),
+	('138d4aa2-ee02-41d2-bef8-2a37cd22f855', NULL, 'Ureia Agrícola', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-04-06 23:04:22.066463+00', 0, 'INSUMO', 'fazenda_padrao'),
+	('801a934c-54cc-4927-8470-3a27af41e929', NULL, 'Semente de Milho Tradicional', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-04-06 23:04:22.066463+00', 0, 'SEMENTE', 'fazenda_padrao');
 
 
 --
@@ -362,13 +371,13 @@ INSERT INTO "public"."users" ("id", "nome", "email", "tipo_usuario", "created_at
 -- Data for Name: culturas; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO "public"."culturas" ("id", "uuid", "nome", "observacao", "created_at", "last_updated", "is_deleted", "usuario_id_bak_20260315145412", "is_deleted_bool", "usuario_id") VALUES
-	('43d79ab6-b007-48c8-8bbe-971b435d1999', '1e455d23-c2f4-4c24-ba41-ffdc252c7b3d', 'MILHO', NULL, '2026-03-23 23:04:06.249126', '2026-03-23 23:04:06.249126', 0, NULL, false, NULL),
-	('42289112-73a5-4060-8955-ff6823abd5b2', '25314468-574b-4c27-8498-fb5d67646240', 'SOJA', NULL, '2026-03-23 23:04:06.249126', '2026-03-23 23:04:06.249126', 0, NULL, false, NULL),
-	('9c39b74d-d843-48b4-8e55-c1f9f13e9dcf', 'eb7dd9b3-49fd-46d7-89e8-d24b23c3a66c', 'COVE', NULL, '2026-03-23 23:04:06.249126', '2026-03-23 23:04:06.249126', 0, NULL, false, NULL),
-	('5677f411-faf2-486a-be2d-93e1790b2cce', '5012f28d-f38a-46e0-b7cd-d9fd69c45a75', 'CEBOLA', NULL, '2026-03-23 23:04:06.249126', '2026-03-23 23:04:06.249126', 0, NULL, false, NULL),
-	('7e5ef8cb-9c0a-4fdd-bc82-2f63a15f729e', 'c875b0d6-2487-4d6e-8677-92011275b0c2', 'CEBOLINHA', NULL, '2026-03-23 23:04:06.249126', '2026-03-23 23:04:06.249126', 0, NULL, false, NULL),
-	('6ad0bb3d-b733-41fc-89d9-ae88ed632e82', '48f7c9a3-65ac-4f3e-abf4-4d6ffffcd52b', 'SALSINHA', NULL, '2026-03-23 23:04:06.249126', '2026-03-23 23:04:06.249126', 0, NULL, false, NULL);
+INSERT INTO "public"."culturas" ("id", "uuid", "nome", "observacao", "created_at", "last_updated", "is_deleted", "usuario_id_bak_20260315145412", "is_deleted_bool", "usuario_id", "farm_id") VALUES
+	('43d79ab6-b007-48c8-8bbe-971b435d1999', '1e455d23-c2f4-4c24-ba41-ffdc252c7b3d', 'MILHO', NULL, '2026-03-23 23:04:06.249126', '2026-03-23 23:04:06.249126', 0, NULL, false, NULL, 'fazenda_padrao'),
+	('42289112-73a5-4060-8955-ff6823abd5b2', '25314468-574b-4c27-8498-fb5d67646240', 'SOJA', NULL, '2026-03-23 23:04:06.249126', '2026-03-23 23:04:06.249126', 0, NULL, false, NULL, 'fazenda_padrao'),
+	('9c39b74d-d843-48b4-8e55-c1f9f13e9dcf', 'eb7dd9b3-49fd-46d7-89e8-d24b23c3a66c', 'COVE', NULL, '2026-03-23 23:04:06.249126', '2026-03-23 23:04:06.249126', 0, NULL, false, NULL, 'fazenda_padrao'),
+	('5677f411-faf2-486a-be2d-93e1790b2cce', '5012f28d-f38a-46e0-b7cd-d9fd69c45a75', 'CEBOLA', NULL, '2026-03-23 23:04:06.249126', '2026-03-23 23:04:06.249126', 0, NULL, false, NULL, 'fazenda_padrao'),
+	('7e5ef8cb-9c0a-4fdd-bc82-2f63a15f729e', 'c875b0d6-2487-4d6e-8677-92011275b0c2', 'CEBOLINHA', NULL, '2026-03-23 23:04:06.249126', '2026-03-23 23:04:06.249126', 0, NULL, false, NULL, 'fazenda_padrao'),
+	('6ad0bb3d-b733-41fc-89d9-ae88ed632e82', '48f7c9a3-65ac-4f3e-abf4-4d6ffffcd52b', 'SALSINHA', NULL, '2026-03-23 23:04:06.249126', '2026-03-23 23:04:06.249126', 0, NULL, false, NULL, 'fazenda_padrao');
 
 
 --
@@ -1223,9 +1232,8 @@ ALTER TABLE public.monitoramento_entidade RENAME COLUMN usuario_id_to_drop_bak_2
 -- Data for Name: user_profiles; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO "public"."user_profiles" ("id", "email", "name", "role", "created_at", "last_updated") VALUES
-	('405ea0d8-d937-4973-b6ae-23aac96f1b87', 'brunower2009@gmail.com', NULL, 'PRODUTOR', '2026-03-25 23:33:17.8237+00', '2026-03-25 23:33:17.8237+00'),
-	('44f3c0c7-772a-4931-a0f9-5566bc63a685', 'bruno.p.santos100@gmail.com', NULL, 'PRODUTOR', '2026-03-25 23:35:34.199662+00', '2026-03-25 23:35:34.199662+00');
+INSERT INTO "public"."user_profiles" ("id", "email", "name", "role", "created_at", "last_updated", "farm_id", "is_deleted") VALUES
+	('405ea0d8-d937-4973-b6ae-23aac96f1b87', 'brunower2009@gmail.com', NULL, 'PRODUTOR', '2026-03-25 23:33:17.8237+00', '2026-03-25 23:33:17.8237+00', 'fazenda_padrao', false);
 
 
 --
@@ -1356,7 +1364,7 @@ INSERT INTO "storage"."buckets" ("id", "name", "owner", "created_at", "updated_a
 -- Name: refresh_tokens_id_seq; Type: SEQUENCE SET; Schema: auth; Owner: supabase_auth_admin
 --
 
-SELECT pg_catalog.setval('"auth"."refresh_tokens_id_seq"', 72, true);
+SELECT pg_catalog.setval('"auth"."refresh_tokens_id_seq"', 77, true);
 
 
 --
@@ -1384,6 +1392,6 @@ SELECT pg_catalog.setval('"public"."usuario_id_quarantine_id_seq"', 1, false);
 -- PostgreSQL database dump complete
 --
 
--- \unrestrict wOnSVbaPvnJOSqm1mYSzgcoOytUaeGtTqaMBRE08oGOU34bhXoJhA73nInzED9T
+-- \unrestrict zUTkaQrqts7FM7Ns5tDyF7hhjNJ2y1sUACsbDVH6u3kOzR5Q0WmLjIdSJRqf6Ou
 
 RESET ALL;
