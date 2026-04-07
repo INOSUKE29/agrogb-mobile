@@ -25,8 +25,8 @@ export default function CategoriasDespesaScreen({ navigation }) {
         try {
             const data = await getCategoriasDespesa();
             setCategorias(data);
-        } catch (error) {
-            console.error(error);
+        } catch {
+            // log error
             Alert.alert('Erro', 'Não foi possível carregar as categorias.');
         } finally {
             setLoading(false);
@@ -46,7 +46,7 @@ export default function CategoriasDespesaScreen({ navigation }) {
             setNome('');
             setTipo('FIXA');
             loadData();
-        } catch (error) {
+        } catch {
             Alert.alert('Erro', 'Não foi possível registrar a categoria.');
         }
     };
@@ -64,7 +64,7 @@ export default function CategoriasDespesaScreen({ navigation }) {
                         try {
                             await deleteCategoriaDespesa(id);
                             loadData();
-                        } catch (error) {
+                        } catch {
                             Alert.alert('Erro', 'Falha ao remover categoria.');
                         }
                     }

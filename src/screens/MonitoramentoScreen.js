@@ -9,12 +9,12 @@
  * - Timeline de registros com severidade visual
  */
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
-    View, Text, TouchableOpacity, StyleSheet, FlatList,
+    View, Text, TouchableOpacity, StyleSheet,
     Modal, Alert, Linking, ScrollView, TextInput,
     SafeAreaView, StatusBar, Platform, ActivityIndicator,
-    RefreshControl, Animated
+    RefreshControl
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -125,7 +125,7 @@ export default function MonitoramentoScreen({ navigation }) {
             setAddModal(false);
             loadHistory();
             showToast('✅ Observação registrada no Diário de Campo!');
-        } catch (e) {
+        } catch {
             Alert.alert('Erro', 'Falha ao salvar. Verifique o banco de dados.');
         } finally { setSavingNote(false); }
     };
@@ -268,7 +268,7 @@ export default function MonitoramentoScreen({ navigation }) {
     };
 
     // ── FIELD LOG ITEM ────────────────────────────────────────────────────────
-    const renderHistoryItem = ({ item, index }) => {
+    const renderHistoryItem = ({ item }) => {
         const sev = getSeveridade(item.severidade);
         const cat = getCategoria(item.categoria);
         return (

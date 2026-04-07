@@ -31,7 +31,6 @@ export default function RelatoriosScreen() {
     const [previsaoColheita, setPrevisaoColheita] = useState({ labels: ['Sem dados'], data: [0] });
     const [recentFeeds, setRecentFeeds] = useState([]);
     const [cadastrosTot, setCadastrosTot] = useState({ clientes: 0, insumos: 0, plantios: 0 });
-    const [hasData, setHasData] = useState(false);
 
     useFocusEffect(useCallback(() => { loadGraphs(); }, [periodo]));
 
@@ -210,7 +209,7 @@ export default function RelatoriosScreen() {
                 });
             } catch(e) { console.log('Erro ao carregar totais de cadastro', e); }
 
-            setHasData(dataFound);
+            // setHasData(dataFound);
 
         } catch (e) {
             console.error('[REPORT ERROR]', e);

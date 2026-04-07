@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
-    View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, 
+    View, Text, StyleSheet, FlatList, TouchableOpacity, 
     ActivityIndicator, TextInput, SafeAreaView, StatusBar, Platform, KeyboardAvoidingView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useIsFocused } from '@react-navigation/native';
 
@@ -34,8 +33,8 @@ export default function ClientesScreen({ navigation }) {
             const uniqueData = [...new Map(data.map(item => [item.cpf_cnpj ? item.cpf_cnpj.trim() : item.nome.trim().toUpperCase(), item])).values()];
             setItems(uniqueData);
             setFilteredItems(uniqueData);
-        } catch (e) {
-            console.error('Erro ao carregar clientes:', e);
+        } catch {
+            // Error log
         } finally { 
             setLoading(false); 
         }

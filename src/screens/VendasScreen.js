@@ -6,13 +6,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
     View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, 
-    Modal, TextInput, Platform, SafeAreaView, StatusBar, 
+    TextInput, Platform, SafeAreaView, StatusBar, 
     ActivityIndicator, Switch 
 } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { getCadastro, getClientes } from '../database/database';
 import { FinanceService } from '../modules/finance/services/FinanceService';
-import { deleteVenda, marcarVendaRecebida } from '../services/VendaService';
+import { deleteVenda } from '../services/VendaService';
 import ProductModal from '../modules/inventory/components/ProductModal';
 import ClientModal from '../modules/finance/components/ClientModal';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,7 +25,7 @@ import { showToast } from '../ui/Toast';
 import { LinearGradient } from 'expo-linear-gradient';
 import SafeBlurView from '../ui/SafeBlurView';
 
-export default function VendasScreen({ navigation, route }) {
+export default function VendasScreen({ navigation }) {
     const [cliente, setCliente] = useState('');
     const [produto, setProduto] = useState('');
     const [quantidade, setQuantidade] = useState('');
@@ -36,16 +36,9 @@ export default function VendasScreen({ navigation, route }) {
     const [dataVenda, setDataVenda] = useState(new Date().toLocaleDateString('pt-BR'));
 
     const [editingUuid, setEditingUuid] = useState(null);
-    const [history, setHistory] = useState([]);
     
     const [modalVisible, setModalVisible] = useState(false);
     const [clientModalVisible, setClientModalVisible] = useState(false);
-    const [recebimentoModal, setRecebimentoModal] = useState(false);
-    const [recebimentoItem, setRecebimentoItem] = useState(null);
-    const [valorRecebido, setValorRecebido] = useState('');
-    
-    const [items, setItems] = useState([]);
-    const [clients, setClients] = useState([]);
     
     const [confirmVisible, setConfirmVisible] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
@@ -82,20 +75,15 @@ export default function VendasScreen({ navigation, route }) {
 
     const loadInitialData = useCallback(async () => {
         try {
-            const allItems = await getCadastro();
-            setItems(allItems.filter(i => i.vendavel === 1 || i.vendavel === true || i.vendavel === "1"));
-            const allClients = await getClientes();
-            setClients(allClients);
-        } catch (err) { }
+            await getCadastro();
+            await getClientes();
+        } catch { }
     }, []);
 
     const loadHistory = useCallback(async () => {
         try {
-            const data = await FinanceService.getRecentSales();
-            setHistory(data || []);
-        } catch (e) {
-            setHistory([]);
-        }
+            await FinanceService.getRecentSales();
+        } catch { }
     }, []);
 
     useFocusEffect(useCallback(() => { loadInitialData(); loadHistory(); }, [loadInitialData, loadHistory]));

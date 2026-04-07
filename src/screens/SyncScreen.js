@@ -8,14 +8,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { executeQuery, getAppSettings, updateAppSetting } from '../database/database';
 import * as Updates from 'expo-updates';
 import AppContainer from '../ui/AppContainer';
-import ScreenHeader from '../ui/ScreenHeader';
-import GlowCard from '../ui/GlowCard';
-import PrimaryButton from '../ui/PrimaryButton';
 import { showToast } from '../ui/Toast';
 import { testConnection } from '../services/supabaseClient';
 import { syncAllMaster } from '../services/SyncService';
 import { BackupService } from '../services/BackupService';
-import { WeatherService } from '../services/weatherService';
 import { ErrorService } from '../services/ErrorService';
 
 export default function SyncScreen({ navigation }) {
@@ -596,7 +592,7 @@ export default function SyncScreen({ navigation }) {
                                             style={[styles.restoreBtn, { borderColor: '#10B981' }]}
                                             onPress={async () => {
                                                 const tabelas = ['vendas', 'compras', 'colheitas', 'custos', 'monitoramento_entidade', 'cadastro', 'clientes', 'culturas', 'plantio', 'maquinas', 'caderno_notas'];
-                                                for (const t of tabelas) { try { await executeQuery(`UPDATE ${t} SET is_deleted = 0 WHERE is_deleted = 1`); } catch (e) { } }
+                                                for (const t of tabelas) { try { await executeQuery(`UPDATE ${t} SET is_deleted = 0 WHERE is_deleted = 1`); } catch { } }
                                                 countLixeira(); showToast('Itens restaurados com sucesso!'); setActiveModal(null);
                                             }}
                                         >
@@ -613,7 +609,7 @@ export default function SyncScreen({ navigation }) {
                                                         onPress: async () => {
                                                             const tabelas = ['vendas', 'compras', 'colheitas', 'custos', 'costs', 'monitoramento_entidade', 'cadastro', 'clientes', 'culturas', 'plantio', 'maquinas', 'caderno_notas'];
                                                             for (const t of tabelas) {
-                                                                try { await executeQuery(`DELETE FROM ${t} WHERE is_deleted = 1`); } catch (e) { }
+                                                                try { await executeQuery(`DELETE FROM ${t} WHERE is_deleted = 1`); } catch { }
                                                             }
                                                             countLixeira(); showToast('Lixeira esvaziada!'); setActiveModal(null);
                                                         }

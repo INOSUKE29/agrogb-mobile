@@ -40,15 +40,12 @@ export default function ColheitaScreen({ navigation }) {
     const [modalQty, setModalQty] = useState('');
     const [modalMotivo, setModalMotivo] = useState('');
     
-    const [productsDB, setProductsDB] = useState([]);
     const [areasDB, setAreasDB] = useState([]);
 
     const loadData = useCallback(async () => {
         try {
-            const allItems = await getCadastro();
-            setProductsDB(allItems.filter(i => i.tipo === 'PRODUTO'));
             setAreasDB(await getCulturas());
-        } catch (err) { }
+        } catch { }
     }, []);
 
     useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
@@ -145,7 +142,7 @@ export default function ColheitaScreen({ navigation }) {
             }
 
             showToast('✅ Registro sincronizado com a base!');
-            try { require('../services/AutoSyncService').default.trigger(); } catch (e) {}
+            try { require('../services/AutoSyncService').default.trigger(); } catch {}
             await AsyncStorage.removeItem(DRAFT_KEY);
             navigation.goBack();
         } catch (error) {
