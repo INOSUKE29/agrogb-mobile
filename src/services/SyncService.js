@@ -2,30 +2,32 @@ import { supabase } from './supabaseClient';
 import { executeQuery, getAppSettings, executeTransaction } from '../database/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const syncTables = [
+// BUILD #107 - Fonte Única de Tabelas Sincronizáveis
+export const SYNC_TABLES = [
     { name: 'usuarios', pk: 'id' },
-    { name: 'colheitas', pk: 'uuid' },
-    { name: 'monitoramento_entidade', pk: 'uuid' },
-    { name: 'vendas', pk: 'uuid' },
+    { name: 'v2_talhoes', pk: 'id' },
+    { name: 'v2_plantios', pk: 'id' },
+    { name: 'v2_colheitas', pk: 'uuid' },
+    { name: 'v2_vendas', pk: 'uuid' },
+    { name: 'v2_custos', pk: 'uuid' },
+    { name: 'v2_manutencoes', pk: 'uuid' },
     { name: 'compras', pk: 'uuid' },
-    { name: 'plantio', pk: 'uuid' },
-    { name: 'custos', pk: 'uuid' },
-    { name: 'descarte', pk: 'uuid' },
     { name: 'cadastro', pk: 'uuid' },
     { name: 'clientes', pk: 'uuid' },
     { name: 'culturas', pk: 'uuid' },
     { name: 'maquinas', pk: 'uuid' },
-    { name: 'manutencao_frota', pk: 'uuid' },
-    { name: 'planos_adubacao', pk: 'uuid' },
-    { name: 'cost_categories', pk: 'id' },
-    { name: 'costs', pk: 'id' },
     { name: 'caderno_notas', pk: 'uuid' },
-    { name: 'orders', pk: 'id' },
     { name: 'areas', pk: 'uuid' },
-    { name: 'fertilization_recipes', pk: 'id' },
-    { name: 'fertilization_items', pk: 'id' },
-    { name: 'fertilization_applications', pk: 'id' }
+    { name: 'v2_estoque_movimentacoes', pk: 'uuid' }
 ];
+
+/**
+ * Função Auxiliar para sanitizar strings SQL e evitar quebras de aspas
+ */
+const escapeSql = (str) => {
+    if (typeof str !== 'string') return str;
+    return str.replace(/'/g, "''");
+};
 
 // O PUSH lê tudo com sync_status = 0
 export const pushLocalChanges = async () => {
@@ -36,7 +38,7 @@ export const pushLocalChanges = async () => {
 
         let totalsSynced = 0;
 
-        for (const tableInfo of syncTables) {
+        for (const tableInfo of SYNC_TABLES) {
             const tableName = tableInfo.name;
             const pk = tableInfo.pk;
 
@@ -91,7 +93,7 @@ export const pullServerChanges = async () => {
 
         let totalsPulled = 0;
 
-        for (const tableInfo of syncTables) {
+        for (const tableInfo of SYNC_TABLES) {
             const tableName = tableInfo.name;
             const pk = tableInfo.pk;
             const batchQueries = [];
@@ -123,7 +125,7 @@ export const pullServerChanges = async () => {
 
                                 if (remoteTime > localTime) {
                                     if (localRow.sync_status === 0) {
-                                        // Conflito: Mantém individual para maior segurança
+                                        // Conflito: Mantém registro para auditoria
                                         const conflictId = Math.random().toString(36).substr(2, 9);
                                         await executeQuery(
                                             `INSERT INTO v2_sync_conflicts (id, table_name, record_uuid, local_data, remote_data, status) 
@@ -133,15 +135,15 @@ export const pullServerChanges = async () => {
                                     } else {
                                         const sets = Object.keys(remoteRow).map(k => {
                                             const v = remoteRow[k];
-                                            const val = v === null ? 'NULL' : `'${String(v).replace(/'/g, "''")}'`;
+                                            const val = v === null ? 'NULL' : `'${escapeSql(String(v))}'`;
                                             return `"${k}" = ${val}`;
                                         }).join(', ');
-                                        batchQueries.push(`UPDATE ${tableName} SET ${sets}, sync_status = 1 WHERE ${pk} = '${String(pkValue).replace(/'/g, "''")}'`);
+                                        batchQueries.push(`UPDATE ${tableName} SET ${sets}, sync_status = 1 WHERE ${pk} = '${escapeSql(String(pkValue))}'`);
                                     }
                                 }
                             } else {
                                 const rowKeys = Object.keys(remoteRow);
-                                const rowValues = Object.values(remoteRow).map(v => v === null ? 'NULL' : `'${String(v).replace(/'/g, "''")}'`);
+                                const rowValues = Object.values(remoteRow).map(v => v === null ? 'NULL' : `'${escapeSql(String(v))}'`);
                                 rowKeys.push('sync_status');
                                 rowValues.push(1);
 

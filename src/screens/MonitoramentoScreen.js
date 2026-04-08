@@ -19,10 +19,9 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { executeQuery } from '../database/database';
 import { showToast } from '../ui/Toast';
 import { useWeather } from '../context/WeatherContext';
-import { v4 as uuidv4 } from 'uuid';
+import MonitoramentoService from '../services/MonitoramentoService';
 
 // ── CONSTANTES ────────────────────────────────────────────────────────────────
 const TABS = ['CAMPO', 'PESQUISA'];
@@ -85,11 +84,7 @@ export default function MonitoramentoScreen({ navigation }) {
     const loadHistory = async () => {
         setLoadingHistory(true);
         try {
-            const res = await executeQuery(
-                `SELECT * FROM monitoramento_entidade WHERE status != 'EXCLUIDO' ORDER BY data DESC LIMIT 60`
-            );
-            const rows = [];
-            for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+            const rows = await MonitoramentoService.getHistorico();
             setHistory(rows);
         } catch { }
         finally { setLoadingHistory(false); }
@@ -105,28 +100,20 @@ export default function MonitoramentoScreen({ navigation }) {
         if (!fieldNote.trim()) { Alert.alert('Atenção', 'Escreva uma observação.'); return; }
         setSavingNote(true);
         try {
-            await executeQuery(
-                `INSERT INTO monitoramento_entidade (uuid, cultura_id, data, observacao_usuario, status, nivel_confianca, severidade, categoria, criado_em, last_updated) VALUES (?,?,?,?,?,?,?,?,?,?)`,
-                [
-                    uuidv4(),
-                    fieldLocal.toUpperCase() || 'CAMPO GERAL',
-                    new Date().toISOString(),
-                    fieldNote.toUpperCase(),
-                    'CONFIRMADO',
-                    'TÉCNICO',
-                    fieldSeveridade,
-                    fieldCategoria,
-                    new Date().toISOString(),
-                    new Date().toISOString()
-                ]
-            );
+            await MonitoramentoService.registrarObservacao({
+                local: fieldLocal,
+                observacao: fieldNote,
+                severidade: fieldSeveridade,
+                categoria: fieldCategoria
+            });
+            
             setFieldNote(''); setFieldLocal('');
             setFieldCategoria('OUTROS'); setFieldSeveridade('BAIXA');
             setAddModal(false);
             loadHistory();
             showToast('✅ Observação registrada no Diário de Campo!');
         } catch {
-            Alert.alert('Erro', 'Falha ao salvar. Verifique o banco de dados.');
+            Alert.alert('Erro', 'Falha ao salvar no diário.');
         } finally { setSavingNote(false); }
     };
 
@@ -138,11 +125,11 @@ export default function MonitoramentoScreen({ navigation }) {
     };
 
     const handleDelete = (item) => {
-        Alert.alert('Excluir Registro', 'Remover este apontamento?', [
+        Alert.alert('Excluir Registro', 'Remover este apontamento do histórico?', [
             { text: 'Cancelar', style: 'cancel' },
             {
                 text: 'Excluir', style: 'destructive', onPress: async () => {
-                    await executeQuery(`UPDATE monitoramento_entidade SET status='EXCLUIDO' WHERE uuid=?`, [item.uuid]);
+                    await MonitoramentoService.excluirRegistro(item.uuid);
                     loadHistory();
                 }
             }

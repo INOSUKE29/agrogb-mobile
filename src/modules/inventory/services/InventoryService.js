@@ -1,10 +1,11 @@
 import { executeQuery } from '../../../database/database';
 import { supabase } from '../../../services/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
+import EstoqueService from '../../../services/EstoqueService';
 
 /**
- * InventoryService (V1.1 DIAMOND PRO) 💎
- * Gerencia Produtos, Insumos e Estoque. 🚀
+ * InventoryService (V2.0 ENTERPRISE) 💎
+ * Gerencia Produtos, Insumos e Interface com o Estoque consolidado.
  */
 export const InventoryService = {
     /**
@@ -50,54 +51,21 @@ export const InventoryService = {
     },
 
     /**
-     * Busca o estoque consolidado (v1.0.1 Fix)
+     * Busca o estoque consolidado delegando para o EstoqueService
      */
-    getStocks: async () => { // Nome alternativo se for plural, mas useInventory chama getStock()
-        const res = await executeQuery(`
-            SELECT e.id, e.produto, e.quantidade, e.last_updated, c.unidade
-            FROM estoque e
-            LEFT JOIN cadastro c ON UPPER(e.produto) = UPPER(c.nome)
-            ORDER BY e.produto ASC
-        `);
-        const rows = [];
-        for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
-        return rows;
+    getStocks: async () => {
+        return await EstoqueService.getListaConsolidada();
     },
 
-    getStock: async () => { // Alias para compatibilidade com useInventory.js
-        const res = await executeQuery(`
-            SELECT e.id, e.produto, e.quantidade, e.last_updated, c.unidade
-            FROM estoque e
-            LEFT JOIN cadastro c ON UPPER(e.produto) = UPPER(c.nome)
-            ORDER BY e.produto ASC
-        `);
-        const rows = [];
-        for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
-        return rows;
+    getStock: async () => { 
+        return await EstoqueService.getListaConsolidada();
     },
 
     /**
-     * Atualiza o estoque de um produto (Soma/Subtrai)
+     * Atualiza o estoque de um produto (Redirecionado para o motor Enterprise)
      */
-    updateStock: async (productName, quantity, date = null) => {
-        const res = await executeQuery('SELECT quantidade FROM estoque WHERE produto = ?', [productName.toUpperCase()]);
-        const currentQty = res.rows.length > 0 ? res.rows.item(0).quantidade : 0;
-        const newQty = currentQty + quantity;
-
-        if (res.rows.length > 0) {
-            await executeQuery('UPDATE estoque SET quantidade = ?, last_updated = ? WHERE produto = ?', [newQty, new Date().toISOString(), productName.toUpperCase()]);
-        } else {
-            await executeQuery('INSERT INTO estoque (produto, quantidade, last_updated) VALUES (?, ?, ?)', [productName.toUpperCase(), newQty, new Date().toISOString()]);
-        }
-
-        // Registra movimentação (Legacy support)
-        if (date) {
-            const uuid = uuidv4();
-            await executeQuery(
-                `INSERT INTO v2_movimentacoes_estoque (id, produto_id, tipo, quantidade, data, sync_status) VALUES (?, ?, ?, ?, ?, ?)`,
-                [uuid, productName.toUpperCase(), quantity > 0 ? 'ENTRADA' : 'SAÍDA', Math.abs(quantity), date, 'pending']
-            );
-        }
+    updateStock: async (productName, quantity, reason = 'AJUSTE MANUAL') => {
+        return await EstoqueService.movimentar(productName, quantity, reason);
     },
 
     /**

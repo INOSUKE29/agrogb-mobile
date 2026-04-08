@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
         flex: 1,
         width: '100%',
         maxWidth: Platform.OS === 'web' ? 480 : '100%',
-        backgroundColor: '#f8fafc',
+        backgroundColor: '#09100c',
         overflow: 'hidden',
     }
 });

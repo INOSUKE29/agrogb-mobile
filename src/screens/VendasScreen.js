@@ -9,10 +9,8 @@ import {
     TextInput, Platform, SafeAreaView, StatusBar, 
     ActivityIndicator, Switch 
 } from 'react-native';
-import { v4 as uuidv4 } from 'uuid';
-import { getCadastro, getClientes } from '../database/database';
-import { FinanceService } from '../modules/finance/services/FinanceService';
-import { deleteVenda } from '../services/VendaService';
+import { v4 as uuidv4 } from 'uuid';import { getCadastro, getClientes } from '../database/database';
+import VendaService from '../services/VendaService';
 import ProductModal from '../modules/inventory/components/ProductModal';
 import ClientModal from '../modules/finance/components/ClientModal';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,6 +25,7 @@ import SafeBlurView from '../ui/SafeBlurView';
 
 export default function VendasScreen({ navigation }) {
     const [cliente, setCliente] = useState('');
+    const [clienteId, setClienteId] = useState(null); // BUILD #107: Guardando ID
     const [produto, setProduto] = useState('');
     const [quantidade, setQuantidade] = useState('');
     const [precoKg, setPrecoKg] = useState('');
@@ -53,6 +52,7 @@ export default function VendasScreen({ navigation }) {
                 if (saved) {
                     const draft = JSON.parse(saved);
                     setCliente(draft.cliente || '');
+                    setClienteId(draft.clienteId || null);
                     setProduto(draft.produto || '');
                     setQuantidade(draft.quantidade || '');
                     setPrecoKg(draft.precoKg || '');
@@ -66,12 +66,12 @@ export default function VendasScreen({ navigation }) {
     useEffect(() => {
         const saveDraft = async () => {
             if (!editingUuid && (cliente || produto || quantidade || precoKg)) {
-                await AsyncStorage.setItem(DRAFT_KEY, JSON.stringify({ cliente, produto, quantidade, precoKg, formaPagamento }));
+                await AsyncStorage.setItem(DRAFT_KEY, JSON.stringify({ cliente, clienteId, produto, quantidade, precoKg, formaPagamento }));
             }
         };
         const timer = setTimeout(saveDraft, 1000);
         return () => clearTimeout(timer);
-    }, [cliente, produto, quantidade, precoKg, formaPagamento, editingUuid]);
+    }, [cliente, clienteId, produto, quantidade, precoKg, formaPagamento, editingUuid]);
 
     const loadInitialData = useCallback(async () => {
         try {
@@ -82,7 +82,7 @@ export default function VendasScreen({ navigation }) {
 
     const loadHistory = useCallback(async () => {
         try {
-            await FinanceService.getRecentSales();
+            // Em breve: VendaService.getVendasRecentes()
         } catch { }
     }, []);
 
@@ -104,28 +104,28 @@ export default function VendasScreen({ navigation }) {
         if (valorTotalCalc <= 0) return Alert.alert('Atenção', 'Valor total inválido.');
 
         setSaving(true);
-        const stPgto = (formaPagamento === 'PRAZO' || contasReceber) ? 'A_RECEBER' : 'RECEBIDO';
+        const stPgto = (formaPagamento === 'PRAZO' || contasReceber) ? 'PENDENTE' : 'PAGO';
 
         const dados = {
-            uuid: editingUuid || uuidv4(),
-            cliente: (cliente || 'BALCÃO').toUpperCase(),
-            produto: produto.toUpperCase(),
+            uuid: editingUuid || null, // VendaService gerará se null
+            cliente_id: clienteId,
+            cliente_nome: cliente || 'BALCÃO',
+            produto: produto,
             quantidade: parseFloat(quantidade),
-            valor: valorTotalCalc,
+            valor_total: valorTotalCalc,
             observacao: `FORMA: ${formaPagamento}`,
             data: parseDate(dataVenda),
-            status_pagamento: stPgto,
-            data_recebimento: stPgto === 'RECEBIDO' ? new Date().toISOString() : null
+            pagamento_status: stPgto
         };
         
         try {
-            await FinanceService.recordSale(dados);
+            await VendaService.registrarVenda(dados);
             showToast(editingUuid ? '✨ Venda atualizada!' : '✅ Venda registrada!');
             
             if (isSaveAndNew) {
                 setProduto(''); setQuantidade(''); setPrecoKg(''); 
             } else {
-                setCliente(''); setProduto(''); setQuantidade(''); setPrecoKg(''); setFormaPagamento('PIX'); setEditingUuid(null);
+                setCliente(''); setClienteId(null); setProduto(''); setQuantidade(''); setPrecoKg(''); setFormaPagamento('PIX'); setEditingUuid(null);
             }
 
             await AsyncStorage.removeItem(DRAFT_KEY);
@@ -137,11 +137,12 @@ export default function VendasScreen({ navigation }) {
         } finally {
             setSaving(false);
         }
-    }, [produto, quantidade, precoKg, valorTotalCalc, cliente, formaPagamento, contasReceber, dataVenda, editingUuid, loadHistory]);
+    }, [produto, quantidade, precoKg, valorTotalCalc, cliente, clienteId, formaPagamento, contasReceber, dataVenda, editingUuid, loadHistory]);
+
     const confirmDelete = useCallback(async () => {
         if (!itemToDelete) return;
         try {
-            await deleteVenda(itemToDelete.uuid);
+            await VendaService.excluirVenda(itemToDelete.uuid);
             setConfirmVisible(false);
             setItemToDelete(null);
             showToast('🗑️ Venda excluída!');

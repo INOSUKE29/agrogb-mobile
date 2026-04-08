@@ -1,74 +1,101 @@
-import { executeQuery } from '../database/database';
-import { atualizarEstoque } from './EstoqueService';
+import { executeQuery, logActivity } from '../database/database';
+import { v4 } from 'uuid';
+import EstoqueService from './EstoqueService';
 
-const up = (text) => text ? text.toString().toUpperCase().trim() : '';
+/**
+ * SERVIÇO DE VENDAS ENTERPRISE - BUILD #107
+ * Responsável por toda a lógica de negócio, garantindo integridade entre Venda e Estoque.
+ */
+class VendaService {
+    
+    /**
+     * Registra uma nova venda com baixa automática de estoque
+     */
+    static async registrarVenda(vendaData) {
+        const {
+            produto,
+            quantidade,
+            valor_total,
+            cliente_id,
+            cliente_nome,
+            data,
+            observacao,
+            pagamento_status = 'PENDENTE'
+        } = vendaData;
 
-export const insertVenda = async (v) => {
-    await executeQuery(
-        `INSERT INTO vendas (uuid, cliente, produto, quantidade, valor, data, observacao, status_pagamento, data_recebimento, forma_pagamento, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [v.uuid, up(v.cliente), up(v.produto), v.quantidade, v.valor, v.data, up(v.observacao), v.status_pagamento || 'A_RECEBER', v.data_recebimento || null, v.forma_pagamento || null, new Date().toISOString(), 0]
-    );
+        const uuid = v4();
+        const timestamp = new Date().toISOString();
 
-    // BAIXA DE ESTOQUE (PRODUTO PRINCIPAL + RECEITA)
-    try {
-        await atualizarEstoque(v.produto, -v.quantidade, v.data);
+        try {
+            // 1. Registra a Venda no SQLite
+            await executeQuery(
+                `INSERT INTO vendas (
+                    uuid, produto, quantidade, valor_total, cliente_id, cliente_nome, 
+                    data, observacao, pagamento_status, last_updated, sync_status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+                [
+                    uuid, 
+                    produto.toUpperCase().trim(), 
+                    quantidade, 
+                    valor_total, 
+                    cliente_id, 
+                    cliente_nome.toUpperCase().trim(),
+                    data, 
+                    observacao || '', 
+                    pagamento_status,
+                    timestamp
+                ]
+            );
 
-        // ENGENHARIA DE PRODUTO: Buscar se o item vendido tem uma "receita" (composição)
-        const resCad = await executeQuery('SELECT uuid FROM cadastro WHERE nome = ?', [up(v.produto)]);
-        if (resCad.rows.length > 0) {
-            const paiUuid = resCad.rows.item(0).uuid;
-            const resRec = await executeQuery(`
-                SELECT r.quantidade as qtd_uso, c.nome as nome_insumo 
-                FROM receitas r
-                JOIN cadastro c ON r.item_filho_uuid = c.uuid
-                WHERE r.produto_pai_uuid = ?
-            `, [paiUuid]);
+            // 2. Realiza a baixa no estoque através do serviço mestre
+            // Toda venda gera uma auditoria automática em v2_estoque_movimentacoes
+            await EstoqueService.movimentar(produto, -quantidade, `VENDA: ${uuid}`, uuid);
 
-            for (let i = 0; i < resRec.rows.length; i++) {
-                const item = resRec.rows.item(i);
-                const qtdTotalBaixa = item.qtd_uso * v.quantidade;
-                await atualizarEstoque(item.nome_insumo, -qtdTotalBaixa, v.data);
-                console.log(`[Engenharia] Baixa automática: ${item.nome_insumo} (-${qtdTotalBaixa})`);
-            }
+            // 3. Registra Log de Atividade
+            await logActivity('VENDA', 'VENDAS', `Venda de ${quantidade} de ${produto} para ${cliente_nome}`);
+
+            return { success: true, uuid };
+        } catch (error) {
+            console.error('❌ [VendaService Error]:', error);
+            throw error;
         }
-    } catch (e) {
-        console.error('Falha na baixa de estoque/receita:', e);
-    }
-};
-
-export const updateVenda = async (uuid, v) => {
-    const ant = await executeQuery('SELECT * FROM vendas WHERE uuid = ?', [uuid]);
-    if (ant.rows.length > 0) {
-        const old = ant.rows.item(0);
-        await atualizarEstoque(old.produto, old.quantidade); // Devolve ao estoque (reverte saída)
     }
 
-    await executeQuery(
-        `UPDATE vendas SET cliente = ?, produto = ?, quantidade = ?, valor = ?, data = ?, observacao = ?, status_pagamento = ?, data_recebimento = ?, forma_pagamento = ?, last_updated = ?, sync_status = 0 WHERE uuid = ?`,
-        [up(v.cliente), up(v.produto), v.quantidade, v.valor, v.data, up(v.observacao), v.status_pagamento || 'A_RECEBER', v.data_recebimento || null, v.forma_pagamento || null, new Date().toISOString(), uuid]
-    );
-    await atualizarEstoque(v.produto, -v.quantidade); // Tira do estoque novamente com nova qtd
-};
-
-export const deleteVenda = async (uuid) => {
-    const ant = await executeQuery('SELECT * FROM vendas WHERE uuid = ?', [uuid]);
-    if (ant.rows.length > 0) {
-        const old = ant.rows.item(0);
-        await atualizarEstoque(old.produto, old.quantidade); // Devolve ao estoque
+    /**
+     * Retorna lista de vendas recentes (Abstração do driver)
+     */
+    static async getVendasRecentes() {
+        const res = await executeQuery(
+            'SELECT * FROM vendas WHERE is_deleted = 0 ORDER BY data DESC, id DESC LIMIT 100'
+        );
+        const rows = [];
+        for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+        return rows;
     }
-    await executeQuery('UPDATE vendas SET is_deleted = 1, sync_status = 0 WHERE uuid = ?', [uuid]);
-};
 
-export const getVendasRecentes = async () => {
-    const res = await executeQuery('SELECT * FROM vendas WHERE is_deleted = 0 ORDER BY data DESC, id DESC LIMIT 50');
-    const rows = [];
-    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
-    return rows;
-};
+    /**
+     * Estorno/Deleção de Venda (Repõe estoque automaticamente)
+     */
+    static async excluirVenda(uuid) {
+        try {
+            const venda = await executeQuery('SELECT * FROM vendas WHERE uuid = ?', [uuid]);
+            if (venda.rows.length > 0) {
+                const v = venda.rows.item(0);
+                // Repõe o estoque que foi baixado (Estorno)
+                await EstoqueService.movimentar(v.produto, v.quantidade, `ESTORNO VENDA: ${uuid}`, uuid);
+                
+                // Exclusão Lógica (Soft Delete) - Regra de Ouro Build #107
+                await executeQuery('UPDATE vendas SET is_deleted = 1, sync_status = 0 WHERE uuid = ?', [uuid]);
+                
+                await logActivity('DELETE', 'VENDAS', `Estorno de venda ${uuid} - Estoque reposto.`);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('❌ [VendaService Excluir Error]:', error);
+            throw error;
+        }
+    }
+}
 
-export const marcarVendaRecebida = async (uuid, valor_recebido) => {
-    await executeQuery(
-        `UPDATE vendas SET status_pagamento = 'RECEBIDO', valor_recebido = ?, data_recebimento = ?, last_updated = ? WHERE uuid = ?`,
-        [valor_recebido, new Date().toISOString(), new Date().toISOString(), uuid]
-    );
-};
+export default VendaService;

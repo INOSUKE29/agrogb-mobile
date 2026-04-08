@@ -8,76 +8,48 @@ import { LoggingService } from '../../system/services/LoggingService';
 export const AnalyticsService = {
 
     /**
-     * Calcula o ROI da Safra.
-     * ROI = ((Receita - Custo) / Custo) * 100
+     * BUILD #107 ENTERPRISE - Método Consolidado
+     * Reduz o número de queries na inicialização puxando todos os KPIS essenciais de uma vez.
      */
-    calculateROI: async () => {
+    getDashboardStats: async () => {
         try {
-            const vendas = await executeQuery(`SELECT SUM(valor_total) as total FROM v2_vendas WHERE is_deleted = 0`);
-            const custos = await executeQuery(`SELECT SUM(valor) as total FROM compras WHERE is_deleted = 0`);
-
-            const receita = vendas.rows.item(0).total || 0;
-            const despesa = custos.rows.item(0).total || 0;
-
-            if (despesa === 0) return 0;
-            return (((receita - despesa) / despesa) * 100).toFixed(1);
-        } catch (error) {
-            await LoggingService.logError('AnalyticsService', 'calculateROI', error);
-            return 0;
-        }
-    },
-
-    /**
-     * Busca o progresso da colheita atual.
-     */
-    getHarvestProgress: async () => {
-        try {
-            // Exemplo de lógica para progresso baseado em estimativa vs real
-            const query = `
+            // Executa as somas fundamentais em um único bloco
+            const resFinance = await executeQuery(`
                 SELECT 
-                    SUM(quantidade_total) as colhido,
-                    (SELECT SUM(area * 3000) FROM v2_talhoes) as estimado -- 3000kg/ha como base
-                FROM v2_colheitas
-            `;
-            const res = await executeQuery(query);
-            const data = res.rows.item(0);
+                    (SELECT SUM(valor_total) FROM v2_vendas WHERE is_deleted = 0) as receita,
+                    (SELECT SUM(valor) FROM compras WHERE is_deleted = 0) as despesa,
+                    (SELECT SUM(quantidade_total) FROM v2_colheitas) as colhido,
+                    (SELECT SUM(area * 3000) FROM v2_talhoes) as estimado
+            `);
             
+            const data = resFinance.rows.item(0);
+            const receita = data.receita || 0;
+            const despesa = data.despesa || 0;
             const colhido = data.colhido || 0;
-            const estimado = data.estimado || 1; // evita div por zero
-            
-            const percentual = Math.min((colhido / estimado) * 100, 100);
+            const estimado = data.estimado || 1;
+
+            // Cálculos em memória (mais rápido que no SQL)
+            const roi = despesa === 0 ? 0 : (((receita - despesa) / despesa) * 100).toFixed(1);
+            const harvestPercent = Math.min((colhido / estimado) * 100, 100).toFixed(0);
 
             return {
-                percentual: percentual.toFixed(0),
-                colhido: colhido,
-                estimado: estimado
+                roi,
+                receita,
+                despesa,
+                harvest: {
+                    percentual: harvestPercent,
+                    colhido,
+                    estimado
+                }
             };
         } catch (error) {
-            await LoggingService.logError('AnalyticsService', 'getHarvestProgress', error);
-            return { percentual: 0, colhido: 0, estimado: 0 };
+            await LoggingService.logError('AnalyticsService', 'getDashboardStats', error);
+            return null;
         }
     },
 
     /**
-     * Busca a saúde financeira atual (Receita e Despesa).
-     */
-    getFinancialStatus: async () => {
-        try {
-            const vendas = await executeQuery(`SELECT SUM(valor_total) as soma FROM v2_vendas WHERE is_deleted = 0`);
-            const custos = await executeQuery(`SELECT SUM(valor) as soma FROM compras WHERE is_deleted = 0`);
-            
-            return {
-                receita: vendas.rows.item(0).soma || 0,
-                despesa: custos.rows.item(0).soma || 0
-            };
-        } catch (error) {
-            await LoggingService.logError('AnalyticsService', 'getFinancialStatus', error);
-            return { receita: 0, despesa: 0 };
-        }
-    },
-
-    /**
-     * Detecção de anomalias por talhão.
+     * Mantemos as anomalias isoladas por serem opcionais/pesadas
      */
     getAnomalies: async () => {
         try {

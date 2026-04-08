@@ -20,20 +20,15 @@ export function useAnalytics() {
     const loadData = useCallback(async () => {
         try {
             setLoading(true);
-            const [roi, finance, harvest, anomalies] = await Promise.all([
-                AnalyticsService.calculateROI(),
-                AnalyticsService.getFinancialStatus(),
-                AnalyticsService.getHarvestProgress(),
-                AnalyticsService.getAnomalies()
-            ]);
-
-            setStats({
-                roi,
-                receita: finance.receita,
-                despesa: finance.despesa,
-                harvest,
-                anomalies
-            });
+            const data = await AnalyticsService.getDashboardStats();
+            
+            if (data) {
+                const anomalies = await AnalyticsService.getAnomalies();
+                setStats({
+                    ...data,
+                    anomalies
+                });
+            }
         } catch (error) {
             await LoggingService.logError('useAnalytics', 'loadData', error);
         } finally {

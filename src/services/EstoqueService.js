@@ -1,49 +1,89 @@
-import { executeQuery, atualizarEstoque } from '../database/database';
+import { executeQuery, logActivity } from '../database/database';
 
-const up = (t) => (t ? t.toUpperCase() : null);
+/**
+ * SERVIÇO DE ESTOQUE ENTERPRISE - BUILD #107
+ * Responsável pela integridade física dos produtos e histórico de movimentações.
+ */
+class EstoqueService {
 
+    /**
+     * Atualiza a quantidade de um produto de forma segura
+     */
+    static async movimentar(id_produto, delta, motivo = 'AJUSTE', uuid_referencia = null) {
+        const timestamp = new Date().toISOString();
+        
+        try {
+            // 1. Busca o saldo atual
+            const res = await executeQuery('SELECT * FROM estoque WHERE id = ? OR produto = ?', [id_produto, id_produto]);
+            
+            if (res.rows.length === 0) {
+                // Se não existe, cria o registro inicial (se delta for positivo)
+                if (delta < 0) return { success: false, error: 'Estoque insuficiente (não existente)' };
+                
+                await executeQuery(
+                    'INSERT INTO estoque (produto, quantidade, last_updated) VALUES (?, ?, ?)',
+                    [id_produto, delta, timestamp]
+                );
+            } else {
+                const item = res.rows.item(0);
+                let novaQtd = (item.quantidade || 0) + delta;
 
-export const getEstoque = async () => {
-    // JOIN com cadastro para pegar unidade e tipo
-    const res = await executeQuery(`
-        SELECT e.*, c.unidade, c.tipo, c.fator_conversao 
-        FROM estoque e
-        LEFT JOIN cadastro c ON UPPER(e.produto) = UPPER(c.nome)
-        WHERE e.is_deleted = 0
-        ORDER BY e.quantidade ASC
-    `);
-    const rows = [];
-    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
-    return rows;
-};
+                // Regra de Ouro: Nunca negativo (a menos que explicitamente permitido no futuro)
+                if (novaQtd < 0) {
+                    console.warn(`[Estoque] Saldo insuficiente para ${id_produto}. Ajustado para 0.`);
+                    novaQtd = 0;
+                }
 
-export const registrarAjusteEstoqueInicial = async (d) => {
-    // Insere como uma compra com valor = 0 e um texto identificador
-    // para que não gere custo, mas aumente a quantidade de estoque.
-    await executeQuery(`INSERT INTO compras (uuid, item, quantidade, valor, cultura, data, observacao, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [d.uuid, up(d.produto), d.quantidade, 0, 'SISTEMA', new Date().toISOString(), 'AJUSTE_INICIAL|' + (d.observacao || ''), new Date().toISOString(), 0]);
-    await atualizarEstoque(d.produto, d.quantidade);
-};
+                await executeQuery(
+                    'UPDATE estoque SET quantidade = ?, last_updated = ? WHERE id = ?',
+                    [novaQtd, timestamp, item.id]
+                );
+            }
 
-export const insertProcessamento = async (d) => {
-    // d.tipo = 'CONGELAMENTO' ou 'DESCARTE'
-    await executeQuery(`INSERT INTO descarte (uuid, produto, quantidade_kg, motivo, data, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [d.uuid, up(d.produto), d.quantidade_kg, up(d.motivo) + ` [${d.tipo}]`, d.data, new Date().toISOString(), 0]
-    );
+            // 2. Registra na tabela de movimentação histórica (Auditoria) padronizada v2
+            await executeQuery(
+                `INSERT INTO v2_estoque_movimentacoes (
+                    uuid, produto_id, tipo, quantidade, origem, data, sync_status
+                ) VALUES (?, ?, ?, ?, ?, ?, 0)`,
+                [
+                    require('uuid').v4(),
+                    id_produto,
+                    delta > 0 ? 'ENTRADA' : 'SAIDA',
+                    Math.abs(delta),
+                    motivo,
+                    timestamp
+                ]
+            );
 
-    // Abate o estoque do produto principal
-    await atualizarEstoque(d.produto, -d.quantidade_kg);
-
-    if (d.tipo === 'CONGELAMENTO') {
-        // Acrescenta no estoque com sufixo (CONGELADO)
-        await atualizarEstoque(`${d.produto} (CONGELADO)`, d.quantidade_kg);
+            return { success: true };
+        } catch (error) {
+            console.error('❌ [EstoqueService Error]:', error);
+            throw error;
+        }
     }
-};
 
-export const insertDescarte = async (d) => {
-    return insertProcessamento({ ...d, tipo: 'DESCARTE' });
-};
+    /**
+     * Busca o saldo consolidado de um produto
+     */
+    static async getSaldo(id_produto) {
+        const res = await executeQuery('SELECT quantidade FROM estoque WHERE id = ? OR produto = ?', [id_produto, id_produto]);
+        return res.rows.length > 0 ? res.rows.item(0).quantidade : 0;
+    }
 
-export const insertCongelamento = async (d) => {
-    return insertProcessamento({ ...d, tipo: 'CONGELAMENTO' });
-};
+    /**
+     * Retorna a lista completa de estoque para o Dashboard (Com Unidade do Cadastro)
+     */
+    static async getListaConsolidada() {
+        const res = await executeQuery(`
+            SELECT e.*, c.unidade, c.tipo as categoria 
+            FROM estoque e
+            LEFT JOIN cadastro c ON UPPER(e.produto) = UPPER(c.nome)
+            ORDER BY e.produto ASC
+        `);
+        const rows = [];
+        for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+        return rows;
+    }
+}
+
+export default EstoqueService;

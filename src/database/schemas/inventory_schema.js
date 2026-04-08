@@ -59,14 +59,14 @@ export const INVENTORY_SCHEMA = [
         last_updated TEXT,
         sync_status TEXT DEFAULT 'pending'
     );`,
-    `CREATE TABLE IF NOT EXISTS v2_movimentacoes_estoque (
-        id TEXT PRIMARY KEY,
+    `CREATE TABLE IF NOT EXISTS v2_estoque_movimentacoes (
+        uuid TEXT PRIMARY KEY,
         produto_id TEXT,
-        tipo TEXT,
+        tipo TEXT, -- ENTRADA / SAIDA
         quantidade REAL,
-        origem TEXT,
+        origem TEXT, -- COMPRA, VENDA, AJUSTE
         data TEXT,
         created_at TEXT DEFAULT (datetime('now')),
-        sync_status TEXT DEFAULT 'pending'
+        sync_status INTEGER DEFAULT 0
     );`
 ];

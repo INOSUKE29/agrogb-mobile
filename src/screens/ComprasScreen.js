@@ -4,8 +4,7 @@ import {
     TextInput, Platform, SafeAreaView, StatusBar, ActivityIndicator 
 } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
-import { getCadastro } from '../database/database';
-import { FinanceService } from '../modules/finance/services/FinanceService';
+import CompraService from '../services/CompraService';
 import ProductModal from '../modules/inventory/components/ProductModal';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -28,26 +27,20 @@ export default function ComprasScreen({ navigation }) {
     const [modalVisible, setModalVisible] = useState(false);
     const [saving, setSaving] = useState(false);
 
-    const loadInitialData = useCallback(async () => {
-        try {
-            await getCadastro();
-        } catch (err) { }
-    }, []);
-
     const loadHistory = useCallback(async () => {
         try {
-            const data = await FinanceService.getRecentPurchases ? await FinanceService.getRecentPurchases() : [];
+            const data = await CompraService.getRecentPurchases();
             setHistory(data);
         } catch (e) {
             setHistory([]);
         }
     }, []);
 
-    useFocusEffect(useCallback(() => { loadInitialData(); loadHistory(); }, [loadInitialData, loadHistory]));
+    useFocusEffect(useCallback(() => { loadHistory(); }, [loadHistory]));
 
     const unitPrice = useMemo(() => {
-        const q = parseFloat(quantidade);
-        const v = parseFloat(valorTotal);
+        const q = parseFloat(String(quantidade).replace(',', '.'));
+        const v = parseFloat(String(valorTotal).replace(',', '.'));
         if (q > 0 && v > 0) return (v / q).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         return '0,00';
     }, [quantidade, valorTotal]);
@@ -59,35 +52,37 @@ export default function ComprasScreen({ navigation }) {
         const dados = {
             uuid: editingUuid || uuidv4(),
             produto: insumo.toUpperCase(),
-            quantidade: parseFloat(quantidade),
-            valor: parseFloat(valorTotal),
-            observacao: observacoes.toUpperCase() + (detalhes ? ` | DETALHES: ${detalhes.toUpperCase()}` : ''),
+            quantidade: parseFloat(String(quantidade).replace(',', '.')),
+            valor: parseFloat(String(valorTotal).replace(',', '.')),
+            observacao: (observacoes || '').toUpperCase() + (detalhes ? ` | DETALHES: ${detalhes.toUpperCase()}` : ''),
             data: new Date().toISOString().split('T')[0],
-            cultura: cultura.toUpperCase()
+            cultura: (cultura || '').toUpperCase()
         };
         
         try {
-            if (FinanceService.recordPurchase) {
-                await FinanceService.recordPurchase(dados);
-            }
-            showToast(editingUuid ? '✨ Compra atualizada!' : '✅ Compra registrada!');
+            await CompraService.registrarCompra(dados);
+            showToast(editingUuid ? '✨ Registro atualizado!' : '✅ Compra e Estoque atualizados!');
             setInsumo(''); setQuantidade(''); setValorTotal(''); setCultura(''); setDetalhes(''); setObservacoes(''); setEditingUuid(null);
             loadHistory();
             try { AutoSyncService.trigger(); } catch {}
         } catch (error) {
-            Alert.alert('Erro', 'Não foi possível salvar.');
+            Alert.alert('Erro', 'Falha ao processar compra.');
         } finally {
             setSaving(false);
         }
     }, [insumo, quantidade, valorTotal, cultura, detalhes, observacoes, editingUuid, loadHistory]);
 
     const handleDelete = async (item) => {
-        Alert.alert('Excluir Compra', `Deseja apagar a entrada de ${item.produto}?`, [
+        Alert.alert('Excluir Compra', `Deseja apagar a entrada de ${item.produto}? O saldo de estoque será estornado.`, [
             { text: 'Cancelar', style: 'cancel' },
             { text: 'Excluir', style: 'destructive', onPress: async () => {
-                if (FinanceService.deletePurchase) await FinanceService.deletePurchase(item.uuid);
-                showToast('✅ Excluído!');
-                loadHistory();
+                try {
+                    await CompraService.excluirCompra(item.uuid);
+                    showToast('✅ Registro e Estoque estornados!');
+                    loadHistory();
+                } catch (e) {
+                    Alert.alert('Erro', 'Não foi possível excluir.');
+                }
             }}
         ]);
     };

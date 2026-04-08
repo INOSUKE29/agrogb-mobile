@@ -161,16 +161,15 @@ export const SCHEMA_V10 = [
         sync_status TEXT DEFAULT 'pending',
         FOREIGN KEY(produto_id) REFERENCES v2_produtos(id)
     )`,
-    `CREATE TABLE IF NOT EXISTS v2_movimentacoes_estoque (
-        id TEXT PRIMARY KEY,
+    `CREATE TABLE IF NOT EXISTS v2_estoque_movimentacoes (
+        uuid TEXT PRIMARY KEY,
         produto_id TEXT,
         tipo TEXT, -- ENTRADA / SAIDA
         quantidade REAL,
         origem TEXT, -- Compra, Plantio, Venda, Descarte
         data TEXT,
         created_at TEXT DEFAULT (datetime('now')),
-        sync_status TEXT DEFAULT 'pending',
-        FOREIGN KEY(produto_id) REFERENCES v2_produtos(id)
+        sync_status INTEGER DEFAULT 0
     )`,
 
     // --- 5. FROTA E MÁQUINAS ---
