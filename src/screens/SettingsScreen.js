@@ -18,6 +18,7 @@ import { showToast } from '../ui/Toast';
 import { AuthService } from '../services/authService';
 import { executeQuery } from '../database/database';
 import { pushLocalChanges, pullServerChanges } from '../services/SyncService';
+import { LoggingService } from '../modules/system/services/LoggingService';
 
 export default function SettingsScreen({ navigation }) {
     const { colors, theme, setTheme } = useTheme();
@@ -249,6 +250,24 @@ export default function SettingsScreen({ navigation }) {
                         </View>
                         <Text style={styles.syncDate}>Último Backup: 23/04/2024</Text>
                     </View>
+                </SettingsGroup>
+
+                {/* 🛠️ SUPORTE TÉCNICO (Novo) */}
+                <SettingsGroup icon="construct-outline" title="Suporte Técnico">
+                    <SettingsItem 
+                        icon="bug-outline" 
+                        label="Exportar Relatório de Erros" 
+                        iconColor="#F59E0B"
+                        isLast
+                        onPress={async () => {
+                            setLoading(true);
+                            const res = await LoggingService.exportLogs();
+                            setLoading(false);
+                            if (!res.success) {
+                                Alert.alert('Aviso', res.message);
+                            }
+                        }} 
+                    />
                 </SettingsGroup>
 
                 {/* 🚪 LOGOUT (Fiel ao Mockup) */}

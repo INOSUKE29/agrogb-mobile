@@ -1,53 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { ScrollView, View, Text, StyleSheet, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import AppContainer from '../ui/AppContainer';
 import ScreenHeader from '../ui/ScreenHeader';
-import AnalyticsDashboard from '../ui/components/AnalyticsDashboard';
+import DashboardContent from '../ui/components/DashboardContent';
 import RecommendationCard from '../ui/components/RecommendationCard';
-import { AnalyticsService } from '../services/AnalyticsService';
+import { useAnalytics } from '../modules/analytics/hooks/useAnalytics';
 import { executeQuery } from '../database/database';
 
+/**
+ * IntelligenceScreen (Módulo Analytics - Diamond Pro)
+ * Camada de visualização da inteligência AgTech.
+ */
 export default function IntelligenceScreen({ navigation }) {
-    const [loading, setLoading] = useState(true);
-    const [productivity, setProductivity] = useState([]);
-    const [finance, setFinance] = useState({ receita: 0, despesa: 0 });
-    const [recommendations, setRecommendations] = useState([]);
-    const [trends, setTrends] = useState([]);
-    const [refreshing, setRefreshing] = useState(false);
+    const analytics = useAnalytics();
+    const [recommendations, setRecommendations] = React.useState([]);
 
-    const loadData = async () => {
+    const loadRecommendations = React.useCallback(async () => {
         try {
-            const prod = await AnalyticsService.getTalhaoProductivity();
-            const fin = await AnalyticsService.getFinancialHealth();
-            const trendData = await AnalyticsService.detectProductionTrends();
             const recs = await executeQuery(`SELECT * FROM v2_recomendacoes_tecnicas WHERE status = 'Pendente' ORDER BY created_at DESC`);
-            
-            setProductivity(prod);
-            setFinance(fin);
-            setTrends(trendData);
             setRecommendations(recs.rows._array || []);
         } catch (error) {
-            console.error("Erro ao carregar inteligência:", error);
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
+            console.error("Erro ao carregar recomendações:", error);
         }
-    };
-
-    useEffect(() => {
-        loadData();
     }, []);
 
-    const onRefresh = () => {
-        setRefreshing(true);
-        loadData();
-    };
+    React.useEffect(() => {
+        loadRecommendations();
+    }, [loadRecommendations]);
 
-    if (loading) {
+    if (analytics.loading) {
         return (
             <AppContainer>
                 <View style={styles.center}>
-                    <ActivityIndicator size="large" color="#15803D" />
+                    <ActivityIndicator size="large" color="#A3E635" />
                     <Text style={styles.loadingText}>Processando Inteligência Rural...</Text>
                 </View>
             </AppContainer>
@@ -59,28 +44,30 @@ export default function IntelligenceScreen({ navigation }) {
             <ScreenHeader title="INTELIGÊNCIA AGTECH" onBack={() => navigation.goBack()} />
             <ScrollView 
                 contentContainerStyle={styles.content}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                refreshControl={<RefreshControl refreshing={analytics.refreshing} onRefresh={analytics.refresh} tintColor="#A3E635" />}
             >
-                {/* 0. ALERTAS DE TENDÊNCIA DE PRODUÇÃO */}
-                {trends.length > 0 && (
+                {/* 1. DASHBOARD DE BI UNIFICADO DIAMOND PRO */}
+                <DashboardContent data={analytics} />
+
+                {/* 2. ALERTAS DE TENDÊNCIA DE PRODUÇÃO */}
+                {analytics.anomalies.length > 0 && (
                     <View style={styles.trendsContainer}>
                         <Text style={styles.sectionTitle}>Alertas de Produtividade 📉</Text>
-                        {trends.map((trend, idx) => (
-                            <View key={idx} style={[styles.trendCard, { borderLeftColor: trend.nivel === 'CRÍTICO' ? '#EF4444' : '#F59E0B' }]}>
+                        {analytics.anomalies.map((trend, idx) => (
+                            <View key={idx} style={styles.trendCard}>
                                 <View style={styles.trendHeader}>
                                     <Text style={styles.trendTalhao}>{trend.talhao}</Text>
-                                    <View style={[styles.levelBadge, { backgroundColor: trend.nivel === 'CRÍTICO' ? '#FEE2E2' : '#FEF3C7' }]}>
-                                        <Text style={[styles.levelText, { color: trend.nivel === 'CRÍTICO' ? '#EF4444' : '#B45309' }]}>{trend.nivel}</Text>
+                                    <View style={styles.levelBadge}>
+                                        <Text style={styles.levelText}>ANOMALIA</Text>
                                     </View>
                                 </View>
-                                <Text style={styles.trendDesc}>Queda de <Text style={{fontWeight: 'bold'}}>{trend.queda}%</Text> comparado ao mês anterior.</Text>
-                                <Text style={styles.trendAction}>💡 {trend.sugestao}</Text>
+                                <Text style={styles.trendDesc}>Produção abaixo de 70% da média histórica detectada para este talhão.</Text>
                             </View>
                         ))}
                     </View>
                 )}
 
-                {/* 1. INSIGHTS E RECOMENDAÇÕES */}
+                {/* 3. INSIGHTS E RECOMENDAÇÕES */}
                 <Text style={styles.sectionTitle}>Insights Agronômicos ✨</Text>
                 {recommendations.length > 0 ? (
                     recommendations.map((rec) => (
@@ -96,12 +83,6 @@ export default function IntelligenceScreen({ navigation }) {
                     </View>
                 )}
 
-                {/* 2. DASHBOARD DE BI */}
-                <AnalyticsDashboard 
-                    productivityData={productivity}
-                    financialData={finance}
-                />
-
                 <View style={styles.footerInfo}>
                     <Text style={styles.footerText}>Dados atualizados em: {new Date().toLocaleTimeString()}</Text>
                 </View>
@@ -112,19 +93,18 @@ export default function IntelligenceScreen({ navigation }) {
 
 const styles = StyleSheet.create({
     content: { paddingBottom: 40 },
-    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    loadingText: { marginTop: 12, color: '#15803D', fontWeight: 'bold' },
-    sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#111827', marginHorizontal: 20, marginTop: 20, marginBottom: 10 },
-    emptyCard: { backgroundColor: '#F0FDF4', padding: 20, borderRadius: 16, marginHorizontal: 20, alignItems: 'center' },
-    emptyText: { color: '#15803D', fontSize: 13, textAlign: 'center' },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#09100c' },
+    loadingText: { marginTop: 12, color: '#A3E635', fontWeight: 'bold' },
+    sectionTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', marginHorizontal: 20, marginTop: 10, marginBottom: 15, letterSpacing: 1 },
+    emptyCard: { backgroundColor: 'rgba(163, 230, 53, 0.05)', padding: 20, borderRadius: 24, marginHorizontal: 20, alignItems: 'center' },
+    emptyText: { color: '#A3E635', fontSize: 13, textAlign: 'center', fontWeight: 'bold' },
     footerInfo: { alignItems: 'center', marginTop: 24 },
-    footerText: { fontSize: 11, color: '#9CA3AF' },
+    footerText: { fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: 'bold' },
     trendsContainer: { marginBottom: 10 },
-    trendCard: { backgroundColor: '#FFF', marginHorizontal: 20, padding: 16, borderRadius: 16, marginBottom: 12, borderLeftWidth: 5, elevation: 2 },
+    trendCard: { backgroundColor: 'rgba(239, 68, 68, 0.1)', marginHorizontal: 20, padding: 20, borderRadius: 24, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.2)' },
     trendHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-    trendTalhao: { fontSize: 16, fontWeight: 'bold', color: '#1F2937' },
-    levelBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 },
-    levelText: { fontSize: 10, fontWeight: 'bold' },
-    trendDesc: { fontSize: 13, color: '#4B5563', marginBottom: 6 },
-    trendAction: { fontSize: 12, color: '#15803D', fontStyle: 'italic' }
+    trendTalhao: { fontSize: 16, fontWeight: '900', color: '#FFF' },
+    levelBadge: { backgroundColor: '#EF4444', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+    levelText: { fontSize: 10, fontWeight: '900', color: '#FFF' },
+    trendDesc: { fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 20 }
 });

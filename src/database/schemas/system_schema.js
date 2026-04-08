@@ -63,5 +63,14 @@ export const SYSTEM_SCHEMA = [
         ativo INTEGER DEFAULT 1, 
         last_updated TEXT NOT NULL, 
         sync_status INTEGER DEFAULT 0
+    );`,
+    `CREATE TABLE IF NOT EXISTS v2_error_logs (
+        id TEXT PRIMARY KEY,
+        tela TEXT,
+        funcao TEXT,
+        erro TEXT,
+        stack TEXT,
+        severity TEXT DEFAULT 'ERROR',
+        created_at TEXT DEFAULT (datetime('now'))
     );`
 ];
