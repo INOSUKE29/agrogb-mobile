@@ -205,18 +205,23 @@ export const loginWithBiometrics = async () => {
 
 const checkSession = async () => {
     try {
-        // 1. Tenta recuperar sessão local do SecureStore
+        if (__DEV__) console.log('🔍 [AUTH CHECK] Iniciando verificação de sessão...');
+        
+        // 1. Tenta recuperar sessão local do SecureStore com timeout agressivo
         const localSession = await safeGet("user_session_v1");
+        if (__DEV__) console.log('🔍 [AUTH CHECK] Sessão local recuperada:', !!localSession);
         
         // 2. Sincroniza com Supabase Auth (Garante que o token não expirou)
+        if (__DEV__) console.log('🔍 [AUTH CHECK] Consultando Supabase Auth...');
         const sessionResult = await promiseWithTimeout(
             supabase.auth.getSession(),
-            10000,
+            5000,
             "Timeout ao verificar sessão no servidor."
         );
         const { data: { session }, error } = sessionResult;
         
         if (error || !session) {
+            if (__DEV__) console.log('🔍 [AUTH CHECK] Nenhuma sessão ativa no Supabase.');
             if (localSession) {
                 if (__DEV__) console.log('[AuthService] Sessão local expirada ou inválida no Supabase. Limpando...');
                 await safeRemove("user_session_v1");
@@ -224,8 +229,11 @@ const checkSession = async () => {
             return null;
         }
 
+        if (__DEV__) console.log('🔍 [AUTH CHECK] Sessão válida encontrada no Supabase: ', session.user.id);
+
         // 3. Se temos sessão no Supabase mas não local (ou vice-versa), harmoniza
         if (!localSession || localSession.userId !== session.user.id) {
+            if (__DEV__) console.log('🔍 [AUTH CHECK] Harmonizando sessão local com servidor...');
             const newSession = {
                 userId: session.user.id,
                 email: session.user.email,
@@ -235,9 +243,12 @@ const checkSession = async () => {
             return newSession;
         }
 
+        if (__DEV__) console.log('🔍 [AUTH CHECK] Sessão sincronizada e pronta.');
         return localSession;
     } catch (e) {
         if (__DEV__) console.error('[AuthService] Erro crítico no checkSession (Timeout/Rede):', e.message);
+        
+        // Em caso de falha de rede/timeout, retornamos a sessão local para não travar o app (Offline-First)
         const localSession = await safeGet("user_session_v1");
         if (localSession) {
             if (__DEV__) console.log('[AuthService] Salvando sessão com base no cache local (Modo Offline).');

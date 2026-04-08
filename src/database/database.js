@@ -64,14 +64,32 @@ export const executeTransaction = (queries) => {
         
         db.transaction(tx => {
             queries.forEach(sql => {
-                tx.executeSql(sql, [], null, (_, err) => {
-                    console.warn('⚠️ Erro em lote:', sql.substring(0, 50), err.message);
-                    return false; // continua execução
-                });
+                // Remove espaços vazios ou linhas nulas antes de executar
+                if (!sql || sql.trim() === '') return;
+
+                tx.executeSql(
+                    sql, 
+                    [], 
+                    null, 
+                    (_, err) => {
+                        // Logamos o erro mas retornamos 'false' para NÃO abortar a transação
+                        // Isso é vital para migrações que podem falhar (ex: colunas duplicadas)
+                        console.warn('⚠️ [SQL MIGRATION WARNING]:', sql.substring(0, 50), '->', err.message);
+                        return false; 
+                    }
+                );
             });
         }, 
-        (err) => reject(err), 
-        () => resolve());
+        (err) => {
+            // Se a transação INTEIRA falhar por erro fatal (ex: banco corrompido ou erro de sintaxe grave)
+            console.error('❌ [TRANSACTION FATAL ERROR]:', err.message);
+            // IMPORTANTE: Resolvemos mesmo assim para permitir que o app abra 
+            // e possamos ver o erro na tela ou em logs, em vez de travar no loading.
+            resolve(); 
+        }, 
+        () => {
+            resolve();
+        });
     });
 };
 
