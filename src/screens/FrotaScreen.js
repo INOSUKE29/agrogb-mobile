@@ -6,6 +6,7 @@ import { deleteMaquina } from '../database/database';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import ConfirmModal from '../ui/ConfirmModal';
+import SafeBlurView from '../ui/SafeBlurView';
 import { showToast } from '../ui/Toast';
 
 export default function FrotaScreen() {
@@ -129,17 +130,59 @@ export default function FrotaScreen() {
             <View style={styles.mobileFrame}>
                 <SafeAreaView style={{ flex: 1 }}>
                     {/* CUSTOM HEADER */}
-                    <View style={styles.header}>
+                    {/* HUB TOP NAVIGATION */}
+                    <View style={styles.hubTopRow}>
                         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                             <Ionicons name="arrow-back" size={24} color="#D1FAE5" />
                         </TouchableOpacity>
-                        <View style={{alignItems: 'center'}}>
-                            <Text style={styles.headerTitle}>Gestão de Frota</Text>
-                            <Text style={styles.headerSub}>Máquinas e Caminhões</Text>
+                        <Text style={styles.hubHeaderText}>GESTÃO DE FROTA</Text>
+                    </View>
+
+                    {/* HUB DASHBOARD */}
+                    <SafeBlurView intensity={20} style={styles.hubDashboardCard}>
+                        <View style={styles.hubStatsRow}>
+                            <View style={styles.hubStat}>
+                                <Text style={styles.hubStatLabel}>TOTAL</Text>
+                                <Text style={styles.hubStatValue}>{displayMachines.length}</Text>
+                                <Text style={styles.hubStatSub}>VEÍCULOS</Text>
+                            </View>
+                            <View style={styles.hubDivider} />
+                            <View style={styles.hubStat}>
+                                <Text style={styles.hubStatLabel}>REVISÃO</Text>
+                                <Text style={[styles.hubStatValue, { color: '#EF4444' }]}>
+                                    {displayMachines.filter(m => m.horimetro_atual >= (m.intervalo_revisao || 0)).length}
+                                </Text>
+                                <Text style={styles.hubStatSub}>ALERTAS</Text>
+                            </View>
+                            <View style={styles.hubDivider} />
+                            <View style={styles.hubStat}>
+                                <Text style={styles.hubStatLabel}>ATIVOS</Text>
+                                <Text style={[styles.hubStatValue, { color: '#10B981' }]}>
+                                    {displayMachines.filter(m => m.horimetro_atual < (m.intervalo_revisao || 99999)).length}
+                                </Text>
+                                <Text style={styles.hubStatSub}>DISPONÍVEIS</Text>
+                            </View>
                         </View>
-                        <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('MaquinaForm')}>
-                            <Ionicons name="add" size={24} color="#064E3B" />
+                    </SafeBlurView>
+
+                    {/* QUICK ACTIONS */}
+                    <View style={styles.quickActionsRow}>
+                        <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('MaquinaForm')}>
+                            <LinearGradient colors={['#34D399', '#059669']} style={styles.qaGradient}>
+                                <Ionicons name="add-circle" size={20} color="#064E3B" />
+                                <Text style={styles.qaText}>NOVO VEÍCULO</Text>
+                            </LinearGradient>
                         </TouchableOpacity>
+                        
+                        <TouchableOpacity style={styles.quickActionBtnSecondary}>
+                            <Ionicons name="construct-outline" size={18} color="#A7F3D0" />
+                            <Text style={styles.qaTextSecondary}>MANUTENÇÃO</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.headerSection}>
+                        <View style={styles.indicator} />
+                        <Text style={styles.sectionTitle}>LISTAGEM DA FROTA OPERACIONAL</Text>
                     </View>
 
                     {/* MAIN LIST */}
@@ -178,11 +221,28 @@ const styles = StyleSheet.create({
     webContainer: { flex: 1, alignItems: 'center', backgroundColor: '#000' },
     mobileFrame: { flex: 1, width: '100%', maxWidth: 480, position: 'relative' },
     
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 15 : 20, paddingBottom: 20 },
-    backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-    headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFF' },
-    headerSub: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
-    addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#34D399', justifyContent: 'center', alignItems: 'center' },
+    hubTopRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 15 : 20, marginBottom: 15, gap: 15 },
+    backBtn: { width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+    hubHeaderText: { color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '900', letterSpacing: 2 },
+    
+    hubDashboardCard: { marginHorizontal: 20, borderRadius: 24, paddingVertical: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', overflow: 'hidden' },
+    hubStatsRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
+    hubStat: { alignItems: 'center', flex: 1 },
+    hubStatLabel: { color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '900', letterSpacing: 1.5, marginBottom: 4 },
+    hubStatValue: { color: '#FFF', fontSize: 20, fontWeight: '900' },
+    hubStatSub: { color: 'rgba(255,255,255,0.25)', fontSize: 8, fontWeight: '800', marginTop: 2 },
+    hubDivider: { width: 1, height: 35, backgroundColor: 'rgba(255,255,255,0.08)' },
+
+    quickActionsRow: { flexDirection: 'row', paddingHorizontal: 20, marginTop: 15, gap: 12 },
+    quickActionBtn: { flex: 1.2, height: 50, borderRadius: 15, overflow: 'hidden' },
+    qaGradient: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+    qaText: { color: '#064E3B', fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
+    quickActionBtnSecondary: { flex: 1, height: 50, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+    qaTextSecondary: { color: '#A7F3D0', fontSize: 11, fontWeight: '900' },
+
+    headerSection: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginTop: 25, marginBottom: 15 },
+    indicator: { width: 4, height: 16, borderRadius: 2, backgroundColor: '#34D399', marginRight: 10 },
+    sectionTitle: { color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: '900', letterSpacing: 1 },
 
     listContent: { paddingHorizontal: 20, paddingBottom: 100 },
     

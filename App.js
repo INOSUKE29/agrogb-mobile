@@ -40,6 +40,8 @@ import AdubacaoDetailScreen from './src/screens/AdubacaoDetailScreen';
 import ClienteFormScreen from './src/screens/ClienteFormScreen';
 import CadastroFormScreen from './src/screens/CadastroFormScreen';
 import MenuCadastrosScreen from './src/screens/MenuCadastrosScreen';
+import MenuOperacionalScreen from './src/screens/MenuOperacionalScreen';
+import MenuFinanceiroScreen from './src/screens/MenuFinanceiroScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import RecoverScreen from './src/screens/RecoverScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
@@ -50,6 +52,11 @@ import GraficosScreen from './src/screens/GraficosScreen';
 import IntelligenceScreen from './src/screens/IntelligenceScreen';
 import CategoriasDespesaScreen from './src/screens/CategoriasDespesaScreen';
 import FinancialAccountsScreen from './src/screens/FinancialAccountsScreen';
+import ApplicationFormScreen from './src/screens/ApplicationFormScreen';
+import ConfigScreen from './src/screens/ConfigScreen';
+import FertilizationScreen from './src/screens/FertilizationScreen';
+import PlanoAdubacaoScreen from './src/screens/PlanoAdubacaoScreen';
+import RecipeFormScreen from './src/screens/RecipeFormScreen';
 import { supabase } from './src/services/supabaseClient';
 
 import ErrorBoundary from './src/ui/ErrorBoundary';
@@ -170,7 +177,7 @@ export default function App() {
                                         <Stack.Screen name="Compras" component={ComprasScreen} options={{ title: 'Registrar Compra' }} />
                                         <Stack.Screen name="Plantio" component={PlantioScreen} options={{ title: 'Registrar Plantio' }} />
                                         <Stack.Screen name="Custos" component={CustosScreen} options={{ title: 'Registrar Custo' }} />
-                                        <Stack.Screen name="Processamento" component={ProcessamentoScreen} options={{ title: 'Processamento & Perdas' }} />
+                                        <Stack.Screen name="Processamento" component={ProcessamentoScreen} options={{ title: 'Perdas' }} />
                                         <Stack.Screen name="Cadastro" component={CadastroScreen} options={{ title: 'Cadastros Gerais' }} />
                                         <Stack.Screen name="Clientes" component={ClientesScreen} options={{ title: 'Gerenciar Clientes' }} />
                                         <Stack.Screen name="Culturas" component={CulturasScreen} options={{ title: 'Culturas e Áreas' }} />
@@ -189,12 +196,19 @@ export default function App() {
                                         <Stack.Screen name="ClienteForm" component={ClienteFormScreen} options={{ title: 'Novo Cliente' }} />
                                         <Stack.Screen name="CadastroForm" component={CadastroFormScreen} options={{ title: 'Novo Cadastro' }} />
                                         <Stack.Screen name="MenuCadastros" component={MenuCadastrosScreen} options={{ title: 'Menu de Cadastros' }} />
+                                        <Stack.Screen name="MenuOperacional" component={MenuOperacionalScreen} options={{ title: 'Menu Operacional' }} />
+                                        <Stack.Screen name="MenuFinanceiro" component={MenuFinanceiroScreen} options={{ title: 'Menu Financeiro' }} />
                                         <Stack.Screen name="Encomendas" component={EncomendasScreen} options={{ title: 'Minhas Encomendas' }} />
                                         <Stack.Screen name="NovaEncomenda" component={NovaEncomendaScreen} options={{ title: 'Nova Encomenda' }} />
                                         <Stack.Screen name="Graficos" component={GraficosScreen} options={{ title: 'Resumo de Gráficos' }} />
                                         <Stack.Screen name="Intelligence" component={IntelligenceScreen} options={{ headerShown: false }} />
                                         <Stack.Screen name="CategoriasDespesa" component={CategoriasDespesaScreen} options={{ title: 'Categorias de Despesa' }} />
                                         <Stack.Screen name="FinancialAccounts" component={FinancialAccountsScreen} options={{ title: 'Contas Financeiras' }} />
+                                        <Stack.Screen name="ApplicationForm" component={ApplicationFormScreen} options={{ title: 'Nova Aplicação' }} />
+                                        <Stack.Screen name="Config" component={ConfigScreen} options={{ title: 'Configurações Técnicas' }} />
+                                        <Stack.Screen name="Fertilization" component={FertilizationScreen} options={{ title: 'Fertirrigação' }} />
+                                        <Stack.Screen name="PlanoAdubacao" component={PlanoAdubacaoScreen} options={{ title: 'Plano de Adubação' }} />
+                                        <Stack.Screen name="RecipeForm" component={RecipeFormScreen} options={{ title: 'Receituário Agronômico' }} />
                                     </>
                                 )}
                             </Stack.Navigator>

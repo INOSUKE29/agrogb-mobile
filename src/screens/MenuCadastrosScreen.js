@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar as RNStatusBar, Vibration, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import SafeBlurView from '../ui/SafeBlurView';
 
 export default function MenuCadastrosScreen({ navigation }) {
     // AÇÕES RÁPIDAS (Vão direto para o formulário de NOVO)
@@ -30,42 +31,67 @@ export default function MenuCadastrosScreen({ navigation }) {
     const MENU_ITEMS = [
         {
             title: "PRODUTOS / INSUMOS",
-            subtitle: "Defensivos, Fertilizantes, Embalagens...",
+            subtitle: "Catálogo Geral",
             icon: "cube-outline",
-            description: "Gerenciar catálogo de estoque.",
+            description: "Gerenciar defensivos, sementes e produtos.",
             route: "Cadastro",
             color: "#10B981" 
         },
         {
             title: "CLIENTES & PARCEIROS",
-            subtitle: "Compradores, Fornecedores...",
+            subtitle: "Fichas & Contatos",
             icon: "people-outline",
-            description: "Acessar ficha completa e excluir cadastros.",
+            description: "Gerenciar compradores e fornecedores.",
             route: "Clientes",
             color: "#3B82F6" 
         },
         {
-            title: "ÁREAS / TALHÕES",
-            subtitle: "Setores da propriedade...",
+            title: "ÁREAS & TALHÕES",
+            subtitle: "Gestão de Propriedades",
             icon: "map-outline",
-            description: "Gerenciar locais de plantio.",
+            description: "Gerenciar locais de plantio e variedades.",
             route: "Culturas",
-            color: "#FBBF24" 
+            color: "#FCD34D" 
         },
         {
-            title: "MINHA FROTA",
-            subtitle: "Tratores, Caminhões, Implementos...",
+            title: "GESTÃO DE EQUIPE",
+            subtitle: "Usuários & Permissões",
+            icon: "lock-closed-outline",
+            description: "Controle quem acessa o sistema.",
+            route: "Usuarios",
+            color: "#64748B" 
+        },
+        {
+            title: "INTELIGÊNCIA AGRO (IA)",
+            subtitle: "Análise Preditiva",
+            icon: "bulb-outline",
+            description: "Consultoria inteligente baseada em dados.",
+            route: "Intelligence",
+            color: "#A3E635" 
+        },
+        {
+            title: "RELATÓRIOS & BI",
+            subtitle: "Performance Geral",
+            icon: "bar-chart-outline",
+            description: "Gráficos de produtividade e DRE.",
+            route: "Relatorios",
+            color: "#EC4899" 
+        },
+        {
+            title: "SISTEMA & AJUSTES",
+            subtitle: "Configurações Globais",
             icon: "settings-outline",
-            description: "Gerenciar ferramentas de trabalho.",
-            route: "Frota", 
-            color: "#A78BFA" 
+            description: "Sincronia, Backup e Preferências.",
+            route: "Settings", 
+            color: "#94A3B8" 
         }
     ];
 
     return (
         <View style={styles.root}>
-            <LinearGradient colors={['#040914', '#0A1220']} style={StyleSheet.absoluteFill} />
-            <RNStatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+            {/* BACKGROUND ORBS */}
+            <View style={[styles.ambientOrb, { top: -100, right: -100, backgroundColor: '#3B82F6', opacity: 0.1 }]} />
+            <View style={[styles.ambientOrb, { bottom: -50, left: -100, backgroundColor: '#64748B', opacity: 0.08 }]} />
 
             {/* HEADER */}
             <View style={styles.header}>
@@ -74,7 +100,7 @@ export default function MenuCadastrosScreen({ navigation }) {
                 </TouchableOpacity>
                 <View style={{ flex: 1 }}>
                     <Text style={styles.headerTitle}>Central de Cadastros</Text>
-                    <Text style={styles.headerSub}>Gerenciamento Geral</Text>
+                    <Text style={styles.headerSub}>GERENCIAMENTO GERAL</Text>
                 </View>
             </View>
 
@@ -86,17 +112,16 @@ export default function MenuCadastrosScreen({ navigation }) {
                     {QUICK_ACTIONS.map((action, idx) => (
                         <TouchableOpacity
                             key={idx}
-                            style={styles.quickCard}
+                            style={styles.quickCardWrapper}
                             activeOpacity={0.8}
-                            onPress={() => {
-                                if (Platform.OS !== 'web') Vibration.vibrate(20);
-                                navigation.navigate(action.route);
-                            }}
+                            onPress={() => navigation.navigate(action.route)}
                         >
-                            <View style={[styles.quickIconBox, { backgroundColor: action.color + '15', borderWidth: 1, borderColor: action.color + '30' }]}>
-                                <Ionicons name={action.icon} size={28} color={action.color} />
-                            </View>
-                            <Text style={styles.quickTitle}>{action.title}</Text>
+                            <SafeBlurView intensity={20} style={styles.quickCard}>
+                                <View style={[styles.quickIconBox, { backgroundColor: action.color + '15' }]}>
+                                    <Ionicons name={action.icon} size={28} color={action.color} />
+                                </View>
+                                <Text style={styles.quickTitle}>{action.title}</Text>
+                            </SafeBlurView>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
@@ -106,35 +131,34 @@ export default function MenuCadastrosScreen({ navigation }) {
                 {MENU_ITEMS.map((item, index) => (
                     <TouchableOpacity
                         key={index}
-                        style={styles.card}
-                        onPress={() => {
-                            if (Platform.OS !== 'web') Vibration.vibrate(20);
-                            navigation.navigate(item.route);
-                        }}
+                        style={styles.cardWrapper}
+                        onPress={() => navigation.navigate(item.route)}
                         activeOpacity={0.8}
                     >
-                        <View style={[styles.iconBox, { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.05)' }]}>
-                            <Ionicons name={item.icon} size={26} color={item.color} />
-                        </View>
-                        
-                        <View style={styles.textContainer}>
-                            <Text style={[styles.cardTitle, { color: item.color }]}>{item.title}</Text>
-                            <Text style={styles.cardSub}>{item.subtitle}</Text>
-                            <Text style={styles.cardDesc}>{item.description}</Text>
-                        </View>
-                        
-                        <View style={styles.chevronBox}>
-                            <Ionicons name="chevron-forward" size={18} color="#64748B" />
-                        </View>
+                        <SafeBlurView intensity={15} style={styles.card}>
+                            <View style={[styles.iconBox, { backgroundColor: `${item.color}10` }]}>
+                                <Ionicons name={item.icon} size={26} color={item.color} />
+                            </View>
+                            
+                            <View style={styles.textContainer}>
+                                <Text style={[styles.cardTitle, { color: item.color }]}>{item.title}</Text>
+                                <Text style={styles.cardSub}>{item.subtitle}</Text>
+                                <Text style={styles.cardDesc}>{item.description}</Text>
+                            </View>
+                            
+                            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.2)" />
+                        </SafeBlurView>
                     </TouchableOpacity>
                 ))}
             </ScrollView>
+
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    root: { flex: 1 },
+    root: { flex: 1, backgroundColor: '#040914' },
+    ambientOrb: { position: 'absolute', width: 300, height: 300, borderRadius: 150, zIndex: -1 },
 
     header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight + 20 : 30, paddingBottom: 15 },
     backButton: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', marginRight: 15 },
@@ -147,18 +171,18 @@ const styles = StyleSheet.create({
 
     // Quick Actions
     quickActionsContainer: { gap: 15, paddingBottom: 20 },
-    quickCard: { backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', borderRadius: 20, padding: 20, alignItems: 'center', width: 140 },
+    quickCardWrapper: { width: 140, borderRadius: 20, overflow: 'hidden' },
+    quickCard: { padding: 20, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
     quickIconBox: { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
     quickTitle: { color: '#E2E8F0', fontSize: 13, fontWeight: '800', textAlign: 'center' },
 
     // List Cards
+    cardWrapper: { marginBottom: 12, borderRadius: 20, overflow: 'hidden' },
     card: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.02)',
-        borderRadius: 20,
         padding: 20,
-        marginBottom: 12,
+        backgroundColor: 'rgba(255,255,255,0.02)',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.05)',
     },
@@ -167,16 +191,10 @@ const styles = StyleSheet.create({
         borderRadius: 16, 
         justifyContent: 'center', alignItems: 'center', 
         marginRight: 16,
-        borderWidth: 1,
     },
     textContainer: { flex: 1 },
     cardTitle: { fontSize: 12, fontWeight: '900', marginBottom: 4, letterSpacing: 1 },
     cardSub: { fontSize: 14, fontWeight: '800', color: '#F8FAFC', marginBottom: 2 },
     cardDesc: { fontSize: 11, color: '#64748B', fontWeight: '600' },
-    
-    chevronBox: {
-        marginLeft: 10,
-        height: '100%',
-        justifyContent: 'center'
-    }
 });
+

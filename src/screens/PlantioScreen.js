@@ -138,6 +138,26 @@ export default function PlantioScreen({ navigation }) {
 
                     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                         
+                        {/* 🚜 HUB ACCESS: PLANO SAFRA */}
+                        <TouchableOpacity 
+                            style={styles.hubPill} 
+                            onPress={() => navigation.navigate('PlanoAdubacao')}
+                        >
+                            <LinearGradient 
+                                colors={['rgba(52, 211, 153, 0.15)', 'rgba(52, 211, 153, 0.05)']} 
+                                style={styles.hubPillGradient}
+                            >
+                                <View style={styles.hubIconBox}>
+                                    <Ionicons name="map" size={20} color="#34D399" />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.hubTitle}>PLANO SAFRA E ADUBAÇÃO</Text>
+                                    <Text style={styles.hubSub}>Planejamento técnico e metas da safra</Text>
+                                </View>
+                                <Ionicons name="chevron-forward" size={18} color="rgba(52, 211, 153, 0.5)" />
+                            </LinearGradient>
+                        </TouchableOpacity>
+
                         <View style={styles.glassCard}>
                             <View style={styles.cardHeaderStrip}>
                                 <MaterialCommunityIcons name="sprout" size={18} color="#34D399" />
@@ -373,6 +393,12 @@ const styles = StyleSheet.create({
     headerSub: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
 
     scrollContent: { padding: 20, paddingBottom: 100 },
+    
+    hubPill: { marginBottom: 20, borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(52, 211, 153, 0.2)' },
+    hubPillGradient: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
+    hubIconBox: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(52, 211, 153, 0.2)', justifyContent: 'center', alignItems: 'center' },
+    hubTitle: { color: '#34D399', fontSize: 13, fontWeight: '900', letterSpacing: 1 },
+    hubSub: { color: 'rgba(255,255,255,0.4)', fontSize: 10, marginTop: 2, fontWeight: '600' },
 
     glassCard: { backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 20, padding: 22, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', shadowColor: '#000', shadowOffset:{width:0, height: 10}, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
     cardHeaderStrip: { flexDirection: 'row', alignItems: 'center', marginBottom: 25, backgroundColor: 'rgba(52, 211, 153, 0.15)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, alignSelf: 'flex-start', borderWidth: 1, borderColor: 'rgba(52, 211, 153, 0.3)' },

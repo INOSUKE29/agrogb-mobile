@@ -27,6 +27,9 @@ export default function ComprasScreen({ navigation }) {
     const [modalVisible, setModalVisible] = useState(false);
     const [saving, setSaving] = useState(false);
 
+    // HISTORY FIRST NAVIGATION
+    const [view, setView] = useState('LIST');
+
     const loadHistory = useCallback(async () => {
         try {
             const data = await CompraService.getRecentPurchases();
@@ -63,6 +66,7 @@ export default function ComprasScreen({ navigation }) {
             await CompraService.registrarCompra(dados);
             showToast(editingUuid ? '✨ Registro atualizado!' : '✅ Compra e Estoque atualizados!');
             setInsumo(''); setQuantidade(''); setValorTotal(''); setCultura(''); setDetalhes(''); setObservacoes(''); setEditingUuid(null);
+            setView('LIST');
             loadHistory();
             try { AutoSyncService.trigger(); } catch {}
         } catch (error) {
@@ -87,34 +91,89 @@ export default function ComprasScreen({ navigation }) {
         ]);
     };
 
-    return (
-        <View style={styles.webContainer}>
-            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            <LinearGradient colors={['#020617', '#0A0F1C', '#030712']} style={StyleSheet.absoluteFill} />
-
-            {/* 🌀 AMBIENT ORBS */}
-            <View style={[styles.ambientOrb, { top: -60, left: -40, backgroundColor: '#10B981', opacity: 0.12 }]} />
-            <View style={[styles.ambientOrb, { bottom: 40, right: -60, backgroundColor: '#D4AF37', opacity: 0.08 }]} />
-
-            <SafeAreaView style={{ flex: 1, width: '100%', maxWidth: 520, alignSelf: 'center' }}>
-                
-                <View style={styles.header}>
-                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation?.goBack?.()}>
-                        <Ionicons name="chevron-back" size={24} color="#F8FAFC" />
-                    </TouchableOpacity>
-                    <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={styles.headerTitle}>COMPRAS</Text>
-                        <Text style={styles.headerSub}>ENTRADA DE INSUMOS</Text>
-                    </View>
-                    <TouchableOpacity style={styles.headerRightBtn} onPress={() => { setEditingUuid(null); setInsumo(''); }}>
-                        <Ionicons name="add" size={18} color="#10B981" />
-                    </TouchableOpacity>
+    const renderList = () => (
+        <View style={{ flex: 1, paddingHorizontal: 22 }}>
+            <View style={[styles.header, { paddingHorizontal: 0 }]}>
+                <TouchableOpacity style={styles.backBtn} onPress={() => navigation?.goBack?.()}>
+                    <Ionicons name="chevron-back" size={24} color="#F8FAFC" />
+                </TouchableOpacity>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.headerTitle}>COMPRAS</Text>
+                    <Text style={styles.headerSub}>HISTÓRICO ESTOQUE</Text>
                 </View>
+                <View style={{ width: 42 }} />
+            </View>
 
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            {history.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                    <Ionicons name="receipt-outline" size={48} color="rgba(255,255,255,0.1)" />
+                    <Text style={[styles.emptyText, { marginTop: 16 }]}>Nenhuma compra registrada.</Text>
+                </View>
+            ) : (
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+                    {history.map((item, index) => (
+                        <SafeBlurView key={item.uuid || index} intensity={15} style={styles.historyCard} webFallbackColor="rgba(255,255,255,0.02)">
+                            <View style={styles.historyHeader}>
+                                <View style={styles.historyIconBg}>
+                                    <Ionicons name="cart" size={16} color="#D4AF37" />
+                                </View>
+                                <View style={{ flex: 1, marginLeft: 12 }}>
+                                    <Text style={styles.hProd}>{item.produto}</Text>
+                                    <Text style={styles.hSub}>{item.cultura || 'GERAL'}</Text>
+                                </View>
+                                <Text style={styles.hVal}>R$ {item.valor?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</Text>
+                            </View>
+                            
+                            <View style={styles.historyFooter}>
+                                <Text style={styles.hData}>{item.data ? new Date(item.data).toLocaleDateString('pt-BR') : '-'}</Text>
+                                <Text style={styles.hSubInfo}>{item.quantidade} UNIDADES</Text>
+                                <View style={styles.historyActions}>
+                                    <TouchableOpacity onPress={() => { 
+                                        setEditingUuid(item.uuid); 
+                                        setInsumo(item.produto); 
+                                        setQuantidade(String(item.quantidade)); 
+                                        setValorTotal(String(item.valor));
+                                        setCultura(item.cultura || '');
+                                        setView('FORM');
+                                    }}>
+                                        <Ionicons name="create-outline" size={20} color="rgba(255,255,255,0.4)" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => handleDelete(item)}>
+                                        <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </SafeBlurView>
+                    ))}
+                </ScrollView>
+            )}
 
-                    <SafeBlurView intensity={20} style={styles.glassCard} webFallbackColor="rgba(255,255,255,0.03)">
-                        <Text style={styles.sectionTitle}>DETALHES DA ENTRADA</Text>
+            {/* FAB DIAMOND PRO */}
+            <TouchableOpacity style={styles.fab} activeOpacity={0.9} onPress={() => { setEditingUuid(null); setView('FORM'); }}>
+                <LinearGradient colors={['#D4AF37', '#9A7B2C']} style={styles.fabGradient} start={{x: 0, y: 0}} end={{x: 1, y: 1}}>
+                    <Ionicons name="add" size={30} color="#FFF" />
+                </LinearGradient>
+            </TouchableOpacity>
+        </View>
+    );
+
+    const renderForm = () => (
+        <View style={{ flex: 1 }}>
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.backBtn} onPress={() => setView('LIST')}>
+                    <Ionicons name="chevron-back" size={24} color="#F8FAFC" />
+                </TouchableOpacity>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.headerTitle}>{editingUuid ? 'EDITAR COMPRA' : 'NOVA COMPRA'}</Text>
+                    <Text style={styles.headerSub}>ENTRADA DE INSUMOS</Text>
+                </View>
+                <View style={{ width: 42 }} />
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+
+                <SafeBlurView intensity={20} style={styles.glassCard} webFallbackColor="rgba(255,255,255,0.03)">
+                    <Text style={styles.sectionTitle}>DETALHES DA ENTRADA</Text>
 
                         {/* BUSCA DE INSUMO */}
                         <TouchableOpacity style={styles.searchBox} onPress={() => setModalVisible(true)}>
@@ -188,62 +247,32 @@ export default function ComprasScreen({ navigation }) {
                                 </View>
                             </View>
                         </View>
-                    </SafeBlurView>
+                </SafeBlurView>
 
-                    <Text style={styles.historySectionTitle}>ENTRADAS RECENTES</Text>
+                <TouchableOpacity style={styles.btnPrimary} onPress={handleSalvar} disabled={saving}>
+                    <LinearGradient colors={['#D4AF37', '#9A7B2C']} style={styles.btnGradient} start={{x:0,y:0}} end={{x:1,y:1}}>
+                        {saving 
+                            ? <ActivityIndicator color="#FFF" />
+                            : <><Ionicons name="checkmark-circle" size={22} color="#FFF" /><Text style={styles.btnPrimaryText}>{editingUuid ? 'SALVAR ALTERAÇÕES' : 'CONFIRMAR COMPRA'}</Text></>
+                        }
+                    </LinearGradient>
+                </TouchableOpacity>
 
-                    {history.length === 0 ? (
-                        <View style={styles.emptyContainer}>
-                            <Ionicons name="receipt-outline" size={40} color="rgba(255,255,255,0.1)" />
-                            <Text style={styles.emptyText}>Nenhuma compra registrada.</Text>
-                        </View>
-                    ) : (
-                        history.map((item, index) => (
-                            <SafeBlurView key={item.uuid || index} intensity={15} style={styles.historyCard} webFallbackColor="rgba(255,255,255,0.02)">
-                                <View style={styles.historyHeader}>
-                                    <View style={styles.historyIconBg}>
-                                        <Ionicons name="cart" size={16} color="#D4AF37" />
-                                    </View>
-                                    <View style={{ flex: 1, marginLeft: 12 }}>
-                                        <Text style={styles.hProd}>{item.produto}</Text>
-                                        <Text style={styles.hSub}>{item.cultura || 'GERAL'}</Text>
-                                    </View>
-                                    <Text style={styles.hVal}>R$ {item.valor?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</Text>
-                                </View>
-                                
-                                <View style={styles.historyFooter}>
-                                    <Text style={styles.hSubInfo}>{item.quantidade} UNIDADES</Text>
-                                    <View style={styles.historyActions}>
-                                        <TouchableOpacity onPress={() => { 
-                                            setEditingUuid(item.uuid); 
-                                            setInsumo(item.produto); 
-                                            setQuantidade(String(item.quantidade)); 
-                                            setValorTotal(String(item.valor));
-                                            setCultura(item.cultura || '');
-                                        }}>
-                                            <Ionicons name="create-outline" size={20} color="rgba(255,255,255,0.4)" />
-                                        </TouchableOpacity>
-                                        <TouchableOpacity onPress={() => handleDelete(item)}>
-                                            <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
-                            </SafeBlurView>
-                        ))
-                    )}
+            </ScrollView>
+        </View>
+    );
 
-                    <TouchableOpacity style={styles.btnPrimary} onPress={handleSalvar} disabled={saving}>
-                        <LinearGradient colors={['#10B981', '#059669']} style={styles.btnGradient}>
-                            {saving ? <ActivityIndicator color="#FFF" /> : (
-                                <>
-                                    <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-                                    <Text style={styles.btnPrimaryText}>{editingUuid ? 'ATUALIZAR REGISTRO' : 'EFETIVAR COMPRA'}</Text>
-                                </>
-                            )}
-                        </LinearGradient>
-                    </TouchableOpacity>
+    return (
+        <View style={styles.webContainer}>
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+            <LinearGradient colors={['#020617', '#0A0F1C', '#030712']} style={StyleSheet.absoluteFill} />
 
-                </ScrollView>
+            {/* 🌀 AMBIENT ORBS */}
+            <View style={[styles.ambientOrb, { top: -60, left: -40, backgroundColor: '#10B981', opacity: 0.12 }]} />
+            <View style={[styles.ambientOrb, { bottom: 40, right: -60, backgroundColor: '#D4AF37', opacity: 0.08 }]} />
+
+            <SafeAreaView style={{ flex: 1, width: '100%', maxWidth: 520, alignSelf: 'center' }}>
+                {view === 'LIST' ? renderList() : renderForm()}
 
                 <ProductModal visible={modalVisible} onClose={() => setModalVisible(false)} onCreated={(p) => { setInsumo(p.nome); setModalVisible(false); }} />
             </SafeAreaView>
@@ -302,7 +331,6 @@ const styles = StyleSheet.create({
     },
     obsInput: { height: 100, textAlignVertical: 'top', padding: 18, color: '#FFF', fontSize: 14, fontWeight: '500' },
 
-    historySectionTitle: { color: 'rgba(255,255,255,0.35)', fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 15 },
     emptyContainer: { alignItems: 'center', paddingVertical: 40, gap: 15 },
     emptyText: { color: 'rgba(255,255,255,0.2)', fontSize: 13, fontWeight: '600' },
 
@@ -314,10 +342,14 @@ const styles = StyleSheet.create({
     hSub: { color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '800', marginTop: 2, letterSpacing: 0.5 },
     
     historyFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 15, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.04)' },
+    hData: { color: 'rgba(255,255,255,0.25)', fontSize: 11, fontWeight: '800' },
     hSubInfo: { color: '#10B981', fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
     historyActions: { flexDirection: 'row', gap: 18 },
 
     btnPrimary: { marginTop: 20, borderRadius: 20, overflow: 'hidden' },
     btnGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 68, gap: 12 },
-    btnPrimaryText: { color: '#FFF', fontSize: 14, fontWeight: '900', letterSpacing: 1.5 }
+    btnPrimaryText: { color: '#FFF', fontSize: 14, fontWeight: '900', letterSpacing: 1.5 },
+
+    fab: { position: 'absolute', right: 24, bottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 15, elevation: 10 },
+    fabGradient: { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center' }
 });

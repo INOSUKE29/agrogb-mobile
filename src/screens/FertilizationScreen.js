@@ -134,12 +134,8 @@ export default function FertilizationScreen() {
                     style={styles.fab}
                     onPress={() => navigation.navigate(activeTab === 'Receitas' ? 'RecipeForm' : 'ApplicationForm')}
                 >
-                    <View style={styles.fabContent}>
-                        <Ionicons name="add" size={24} color="#FFF" />
-                        <Text style={styles.fabText}>{activeTab === 'Receitas' ? 'Nova Receita' : 'Nova Aplicação'}</Text>
-                    </View>
-                    <View style={styles.fabCircle}>
-                        <Ionicons name="add" size={28} color="#FFF" />
+                    <View style={styles.fabGradient}>
+                        <Ionicons name="add" size={30} color="#FFF" />
                     </View>
                 </TouchableOpacity>
             </SafeAreaView>
@@ -235,41 +231,6 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '600',
     },
-    fab: {
-        position: 'absolute',
-        bottom: 30,
-        right: 20,
-        height: 56,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    fabContent: {
-        backgroundColor: '#1B4D3E',
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingLeft: 15,
-        paddingRight: 35,
-        height: 48,
-        borderRadius: 24,
-        marginRight: -24,
-    },
-    fabText: {
-        color: '#FFF',
-        fontWeight: '800',
-        marginLeft: 4,
-        fontSize: 14,
-    },
-    fabCircle: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: '#2ECC71',
-        justifyContent: 'center',
-        alignItems: 'center',
-        elevation: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-    }
+    fab: { position: 'absolute', bottom: 30, right: 22, borderRadius: 30, elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6 },
+    fabGradient: { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', backgroundColor: '#D4AF37' }
 });

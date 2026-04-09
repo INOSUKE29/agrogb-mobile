@@ -357,7 +357,7 @@ export default function MonitoramentoScreen({ navigation }) {
                         ) : history.length === 0 ? (
                             <View style={styles.emptyBox}>
                                 <View style={styles.emptyRing}>
-                                    <MaterialCommunityIcons name="binoculars" size={36} color="rgba(52,211,153,0.4)" />
+                                    <MaterialCommunityIcons name="monitor-dashboard" size={36} color="rgba(52,211,153,0.4)" />
                                 </View>
                                 <Text style={styles.emptyTitle}>Nenhum registro</Text>
                                 <Text style={styles.emptyDesc}>Inicie o monitoramento registrando observações de campo: pragas, doenças, deficiências.</Text>

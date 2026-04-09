@@ -19,6 +19,7 @@ import {
 } from '../database/database';
 import { showToast } from '../ui/Toast';
 import ConfirmModal from '../ui/ConfirmModal';
+import SafeBlurView from '../ui/SafeBlurView';
 
 // ── CATEGORIAS (mantidas do original) ────────────────────────────────────────
 const CATEGORIES = {
@@ -276,25 +277,59 @@ export default function CadastroScreen({ navigation }) {
             <SafeAreaView style={{ flex: 1 }}>
 
                 {/* HEADER */}
-                <View style={styles.header}>
-                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation?.goBack?.()}>
-                        <Ionicons name="arrow-back" size={22} color="#D1FAE5" />
-                    </TouchableOpacity>
-                    <View>
-                        <Text style={styles.headerTitle}>Catálogo <Text style={{ color: '#8B5CF6' }}>Geral</Text></Text>
-                        <Text style={styles.headerSub}>Produtos, Insumos & Composições</Text>
+                {/* MASTER HUB DASHBOARD */}
+                <View style={styles.hubContainer}>
+                    <View style={styles.hubTopRow}>
+                        <TouchableOpacity style={styles.backBtn} onPress={() => navigation?.goBack?.()}>
+                            <Ionicons name="arrow-back" size={22} color="#D1FAE5" />
+                        </TouchableOpacity>
+                        <Text style={styles.hubHeaderMainTitle}>GESTÃO GLOBAL</Text>
                     </View>
-                    <View style={{ flexDirection: 'row', gap: 10, marginLeft: 'auto' }}>
-                        <TouchableOpacity
-                            style={styles.scanBtn}
+                    <SafeBlurView intensity={20} style={styles.hubDashboard}>
+                        <View style={styles.hubHeader}>
+                            <View>
+                                <Text style={styles.hubTitle}>HUB DE <Text style={{ color: '#8B5CF6' }}>CADASTROS</Text></Text>
+                                <Text style={styles.hubSubtitle}>{items.length} ITENS CATALOGADOS</Text>
+                            </View>
+                            <TouchableOpacity style={styles.hubConfigBtn}>
+                                <Ionicons name="options-outline" size={20} color="#8B5CF6" />
+                            </TouchableOpacity>
+                        </View>
+                        
+                        <View style={styles.miniStatsRow}>
+                            <View style={styles.miniStat}>
+                                <Text style={styles.miniStatVal}>{items.filter(i => i.tipo === 'INSUMO' || i.tipo === 'DEFENSIVO' || i.tipo === 'FERTILIZANTE').length}</Text>
+                                <Text style={styles.miniStatLab}>INSUMOS</Text>
+                            </View>
+                            <View style={styles.miniStatDivider} />
+                            <View style={styles.miniStat}>
+                                <Text style={styles.miniStatVal}>{items.filter(i => i.tipo === 'PRODUTO').length}</Text>
+                                <Text style={styles.miniStatLab}>PRODUTOS</Text>
+                            </View>
+                            <View style={styles.miniStatDivider} />
+                            <View style={styles.miniStat}>
+                                <Text style={styles.miniStatVal}>{items.filter(i => i.tipo === 'CULTURA').length}</Text>
+                                <Text style={styles.miniStatLab}>CULTURAS</Text>
+                            </View>
+                        </View>
+                    </SafeBlurView>
+
+                    <View style={styles.hubActions}>
+                        <TouchableOpacity style={styles.mainActionBtn} onPress={() => { resetForm(); setModalVisible(true); }}>
+                            <LinearGradient colors={['#8B5CF6', '#6D28D9']} style={styles.mainActionGradient}>
+                                <Ionicons name="add" size={20} color="#FFF" />
+                                <Text style={styles.mainActionText}>NOVO ITEM</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity 
+                            style={styles.sacnActionBtn}
                             onPress={() => navigation?.navigate('Scanner', {
                                 onScanComplete: (data) => { setNome(data.nome); setTipo(data.tipo); setObservacao(data.observacao); setModalVisible(true); }
                             })}
                         >
                             <Ionicons name="scan" size={20} color="#8B5CF6" />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.addBtnHeader} onPress={() => { resetForm(); setModalVisible(true); }}>
-                            <Ionicons name="add" size={22} color="#FFF" />
+                            <Text style={styles.scanActionText}>SCANNER</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -737,12 +772,29 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#000' },
     orb: { position: 'absolute', width: 300, height: 300, borderRadius: 150, opacity: 0.07 },
 
-    header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 15 : 20, paddingBottom: 15 },
+    hubContainer: { paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 15 : 20, marginBottom: 15 },
+    hubTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15, gap: 12 },
     backBtn: { width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-    headerTitle: { fontSize: 20, fontWeight: '900', color: '#FFF', letterSpacing: 0.3 },
-    headerSub: { fontSize: 11, color: '#6B7280', marginTop: 2 },
-    scanBtn: { width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(139,92,246,0.1)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)' },
-    addBtnHeader: { width: 42, height: 42, borderRadius: 14, backgroundColor: '#8B5CF6', justifyContent: 'center', alignItems: 'center', shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 8 },
+    hubHeaderMainTitle: { color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '900', letterSpacing: 2 },
+    
+    hubDashboard: { borderRadius: 24, padding: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', overflow: 'hidden' },
+    hubHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
+    hubTitle: { color: '#FFF', fontSize: 18, fontWeight: '900', letterSpacing: 0.5 },
+    hubSubtitle: { color: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: '800', marginTop: 2 },
+    hubConfigBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(139,92,246,0.1)', justifyContent: 'center', alignItems: 'center' },
+    
+    miniStatsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.02)', padding: 12, borderRadius: 16 },
+    miniStat: { flex: 1, alignItems: 'center' },
+    miniStatVal: { color: '#FFF', fontSize: 16, fontWeight: '900' },
+    miniStatLab: { color: 'rgba(255,255,255,0.3)', fontSize: 8, fontWeight: '900', marginTop: 2 },
+    miniStatDivider: { width: 1, height: 20, backgroundColor: 'rgba(255,255,255,0.08)' },
+
+    hubActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
+    mainActionBtn: { flex: 1.5, height: 52, borderRadius: 16, overflow: 'hidden', shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+    mainActionGradient: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+    mainActionText: { color: '#FFF', fontSize: 12, fontWeight: '900' },
+    sacnActionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+    scanActionText: { color: '#8B5CF6', fontSize: 12, fontWeight: '900' },
 
     searchWrap: { paddingHorizontal: 20, marginBottom: 12 },
     searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 16, paddingHorizontal: 16, height: 52, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', gap: 10 },

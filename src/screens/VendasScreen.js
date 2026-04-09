@@ -9,7 +9,8 @@ import {
     TextInput, Platform, SafeAreaView, StatusBar, 
     ActivityIndicator, Switch 
 } from 'react-native';
-import { v4 as uuidv4 } from 'uuid';import { getCadastro, getClientes } from '../database/database';
+import { v4 as uuidv4 } from 'uuid';
+import { getCadastro, getClientes } from '../database/database';
 import VendaService from '../services/VendaService';
 import ProductModal from '../modules/inventory/components/ProductModal';
 import ClientModal from '../modules/finance/components/ClientModal';
@@ -25,7 +26,7 @@ import SafeBlurView from '../ui/SafeBlurView';
 
 export default function VendasScreen({ navigation }) {
     const [cliente, setCliente] = useState('');
-    const [clienteId, setClienteId] = useState(null); // BUILD #107: Guardando ID
+    const [clienteId, setClienteId] = useState(null);
     const [produto, setProduto] = useState('');
     const [quantidade, setQuantidade] = useState('');
     const [precoKg, setPrecoKg] = useState('');
@@ -42,6 +43,11 @@ export default function VendasScreen({ navigation }) {
     const [confirmVisible, setConfirmVisible] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
     const [saving, setSaving] = useState(false);
+
+    // HISTORY FIRST NAVIGATION
+    const [view, setView] = useState('LIST');
+    const [history, setHistory] = useState([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
 
     const DRAFT_KEY = '@draft_VendasScreen_Diamond_v1';
 
@@ -81,9 +87,19 @@ export default function VendasScreen({ navigation }) {
     }, []);
 
     const loadHistory = useCallback(async () => {
+        setLoadingHistory(true);
         try {
-            // Em breve: VendaService.getVendasRecentes()
-        } catch { }
+            const data = await VendaService.getRecentSales ? await VendaService.getRecentSales() : [];
+            if (!data || data.length === 0) {
+               setHistory([]);
+            } else {
+               setHistory(data);
+            }
+        } catch { 
+            setHistory([]);
+        } finally {
+            setLoadingHistory(false);
+        }
     }, []);
 
     useFocusEffect(useCallback(() => { loadInitialData(); loadHistory(); }, [loadInitialData, loadHistory]));
@@ -107,7 +123,7 @@ export default function VendasScreen({ navigation }) {
         const stPgto = (formaPagamento === 'PRAZO' || contasReceber) ? 'PENDENTE' : 'PAGO';
 
         const dados = {
-            uuid: editingUuid || null, // VendaService gerará se null
+            uuid: editingUuid || null,
             cliente_id: clienteId,
             cliente_nome: cliente || 'BALCÃO',
             produto: produto,
@@ -126,6 +142,7 @@ export default function VendasScreen({ navigation }) {
                 setProduto(''); setQuantidade(''); setPrecoKg(''); 
             } else {
                 setCliente(''); setClienteId(null); setProduto(''); setQuantidade(''); setPrecoKg(''); setFormaPagamento('PIX'); setEditingUuid(null);
+                setView('LIST');
             }
 
             await AsyncStorage.removeItem(DRAFT_KEY);
@@ -154,29 +171,90 @@ export default function VendasScreen({ navigation }) {
         }
     }, [itemToDelete, loadHistory]);
 
-    return (
-        <View style={styles.webContainer}>
-            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            <LinearGradient colors={['#020617', '#0A0F1C', '#030712']} style={StyleSheet.absoluteFill} />
+    const handleEditVenda = (item) => {
+        setEditingUuid(item.uuid);
+        setCliente(item.cliente_nome || item.cliente || '');
+        setProduto(item.produto || '');
+        setQuantidade(String(item.quantidade || ''));
+        if (item.valor_total && item.quantidade) {
+            setPrecoKg(String((item.valor_total / item.quantidade).toFixed(2)));
+        } else {
+            setPrecoKg('');
+        }
+        setFormaPagamento(item.observacao && item.observacao.includes('PRAZO') ? 'PRAZO' : 'PIX');
+        setView('FORM');
+    };
 
-            {/* 🌀 AMBIENT ORBS */}
-            <View style={[styles.ambientOrb, { top: -40, right: -60, backgroundColor: '#10B981', opacity: 0.12 }]} />
-            <View style={[styles.ambientOrb, { bottom: 100, left: -80, backgroundColor: '#D4AF37', opacity: 0.08 }]} />
+    const renderList = () => (
+        <View style={{ flex: 1, paddingHorizontal: 22 }}>
+            <View style={[styles.header, { paddingHorizontal: 0 }]}>
+                <TouchableOpacity style={styles.backBtn} onPress={() => navigation?.goBack?.()}>
+                    <Ionicons name="chevron-back" size={24} color="#F8FAFC" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>HISTÓRICO DE VENDAS</Text>
+                <View style={{ width: 40 }} />
+            </View>
 
-            <SafeAreaView style={{ flex: 1, width: '100%', maxWidth: 520, alignSelf: 'center' }}>
-                
-                {/* ── HEADER ── */}
-                <View style={styles.header}>
-                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation?.goBack?.()}>
-                        <Ionicons name="chevron-back" size={24} color="#F8FAFC" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>{editingUuid ? 'EDITAR VENDA' : 'NOVA VENDA'}</Text>
-                    <TouchableOpacity style={styles.headerRightBtn} onPress={() => handleSalvar(false)}>
-                        <Text style={styles.headerRightBtnText}>SALVAR</Text>
-                    </TouchableOpacity>
+            {loadingHistory ? (
+                <ActivityIndicator color="#10B981" style={{ marginTop: 40 }} />
+            ) : history.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                    <Ionicons name="receipt-outline" size={48} color="rgba(255,255,255,0.1)" />
+                    <Text style={styles.emptyText}>Nenhuma venda registrada recentemente.</Text>
                 </View>
+            ) : (
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+                    {history.map(item => (
+                        <SafeBlurView key={item.uuid} intensity={15} style={styles.historyCard} webFallbackColor="rgba(255,255,255,0.02)">
+                            <View style={styles.historyHeader}>
+                                <View style={styles.historyIconBg}>
+                                    <Ionicons name="cart" size={18} color="#D4AF37" />
+                                </View>
+                                <View style={{ flex: 1, marginLeft: 12 }}>
+                                    <Text style={styles.hProd}>{item.cliente_nome || item.cliente || 'BALCÃO'}</Text>
+                                    <Text style={styles.hSub}>{item.produto} • {item.quantidade} KG</Text>
+                                </View>
+                                <Text style={styles.hVal}>R$ {((item.valor_total || item.valor) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</Text>
+                            </View>
+                            <View style={styles.historyFooter}>
+                                <Text style={styles.hData}>{new Date(item.data).toLocaleDateString('pt-BR')}</Text>
+                                <View style={styles.historyActions}>
+                                    <TouchableOpacity onPress={() => handleEditVenda(item)} style={{ marginRight: 15 }}>
+                                        <Ionicons name="create-outline" size={20} color="rgba(255,255,255,0.4)" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => { setItemToDelete(item); setConfirmVisible(true); }}>
+                                        <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </SafeBlurView>
+                    ))}
+                </ScrollView>
+            )}
 
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            {/* FAB DIAMOND PRO */}
+            <TouchableOpacity style={styles.fab} activeOpacity={0.9} onPress={() => { setEditingUuid(null); setView('FORM'); }}>
+                <LinearGradient colors={['#D4AF37', '#9A7B2C']} style={styles.fabGradient} start={{x: 0, y: 0}} end={{x: 1, y: 1}}>
+                    <Ionicons name="add" size={30} color="#FFF" />
+                </LinearGradient>
+            </TouchableOpacity>
+        </View>
+    );
+
+    const renderForm = () => (
+        <View style={{ flex: 1 }}>
+            {/* ── HEADER ── */}
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.backBtn} onPress={() => setView('LIST')}>
+                    <Ionicons name="chevron-back" size={24} color="#F8FAFC" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>{editingUuid ? 'EDITAR VENDA' : 'NOVA VENDA'}</Text>
+                <TouchableOpacity style={styles.headerRightBtn} onPress={() => handleSalvar(false)}>
+                    <Text style={styles.headerRightBtnText}>SALVAR</Text>
+                </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
                     {/* CLIENTE */}
                     <Text style={styles.sectionTitle}>CLIENTE</Text>
@@ -307,7 +385,7 @@ export default function VendasScreen({ navigation }) {
                         <SafeBlurView intensity={15} style={styles.glassCard} webFallbackColor="rgba(255,255,255,0.02)">
                             <View style={styles.cardActionRow}>
                                 <TextInput
-                                    style={[styles.mainValue, { flex: 1, outline: 'none' }]}
+                                    style={[styles.mainValue, { flex: 1 }]}
                                     placeholder="DD/MM/AAAA"
                                     placeholderTextColor="rgba(255,255,255,0.2)"
                                     value={dataVenda}
@@ -354,6 +432,20 @@ export default function VendasScreen({ navigation }) {
                     )}
 
                 </ScrollView>
+        </View>
+    );
+
+    return (
+        <View style={styles.webContainer}>
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+            <LinearGradient colors={['#020617', '#0A0F1C', '#030712']} style={StyleSheet.absoluteFill} />
+
+            {/* 🌀 AMBIENT ORBS */}
+            <View style={[styles.ambientOrb, { top: -40, right: -60, backgroundColor: '#10B981', opacity: 0.12 }]} />
+            <View style={[styles.ambientOrb, { bottom: 100, left: -80, backgroundColor: '#D4AF37', opacity: 0.08 }]} />
+
+            <SafeAreaView style={{ flex: 1, width: '100%', maxWidth: 520, alignSelf: 'center' }}>
+                {view === 'LIST' ? renderList() : renderForm()}
 
                 {/* MODAIS */}
                 <ProductModal visible={modalVisible} onClose={() => setModalVisible(false)} onCreated={(p) => { setProduto(p.nome); setModalVisible(false); }} />
@@ -441,6 +533,22 @@ const styles = StyleSheet.create({
     btnSecondaryText: { color: '#10B981', fontSize: 13, fontWeight: '900', letterSpacing: 1 },
 
     discardBtn: { alignSelf: 'center', padding: 12 },
-    discardText: { color: '#EF4444', fontSize: 11, fontWeight: '900', letterSpacing: 1 }
-});
+    discardText: { color: '#EF4444', fontSize: 11, fontWeight: '900', letterSpacing: 1 },
 
+    emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
+    emptyText: { color: 'rgba(255,255,255,0.4)', fontSize: 14, textAlign: 'center', marginTop: 16, fontWeight: '600' },
+    
+    historyCard: { borderRadius: 20, padding: 18, marginBottom: 15, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
+    historyHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
+    historyIconBg: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(212, 175, 55, 0.1)', justifyContent: 'center', alignItems: 'center' },
+    hProd: { color: '#F8FAFC', fontSize: 16, fontWeight: '800' },
+    hSub: { color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: '700', marginTop: 4, letterSpacing: 0.5 },
+    hVal: { color: '#10B981', fontSize: 16, fontWeight: '900' },
+    
+    historyFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 15, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.04)' },
+    hData: { color: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+    historyActions: { flexDirection: 'row', alignItems: 'center' },
+
+    fab: { position: 'absolute', right: 24, bottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 15, elevation: 10 },
+    fabGradient: { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center' }
+});

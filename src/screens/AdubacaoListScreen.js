@@ -103,6 +103,37 @@ export default function AdubacaoListScreen({ navigation }) {
                         </TouchableOpacity>
                     </View>
 
+                    {/* 🧪 HUB DE ADUBAÇÃO (4 BOTÕES) */}
+                    <View style={styles.hubContainer}>
+                        <TouchableOpacity style={styles.hubItem} onPress={() => navigation.navigate('AdubacaoForm')}>
+                            <View style={[styles.hubIconBg, { backgroundColor: 'rgba(52, 211, 153, 0.15)' }]}>
+                                <Ionicons name="add" size={20} color="#34D399" />
+                            </View>
+                            <Text style={styles.hubLabel}>NOVA</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.hubItem} onPress={() => navigation.navigate('RecipeForm')}>
+                            <View style={[styles.hubIconBg, { backgroundColor: 'rgba(167, 243, 208, 0.15)' }]}>
+                                <Ionicons name="document-text" size={20} color="#6EE7B7" />
+                            </View>
+                            <Text style={styles.hubLabel}>RECEITA</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.hubItem} onPress={() => navigation.navigate('Fertilization')}>
+                            <View style={[styles.hubIconBg, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                                <Ionicons name="water" size={20} color="#10B981" />
+                            </View>
+                            <Text style={styles.hubLabel}>FERTI</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.hubItem} onPress={() => navigation.navigate('ApplicationForm')}>
+                            <View style={[styles.hubIconBg, { backgroundColor: 'rgba(5, 150, 105, 0.15)' }]}>
+                                <Ionicons name="calendar" size={20} color="#059669" />
+                            </View>
+                            <Text style={styles.hubLabel}>APLICAR</Text>
+                        </TouchableOpacity>
+                    </View>
+
                     {/* TABS */}
                     <View style={styles.tabContainer}>
                         {['Todos', 'Agendados', 'Concluídos'].map(tab => (
@@ -145,6 +176,11 @@ const styles = StyleSheet.create({
     headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFF', textAlign: 'center' },
     headerSub: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', marginTop: 2 },
     addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#34D399', justifyContent: 'center', alignItems: 'center' },
+    
+    hubContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 25 },
+    hubItem: { alignItems: 'center', flex: 1 },
+    hubIconBg: { width: 48, height: 48, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginBottom: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+    hubLabel: { color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
 
     tabContainer: { flexDirection: 'row', marginHorizontal: 20, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 12, padding: 4, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
     tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 },
