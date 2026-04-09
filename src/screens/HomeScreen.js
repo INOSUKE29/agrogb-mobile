@@ -59,44 +59,59 @@ export default function HomeScreen() {
                             />
                         }
                     >
-                        <DashboardContent data={analytics} />
-
-                        {/* INTELIGÊNCIA & ESTRATÉGIA */}
-                        <View style={styles.quickAccess}>
-                            <Text style={styles.sectionLabel}>INTELIGÊNCIA & ESTRATÉGIA</Text>
-                            <View style={styles.gridRow}>
-                                <QuickBtn icon="bulb" label="IA Agro" color="#FCD34D" onPress={() => navigation.navigate('Intelligence')} />
-                                <QuickBtn icon="bar-chart" label="BI Geral" color="#3B82F6" onPress={() => navigation.navigate('Relatorios')} />
-                                <QuickBtn icon="analytics" label="Gráficos" color="#8B5CF6" onPress={() => navigation.navigate('Graficos')} />
-                                <QuickBtn icon="leaf" label="Planos" color="#A3E635" onPress={() => navigation.navigate('AdubacaoList')} />
-                            </View>
-                        </View>
+                        <DashboardContent data={analytics}                        {/* BOTÕES DE AÇÃO RÁPIDA (Pills) */}
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.actionPillsRow}>
+                            <TouchableOpacity style={styles.actionPill} onPress={() => navigation.navigate('Vendas')}>
+                                <Ionicons name="add" size={16} color="#A3E635" />
+                                <Text style={styles.actionPillText}>Registrar Venda</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.actionPill, styles.actionPillHighlight]} onPress={() => navigation.navigate('Custos')}>
+                                <Ionicons name="add" size={16} color="#FFF" />
+                                <Text style={[styles.actionPillText, { color: '#FFF' }]}>Registrar Custo</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.actionPill} onPress={() => navigation.navigate('Colheita')}>
+                                <Ionicons name="add" size={16} color="#A3E635" />
+                                <Text style={styles.actionPillText}>Registrar Colheita</Text>
+                            </TouchableOpacity>
+                        </ScrollView>
 
                         {/* GESTÃO OPERACIONAL */}
-                        <View style={styles.quickAccess}>
-                            <Text style={styles.sectionLabel}>GESTÃO OPERACIONAL</Text>
-                            <View style={styles.gridRow}>
-                                <QuickBtn icon="seedling" label="Plantio" color="#10B981" onPress={() => navigation.navigate('Plantio')} />
-                                <QuickBtn icon="calendar" label="Monitor" color="#3B82F6" onPress={() => navigation.navigate('Monitoramento')} />
-                                <QuickBtn icon="basket" label="Colheita" color="#F59E0B" onPress={() => navigation.navigate('Colheita')} />
-                                <QuickBtn icon="cube" label="Estoque" color="#6366F1" onPress={() => navigation.navigate('Estoque')} />
+                        <View style={styles.sectionContainer}>
+                            <View style={styles.sectionTitleRow}>
+                                <View style={styles.sectionTitleDash} />
+                                <Text style={styles.sectionTitle}>GESTÃO OPERACIONAL</Text>
                             </View>
-                            <View style={[styles.gridRow, { marginTop: 15 }]}>
-                                <QuickBtn icon="cart" label="Compras" color="#EC4899" onPress={() => navigation.navigate('Compras')} />
-                                <QuickBtn icon="cash" label="Vendas" color="#A3E635" onPress={() => navigation.navigate('Vendas')} />
-                                <QuickBtn icon="wallet" label="Custos" color="#EF4444" onPress={() => navigation.navigate('Custos')} />
-                                <QuickBtn icon="cube-outline" label="Encomendas" color="#14B8A6" onPress={() => navigation.navigate('Encomendas')} />
+                            <View style={styles.bigGridRow}>
+                                <BigCard icon="leaf" label="Plantio" color="#10B981" onPress={() => navigation.navigate('Plantio')} />
+                                <BigCard icon="basket" label="Colheita" color="#A3E635" onPress={() => navigation.navigate('Colheita')} />
+                                <BigCard icon="calendar" label="Monitorar" color="#3B82F6" onPress={() => navigation.navigate('Monitoramento')} />
+                                <BigCard icon="flask" label="Adubação" color="#8B5CF6" onPress={() => navigation.navigate('AdubacaoList')} />
                             </View>
                         </View>
 
-                        {/* ADMINISTRAÇÃO */}
-                        <View style={styles.quickAccess}>
-                            <Text style={styles.sectionLabel}>ADMINISTRAÇÃO</Text>
-                            <View style={styles.gridRow}>
-                                <QuickBtn icon="people" label="Clientes" color="#10B981" onPress={() => navigation.navigate('Cadastros')} />
-                                <QuickBtn icon="document-text" label="Registro" color="#3B82F6" onPress={() => navigation.navigate('MenuCadastros')} />
-                                <QuickBtn icon="car" label="Frota" color="#F59E0B" onPress={() => navigation.navigate('Frota')} />
-                                <QuickBtn icon="book" label="Campo" color="#8B5CF6" onPress={() => navigation.navigate('CadernoCampo')} />
+                        {/* COMERCIAL & FINANCEIRO */}
+                        <View style={styles.sectionContainer}>
+                            <View style={styles.sectionTitleRow}>
+                                <View style={[styles.sectionTitleDash, { backgroundColor: '#3B82F6' }]} />
+                                <Text style={styles.sectionTitle}>COMERCIAL & FINANCEIRO</Text>
+                            </View>
+                            <View style={styles.bigGridRow}>
+                                <BigCard icon="cart" label="Vendas" color="#3B82F6" onPress={() => navigation.navigate('Vendas')} />
+                                <BigCard icon="cube" label="Estoque" color="#F59E0B" onPress={() => navigation.navigate('Estoque')} />
+                                <BigCard icon="wallet" label="Despesas" color="#EF4444" onPress={() => navigation.navigate('Custos')} />
+                                <BigCard icon="car" label="Compras" color="#14B8A6" onPress={() => navigation.navigate('Compras')} />
+                            </View>
+                        </View>
+
+                        {/* SISTEMA & INTELIGÊNCIA */}
+                        <View style={styles.sectionContainer}>
+                            <View style={styles.sectionTitleRow}>
+                                <View style={[styles.sectionTitleDash, { backgroundColor: '#FCD34D' }]} />
+                                <Text style={styles.sectionTitle}>SISTEMA</Text>
+                            </View>
+                            <View style={styles.bigGridRow}>
+                                <BigCard icon="people" label="Cadastros" color="#64748B" onPress={() => navigation.navigate('MenuCadastros')} />
+                                <BigCard icon="bulb" label="Inteligência" color="#FCD34D" onPress={() => navigation.navigate('Intelligence')} />
                             </View>
                         </View>
                         
@@ -105,9 +120,9 @@ export default function HomeScreen() {
 
                     {/* BOTTOM NAV SIMULADO (Para visual de App Grande) */}
                     <View style={styles.bottomNav}>
-                        <NavBtn icon="home" label="Início" active />
-                        <NavBtn icon="stats-chart" label="BI" onPress={() => navigation.navigate('Relatorios')} />
-                        <NavBtn icon="sync" label="Sinc" onPress={() => navigation.navigate('Sync')} />
+                        <NavBtn icon="home" label="Home" active />
+                        <NavBtn icon="bar-chart" label="Relatórios" onPress={() => navigation.navigate('Relatorios')} />
+                        <NavBtn icon="sync" label="Sync" onPress={() => navigation.navigate('Sync')} />
                         <NavBtn icon="person" label="Perfil" onPress={() => navigation.navigate('Profile')} />
                     </View>
                 </SafeAreaView>
@@ -116,12 +131,11 @@ export default function HomeScreen() {
     );
 }
 
-const QuickBtn = ({ icon, label, color, onPress }) => (
-    <TouchableOpacity style={styles.qBtn} onPress={onPress}>
-        <View style={[styles.qIconBg, { backgroundColor: `${color}20` }]}>
-            <Ionicons name={icon} size={24} color={color} />
-        </View>
-        <Text style={styles.qLabel}>{label}</Text>
+// NOVO COMPONENTE: BIG CARD (Estilo do Print Oficial)
+const BigCard = ({ icon, label, color, onPress }) => (
+    <TouchableOpacity style={styles.bigCard} onPress={onPress} activeOpacity={0.8}>
+        <Ionicons name={icon} size={28} color={color} style={{ marginBottom: 10 }} />
+        <Text style={styles.bigCardText}>{label}</Text>
     </TouchableOpacity>
 );
 
@@ -138,15 +152,25 @@ const styles = StyleSheet.create({
     scrollArea: { paddingBottom: 120 },
     header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 10 },
     headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    greeting: { color: '#FFF', fontSize: 18, fontWeight: '900' },
-    subtext: { color: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 'bold', letterSpacing: 1.5 },
+    greeting: { color: '#FFF', fontSize: 20, fontWeight: '900' },
+    subtext: { color: '#A3E635', fontSize: 10, fontWeight: 'bold', letterSpacing: 1.5, marginTop: 2 },
     
-    quickAccess: { paddingHorizontal: 20, marginTop: 10, marginBottom: 15 },
-    sectionLabel: { color: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 15 },
-    gridRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
-    qBtn: { alignItems: 'center', width: (width - 70) / 4 }, // Distributes 4 items equally
-    qIconBg: { width: 52, height: 52, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-    qLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 9, fontWeight: 'bold', textAlign: 'center' },
+    // Action Pills (Registrar)
+    actionPillsRow: { paddingHorizontal: 20, marginBottom: 25, gap: 10 },
+    actionPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', paddingVertical: 12, paddingHorizontal: 16, borderRadius: 20, height: 45 },
+    actionPillHighlight: { backgroundColor: 'rgba(163, 230, 53, 0.15)', borderColor: '#A3E635' },
+    actionPillText: { color: '#E2E8F0', fontSize: 13, fontWeight: 'bold', marginLeft: 8 },
+
+    // Sections
+    sectionContainer: { paddingHorizontal: 20, marginBottom: 20 },
+    sectionTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
+    sectionTitleDash: { width: 4, height: 16, backgroundColor: '#A3E635', borderRadius: 2, marginRight: 8 },
+    sectionTitle: { color: '#FFF', fontSize: 12, fontWeight: '900', letterSpacing: 1.5 },
+    
+    // Big Grid (2x2)
+    bigGridRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 },
+    bigCard: { width: '48%', backgroundColor: '#F8FAFC', borderRadius: 16, paddingVertical: 20, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center', marginBottom: 5 },
+    bigCardText: { color: '#0F172A', fontSize: 13, fontWeight: '800' },
 
     bottomNav: {
         position: 'absolute',
@@ -154,7 +178,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         height: 80,
-        backgroundColor: '#09100c',
+        backgroundColor: '#0A1211', // Corzinha levemente cinza base do app
         flexDirection: 'row',
         justifyContent: 'space-around',
         alignItems: 'center',
@@ -164,4 +188,5 @@ const styles = StyleSheet.create({
     },
     navItem: { alignItems: 'center' },
     navText: { fontSize: 10, marginTop: 4, fontWeight: 'bold' }
+});Weight: 'bold' }
 });
