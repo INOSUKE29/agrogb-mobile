@@ -4,7 +4,7 @@ SET session_replication_role = replica;
 -- PostgreSQL database dump
 --
 
--- \restrict bqWsDmyW5Rxyhf8dt4yhm2njtbu6y4TEwnn2WuFhclETk87meCaKYHKPLdtlu5m
+-- \restrict mcT04eajsiI3GMiwc8VE6EaWdrLEXhbL3VY2vx9hRfYzgg2BzDgJIupsCT8Ghjj
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6
@@ -99,7 +99,7 @@ INSERT INTO "auth"."sessions" ("id", "user_id", "created_at", "updated_at", "fac
 	('08365e96-de84-443f-ae41-4887f62b13d5', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '2026-04-06 11:35:30.909671+00', '2026-04-06 11:35:30.909671+00', NULL, 'aal1', NULL, NULL, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '186.193.211.229', NULL, NULL, NULL, NULL, NULL),
 	('399cafc5-b50b-47a0-946d-a878b740cbb1', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '2026-04-06 20:59:09.543936+00', '2026-04-06 22:51:44.206062+00', NULL, 'aal1', NULL, '2026-04-06 22:51:44.205952', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '186.193.211.229', NULL, NULL, NULL, NULL, NULL),
 	('49381fc3-53d5-4cac-a86d-df678a34d983', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '2026-04-05 11:55:23.303649+00', '2026-04-07 06:17:36.425539+00', NULL, 'aal1', NULL, '2026-04-07 06:17:36.425428', 'okhttp/4.9.2', '186.193.211.229', NULL, NULL, NULL, NULL, NULL),
-	('eb9938c2-3bf7-4da3-890f-fb5f46243ac0', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '2026-04-02 09:46:20.915402+00', '2026-04-07 19:51:34.638795+00', NULL, 'aal1', NULL, '2026-04-07 19:51:34.638679', 'okhttp/4.9.2', '186.193.211.229', NULL, NULL, NULL, NULL, NULL);
+	('eb9938c2-3bf7-4da3-890f-fb5f46243ac0', '405ea0d8-d937-4973-b6ae-23aac96f1b87', '2026-04-02 09:46:20.915402+00', '2026-04-08 23:28:56.022268+00', NULL, 'aal1', NULL, '2026-04-08 23:28:56.022151', 'okhttp/4.9.2', '186.193.211.229', NULL, NULL, NULL, NULL, NULL);
 
 
 --
@@ -291,67 +291,17 @@ INSERT INTO "auth"."refresh_tokens" ("instance_id", "id", "token", "user_id", "r
 
 
 --
--- Data for Name: areas; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-
-
---
 -- Data for Name: cadastro; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO "public"."cadastro" ("uuid", "user_id", "nome", "unidade", "tipo", "observacao", "estocavel", "vendavel", "fator_conversao", "preco_venda", "last_updated", "is_deleted", "categoria", "farm_id") VALUES
-	('d556b9df-2c78-4b50-8660-7aa40df99ece', NULL, 'Fertilizante NPK 10-10-10', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:06:52.611646+00', 0, 'INSUMO', 'fazenda_padrao'),
-	('a4da9694-a61f-41db-a26f-36472254c93c', NULL, 'Ureia Agrícola', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:06:52.611646+00', 0, 'INSUMO', 'fazenda_padrao'),
-	('2e66a0e7-6cea-444a-802f-0e892ac13a23', NULL, 'Semente de Milho Tradicional', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:06:52.611646+00', 0, 'SEMENTE', 'fazenda_padrao'),
-	('497d7c68-0c2f-4620-bd29-fc9a28b179b8', NULL, 'Fertilizante NPK 10-10-10', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:09:02.57158+00', 0, 'INSUMO', 'fazenda_padrao'),
-	('0a9259c4-8de1-4ddc-a3a3-59f3941d60b5', NULL, 'Ureia Agrícola', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:09:02.57158+00', 0, 'INSUMO', 'fazenda_padrao'),
-	('65496cf6-c419-4841-8f82-07f9380a8bad', NULL, 'Semente de Milho Tradicional', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:09:02.57158+00', 0, 'SEMENTE', 'fazenda_padrao'),
-	('9748d9a5-9292-4909-abba-228894b0f3d5', NULL, 'Fertilizante NPK 10-10-10', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:11:25.838525+00', 0, 'INSUMO', 'fazenda_padrao'),
-	('c901c8c4-b77f-415f-a6c5-b51ee4697d05', NULL, 'Ureia Agrícola', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:11:25.838525+00', 0, 'INSUMO', 'fazenda_padrao'),
-	('66e81b6b-fd96-4239-9252-b8a0053eab57', NULL, 'Semente de Milho Tradicional', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-03-24 00:11:25.838525+00', 0, 'SEMENTE', 'fazenda_padrao'),
-	('ce0a3a8c-c2f7-4dc6-bc4a-bf63f13e5d30', NULL, 'Fertilizante NPK 10-10-10', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-04-06 22:35:51.025997+00', 0, 'INSUMO', 'fazenda_padrao'),
-	('e81e1d2d-da0c-4d32-b6db-b26c5d22be3a', NULL, 'Ureia Agrícola', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-04-06 22:35:51.025997+00', 0, 'INSUMO', 'fazenda_padrao'),
-	('9b1de500-86a4-4b5b-9328-bd6f7fc5a4d7', NULL, 'Semente de Milho Tradicional', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-04-06 22:35:51.025997+00', 0, 'SEMENTE', 'fazenda_padrao'),
-	('746fbfc6-8af0-47bb-8085-24ccd79a6c2b', NULL, 'Fertilizante NPK 10-10-10', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-04-06 23:04:22.066463+00', 0, 'INSUMO', 'fazenda_padrao'),
-	('138d4aa2-ee02-41d2-bef8-2a37cd22f855', NULL, 'Ureia Agrícola', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-04-06 23:04:22.066463+00', 0, 'INSUMO', 'fazenda_padrao'),
-	('801a934c-54cc-4927-8470-3a27af41e929', NULL, 'Semente de Milho Tradicional', 'KG', NULL, NULL, 1, 1, 1, 0, '2026-04-06 23:04:22.066463+00', 0, 'SEMENTE', 'fazenda_padrao');
-
-
---
--- Data for Name: caderno_notas; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
+INSERT INTO "public"."cadastro" ("uuid", "nome", "unidade", "categoria", "last_updated", "farm_id", "is_deleted") VALUES
+	('fdc06ded-2bb2-4a17-ace4-5eae58b4cab7', 'Fertilizante NPK 10-10-10', 'KG', 'INSUMO', '2026-04-08 22:21:57.554326+00', 'fazenda_padrao', false),
+	('0b25817b-c61f-479c-ad05-0480efc4ef27', 'Ureia Agrícola', 'KG', 'INSUMO', '2026-04-08 22:21:57.554326+00', 'fazenda_padrao', false),
+	('b4311285-4bfe-40b4-af76-382ae729a18b', 'Semente de Milho Tradicional', 'KG', 'SEMENTE', '2026-04-08 22:21:57.554326+00', 'fazenda_padrao', false);
 
 
 --
 -- Data for Name: categorias_despesa; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-
-
---
--- Data for Name: clientes; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-
-
---
--- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-INSERT INTO "public"."users" ("id", "nome", "email", "tipo_usuario", "created_at", "last_updated", "uuid", "is_deleted", "usuario_id_bak_20260315145412", "is_deleted_bool", "usuario_id") VALUES
-	('00ac01a0-5343-433f-a8ec-ee863d527767', NULL, NULL, NULL, '2026-03-08 13:04:50.815268', '2026-03-08 13:04:50.815268', '54ba3a8f-0f64-4135-9fc2-52375abd4912', 0, NULL, false, NULL);
-
-
---
--- Data for Name: colheitas; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-
-
---
--- Data for Name: compras; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 
@@ -369,25 +319,6 @@ INSERT INTO "public"."users" ("id", "nome", "email", "tipo_usuario", "created_at
 
 
 --
--- Data for Name: culturas; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-INSERT INTO "public"."culturas" ("id", "uuid", "nome", "observacao", "created_at", "last_updated", "is_deleted", "usuario_id_bak_20260315145412", "is_deleted_bool", "usuario_id", "farm_id") VALUES
-	('43d79ab6-b007-48c8-8bbe-971b435d1999', '1e455d23-c2f4-4c24-ba41-ffdc252c7b3d', 'MILHO', NULL, '2026-03-23 23:04:06.249126', '2026-03-23 23:04:06.249126', 0, NULL, false, NULL, 'fazenda_padrao'),
-	('42289112-73a5-4060-8955-ff6823abd5b2', '25314468-574b-4c27-8498-fb5d67646240', 'SOJA', NULL, '2026-03-23 23:04:06.249126', '2026-03-23 23:04:06.249126', 0, NULL, false, NULL, 'fazenda_padrao'),
-	('9c39b74d-d843-48b4-8e55-c1f9f13e9dcf', 'eb7dd9b3-49fd-46d7-89e8-d24b23c3a66c', 'COVE', NULL, '2026-03-23 23:04:06.249126', '2026-03-23 23:04:06.249126', 0, NULL, false, NULL, 'fazenda_padrao'),
-	('5677f411-faf2-486a-be2d-93e1790b2cce', '5012f28d-f38a-46e0-b7cd-d9fd69c45a75', 'CEBOLA', NULL, '2026-03-23 23:04:06.249126', '2026-03-23 23:04:06.249126', 0, NULL, false, NULL, 'fazenda_padrao'),
-	('7e5ef8cb-9c0a-4fdd-bc82-2f63a15f729e', 'c875b0d6-2487-4d6e-8677-92011275b0c2', 'CEBOLINHA', NULL, '2026-03-23 23:04:06.249126', '2026-03-23 23:04:06.249126', 0, NULL, false, NULL, 'fazenda_padrao'),
-	('6ad0bb3d-b733-41fc-89d9-ae88ed632e82', '48f7c9a3-65ac-4f3e-abf4-4d6ffffcd52b', 'SALSINHA', NULL, '2026-03-23 23:04:06.249126', '2026-03-23 23:04:06.249126', 0, NULL, false, NULL, 'fazenda_padrao');
-
-
---
--- Data for Name: custos; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-
-
---
 -- Data for Name: descarte; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -395,20 +326,6 @@ INSERT INTO "public"."culturas" ("id", "uuid", "nome", "observacao", "created_at
 
 --
 -- Data for Name: error_logs; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-
-
---
--- Data for Name: items; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-INSERT INTO "public"."items" ("id", "codigo", "nome", "categoria", "unidade", "tipo", "descricao", "created_at", "last_updated", "uuid", "is_deleted", "unidade_id", "usuario_id_bak_20260315145412", "is_deleted_bool", "usuario_id") VALUES
-	('5e263716-05bb-4a22-89d7-3a0f6659fc9b', NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-08 13:05:54.200885', '2026-03-08 13:05:54.200885', 'e16fa8f2-c73c-4aa3-a03c-6b63b4b0d485', 0, NULL, NULL, false, NULL);
-
-
---
--- Data for Name: estoque; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 
@@ -439,18 +356,6 @@ INSERT INTO "public"."items" ("id", "codigo", "nome", "categoria", "unidade", "t
 
 --
 -- Data for Name: financial_installments; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-
-
---
--- Data for Name: maquinas; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-
-
---
--- Data for Name: manutencao_frota; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 
@@ -499,18 +404,6 @@ INSERT INTO "public"."items" ("id", "codigo", "nome", "categoria", "unidade", "t
 
 --
 -- Data for Name: orders; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-
-
---
--- Data for Name: planos_adubacao; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-
-
---
--- Data for Name: plantio; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 
@@ -1230,11 +1123,11 @@ ALTER TABLE public.monitoramento_entidade RENAME COLUMN usuario_id_to_drop_bak_2
 
 
 --
--- Data for Name: user_profiles; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO "public"."user_profiles" ("id", "email", "name", "role", "created_at", "last_updated", "farm_id", "is_deleted") VALUES
-	('405ea0d8-d937-4973-b6ae-23aac96f1b87', 'brunower2009@gmail.com', NULL, 'PRODUTOR', '2026-03-25 23:33:17.8237+00', '2026-03-25 23:33:17.8237+00', 'fazenda_padrao', false);
+INSERT INTO "public"."users" ("id", "nome", "email", "tipo_usuario", "created_at", "last_updated", "uuid", "is_deleted", "usuario_id_bak_20260315145412", "is_deleted_bool", "usuario_id") VALUES
+	('00ac01a0-5343-433f-a8ec-ee863d527767', NULL, NULL, NULL, '2026-03-08 13:04:50.815268', '2026-03-08 13:04:50.815268', '54ba3a8f-0f64-4135-9fc2-52375abd4912', 0, NULL, false, NULL);
 
 
 --
@@ -1268,19 +1161,19 @@ INSERT INTO "public"."user_profiles" ("id", "email", "name", "role", "created_at
 
 
 --
--- Data for Name: v2_colheitas; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-
-
---
 -- Data for Name: v2_custos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 
 
 --
--- Data for Name: v2_movimentacoes_estoque; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: v2_estoque_atual; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+
+
+--
+-- Data for Name: v2_estoque_movimentacoes; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 
@@ -1305,12 +1198,6 @@ INSERT INTO "public"."user_profiles" ("id", "email", "name", "role", "created_at
 
 --
 -- Data for Name: v2_vendas; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-
-
---
--- Data for Name: vendas; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 
@@ -1393,6 +1280,6 @@ SELECT pg_catalog.setval('"public"."usuario_id_quarantine_id_seq"', 1, false);
 -- PostgreSQL database dump complete
 --
 
--- \unrestrict bqWsDmyW5Rxyhf8dt4yhm2njtbu6y4TEwnn2WuFhclETk87meCaKYHKPLdtlu5m
+-- \unrestrict mcT04eajsiI3GMiwc8VE6EaWdrLEXhbL3VY2vx9hRfYzgg2BzDgJIupsCT8Ghjj
 
 RESET ALL;

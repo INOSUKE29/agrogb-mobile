@@ -143,9 +143,8 @@ CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     SET "search_path" TO ''
     AS $$
 BEGIN
-  -- Usamos public. para referenciar a tabela com precisão
-  INSERT INTO public.user_profiles (id, full_name, email)
-  VALUES (new.id, new.raw_user_meta_data->>'full_name', new.email);
+  INSERT INTO public.user_profiles (id, name, email, role)
+  VALUES (new.id, new.raw_user_meta_data->>'full_name', new.email, 'PRODUTOR');
   RETURN new;
 END;
 $$;
@@ -222,29 +221,28 @@ $$;
 ALTER FUNCTION "public"."monitoramento_entidade_run_checks"() OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."process_sale_v2"("p_user_id" "uuid", "p_produto_uuid" "uuid", "p_quantidade" real, "p_valor" real) RETURNS "uuid"
+CREATE OR REPLACE FUNCTION "public"."process_sale_v2"("p_usuario_id" "uuid", "p_produto_uuid" "uuid", "p_quantidade" real, "p_valor" real) RETURNS "uuid"
     LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
+    SET "search_path" TO ''
     AS $$
 DECLARE v_uuid UUID := gen_random_uuid();
 BEGIN
-    INSERT INTO public.vendas (uuid, user_id, quantidade, valor, data_venda, last_updated)
-    VALUES (v_uuid, p_user_id, p_quantidade, p_valor, now(), now());
+    INSERT INTO public.v2_vendas (uuid, usuario_id, quantidade, valor, data_venda, last_updated)
+    VALUES (v_uuid, p_usuario_id, p_quantidade, p_valor, now(), now());
 
-    UPDATE public.estoque 
-    SET quantidade = quantidade - p_quantidade,
-        last_updated = now()
-    WHERE produto_uuid = p_produto_uuid AND user_id = p_user_id;
+    UPDATE public.v2_estoque_atual 
+    SET quantidade = quantidade - p_quantidade, last_updated = now()
+    WHERE (produto_uuid = p_produto_uuid OR uuid = p_produto_uuid) AND usuario_id = p_usuario_id;
 
-    INSERT INTO public.v2_movimentacoes_estoque (user_id, produto_uuid, tipo, quantidade, origem, data)
-    VALUES (p_user_id, p_produto_uuid, 'SAÍDA', p_quantidade, 'VENDA', now());
+    INSERT INTO public.v2_estoque_movimentacoes (uuid, usuario_id, produto_uuid, tipo, quantidade, origem, data)
+    VALUES (gen_random_uuid(), p_usuario_id, p_produto_uuid, 'SAÍDA', p_quantidade, 'VENDA: ' || v_uuid::text, now());
 
     RETURN v_uuid;
 END;
 $$;
 
 
-ALTER FUNCTION "public"."process_sale_v2"("p_user_id" "uuid", "p_produto_uuid" "uuid", "p_quantidade" real, "p_valor" real) OWNER TO "postgres";
+ALTER FUNCTION "public"."process_sale_v2"("p_usuario_id" "uuid", "p_produto_uuid" "uuid", "p_quantidade" real, "p_valor" real) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."try_text_to_uuid"("text") RETURNS "uuid"
@@ -262,8 +260,8 @@ ALTER FUNCTION "public"."try_text_to_uuid"("text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."update_last_updated_column"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
     AS $$
 BEGIN
   NEW.last_updated = now();
@@ -401,62 +399,18 @@ CREATE TABLE IF NOT EXISTS "public"."app_settings" (
 ALTER TABLE "public"."app_settings" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."areas" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "nome" "text",
-    "descricao" "text",
-    "metragem" numeric,
-    "created_at" timestamp without time zone DEFAULT "now"(),
-    "last_updated" timestamp without time zone DEFAULT "now"(),
-    "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"(),
-    "is_deleted" integer DEFAULT 0,
-    "usuario_id_bak_20260315145412" "uuid",
-    "is_deleted_bool" boolean DEFAULT false,
-    "user_id" "uuid",
-    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
-);
-
-
-ALTER TABLE "public"."areas" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."cadastro" (
     "uuid" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "user_id" "uuid",
     "nome" "text" NOT NULL,
-    "unidade" "text",
-    "tipo" "text",
-    "observacao" "text",
-    "estocavel" integer DEFAULT 1,
-    "vendavel" integer DEFAULT 1,
-    "fator_conversao" numeric DEFAULT 1,
-    "preco_venda" numeric DEFAULT 0,
+    "unidade" "text" DEFAULT 'UN'::"text",
+    "categoria" "text" DEFAULT 'INSUMO'::"text",
     "last_updated" timestamp with time zone DEFAULT "now"(),
-    "is_deleted" integer DEFAULT 0,
-    "categoria" "text",
-    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text",
+    "is_deleted" boolean DEFAULT false
 );
 
 
 ALTER TABLE "public"."cadastro" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."caderno_notas" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"(),
-    "observacao" "text",
-    "data" "text",
-    "created_at" timestamp without time zone DEFAULT "now"(),
-    "last_updated" timestamp without time zone DEFAULT "now"(),
-    "is_deleted" integer DEFAULT 0,
-    "usuario_id_bak_20260315145412" "uuid",
-    "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid",
-    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
-);
-
-
-ALTER TABLE "public"."caderno_notas" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."categorias_despesa" (
@@ -474,72 +428,6 @@ CREATE TABLE IF NOT EXISTS "public"."categorias_despesa" (
 
 
 ALTER TABLE "public"."categorias_despesa" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."clientes" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "nome" "text",
-    "telefone" "text",
-    "cidade" "text",
-    "estado" "text",
-    "observacoes" "text",
-    "created_at" timestamp without time zone DEFAULT "now"(),
-    "last_updated" timestamp without time zone DEFAULT "now"(),
-    "uuid" "uuid" DEFAULT "gen_random_uuid"(),
-    "is_deleted" integer DEFAULT 0,
-    "usuario_id_bak_20260315145412" "uuid",
-    "is_deleted_bool" boolean DEFAULT false,
-    "user_id" "uuid",
-    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
-);
-
-
-ALTER TABLE "public"."clientes" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."colheitas" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "area_id" "uuid",
-    "produto" "text",
-    "quantidade" numeric,
-    "tipo" "text",
-    "data_colheita" "date",
-    "usuario_id_bak_20260315145412" "uuid",
-    "created_at" timestamp without time zone DEFAULT "now"(),
-    "last_updated" timestamp without time zone DEFAULT "now"(),
-    "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"(),
-    "is_deleted" integer DEFAULT 0,
-    "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid",
-    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
-);
-
-
-ALTER TABLE "public"."colheitas" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."compras" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"(),
-    "item" "text",
-    "quantidade" numeric,
-    "valor" numeric,
-    "cultura" "text",
-    "data" "text",
-    "observacao" "text",
-    "detalhes" "text",
-    "anexo" "text",
-    "created_at" timestamp without time zone DEFAULT "now"(),
-    "last_updated" timestamp without time zone DEFAULT "now"(),
-    "is_deleted" integer DEFAULT 0,
-    "usuario_id_bak_20260315145412" "uuid",
-    "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid",
-    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
-);
-
-
-ALTER TABLE "public"."compras" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."cost_categories" (
@@ -584,48 +472,6 @@ CREATE TABLE IF NOT EXISTS "public"."costs" (
 ALTER TABLE "public"."costs" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."culturas" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"(),
-    "nome" "text" NOT NULL,
-    "observacao" "text",
-    "created_at" timestamp without time zone DEFAULT "now"(),
-    "last_updated" timestamp without time zone DEFAULT "now"(),
-    "is_deleted" integer DEFAULT 0,
-    "usuario_id_bak_20260315145412" "uuid",
-    "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid",
-    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
-);
-
-
-ALTER TABLE "public"."culturas" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."custos" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "uuid" "uuid" DEFAULT "gen_random_uuid"(),
-    "produto" "text",
-    "tipo" "text",
-    "quantidade" numeric,
-    "valor_total" numeric,
-    "data" "text",
-    "observacao" "text",
-    "anexo" "text",
-    "categoria_id" "text",
-    "created_at" timestamp without time zone DEFAULT "now"(),
-    "last_updated" timestamp without time zone DEFAULT "now"(),
-    "is_deleted" integer DEFAULT 0,
-    "usuario_id_bak_20260315145412" "uuid",
-    "is_deleted_bool" boolean DEFAULT false,
-    "user_id" "uuid",
-    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
-);
-
-
-ALTER TABLE "public"."custos" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."descarte" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"(),
@@ -662,24 +508,6 @@ CREATE TABLE IF NOT EXISTS "public"."error_logs" (
 
 
 ALTER TABLE "public"."error_logs" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."estoque" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "produto_uuid" "uuid",
-    "quantidade" numeric,
-    "updated_at" timestamp without time zone DEFAULT "now"(),
-    "last_updated" timestamp without time zone DEFAULT "now"(),
-    "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"(),
-    "is_deleted" integer DEFAULT 0,
-    "usuario_id_bak_20260315145412" "uuid",
-    "is_deleted_bool" boolean DEFAULT false,
-    "user_id" "uuid",
-    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
-);
-
-
-ALTER TABLE "public"."estoque" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."fertilization_applications" (
@@ -841,70 +669,6 @@ CREATE OR REPLACE VIEW "public"."financial_summary" WITH ("security_invoker"='tr
 ALTER VIEW "public"."financial_summary" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."items" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "codigo" "text",
-    "nome" "text",
-    "categoria" "text",
-    "unidade" "text",
-    "tipo" "text",
-    "descricao" "text",
-    "created_at" timestamp without time zone DEFAULT "now"(),
-    "last_updated" timestamp without time zone DEFAULT "now"(),
-    "uuid" "text" DEFAULT "extensions"."uuid_generate_v4"(),
-    "is_deleted" integer DEFAULT 0,
-    "unidade_id" integer,
-    "usuario_id_bak_20260315145412" "uuid",
-    "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid",
-    CONSTRAINT "items_uuid_check" CHECK (("uuid" ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'::"text"))
-);
-
-
-ALTER TABLE "public"."items" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."manutencao_frota" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "uuid" "text",
-    "maquina_uuid" "uuid",
-    "data" "text",
-    "descricao" "text",
-    "valor" numeric,
-    "last_updated" timestamp without time zone DEFAULT "now"(),
-    "is_deleted" integer DEFAULT 0,
-    "usuario_id_bak_20260315145412" "uuid",
-    "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid",
-    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
-);
-
-
-ALTER TABLE "public"."manutencao_frota" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."maquinas" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"(),
-    "nome" "text",
-    "tipo" "text",
-    "placa" "text",
-    "horimetro_atual" numeric DEFAULT 0,
-    "intervalo_revisao" numeric DEFAULT 10000,
-    "status" "text" DEFAULT 'OK'::"text",
-    "created_at" timestamp without time zone DEFAULT "now"(),
-    "last_updated" timestamp without time zone DEFAULT "now"(),
-    "is_deleted" integer DEFAULT 0,
-    "usuario_id_bak_20260315145412" "uuid",
-    "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid",
-    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
-);
-
-
-ALTER TABLE "public"."maquinas" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."monitoramento_entidade" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"(),
@@ -1058,51 +822,6 @@ CREATE TABLE IF NOT EXISTS "public"."orders" (
 ALTER TABLE "public"."orders" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."planos_adubacao" (
-    "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "nome_plano" "text",
-    "cultura" "text",
-    "tipo_aplicacao" "text",
-    "area_local" "text",
-    "descricao_tecnica" "text",
-    "status" "text",
-    "data_criacao" timestamp without time zone DEFAULT "now"(),
-    "data_aplicacao" timestamp without time zone,
-    "anexos_uri" "text",
-    "last_updated" timestamp without time zone DEFAULT "now"(),
-    "is_deleted" integer DEFAULT 0,
-    "id" "uuid",
-    "usuario_id_bak_20260315145412" "uuid",
-    "is_deleted_bool" boolean DEFAULT false,
-    "user_id" "uuid",
-    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
-);
-
-
-ALTER TABLE "public"."planos_adubacao" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."plantio" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "uuid" "uuid" DEFAULT "extensions"."uuid_generate_v4"(),
-    "cultura" "text",
-    "quantidade_pes" integer,
-    "tipo_plantio" "text",
-    "data" "text",
-    "observacao" "text",
-    "created_at" timestamp without time zone DEFAULT "now"(),
-    "last_updated" timestamp without time zone DEFAULT "now"(),
-    "is_deleted" integer DEFAULT 0,
-    "usuario_id_bak_20260315145412" "uuid",
-    "is_deleted_bool" boolean DEFAULT false,
-    "user_id" "uuid",
-    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
-);
-
-
-ALTER TABLE "public"."plantio" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."production_fertilization_items" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid",
@@ -1193,21 +912,6 @@ CREATE TABLE IF NOT EXISTS "public"."unidades_medida" (
 ALTER TABLE "public"."unidades_medida" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."user_profiles" (
-    "id" "uuid" DEFAULT "auth"."uid"() NOT NULL,
-    "email" "text",
-    "name" "text",
-    "role" "text" DEFAULT 'USUARIO'::"text",
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "last_updated" timestamp with time zone DEFAULT "now"(),
-    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text",
-    "is_deleted" boolean DEFAULT false
-);
-
-
-ALTER TABLE "public"."user_profiles" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."users" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "nome" "text",
@@ -1257,21 +961,6 @@ ALTER SEQUENCE "public"."usuario_id_quarantine_id_seq" OWNED BY "public"."usuari
 
 
 
-CREATE OR REPLACE VIEW "public"."usuarios" WITH ("security_invoker"='true') AS
- SELECT "id",
-    "email",
-    "name",
-    "role",
-    "created_at",
-    "last_updated",
-    "farm_id",
-    "is_deleted"
-   FROM "public"."user_profiles";
-
-
-ALTER VIEW "public"."usuarios" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."v2_analise_solo" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "talhao_id" "uuid",
@@ -1286,52 +975,50 @@ CREATE TABLE IF NOT EXISTS "public"."v2_analise_solo" (
 ALTER TABLE "public"."v2_analise_solo" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."v2_colheitas" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "plantio_id" "uuid",
-    "data_colheita" "date",
-    "quantidade_total" numeric,
-    "unidade" "text" DEFAULT 'KG'::"text",
-    "qualidade" "text",
-    "observacao" "text",
-    "usuario_id_bak_20260315145412" "uuid",
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone,
-    "is_deleted" integer DEFAULT 0,
-    "is_deleted_bool" boolean DEFAULT false,
-    "usuario_id" "uuid"
-);
-
-
-ALTER TABLE "public"."v2_colheitas" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."v2_custos" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "uuid" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "usuario_id" "uuid",
-    "produto" "text",
-    "tipo" "text",
     "valor_total" numeric,
-    "data" "text",
-    "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"())
+    "descricao" "text",
+    "data" "date" DEFAULT CURRENT_DATE,
+    "last_updated" timestamp with time zone DEFAULT "now"(),
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text",
+    "is_deleted" boolean DEFAULT false
 );
 
 
 ALTER TABLE "public"."v2_custos" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."v2_movimentacoes_estoque" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "user_id" "uuid",
+CREATE TABLE IF NOT EXISTS "public"."v2_estoque_atual" (
+    "uuid" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "usuario_id" "uuid",
     "produto_uuid" "uuid",
-    "tipo" "text",
-    "quantidade" real,
-    "origem" "text",
-    "data" timestamp with time zone DEFAULT "now"()
+    "quantidade" numeric DEFAULT 0,
+    "last_updated" timestamp with time zone DEFAULT "now"(),
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text",
+    "is_deleted" boolean DEFAULT false
 );
 
 
-ALTER TABLE "public"."v2_movimentacoes_estoque" OWNER TO "postgres";
+ALTER TABLE "public"."v2_estoque_atual" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."v2_estoque_movimentacoes" (
+    "uuid" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "usuario_id" "uuid",
+    "produto_uuid" "uuid",
+    "tipo" "text" NOT NULL,
+    "quantidade" numeric NOT NULL,
+    "origem" "text",
+    "data" timestamp with time zone DEFAULT "now"(),
+    "last_updated" timestamp with time zone DEFAULT "now"(),
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text",
+    "is_deleted" boolean DEFAULT false
+);
+
+
+ALTER TABLE "public"."v2_estoque_movimentacoes" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."v2_plantios" (
@@ -1394,79 +1081,31 @@ ALTER TABLE "public"."v2_sync_conflicts" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."v2_vendas" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "uuid" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "usuario_id" "uuid",
-    "cliente" "text",
-    "produto" "text",
     "quantidade" numeric,
     "valor" numeric,
-    "data" "text",
-    "status_pagamento" "text" DEFAULT 'A_RECEBER'::"text",
-    "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"())
+    "data_venda" "date" DEFAULT CURRENT_DATE,
+    "last_updated" timestamp with time zone DEFAULT "now"(),
+    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text",
+    "is_deleted" boolean DEFAULT false
 );
 
 
 ALTER TABLE "public"."v2_vendas" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."vendas" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "cliente_id" "uuid",
-    "produto_id" "uuid",
-    "quantidade" numeric,
-    "valor" numeric,
-    "status_pagamento" "text",
-    "data_venda" "date",
-    "created_at" timestamp without time zone DEFAULT "now"(),
-    "last_updated" timestamp without time zone DEFAULT "now"(),
-    "uuid" "uuid" DEFAULT "gen_random_uuid"(),
-    "is_deleted" integer DEFAULT 0,
-    "usuario_id_bak_20260315145412" "uuid",
-    "is_deleted_bool" boolean DEFAULT false,
-    "user_id" "uuid",
-    "farm_id" "text" DEFAULT 'fazenda_padrao'::"text"
-);
-
-
-ALTER TABLE "public"."vendas" OWNER TO "postgres";
-
-
-CREATE OR REPLACE VIEW "public"."view_culturas_resumo" WITH ("security_invoker"='true') AS
- SELECT "user_id",
-    "cultura",
-    "count"(*) AS "total_plantios",
-    "sum"("quantidade_pes") AS "total_pes"
-   FROM "public"."plantio"
-  GROUP BY "user_id", "cultura";
-
-
-ALTER VIEW "public"."view_culturas_resumo" OWNER TO "postgres";
-
-
-CREATE OR REPLACE VIEW "public"."view_estoque_critico" WITH ("security_invoker"='true') AS
- SELECT "e"."user_id",
-    "c"."nome" AS "produto",
-    "e"."quantidade",
-    "c"."unidade"
-   FROM ("public"."estoque" "e"
-     JOIN "public"."cadastro" "c" ON (("e"."produto_uuid" = "c"."uuid")))
-  WHERE ("e"."quantidade" <= (0)::numeric);
-
-
-ALTER VIEW "public"."view_estoque_critico" OWNER TO "postgres";
-
-
 CREATE OR REPLACE VIEW "public"."view_financeiro_resumo" WITH ("security_invoker"='true') AS
- SELECT "v"."user_id",
-    COALESCE("sum"("v"."valor"), (0)::numeric) AS "total_vendas",
-    COALESCE("c"."total_custos", (0)::numeric) AS "total_custos",
-    (COALESCE("sum"("v"."valor"), (0)::numeric) - COALESCE("c"."total_custos", (0)::numeric)) AS "lucro_liquido"
-   FROM ("public"."vendas" "v"
-     LEFT JOIN ( SELECT "custos"."user_id",
-            "sum"("custos"."valor_total") AS "total_custos"
-           FROM "public"."custos"
-          GROUP BY "custos"."user_id") "c" ON (("c"."user_id" = "v"."user_id")))
-  GROUP BY "v"."user_id", "c"."total_custos";
+ SELECT "usuario_id",
+    COALESCE("sum"("valor"), (0)::numeric) AS "total_vendas",
+    ( SELECT COALESCE("sum"("c"."valor_total"), (0)::numeric) AS "coalesce"
+           FROM "public"."v2_custos" "c"
+          WHERE ("c"."usuario_id" = "v"."usuario_id")) AS "total_custos",
+    (COALESCE("sum"("valor"), (0)::numeric) - ( SELECT COALESCE("sum"("c"."valor_total"), (0)::numeric) AS "coalesce"
+           FROM "public"."v2_custos" "c"
+          WHERE ("c"."usuario_id" = "v"."usuario_id"))) AS "lucro_liquido"
+   FROM "public"."v2_vendas" "v"
+  GROUP BY "usuario_id";
 
 
 ALTER VIEW "public"."view_financeiro_resumo" OWNER TO "postgres";
@@ -1505,13 +1144,8 @@ ALTER TABLE ONLY "public"."app_settings"
 
 
 
-ALTER TABLE ONLY "public"."areas"
-    ADD CONSTRAINT "areas_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."areas"
-    ADD CONSTRAINT "areas_uuid_unique" UNIQUE ("uuid");
+ALTER TABLE ONLY "public"."cadastro"
+    ADD CONSTRAINT "cadastro_nome_unique" UNIQUE ("nome");
 
 
 
@@ -1520,48 +1154,8 @@ ALTER TABLE ONLY "public"."cadastro"
 
 
 
-ALTER TABLE ONLY "public"."caderno_notas"
-    ADD CONSTRAINT "caderno_notas_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."caderno_notas"
-    ADD CONSTRAINT "caderno_notas_uuid_key" UNIQUE ("uuid");
-
-
-
 ALTER TABLE ONLY "public"."categorias_despesa"
     ADD CONSTRAINT "categorias_despesa_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."clientes"
-    ADD CONSTRAINT "clientes_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."clientes"
-    ADD CONSTRAINT "clientes_uuid_unique" UNIQUE ("uuid");
-
-
-
-ALTER TABLE ONLY "public"."colheitas"
-    ADD CONSTRAINT "colheitas_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."colheitas"
-    ADD CONSTRAINT "colheitas_uuid_unique" UNIQUE ("uuid");
-
-
-
-ALTER TABLE ONLY "public"."compras"
-    ADD CONSTRAINT "compras_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."compras"
-    ADD CONSTRAINT "compras_uuid_key" UNIQUE ("uuid");
 
 
 
@@ -1585,26 +1179,6 @@ ALTER TABLE ONLY "public"."costs"
 
 
 
-ALTER TABLE ONLY "public"."culturas"
-    ADD CONSTRAINT "culturas_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."culturas"
-    ADD CONSTRAINT "culturas_uuid_key" UNIQUE ("uuid");
-
-
-
-ALTER TABLE ONLY "public"."custos"
-    ADD CONSTRAINT "custos_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."custos"
-    ADD CONSTRAINT "custos_uuid_key" UNIQUE ("uuid");
-
-
-
 ALTER TABLE ONLY "public"."descarte"
     ADD CONSTRAINT "descarte_pkey" PRIMARY KEY ("id");
 
@@ -1622,21 +1196,6 @@ ALTER TABLE ONLY "public"."error_logs"
 
 ALTER TABLE ONLY "public"."error_logs"
     ADD CONSTRAINT "error_logs_uuid_key" UNIQUE ("uuid");
-
-
-
-ALTER TABLE ONLY "public"."estoque"
-    ADD CONSTRAINT "estoque_item_id_key" UNIQUE ("produto_uuid");
-
-
-
-ALTER TABLE ONLY "public"."estoque"
-    ADD CONSTRAINT "estoque_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."estoque"
-    ADD CONSTRAINT "estoque_uuid_unique" UNIQUE ("uuid");
 
 
 
@@ -1662,41 +1221,6 @@ ALTER TABLE ONLY "public"."financial_accounts"
 
 ALTER TABLE ONLY "public"."financial_installments"
     ADD CONSTRAINT "financial_installments_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."items"
-    ADD CONSTRAINT "items_codigo_key" UNIQUE ("codigo");
-
-
-
-ALTER TABLE ONLY "public"."items"
-    ADD CONSTRAINT "items_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."items"
-    ADD CONSTRAINT "items_uuid_unique" UNIQUE ("uuid");
-
-
-
-ALTER TABLE ONLY "public"."manutencao_frota"
-    ADD CONSTRAINT "manutencao_frota_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."manutencao_frota"
-    ADD CONSTRAINT "manutencao_frota_uuid_key" UNIQUE ("uuid");
-
-
-
-ALTER TABLE ONLY "public"."maquinas"
-    ADD CONSTRAINT "maquinas_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."maquinas"
-    ADD CONSTRAINT "maquinas_uuid_key" UNIQUE ("uuid");
 
 
 
@@ -1745,21 +1269,6 @@ ALTER TABLE ONLY "public"."orders"
 
 
 
-ALTER TABLE ONLY "public"."planos_adubacao"
-    ADD CONSTRAINT "planos_adubacao_pkey" PRIMARY KEY ("uuid");
-
-
-
-ALTER TABLE ONLY "public"."plantio"
-    ADD CONSTRAINT "plantio_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."plantio"
-    ADD CONSTRAINT "plantio_uuid_key" UNIQUE ("uuid");
-
-
-
 ALTER TABLE ONLY "public"."production_fertilization_items"
     ADD CONSTRAINT "production_fertilization_items_pkey" PRIMARY KEY ("id");
 
@@ -1800,16 +1309,6 @@ ALTER TABLE ONLY "public"."unidades_medida"
 
 
 
-ALTER TABLE ONLY "public"."user_profiles"
-    ADD CONSTRAINT "user_profiles_email_key" UNIQUE ("email");
-
-
-
-ALTER TABLE ONLY "public"."user_profiles"
-    ADD CONSTRAINT "user_profiles_pkey" PRIMARY KEY ("id");
-
-
-
 ALTER TABLE ONLY "public"."users"
     ADD CONSTRAINT "users_email_key" UNIQUE ("email");
 
@@ -1835,23 +1334,23 @@ ALTER TABLE ONLY "public"."v2_analise_solo"
 
 
 
-ALTER TABLE ONLY "public"."v2_colheitas"
-    ADD CONSTRAINT "v2_colheitas_pkey" PRIMARY KEY ("id");
-
-
-
 ALTER TABLE ONLY "public"."v2_custos"
-    ADD CONSTRAINT "v2_custos_pkey" PRIMARY KEY ("id");
+    ADD CONSTRAINT "v2_custos_pkey" PRIMARY KEY ("uuid");
+
+
+
+ALTER TABLE ONLY "public"."v2_estoque_atual"
+    ADD CONSTRAINT "v2_estoque_atual_pkey" PRIMARY KEY ("uuid");
+
+
+
+ALTER TABLE ONLY "public"."v2_estoque_movimentacoes"
+    ADD CONSTRAINT "v2_estoque_movimentacoes_pkey" PRIMARY KEY ("uuid");
 
 
 
 ALTER TABLE ONLY "public"."v2_fazendas"
     ADD CONSTRAINT "v2_fazendas_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."v2_movimentacoes_estoque"
-    ADD CONSTRAINT "v2_movimentacoes_estoque_pkey" PRIMARY KEY ("id");
 
 
 
@@ -1886,17 +1385,7 @@ ALTER TABLE ONLY "public"."v2_talhoes"
 
 
 ALTER TABLE ONLY "public"."v2_vendas"
-    ADD CONSTRAINT "v2_vendas_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."vendas"
-    ADD CONSTRAINT "vendas_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."vendas"
-    ADD CONSTRAINT "vendas_uuid_unique" UNIQUE ("uuid");
+    ADD CONSTRAINT "v2_vendas_pkey" PRIMARY KEY ("uuid");
 
 
 
@@ -1912,27 +1401,7 @@ CREATE INDEX "app_settings_usuario_id_idx" ON "public"."app_settings" USING "btr
 
 
 
-CREATE INDEX "areas_usuario_id_idx" ON "public"."areas" USING "btree" ("usuario_id_bak_20260315145412");
-
-
-
-CREATE INDEX "caderno_notas_usuario_id_idx" ON "public"."caderno_notas" USING "btree" ("usuario_id_bak_20260315145412");
-
-
-
 CREATE INDEX "categorias_despesa_usuario_id_idx" ON "public"."categorias_despesa" USING "btree" ("usuario_id_bak_20260315145412");
-
-
-
-CREATE INDEX "clientes_usuario_id_idx" ON "public"."clientes" USING "btree" ("usuario_id_bak_20260315145412");
-
-
-
-CREATE INDEX "colheitas_usuario_id_idx" ON "public"."colheitas" USING "btree" ("usuario_id_bak_20260315145412");
-
-
-
-CREATE INDEX "compras_usuario_id_idx" ON "public"."compras" USING "btree" ("usuario_id_bak_20260315145412");
 
 
 
@@ -1944,14 +1413,6 @@ CREATE INDEX "costs_usuario_id_idx" ON "public"."costs" USING "btree" ("usuario_
 
 
 
-CREATE INDEX "culturas_usuario_id_idx" ON "public"."culturas" USING "btree" ("usuario_id_bak_20260315145412");
-
-
-
-CREATE INDEX "custos_usuario_id_idx" ON "public"."custos" USING "btree" ("usuario_id_bak_20260315145412");
-
-
-
 CREATE INDEX "descarte_usuario_id_idx" ON "public"."descarte" USING "btree" ("usuario_id_bak_20260315145412");
 
 
@@ -1960,43 +1421,7 @@ CREATE INDEX "error_logs_usuario_id_idx" ON "public"."error_logs" USING "btree" 
 
 
 
-CREATE INDEX "estoque_usuario_id_idx" ON "public"."estoque" USING "btree" ("usuario_id_bak_20260315145412");
-
-
-
-CREATE INDEX "idx_areas_updated" ON "public"."areas" USING "btree" ("last_updated");
-
-
-
-CREATE INDEX "idx_areas_uuid" ON "public"."areas" USING "btree" ("uuid");
-
-
-
 CREATE INDEX "idx_backup_monitoramento_entidade_id" ON "public"."monitoramento_entidade_usuario_id_backup" USING "btree" ("monitoramento_entidade_id");
-
-
-
-CREATE INDEX "idx_clientes_uuid" ON "public"."clientes" USING "btree" ("uuid");
-
-
-
-CREATE INDEX "idx_colheitas_area_id" ON "public"."colheitas" USING "btree" ("area_id");
-
-
-
-CREATE INDEX "idx_colheitas_usuario_id" ON "public"."colheitas" USING "btree" ("usuario_id_bak_20260315145412");
-
-
-
-CREATE INDEX "idx_colheitas_uuid" ON "public"."colheitas" USING "btree" ("uuid");
-
-
-
-CREATE INDEX "idx_culturas_uuid" ON "public"."culturas" USING "btree" ("uuid");
-
-
-
-CREATE INDEX "idx_estoque_updated" ON "public"."estoque" USING "btree" ("last_updated");
 
 
 
@@ -2012,18 +1437,6 @@ CREATE INDEX "idx_fin_inst_acc" ON "public"."financial_installments" USING "btre
 
 
 
-CREATE INDEX "idx_items_last_updated" ON "public"."items" USING "btree" ("last_updated");
-
-
-
-CREATE INDEX "idx_items_updated" ON "public"."items" USING "btree" ("last_updated");
-
-
-
-CREATE INDEX "idx_items_uuid" ON "public"."items" USING "btree" ("uuid");
-
-
-
 CREATE INDEX "idx_monitoramento_entidade_user_id" ON "public"."monitoramento_entidade" USING "btree" ("user_id");
 
 
@@ -2032,51 +1445,7 @@ CREATE INDEX "idx_movimentestoque_item_id" ON "public"."movimentos_estoque" USIN
 
 
 
-CREATE INDEX "idx_planos_adubacao_status" ON "public"."planos_adubacao" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_sync_updated" ON "public"."items" USING "btree" ("last_updated");
-
-
-
-CREATE INDEX "idx_sync_updated_items" ON "public"."items" USING "btree" ("last_updated");
-
-
-
 CREATE INDEX "idx_users_updated" ON "public"."users" USING "btree" ("last_updated");
-
-
-
-CREATE INDEX "idx_vendas_cliente_id" ON "public"."vendas" USING "btree" ("cliente_id");
-
-
-
-CREATE INDEX "idx_vendas_produto_id" ON "public"."vendas" USING "btree" ("produto_id");
-
-
-
-CREATE INDEX "idx_vendas_updated" ON "public"."vendas" USING "btree" ("last_updated");
-
-
-
-CREATE INDEX "idx_vendas_usuario_id" ON "public"."vendas" USING "btree" ("usuario_id_bak_20260315145412");
-
-
-
-CREATE INDEX "idx_vendas_uuid" ON "public"."vendas" USING "btree" ("uuid");
-
-
-
-CREATE INDEX "items_usuario_id_idx" ON "public"."items" USING "btree" ("usuario_id_bak_20260315145412");
-
-
-
-CREATE INDEX "manutencao_frota_usuario_id_idx" ON "public"."manutencao_frota" USING "btree" ("usuario_id_bak_20260315145412");
-
-
-
-CREATE INDEX "maquinas_usuario_id_idx" ON "public"."maquinas" USING "btree" ("usuario_id_bak_20260315145412");
 
 
 
@@ -2116,14 +1485,6 @@ CREATE INDEX "movimentos_estoque_usuario_id_idx" ON "public"."movimentos_estoque
 
 
 
-CREATE INDEX "planos_adubacao_usuario_id_idx" ON "public"."planos_adubacao" USING "btree" ("usuario_id_bak_20260315145412");
-
-
-
-CREATE INDEX "plantio_usuario_id_idx" ON "public"."plantio" USING "btree" ("usuario_id_bak_20260315145412");
-
-
-
 CREATE INDEX "profiles_usuario_id_idx" ON "public"."profiles" USING "btree" ("usuario_id_bak_20260315145412");
 
 
@@ -2144,35 +1505,7 @@ CREATE UNIQUE INDEX "uq_analise_ia_uuid" ON "public"."analise_ia" USING "btree" 
 
 
 
-CREATE UNIQUE INDEX "uq_areas_uuid" ON "public"."areas" USING "btree" ("uuid");
-
-
-
-CREATE UNIQUE INDEX "uq_caderno_notas_uuid" ON "public"."caderno_notas" USING "btree" ("uuid");
-
-
-
-CREATE UNIQUE INDEX "uq_clientes_uuid" ON "public"."clientes" USING "btree" ("uuid");
-
-
-
-CREATE UNIQUE INDEX "uq_colheitas_uuid" ON "public"."colheitas" USING "btree" ("uuid");
-
-
-
-CREATE UNIQUE INDEX "uq_compras_uuid" ON "public"."compras" USING "btree" ("uuid");
-
-
-
 CREATE UNIQUE INDEX "uq_costs_uuid" ON "public"."costs" USING "btree" ("uuid");
-
-
-
-CREATE UNIQUE INDEX "uq_culturas_uuid" ON "public"."culturas" USING "btree" ("uuid");
-
-
-
-CREATE UNIQUE INDEX "uq_custos_uuid" ON "public"."custos" USING "btree" ("uuid");
 
 
 
@@ -2181,22 +1514,6 @@ CREATE UNIQUE INDEX "uq_descarte_uuid" ON "public"."descarte" USING "btree" ("uu
 
 
 CREATE UNIQUE INDEX "uq_error_logs_uuid" ON "public"."error_logs" USING "btree" ("uuid");
-
-
-
-CREATE UNIQUE INDEX "uq_estoque_item_id" ON "public"."estoque" USING "btree" ("produto_uuid");
-
-
-
-CREATE UNIQUE INDEX "uq_estoque_uuid" ON "public"."estoque" USING "btree" ("uuid");
-
-
-
-CREATE UNIQUE INDEX "uq_items_uuid" ON "public"."items" USING "btree" ("uuid");
-
-
-
-CREATE UNIQUE INDEX "uq_maquinas_uuid" ON "public"."maquinas" USING "btree" ("uuid");
 
 
 
@@ -2209,14 +1526,6 @@ CREATE UNIQUE INDEX "uq_monitoramento_media_uuid" ON "public"."monitoramento_med
 
 
 CREATE UNIQUE INDEX "uq_movimentacoes_financeiras_uuid" ON "public"."movimentacoes_financeiras" USING "btree" ("uuid");
-
-
-
-CREATE UNIQUE INDEX "uq_planos_adubacao_uuid" ON "public"."planos_adubacao" USING "btree" ("uuid");
-
-
-
-CREATE UNIQUE INDEX "uq_plantio_uuid" ON "public"."plantio" USING "btree" ("uuid");
 
 
 
@@ -2236,15 +1545,7 @@ CREATE UNIQUE INDEX "uq_users_uuid" ON "public"."users" USING "btree" ("uuid");
 
 
 
-CREATE UNIQUE INDEX "uq_vendas_uuid" ON "public"."vendas" USING "btree" ("uuid");
-
-
-
 CREATE INDEX "users_usuario_id_idx" ON "public"."users" USING "btree" ("usuario_id_bak_20260315145412");
-
-
-
-CREATE INDEX "v2_colheitas_usuario_id_idx" ON "public"."v2_colheitas" USING "btree" ("usuario_id_bak_20260315145412");
 
 
 
@@ -2260,23 +1561,23 @@ CREATE INDEX "v2_talhoes_usuario_id_idx" ON "public"."v2_talhoes" USING "btree" 
 
 
 
-CREATE INDEX "vendas_usuario_id_idx" ON "public"."vendas" USING "btree" ("usuario_id_bak_20260315145412");
+CREATE OR REPLACE TRIGGER "tr_update_last_updated_cadastro" BEFORE UPDATE ON "public"."cadastro" FOR EACH ROW EXECUTE FUNCTION "public"."update_last_updated_column"();
 
 
 
-CREATE OR REPLACE TRIGGER "tr_update_last_updated_custos" BEFORE UPDATE ON "public"."custos" FOR EACH ROW EXECUTE FUNCTION "public"."update_last_updated_column"();
+CREATE OR REPLACE TRIGGER "tr_update_last_updated_v2_custos" BEFORE UPDATE ON "public"."v2_custos" FOR EACH ROW EXECUTE FUNCTION "public"."update_last_updated_column"();
 
 
 
-CREATE OR REPLACE TRIGGER "tr_update_last_updated_estoque" BEFORE UPDATE ON "public"."estoque" FOR EACH ROW EXECUTE FUNCTION "public"."update_last_updated_column"();
+CREATE OR REPLACE TRIGGER "tr_update_last_updated_v2_estoque_atual" BEFORE UPDATE ON "public"."v2_estoque_atual" FOR EACH ROW EXECUTE FUNCTION "public"."update_last_updated_column"();
 
 
 
-CREATE OR REPLACE TRIGGER "tr_update_last_updated_planos_adubacao" BEFORE UPDATE ON "public"."planos_adubacao" FOR EACH ROW EXECUTE FUNCTION "public"."update_last_updated_column"();
+CREATE OR REPLACE TRIGGER "tr_update_last_updated_v2_estoque_movimentacoes" BEFORE UPDATE ON "public"."v2_estoque_movimentacoes" FOR EACH ROW EXECUTE FUNCTION "public"."update_last_updated_column"();
 
 
 
-CREATE OR REPLACE TRIGGER "tr_update_last_updated_vendas" BEFORE UPDATE ON "public"."vendas" FOR EACH ROW EXECUTE FUNCTION "public"."update_last_updated_column"();
+CREATE OR REPLACE TRIGGER "tr_update_last_updated_v2_vendas" BEFORE UPDATE ON "public"."v2_vendas" FOR EACH ROW EXECUTE FUNCTION "public"."update_last_updated_column"();
 
 
 
@@ -2300,38 +1601,8 @@ ALTER TABLE ONLY "public"."app_settings"
 
 
 
-ALTER TABLE ONLY "public"."areas"
-    ADD CONSTRAINT "areas_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."caderno_notas"
-    ADD CONSTRAINT "caderno_notas_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
 ALTER TABLE ONLY "public"."categorias_despesa"
     ADD CONSTRAINT "categorias_despesa_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."clientes"
-    ADD CONSTRAINT "clientes_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."colheitas"
-    ADD CONSTRAINT "colheitas_area_id_fkey" FOREIGN KEY ("area_id") REFERENCES "public"."areas"("id");
-
-
-
-ALTER TABLE ONLY "public"."colheitas"
-    ADD CONSTRAINT "colheitas_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "public"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."compras"
-    ADD CONSTRAINT "compras_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
 
 
 
@@ -2345,16 +1616,6 @@ ALTER TABLE ONLY "public"."costs"
 
 
 
-ALTER TABLE ONLY "public"."culturas"
-    ADD CONSTRAINT "culturas_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."custos"
-    ADD CONSTRAINT "custos_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
 ALTER TABLE ONLY "public"."descarte"
     ADD CONSTRAINT "descarte_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
 
@@ -2362,16 +1623,6 @@ ALTER TABLE ONLY "public"."descarte"
 
 ALTER TABLE ONLY "public"."error_logs"
     ADD CONSTRAINT "error_logs_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."estoque"
-    ADD CONSTRAINT "estoque_item_id_fkey" FOREIGN KEY ("produto_uuid") REFERENCES "public"."items"("id");
-
-
-
-ALTER TABLE ONLY "public"."estoque"
-    ADD CONSTRAINT "estoque_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
 
 
 
@@ -2402,31 +1653,6 @@ ALTER TABLE ONLY "public"."financial_accounts"
 
 ALTER TABLE ONLY "public"."financial_installments"
     ADD CONSTRAINT "financial_installments_account_id_fkey" FOREIGN KEY ("account_id") REFERENCES "public"."financial_accounts"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."user_profiles"
-    ADD CONSTRAINT "fk_user" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."items"
-    ADD CONSTRAINT "items_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."manutencao_frota"
-    ADD CONSTRAINT "manutencao_frota_maquina_uuid_fkey" FOREIGN KEY ("maquina_uuid") REFERENCES "public"."maquinas"("id");
-
-
-
-ALTER TABLE ONLY "public"."manutencao_frota"
-    ADD CONSTRAINT "manutencao_frota_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."maquinas"
-    ADD CONSTRAINT "maquinas_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
 
 
 
@@ -2481,37 +1707,7 @@ ALTER TABLE ONLY "public"."movimentacoes_financeiras"
 
 
 ALTER TABLE ONLY "public"."movimentos_estoque"
-    ADD CONSTRAINT "movimentos_estoque_item_id_fkey" FOREIGN KEY ("item_id") REFERENCES "public"."items"("id");
-
-
-
-ALTER TABLE ONLY "public"."movimentos_estoque"
     ADD CONSTRAINT "movimentos_estoque_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."orders"
-    ADD CONSTRAINT "orders_cliente_id_fkey" FOREIGN KEY ("cliente_id") REFERENCES "public"."clientes"("uuid");
-
-
-
-ALTER TABLE ONLY "public"."orders"
-    ADD CONSTRAINT "orders_produto_id_fkey" FOREIGN KEY ("produto_id") REFERENCES "public"."cadastro"("uuid");
-
-
-
-ALTER TABLE ONLY "public"."planos_adubacao"
-    ADD CONSTRAINT "planos_adubacao_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."plantio"
-    ADD CONSTRAINT "plantio_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."production_fertilization_items"
-    ADD CONSTRAINT "production_fertilization_items_plano_uuid_fkey" FOREIGN KEY ("plano_uuid") REFERENCES "public"."planos_adubacao"("uuid");
 
 
 
@@ -2555,13 +1751,18 @@ ALTER TABLE ONLY "public"."v2_analise_solo"
 
 
 
-ALTER TABLE ONLY "public"."v2_colheitas"
-    ADD CONSTRAINT "v2_colheitas_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "public"."v2_produtores"("id");
+ALTER TABLE ONLY "public"."v2_estoque_atual"
+    ADD CONSTRAINT "v2_estoque_atual_produto_uuid_fkey" FOREIGN KEY ("produto_uuid") REFERENCES "public"."cadastro"("uuid");
 
 
 
-ALTER TABLE ONLY "public"."v2_custos"
-    ADD CONSTRAINT "v2_custos_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "public"."v2_produtores"("id");
+ALTER TABLE ONLY "public"."v2_estoque_atual"
+    ADD CONSTRAINT "v2_estoque_atual_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."v2_estoque_movimentacoes"
+    ADD CONSTRAINT "v2_estoque_movimentacoes_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "auth"."users"("id");
 
 
 
@@ -2605,43 +1806,11 @@ ALTER TABLE ONLY "public"."v2_talhoes"
 
 
 
-ALTER TABLE ONLY "public"."v2_vendas"
-    ADD CONSTRAINT "v2_vendas_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "public"."v2_produtores"("id");
-
-
-
-ALTER TABLE ONLY "public"."vendas"
-    ADD CONSTRAINT "vendas_cliente_id_fkey" FOREIGN KEY ("cliente_id") REFERENCES "public"."clientes"("id");
-
-
-
-ALTER TABLE ONLY "public"."vendas"
-    ADD CONSTRAINT "vendas_produto_id_fkey" FOREIGN KEY ("produto_id") REFERENCES "public"."items"("id");
-
-
-
-ALTER TABLE ONLY "public"."vendas"
-    ADD CONSTRAINT "vendas_usuario_id_fkey" FOREIGN KEY ("usuario_id_bak_20260315145412") REFERENCES "public"."users"("id");
-
-
-
 CREATE POLICY "Atualização para autenticados" ON "public"."activity_log" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
 CREATE POLICY "Atualização para autenticados" ON "public"."analise_ia" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Atualização para autenticados" ON "public"."caderno_notas" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Atualização para autenticados" ON "public"."colheitas" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Atualização para autenticados" ON "public"."compras" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -2654,14 +1823,6 @@ CREATE POLICY "Atualização para autenticados" ON "public"."costs" FOR UPDATE T
 
 
 CREATE POLICY "Atualização para autenticados" ON "public"."error_logs" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Atualização para autenticados" ON "public"."items" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Atualização para autenticados" ON "public"."maquinas" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -2697,18 +1858,6 @@ CREATE POLICY "Atualização para autenticados" ON "public"."users" FOR UPDATE T
 
 
 
-CREATE POLICY "Exclusão para autenticados" ON "public"."caderno_notas" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Exclusão para autenticados" ON "public"."colheitas" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Exclusão para autenticados" ON "public"."compras" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "Exclusão para autenticados" ON "public"."cost_categories" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
@@ -2718,14 +1867,6 @@ CREATE POLICY "Exclusão para autenticados" ON "public"."costs" FOR DELETE TO "a
 
 
 CREATE POLICY "Exclusão para autenticados" ON "public"."error_logs" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Exclusão para autenticados" ON "public"."items" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Exclusão para autenticados" ON "public"."maquinas" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -2765,18 +1906,6 @@ CREATE POLICY "Inserção para autenticados" ON "public"."analise_ia" FOR INSERT
 
 
 
-CREATE POLICY "Inserção para autenticados" ON "public"."caderno_notas" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Inserção para autenticados" ON "public"."colheitas" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Inserção para autenticados" ON "public"."compras" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "Inserção para autenticados" ON "public"."cost_categories" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
@@ -2786,14 +1915,6 @@ CREATE POLICY "Inserção para autenticados" ON "public"."costs" FOR INSERT TO "
 
 
 CREATE POLICY "Inserção para autenticados" ON "public"."error_logs" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Inserção para autenticados" ON "public"."items" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "Inserção para autenticados" ON "public"."maquinas" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -2833,43 +1954,7 @@ CREATE POLICY "Manage own app_settings" ON "public"."app_settings" USING (false)
 
 
 
-CREATE POLICY "Manage own areas" ON "public"."areas" USING (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Manage own cadastro" ON "public"."cadastro" USING (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Manage own caderno_notas" ON "public"."caderno_notas" USING (("auth"."uid"() = "usuario_id")) WITH CHECK (("auth"."uid"() = "usuario_id"));
-
-
-
-CREATE POLICY "Manage own clientes" ON "public"."clientes" USING (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Manage own colheitas" ON "public"."colheitas" USING (("auth"."uid"() = "usuario_id")) WITH CHECK (("auth"."uid"() = "usuario_id"));
-
-
-
-CREATE POLICY "Manage own compras" ON "public"."compras" USING (("auth"."uid"() = "usuario_id")) WITH CHECK (("auth"."uid"() = "usuario_id"));
-
-
-
-CREATE POLICY "Manage own culturas" ON "public"."culturas" USING (("auth"."uid"() = "id"));
-
-
-
-CREATE POLICY "Manage own custos" ON "public"."custos" USING (("auth"."uid"() = "user_id"));
-
-
-
 CREATE POLICY "Manage own descarte" ON "public"."descarte" USING (("auth"."uid"() = "usuario_id")) WITH CHECK (("auth"."uid"() = "usuario_id"));
-
-
-
-CREATE POLICY "Manage own estoque" ON "public"."estoque" USING (("auth"."uid"() = "user_id"));
 
 
 
@@ -2881,23 +1966,7 @@ CREATE POLICY "Manage own fertilization_recipes" ON "public"."fertilization_reci
 
 
 
-CREATE POLICY "Manage own manutencao_frota" ON "public"."manutencao_frota" USING (("auth"."uid"() = "usuario_id")) WITH CHECK (("auth"."uid"() = "usuario_id"));
-
-
-
-CREATE POLICY "Manage own maquinas" ON "public"."maquinas" USING (("auth"."uid"() = "usuario_id")) WITH CHECK (("auth"."uid"() = "usuario_id"));
-
-
-
 CREATE POLICY "Manage own orders" ON "public"."orders" USING (("auth"."uid"() = "usuario_id")) WITH CHECK (("auth"."uid"() = "usuario_id"));
-
-
-
-CREATE POLICY "Manage own planos_adubacao" ON "public"."planos_adubacao" USING (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Manage own plantio" ON "public"."plantio" USING (("auth"."uid"() = "user_id"));
 
 
 
@@ -2905,31 +1974,23 @@ CREATE POLICY "Manage own production_fertilization_items" ON "public"."productio
 
 
 
-CREATE POLICY "Manage own user_profiles" ON "public"."user_profiles" USING (("auth"."uid"() = "id"));
+CREATE POLICY "Manage own v2_custos" ON "public"."v2_custos" USING (("auth"."uid"() = "usuario_id"));
 
 
 
-CREATE POLICY "Manage own v2_movimentacoes_estoque" ON "public"."v2_movimentacoes_estoque" USING (("auth"."uid"() = "user_id"));
+CREATE POLICY "Manage own v2_estoque_atual" ON "public"."v2_estoque_atual" USING (("auth"."uid"() = "usuario_id"));
 
 
 
-CREATE POLICY "Manage own vendas" ON "public"."vendas" USING (("auth"."uid"() = "user_id"));
+CREATE POLICY "Manage own v2_estoque_movimentacoes" ON "public"."v2_estoque_movimentacoes" USING (("auth"."uid"() = "usuario_id"));
+
+
+
+CREATE POLICY "Manage own v2_vendas" ON "public"."v2_vendas" USING (("auth"."uid"() = "usuario_id"));
 
 
 
 CREATE POLICY "Owner Access" ON "public"."analise_ia" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
-CREATE POLICY "Owner Access" ON "public"."caderno_notas" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
-CREATE POLICY "Owner Access" ON "public"."colheitas" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
-CREATE POLICY "Owner Access" ON "public"."compras" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
 
@@ -2954,14 +2015,6 @@ CREATE POLICY "Owner Access" ON "public"."fertilization_applications" USING (("u
 
 
 CREATE POLICY "Owner Access" ON "public"."fertilization_recipes" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
-CREATE POLICY "Owner Access" ON "public"."manutencao_frota" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
-CREATE POLICY "Owner Access" ON "public"."maquinas" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
 
@@ -3026,9 +2079,6 @@ CREATE POLICY "analise_ia_admin_read" ON "public"."analise_ia" FOR SELECT TO "au
 ALTER TABLE "public"."app_settings" ENABLE ROW LEVEL SECURITY;
 
 
-ALTER TABLE "public"."areas" ENABLE ROW LEVEL SECURITY;
-
-
 CREATE POLICY "authenticated_delete" ON "public"."monitoramento_entidade_audit" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
@@ -3053,18 +2103,6 @@ CREATE POLICY "authenticated_shared_access" ON "public"."descarte" TO "authentic
 
 
 
-CREATE POLICY "authenticated_shared_access" ON "public"."items" TO "authenticated" USING (("auth"."uid"() IS NOT NULL)) WITH CHECK (("auth"."uid"() IS NOT NULL));
-
-
-
-CREATE POLICY "authenticated_shared_access" ON "public"."manutencao_frota" TO "authenticated" USING (("auth"."uid"() IS NOT NULL)) WITH CHECK (("auth"."uid"() IS NOT NULL));
-
-
-
-CREATE POLICY "authenticated_shared_access" ON "public"."maquinas" TO "authenticated" USING (("auth"."uid"() IS NOT NULL)) WITH CHECK (("auth"."uid"() IS NOT NULL));
-
-
-
 CREATE POLICY "authenticated_shared_access" ON "public"."unidades_medida" TO "authenticated" USING (("auth"."uid"() IS NOT NULL)) WITH CHECK (("auth"."uid"() IS NOT NULL));
 
 
@@ -3076,17 +2114,6 @@ CREATE POLICY "authenticated_update" ON "public"."monitoramento_entidade_audit" 
 ALTER TABLE "public"."cadastro" ENABLE ROW LEVEL SECURITY;
 
 
-ALTER TABLE "public"."caderno_notas" ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "caderno_notas_admin_read" ON "public"."caderno_notas" FOR SELECT TO "authenticated" USING ((("auth"."jwt"() ->> 'role'::"text") = 'admin'::"text"));
-
-
-
-CREATE POLICY "caderno_notas_owner_full_access" ON "public"."caderno_notas" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
-
-
-
 ALTER TABLE "public"."categorias_despesa" ENABLE ROW LEVEL SECURITY;
 
 
@@ -3095,31 +2122,6 @@ CREATE POLICY "categorias_despesa_admin_read" ON "public"."categorias_despesa" F
 
 
 CREATE POLICY "categorias_despesa_owner_full_access" ON "public"."categorias_despesa" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
-
-
-
-ALTER TABLE "public"."clientes" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."colheitas" ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "colheitas_admin_read" ON "public"."colheitas" FOR SELECT TO "authenticated" USING ((("auth"."jwt"() ->> 'role'::"text") = 'admin'::"text"));
-
-
-
-CREATE POLICY "colheitas_owner_full_access" ON "public"."colheitas" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
-
-
-
-ALTER TABLE "public"."compras" ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "compras_admin_read" ON "public"."compras" FOR SELECT TO "authenticated" USING ((("auth"."jwt"() ->> 'role'::"text") = 'admin'::"text"));
-
-
-
-CREATE POLICY "compras_owner_full_access" ON "public"."compras" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
 
 
 
@@ -3145,12 +2147,6 @@ CREATE POLICY "costs_owner_full_access" ON "public"."costs" TO "authenticated" U
 
 
 
-ALTER TABLE "public"."culturas" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."custos" ENABLE ROW LEVEL SECURITY;
-
-
 ALTER TABLE "public"."descarte" ENABLE ROW LEVEL SECURITY;
 
 
@@ -3173,9 +2169,6 @@ CREATE POLICY "error_logs_owner_full_access" ON "public"."error_logs" TO "authen
 
 
 
-ALTER TABLE "public"."estoque" ENABLE ROW LEVEL SECURITY;
-
-
 ALTER TABLE "public"."fertilization_applications" ENABLE ROW LEVEL SECURITY;
 
 
@@ -3189,39 +2182,6 @@ ALTER TABLE "public"."financial_accounts" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."financial_installments" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."items" ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "items_admin_read" ON "public"."items" FOR SELECT TO "authenticated" USING ((("auth"."jwt"() ->> 'role'::"text") = 'admin'::"text"));
-
-
-
-CREATE POLICY "items_owner_full_access" ON "public"."items" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
-
-
-
-ALTER TABLE "public"."manutencao_frota" ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "manutencao_frota_admin_read" ON "public"."manutencao_frota" FOR SELECT TO "authenticated" USING ((("auth"."jwt"() ->> 'role'::"text") = 'admin'::"text"));
-
-
-
-CREATE POLICY "manutencao_frota_owner_full_access" ON "public"."manutencao_frota" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
-
-
-
-ALTER TABLE "public"."maquinas" ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "maquinas_admin_read" ON "public"."maquinas" FOR SELECT TO "authenticated" USING ((("auth"."jwt"() ->> 'role'::"text") = 'admin'::"text"));
-
-
-
-CREATE POLICY "maquinas_owner_full_access" ON "public"."maquinas" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
-
 
 
 ALTER TABLE "public"."monitoramento_entidade" ENABLE ROW LEVEL SECURITY;
@@ -3323,14 +2283,6 @@ CREATE POLICY "movimentos_estoque_owner_full_access" ON "public"."movimentos_est
 ALTER TABLE "public"."orders" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "owner_access_colheitas" ON "public"."colheitas" TO "authenticated" USING (((("usuario_id_bak_20260315145412")::"text" = (( SELECT "auth"."uid"() AS "uid"))::"text") OR (("auth"."jwt"() ->> 'user_role'::"text") = 'admin'::"text"))) WITH CHECK (((("usuario_id_bak_20260315145412")::"text" = (( SELECT "auth"."uid"() AS "uid"))::"text") OR (("auth"."jwt"() ->> 'user_role'::"text") = 'admin'::"text")));
-
-
-
-CREATE POLICY "owner_delete" ON "public"."colheitas" FOR DELETE TO "authenticated" USING ((("usuario_id_bak_20260315145412")::"text" = (( SELECT "auth"."uid"() AS "uid"))::"text"));
-
-
-
 CREATE POLICY "owner_delete" ON "public"."error_logs" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
@@ -3372,18 +2324,6 @@ CREATE POLICY "owner_full_access" ON "public"."activity_log" TO "authenticated" 
 
 
 CREATE POLICY "owner_full_access" ON "public"."analise_ia" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
-CREATE POLICY "owner_full_access" ON "public"."caderno_notas" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
-CREATE POLICY "owner_full_access" ON "public"."colheitas" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
-CREATE POLICY "owner_full_access" ON "public"."compras" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
 
@@ -3447,14 +2387,6 @@ CREATE POLICY "owner_full_access" ON "public"."v2_analise_solo" TO "authenticate
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."v2_colheitas" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
-CREATE POLICY "owner_full_access" ON "public"."v2_custos" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
 CREATE POLICY "owner_full_access" ON "public"."v2_fazendas" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
 
 
@@ -3475,15 +2407,7 @@ CREATE POLICY "owner_full_access" ON "public"."v2_talhoes" TO "authenticated" US
 
 
 
-CREATE POLICY "owner_full_access" ON "public"."v2_vendas" TO "authenticated" USING (("usuario_id" = "auth"."uid"())) WITH CHECK (("usuario_id" = "auth"."uid"()));
-
-
-
 CREATE POLICY "owner_insert" ON "public"."analise_ia" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "owner_insert" ON "public"."colheitas" FOR INSERT TO "authenticated" WITH CHECK ((("usuario_id_bak_20260315145412")::"text" = (( SELECT "auth"."uid"() AS "uid"))::"text"));
 
 
 
@@ -3531,10 +2455,6 @@ CREATE POLICY "owner_select" ON "public"."analise_ia" FOR SELECT TO "authenticat
 
 
 
-CREATE POLICY "owner_select" ON "public"."colheitas" FOR SELECT TO "authenticated" USING ((("usuario_id_bak_20260315145412")::"text" = (( SELECT "auth"."uid"() AS "uid"))::"text"));
-
-
-
 CREATE POLICY "owner_select" ON "public"."error_logs" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
@@ -3579,10 +2499,6 @@ CREATE POLICY "owner_update" ON "public"."analise_ia" FOR UPDATE TO "authenticat
 
 
 
-CREATE POLICY "owner_update" ON "public"."colheitas" FOR UPDATE TO "authenticated" USING ((("usuario_id_bak_20260315145412")::"text" = (( SELECT "auth"."uid"() AS "uid"))::"text")) WITH CHECK ((("usuario_id_bak_20260315145412")::"text" = (( SELECT "auth"."uid"() AS "uid"))::"text"));
-
-
-
 CREATE POLICY "owner_update" ON "public"."error_logs" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
@@ -3619,12 +2535,6 @@ CREATE POLICY "owner_update" ON "public"."users" FOR UPDATE TO "authenticated" U
 
 
 
-ALTER TABLE "public"."planos_adubacao" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."plantio" ENABLE ROW LEVEL SECURITY;
-
-
 ALTER TABLE "public"."production_fertilization_items" ENABLE ROW LEVEL SECURITY;
 
 
@@ -3639,10 +2549,6 @@ CREATE POLICY "profiles_owner_full_access" ON "public"."profiles" TO "authentica
 
 
 
-CREATE POLICY "public_delete" ON "public"."compras" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "public_delete" ON "public"."cost_categories" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
@@ -3651,19 +2557,7 @@ CREATE POLICY "public_delete" ON "public"."costs" FOR DELETE TO "authenticated" 
 
 
 
-CREATE POLICY "public_delete" ON "public"."items" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_delete" ON "public"."maquinas" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "public_delete" ON "public"."unidades_medida" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_insert" ON "public"."compras" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -3675,19 +2569,7 @@ CREATE POLICY "public_insert" ON "public"."costs" FOR INSERT TO "authenticated" 
 
 
 
-CREATE POLICY "public_insert" ON "public"."items" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_insert" ON "public"."maquinas" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "public_insert" ON "public"."unidades_medida" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_select" ON "public"."compras" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -3696,14 +2578,6 @@ CREATE POLICY "public_select" ON "public"."cost_categories" FOR SELECT TO "authe
 
 
 CREATE POLICY "public_select" ON "public"."costs" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_select" ON "public"."items" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_select" ON "public"."maquinas" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -3727,23 +2601,7 @@ CREATE POLICY "public_standard_access" ON "public"."descarte" TO "authenticated"
 
 
 
-CREATE POLICY "public_standard_access" ON "public"."items" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_standard_access" ON "public"."manutencao_frota" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_standard_access" ON "public"."maquinas" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
 CREATE POLICY "public_standard_access" ON "public"."unidades_medida" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_update" ON "public"."compras" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -3752,14 +2610,6 @@ CREATE POLICY "public_update" ON "public"."cost_categories" FOR UPDATE TO "authe
 
 
 CREATE POLICY "public_update" ON "public"."costs" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_update" ON "public"."items" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
-
-
-
-CREATE POLICY "public_update" ON "public"."maquinas" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
 
 
 
@@ -3796,9 +2646,6 @@ CREATE POLICY "unidades_medida_owner_full_access" ON "public"."unidades_medida" 
 
 
 
-ALTER TABLE "public"."user_profiles" ENABLE ROW LEVEL SECURITY;
-
-
 ALTER TABLE "public"."users" ENABLE ROW LEVEL SECURITY;
 
 
@@ -3816,18 +2663,13 @@ ALTER TABLE "public"."usuario_id_quarantine" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."v2_analise_solo" ENABLE ROW LEVEL SECURITY;
 
 
-ALTER TABLE "public"."v2_colheitas" ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "v2_colheitas_admin_read" ON "public"."v2_colheitas" FOR SELECT TO "authenticated" USING ((("auth"."jwt"() ->> 'role'::"text") = 'admin'::"text"));
-
-
-
-CREATE POLICY "v2_colheitas_owner_full_access" ON "public"."v2_colheitas" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
-
-
-
 ALTER TABLE "public"."v2_custos" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."v2_estoque_atual" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."v2_estoque_movimentacoes" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."v2_fazendas" ENABLE ROW LEVEL SECURITY;
@@ -3839,9 +2681,6 @@ CREATE POLICY "v2_fazendas_admin_read" ON "public"."v2_fazendas" FOR SELECT TO "
 
 CREATE POLICY "v2_fazendas_owner_full_access" ON "public"."v2_fazendas" TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "usuario_id_bak_20260315145412"));
 
-
-
-ALTER TABLE "public"."v2_movimentacoes_estoque" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."v2_plantios" ENABLE ROW LEVEL SECURITY;
@@ -3880,9 +2719,6 @@ CREATE POLICY "v2_talhoes_owner_full_access" ON "public"."v2_talhoes" TO "authen
 
 
 ALTER TABLE "public"."v2_vendas" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."vendas" ENABLE ROW LEVEL SECURITY;
 
 
 
@@ -4117,9 +2953,9 @@ GRANT ALL ON FUNCTION "public"."monitoramento_entidade_run_checks"() TO "service
 
 
 
-GRANT ALL ON FUNCTION "public"."process_sale_v2"("p_user_id" "uuid", "p_produto_uuid" "uuid", "p_quantidade" real, "p_valor" real) TO "anon";
-GRANT ALL ON FUNCTION "public"."process_sale_v2"("p_user_id" "uuid", "p_produto_uuid" "uuid", "p_quantidade" real, "p_valor" real) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."process_sale_v2"("p_user_id" "uuid", "p_produto_uuid" "uuid", "p_quantidade" real, "p_valor" real) TO "service_role";
+GRANT ALL ON FUNCTION "public"."process_sale_v2"("p_usuario_id" "uuid", "p_produto_uuid" "uuid", "p_quantidade" real, "p_valor" real) TO "anon";
+GRANT ALL ON FUNCTION "public"."process_sale_v2"("p_usuario_id" "uuid", "p_produto_uuid" "uuid", "p_quantidade" real, "p_valor" real) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."process_sale_v2"("p_usuario_id" "uuid", "p_produto_uuid" "uuid", "p_quantidade" real, "p_valor" real) TO "service_role";
 
 
 
@@ -4188,45 +3024,15 @@ GRANT ALL ON TABLE "public"."app_settings" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."areas" TO "anon";
-GRANT ALL ON TABLE "public"."areas" TO "authenticated";
-GRANT ALL ON TABLE "public"."areas" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."cadastro" TO "anon";
 GRANT ALL ON TABLE "public"."cadastro" TO "authenticated";
 GRANT ALL ON TABLE "public"."cadastro" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."caderno_notas" TO "anon";
-GRANT ALL ON TABLE "public"."caderno_notas" TO "authenticated";
-GRANT ALL ON TABLE "public"."caderno_notas" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."categorias_despesa" TO "anon";
 GRANT ALL ON TABLE "public"."categorias_despesa" TO "authenticated";
 GRANT ALL ON TABLE "public"."categorias_despesa" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."clientes" TO "anon";
-GRANT ALL ON TABLE "public"."clientes" TO "authenticated";
-GRANT ALL ON TABLE "public"."clientes" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."colheitas" TO "anon";
-GRANT ALL ON TABLE "public"."colheitas" TO "authenticated";
-GRANT ALL ON TABLE "public"."colheitas" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."compras" TO "anon";
-GRANT ALL ON TABLE "public"."compras" TO "authenticated";
-GRANT ALL ON TABLE "public"."compras" TO "service_role";
 
 
 
@@ -4242,18 +3048,6 @@ GRANT ALL ON TABLE "public"."costs" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."culturas" TO "anon";
-GRANT ALL ON TABLE "public"."culturas" TO "authenticated";
-GRANT ALL ON TABLE "public"."culturas" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."custos" TO "anon";
-GRANT ALL ON TABLE "public"."custos" TO "authenticated";
-GRANT ALL ON TABLE "public"."custos" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."descarte" TO "anon";
 GRANT ALL ON TABLE "public"."descarte" TO "authenticated";
 GRANT ALL ON TABLE "public"."descarte" TO "service_role";
@@ -4263,12 +3057,6 @@ GRANT ALL ON TABLE "public"."descarte" TO "service_role";
 GRANT ALL ON TABLE "public"."error_logs" TO "anon";
 GRANT ALL ON TABLE "public"."error_logs" TO "authenticated";
 GRANT ALL ON TABLE "public"."error_logs" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."estoque" TO "anon";
-GRANT ALL ON TABLE "public"."estoque" TO "authenticated";
-GRANT ALL ON TABLE "public"."estoque" TO "service_role";
 
 
 
@@ -4311,24 +3099,6 @@ GRANT ALL ON TABLE "public"."movimentacoes_financeiras" TO "service_role";
 GRANT ALL ON TABLE "public"."financial_summary" TO "anon";
 GRANT ALL ON TABLE "public"."financial_summary" TO "authenticated";
 GRANT ALL ON TABLE "public"."financial_summary" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."items" TO "anon";
-GRANT ALL ON TABLE "public"."items" TO "authenticated";
-GRANT ALL ON TABLE "public"."items" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."manutencao_frota" TO "anon";
-GRANT ALL ON TABLE "public"."manutencao_frota" TO "authenticated";
-GRANT ALL ON TABLE "public"."manutencao_frota" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."maquinas" TO "anon";
-GRANT ALL ON TABLE "public"."maquinas" TO "authenticated";
-GRANT ALL ON TABLE "public"."maquinas" TO "service_role";
 
 
 
@@ -4386,18 +3156,6 @@ GRANT ALL ON TABLE "public"."orders" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."planos_adubacao" TO "anon";
-GRANT ALL ON TABLE "public"."planos_adubacao" TO "authenticated";
-GRANT ALL ON TABLE "public"."planos_adubacao" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."plantio" TO "anon";
-GRANT ALL ON TABLE "public"."plantio" TO "authenticated";
-GRANT ALL ON TABLE "public"."plantio" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."production_fertilization_items" TO "anon";
 GRANT ALL ON TABLE "public"."production_fertilization_items" TO "authenticated";
 GRANT ALL ON TABLE "public"."production_fertilization_items" TO "service_role";
@@ -4434,12 +3192,6 @@ GRANT ALL ON TABLE "public"."unidades_medida" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."user_profiles" TO "anon";
-GRANT ALL ON TABLE "public"."user_profiles" TO "authenticated";
-GRANT ALL ON TABLE "public"."user_profiles" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."users" TO "anon";
 GRANT ALL ON TABLE "public"."users" TO "authenticated";
 GRANT ALL ON TABLE "public"."users" TO "service_role";
@@ -4458,21 +3210,9 @@ GRANT ALL ON SEQUENCE "public"."usuario_id_quarantine_id_seq" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."usuarios" TO "anon";
-GRANT ALL ON TABLE "public"."usuarios" TO "authenticated";
-GRANT ALL ON TABLE "public"."usuarios" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."v2_analise_solo" TO "anon";
 GRANT ALL ON TABLE "public"."v2_analise_solo" TO "authenticated";
 GRANT ALL ON TABLE "public"."v2_analise_solo" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."v2_colheitas" TO "anon";
-GRANT ALL ON TABLE "public"."v2_colheitas" TO "authenticated";
-GRANT ALL ON TABLE "public"."v2_colheitas" TO "service_role";
 
 
 
@@ -4482,9 +3222,15 @@ GRANT ALL ON TABLE "public"."v2_custos" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."v2_movimentacoes_estoque" TO "anon";
-GRANT ALL ON TABLE "public"."v2_movimentacoes_estoque" TO "authenticated";
-GRANT ALL ON TABLE "public"."v2_movimentacoes_estoque" TO "service_role";
+GRANT ALL ON TABLE "public"."v2_estoque_atual" TO "anon";
+GRANT ALL ON TABLE "public"."v2_estoque_atual" TO "authenticated";
+GRANT ALL ON TABLE "public"."v2_estoque_atual" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."v2_estoque_movimentacoes" TO "anon";
+GRANT ALL ON TABLE "public"."v2_estoque_movimentacoes" TO "authenticated";
+GRANT ALL ON TABLE "public"."v2_estoque_movimentacoes" TO "service_role";
 
 
 
@@ -4515,24 +3261,6 @@ GRANT ALL ON TABLE "public"."v2_sync_conflicts" TO "service_role";
 GRANT ALL ON TABLE "public"."v2_vendas" TO "anon";
 GRANT ALL ON TABLE "public"."v2_vendas" TO "authenticated";
 GRANT ALL ON TABLE "public"."v2_vendas" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."vendas" TO "anon";
-GRANT ALL ON TABLE "public"."vendas" TO "authenticated";
-GRANT ALL ON TABLE "public"."vendas" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."view_culturas_resumo" TO "anon";
-GRANT ALL ON TABLE "public"."view_culturas_resumo" TO "authenticated";
-GRANT ALL ON TABLE "public"."view_culturas_resumo" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."view_estoque_critico" TO "anon";
-GRANT ALL ON TABLE "public"."view_estoque_critico" TO "authenticated";
-GRANT ALL ON TABLE "public"."view_estoque_critico" TO "service_role";
 
 
 
