@@ -1,11 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, StatusBar, Image, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, StatusBar, Image, RefreshControl, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
 import { useAnalytics } from '../modules/analytics/hooks/useAnalytics';
 import DashboardContent from '../ui/components/DashboardContent';
+
+const { width } = Dimensions.get('window');
 
 /**
  * HomeScreen - AgroGB Diamond Pro 2026 💎
@@ -59,18 +61,46 @@ export default function HomeScreen() {
                     >
                         <DashboardContent data={analytics} />
 
-                        {/* ACESSO RÁPIDO */}
+                        {/* INTELIGÊNCIA & ESTRATÉGIA */}
+                        <View style={styles.quickAccess}>
+                            <Text style={styles.sectionLabel}>INTELIGÊNCIA & ESTRATÉGIA</Text>
+                            <View style={styles.gridRow}>
+                                <QuickBtn icon="bulb" label="IA Agro" color="#FCD34D" onPress={() => navigation.navigate('Intelligence')} />
+                                <QuickBtn icon="bar-chart" label="BI Geral" color="#3B82F6" onPress={() => navigation.navigate('Relatorios')} />
+                                <QuickBtn icon="analytics" label="Gráficos" color="#8B5CF6" onPress={() => navigation.navigate('Graficos')} />
+                                <QuickBtn icon="leaf" label="Planos" color="#A3E635" onPress={() => navigation.navigate('AdubacaoList')} />
+                            </View>
+                        </View>
+
+                        {/* GESTÃO OPERACIONAL */}
                         <View style={styles.quickAccess}>
                             <Text style={styles.sectionLabel}>GESTÃO OPERACIONAL</Text>
-                            <View style={styles.btnRow}>
-                                <QuickBtn icon="leaf" label="Plantio" color="#10B981" onPress={() => navigation.navigate('Plantio')} />
+                            <View style={styles.gridRow}>
+                                <QuickBtn icon="seedling" label="Plantio" color="#10B981" onPress={() => navigation.navigate('Plantio')} />
                                 <QuickBtn icon="calendar" label="Monitor" color="#3B82F6" onPress={() => navigation.navigate('Monitoramento')} />
-                                <QuickBtn icon="cart" label="Compras" color="#F59E0B" onPress={() => navigation.navigate('Compras')} />
+                                <QuickBtn icon="basket" label="Colheita" color="#F59E0B" onPress={() => navigation.navigate('Colheita')} />
+                                <QuickBtn icon="cube" label="Estoque" color="#6366F1" onPress={() => navigation.navigate('Estoque')} />
+                            </View>
+                            <View style={[styles.gridRow, { marginTop: 15 }]}>
+                                <QuickBtn icon="cart" label="Compras" color="#EC4899" onPress={() => navigation.navigate('Compras')} />
                                 <QuickBtn icon="cash" label="Vendas" color="#A3E635" onPress={() => navigation.navigate('Vendas')} />
+                                <QuickBtn icon="wallet" label="Custos" color="#EF4444" onPress={() => navigation.navigate('Custos')} />
+                                <QuickBtn icon="cube-outline" label="Encomendas" color="#14B8A6" onPress={() => navigation.navigate('Encomendas')} />
+                            </View>
+                        </View>
+
+                        {/* ADMINISTRAÇÃO */}
+                        <View style={styles.quickAccess}>
+                            <Text style={styles.sectionLabel}>ADMINISTRAÇÃO</Text>
+                            <View style={styles.gridRow}>
+                                <QuickBtn icon="people" label="Clientes" color="#10B981" onPress={() => navigation.navigate('Cadastros')} />
+                                <QuickBtn icon="document-text" label="Registro" color="#3B82F6" onPress={() => navigation.navigate('MenuCadastros')} />
+                                <QuickBtn icon="car" label="Frota" color="#F59E0B" onPress={() => navigation.navigate('Frota')} />
+                                <QuickBtn icon="book" label="Campo" color="#8B5CF6" onPress={() => navigation.navigate('CadernoCampo')} />
                             </View>
                         </View>
                         
-                        <View style={{ height: 100 }} />
+                        <View style={{ height: 120 }} />
                     </ScrollView>
 
                     {/* BOTTOM NAV SIMULADO (Para visual de App Grande) */}
@@ -111,12 +141,12 @@ const styles = StyleSheet.create({
     greeting: { color: '#FFF', fontSize: 18, fontWeight: '900' },
     subtext: { color: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 'bold', letterSpacing: 1.5 },
     
-    quickAccess: { paddingHorizontal: 20, marginTop: 10 },
+    quickAccess: { paddingHorizontal: 20, marginTop: 10, marginBottom: 15 },
     sectionLabel: { color: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 15 },
-    btnRow: { flexDirection: 'row', justifyContent: 'space-between' },
-    qBtn: { alignItems: 'center', width: 70 },
-    qIconBg: { width: 56, height: 56, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-    qLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: 'bold' },
+    gridRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
+    qBtn: { alignItems: 'center', width: (width - 70) / 4 }, // Distributes 4 items equally
+    qIconBg: { width: 52, height: 52, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+    qLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 9, fontWeight: 'bold', textAlign: 'center' },
 
     bottomNav: {
         position: 'absolute',
