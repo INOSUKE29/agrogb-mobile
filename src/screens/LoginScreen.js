@@ -119,7 +119,7 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
                         {/* ── LOGO E TÍTUTLOS ──────────────────────────────── */}
                         <View style={styles.logoBlock}>
                             <Image
-                                source={require('../../assets/logo_agrogb.jpg')}
+                                source={require('../../assets/logo_agrogb_feita.jpg')}
                                 style={styles.logoImage}
                                 resizeMode="contain"
                             />
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
 
     /* L O G O */
     logoBlock: { alignItems: 'center', marginBottom: 40 },
-    logoImage: { width: 110, height: 110, marginBottom: 20 },
+    logoImage: { width: 150, height: 150, marginBottom: 20 },
     brandTitle: { fontSize: 32, fontWeight: 'bold', color: '#FFF', letterSpacing: 0.5, marginBottom: 6 },
     brandSubtitle: { color: '#6B7280', fontSize: 10, fontWeight: '700', letterSpacing: 2.5, textTransform: 'uppercase' },
 
