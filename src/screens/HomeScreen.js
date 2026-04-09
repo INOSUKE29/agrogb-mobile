@@ -147,30 +147,32 @@ const NavBtn = ({ icon, label, active, onPress }) => (
 );
 
 const styles = StyleSheet.create({
-    webContainer: { flex: 1, backgroundColor: '#09100c' },
-    mobileFrame: { flex: 1, width: '100%' },
+    webContainer: { flex: 1, backgroundColor: '#0A0F1D' }, // Midnight Blue profundo da borda
+    mobileFrame: { flex: 1, width: '100%', backgroundColor: '#0B1120' },
+    
     scrollArea: { paddingBottom: 120 },
     header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 10 },
     headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     greeting: { color: '#FFF', fontSize: 20, fontWeight: '900' },
-    subtext: { color: '#A3E635', fontSize: 10, fontWeight: 'bold', letterSpacing: 1.5, marginTop: 2 },
+    subtext: { color: '#3B82F6', fontSize: 10, fontWeight: 'bold', letterSpacing: 1.5, marginTop: 2 }, // Azul subtil do print
     
     // Action Pills (Registrar)
     actionPillsRow: { paddingHorizontal: 20, marginBottom: 25, gap: 10 },
-    actionPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', paddingVertical: 12, paddingHorizontal: 16, borderRadius: 20, height: 45 },
-    actionPillHighlight: { backgroundColor: 'rgba(163, 230, 53, 0.15)', borderColor: '#A3E635' },
+    actionPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', paddingVertical: 12, paddingHorizontal: 16, borderRadius: 20, height: 45 },
+    actionPillHighlight: { backgroundColor: 'rgba(59, 130, 246, 0.15)', borderColor: '#3B82F6' }, // Destaque em azul premium
     actionPillText: { color: '#E2E8F0', fontSize: 13, fontWeight: 'bold', marginLeft: 8 },
 
     // Sections
     sectionContainer: { paddingHorizontal: 20, marginBottom: 20 },
     sectionTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
-    sectionTitleDash: { width: 4, height: 16, backgroundColor: '#A3E635', borderRadius: 2, marginRight: 8 },
-    sectionTitle: { color: '#FFF', fontSize: 12, fontWeight: '900', letterSpacing: 1.5 },
+    sectionTitleDash: { width: 4, height: 16, backgroundColor: '#3B82F6', borderRadius: 2, marginRight: 8 }, // Azul das categorias
+    sectionTitle: { color: '#3B82F6', fontSize: 12, fontWeight: '800', letterSpacing: 1.2 }, // Cor de "Segurança", "Equipe" do print
     
     // Big Grid (2x2)
     bigGridRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 },
-    bigCard: { width: '48%', backgroundColor: '#F8FAFC', borderRadius: 16, paddingVertical: 20, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center', marginBottom: 5 },
-    bigCardText: { color: '#0F172A', fontSize: 13, fontWeight: '800' },
+    // A mágica do Dark Card Premium (Fundo translúcido fosco em vez de branco batido)
+    bigCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, paddingVertical: 20, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center', marginBottom: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
+    bigCardText: { color: '#F1F5F9', fontSize: 13, fontWeight: '800' },
 
     bottomNav: {
         position: 'absolute',
@@ -178,7 +180,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         height: 80,
-        backgroundColor: '#0A1211', // Corzinha levemente cinza base do app
+        backgroundColor: '#0A0F1D', // O mesmo azul profundo da base
         flexDirection: 'row',
         justifyContent: 'space-around',
         alignItems: 'center',
