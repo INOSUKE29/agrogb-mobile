@@ -31,13 +31,14 @@ export const InventoryService = {
         );
 
         // Tenta sincronizar se houver rede (fundo)
+        // Sincronização em background otimizada (Non-blocking)
         supabase.from('cadastro').insert([{
             uuid: uuid,
             nome: record.nome,
             unidade: record.unidade,
             tipo: record.tipo
         }]).then(({ error }) => {
-            if (!error) executeQuery(`UPDATE cadastro SET sync_status = 1 WHERE uuid = ?`, [uuid]);
+            if (error && __DEV__) console.warn('[InventorySync] Falha silenciosa:', error.message);
         });
 
         return record;

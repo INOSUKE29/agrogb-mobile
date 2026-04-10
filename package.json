@@ -1,6 +1,6 @@
 {
   "name": "agrogb-mobile",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "AgroGB Mobile - Aplicativo de Gestão Rural",
   "main": "./index.js",
   "engines": {

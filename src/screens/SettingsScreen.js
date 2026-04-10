@@ -9,6 +9,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { LinearGradient } from 'expo-linear-gradient';
+import Constants from 'expo-constants';
 import SafeBlurView from '../ui/SafeBlurView';
 
 import { useTheme } from '../theme/ThemeContext';
@@ -19,6 +20,7 @@ import { AuthService } from '../services/authService';
 import { executeQuery } from '../database/database';
 import { pushLocalChanges, pullServerChanges } from '../services/SyncService';
 import { LoggingService } from '../modules/system/services/LoggingService';
+import { StorageHelper } from '../services/storageHelper';
 
 export default function SettingsScreen({ navigation }) {
     const { colors, theme, setTheme } = useTheme();
@@ -59,7 +61,7 @@ export default function SettingsScreen({ navigation }) {
             // 3. Status Biometria
             const hasHardware = await LocalAuthentication.hasHardwareAsync();
             const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-            const asked = await AsyncStorage.getItem('@asked_biometrics');
+            const asked = await StorageHelper.get('@asked_biometrics');
             setBiometryInfo({
                 available: hasHardware,
                 enrolled: asked === 'true' && isEnrolled
@@ -75,20 +77,28 @@ export default function SettingsScreen({ navigation }) {
     useFocusEffect(useCallback(() => { loadData(); }, []));
 
     const handleToggleBiometry = async () => {
-        if (!biometryInfo.available) return;
+        if (!biometryInfo.available) {
+            Alert.alert('Indisponível', 'Este dispositivo não suporta biometria ou ela não está configurada nas configurações do sistema.');
+            return;
+        }
+
         if (biometryInfo.enrolled) {
-            await AsyncStorage.removeItem('@asked_biometrics');
+            await StorageHelper.remove('@asked_biometrics');
             showToast('Biometria desativada');
             loadData();
         } else {
             const result = await LocalAuthentication.authenticateAsync({
-                promptMessage: 'Confirme sua identidade',
-                fallbackLabel: 'Usar Senha'
+                promptMessage: 'Confirme sua identidade para ativar a biometria',
+                fallbackLabel: 'Usar Senha',
+                disableDeviceFallback: false
             });
+            
             if (result.success) {
-                await AsyncStorage.setItem('@asked_biometrics', 'true');
+                await StorageHelper.save('@asked_biometrics', 'true');
                 showToast('Biometria ativada!');
                 loadData();
+            } else {
+                showToast('Falha ao autenticar biometria');
             }
         }
     };
@@ -122,7 +132,6 @@ export default function SettingsScreen({ navigation }) {
                 onPress={onPress} 
                 activeOpacity={0.7} 
                 style={styles.itemWrapper}
-                disabled={type === 'switch'}
             >
                 <View style={styles.itemMain}>
                     <View style={[styles.iconBox, { backgroundColor: danger ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.05)' }]}>
@@ -282,7 +291,7 @@ export default function SettingsScreen({ navigation }) {
                 </TouchableOpacity>
 
                 <View style={styles.versionInfo}>
-                    <Text style={styles.versionText}>AgroGB Diamond Pro • v1.12.0</Text>
+                    <Text style={styles.versionText}>AgroGB Diamond Pro • v{Constants.expoConfig.version}</Text>
                     <Text style={styles.versionSub}>SISTEMA DE GESTÃO RURAL</Text>
                 </View>
             </ScrollView>

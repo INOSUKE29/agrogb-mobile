@@ -2,7 +2,7 @@
   "expo": {
     "name": "AgroGB Mobile",
     "slug": "agrogb-mobile",
-    "version": "1.0.0",
+    "version": "1.2.1",
     "scheme": "agrogb",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -20,6 +20,7 @@
       "bundleIdentifier": "com.agrogb.mobile"
     },
     "android": {
+      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#10B981"

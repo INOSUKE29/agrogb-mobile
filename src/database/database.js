@@ -10,47 +10,64 @@ const __DEV__ = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
 let db;
 
 // Função auxiliar para promissificar o executeSql
-export const executeQuery = (sql, params = []) => {
+export const executeQuery = (sql, params = [], retries = 3) => {
     return new Promise((resolve, reject) => {
         if (!db) {
             reject(new Error('Banco não inicializado'));
             return;
         }
         
-        // Timeout de segurança de 30s por query (v10.7 Gold)
         const queryTimeout = setTimeout(() => {
             console.warn('🕒 [SQL TIMEOUT CRÍTICO]:', sql.substring(0, 100));
             reject(new Error('Timeout de execução SQL'));
         }, 30000);
 
-        try {
-            db.transaction(tx => {
-                const start = Date.now();
-                tx.executeSql(
-                    sql,
-                    params,
-                    (_, result) => {
-                        clearTimeout(queryTimeout);
-                        const duration = Date.now() - start;
-                        if (__DEV__ && duration > 1000) {
-                            console.log(`⚠️ Query Lenta (${duration}ms):`, sql.substring(0, 100));
+        const attemptQuery = (remainingRetries) => {
+            try {
+                db.transaction(tx => {
+                    const start = Date.now();
+                    tx.executeSql(
+                        sql,
+                        params,
+                        (_, result) => {
+                            clearTimeout(queryTimeout);
+                            const duration = Date.now() - start;
+                            if (__DEV__ && duration > 1000) {
+                                console.log(`⚠️ Query Lenta (${duration}ms):`, sql.substring(0, 100));
+                            }
+                            resolve(result);
+                        },
+                        (_, error) => {
+                            // Se o erro for de banco ocupado/travado, tentamos novamente
+                            if (remainingRetries > 0 && (error.message?.includes('locked') || error.message?.includes('busy'))) {
+                                clearTimeout(queryTimeout);
+                                const delay = (4 - remainingRetries) * 200; // Backoff simples
+                                console.log(`🔄 [DB BUSY] Tentando novamente em ${delay}ms... (Restantes: ${remainingRetries})`);
+                                setTimeout(() => attemptQuery(remainingRetries - 1), delay);
+                                return;
+                            }
+
+                            clearTimeout(queryTimeout);
+                            if (__DEV__) console.log('⚠️ Erro SQL:', sql, error.message);
+                            reject(error);
                         }
-                        resolve(result);
-                    },
-                    (_, error) => {
+                    );
+                }, (txError) => {
+                    if (remainingRetries > 0 && (txError.message?.includes('locked') || txError.message?.includes('busy'))) {
                         clearTimeout(queryTimeout);
-                        if (__DEV__) console.log('⚠️ Erro SQL:', sql, error.message);
-                        reject(error);
+                        setTimeout(() => attemptQuery(remainingRetries - 1), 200);
+                        return;
                     }
-                );
-            }, (txError) => {
+                    clearTimeout(queryTimeout);
+                    reject(txError);
+                });
+            } catch (e) {
                 clearTimeout(queryTimeout);
-                reject(txError);
-            });
-        } catch (e) {
-            clearTimeout(queryTimeout);
-            reject(e);
-        }
+                reject(e);
+            }
+        };
+
+        attemptQuery(retries);
     });
 };
 
@@ -220,7 +237,7 @@ const seedKnowledgeBasePro = async () => {
                 await executeQuery(
                     `INSERT INTO base_conhecimento_pro (uuid, tipo, titulo, sintomas, causas, controle, fonte, nivel_confianca, last_updated) 
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [require('uuid').v4(), s.tipo, s.titulo, s.sintomas, s.causas, s.controle, s.fonte, s.conf, new Date().toISOString()]
+                    [v4(), s.tipo, s.titulo, s.sintomas, s.causas, s.controle, s.fonte, s.conf, new Date().toISOString()]
                 );
             }
             console.log('✅ Base de Conhecimento Seedada com sucesso!');

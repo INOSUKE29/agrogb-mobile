@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
+import * as Updates from 'expo-updates';
 import { initDB } from './src/database/database';
 import AutoSyncService from './src/services/AutoSyncService';
 import { AuthService } from './src/services/authService';
@@ -73,6 +74,23 @@ export default function App() {
     const [initError, setInitError] = useState(null);
 
     useEffect(() => {
+        async function checkUpdates() {
+            try {
+                if (!__DEV__) {
+                    const update = await Updates.checkForUpdateAsync();
+                    if (update.isAvailable) {
+                        console.log("Baixando atualização OTA...");
+                        await Updates.fetchUpdateAsync();
+                        // Recarrega o app para aplicar a atualização
+                        await Updates.reloadAsync(); 
+                    }
+                }
+            } catch (err) {
+                console.log("Erro ao checar OTA Updates:", err);
+            }
+        }
+        checkUpdates();
+
         // initDB inicia o sistema e a sessão do usuário
         initDB()
             .then(async () => {

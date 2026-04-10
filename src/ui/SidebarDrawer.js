@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Animated, Dimensions, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import { executeQuery } from '../database/database';
 import { useTheme } from '../theme/ThemeContext';
@@ -157,7 +158,7 @@ export default function SidebarDrawer({ visible, onClose, navigation: navigation
                             <Ionicons name="log-out-outline" size={24} color={colors.danger} />
                             <Text style={[styles.logoutText, { color: colors.danger }]}>Sair</Text>
                         </TouchableOpacity>
-                        <Text style={[styles.version, { color: colors.textMuted }]}>AgroGB v1.1.10</Text>
+                        <Text style={[styles.version, { color: colors.textMuted }]}>AgroGB v{Constants.expoConfig.version}</Text>
                     </View>
 
                 </Animated.View>
