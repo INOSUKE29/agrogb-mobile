@@ -131,7 +131,7 @@ export default function App() {
         return (
             <View style={{ flex: 1, backgroundColor: '#0B121E', justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" color="#10B981" />
-                <Text style={{ color: '#64748B', marginTop: 10 }}>AgroGB - V1.0 2026</Text>
+                <Text style={{ color: '#64748B', marginTop: 10 }}>AgroGB - V{Updates.runtimeVersion || '1.2.1'} 2026</Text>
             </View>
         );
     }
