@@ -100,7 +100,7 @@ export default function RegisterScreen() {
                         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                             <Ionicons name="arrow-back" size={24} color="#FFF" />
                         </TouchableOpacity>
-                        <Image source={require('../../assets/logo_agrogb_premium.png')} style={styles.logoImage} resizeMode="contain" />
+                        <Image source={require('../../assets/logo_agrogb_premium.jpg')} style={styles.logoImage} resizeMode="contain" />
                     </View>
 
                     <Text style={styles.brandTitle}>Criar Conta</Text>
