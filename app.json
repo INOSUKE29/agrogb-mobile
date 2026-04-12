@@ -2,7 +2,6 @@
   "expo": {
     "name": "AgroGB Mobile",
     "slug": "agrogb-mobile",
-    "version": "1.2.1",
     "scheme": "agrogb",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -41,11 +40,6 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "dd5b4ea9-8594-4f37-86a3-b5ef94900b23"
-      }
     },
     "runtimeVersion": {
       "policy": "appVersion"

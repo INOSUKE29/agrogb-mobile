@@ -2,9 +2,10 @@ import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import 'react-native-url-polyfill/auto'; // Required for Supabase in React Native
 
-// Configuração via variáveis de ambiente (arquivo .env)
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+// Configuração via variáveis de ambiente (arquivo .env) com fallbacks de segurança
+// Estes valores garantem que o APK funcione mesmo que o ambiente de build falhe em injetar as chaves
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://uklygrvibmiknwarzqap.supabase.co';
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_6e3KZkbHgcfd_-xaOeIBLA_2AJeN9Ew';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
