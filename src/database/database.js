@@ -309,6 +309,67 @@ export const updateAppSetting = async (column, value) => {
     }
 };
 
+// --- FUNÇÕES DE BUSCA (RESTAURAÇÃO) ---
+
+export const getCadastro = async () => {
+    try {
+        const res = await executeQuery('SELECT * FROM cadastro WHERE is_deleted = 0 ORDER BY nome ASC');
+        const rows = [];
+        for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+        return rows;
+    } catch (e) {
+        console.error('Erro ao buscar cadastro:', e);
+        return [];
+    }
+};
+
+export const getClientes = async () => {
+    try {
+        const res = await executeQuery('SELECT * FROM clientes WHERE is_deleted = 0 ORDER BY nome ASC');
+        const rows = [];
+        for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+        return rows;
+    } catch (e) {
+        console.error('Erro ao buscar clientes:', e);
+        return [];
+    }
+};
+
+export const getAreas = async () => {
+    try {
+        const res = await executeQuery('SELECT * FROM areas WHERE is_deleted = 0 ORDER BY nome ASC');
+        const rows = [];
+        for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+        return rows;
+    } catch (e) {
+        console.error('Erro ao buscar áreas:', e);
+        return [];
+    }
+};
+
+export const getCulturas = async () => {
+    try {
+        const res = await executeQuery('SELECT * FROM culturas WHERE is_deleted = 0 ORDER BY nome ASC');
+        const rows = [];
+        for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+        return rows;
+    } catch (e) {
+        console.error('Erro ao buscar culturas:', e);
+        return [];
+    }
+};
+
+export const getCategoriasDespesa = async () => {
+    try {
+        const res = await executeQuery('SELECT * FROM categorias_despesa ORDER BY nome ASC');
+        const rows = [];
+        for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+        return rows;
+    } catch (e) {
+        return [];
+    }
+};
+
 // --- FUNÇÃO LEGADA (MANTIDA PARA COMPATIBILIDADE TEMPORÁRIA) ---
 // Será removida quando todos os módulos usarem EstoqueService
 export const atualizarEstoque = async (produto, quantidadeDelta) => {

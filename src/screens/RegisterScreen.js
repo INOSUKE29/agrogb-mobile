@@ -100,7 +100,7 @@ export default function RegisterScreen() {
                         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                             <Ionicons name="arrow-back" size={24} color="#FFF" />
                         </TouchableOpacity>
-                        <Image source={require('../../assets/logo_agrogb.jpg')} style={styles.logoImage} resizeMode="contain" />
+                        <Image source={require('../../assets/logo_agrogb_premium.png')} style={styles.logoImage} resizeMode="contain" />
                     </View>
 
                     <Text style={styles.brandTitle}>Criar Conta</Text>
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     /* L O G O  &  H E A D E R */
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 40 },
     backBtn: { width: 44, height: 44, justifyContent: 'center', alignItems: 'flex-start' },
-    logoImage: { width: 50, height: 50 },
+    logoImage: { width: 150, height: 150 },
 
     brandTitle: { fontSize: 28, fontWeight: 'bold', color: '#FFF', letterSpacing: 0.5, marginBottom: 6 },
     brandSubtitle: { color: '#6B7280', fontSize: 10, fontWeight: '700', letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 40 },

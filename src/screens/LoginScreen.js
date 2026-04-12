@@ -119,7 +119,7 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
                         {/* ── LOGO E TÍTUTLOS ──────────────────────────────── */}
                         <View style={styles.logoBlock}>
                             <Image
-                                source={require('../../assets/logo_agrogb_feita.jpg')}
+                                source={require('../../assets/logo_agrogb_premium.png')}
                                 style={styles.logoImage}
                                 resizeMode="contain"
                             />
