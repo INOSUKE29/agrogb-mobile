@@ -4,7 +4,7 @@ SET session_replication_role = replica;
 -- PostgreSQL database dump
 --
 
--- \restrict uSogoSIO2G2Ag4F0fjFNW1YGpqBLfOlAVWvTancoldDcjDa2pxAPErk6dGSysJw
+-- \restrict 1ZTYZGUxJhiG35ooEPXqlTccrm7X49EqtaiyVN06iSDKWILOrAK19aJz0OzmiHY
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6
@@ -1177,6 +1177,6 @@ SELECT pg_catalog.setval('"public"."usuario_id_quarantine_id_seq"', 1, false);
 -- PostgreSQL database dump complete
 --
 
--- \unrestrict uSogoSIO2G2Ag4F0fjFNW1YGpqBLfOlAVWvTancoldDcjDa2pxAPErk6dGSysJw
+-- \unrestrict 1ZTYZGUxJhiG35ooEPXqlTccrm7X49EqtaiyVN06iSDKWILOrAK19aJz0OzmiHY
 
 RESET ALL;
