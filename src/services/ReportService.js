@@ -1,12 +1,12 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
+import { Alert } from 'react-native';
 import { getBaseTemplate } from '../utils/ReportTemplate';
 import { executeQuery } from '../database/database';
 
-// Helper de formatação
+// Helper de formatação de moeda formatCurrency
 const fmt = (v) => v ? v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00';
-const fmtKg = (v) => v ? `${v.toLocaleString('pt-BR')} kg` : '0 kg';
 const fmtData = (d) => d ? new Date(d).toLocaleDateString('pt-BR') : '-';
 
 export const generatePDFAgro = async (type, startDate, endDate) => {
@@ -17,9 +17,9 @@ export const generatePDFAgro = async (type, startDate, endDate) => {
 
         // 1. Relatório de Vendas
         if (type === 'VENDAS') {
-            title = 'Relatório de Comercialização';
+            title = 'Relatório de Vendas';
             const res = await executeQuery(
-                `SELECT * FROM vendas WHERE data BETWEEN ? AND ? AND is_deleted = 0 ORDER BY data DESC`,
+                `SELECT * FROM vendas WHERE data BETWEEN ? AND ? ORDER BY data DESC`,
                 [startDate, endDate]
             );
 
@@ -41,15 +41,10 @@ export const generatePDFAgro = async (type, startDate, endDate) => {
             }
 
             contentHtml = `
-                <div class="summary-container">
-                    <div class="summary-box">
-                        <div class="summary-label">Volume Total Vendas</div>
-                        <div class="summary-value">${fmt(total)}</div>
-                    </div>
-                    <div class="summary-box">
-                         <div class="summary-label">Qtd. Transações</div>
-                         <div class="summary-value" style="color: #1F2937">${res.rows.length}</div>
-                    </div>
+                <div class="summary-box">
+                    <div class="summary-title">RESUMO DO PERÍODO</div>
+                    <div style="font-size: 24px; font-weight: 900; color: #10B981">${fmt(total)}</div>
+                    <div style="font-size: 12px; color: #6B7280">${res.rows.length} registros encontrados</div>
                 </div>
 
                 <table>
@@ -63,15 +58,15 @@ export const generatePDFAgro = async (type, startDate, endDate) => {
                             <th>TOTAL</th>
                         </tr>
                     </thead>
-                    <tbody>${rows || '<tr><td colspan="6" style="text-align:center">Nenhum registro encontrado</td></tr>'}</tbody>
+                    <tbody>${rows}</tbody>
                 </table>
             `;
         }
 
-        // 2. Relatório de Estoque
+        // 2. Relatório de Estoque (Snapshot - Data range ignorado nesse caso, é o atual)
         else if (type === 'ESTOQUE') {
-            title = 'Inventário de Insumos e Produtos';
-            const res = await executeQuery(`SELECT * FROM estoque WHERE is_deleted = 0 ORDER BY produto ASC`);
+            title = 'Posição de Estoque Atual';
+            const res = await executeQuery(`SELECT * FROM estoque ORDER BY produto ASC`);
 
             let rows = '';
             for (let i = 0; i < res.rows.length; i++) {
@@ -80,17 +75,15 @@ export const generatePDFAgro = async (type, startDate, endDate) => {
                 <tr>
                     <td><b>${item.produto}</b></td>
                     <td>${item.quantidade}</td>
-                    <td><span class="badge ${item.quantidade > 0 ? 'badge-info' : 'badge-error'}">${item.quantidade > 0 ? 'Disponível' : 'Esgotado'}</span></td>
+                    <td><span class="badge badge-blue">Disponível</span></td>
                     <td>${fmtData(item.last_updated)}</td>
                 </tr>`;
             }
 
             contentHtml = `
-                 <div class="summary-container">
-                    <div class="summary-box">
-                        <div class="summary-label">Itens em Catálogo</div>
-                        <div class="summary-value" style="color: #3B82F6">${res.rows.length}</div>
-                    </div>
+                 <div class="summary-box">
+                    <div class="summary-title">ITENS CADASTRADOS</div>
+                    <div style="font-size: 24px; font-weight: 900; color: #3B82F6">${res.rows.length}</div>
                 </div>
                 <table>
                     <thead>
@@ -101,52 +94,67 @@ export const generatePDFAgro = async (type, startDate, endDate) => {
                             <th>ÚLT. MOVIM.</th>
                         </tr>
                     </thead>
-                    <tbody>${rows || '<tr><td colspan="4" style="text-align:center">Nenhum registro encontrado</td></tr>'}</tbody>
+                    <tbody>${rows}</tbody>
                 </table>
             `;
         }
 
-        // 3. Relatório de Colheita (NOVO)
-        else if (type === 'COLHEITA') {
-            title = 'Rastreabilidade de Colheita';
+        // 3. Relatório Detalhado de Colheita (Fase 14)
+        else if (type === 'COLHEITA_DETALHADA') {
+            title = 'Relatório Operacional de Colheita';
             const res = await executeQuery(
-                `SELECT * FROM colheitas WHERE data BETWEEN ? AND ? AND is_deleted = 0 ORDER BY data DESC`,
+                `SELECT data, cultura, area_id, total_caixas, quantidade, observacao 
+                 FROM colheitas 
+                 WHERE data BETWEEN ? AND ? AND is_deleted = 0 
+                 ORDER BY data DESC, area_id ASC`,
                 [startDate, endDate]
             );
 
-            let totalQtd = 0;
+            let totalCx = 0;
+            let totalKg = 0;
             let rows = '';
+
             for (let i = 0; i < res.rows.length; i++) {
                 const item = res.rows.item(i);
-                totalQtd += item.quantidade;
+                totalCx += (item.total_caixas || 0);
+                totalKg += (item.quantidade || 0);
+
+                let obsBadge = '';
+                if (item.observacao && item.observacao.toUpperCase().includes('CONGELADO')) {
+                    obsBadge = '<span class="badge badge-blue" style="margin-right: 4px;">Congelado</span>';
+                } else if (item.observacao && item.observacao.toUpperCase().includes('DESCARTE')) {
+                    obsBadge = '<span class="badge badge-red" style="margin-right: 4px;">Descarte</span>';
+                }
+
                 rows += `
                 <tr>
                     <td>${fmtData(item.data)}</td>
-                    <td><b>${item.cultura}</b></td>
-                    <td>${item.produto}</td>
-                    <td>${fmtKg(item.quantidade)}</td>
-                    <td>${item.observacao || '-'}</td>
+                    <td><b>${item.area_id || 'N/A'}</b></td>
+                    <td>${item.cultura || 'N/A'}</td>
+                    <td>${item.total_caixas || 0}</td>
+                    <td>${item.quantidade || 0}</td>
+                    <td>${obsBadge}<span style="font-size: 10px; color: #6B7280">${item.observacao || ''}</span></td>
                 </tr>`;
             }
 
             contentHtml = `
-                <div class="summary-container">
-                    <div class="summary-box">
-                        <div class="summary-label">Produção Total Acumulada</div>
-                        <div class="summary-value" style="color: #10B981">${fmtKg(totalQtd)}</div>
-                    </div>
+                 <div class="summary-box">
+                    <div class="summary-title">PRODUÇÃO DO PERÍODO</div>
+                    <div style="font-size: 24px; font-weight: 900; color: #10B981">${totalCx} Caixas <span style="font-size: 16px; color: #6B7280; font-weight: normal">(${totalKg} KG)</span></div>
+                    <div style="font-size: 12px; color: #6B7280">${res.rows.length} registros computados</div>
                 </div>
                 <table>
                     <thead>
                         <tr>
                             <th>DATA</th>
+                            <th>ÁREA / TALHÃO</th>
                             <th>CULTURA</th>
-                            <th>PRODUTO/LOTE</th>
-                            <th>QUANTIDADE</th>
-                            <th>NOTAS</th>
+                            <th>CAIXAS</th>
+                            <th>KG TOTAL</th>
+                            <th>OBSERVAÇÕES</th>
                         </tr>
                     </thead>
-                    <tbody>${rows || '<tr><td colspan="5" style="text-align:center">Nenhum registro encontrado</td></tr>'}</tbody>
+                    <tbody>${rows}</tbody>
                 </table>
             `;
         }
@@ -157,9 +165,9 @@ export const generatePDFAgro = async (type, startDate, endDate) => {
         const { uri } = await Print.printToFileAsync({ html });
         console.log('PDF gerado em:', uri);
 
+        // Renomear para ficar bonito
         const safeTitle = title.replace(/ /g, '_');
-        const filename = `AgroGB_${safeTitle}_${new Date().getTime()}.pdf`;
-        const newPath = `${FileSystem.documentDirectory}${filename}`;
+        const newPath = `${FileSystem.documentDirectory}AgroGB_${safeTitle}_${startDate}.pdf`;
 
         await FileSystem.moveAsync({
             from: uri,
@@ -168,9 +176,12 @@ export const generatePDFAgro = async (type, startDate, endDate) => {
 
         if (await Sharing.isAvailableAsync()) {
             await Sharing.shareAsync(newPath);
+        } else {
+            Alert.alert('Atenção', 'Compartilhamento não disponível neste dispositivo');
         }
 
     } catch (error) {
         console.error('Erro ao gerar PDF:', error);
+        Alert.alert('Erro', 'Falha ao processar relatório: ' + error.message);
     }
 };

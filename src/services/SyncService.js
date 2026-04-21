@@ -1,33 +1,28 @@
 import { supabase } from './supabaseClient';
-import { executeQuery, getAppSettings, executeTransaction } from '../database/database';
+import { executeQuery, getAppSettings, updateAppSetting } from '../database/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// BUILD #107 - Fonte Única de Tabelas Sincronizáveis
-export const SYNC_TABLES = [
+const syncTables = [
     { name: 'usuarios', pk: 'id' },
-    { name: 'v2_talhoes', pk: 'id' },
-    { name: 'v2_plantios', pk: 'id' },
-    { name: 'v2_colheitas', pk: 'uuid' },
-    { name: 'v2_vendas', pk: 'uuid' },
-    { name: 'v2_custos', pk: 'uuid' },
-    { name: 'v2_manutencoes', pk: 'uuid' },
+    { name: 'colheitas', pk: 'uuid' },
+    { name: 'monitoramento_entidade', pk: 'uuid' },
+    { name: 'vendas', pk: 'uuid' },
     { name: 'compras', pk: 'uuid' },
+    { name: 'plantio', pk: 'uuid' },
+    { name: 'custos', pk: 'uuid' },
+    { name: 'descarte', pk: 'uuid' },
     { name: 'cadastro', pk: 'uuid' },
     { name: 'clientes', pk: 'uuid' },
     { name: 'culturas', pk: 'uuid' },
     { name: 'maquinas', pk: 'uuid' },
+    { name: 'manutencao_frota', pk: 'uuid' },
+    { name: 'planos_adubacao', pk: 'uuid' },
+    { name: 'cost_categories', pk: 'id' },
+    { name: 'costs', pk: 'id' },
     { name: 'caderno_notas', pk: 'uuid' },
-    { name: 'areas', pk: 'uuid' },
-    { name: 'v2_estoque_movimentacoes', pk: 'uuid' }
+    { name: 'orders', pk: 'id' },
+    { name: 'areas', pk: 'uuid' }
 ];
-
-/**
- * Função Auxiliar para sanitizar strings SQL e evitar quebras de aspas
- */
-const escapeSql = (str) => {
-    if (typeof str !== 'string') return str;
-    return str.replace(/'/g, "''");
-};
 
 // O PUSH lê tudo com sync_status = 0
 export const pushLocalChanges = async () => {
@@ -38,7 +33,7 @@ export const pushLocalChanges = async () => {
 
         let totalsSynced = 0;
 
-        for (const tableInfo of SYNC_TABLES) {
+        for (const tableInfo of syncTables) {
             const tableName = tableInfo.name;
             const pk = tableInfo.pk;
 
@@ -64,7 +59,7 @@ export const pushLocalChanges = async () => {
                     const { error } = await supabase.from(tableName).upsert(records, { onConflict: pk });
 
                     if (error) {
-                        if (__DEV__) console.error(`Erro Push na tabela ${tableName}:`, error);
+                        console.error(`Erro Push na tabela ${tableName}:`, error);
                     } else {
                         // Marca como Sincronizado no SQLite
                         const ids = records.map(r => typeof r[pk] === 'string' ? `'${r[pk]}'` : r[pk]).join(',');
@@ -72,13 +67,13 @@ export const pushLocalChanges = async () => {
                         totalsSynced += records.length;
                     }
                 }
-            } catch {
-                if (__DEV__) console.log(`Pular push ${tableName}, possivelmente inexistente ou sem sync_status.`);
+            } catch (err) {
+                console.log(`Pular push ${tableName}, possivelmente inexistente ou sem sync_status.`);
             }
         }
         return { success: true, pushed: totalsSynced };
     } catch (e) {
-        console.error('[SYNC ERROR] Push Error:', e);
+        console.error('Push Error:', e);
         return { success: false, error: e.message };
     }
 };
@@ -93,12 +88,12 @@ export const pullServerChanges = async () => {
 
         let totalsPulled = 0;
 
-        for (const tableInfo of SYNC_TABLES) {
+        for (const tableInfo of syncTables) {
             const tableName = tableInfo.name;
             const pk = tableInfo.pk;
-            const batchQueries = [];
 
             try {
+                // Puxa do Supabase dados baseados no last_updated (timestamp longo)
                 const { data, error } = await supabase
                     .from(tableName)
                     .select('*')
@@ -106,62 +101,38 @@ export const pullServerChanges = async () => {
                     .gt('last_updated', lastSync);
 
                 if (error) {
-                    if (__DEV__) console.error(`Erro Pull na tabela ${tableName}:`, error);
+                    console.error(`Erro Pull na tabela ${tableName}:`, error);
                     continue;
                 }
 
                 if (data && data.length > 0) {
-                    for (const remoteRow of data) {
-                        const pkValue = remoteRow[pk];
-                        if (!pkValue) continue;
+                    for (const row of data) {
+                        const rowKeys = Object.keys(row);
+                        const rowValues = Object.values(row);
 
-                        try {
-                            const localRes = await executeQuery(`SELECT last_updated, sync_status FROM ${tableName} WHERE ${pk} = ?`, [pkValue]);
-                            
-                            if (localRes.rows.length > 0) {
-                                const localRow = localRes.rows.item(0);
-                                const localTime = localRow.last_updated ? new Date(localRow.last_updated).getTime() : 0;
-                                const remoteTime = remoteRow.last_updated ? new Date(remoteRow.last_updated).getTime() : 0;
+                        // Insere Coluna Local
+                        rowKeys.push('sync_status');
+                        rowValues.push(1); // Veio de lá, então já ta syncado
 
-                                if (remoteTime > localTime) {
-                                    if (localRow.sync_status === 0) {
-                                        // Conflito: Mantém registro para auditoria
-                                        const conflictId = Math.random().toString(36).substr(2, 9);
-                                        await executeQuery(
-                                            `INSERT INTO v2_sync_conflicts (id, table_name, record_uuid, local_data, remote_data, status) 
-                                             VALUES (?, ?, ?, ?, ?, ?)`,
-                                            [conflictId, tableName, String(pkValue), JSON.stringify(localRow), JSON.stringify(remoteRow), 'Pendente']
-                                        );
-                                    } else {
-                                        const sets = Object.keys(remoteRow).map(k => {
-                                            const v = remoteRow[k];
-                                            const val = v === null ? 'NULL' : `'${escapeSql(String(v))}'`;
-                                            return `"${k}" = ${val}`;
-                                        }).join(', ');
-                                        batchQueries.push(`UPDATE ${tableName} SET ${sets}, sync_status = 1 WHERE ${pk} = '${escapeSql(String(pkValue))}'`);
-                                    }
-                                }
-                            } else {
-                                const rowKeys = Object.keys(remoteRow);
-                                const rowValues = Object.values(remoteRow).map(v => v === null ? 'NULL' : `'${escapeSql(String(v))}'`);
-                                rowKeys.push('sync_status');
-                                rowValues.push(1);
+                        const placeholders = rowKeys.map(() => '?').join(', ');
+                        const escapeKeys = rowKeys.map(k => `"${k}"`).join(', ');
 
-                                batchQueries.push(`INSERT INTO ${tableName} (${rowKeys.map(k => `"${k}"`).join(', ')}) VALUES (${rowValues.join(', ')})`);
-                            }
-                        } catch (e) {
-                            if (__DEV__) console.error(`[SYNC] Preparação falhou em ${tableName}:`, e);
-                        }
-                    }
+                        const updateAssignments = rowKeys
+                            .filter(k => k !== pk)
+                            .map(k => `"${k}" = excluded."${k}"`).join(', ');
 
-                    if (batchQueries.length > 0) {
-                        if (__DEV__) console.log(`[SYNC] Executando lote de ${batchQueries.length} comandos para ${tableName}`);
-                        await executeTransaction(batchQueries);
+                        // SQLite UPSERT Syntax (Conflict on PK)
+                        const upsertQuery = `
+                            INSERT INTO ${tableName} (${escapeKeys}) VALUES (${placeholders})
+                            ON CONFLICT(${pk}) DO UPDATE SET ${updateAssignments};
+                        `;
+
+                        await executeQuery(upsertQuery, rowValues);
                     }
                     totalsPulled += data.length;
                 }
-            } catch (e) {
-                if (__DEV__) console.log(`Erro ao processar tabela ${tableName}:`, e.message);
+            } catch (err) {
+                console.log(`Pular pull ${tableName}.`);
             }
         }
 
@@ -169,7 +140,7 @@ export const pullServerChanges = async () => {
         return { success: true, pulled: totalsPulled };
 
     } catch (e) {
-        console.error('[SYNC ERROR] Pull Error:', e);
+        console.error('Pull Error:', e);
         return { success: false, error: e.message };
     }
 };

@@ -1,298 +1,219 @@
-/**
- * LoginScreen.js — AgroGB OS
- * Réplica exata da imagem "perfeita" enviada pelo usuário:
- * - Fundo azul marinho escuro sem foto
- * - Inputs flutuantes sem card de fundo
- * - Botão com degradê verde para azul (ENTRAR NO SISTEMA)
- * - Biometria centralizada abaixo do botão
- * - Rodapé "CRIAR NOVA CONTA  •  RECUPERAR SENHA"
- */
-
 import React, { useState, useEffect, useRef } from 'react';
-import {
-    View, Text, StyleSheet, Image, KeyboardAvoidingView,
-    Platform, Alert, StatusBar, TouchableOpacity,
-    TextInput, ActivityIndicator, ScrollView,
-    Dimensions, Animated
-} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LinearGradient } from 'expo-linear-gradient';
+import {
+    View, Text, TextInput, TouchableOpacity, StyleSheet, Alert,
+    KeyboardAvoidingView, Platform, Dimensions, ImageBackground, SafeAreaView, ScrollView, Image, ActivityIndicator, Animated
+} from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { AuthService } from '../services/authService';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as LocalAuthentication from 'expo-local-authentication';
+import { AuthService } from '../services/authService';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
+
+// Fundo rural clean
+const RURAL_BG = { uri: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80' };
 
 export default function LoginScreen({ navigation, onLoginSuccess }) {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [usuario, setUsuario] = useState('');
+    const [senha, setSenha] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
-    const [secureText, setSecureText] = useState(true);
-
+    
+    // Animações
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    const slideAnim = useRef(new Animated.Value(30)).current;
 
     useEffect(() => {
-        Animated.parallel([
-            Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
-            Animated.timing(slideAnim, { toValue: 0, duration: 800, useNativeDriver: true }),
-        ]).start();
+        Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }).start();
     }, []);
-
-    useEffect(() => {
-        const checkBiometry = async () => {
-            try {
-                const hasHardware = await LocalAuthentication.hasHardwareAsync();
-                const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-                setIsBiometricAvailable(hasHardware && isEnrolled);
-            } catch { setIsBiometricAvailable(false); }
-        };
-        checkBiometry();
-    }, []);
-
-    const handleLogin = async () => {
-        if (!email || !password) return Alert.alert('Acesso Restrito', 'Preencha todos os campos.');
-        realLoginFlow(email, password);
-    };
 
     const handleBiometricLogin = async () => {
         setLoading(true);
         try {
             const res = await AuthService.loginWithBiometrics();
-            if (res.success) { if (onLoginSuccess) onLoginSuccess(res.user); }
-            else Alert.alert('Biometria', res.message || 'Falha na autenticação.');
-        } catch { Alert.alert('Erro', 'Falha ao processar biometria.'); }
-        finally { setLoading(false); }
+            if (res.success) { 
+                if (onLoginSuccess) onLoginSuccess(res.user); 
+            } else {
+                Alert.alert('Biometria', res.message || 'Falha na autenticação.');
+            }
+        } catch { 
+            Alert.alert('Erro', 'Falha ao processar comando de biometria.'); 
+        } finally { 
+            setLoading(false); 
+        }
     };
 
-    const realLoginFlow = async (em, pwd) => {
+    const handleLogin = async () => {
+        const userTrim = usuario.trim().toLowerCase();
+        const passTrim = senha.trim();
+
+        if (!userTrim || !passTrim) return Alert.alert('Acesso Restrito', 'Preencha usuário/e-mail e a senha.');
+
         setLoading(true);
-        const watchdog = setTimeout(() => {
-            setLoading(false);
-            Alert.alert('Servidor Lento', 'O sistema está demorando mais que o normal.');
-        }, 60000);
         try {
-            const res = await AuthService.login(em, pwd);
-            clearTimeout(watchdog);
+            // Conecta ao Supabase Real que não existe na Cobaia mockada
+            const res = await AuthService.login(userTrim, passTrim);
+            
             if (res.success) {
                 const alreadyAsked = await AsyncStorage.getItem('@asked_biometrics');
                 const hardware = await LocalAuthentication.hasHardwareAsync();
                 const enrolled = await LocalAuthentication.isEnrolledAsync();
+                
+                // UX da Digital Original sendo mantida
                 if (hardware && !alreadyAsked && enrolled) {
-                    Alert.alert('Acesso Biométrico', 'Ativar acesso por digital?', [
+                    Alert.alert('Acesso Biométrico', 'Deseja ativar acesso por digital na próxima vez que entrar?', [
                         { text: 'Agora não', onPress: async () => { await AsyncStorage.setItem('@asked_biometrics', 'false'); if (onLoginSuccess) onLoginSuccess(res.user); } },
                         { text: 'Sim', onPress: async () => { await AsyncStorage.setItem('@asked_biometrics', 'true'); if (onLoginSuccess) onLoginSuccess(res.user); } }
                     ]);
-                } else { if (onLoginSuccess) onLoginSuccess(res.user); }
-            } else Alert.alert('Acesso Negado', res.message || 'Credenciais inválidas.');
-        } catch {
-            clearTimeout(watchdog);
-            Alert.alert('Erro', 'Não foi possível completar o acesso.');
+                } else { 
+                    if (onLoginSuccess) onLoginSuccess(res.user); 
+                }
+            } else {
+                 Alert.alert('Acesso Negado', res.message || 'Credenciais inválidas no servidor.');
+            }
+        } catch (e) {
+            console.error(e);
+            Alert.alert('Erro', 'Falha ao conectar com o provedor de autenticação principal.');
         } finally {
-            clearTimeout(watchdog);
             setLoading(false);
         }
     };
 
     return (
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.root}>
-            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <ImageBackground source={RURAL_BG} style={styles.backgroundImage} blurRadius={4}>
+            {/* Overlay Branco Semi-transparente */}
+            <View style={styles.overlay} />
 
-            {/* ── BACKGROUND ───────────────── */}
-            <View style={StyleSheet.absoluteFill}>
-                {/* Degradê Azul Escuro (Navy) */}
-                <LinearGradient
-                    colors={['#05111C', '#0B1626', '#0A1523', '#060D15']}
-                    style={StyleSheet.absoluteFill}
-                />
-                {/* Formas sutis (círculos) no fundo para dar a textura da imagem */}
-                <View style={[styles.bgCircle, { top: -100, right: -150, width: 400, height: 400, backgroundColor: 'rgba(16, 50, 70, 0.2)' }]} />
-                <View style={[styles.bgCircle, { bottom: -50, left: -100, width: 300, height: 300, backgroundColor: 'rgba(16, 40, 70, 0.3)' }]} />
-            </View>
+            <SafeAreaView style={styles.safeArea}>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    style={styles.keyboardView}
+                >
+                    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                
-                <Animated.View style={[{ opacity: fadeAnim, transform: [{ translateY: slideAnim }], flex: 1, justifyContent: 'space-between' }]}>
-                    
-                    <View>
-                        {/* ── LOGO E TÍTUTLOS ──────────────────────────────── */}
-                        <View style={styles.logoBlock}>
+                        {/* HEADER LOGO */}
+                        <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
                             <Image
-                                source={require('../../assets/logo_agrogb_premium.jpg')}
-                                style={styles.logoImage}
+                                source={require('../../assets/logo_agrogb.jpg')}
+                                style={styles.realLogo}
                                 resizeMode="contain"
                             />
-                            <Text style={styles.brandTitle}>AgroGB</Text>
-                            <Text style={styles.brandSubtitle}>SISTEMA DE GESTÃO PROFISSIONAL</Text>
-                        </View>
+                            <Text style={styles.title}>AgroGB</Text>
+                            <Text style={styles.subtitle}>Gestão Profissional</Text>
+                        </Animated.View>
 
-                        {/* ── INPUTS (sem card, flutuantes) ───────────────── */}
-                        <View style={styles.formSection}>
-                            
-                            {/* E-mail ou Usuário */}
-                            <Text style={styles.fieldLabel}>E-MAIL OU USUÁRIO</Text>
-                            <View style={styles.inputRow}>
-                                <Ionicons name="person-outline" size={20} color="#6B7280" />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="ex: admin@agrogb.com"
-                                    placeholderTextColor="#4B5563"
-                                    value={email}
-                                    onChangeText={setEmail}
-                                    autoCapitalize="none"
-                                    keyboardType="email-address"
-                                />
+                        {/* LOGIN CARD CLARO COM SOMBRA */}
+                        <Animated.View style={[styles.card, { opacity: fadeAnim }]}>
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.label}>E-MAIL OU USUÁRIO</Text>
+                                <View style={styles.inputContainer}>
+                                    <Ionicons name="person" size={20} color="#4CAF50" style={styles.inputIconLeft} />
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="exemplo@agrogb.com"
+                                        placeholderTextColor="#9e9e9e"
+                                        value={usuario}
+                                        onChangeText={setUsuario}
+                                        autoCapitalize="none"
+                                        keyboardType="email-address"
+                                    />
+                                </View>
                             </View>
 
-                            {/* Senha */}
-                            <Text style={[styles.fieldLabel, { marginTop: 24 }]}>SENHA DE ACESSO</Text>
-                            <View style={styles.inputRow}>
-                                <Ionicons name="lock-closed-outline" size={20} color="#6B7280" />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="••••••••"
-                                    placeholderTextColor="#4B5563"
-                                    value={password}
-                                    onChangeText={setPassword}
-                                    secureTextEntry={secureText}
-                                />
-                                <TouchableOpacity onPress={() => setSecureText(!secureText)}>
-                                    <Ionicons
-                                        name={secureText ? 'eye-off-outline' : 'eye-outline'}
-                                        size={22}
-                                        color="#6B7280"
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.label}>SENHA DE ACESSO</Text>
+                                <View style={styles.inputContainer}>
+                                    <Ionicons name="lock-closed" size={20} color="#9e9e9e" style={styles.inputIconLeft} />
+                                    <TextInput
+                                        style={[styles.input, { paddingRight: 45 }]}
+                                        placeholder="••••••••"
+                                        placeholderTextColor="#9e9e9e"
+                                        value={senha}
+                                        onChangeText={setSenha}
+                                        secureTextEntry={!showPassword}
                                     />
+                                    <TouchableOpacity
+                                        style={styles.inputIconRight}
+                                        onPress={() => setShowPassword(!showPassword)}
+                                    >
+                                        <Ionicons name={showPassword ? "eye-off" : "eye"} size={20} color="#9e9e9e" />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+
+                            <TouchableOpacity
+                                style={styles.loginButtonContainer}
+                                onPress={handleLogin}
+                                disabled={loading}
+                                activeOpacity={0.9}
+                            >
+                                <LinearGradient
+                                    colors={['#66BB6A', '#2E7D32']}
+                                    style={styles.loginButton}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                >
+                                     {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.loginButtonText}>ENTRAR</Text>}
+                                </LinearGradient>
+                            </TouchableOpacity>
+
+                            {/* BIOMETRIA ANTIGA RESTAURADA AQUI NO MEIO DA UI CLARA */}
+                            <View style={styles.bioContainer}>
+                                <Text style={styles.bioTitle}>Ou acesse apenas com a sua digital</Text>
+                                <TouchableOpacity onPress={handleBiometricLogin} style={styles.fpButtonContainer} activeOpacity={0.8}>
+                                    <View style={styles.fpGlow}>
+                                        <MaterialCommunityIcons name="fingerprint" size={38} color="#2E7D32" />
+                                    </View>
                                 </TouchableOpacity>
                             </View>
 
-                            {/* Botão ENTRAR (Verde para Azul) */}
-                            <TouchableOpacity style={styles.enterBtn} onPress={handleLogin} disabled={loading} activeOpacity={0.87}>
-                                <LinearGradient
-                                    colors={['#178243', '#25508D']} // Degradê Verde->Azul exato do print
-                                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                                    style={styles.enterBtnGradient}
-                                >
-                                    {loading ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.enterBtnText}>ENTRAR NO SISTEMA</Text>}
-                                </LinearGradient>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+                            <View style={styles.linksContainer}>
+                                <TouchableOpacity>
+                                    <Text style={styles.linkText}>Esqueci minha senha</Text>
+                                </TouchableOpacity>
+                                <Text style={styles.linkSeparator}>   •   </Text>
+                                <TouchableOpacity onPress={() => navigation?.navigate?.('Register')}>
+                                    <Text style={styles.linkText}>Criar nova conta</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </Animated.View>
 
-                    {/* ── BIOMETRIA E RODAPÉ ───────────────────── */}
-                    <View style={styles.bottomSection}>
-                        <View style={styles.bioContainer}>
-                            <Text style={styles.bioTitle}>OU ACESSE COM DIGITAL</Text>
-                            <TouchableOpacity onPress={handleBiometricLogin} style={styles.fpButtonContainer} activeOpacity={0.8}>
-                                <View style={styles.fpGlow}>
-                                    <MaterialCommunityIcons name="fingerprint" size={38} color="#10B981" />
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Footer Links */}
-                        <View style={styles.footerRow}>
-                            <TouchableOpacity onPress={() => navigation?.navigate?.('Register')}>
-                                <Text style={styles.footerLink}>CRIAR NOVA CONTA</Text>
-                            </TouchableOpacity>
-                            
-                            <Text style={styles.footerDot}>•</Text>
-                            
-                            <TouchableOpacity onPress={() => navigation?.navigate?.('ForgotPassword')}>
-                                <Text style={styles.footerLink}>RECUPERAR SENHA</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </Animated.View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+                    </ScrollView>
+                </KeyboardAvoidingView>
+            </SafeAreaView>
+        </ImageBackground>
     );
 }
 
 const styles = StyleSheet.create({
-    root: { flex: 1 },
-    bgCircle: { position: 'absolute', borderRadius: 500 }, // Subtle background shapes
-
-    scroll: {
-        flexGrow: 1,
-        paddingHorizontal: 30,
-        paddingTop: Platform.OS === 'ios' ? 80 : 70,
-        paddingBottom: 30,
-    },
-
-    /* L O G O */
-    logoBlock: { alignItems: 'center', marginBottom: 40 },
-    logoImage: { width: 150, height: 150, marginBottom: 20 },
-    brandTitle: { fontSize: 32, fontWeight: 'bold', color: '#FFF', letterSpacing: 0.5, marginBottom: 6 },
-    brandSubtitle: { color: '#6B7280', fontSize: 10, fontWeight: '700', letterSpacing: 2.5, textTransform: 'uppercase' },
-
-    /* F O R M */
-    formSection: { width: '100%', marginBottom: 30 },
-    fieldLabel: {
-        color: '#9CA3AF',
-        fontSize: 11,
-        fontWeight: 'bold',
-        letterSpacing: 1.2,
-        marginBottom: 10,
-        marginLeft: 2
-    },
-    inputRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'transparent',
-        borderRadius: 14,
-        paddingHorizontal: 18,
-        height: 60,
-        borderWidth: 1.5,
-        borderColor: '#1E293B',
-        gap: 12,
-    },
-    input: { flex: 1, color: '#FFF', fontSize: 16 },
-
-    /* B O T T O N */
-    enterBtn: {
-        marginTop: 35,
-        borderRadius: 14,
-        overflow: 'hidden',
-    },
-    enterBtnGradient: {
-        height: 60,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    enterBtnText: {
-        color: '#E2E8F0',
-        fontSize: 14,
-        fontWeight: '800',
-        letterSpacing: 1.5,
-    },
-
-    /* B I O M E T R I A */
-    bottomSection: {
-        alignItems: 'center',
-        paddingBottom: Platform.OS === 'ios' ? 10 : 0
-    },
-    bioContainer: { alignItems: 'center', marginBottom: 40 },
-    bioTitle: { color: '#6B7280', fontSize: 11, fontWeight: 'bold', letterSpacing: 1.5, marginBottom: 16 },
-    fpButtonContainer: {
-        width: 70, height: 70,
-        borderRadius: 35,
-        justifyContent: 'center', alignItems: 'center',
-        backgroundColor: 'rgba(5, 40, 45, 0.4)',
-        borderWidth: 1, borderColor: '#059669',
-        // Optional subtle glow shadow
-        shadowColor: '#10B981',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.6,
-        shadowRadius: 15,
-        elevation: 8
-    },
-    fpGlow: {
-        justifyContent: 'center', alignItems: 'center'
-    },
-
-    /* F O O T E R */
-    footerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14 },
-    footerLink: { color: '#9CA3AF', fontSize: 11, fontWeight: 'bold', letterSpacing: 1 },
-    footerDot: { color: '#4B5563', fontSize: 12, fontWeight: 'bold' },
+    backgroundImage: { flex: 1, width: '100%', height: '100%' },
+    overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255, 255, 255, 0.85)' },
+    safeArea: { flex: 1, },
+    keyboardView: { flex: 1, },
+    scrollContent: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 50 },
+    
+    header: { alignItems: 'center', marginBottom: 25, },
+    realLogo: { width: 120, height: 120, marginBottom: 10, borderRadius: 60, },
+    title: { fontSize: 32, fontWeight: '700', color: '#2E7D32', marginBottom: 4, },
+    subtitle: { fontSize: 13, color: '#6b6b6b', fontWeight: 'bold', textTransform: 'uppercase' },
+    
+    card: { width: '88%', maxWidth: 420, alignSelf: 'center', backgroundColor: '#FFFFFF', borderRadius: 24, padding: 30, shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 15, shadowOffset: { width: 0, height: 6 }, elevation: 5, },
+    inputGroup: { marginBottom: 20, },
+    label: { fontSize: 11, color: '#7a7a7a', letterSpacing: 0.5, marginBottom: 8, marginLeft: 4, fontWeight: '700' },
+    inputContainer: { flexDirection: 'row', alignItems: 'center', height: 52, borderRadius: 14, borderWidth: 1, borderColor: '#e0e0e0', backgroundColor: '#FFFFFF', position: 'relative' },
+    inputIconLeft: { position: 'absolute', left: 15, zIndex: 1, },
+    inputIconRight: { position: 'absolute', right: 15, zIndex: 1, padding: 5, },
+    input: { flex: 1, height: '100%', paddingLeft: 45, fontSize: 15, color: '#333', },
+    loginButtonContainer: { marginTop: 5, borderRadius: 18, shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 4, },
+    loginButton: { height: 55, borderRadius: 18, justifyContent: 'center', alignItems: 'center', },
+    loginButtonText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.5 },
+    
+    bioContainer: { alignItems: 'center', marginTop: 30, marginBottom: 10 },
+    bioTitle: { color: '#6B7280', fontSize: 11, fontWeight: '600', marginBottom: 12 },
+    fpButtonContainer: { width: 66, height: 66, borderRadius: 33, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#10B981', elevation: 2 },
+    fpGlow: { justifyContent: 'center', alignItems: 'center' },
+    
+    linksContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 25, },
+    linkText: { fontSize: 13, color: '#6b6b6b', fontWeight: 'bold' },
+    linkSeparator: { fontSize: 14, color: '#b0b0b0', fontWeight: 'bold' },
 });

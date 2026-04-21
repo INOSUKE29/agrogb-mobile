@@ -1,305 +1,234 @@
-import React from 'react';
-import { 
-    View, Text, StyleSheet, TouchableOpacity, ScrollView, 
-    SafeAreaView, StatusBar, Dimensions, Platform, RefreshControl 
-} from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, StatusBar as RNStatusBar, InteractionManager } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import WeatherWidget from '../components/WeatherWidget';
+import { executeQuery, getConfig, getDashboardStats } from '../database/database';
+import { pushLocalChanges, pullServerChanges } from '../services/SyncService';
+import { MenuConfigService } from '../services/MenuConfigService';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
-import { useAnalytics } from '../modules/analytics/hooks/useAnalytics';
-import SafeBlurView from '../ui/SafeBlurView';
+import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import SidebarDrawer from '../components/SidebarDrawer';
 
 const { width } = Dimensions.get('window');
 
-/**
- * HomeScreen - AGROGB DIAMOND PRO: MASTER EDITION 💎
- * Grid otimizado em 3 grupos lógicos com navegação aninhada (Hubs).
- */
-export default function HomeScreen() {
-    const navigation = useNavigation();
-    const analytics = useAnalytics();
 
-    const totalVendas = analytics.receita || 0;
-    const totalCustos = analytics.despesa || 0;
-    const roi = analytics.roi || "0.0";
-    const harvest = analytics.harvest || { percentual: 0, colhido: 0, estimado: 0 };
+// --- TEMA OFICIAL AGROGB ---
+const THEME = {
+    bg: '#F4F6F5',
+    headerBg: ['#176E46', '#1F8A5B'],
+    cardBg: '#FFFFFF',
+    textMain: '#1E1E1E',
+    textSub: '#6E6E6E',
+    primary: '#1F8A5B',
+    accent: '#27AE60',
+    alert: '#F4B740'
+};
+
+
+export default function HomeScreen({ navigation }) {
+    const [stats, setStats] = useState({
+        saldo: 0,
+        colheitaHoje: 0,
+        vendasHoje: 0,
+        plantioAtivo: 0,
+        maquinasAlert: 0,
+        maquinasAlert: 0,
+        pendentes: 0
+    });
+    const [drawerVisible, setDrawerVisible] = useState(false);
+    const [isReady, setIsReady] = useState(false); // Gatilho de Skeleton View
+
+    const loadStats = async () => {
+        const data = await getDashboardStats();
+        setStats(data);
+    };
+
+    const autoSync = async () => {
+        try {
+            console.log('Iniciando Auto-Sync (Push/Pull)...');
+            await pushLocalChanges();
+            await pullServerChanges();
+            console.log('Auto-Sync Concluído.');
+        } catch (e) {
+            console.log('Falha no Auto-Sync em background:', e);
+        }
+    };
+
+    const [menuConfig, setMenuConfig] = useState(null);
+
+    useFocusEffect(useCallback(() => {
+        // Aguardar o término das animações pesadas do React Navigation 
+        // e adicionar um 'suspiro' de 250ms para garantir que o CPU 
+        // renderizou todos os blocos verdes do layout antes de inundar a API
+        const task = InteractionManager.runAfterInteractions(() => {
+            // Libera a tela de desenhar os blocos e listas só quando a tampa for aberta
+            setIsReady(true);
+            setTimeout(() => {
+                loadStats();
+                autoSync();
+                MenuConfigService.getMenuConfig().then(cfg => setMenuConfig(cfg));
+            }, 50);
+        });
+        return () => task.cancel();
+    }, []));
+
+    // Lógica de Colunas Adaptativas
+    // Se a config diz X colunas, mas a tela for pequena, reduzimos.
+    const screenWidth = Dimensions.get('window').width;
+    const getNumColumns = () => {
+        if (!menuConfig) return 3; // Default loading
+        const desired = menuConfig.menu_columns || 3;
+        if (screenWidth < 380 && desired > 2) return 2; // Fallback para telas pequenas
+        return desired;
+    };
+
+    const numColumns = getNumColumns();
+    const cardWidth = (screenWidth - 40 - ((numColumns - 1) * 12)) / numColumns; // 40 (padding) + gaps
+
+    const formatBRL = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            
-            <LinearGradient 
-                colors={['#0F172A', '#0B121E', '#080C14']} 
-                style={StyleSheet.absoluteFill} 
-            />
-            
-            <View style={[styles.ambientOrb, { top: -60, right: -100, backgroundColor: '#10B981', opacity: 0.08 }]} />
-            <View style={[styles.ambientOrb, { bottom: 150, left: -120, backgroundColor: '#D4AF37', opacity: 0.06 }]} />
-            
-            <SafeAreaView style={styles.safeArea}>
-                <View style={styles.header}>
-                    {/* LOGO AGROGB */}
-                    <View style={styles.headerLogoBox}>
-                        <View style={styles.logoBadge}>
-                            <Ionicons name="leaf" size={18} color="#10B981" />
-                        </View>
+            <RNStatusBar barStyle="light-content" backgroundColor={THEME.headerBg[0]} />
+
+            <LinearGradient colors={THEME.headerBg} style={styles.header}>
+                <View style={[styles.headerTop, { alignItems: 'flex-start', flexDirection: 'column', width: '100%' }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15, width: '100%' }}>
+                        <TouchableOpacity onPress={() => setDrawerVisible(true)} style={styles.profileBtn}>
+                            <Ionicons name="menu" size={30} color="#FFF" />
+                        </TouchableOpacity>
                         <View>
-                            <Text style={styles.logoText}>AgroGB</Text>
-                            <Text style={styles.logoSub}>Olá, Bruno 👋</Text>
+                            <Text style={styles.brand}>AgroGB</Text>
+                            <Text style={styles.salutation}>Painel Gerencial</Text>
                         </View>
                     </View>
-                    {/* AÇÕES DO HEADER: PERFIL + ENGRENAGEM */}
-                    <View style={styles.headerActions}>
-                        <TouchableOpacity style={styles.menuBtn} onPress={() => navigation.navigate('Profile')}>
-                            <SafeBlurView intensity={20} style={styles.menuIconBox}>
-                                <Ionicons name="person-outline" size={21} color="#FFF" />
-                            </SafeBlurView>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.menuBtn, { marginLeft: 10 }]} onPress={() => navigation.navigate('Config')}>
-                            <SafeBlurView intensity={20} style={styles.menuIconBox}>
-                                <Ionicons name="settings-outline" size={21} color="#FFF" />
-                            </SafeBlurView>
-                        </TouchableOpacity>
+                    <View style={{ marginTop: 20, width: '100%' }}>
+                        <WeatherWidget />
                     </View>
                 </View>
 
-                <ScrollView 
-                    showsVerticalScrollIndicator={false} 
-                    contentContainerStyle={styles.scrollContent}
-                    refreshControl={
-                        <RefreshControl refreshing={analytics.refreshing} onRefresh={analytics.refresh} tintColor="#10B981" />
-                    }
-                >
-                    <SafeBlurView intensity={10} style={styles.dashboardCard}>
-                        <View style={styles.dashHeader}>
-                            <Text style={styles.dashTitle}>RESUMO MENSAL</Text>
-                            <Ionicons name="stats-chart" size={18} color="rgba(255,255,255,0.4)" />
-                        </View>
-                        
-                        <View style={styles.dashStatsRow}>
-                            <View style={styles.statBox}>
-                                <View style={styles.statLabelRow}>
-                                    <View style={[styles.dot, { backgroundColor: '#10B981' }]} />
-                                    <Text style={styles.statLabel}>TOTAL VENDAS</Text>
-                                </View>
-                                <Text style={styles.statValue}>R$ {totalVendas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</Text>
-                            </View>
-                            
-                            <View style={styles.statBox}>
-                                <View style={styles.statLabelRow}>
-                                    <View style={[styles.dot, { backgroundColor: '#EF4444' }]} />
-                                    <Text style={styles.statLabel}>CUSTOS TOTAIS</Text>
-                                </View>
-                                <Text style={[styles.statValue, { color: '#FCD34D' }]}>R$ {totalCustos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</Text>
+                {/* SÓ RENDERIZA O RESTANTE SE A TRANSIÇÃO DE LOGIN ESTIVER PRONTA */}
+                {isReady && (
+                    <View style={styles.kpiRow}>
+                        <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>COLHEITA (HOJE)</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                                <Ionicons name="leaf" size={14} color="#34D399" />
+                                <Text style={styles.kpiValue}>{stats.colheitaHoje} <Text style={styles.unit}>kg</Text></Text>
                             </View>
                         </View>
 
-                        <View style={styles.intelRow}>
-                            <View style={styles.intelItem}>
-                                <Text style={styles.intelLabel}>ROI ATUAL</Text>
-                                <Text style={[styles.intelValue, { color: '#10B981' }]}>{roi}%</Text>
-                            </View>
-                            <View style={styles.intelDivider} />
-                            <View style={styles.intelItem}>
-                                <Text style={styles.intelLabel}>PROGRESSO SAFRA</Text>
-                                <View style={styles.progressContainer}>
-                                    <View style={[styles.progressBar, { width: `${harvest.percentual}%` }]} />
-                                    <Text style={styles.progressText}>{harvest.percentual}%</Text>
-                                </View>
+                        <View style={styles.vr} />
+
+                        <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>VENDAS (HOJE)</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                                <Ionicons name="cash" size={14} color="#34D399" />
+                                <Text style={styles.kpiValue}>{stats.vendasHoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</Text>
                             </View>
                         </View>
-                    </SafeBlurView>
 
-                    {/* ⚡ ACTION PILLS (INCLUDES INTELLIGENCE) */}
-                    <View style={styles.actionPills}>
-                        <TouchableOpacity style={styles.pillActiveWrapper} onPress={() => navigation.navigate('Intelligence')}>
-                            <LinearGradient 
-                                colors={['#10B981', '#065F46']} 
-                                style={styles.pillActive}
-                                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                            >
-                                <MaterialCommunityIcons name="robot" size={20} color="#FFF" />
-                                <Text style={[styles.pillText, { color: '#FFF' }]}>Inteligência IA</Text>
-                            </LinearGradient>
-                        </TouchableOpacity>
+                        <View style={styles.vr} />
 
-                        <TouchableOpacity style={styles.pill} onPress={() => navigation.navigate('Vendas')}>
-                            <Ionicons name="add" size={18} color="#10B981" />
-                            <Text style={styles.pillText}>Venda</Text>
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity style={styles.pill} onPress={() => navigation.navigate('Custos')}>
-                            <Ionicons name="add" size={18} color="#D4AF37" />
-                            <Text style={styles.pillText}>Custo</Text>
-                        </TouchableOpacity>
+                        <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>RESULTADO (MÊS)</Text>
+                            <Text style={[styles.kpiValue, { color: stats.saldo >= 0 ? '#34D399' : '#F87171' }]}>
+                                {formatBRL(stats.saldo)}
+                            </Text>
+                        </View>
                     </View>
+                )}
+            </LinearGradient>
 
-                    {/* 🚜 GRUPO 1: GESTÃO OPERACIONAL */}
-                    <View style={styles.sectionHeader}>
-                        <View style={[styles.indicator, { backgroundColor: '#10B981' }]} />
-                        <Text style={styles.sectionTitle}>GESTÃO OPERACIONAL</Text>
-                    </View>
-                    <View style={styles.grid}>
-                        <BalloonButton icon="leaf" label="Plantio" route="Plantio" color="#10B981" />
-                        <BalloonButton icon="basket" label="Colheita" route="Colheita" color="#10B981" />
-                        <BalloonButton icon="flask" label="Adubação" route="AdubacaoList" color="#10B981" />
-                        <BalloonButton icon="book" label="Caderno" route="CadernoCampo" color="#10B981" />
-                        <BalloonButton icon="layers" label="Cadastros" route="Cadastro" color="#10B981" />
-                        <BalloonButton icon="people" label="Equipes" route="Usuarios" color="#10B981" />
-                        <BalloonButton icon="monitor-dashboard" iconType="MCI" label="Monitoramento" route="Monitoramento" color="#10B981" />
-                        <BalloonButton icon="trash-outline" label="Perdas" route="Processamento" color="#10B981" />
-                    </View>
+            <View style={styles.content}>
+                {isReady ? (
+                    <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-                    {/* 💰 GRUPO 2: COMERCIAL & FINANCEIRO */}
-                    <View style={styles.sectionHeader}>
-                        <View style={[styles.indicator, { backgroundColor: '#3B82F6' }]} />
-                        <Text style={styles.sectionTitle}>COMERCIAL & FINANCEIRO</Text>
-                    </View>
-                    <View style={styles.grid}>
-                        <BalloonButton icon="cash" label="Vendas" route="Vendas" color="#3B82F6" />
-                        <BalloonButton icon="cart" label="Compras" route="Compras" color="#3B82F6" />
-                        <BalloonButton icon="wallet" label="Custos" route="Custos" color="#3B82F6" />
-                        <BalloonButton icon="cube" label="Estoque" route="Estoque" color="#3B82F6" />
-                        <BalloonButton icon="truck-delivery-outline" iconType="MCI" label="Encomendas" route="Encomendas" color="#3B82F6" />
-                        <BalloonButton icon="office-building" iconType="MCI" label="Contas" route="FinancialAccounts" color="#3B82F6" />
-                        <BalloonButton icon="tractor" iconType="MCI" label="Frota" route="Frota" color="#3B82F6" />
-                        <BalloonButton icon="people-circle" label="Clientes" route="Clientes" color="#3B82F6" />
-                        <BalloonButton icon="bar-chart" label="Gráficos" route="Graficos" color="#3B82F6" />
-                        <BalloonButton icon="pie-chart" label="Relatórios" route="Relatorios" color="#3B82F6" />
-                    </View>
+                        {stats.maquinasAlert > 0 && (
+                            <TouchableOpacity style={styles.alertBar} onPress={() => navigation.navigate('Frota')}>
+                                <Ionicons name="warning" size={20} color="#B45309" />
+                                <Text style={styles.alertText}>{stats.maquinasAlert} MÁQUINAS PRECISAM DE REVISÃO</Text>
+                                <Ionicons name="chevron-forward" size={20} color="#B45309" />
+                            </TouchableOpacity>
+                        )}
 
-                    {/* ⚙️ GRUPO 3: SISTEMA */}
-                    <View style={styles.sectionHeader}>
-                        <View style={[styles.indicator, { backgroundColor: '#64748B' }]} />
-                        <Text style={styles.sectionTitle}>SISTEMA</Text>
+                        <Text style={styles.sectionTitle}>ACESSO RÁPIDO</Text>
+                        {menuConfig ? (
+                            <View style={styles.grid}>
+                                {menuConfig.menu_items.filter(i => i.enabled).map((item, index) => (
+                                    <TouchableOpacity
+                                        key={item.id}
+                                        style={[styles.card, { width: cardWidth }]}
+                                        onPress={() => navigation.navigate(item.screen)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={[styles.iconCircle, { backgroundColor: (item.color || '#374151') + '15' }]}>
+                                            <Ionicons name={item.icon} size={24} color={item.color || '#374151'} />
+                                        </View>
+                                        <Text style={styles.cardTitle} numberOfLines={1}>{item.label}</Text>
+                                        {/* Badges Especiais */}
+                                        {item.id === 'sync' && stats.pendentes > 0 && (
+                                            <View style={styles.badge}>
+                                                <Text style={styles.badgeText}>{stats.pendentes}</Text>
+                                            </View>
+                                        )}
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        ) : (
+                            <View style={{ padding: 20, alignItems: 'center' }}><Text>Carregando menu...</Text></View>
+                        )}
+
+                        <View style={styles.footer}>
+                            <Text style={styles.version}>AgroGB Mobile v6.0 • Premium</Text>
+                        </View>
+                    </ScrollView>
+                ) : (
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 }}>
+                        <Ionicons name="leaf-outline" size={40} color="#D1D5DB" />
+                        <Text style={{ marginTop: 10, color: '#9CA3AF', fontSize: 12 }}>Preparando espaço...</Text>
                     </View>
-                    <View style={styles.grid}>
-                        <BalloonButton icon="person" label="Perfil" route="Profile" color="#64748B" />
-                        <BalloonButton icon="scan" label="Scanner" route="Scanner" color="#64748B" />
-                        <BalloonButton icon="sync" label="Sincronia" route="Sync" color="#3B82F6" />
-                        <BalloonButton icon="settings" label="Ajustes" route="Settings" color="#64748B" />
-                        <BalloonButton icon="construct" label="Config" route="Config" color="#64748B" />
-                    </View>
+                )}
+            </View>
 
-                    <View style={{ height: 120 }} />
-                </ScrollView>
-
-                {/* ── BOTTOM NAV ── */}
-                <View style={styles.bottomNav}>
-                    <NavIcon icon="home" label="Home" active />
-                    <NavIcon icon="bar-chart" label="Relatórios" onPress={() => navigation.navigate('Relatorios')} />
-                    <NavIcon icon="sync" label="Sync" onPress={() => navigation.navigate('Sync')} />
-                    <NavIcon icon="person" label="Perfil" onPress={() => navigation.navigate('Profile')} />
-                </View>
-
-            </SafeAreaView>
+            <SidebarDrawer visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
         </View>
     );
 }
 
-const BalloonButton = ({ icon, label, route, color, iconType }) => {
-    const navigation = useNavigation();
-    const IconComponent = iconType === 'MCI' ? MaterialCommunityIcons : Ionicons;
-    return (
-        <TouchableOpacity style={styles.balloon} onPress={() => navigation.navigate(route)}>
-            <IconComponent name={icon} size={28} color={color} />
-            <Text style={styles.balloonText}>{label}</Text>
-        </TouchableOpacity>
-    );
-};
-
-const NavIcon = ({ icon, label, active, onPress }) => (
-    <TouchableOpacity style={styles.navItem} onPress={onPress}>
-        <Ionicons name={icon} size={24} color={active ? "#10B981" : "rgba(255,255,255,0.4)"} />
-        <Text style={[styles.navText, { color: active ? "#10B981" : "rgba(255,255,255,0.4)" }]}>{label}</Text>
-    </TouchableOpacity>
-);
-
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#0B121E' },
-    safeArea: { flex: 1 },
-    ambientOrb: { position: 'absolute', width: 300, height: 300, borderRadius: 150, zIndex: -1 },
-    
-    header: { 
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', 
-        paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? 40 : 10, paddingBottom: 15 
-    },
-    headerLogoBox: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    logoBadge: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(16,185,129,0.12)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(16,185,129,0.25)' },
-    logoText: { color: '#FFF', fontSize: 20, fontWeight: '900', letterSpacing: 0.5 },
-    logoSub: { color: 'rgba(255,255,255,0.45)', fontSize: 12, fontWeight: '600', marginTop: 1 },
-    headerActions: { flexDirection: 'row', alignItems: 'center' },
-    headerTitleBox: { flexDirection: 'row', alignItems: 'center' },
-    greeting: { color: '#FFF', fontSize: 24, fontWeight: '700' },
-    menuBtn: { width: 44, height: 44, borderRadius: 12, overflow: 'hidden' },
-    menuIconBox: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    container: { flex: 1, backgroundColor: THEME.bg, width: '100%', maxWidth: 700, alignSelf: 'center', shadowColor: '#000', elevation: 8, shadowRadius: 20 },
+    header: { paddingHorizontal: 20, paddingTop: 50, paddingBottom: 30, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
+    brand: { fontSize: 22, fontWeight: '900', color: '#FFF', letterSpacing: 0.5 },
+    brandPro: { fontSize: 10, backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden', color: '#A7F3D0' },
+    salutation: { fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginTop: 2 },
+    profileBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 12 },
 
-    scrollContent: { paddingHorizontal: 20, paddingBottom: 100 },
+    kpiRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.15)', padding: 15, borderRadius: 16 },
+    kpiItem: { flex: 1, alignItems: 'center' },
+    kpiLabel: { fontSize: 9, color: 'rgba(255,255,255,0.8)', fontWeight: '700', marginBottom: 4, letterSpacing: 0.5 },
+    kpiValue: { fontSize: 14, color: '#FFF', fontWeight: 'bold' },
+    unit: { fontSize: 10, color: 'rgba(255,255,255,0.7)' },
+    vr: { width: 1, height: 25, backgroundColor: 'rgba(255,255,255,0.25)' },
 
-    dashboardCard: {
-        backgroundColor: 'rgba(255,255,255,0.03)',
-        borderRadius: 24,
-        padding: 20,
-        marginBottom: 20,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
-    },
-    dashHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-    dashTitle: { color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '900', letterSpacing: 1 },
-    dashStatsRow: { flexDirection: 'row', justifyContent: 'space-between' },
-    statBox: { flex: 1 },
-    statLabelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-    dot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
-    statLabel: { color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '800' },
-    statValue: { color: '#FFF', fontSize: 22, fontWeight: '900' },
+    content: { flex: 1, marginTop: -10 },
+    scroll: { padding: 20 },
 
-    intelRow: { flexDirection: 'row', alignItems: 'center', marginTop: 20, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 12 },
-    intelItem: { flex: 1, alignItems: 'center' },
-    intelDivider: { width: 1, height: 25, backgroundColor: 'rgba(255,255,255,0.1)' },
-    intelLabel: { color: 'rgba(255,255,255,0.3)', fontSize: 8, fontWeight: '900', marginBottom: 4 },
-    intelValue: { fontSize: 16, fontWeight: '900' },
-    progressContainer: { flexDirection: 'row', alignItems: 'center' },
-    progressBar: { height: 4, backgroundColor: '#10B981', borderRadius: 2 },
-    progressText: { color: '#FFF', fontSize: 12, fontWeight: '900', marginLeft: 6 },
+    alertBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', padding: 12, borderRadius: 12, marginBottom: 20, gap: 10, borderLeftWidth: 4, borderLeftColor: '#F4B740' },
+    alertText: { flex: 1, fontSize: 11, fontWeight: 'bold', color: '#92400E' },
 
-    // Action Pills
-    actionPills: { flexDirection: 'row', marginBottom: 30, gap: 8 },
-    pill: { 
-        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        height: 54, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.04)', 
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)'
-    },
-    pillActiveWrapper: { flex: 1.4, height: 54, borderRadius: 16, overflow: 'hidden' },
-    pillActive: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-    pillText: { color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '900', textAlign: 'center' },
+    sectionTitle: { fontSize: 12, fontWeight: '800', color: '#6E6E6E', marginBottom: 15, letterSpacing: 0.5 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+    card: { backgroundColor: '#FFF', borderRadius: 16, padding: 15, alignItems: 'center', justifyContent: 'center', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 6, borderWidth: 1, borderColor: 'rgba(0,0,0,0.03)' },
+    iconCircle: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+    cardTitle: { fontSize: 10, fontWeight: '700', color: '#1E1E1E', textAlign: 'center' },
 
-    sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15, marginTop: 10 },
-    indicator: { width: 4, height: 18, borderRadius: 2, marginRight: 10 },
-    sectionTitle: { color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '900', letterSpacing: 1 },
+    badge: { position: 'absolute', top: 5, right: 5, backgroundColor: '#E74C3C', minWidth: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
+    badgeText: { color: '#FFF', fontSize: 9, fontWeight: 'bold' },
 
-    grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 10 },
-    balloon: { 
-        width: '48.5%', 
-        backgroundColor: '#FFFFFF', 
-        borderRadius: 24, 
-        paddingVertical: 25, 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        marginBottom: 12,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3
-    },
-    balloonText: { color: '#1E293B', fontSize: 15, fontWeight: '700', marginTop: 10 },
-
-    bottomNav: {
-        position: 'absolute', bottom: 0, left: 0, right: 0, height: 85,
-        flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center',
-        backgroundColor: '#0B121E', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)',
-        paddingBottom: 20
-    },
-    navItem: { alignItems: 'center' },
-    navText: { fontSize: 10, fontWeight: '800', marginTop: 4 }
+    footer: { marginTop: 40, alignItems: 'center' },
+    version: { color: '#9CA3AF', fontSize: 10, fontWeight: '600' }
 });
+
