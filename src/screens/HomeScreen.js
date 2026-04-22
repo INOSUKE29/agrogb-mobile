@@ -2,43 +2,28 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, StatusBar as RNStatusBar, InteractionManager } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import WeatherWidget from '../components/WeatherWidget';
-import { executeQuery, getConfig, getDashboardStats } from '../database/database';
+import { getDashboardStats } from '../database/database';
 import { pushLocalChanges, pullServerChanges } from '../services/SyncService';
 import { MenuConfigService } from '../services/MenuConfigService';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import SidebarDrawer from '../components/SidebarDrawer';
 
-const { width } = Dimensions.get('window');
-
-
-// --- TEMA OFICIAL AGROGB ---
+// --- TEMA SENIOR PREMIUM AGROGB ---
 const THEME = {
-    bg: '#0B1115',
-    headerBg: ['#063D23', '#085C34'],
-    cardBg: '#161F27',
-    textMain: '#F9FAFB',
-    textSub: '#9CA3AF',
-    primary: '#085C34',
-    accent: '#10B981',
-    alert: '#F4B740',
-    border: '#232F3A'
+    bg: '#F4F7F6',             // Gelo neve ultra suave (Fundo Geral)
+    headerBg: ['#065F3E', '#10B981'], // Verde Navy escuro pro Esmeralda
+    cardBg: '#FFFFFF',         // Branco Absoluto 
+    textMain: '#1E293B',       // Slate Escuro (Titulos Fortes)
+    textSub: '#64748B',        // Slate Neutro (Textos Secundarios)
+    accent: '#10B981',         // Esmeralda brilhante
 };
 
-
 export default function HomeScreen({ navigation }) {
-    const [stats, setStats] = useState({
-        saldo: 0,
-        colheitaHoje: 0,
-        vendasHoje: 0,
-        plantioAtivo: 0,
-        maquinasAlert: 0,
-        maquinasAlert: 0,
-        pendentes: 0
-    });
+    const [stats, setStats] = useState({ saldo: 0, colheitaHoje: 0, vendasHoje: 0, plantioAtivo: 0, maquinasAlert: 0, pendentes: 0 });
     const [drawerVisible, setDrawerVisible] = useState(false);
-    const [isReady, setIsReady] = useState(false); // Gatilho de Skeleton View
+    const [isReady, setIsReady] = useState(false);
+    const [menuConfig, setMenuConfig] = useState(null);
 
     const loadStats = async () => {
         const data = await getDashboardStats();
@@ -46,24 +31,12 @@ export default function HomeScreen({ navigation }) {
     };
 
     const autoSync = async () => {
-        try {
-            console.log('Iniciando Auto-Sync (Push/Pull)...');
-            await pushLocalChanges();
-            await pullServerChanges();
-            console.log('Auto-Sync Concluído.');
-        } catch (e) {
-            console.log('Falha no Auto-Sync em background:', e);
-        }
+        try { await pushLocalChanges(); await pullServerChanges(); } 
+        catch (e) { console.log('Sync BG fail:', e); }
     };
 
-    const [menuConfig, setMenuConfig] = useState(null);
-
     useFocusEffect(useCallback(() => {
-        // Aguardar o término das animações pesadas do React Navigation 
-        // e adicionar um 'suspiro' de 250ms para garantir que o CPU 
-        // renderizou todos os blocos verdes do layout antes de inundar a API
         const task = InteractionManager.runAfterInteractions(() => {
-            // Libera a tela de desenhar os blocos e listas só quando a tampa for aberta
             setIsReady(true);
             setTimeout(() => {
                 loadStats();
@@ -74,112 +47,117 @@ export default function HomeScreen({ navigation }) {
         return () => task.cancel();
     }, []));
 
-    // Lógica de Colunas Adaptativas
-    // Se a config diz X colunas, mas a tela for pequena, reduzimos.
-    const screenWidth = Dimensions.get('window').width;
-    const getNumColumns = () => {
-        if (!menuConfig) return 3; // Default loading
-        const desired = menuConfig.menu_columns || 3;
-        if (screenWidth < 380 && desired > 2) return 2; // Fallback para telas pequenas
-        return desired;
-    };
-
-    const numColumns = getNumColumns();
-    const cardWidth = (screenWidth - 40 - ((numColumns - 1) * 12)) / numColumns; // 40 (padding) + gaps
-
-    const formatBRL = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const formatBRL = (v) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     return (
         <View style={styles.container}>
-            <RNStatusBar barStyle="light-content" backgroundColor={THEME.headerBg[0]} />
+            <RNStatusBar barStyle="light-content" backgroundColor="#065F3E" />
 
-            {isReady ? (
-                <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-                    
-                    <LinearGradient colors={THEME.headerBg} style={styles.header}>
-                        <View style={[styles.headerTop, { alignItems: 'flex-start', flexDirection: 'column', width: '100%' }]}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15, width: '100%' }}>
-                                <TouchableOpacity onPress={() => setDrawerVisible(true)} style={styles.profileBtn}>
-                                    <Ionicons name="menu" size={30} color="#FFF" />
+            <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false} bounces={false}>
+                
+                {/* O HEADER SUPREMO (Com Curvatura Extra) */}
+                <LinearGradient colors={THEME.headerBg} start={{x: 0, y: 0}} end={{x: 1, y: 1}} style={styles.headerCurveWrap}>
+                    <View style={styles.headerContent}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
+                                <TouchableOpacity onPress={() => setDrawerVisible(true)} style={styles.menuIconBox}>
+                                    <Ionicons name="menu-outline" size={28} color="#FFF" />
                                 </TouchableOpacity>
                                 <View>
-                                    <Text style={styles.brand}>AgroGB</Text>
-                                    <Text style={styles.salutation}>Painel Gerencial</Text>
+                                    <Text style={styles.brandText}>AgroGB<Text style={{fontWeight:'400', fontSize: 13}}> App</Text></Text>
+                                    <Text style={styles.salutationText}>Fazenda em Tempo Real</Text>
                                 </View>
                             </View>
-                            <View style={{ marginTop: 20, width: '100%' }}>
-                                <WeatherWidget />
-                            </View>
+                            <View style={styles.proTag}><Text style={styles.proTagText}>PRO</Text></View>
                         </View>
 
-                        <View style={styles.kpiRow}>
-                            <View style={styles.kpiItem}>
-                                <Text style={styles.kpiLabel}>COLHEITA (HOJE)</Text>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                                    <Ionicons name="leaf" size={14} color="#34D399" />
-                                    <Text style={styles.kpiValue}>{stats.colheitaHoje} <Text style={styles.unit}>kg</Text></Text>
+                        {/* Clima Moderno Embutido */}
+                        <WeatherWidget />
+                    </View>
+                </LinearGradient>
+
+                {/* AREA DE CONTEUDO (Puxada p/ cima pra sobrepor o verde) */}
+                <View style={styles.mainContent}>
+                    
+                    {/* CARTAO DE ESTATISTICAS FLUTUANTE (Glass/Elevated) */}
+                    {isReady && (
+                        <View style={styles.statsCardFloating}>
+                            <View style={styles.statBlock}>
+                                <Text style={styles.statLabel}>COLHEITA (Hoje)</Text>
+                                <View style={styles.statRowFlex}>
+                                    <View style={[styles.statIconBox, { backgroundColor: '#ECFDF5' }]}><Ionicons name="leaf" size={12} color="#10B981" /></View>
+                                    <Text style={styles.statNumber}>{stats.colheitaHoje} <Text style={{fontSize: 11, color: THEME.textSub}}>kg</Text></Text>
                                 </View>
                             </View>
-                            <View style={styles.vr} />
-                            <View style={styles.kpiItem}>
-                                <Text style={styles.kpiLabel}>VENDAS (HOJE)</Text>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                                    <Ionicons name="cash" size={14} color="#34D399" />
-                                    <Text style={styles.kpiValue}>{stats.vendasHoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</Text>
+                            
+                            <View style={styles.statDivider} />
+                            
+                            <View style={styles.statBlock}>
+                                <Text style={styles.statLabel}>VENDAS (Mês)</Text>
+                                <View style={styles.statRowFlex}>
+                                    <View style={[styles.statIconBox, { backgroundColor: '#F0F9FF' }]}><Ionicons name="cash" size={12} color="#0EA5E9" /></View>
+                                    <Text style={[styles.statNumber, {color: THEME.textMain}]}>{formatBRL(stats.vendasHoje)}</Text>
                                 </View>
-                            </View>
-                            <View style={styles.vr} />
-                            <View style={styles.kpiItem}>
-                                <Text style={styles.kpiLabel}>RESULTADO (MÊS)</Text>
-                                <Text style={[styles.kpiValue, { color: stats.saldo >= 0 ? '#34D399' : '#F87171' }]}>
-                                    {formatBRL(stats.saldo)}
-                                </Text>
                             </View>
                         </View>
-                    </LinearGradient>
+                    )}
 
-                    <View style={[styles.content, styles.scroll]}>
-                        {stats.maquinasAlert > 0 && (
-                            <TouchableOpacity style={styles.alertBar} onPress={() => navigation.navigate('Frota')}>
-                                <Ionicons name="warning" size={20} color="#B45309" />
-                                <Text style={styles.alertText}>{stats.maquinasAlert} MÁQUINAS PRECISAM DE REVISÃO</Text>
-                                <Ionicons name="chevron-forward" size={20} color="#B45309" />
-                            </TouchableOpacity>
-                        )}
+                    {/* ALERTAS DE FROTA */}
+                    {isReady && stats.maquinasAlert > 0 && (
+                        <TouchableOpacity style={styles.alertBanner} onPress={() => navigation.navigate('Frota')}>
+                            <View style={styles.alertIconCircle}><Ionicons name="warning" size={16} color="#D97706" /></View>
+                            <View style={{flex: 1}}>
+                                <Text style={styles.alertTitle}>ATENÇÃO NA FROTA</Text>
+                                <Text style={styles.alertDesc}>{stats.maquinasAlert} máquinas precisam de revisão imediata.</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="#D97706" />
+                        </TouchableOpacity>
+                    )}
 
-                        <Text style={styles.sectionTitle}>ACESSO RÁPIDO</Text>
-                        {menuConfig ? (
-                            <View style={styles.grid}>
-                                {menuConfig.menu_items.filter(i => i.enabled).map((item, index) => (
+                    {/* GRID CENTRAL: O Famoso "Acesso Rápido" */}
+                    <Text style={styles.sectionHeader}>Acesso Rápido</Text>
+                    
+                    {isReady ? (
+                        <View style={styles.gridContainer}>
+                            {menuConfig ? menuConfig.menu_items.filter(i => i.enabled).map((item, index) => {
+                                const baseColor = item.color || '#64748B';
+                                return (
                                     <TouchableOpacity
                                         key={item.id}
-                                        style={[styles.card, { width: '31%', minWidth: 95 }]}
+                                        style={styles.gridCard}
                                         onPress={() => navigation.navigate(item.screen)}
                                         activeOpacity={0.7}
                                     >
-                                        <View style={[styles.iconCircle, { backgroundColor: (item.color || '#374151') + '15' }]}>
-                                            <Ionicons name={item.icon} size={24} color={item.color || '#374151'} />
+                                        <View style={[styles.gridIconCircle, { backgroundColor: baseColor + '1A' }]}>
+                                            <Ionicons name={item.icon} size={24} color={baseColor} />
                                         </View>
-                                        <Text style={styles.cardTitle} numberOfLines={1}>{item.label}</Text>
+                                        <Text style={styles.gridCardText} numberOfLines={1}>{item.label}</Text>
+                                        
+                                        {/* Bolinha vermelha de notificacao PENDENTES em cima do SYNC */}
                                         {item.id === 'sync' && stats.pendentes > 0 && (
-                                            <View style={styles.badge}><Text style={styles.badgeText}>{stats.pendentes}</Text></View>
+                                            <View style={styles.notificationBubble}>
+                                                <Text style={styles.notificationNumber}>{stats.pendentes}</Text>
+                                            </View>
                                         )}
                                     </TouchableOpacity>
-                                ))}
-                            </View>
-                        ) : (
-                            <View style={{ padding: 20, alignItems: 'center' }}><Text>Carregando menu...</Text></View>
-                        )}
-                        <View style={styles.footer}><Text style={styles.version}>AgroGB Mobile v6.0 • Premium</Text></View>
-                    </View>
+                                );
+                            }) : (
+                                <Text style={{textAlign: 'center', color: THEME.textSub, marginTop: 20}}>Localizando Módulos...</Text>
+                            )}
+                        </View>
+                    ) : (
+                        <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                            <Ionicons name="apps-outline" size={30} color="#CBD5E1" />
+                            <Text style={{ marginTop: 10, color: '#94A3B8', fontSize: 13 }}>Sincronizando painel, aguarde...</Text>
+                        </View>
+                    )}
 
-                </ScrollView>
-            ) : (
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 }}>
-                    <Ionicons name="leaf-outline" size={40} color="#D1D5DB" />
-                    <Text style={{ marginTop: 10, color: '#9CA3AF', fontSize: 12 }}>Preparando espaço...</Text>
+                    <View style={styles.footerSpacing}>
+                         <Text style={styles.footerBrand}>AgroGB 2026 • Design Edition</Text>
+                    </View>
+                    
                 </View>
-            )}
+            </ScrollView>
 
             <SidebarDrawer visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
         </View>
@@ -187,37 +165,83 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: THEME.bg, width: '100%', maxWidth: 700, alignSelf: 'center', shadowColor: '#000', elevation: 8, shadowRadius: 20 },
-    header: { paddingHorizontal: 20, paddingTop: 50, paddingBottom: 30, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
-    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
-    brand: { fontSize: 22, fontWeight: '900', color: '#FFF', letterSpacing: 0.5 },
-    brandPro: { fontSize: 10, backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden', color: '#A7F3D0' },
-    salutation: { fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginTop: 2 },
-    profileBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 12 },
+    container: { flex: 1, backgroundColor: THEME.bg },
+    
+    headerCurveWrap: {
+        paddingTop: 50,
+        paddingBottom: 70, // Espaco extra pra engolir o card de baixo
+        borderBottomLeftRadius: 40,
+        borderBottomRightRadius: 40,
+        shadowColor: '#10B981',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.15,
+        shadowRadius: 20,
+        elevation: 8,
+        zIndex: 1
+    },
+    headerContent: { paddingHorizontal: 24 },
+    menuIconBox: { backgroundColor: 'rgba(255,255,255,0.15)', padding: 6, borderRadius: 12 },
+    brandText: { fontSize: 24, fontWeight: '900', color: '#FFF', letterSpacing: 0.5 },
+    salutationText: { fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '600', marginTop: 2 },
+    proTag: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+    proTagText: { color: '#A7F3D0', fontSize: 10, fontWeight: 'bold', letterSpacing: 1 },
 
-    kpiRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.15)', padding: 15, borderRadius: 16 },
-    kpiItem: { flex: 1, alignItems: 'center' },
-    kpiLabel: { fontSize: 9, color: 'rgba(255,255,255,0.8)', fontWeight: '700', marginBottom: 4, letterSpacing: 0.5 },
-    kpiValue: { fontSize: 14, color: '#FFF', fontWeight: 'bold' },
-    unit: { fontSize: 10, color: 'rgba(255,255,255,0.7)' },
-    vr: { width: 1, height: 25, backgroundColor: 'rgba(255,255,255,0.25)' },
+    mainContent: { flex: 1, paddingHorizontal: 20, marginTop: -45, zIndex: 10 },
+    
+    // THE SUPREME STATS CARD (Flutua na divisao do verde com cinza)
+    statsCardFloating: {
+        flexDirection: 'row',
+        backgroundColor: THEME.cardBg,
+        borderRadius: 24,
+        paddingVertical: 20,
+        paddingHorizontal: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.08,
+        shadowRadius: 15,
+        elevation: 6,
+        marginBottom: 25,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.02)',
+    },
+    statBlock: { flex: 1, alignItems: 'flex-start' },
+    statDivider: { width: 1, height: '100%', backgroundColor: '#F1F5F9', marginHorizontal: 20 },
+    statLabel: { fontSize: 10, fontWeight: '700', color: THEME.textSub, marginBottom: 8, letterSpacing: 0.5, textTransform: 'uppercase' },
+    statRowFlex: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    statIconBox: { width: 24, height: 24, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+    statNumber: { fontSize: 16, fontWeight: '800', color: THEME.textMain },
 
-    content: { flex: 1, marginTop: -10, backgroundColor: THEME.bg },
-    scroll: { padding: 20 },
+    alertBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', padding: 16, borderRadius: 16, marginBottom: 24, borderLeftWidth: 4, borderLeftColor: '#F59E0B' },
+    alertIconCircle: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(217, 119, 6, 0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    alertTitle: { fontSize: 12, fontWeight: '800', color: '#92400E', marginBottom: 2 },
+    alertDesc: { fontSize: 11, color: '#B45309', fontWeight: '500' },
 
-    alertBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#362F18', padding: 12, borderRadius: 12, marginBottom: 20, gap: 10, borderLeftWidth: 4, borderLeftColor: '#F4B740' },
-    alertText: { flex: 1, fontSize: 11, fontWeight: 'bold', color: '#FCD34D' },
+    sectionHeader: { fontSize: 16, fontWeight: '800', color: THEME.textMain, marginBottom: 15, marginLeft: 5 },
+    
+    gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 15, justifyContent: 'center' }, // centraliza gap para web e mobile
+    gridCard: {
+        width: '30%',
+        minWidth: 98,
+        backgroundColor: THEME.cardBg,
+        borderRadius: 20,
+        paddingVertical: 18,
+        paddingHorizontal: 10,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 3,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.02)',
+        marginBottom: 10
+    },
+    gridIconCircle: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+    gridCardText: { fontSize: 11, fontWeight: '700', color: THEME.textMain, textAlign: 'center' },
+    
+    notificationBubble: { position: 'absolute', top: -5, right: -5, backgroundColor: '#EF4444', minWidth: 20, height: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF' },
+    notificationNumber: { color: '#FFF', fontSize: 10, fontWeight: 'bold' },
 
-    sectionTitle: { fontSize: 12, fontWeight: '800', color: THEME.accent, marginBottom: 15, letterSpacing: 0.5 },
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-    card: { backgroundColor: THEME.cardBg, borderRadius: 16, padding: 15, alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, borderWidth: 1, borderColor: THEME.border },
-    iconCircle: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-    cardTitle: { fontSize: 10, fontWeight: '700', color: THEME.textMain, textAlign: 'center' },
-
-    badge: { position: 'absolute', top: 5, right: 5, backgroundColor: '#E74C3C', minWidth: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
-    badgeText: { color: '#FFF', fontSize: 9, fontWeight: 'bold' },
-
-    footer: { marginTop: 40, alignItems: 'center' },
-    version: { color: '#9CA3AF', fontSize: 10, fontWeight: '600' }
+    footerSpacing: { marginTop: 40, marginBottom: 30, alignItems: 'center' },
+    footerBrand: { fontSize: 11, fontWeight: '600', color: '#CBD5E1' }
 });
-
