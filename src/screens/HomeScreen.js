@@ -92,59 +92,52 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.container}>
             <RNStatusBar barStyle="light-content" backgroundColor={THEME.headerBg[0]} />
 
-            <LinearGradient colors={THEME.headerBg} style={styles.header}>
-                <View style={[styles.headerTop, { alignItems: 'flex-start', flexDirection: 'column', width: '100%' }]}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15, width: '100%' }}>
-                        <TouchableOpacity onPress={() => setDrawerVisible(true)} style={styles.profileBtn}>
-                            <Ionicons name="menu" size={30} color="#FFF" />
-                        </TouchableOpacity>
-                        <View>
-                            <Text style={styles.brand}>AgroGB</Text>
-                            <Text style={styles.salutation}>Painel Gerencial</Text>
-                        </View>
-                    </View>
-                    <View style={{ marginTop: 20, width: '100%' }}>
-                        <WeatherWidget />
-                    </View>
-                </View>
-
-                {/* SÓ RENDERIZA O RESTANTE SE A TRANSIÇÃO DE LOGIN ESTIVER PRONTA */}
-                {isReady && (
-                    <View style={styles.kpiRow}>
-                        <View style={styles.kpiItem}>
-                            <Text style={styles.kpiLabel}>COLHEITA (HOJE)</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                                <Ionicons name="leaf" size={14} color="#34D399" />
-                                <Text style={styles.kpiValue}>{stats.colheitaHoje} <Text style={styles.unit}>kg</Text></Text>
+            {isReady ? (
+                <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+                    
+                    <LinearGradient colors={THEME.headerBg} style={styles.header}>
+                        <View style={[styles.headerTop, { alignItems: 'flex-start', flexDirection: 'column', width: '100%' }]}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15, width: '100%' }}>
+                                <TouchableOpacity onPress={() => setDrawerVisible(true)} style={styles.profileBtn}>
+                                    <Ionicons name="menu" size={30} color="#FFF" />
+                                </TouchableOpacity>
+                                <View>
+                                    <Text style={styles.brand}>AgroGB</Text>
+                                    <Text style={styles.salutation}>Painel Gerencial</Text>
+                                </View>
+                            </View>
+                            <View style={{ marginTop: 20, width: '100%' }}>
+                                <WeatherWidget />
                             </View>
                         </View>
 
-                        <View style={styles.vr} />
-
-                        <View style={styles.kpiItem}>
-                            <Text style={styles.kpiLabel}>VENDAS (HOJE)</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                                <Ionicons name="cash" size={14} color="#34D399" />
-                                <Text style={styles.kpiValue}>{stats.vendasHoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</Text>
+                        <View style={styles.kpiRow}>
+                            <View style={styles.kpiItem}>
+                                <Text style={styles.kpiLabel}>COLHEITA (HOJE)</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                                    <Ionicons name="leaf" size={14} color="#34D399" />
+                                    <Text style={styles.kpiValue}>{stats.colheitaHoje} <Text style={styles.unit}>kg</Text></Text>
+                                </View>
+                            </View>
+                            <View style={styles.vr} />
+                            <View style={styles.kpiItem}>
+                                <Text style={styles.kpiLabel}>VENDAS (HOJE)</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                                    <Ionicons name="cash" size={14} color="#34D399" />
+                                    <Text style={styles.kpiValue}>{stats.vendasHoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</Text>
+                                </View>
+                            </View>
+                            <View style={styles.vr} />
+                            <View style={styles.kpiItem}>
+                                <Text style={styles.kpiLabel}>RESULTADO (MÊS)</Text>
+                                <Text style={[styles.kpiValue, { color: stats.saldo >= 0 ? '#34D399' : '#F87171' }]}>
+                                    {formatBRL(stats.saldo)}
+                                </Text>
                             </View>
                         </View>
+                    </LinearGradient>
 
-                        <View style={styles.vr} />
-
-                        <View style={styles.kpiItem}>
-                            <Text style={styles.kpiLabel}>RESULTADO (MÊS)</Text>
-                            <Text style={[styles.kpiValue, { color: stats.saldo >= 0 ? '#34D399' : '#F87171' }]}>
-                                {formatBRL(stats.saldo)}
-                            </Text>
-                        </View>
-                    </View>
-                )}
-            </LinearGradient>
-
-            <View style={styles.content}>
-                {isReady ? (
-                    <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
+                    <View style={[styles.content, styles.scroll]}>
                         {stats.maquinasAlert > 0 && (
                             <TouchableOpacity style={styles.alertBar} onPress={() => navigation.navigate('Frota')}>
                                 <Ionicons name="warning" size={20} color="#B45309" />
@@ -167,11 +160,8 @@ export default function HomeScreen({ navigation }) {
                                             <Ionicons name={item.icon} size={24} color={item.color || '#374151'} />
                                         </View>
                                         <Text style={styles.cardTitle} numberOfLines={1}>{item.label}</Text>
-                                        {/* Badges Especiais */}
                                         {item.id === 'sync' && stats.pendentes > 0 && (
-                                            <View style={styles.badge}>
-                                                <Text style={styles.badgeText}>{stats.pendentes}</Text>
-                                            </View>
+                                            <View style={styles.badge}><Text style={styles.badgeText}>{stats.pendentes}</Text></View>
                                         )}
                                     </TouchableOpacity>
                                 ))}
@@ -179,18 +169,16 @@ export default function HomeScreen({ navigation }) {
                         ) : (
                             <View style={{ padding: 20, alignItems: 'center' }}><Text>Carregando menu...</Text></View>
                         )}
-
-                        <View style={styles.footer}>
-                            <Text style={styles.version}>AgroGB Mobile v6.0 • Premium</Text>
-                        </View>
-                    </ScrollView>
-                ) : (
-                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 }}>
-                        <Ionicons name="leaf-outline" size={40} color="#D1D5DB" />
-                        <Text style={{ marginTop: 10, color: '#9CA3AF', fontSize: 12 }}>Preparando espaço...</Text>
+                        <View style={styles.footer}><Text style={styles.version}>AgroGB Mobile v6.0 • Premium</Text></View>
                     </View>
-                )}
-            </View>
+
+                </ScrollView>
+            ) : (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 }}>
+                    <Ionicons name="leaf-outline" size={40} color="#D1D5DB" />
+                    <Text style={{ marginTop: 10, color: '#9CA3AF', fontSize: 12 }}>Preparando espaço...</Text>
+                </View>
+            )}
 
             <SidebarDrawer visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
         </View>
