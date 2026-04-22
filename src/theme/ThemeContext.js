@@ -37,8 +37,8 @@ export const ThemeProvider = ({ children }) => {
         }
     };
 
-    const effectiveMode = themeConfig === 'system' ? (systemColorScheme || 'light') : themeConfig;
-    const activeTheme = effectiveMode === 'dark' ? themeDark : themeLight;
+    const effectiveMode = 'dark'; // MEGA PROMPT: Exigiu extinção total do Light Mode
+    const activeTheme = themeDark;
 
     return (
         <ThemeContext.Provider value={{

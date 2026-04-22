@@ -47,7 +47,7 @@ export default function HomeScreen({ navigation }) {
 
     // Configuração dos Menus Departamentais conforme o Plano Diretor
     const CATEGORIES = [
-        { title: '🌱 PRODUÇÃO', keys: ['caderno', 'plantio', 'monitorar', 'adubacao', 'colheita', 'descarte'] },
+        { title: '🌱 PRODUÇÃO', keys: ['caderno', 'plantio', 'monitoramento', 'adubacao', 'colheita', 'descarte'] },
         { title: '💰 COMERCIAL', keys: ['vendas', 'encomendas', 'compras'] },
         { title: '📦 CONTROLE', keys: ['estoque', 'custos', 'frota'] }
     ];
