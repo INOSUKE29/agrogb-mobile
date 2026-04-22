@@ -8,18 +8,12 @@ import { MenuConfigService } from '../services/MenuConfigService';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import SidebarDrawer from '../components/SidebarDrawer';
-
-// --- TEMA SENIOR PREMIUM AGROGB ---
-const THEME = {
-    bg: '#F4F7F6',             // Gelo neve ultra suave (Fundo Geral)
-    headerBg: ['#065F3E', '#10B981'], // Verde Navy escuro pro Esmeralda
-    cardBg: '#FFFFFF',         // Branco Absoluto 
-    textMain: '#1E293B',       // Slate Escuro (Titulos Fortes)
-    textSub: '#64748B',        // Slate Neutro (Textos Secundarios)
-    accent: '#10B981',         // Esmeralda brilhante
-};
+import { useTheme } from '../theme/ThemeContext';
 
 export default function HomeScreen({ navigation }) {
+    const { colors: THEME } = useTheme();
+    const styles = getStyles(THEME);
+    
     const [stats, setStats] = useState({ saldo: 0, colheitaHoje: 0, vendasHoje: 0, plantioAtivo: 0, maquinasAlert: 0, pendentes: 0 });
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [isReady, setIsReady] = useState(false);
@@ -51,7 +45,7 @@ export default function HomeScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
-            <RNStatusBar barStyle="light-content" backgroundColor="#065F3E" />
+            <RNStatusBar barStyle="light-content" backgroundColor={THEME.headerBg[0]} />
 
             <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false} bounces={false}>
                 
@@ -164,7 +158,7 @@ export default function HomeScreen({ navigation }) {
     );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (THEME) => StyleSheet.create({
     container: { flex: 1, backgroundColor: THEME.bg },
     
     headerCurveWrap: {

@@ -4,11 +4,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { executeQuery } from '../database/database';
+import { useTheme } from '../theme/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 const DRAWER_WIDTH = width * 0.75;
 
 export default function SidebarDrawer({ visible, onClose }) {
+    const { colors: THEME } = useTheme();
+    const styles = getStyles(THEME);
+    
     const navigation = useNavigation();
     const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current; // Start hidden (left)
     const [user, setUser] = useState({ name: 'Usuário', email: 'agrogb@sistema.com' });
@@ -89,7 +93,7 @@ export default function SidebarDrawer({ visible, onClose }) {
     const MenuItem = ({ icon, label, screen, badge }) => (
         <TouchableOpacity style={styles.menuItem} onPress={() => handleNavigation(screen)}>
             <View style={{ width: 30, alignItems: 'center' }}>
-                <Ionicons name={icon} size={22} color="#F9FAFB" />
+                <Ionicons name={icon} size={22} color={THEME.textMain} />
             </View>
             <Text style={styles.menuText}>{label}</Text>
             {badge && <View style={styles.badge}><Text style={styles.badgeText}>{badge}</Text></View>}
@@ -159,21 +163,21 @@ export default function SidebarDrawer({ visible, onClose }) {
     );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (THEME) => StyleSheet.create({
     overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
     backdrop: { ...StyleSheet.absoluteFillObject },
-    drawer: { width: DRAWER_WIDTH, height: '100%', backgroundColor: '#0B1115', position: 'absolute', left: 0, zIndex: 2, shadowColor: "#000", shadowOffset: { width: 5, height: 0 }, shadowOpacity: 0.5, shadowRadius: 10, elevation: 15 },
-    header: { backgroundColor: '#062B1A', paddingTop: 50, paddingBottom: 20, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#1A242C' },
+    drawer: { width: DRAWER_WIDTH, height: '100%', backgroundColor: THEME.bg, position: 'absolute', left: 0, zIndex: 2, shadowColor: "#000", shadowOffset: { width: 5, height: 0 }, shadowOpacity: 0.5, shadowRadius: 10, elevation: 15 },
+    header: { backgroundColor: THEME.headerBg[0], paddingTop: 50, paddingBottom: 20, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: THEME.border },
     avatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(16, 185, 129, 0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 15 },
     userName: { color: '#F9FAFB', fontSize: 16, fontWeight: 'bold' },
-    userEmail: { color: '#9CA3AF', fontSize: 12 },
+    userEmail: { color: 'rgba(255,255,255,0.8)', fontSize: 12 },
     body: { flex: 1, paddingVertical: 10 },
-    sectionTitle: { fontSize: 12, fontWeight: 'bold', color: '#10B981', marginLeft: 20, marginTop: 15, marginBottom: 5 },
+    sectionTitle: { fontSize: 12, fontWeight: 'bold', color: THEME.accent, marginLeft: 20, marginTop: 15, marginBottom: 5 },
     menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 20 },
-    menuText: { fontSize: 15, color: '#F9FAFB', marginLeft: 15, fontWeight: '500' },
-    divider: { height: 1, backgroundColor: '#1A242C', marginVertical: 10, marginHorizontal: 20 },
-    footer: { padding: 20, borderTopWidth: 1, borderTopColor: '#1A242C', backgroundColor: '#090D11' },
+    menuText: { fontSize: 15, color: THEME.textMain, marginLeft: 15, fontWeight: '500' },
+    divider: { height: 1, backgroundColor: THEME.border, marginVertical: 10, marginHorizontal: 20 },
+    footer: { padding: 20, borderTopWidth: 1, borderTopColor: THEME.border, backgroundColor: THEME.cardBg },
     logoutBtn: { flexDirection: 'row', alignItems: 'center' },
     logoutText: { color: '#EF4444', fontSize: 16, fontWeight: 'bold', marginLeft: 15 },
-    version: { marginTop: 10, fontSize: 10, color: '#4B5563', textAlign: 'center' }
+    version: { marginTop: 10, fontSize: 10, color: THEME.textSub, textAlign: 'center' }
 });
