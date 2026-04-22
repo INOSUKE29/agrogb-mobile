@@ -159,7 +159,7 @@ export default function HomeScreen({ navigation }) {
                                 {menuConfig.menu_items.filter(i => i.enabled).map((item, index) => (
                                     <TouchableOpacity
                                         key={item.id}
-                                        style={[styles.card, { width: cardWidth }]}
+                                        style={[styles.card, { width: '31%', minWidth: 95 }]}
                                         onPress={() => navigation.navigate(item.screen)}
                                         activeOpacity={0.7}
                                     >
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
 
     sectionTitle: { fontSize: 12, fontWeight: '800', color: '#6E6E6E', marginBottom: 15, letterSpacing: 0.5 },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-    card: { backgroundColor: '#FFF', borderRadius: 16, padding: 15, alignItems: 'center', justifyContent: 'center', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 6, borderWidth: 1, borderColor: 'rgba(0,0,0,0.03)' },
+    card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 15, alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
     iconCircle: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
     cardTitle: { fontSize: 10, fontWeight: '700', color: '#1E1E1E', textAlign: 'center' },
 
