@@ -1,90 +1,90 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../theme/ThemeContext';
 
-// Dark theme colors — hardcoded to avoid undefined theme import
-const C = {
-    primary: '#22C55E',
-    primaryDark: '#16A34A',
-    error: '#EF4444',
-    border: '#334155',
-    textGray: '#9CA3AF',
-    bgGray: '#1F2937',
-};
-
-export default function AgroButton({
-    title,
-    onPress,
-    variant = 'primary', // primary, secondary, danger
-    loading = false,
-    disabled = false,
-    style
+export default function AgroButton({ 
+    onPress, title, icon, variant = 'primary', loading = false, disabled = false, style, textStyle 
 }) {
-    let bg = C.primary;
-    let txt = '#FFF';
-    let border = 'transparent';
-    let bw = 0;
+    const { colors } = useTheme();
 
-    if (variant === 'secondary') {
-        bg = 'transparent';
-        txt = C.primary;
-        border = C.primary;
-        bw = 1.5;
-    } else if (variant === 'danger') {
-        bg = '#1a0000';
-        txt = C.error;
-        border = C.error;
-        bw = 1;
-    }
+    // Secondary = Transparente com borda
+    const isSecondary = variant === 'secondary';
+    const isDanger = variant === 'danger';
 
-    if (disabled) {
-        bg = C.bgGray;
-        txt = C.textGray;
-        border = C.border;
-        bw = 1;
-    }
+    const getColors = () => {
+        if (disabled) return { bg: ['#334155', '#334155'], text: '#94A3B8', border: 'transparent' };
+        if (isDanger) return { bg: ['transparent', 'transparent'], text: colors.error, border: colors.error };
+        if (isSecondary) return { bg: ['transparent', 'transparent'], text: colors.textMain, border: colors.border };
+        
+        // Primary Gradiente AgroGB Escuro -> Claro do botao
+        return { bg: [colors.accent, '#22C55E'], text: '#FFFFFF', border: 'transparent' };
+    };
+
+    const c = getColors();
+
+    const Content = () => (
+        <View style={styles.contentWrap}>
+            {loading ? (
+                <ActivityIndicator color={c.text} size="small" />
+            ) : (
+                <>
+                    {icon && <Ionicons name={icon} size={20} color={c.text} style={styles.iconSpaced} />}
+                    <Text style={[styles.title, { color: c.text }, textStyle]}>{title}</Text>
+                </>
+            )}
+        </View>
+    );
+
+    const baseWrapperStyle = [
+        styles.buttonBase,
+        {
+            borderColor: c.border,
+            borderWidth: (isSecondary || isDanger) ? 1 : 0
+        },
+        style
+    ];
 
     return (
-        <TouchableOpacity
-            style={[
-                styles.container,
-                { backgroundColor: bg, borderColor: border, borderWidth: bw },
-                variant === 'primary' && !disabled && styles.shadow,
-                style,
-            ]}
-            onPress={onPress}
-            activeOpacity={0.8}
-            disabled={disabled || loading}
-        >
-            {loading ? (
-                <ActivityIndicator color={txt} />
+        <TouchableOpacity onPress={onPress} disabled={disabled || loading} activeOpacity={0.8} style={baseWrapperStyle}>
+            {(!isSecondary && !isDanger && !disabled) ? (
+                <LinearGradient colors={c.bg} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.gradientFill}>
+                    <Content />
+                </LinearGradient>
             ) : (
-                <Text style={[styles.text, { color: txt }]}>
-                    {title ? title.toUpperCase() : ''}
-                </Text>
+                <View style={styles.gradientFill}>
+                    <Content />
+                </View>
             )}
         </TouchableOpacity>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        height: 54,
-        borderRadius: 14,
+    buttonBase: {
+        borderRadius: 14, // 12-16px as requested
+        overflow: 'hidden',
+        minHeight: 50,
+        justifyContent: 'center',
+    },
+    gradientFill: {
+        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        marginVertical: 8,
+        paddingHorizontal: 16
     },
-    shadow: {
-        shadowColor: '#22C55E',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 6,
+    contentWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center'
     },
-    text: {
-        fontSize: 14,
-        fontWeight: '700',
-        letterSpacing: 0.8,
+    title: {
+        fontSize: 15,
+        fontWeight: 'bold',
+        letterSpacing: 0.5,
+    },
+    iconSpaced: {
+        marginRight: 8
     }
 });
