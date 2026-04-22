@@ -15,14 +15,15 @@ const { width } = Dimensions.get('window');
 
 // --- TEMA OFICIAL AGROGB ---
 const THEME = {
-    bg: '#F4F6F5',
-    headerBg: ['#176E46', '#1F8A5B'],
-    cardBg: '#FFFFFF',
-    textMain: '#1E1E1E',
-    textSub: '#6E6E6E',
-    primary: '#1F8A5B',
-    accent: '#27AE60',
-    alert: '#F4B740'
+    bg: '#0B1115',
+    headerBg: ['#063D23', '#085C34'],
+    cardBg: '#161F27',
+    textMain: '#F9FAFB',
+    textSub: '#9CA3AF',
+    primary: '#085C34',
+    accent: '#10B981',
+    alert: '#F4B740',
+    border: '#232F3A'
 };
 
 
@@ -201,17 +202,17 @@ const styles = StyleSheet.create({
     unit: { fontSize: 10, color: 'rgba(255,255,255,0.7)' },
     vr: { width: 1, height: 25, backgroundColor: 'rgba(255,255,255,0.25)' },
 
-    content: { flex: 1, marginTop: -10 },
+    content: { flex: 1, marginTop: -10, backgroundColor: THEME.bg },
     scroll: { padding: 20 },
 
-    alertBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', padding: 12, borderRadius: 12, marginBottom: 20, gap: 10, borderLeftWidth: 4, borderLeftColor: '#F4B740' },
-    alertText: { flex: 1, fontSize: 11, fontWeight: 'bold', color: '#92400E' },
+    alertBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#362F18', padding: 12, borderRadius: 12, marginBottom: 20, gap: 10, borderLeftWidth: 4, borderLeftColor: '#F4B740' },
+    alertText: { flex: 1, fontSize: 11, fontWeight: 'bold', color: '#FCD34D' },
 
-    sectionTitle: { fontSize: 12, fontWeight: '800', color: '#6E6E6E', marginBottom: 15, letterSpacing: 0.5 },
+    sectionTitle: { fontSize: 12, fontWeight: '800', color: THEME.accent, marginBottom: 15, letterSpacing: 0.5 },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-    card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 15, alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+    card: { backgroundColor: THEME.cardBg, borderRadius: 16, padding: 15, alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, borderWidth: 1, borderColor: THEME.border },
     iconCircle: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-    cardTitle: { fontSize: 10, fontWeight: '700', color: '#1E1E1E', textAlign: 'center' },
+    cardTitle: { fontSize: 10, fontWeight: '700', color: THEME.textMain, textAlign: 'center' },
 
     badge: { position: 'absolute', top: 5, right: 5, backgroundColor: '#E74C3C', minWidth: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
     badgeText: { color: '#FFF', fontSize: 9, fontWeight: 'bold' },
