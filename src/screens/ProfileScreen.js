@@ -1,446 +1,235 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, Switch } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useFocusEffect } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../services/supabaseClient';
 import { executeQuery } from '../database/database';
-import AgroButton from '../components/AgroButton';
+
+const THEME = {
+    bg: '#0B1115', // Fundo super escuro estilo Dark Mode
+    card: '#161F27', // Fundo dos agrupamentos
+    textMain: '#F9FAFB', // Branco forte
+    textSub: '#9CA3AF', // Cinza texto secundário
+    accent: '#10B981', // Verde Esmeralda 
+    border: '#232F3A',
+    danger: '#EF4444'
+};
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F3F4F6' },
-    header: { alignItems: 'center', paddingTop: 60, paddingBottom: 40, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
-    avatarContainer: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', marginBottom: 15, elevation: 10, borderWidth: 4, borderColor: 'rgba(255,255,255,0.2)' },
-    avatarText: { fontSize: 36, fontWeight: 'bold', color: '#059669' },
-    name: { fontSize: 22, fontWeight: 'bold', color: '#FFF' },
-    role: { fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 'bold', letterSpacing: 1, marginTop: 5 },
-
-    badge: { marginTop: 15, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-    badgeText: { color: '#FFF', fontSize: 11, fontWeight: 'bold' },
-
-    body: { flex: 1, padding: 20, marginTop: -30 },
-    section: { backgroundColor: '#FFF', borderRadius: 20, padding: 25, elevation: 3, marginBottom: 20 },
-    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-    sectionTitle: { fontSize: 12, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1 },
-
-    editBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-    editText: { fontSize: 12, fontWeight: 'bold', color: '#059669' },
-
-    fieldGroup: { marginBottom: 20 },
-    label: { fontSize: 11, fontWeight: 'bold', color: '#6B7280', marginBottom: 6, textTransform: 'uppercase' },
-    value: { fontSize: 16, fontWeight: '600', color: '#1F2937' },
-    input: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, padding: 12, fontSize: 16, color: '#1F2937' },
-
-    divider: { height: 1, backgroundColor: '#F3F4F6', marginVertical: 15 },
-
-    saveBtn: { backgroundColor: '#059669', padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 10 },
-    saveText: { color: '#FFF', fontWeight: 'bold', fontSize: 14 },
-
-    version: { textAlign: 'center', marginTop: 30, color: '#D1D5DB', fontSize: 10, fontWeight: 'bold' }
+    container: { flex: 1, backgroundColor: THEME.bg },
+    scroll: { paddingHorizontal: 16, paddingTop: 60, paddingBottom: 40 },
+    
+    // Header Style Premium
+    headerTitleContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 25 },
+    headerIconWrap: { width: 40, height: 40, justifyContent: 'center' },
+    mainTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: THEME.textMain, textAlign: 'center', marginRight: 40 }, // margem p compensar seta
+    
+    // Profile Box
+    profileBox: { backgroundColor: THEME.card, borderRadius: 16, padding: 18, flexDirection: 'row', alignItems: 'center', marginBottom: 30, borderWidth: 1, borderColor: THEME.border },
+    avatarContainer: { width: 66, height: 66, borderRadius: 33, backgroundColor: '#2D3748', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    avatarImg: { width: 66, height: 66, borderRadius: 33 },
+    avatarText: { fontSize: 24, fontWeight: 'bold', color: THEME.textMain },
+    profileInfo: { flex: 1, justifyContent: 'center' },
+    name: { fontSize: 18, fontWeight: '700', color: THEME.textMain, marginBottom: 2 },
+    email: { fontSize: 13, color: THEME.textSub, marginBottom: 2 },
+    company: { fontSize: 12, color: THEME.textSub },
+    editProfileBtn: { backgroundColor: '#1F2B36', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: THEME.border },
+    editProfileTxt: { color: THEME.textMain, fontSize: 12, fontWeight: '600' },
+    
+    // Edit Form Expandido (Apenas mostrado ao clicar em editar)
+    editBox: { backgroundColor: THEME.card, borderRadius: 16, padding: 18, marginBottom: 30, borderWidth: 1, borderColor: THEME.border },
+    inputView: { marginBottom: 15 },
+    inputLabel: { color: THEME.textSub, fontSize: 11, marginBottom: 5, textTransform: 'uppercase', fontWeight: 'bold' },
+    input: { backgroundColor: '#11181F', borderWidth: 1, borderColor: THEME.border, borderRadius: 10, padding: 12, color: THEME.textMain, fontSize: 15 },
+    saveBtn: { backgroundColor: THEME.accent, padding: 14, borderRadius: 10, alignItems: 'center', marginTop: 5 },
+    
+    // Group Sections
+    sectionWrap: { marginBottom: 25 },
+    sectionTitle: { fontSize: 13, fontWeight: '700', color: THEME.accent, marginBottom: 8, marginLeft: 10, textTransform: 'capitalize' },
+    listGroup: { backgroundColor: THEME.card, borderRadius: 16, overflow: 'hidden' },
+    
+    listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: THEME.border },
+    listItemIconBox: { width: 34, alignItems: 'center' },
+    listItemTitle: { flex: 1, fontSize: 15, color: THEME.textMain, fontWeight: '500' },
+    listItemSub: { fontSize: 13, color: THEME.textSub, marginRight: 5 },
+    arrowIcon: { opacity: 0.5 },
+    
+    version: { textAlign: 'center', marginVertical: 30, color: THEME.textSub, fontSize: 11, fontWeight: '600' }
 });
 
 export default function ProfileScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
-    const [saving, setSaving] = useState(false);
-
-    // User Data State
-    const [user, setUser] = useState({
-        id: null,
-        nome: '',
-        usuario: '',
-        email: '',
-        telefone: '',
-        endereco: '',
-        nivel: '',
-        provider: 'local',
-        senha_atual: '',
-        nova_senha: '',
-        avatar: null
-    });
     
-    // Configurações de Segurança
+    const [user, setUser] = useState({ id: null, nome: '', usuario: '', email: '', telefone: '', endereco: '', nivel: '', provider: 'local', senha_atual: '', nova_senha: '', avatar: null });
     const [biometria, setBiometria] = useState(false);
     const [twoFA, setTwoFA] = useState(false);
 
     const loadProfile = async () => {
-        setLoading(true);
         try {
             const jsonUser = await AsyncStorage.getItem('user_session');
             if (jsonUser) {
                 const session = JSON.parse(jsonUser);
-                // Force reload from DB to be sure
                 const res = await executeQuery('SELECT * FROM usuarios WHERE id = ?', [session.id]);
                 if (res.rows.length > 0) {
                     const u = res.rows.item(0);
-                    setUser({
-                        id: u.id,
-                        nome: u.nome_completo || u.usuario, // Fallback
-                        usuario: u.usuario,
-                        email: u.email || '',
-                        telefone: u.telefone || '',
-                        endereco: u.endereco || '',
-                        nivel: u.nivel || 'USUARIO',
-                        provider: u.provider || 'local',
-                        senha_atual: '',
-                        nova_senha: '',
-                        avatar: u.avatar || null
-                    });
+                    setUser({ id: u.id, nome: u.nome_completo || u.usuario, usuario: u.usuario, email: u.email || '', telefone: u.telefone || '', endereco: u.endereco || '', nivel: u.nivel || 'USUARIO', provider: u.provider || 'local', senha_atual: '', nova_senha: '', avatar: u.avatar || null });
                 }
             }
-            
-            // Carregar config de biometria e 2FA do local storage
             const bioSettings = await AsyncStorage.getItem(`bio_${session?.id}`);
             if(bioSettings) setBiometria(bioSettings === 'true');
             const twoFASettings = await AsyncStorage.getItem(`twofa_${session?.id}`);
             if(twoFASettings) setTwoFA(twoFASettings === 'true');
-            
         } catch (e) { console.error(e); } finally { setLoading(false); }
     };
 
     useFocusEffect(useCallback(() => { loadProfile(); }, []));
 
-    // Helpers Biometria
-    const autenticarComBiometria = async () => {
-        try {
-            const hasHardware = await LocalAuthentication.hasHardwareAsync();
-            if (!hasHardware) {
-                Alert.alert('Ops', 'Este dispositivo não possui suporte à biometria.');
-                return false;
-            }
-
-            const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-            if (!isEnrolled) {
-                Alert.alert('Ops', 'Nenhuma biometria cadastrada no seu aparelho.');
-                return false;
-            }
-
-            const result = await LocalAuthentication.authenticateAsync({
-                promptMessage: 'Autentique-se para confirmar',
-                fallbackLabel: 'Usar senha',
-                disableDeviceFallback: false,
-            });
-
-            return result.success;
-        } catch (error) {
-            console.error('Erro na autenticação biométrica:', error);
-            return false;
-        }
-    };
-
     const handleBiometricToggle = async (value) => {
         if(value) {
-            const autenticado = await autenticarComBiometria();
-            if (autenticado) {
-                setBiometria(true);
-                AsyncStorage.setItem(`bio_${user.id}`, 'true');
-            } else {
-                setBiometria(false);
-            }
+            const hasHardware = await LocalAuthentication.hasHardwareAsync();
+            if (!hasHardware) return Alert.alert('Erro', 'Este dispositivo não suporta biometria.');
+            const result = await LocalAuthentication.authenticateAsync({ promptMessage: 'Ativar digital', disableDeviceFallback: false });
+            if (result.success) { setBiometria(true); AsyncStorage.setItem(`bio_${user.id}`, 'true'); }
         } else {
-            setBiometria(false);
-            AsyncStorage.setItem(`bio_${user.id}`, 'false');
+            setBiometria(false); AsyncStorage.setItem(`bio_${user.id}`, 'false');
         }
     };
-    
+
     const handleTwoFAToggle = (value) => {
-        setTwoFA(value);
-        AsyncStorage.setItem(`twofa_${user.id}`, value ? 'true' : 'false');
-        if(value) Alert.alert('2FA Ativado', 'Sua conta agora exigirá código adicional ao logar (em desenvolvimento).');
+        setTwoFA(value); AsyncStorage.setItem(`twofa_${user.id}`, value ? 'true' : 'false');
     };
 
     const handleSave = async () => {
-        setSaving(true);
         try {
-            if (user.nova_senha && user.nova_senha.length > 0) {
-                if (user.nova_senha.length < 3) {
-                    setSaving(false);
-                    return Alert.alert('Atenção', 'A nova senha deve ter pelo menos 3 caracteres.');
-                }
-
-                // Verificar senha atual primeiro
-                const res = await executeQuery('SELECT senha FROM usuarios WHERE id = ?', [user.id]);
-                if (res.rows.length > 0) {
-                    const hash = res.rows.item(0).senha;
-                    let isValid = false;
-                    if (hash && hash.startsWith('$2')) {
-                        const bcrypt = require('react-native-bcrypt');
-                        isValid = bcrypt.compareSync(user.senha_atual, hash);
-                    } else {
-                        isValid = (hash === user.senha_atual);
-                    }
-                    if (!isValid) {
-                        setSaving(false);
-                        return Alert.alert('Acesso Negado', 'A senha atual está incorreta. Não é possível alterar a senha.');
-                    }
-                }
-
-                await executeQuery(
-                    `UPDATE usuarios SET nome_completo = ?, email = ?, telefone = ?, endereco = ?, senha = ?, avatar = ?, last_updated = ? WHERE id = ?`,
-                    [user.nome.toUpperCase(), user.email.toLowerCase(), user.telefone, user.endereco.toUpperCase(), user.nova_senha, user.avatar, new Date().toISOString(), user.id]
-                );
-            } else {
-                await executeQuery(
-                    `UPDATE usuarios SET nome_completo = ?, email = ?, telefone = ?, endereco = ?, avatar = ?, last_updated = ? WHERE id = ?`,
-                    [user.nome.toUpperCase(), user.email.toLowerCase(), user.telefone, user.endereco.toUpperCase(), user.avatar, new Date().toISOString(), user.id]
-                );
-            }
-            Alert.alert('Sucesso', 'Perfil atualizado com sucesso!');
-            setIsEditing(false);
-            // Reload to sync state perfectly
-            loadProfile();
-        } catch (e) {
-            Alert.alert('Erro', 'Falha ao salvar perfil.');
-        } finally { setSaving(false); }
+            await executeQuery(`UPDATE usuarios SET nome_completo=?, email=?, telefone=?, avatar=? WHERE id=?`, [user.nome.toUpperCase(), user.email.toLowerCase(), user.telefone, user.avatar, user.id]);
+            Alert.alert('Sucesso', 'Perfil salvo!'); setIsEditing(false); loadProfile();
+        } catch(e) { Alert.alert('Erro', 'Falha ao salvar'); }
     };
 
     const pickAvatar = async () => {
-        let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.5,
-        });
-
-        if (!result.canceled) {
-            setUser({ ...user, avatar: result.assets[0].uri });
-        }
+        let result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.5 });
+        if (!result.canceled) setUser({ ...user, avatar: result.assets[0].uri });
     };
 
     const handleLogout = async () => {
-        Alert.alert('Sair', 'Deseja realmente encerrar a sessão local e em nuvem?', [
-            { text: 'Cancelar' },
-            {
-                text: 'Sair', style: 'destructive',
-                onPress: async () => {
-                    try {
-                        const { error } = await supabase.auth.signOut();
-                        if(error) console.log('Log de saída cloud falhou:', error);
-                    } catch(e) {}
-                    await AsyncStorage.removeItem('user_session');
-                    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-                }
-            }
+        Alert.alert('Encerrar Sessões', 'Deseja realmente sair da sua conta?', [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Sair', style: 'destructive', onPress: async () => {
+                await supabase.auth.signOut();
+                await AsyncStorage.removeItem('user_session');
+                navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+            }}
         ]);
     };
 
-    const canEdit = user.nivel === 'ADM';
+    const ListItem = ({ icon, color, title, isSwitch, value, onChange, subValue, noBorder, highlightRed, onPress }) => (
+        <TouchableOpacity style={[styles.listItem, noBorder && { borderBottomWidth: 0 }]} activeOpacity={isSwitch ? 1 : 0.6} onPress={onPress}>
+            <View style={styles.listItemIconBox}>
+                <MaterialCommunityIcons name={icon} size={22} color={color || THEME.textSub} />
+            </View>
+            <Text style={[styles.listItemTitle, highlightRed && { color: THEME.danger }]}>{title}</Text>
+            {subValue && <Text style={styles.listItemSub}>{subValue}</Text>}
+            {isSwitch ? (
+                <Switch value={value} onValueChange={onChange} trackColor={{ false: '#374151', true: THEME.accent }} thumbColor="#FFF" />
+            ) : (
+                <Ionicons name="chevron-forward" size={18} color={THEME.textSub} style={styles.arrowIcon} />
+            )}
+        </TouchableOpacity>
+    );
 
     return (
-        <KeyboardAvoidingView 
-            style={styles.container}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-        >
-            <LinearGradient colors={['#064E3B', '#059669']} style={styles.header}>
-                <TouchableOpacity onPress={isEditing ? pickAvatar : null} style={styles.avatarContainer} activeOpacity={isEditing ? 0.7 : 1}>
-                    {user.avatar ? (
-                        <Image source={{ uri: user.avatar }} style={{ width: 84, height: 84, borderRadius: 42 }} />
-                    ) : (
-                        <Text style={styles.avatarText}>{user.nome?.charAt(0).toUpperCase()}</Text>
-                    )}
-                    {isEditing && (
-                        <View style={{ position: 'absolute', bottom: -5, right: -5, backgroundColor: '#059669', borderRadius: 15, padding: 6, borderWidth: 2, borderColor: '#FFF' }}>
-                            <Ionicons name="camera" size={16} color="#FFF" />
-                        </View>
-                    )}
-                </TouchableOpacity>
-                <Text style={styles.name}>{user.nome}</Text>
-                <Text style={styles.role}>{user.nivel === 'ADM' ? 'ADMINISTRADOR' : 'COLABORADOR'}</Text>
-
-                <View style={styles.badge}>
-                    <Ionicons name="diamond" size={12} color="#A7F3D0" />
-                    <Text style={styles.badgeText}>PLANO ULTRAPRO</Text>
-                </View>
-            </LinearGradient>
-
-            <ScrollView style={styles.body}>
-                {/* SEÇÃO 1: DADOS PESSOAIS */}
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>DADOS PESSOAIS</Text>
-                        {canEdit && !isEditing && (
-                            <TouchableOpacity style={styles.editBtn} onPress={() => setIsEditing(true)}>
-                                <Ionicons name="pencil" size={14} color="#059669" />
-                                <Text style={styles.editText}>EDITAR PERFIL</Text>
-                            </TouchableOpacity>
-                        )}
-                        {isEditing && (
-                            <TouchableOpacity style={styles.editBtn} onPress={() => { setIsEditing(false); loadProfile(); }}>
-                                <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
-                                <Text style={[styles.editText, { color: '#EF4444' }]}>CANCELAR</Text>
-                            </TouchableOpacity>
-                        )}
-                    </View>
-
-                    <View style={styles.fieldGroup}>
-                        <Text style={styles.label}>NOME COMPLETO</Text>
-                        {isEditing ? (
-                            <TextInput
-                                style={styles.input}
-                                value={user.nome}
-                                onChangeText={t => setUser({ ...user, nome: t })}
-                            />
-                        ) : (
-                            <Text style={styles.value}>{user.nome || '-'}</Text>
-                        )}
-                    </View>
-
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <View>
-                            <Text style={styles.label}>NÍVEL DE ACESSO</Text>
-                            <Text style={styles.value}>{user.nivel}</Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* SEÇÃO 2: CONTATO E LOCALIZAÇÃO */}
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>CONTATO E LOCAL</Text>
-                    </View>
-
-                    <View style={styles.fieldGroup}>
-                        <Text style={styles.label}>E-MAIL PROFISSIONAL</Text>
-                        {isEditing ? (
-                            <TextInput
-                                style={styles.input}
-                                value={user.email}
-                                onChangeText={t => setUser({ ...user, email: t })}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                            />
-                        ) : (
-                            <Text style={styles.value}>{user.email || 'Não informado'}</Text>
-                        )}
-                    </View>
-
-                    <View style={styles.fieldGroup}>
-                        <Text style={styles.label}>TELEFONE / WHATSAPP</Text>
-                        {isEditing ? (
-                            <TextInput
-                                style={styles.input}
-                                value={user.telefone}
-                                onChangeText={t => setUser({ ...user, telefone: t })}
-                                keyboardType="phone-pad"
-                            />
-                        ) : (
-                            <Text style={styles.value}>{user.telefone || 'Não informado'}</Text>
-                        )}
-                    </View>
-
-                    <View style={styles.fieldGroup}>
-                        <Text style={styles.label}>LOCALIZAÇÃO / FAZENDA</Text>
-                        {isEditing ? (
-                            <TextInput
-                                style={styles.input}
-                                value={user.endereco}
-                                onChangeText={t => setUser({ ...user, endereco: t })}
-                            />
-                        ) : (
-                            <Text style={styles.value}>{user.endereco || 'Não informada'}</Text>
-                        )}
-                    </View>
-                </View>
-
-                {/* SEÇÃO 3: SEGURANÇA DA CONTA */}
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>SEGURANÇA DA CONTA</Text>
-                        <Ionicons name="shield-checkmark" size={18} color="#059669" />
-                    </View>
-
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
-                        <View>
-                            <Text style={styles.label}>USUÁRIO DE LOGIN</Text>
-                            <Text style={styles.value}>{user.usuario}</Text>
-                        </View>
-                        <View>
-                            <Text style={[styles.label, { textAlign: 'right' }]}>AUTENTICAÇÃO VIA</Text>
-                            <Text style={[styles.value, { textAlign: 'right', fontSize: 14 }]}>
-                                {user.provider === 'google' ? 'GOOGLE' : 'SENHA LOCAL'}
-                            </Text>
-                        </View>
-                    </View>
-                    
-                    {/* Botões de Segurança - UX */}
-                    <View style={{ marginBottom: 20 }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F9FAFB', padding: 15, borderRadius: 12, marginBottom: 10 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <Ionicons name="finger-print" size={24} color={biometria ? '#059669' : '#9CA3AF'} style={{ marginRight: 10 }} />
-                                <View>
-                                    <Text style={{ fontWeight: 'bold', color: '#1F2937' }}>Biometria / FaceID</Text>
-                                    <Text style={{ fontSize: 12, color: '#6B7280' }}>Autenticação rápida no aplicativo</Text>
-                                </View>
-                            </View>
-                            <Switch value={biometria} onValueChange={handleBiometricToggle} trackColor={{ false: '#D1D5DB', true: '#A7F3D0' }} thumbColor={biometria ? '#059669' : '#FFF'} />
-                        </View>
-                        
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F9FAFB', padding: 15, borderRadius: 12, marginBottom: 10 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <Ionicons name="lock-closed" size={24} color={twoFA ? '#059669' : '#9CA3AF'} style={{ marginRight: 10 }} />
-                                <View>
-                                    <Text style={{ fontWeight: 'bold', color: '#1F2937' }}>Autenticação 2FA</Text>
-                                    <Text style={{ fontSize: 12, color: '#6B7280' }}>Mais segurança para seus dados</Text>
-                                </View>
-                            </View>
-                            <Switch value={twoFA} onValueChange={handleTwoFAToggle} trackColor={{ false: '#D1D5DB', true: '#A7F3D0' }} thumbColor={twoFA ? '#059669' : '#FFF'} />
-                        </View>
-                    </View>
-
-                    {isEditing && user.provider === 'local' && (
-                        <View>
-                            <View style={styles.divider} />
-                            <Text style={[styles.label, { color: '#B45309', marginBottom: 15 }]}>
-                                <Ionicons name="key" size={12} /> ALTERAR SENHA (OPCIONAL)
-                            </Text>
-
-                            <View style={styles.fieldGroup}>
-                                <Text style={styles.label}>SENHA ATUAL</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Necessário para alterar"
-                                    secureTextEntry
-                                    value={user.senha_atual}
-                                    onChangeText={t => setUser({ ...user, senha_atual: t })}
-                                />
-                            </View>
-
-                            <View style={styles.fieldGroup}>
-                                <Text style={styles.label}>NOVA SENHA</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Deixe em branco p/ não alterar"
-                                    secureTextEntry
-                                    value={user.nova_senha}
-                                    onChangeText={t => setUser({ ...user, nova_senha: t })}
-                                />
-                            </View>
-                        </View>
-                    )}
-                </View>
-
-                {/* BOTÃO SALVAR GLOBAL */}
-                {isEditing && (
-                    <TouchableOpacity style={[styles.saveBtn, { marginBottom: 20 }]} onPress={handleSave} disabled={saving}>
-                        <Ionicons name="save" size={20} color="#FFF" style={{ marginBottom: 4 }} />
-                        <Text style={styles.saveText}>{saving ? 'VALIDANDO DADOS...' : 'CONFIRMAR E SALVAR'}</Text>
+        <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+                
+                {/* Header Navbar */}
+                <View style={styles.headerTitleContainer}>
+                    <TouchableOpacity style={styles.headerIconWrap} onPress={() => navigation.goBack()}>
+                        <Ionicons name="chevron-back" size={26} color={THEME.accent} />
                     </TouchableOpacity>
+                    <Text style={styles.mainTitle}>Configurações</Text>
+                </View>
+
+                {/* Card Perfil Compacto (Reprodução Fiel ao Dribbble) */}
+                <View style={styles.profileBox}>
+                    <TouchableOpacity onPress={pickAvatar} style={styles.avatarContainer}>
+                        {user.avatar ? <Image source={{ uri: user.avatar }} style={styles.avatarImg} /> : <Text style={styles.avatarText}>{user.nome?.charAt(0) || '?'}</Text>}
+                    </TouchableOpacity>
+                    <View style={styles.profileInfo}>
+                        <Text style={styles.name}>{user.nome || user.usuario || 'Usuário'}</Text>
+                        <Text style={styles.email} numberOfLines={1}>{user.email || 'Não configurado'}</Text>
+                        <Text style={styles.company}>Empresa AgroGB</Text>
+                    </View>
+                    <TouchableOpacity style={styles.editProfileBtn} onPress={() => setIsEditing(!isEditing)}>
+                        <Text style={styles.editProfileTxt}>{isEditing ? 'Cancelar' : 'Editar Perfil'}</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Bloco de Edição Oculto Dropdown */}
+                {isEditing && (
+                    <View style={styles.editBox}>
+                        <View style={styles.inputView}><Text style={styles.inputLabel}>Nome Completo</Text><TextInput style={styles.input} value={user.nome} onChangeText={t=>setUser({...user, nome:t})} placeholderTextColor={THEME.textSub} /></View>
+                        <View style={styles.inputView}><Text style={styles.inputLabel}>E-mail</Text><TextInput style={styles.input} value={user.email} onChangeText={t=>setUser({...user, email:t})} keyboardType="email-address" placeholderTextColor={THEME.textSub}/></View>
+                        <View style={styles.inputView}><Text style={styles.inputLabel}>WhatsApp</Text><TextInput style={styles.input} value={user.telefone} onChangeText={t=>setUser({...user, telefone:t})} keyboardType="phone-pad" placeholderTextColor={THEME.textSub}/></View>
+                        <TouchableOpacity style={styles.saveBtn} onPress={handleSave}><Text style={{color:'#FFF', fontWeight:'bold'}}>SALVAR DADOS</Text></TouchableOpacity>
+                    </View>
                 )}
 
-                <View style={{ marginTop: 10, paddingBottom: 50 }}>
-                    <AgroButton
-                        title="SAIR DO APLICATIVO"
-                        onPress={handleLogout}
-                        variant="danger"
-                        style={{ backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' }}
-                        textStyle={{ color: '#DC2626' }}
-                    />
-                    <Text style={styles.version}>AgroGB Mobile v6.0</Text>
+                {/* Seção 1: Segurança */}
+                <View style={styles.sectionWrap}>
+                    <Text style={styles.sectionTitle}>Segurança</Text>
+                    <View style={styles.listGroup}>
+                        <ListItem icon="fingerprint" color="#A0AEC0" title="Login com Biometria" isSwitch value={biometria} onChange={handleBiometricToggle} />
+                        <ListItem icon="shield-lock-outline" color="#A0AEC0" title="Autenticação em 2 Fatores" isSwitch value={twoFA} onChange={handleTwoFAToggle} />
+                        <ListItem icon="lock-outline" color="#A0AEC0" title="Alterar Senha" onPress={() => setIsEditing(true)} />
+                        <ListItem icon="cellphone-link" color="#A0AEC0" title="Dispositivos Conectados" />
+                        <ListItem icon="logout-variant" color={THEME.danger} highlightRed title="Encerrar Todas Sessões" subValue="Hoje 08:30" noBorder onPress={handleLogout} />
+                    </View>
                 </View>
+
+                {/* Seção 2: Equipe */}
+                {user.nivel === 'ADM' && (
+                    <View style={styles.sectionWrap}>
+                        <Text style={styles.sectionTitle}>Equipe</Text>
+                        <View style={styles.listGroup}>
+                            <ListItem icon="account-group-outline" color="#A0AEC0" title="Gerenciar Usuários" />
+                            <ListItem icon="shield-check-outline" color="#A0AEC0" title="Permissões & Acessos" noBorder />
+                        </View>
+                    </View>
+                )}
+
+                {/* Seção 3: Preferências */}
+                <View style={styles.sectionWrap}>
+                    <Text style={styles.sectionTitle}>Preferências</Text>
+                    <View style={styles.listGroup}>
+                        <ListItem icon="theme-light-dark" color="#A0AEC0" title="Tema do Aplicativo" subValue="Escuro" />
+                        <ListItem icon="web" color="#A0AEC0" title="Idioma" subValue="Português" />
+                        <ListItem icon="bell-ring-outline" color="#A0AEC0" title="Notificações" isSwitch value={true} onChange={()=>{}} noBorder />
+                    </View>
+                </View>
+
+                {/* Seção 4: Dados */}
+                <View style={styles.sectionWrap}>
+                    <Text style={styles.sectionTitle}>Dados</Text>
+                    <View style={styles.listGroup}>
+                        <ListItem icon="cloud-sync-outline" color="#A0AEC0" title="Sincronização" subValue="Tempo Real" />
+                        <ListItem icon="cloud-upload-outline" color="#A0AEC0" title="Backup Automático" subValue={`Último: ${new Date().getHours()}:00`} />
+                        <ListItem icon="cloud-download-outline" color="#A0AEC0" title="Restaurar Dados" noBorder />
+                    </View>
+                </View>
+
+                <View style={styles.sectionWrap}>
+                    <View style={styles.listGroup}>
+                        <ListItem icon="information-outline" color="#A0AEC0" title="Ajuda" subValue="1.0.0.0" />
+                        <ListItem icon="help-circle-outline" color="#A0AEC0" title="Sobre o Sistema" noBorder />
+                    </View>
+                </View>
+
+                <Text style={styles.version}>powered by AgroGB System 6.0</Text>
+
             </ScrollView>
         </KeyboardAvoidingView>
     );

@@ -89,7 +89,7 @@ export default function SidebarDrawer({ visible, onClose }) {
     const MenuItem = ({ icon, label, screen, badge }) => (
         <TouchableOpacity style={styles.menuItem} onPress={() => handleNavigation(screen)}>
             <View style={{ width: 30, alignItems: 'center' }}>
-                <Ionicons name={icon} size={22} color="#374151" />
+                <Ionicons name={icon} size={22} color="#F9FAFB" />
             </View>
             <Text style={styles.menuText}>{label}</Text>
             {badge && <View style={styles.badge}><Text style={styles.badgeText}>{badge}</Text></View>}
@@ -160,47 +160,20 @@ export default function SidebarDrawer({ visible, onClose }) {
 }
 
 const styles = StyleSheet.create({
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
     backdrop: { ...StyleSheet.absoluteFillObject },
-    drawer: {
-        width: DRAWER_WIDTH,
-        height: '100%',
-        backgroundColor: '#FFF',
-        position: 'absolute',
-        left: 0,
-        zIndex: 2,
-        shadowColor: "#000",
-        shadowOffset: { width: 2, height: 0 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5
-    },
-    header: {
-        backgroundColor: '#059669',
-        paddingTop: 50,
-        paddingBottom: 20,
-        paddingHorizontal: 20,
-        flexDirection: 'row',
-        alignItems: 'center'
-    },
-    avatar: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 15
-    },
-    userName: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-    userEmail: { color: 'rgba(255,255,255,0.8)', fontSize: 12 },
+    drawer: { width: DRAWER_WIDTH, height: '100%', backgroundColor: '#0B1115', position: 'absolute', left: 0, zIndex: 2, shadowColor: "#000", shadowOffset: { width: 5, height: 0 }, shadowOpacity: 0.5, shadowRadius: 10, elevation: 15 },
+    header: { backgroundColor: '#062B1A', paddingTop: 50, paddingBottom: 20, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#1A242C' },
+    avatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(16, 185, 129, 0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 15 },
+    userName: { color: '#F9FAFB', fontSize: 16, fontWeight: 'bold' },
+    userEmail: { color: '#9CA3AF', fontSize: 12 },
     body: { flex: 1, paddingVertical: 10 },
-    sectionTitle: { fontSize: 12, fontWeight: 'bold', color: '#9CA3AF', marginLeft: 20, marginTop: 15, marginBottom: 5 },
+    sectionTitle: { fontSize: 12, fontWeight: 'bold', color: '#10B981', marginLeft: 20, marginTop: 15, marginBottom: 5 },
     menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 20 },
-    menuText: { fontSize: 15, color: '#374151', marginLeft: 15, fontWeight: '500' },
-    divider: { height: 1, backgroundColor: '#E5E7EB', marginVertical: 10, marginHorizontal: 20 },
-    footer: { padding: 20, borderTopWidth: 1, borderTopColor: '#E5E7EB', backgroundColor: '#F9FAFB' },
+    menuText: { fontSize: 15, color: '#F9FAFB', marginLeft: 15, fontWeight: '500' },
+    divider: { height: 1, backgroundColor: '#1A242C', marginVertical: 10, marginHorizontal: 20 },
+    footer: { padding: 20, borderTopWidth: 1, borderTopColor: '#1A242C', backgroundColor: '#090D11' },
     logoutBtn: { flexDirection: 'row', alignItems: 'center' },
     logoutText: { color: '#EF4444', fontSize: 16, fontWeight: 'bold', marginLeft: 15 },
-    version: { marginTop: 10, fontSize: 10, color: '#9CA3AF', textAlign: 'center' }
+    version: { marginTop: 10, fontSize: 10, color: '#4B5563', textAlign: 'center' }
 });
