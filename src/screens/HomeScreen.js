@@ -1,28 +1,31 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar as RNStatusBar, InteractionManager, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar as RNStatusBar, InteractionManager, Image, Dimensions, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
-import WeatherWidget from '../components/WeatherWidget';
-import SidebarDrawer from '../components/SidebarDrawer';
-import AgroCard from '../components/ui/AgroCard';
 import { getDashboardStats } from '../database/database';
 import { pushLocalChanges, pullServerChanges } from '../services/SyncService';
 import { MenuConfigService } from '../services/MenuConfigService';
 
+const { width } = Dimensions.get('window');
+
+// Diminuir padding lateral
+const CARD_MARGIN = 6;
+// 2 colunas com espacamento
+const CARD_WIDTH = (width / 2) - 16 - CARD_MARGIN;
+
 export default function HomeScreen({ navigation }) {
     const { colors } = useTheme();
-    const styles = getStyles(colors);
     
-    const [stats, setStats] = useState({ saldo: 0, colheitaHoje: 0, vendasHoje: 0, plantioAtivo: 0, maquinasAlert: 0, pendentes: 0 });
-    const [drawerVisible, setDrawerVisible] = useState(false);
+    // stats: { saldo: 0, colheitaHoje: 0, vendasHoje: 0, plantioAtivo: 0, maquinasAlert: 0, pendentes: 0 }
+    const [stats, setStats] = useState({});
     const [isReady, setIsReady] = useState(false);
     const [menuItems, setMenuItems] = useState([]);
 
     const loadStats = async () => {
         const data = await getDashboardStats();
-        setStats(data);
+        setStats(data || {});
     };
 
     const autoSync = async () => {
@@ -43,13 +46,12 @@ export default function HomeScreen({ navigation }) {
         return () => task.cancel();
     }, []));
 
-    const formatBRL = (v) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const formatBRL = (v) => v != null ? v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00';
 
-    // Configuração dos Menus Departamentais conforme o Plano Diretor
     const CATEGORIES = [
-        { title: '🌱 PRODUÇÃO', keys: ['caderno', 'plantio', 'monitoramento', 'adubacao', 'colheita', 'descarte'] },
-        { title: '💰 COMERCIAL', keys: ['vendas', 'encomendas', 'compras'] },
-        { title: '📦 CONTROLE', keys: ['estoque', 'custos', 'frota'] }
+        { title: 'PRODUÇÃO', keys: ['caderno', 'plantio', 'monitoramento', 'adubacao', 'colheita', 'descarte'] },
+        { title: 'COMERCIAL', keys: ['vendas', 'encomendas', 'compras'] },
+        { title: 'CONTROLE', keys: ['estoque', 'custos', 'frota', 'relatorios'] }
     ];
 
     const getGroupedMenus = () => {
@@ -57,215 +59,225 @@ export default function HomeScreen({ navigation }) {
             title: cat.title,
             items: menuItems.filter(item => cat.keys.includes((item.id || item.screen.toLowerCase()).replace('screen', '')))
         })).filter(g => g.items.length > 0); 
-        // Remove grupo se estiver vazio (segurança)
     };
 
-    const renderMenuGrid = (items) => (
-        <View style={styles.gridContainer}>
-            {items.map(item => {
-                // Manter as cores de identificação originais ou usar accent padrao
-                const baseColor = item.color || colors.accent;
-                return (
-                    <TouchableOpacity
-                        key={item.id}
-                        style={[styles.gridCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
-                        onPress={() => navigation.navigate(item.screen)}
-                        activeOpacity={0.7}
-                    >
-                        <View style={[styles.gridIconCircle, { backgroundColor: baseColor + '15' }]}>
-                            <Ionicons name={item.icon} size={24} color={baseColor} />
-                        </View>
-                        <Text style={styles.gridCardText} numberOfLines={1}>{item.label}</Text>
-                        
-                        {item.id === 'sync' && stats.pendentes > 0 && (
-                            <View style={styles.notificationBubble}>
-                                <Text style={styles.notificationNumber}>{stats.pendentes}</Text>
-                            </View>
-                        )}
-                    </TouchableOpacity>
-                );
-            })}
-        </View>
-    );
+    // Helper para extrair DADOS EXTRAS VIVOS (Igual Mockup) baseados no ID do menu
+    const getCardValue = (id) => {
+        switch(id) {
+            case 'vendas': return { val: formatBRL(stats.vendasHoje), sub: 'Vendas Mês', highlight: true };
+            case 'colheita': return { val: `${stats.colheitaHoje || 0} kg`, sub: 'Colheita Hoje', highlight: true };
+            case 'custos': return { val: formatBRL(stats.saldo || 0), sub: 'Saldo Atual' };
+            case 'plantio': return { val: `${stats.plantioAtivo || 0}`, sub: 'Lavouras Ativas' };
+            case 'frota': return stats.maquinasAlert > 0 ? { val: `${stats.maquinasAlert} maq`, sub: 'Revisão Necessária', error: true } : { val: 'Ok', sub: 'Frota' };
+            case 'sync': return stats.pendentes > 0 ? { val: stats.pendentes, sub: 'Pendentes' } : { val: '0', sub: 'Sincronizado' };
+            case 'estoque': return { val: 'Gerenciador', sub: 'Volume' };
+            default: return { val: 'Acessar', sub: 'Painel' };
+        }
+    };
+
+    const renderCard = (item) => {
+        const data = getCardValue(item.id);
+        const baseColor = item.color || '#10B981';
+        
+        return (
+            <TouchableOpacity
+                key={item.id}
+                style={styles.cardBox}
+                onPress={() => navigation.navigate(item.screen)}
+                activeOpacity={0.8}
+            >
+                {/* Efeito Glow Topo */}
+                <View style={[styles.cardGlowTop, { backgroundColor: baseColor + '15' }]} />
+                
+                <View style={styles.cardHeader}>
+                    <View style={[styles.iconWrap, { backgroundColor: baseColor + '20' }]}>
+                        <Ionicons name={item.icon} size={20} color={baseColor} />
+                    </View>
+                    <Text style={styles.cardTitle} numberOfLines={1}>{item.label}</Text>
+                </View>
+                
+                <View style={styles.cardBody}>
+                    <Text style={styles.cardSubTitle}>{data.sub}</Text>
+                    <Text style={[
+                        styles.cardValue, 
+                        data.highlight && { color: '#E2E8F0' },
+                        data.error && { color: '#EF4444' }
+                    ]} numberOfLines={1}>
+                        {data.val}
+                    </Text>
+                </View>
+                
+                {/* Linha/Icone Fantasma Inferior como no Design - Grafico Fake pra Comercial */}
+                {item.id === 'vendas' && (
+                    <Ionicons name="trending-up" size={40} color={baseColor} style={styles.bgIconPhantom} />
+                )}
+            </TouchableOpacity>
+        );
+    };
 
     return (
-        <View style={styles.container}>
-            <RNStatusBar barStyle="light-content" backgroundColor={colors.headerBg[0]} />
+        // FUNDO NEON ESRMERALDA MOCKUP VIBE (Gradiente Global)
+        <LinearGradient 
+            colors={['#071a14', '#141A1E', '#10161a']} 
+            start={{ x: 1, y: 0 }} end={{ x: 0, y: 1 }}
+            style={styles.container}
+        >
+            <RNStatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-            <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false} bounces={false}>
-                
-                {/* 🔝 HEADER & WEATHER */}
-                <LinearGradient colors={colors.headerBg} start={{x: 0, y: 0}} end={{x: 1, y: 1}} style={styles.headerCurveWrap}>
-                    <View style={styles.headerContent}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
-                                <TouchableOpacity onPress={() => setDrawerVisible(true)} style={styles.menuIconBox}>
-                                    <Ionicons name="menu-outline" size={28} color="#FFF" />
-                                </TouchableOpacity>
-                                <View>
-                                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                                        <Image source={require('../../assets/logo.png')} style={{ width: 45, height: 45, marginRight: 10, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }} resizeMode="contain" />
-                                        <Text style={styles.brandText}>AgroGB</Text>
-                                        <View style={styles.proTag}><Text style={styles.proTagText}>PRO</Text></View>
-                                    </View>
-                                    <Text style={styles.salutationText}>Fazenda em tempo real</Text>
-                                </View>
-                            </View>
-                        </View>
-                        {/* 🌦 CARD DE CLIMA */}
-                        <WeatherWidget />
-                    </View>
-                </LinearGradient>
-
-                <View style={styles.mainContent}>
-                    
-                    {/* 📊 RESUMO RÁPIDO (Stats Glass Card) */}
-                    {isReady && (
-                        <AgroCard style={styles.statsCardFloating} noPadding>
-                            <View style={styles.statsRow}>
-                                <View style={styles.statBlock}>
-                                    <Text style={styles.statLabel}>COLHEITA (Hoje)</Text>
-                                    <View style={styles.statRowFlex}>
-                                        <View style={[styles.statIconBox, { backgroundColor: colors.accent + '20' }]}>
-                                            <Ionicons name="leaf" size={12} color={colors.accent} />
-                                        </View>
-                                        <Text style={styles.statNumber}>{stats.colheitaHoje} <Text style={{fontSize: 11, color: colors.textSub}}>kg</Text></Text>
-                                    </View>
-                                </View>
-                                
-                                <View style={styles.statDivider} />
-                                
-                                <View style={styles.statBlock}>
-                                    <Text style={styles.statLabel}>VENDAS (Mês)</Text>
-                                    <View style={styles.statRowFlex}>
-                                        <View style={[styles.statIconBox, { backgroundColor: colors.info + '20' }]}>
-                                            <Ionicons name="cash" size={12} color={colors.info} />
-                                        </View>
-                                        <Text style={styles.statNumber}>{formatBRL(stats.vendasHoje)}</Text>
-                                    </View>
-                                </View>
-                            </View>
-                        </AgroCard>
-                    )}
-
-                    {/* ALERTAS */}
-                    {isReady && stats.maquinasAlert > 0 && (
-                        <AgroCard style={styles.alertBanner} onPress={() => navigation.navigate('Frota')} noPadding>
-                            <View style={[styles.alertIconCircle, { backgroundColor: colors.warning + '20' }]}>
-                                <Ionicons name="warning" size={16} color={colors.warning} />
-                            </View>
-                            <View style={{flex: 1}}>
-                                <Text style={[styles.alertTitle, { color: colors.warning }]}>ATENÇÃO NA FROTA</Text>
-                                <Text style={styles.alertDesc}>{stats.maquinasAlert} máquinas precisam de revisão.</Text>
-                            </View>
-                            <Ionicons name="chevron-forward" size={20} color={colors.warning} />
-                        </AgroCard>
-                    )}
-
-                    {/* ⚡ ACESSO RÁPIDO DIVIDIDO (CORAÇÃO DO APP) */}
-                    {isReady ? (
-                        <View style={{ marginTop: 10 }}>
-                            {getGroupedMenus().map((group, index) => (
-                                <View key={index} style={styles.menuSection}>
-                                    <Text style={styles.sectionTitle}>{group.title}</Text>
-                                    {renderMenuGrid(group.items)}
-                                </View>
-                            ))}
-
-                            {/* Menu Extra (Itens que não caíram na classificação principal, ex Sync, Relatorios) */}
-                            {renderMenuGrid(menuItems.filter(item => {
-                                const allKeys = CATEGORIES.flatMap(c => c.keys);
-                                return !allKeys.includes((item.id || item.screen.toLowerCase()).replace('screen', ''));
-                            }))}
-                        </View>
-                    ) : (
-                        <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-                            <Ionicons name="apps-outline" size={30} color={colors.border} />
-                            <Text style={{ marginTop: 10, color: colors.textSub, fontSize: 13 }}>Sincronizando painel...</Text>
-                        </View>
-                    )}
-
-                    <View style={styles.footerSpacing}>
-                         <Text style={styles.footerBrand}>AgroGB Premium System</Text>
-                    </View>
-                    
+            {/* TOP NAVBAR Ouro */}
+            <View style={styles.topNav}>
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <Image source={require('../../assets/logo.png')} style={styles.logoImg} resizeMode="contain" />
+                    <Text style={styles.brandTitle}>AgroGB</Text>
                 </View>
-            </ScrollView>
+                
+                <View style={{ flexDirection: 'row', gap: 20 }}>
+                     <TouchableOpacity><Ionicons name="search-outline" size={24} color="#A7B0B5" /></TouchableOpacity>
+                     <TouchableOpacity>
+                         <Ionicons name="notifications-outline" size={24} color="#A7B0B5" />
+                         {stats.pendentes > 0 && <View style={styles.redDot} />}
+                     </TouchableOpacity>
+                </View>
+            </View>
 
-            <SidebarDrawer visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
-        </View>
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                
+                {isReady ? (
+                    <View style={styles.groupsContainer}>
+                        {getGroupedMenus().map((group, index) => (
+                            <View key={index} style={styles.sectionWrap}>
+                                <Text style={styles.groupHead}>{group.title}</Text>
+                                <View style={styles.gridBox}>
+                                    {group.items.map(renderCard)}
+                                </View>
+                            </View>
+                        ))}
+                    </View>
+                ) : (
+                    <View style={styles.loaderBox}>
+                        <ActivityIndicator color="#10B981" size="large" />
+                    </View>
+                )}
+
+            </ScrollView>
+        </LinearGradient>
     );
 }
 
-const getStyles = (colors) => StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.bg },
-    
-    headerCurveWrap: {
-        paddingTop: 50,
-        paddingBottom: 70, // Espaco para overlap do card
-        borderBottomLeftRadius: 35,
-        borderBottomRightRadius: 35,
-        zIndex: 1
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
     },
-    headerContent: { paddingHorizontal: 24 },
-    menuIconBox: { backgroundColor: 'rgba(255,255,255,0.1)', padding: 6, borderRadius: 12 },
-    brandText: { fontSize: 24, fontWeight: '900', color: '#FFF', letterSpacing: 0.5, marginRight: 8 },
-    salutationText: { fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: '500', marginTop: 2 },
-    proTag: { backgroundColor: colors.accent, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-    proTagText: { color: '#FFF', fontSize: 9, fontWeight: 'bold', letterSpacing: 1 },
-
-    mainContent: { flex: 1, paddingHorizontal: 20, marginTop: -40, zIndex: 10 },
-    
-    // OVERLAPPING CARD
-    statsCardFloating: {
-        marginBottom: 25,
-    },
-    statsRow: {
+    topNav: {
         flexDirection: 'row',
-        paddingVertical: 20,
-        paddingHorizontal: 20,
-    },
-    statBlock: { flex: 1 },
-    statDivider: { width: 1, height: '100%', backgroundColor: colors.border, marginHorizontal: 15 },
-    statLabel: { fontSize: 10, fontWeight: '700', color: colors.textSub, marginBottom: 8, letterSpacing: 0.5 },
-    statRowFlex: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    statIconBox: { width: 24, height: 24, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-    statNumber: { fontSize: 16, fontWeight: '800', color: colors.textMain },
-
-    alertBanner: {
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        padding: 16, 
-        marginBottom: 20, 
-        borderLeftWidth: 4, 
-        borderLeftColor: colors.warning 
-    },
-    alertIconCircle: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-    alertTitle: { fontSize: 12, fontWeight: '800', marginBottom: 2 },
-    alertDesc: { fontSize: 11, color: colors.textSub },
-
-    menuSection: { marginBottom: 25 },
-    sectionTitle: { fontSize: 14, fontWeight: '800', color: colors.textSub, marginBottom: 15, letterSpacing: 0.5 },
-    
-    gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, justifyContent: 'space-between' },
-    gridCard: {
-        width: '31%',
-        minWidth: 95,
-        borderRadius: 16,
-        paddingVertical: 18,
-        paddingHorizontal: 8,
         alignItems: 'center',
-        borderWidth: 1,
-        marginBottom: 8,
-        backgroundColor: 'rgba(255,255,255,0.025)', // Card super glass
-        shadowColor: 'transparent',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingTop: 55,
+        paddingBottom: 20,
+        zIndex: 10
     },
-    gridIconCircle: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-    gridCardText: { fontSize: 11, fontWeight: '700', color: colors.textMain, textAlign: 'center' },
+    logoImg: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        marginRight: 12
+    },
+    brandTitle: {
+        fontSize: 26,
+        fontWeight: 'bold',
+        color: '#F8FAFC',
+        letterSpacing: 0.5
+    },
+    redDot: {
+        position: 'absolute',
+        top: 0, right: 2,
+        width: 10, height: 10,
+        borderRadius: 5,
+        backgroundColor: '#EF4444',
+        borderWidth: 2, borderColor: '#071a14'
+    },
+    scrollContent: {
+        paddingHorizontal: 16,
+        paddingBottom: 40
+    },
+    loaderBox: {
+        marginTop: 100,
+        alignItems: 'center'
+    },
+    groupsContainer: {
+        marginTop: 10,
+    },
+    sectionWrap: {
+        marginBottom: 26
+    },
+    groupHead: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#F1F5F9', // Cor brilhante
+        letterSpacing: 1,
+        marginBottom: 16,
+        marginLeft: 4
+    },
+    gridBox: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+    },
     
-    notificationBubble: { position: 'absolute', top: -5, right: -5, backgroundColor: colors.error, minWidth: 20, height: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.bg },
-    notificationNumber: { color: '#FFF', fontSize: 10, fontWeight: 'bold' },
-
-    footerSpacing: { marginTop: 30, marginBottom: 30, alignItems: 'center' },
-    footerBrand: { fontSize: 11, fontWeight: '600', color: colors.border }
+    // Emerald Card Style (O que o usuário tanto queria)
+    cardBox: {
+        width: CARD_WIDTH,
+        backgroundColor: 'rgba(255, 255, 255, 0.04)',
+        borderRadius: 18,
+        padding: 16,
+        margin: CARD_MARGIN,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255, 0.08)',
+        position: 'relative',
+        overflow: 'hidden'
+        // shadowColor: '#000', // Sombra nativa as vezes não fica legal com opacity
+    },
+    cardGlowTop: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0,
+        height: 3,
+        opacity: 0.8
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 18
+    },
+    iconWrap: {
+        width: 34, height: 34,
+        borderRadius: 10,
+        justifyContent: 'center', alignItems: 'center',
+        marginRight: 10
+    },
+    cardTitle: {
+        flex: 1,
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#F8FAFC'
+    },
+    cardBody: {
+        marginBottom: 4
+    },
+    cardSubTitle: {
+        fontSize: 12,
+        color: '#94A3B8',
+        marginBottom: 4
+    },
+    cardValue: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: '#38BDF8' // Azul Neon claro para dar o ar de Dashboard moderno
+    },
+    bgIconPhantom: {
+        position: 'absolute',
+        bottom: -5,
+        right: -5,
+        opacity: 0.15,
+        transform: [{ scale: 1.2 }]
+    }
 });
