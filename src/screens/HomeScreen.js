@@ -70,7 +70,17 @@ export default function HomeScreen({ navigation }) {
 
     const renderCard = (item) => {
         const data = getCardValue(item.id);
-        const baseColor = item.color || '#10B981';
+        
+        let customColor = '#34D399'; // Base Emerald
+        let valColor = '#FFFFFF';
+        if (item.id === 'vendas' || item.id === 'colheita' || item.id === 'financeiro' || item.id === 'adubacao') customColor = '#10B981';
+        if (item.id === 'relatorios' || item.id === 'estoque' || item.id === 'faturamento') { customColor = '#3B82F6'; valColor = '#FFF'; }
+        if (item.id === 'alertas' || item.id === 'pendentes' || item.id === 'descarte') { customColor = '#EF4444'; valColor = '#FFF'; }
+        if (data.error) { customColor = '#EF4444'; valColor = '#EF4444'; }
+        if (data.highlight) valColor = customColor; // Vendas / Colheita / Custos verde!
+
+        // Limpeza dos Textos Sub/Padroes para imitar a tela Limpa da Esquerda do Mockup
+        const isDefault = data.sub === 'Painel';
         
         return (
             <TouchableOpacity
@@ -79,42 +89,39 @@ export default function HomeScreen({ navigation }) {
                 onPress={() => navigation.navigate(item.screen)}
                 activeOpacity={0.8}
             >
-                {/* Efeito Glow Topo */}
-                <View style={[styles.cardGlowTop, { backgroundColor: baseColor + '15' }]} />
-                
                 <View style={styles.cardHeader}>
-                    <View style={[styles.iconWrap, { backgroundColor: baseColor + '20' }]}>
-                        <Ionicons name={item.icon} size={20} color={baseColor} />
+                    <View style={[styles.iconWrap, { backgroundColor: customColor + '18', borderColor: customColor + '40', borderWidth: 1 }]}>
+                        <Ionicons name={item.icon} size={16} color={customColor} />
                     </View>
                     <Text style={styles.cardTitle} numberOfLines={1}>{item.label}</Text>
                 </View>
                 
                 <View style={styles.cardBody}>
-                    <Text style={styles.cardSubTitle}>{data.sub}</Text>
+                    {!isDefault && <Text style={styles.cardSubTitle}>{data.sub}</Text>}
                     <Text style={[
                         styles.cardValue, 
-                        data.highlight && { color: '#E2E8F0' },
-                        data.error && { color: '#EF4444' }
+                        { color: valColor },
+                        isDefault && { fontSize: 16, color: 'rgba(255,255,255,0.7)', fontWeight: '600', marginTop: 10 }
                     ]} numberOfLines={1}>
-                        {data.val}
+                        {isDefault ? 'Acessar módulo' : data.val}
                     </Text>
                 </View>
                 
-                {/* Linha/Icone Fantasma Inferior como no Design - Grafico Fake pra Comercial */}
-                {item.id === 'vendas' && (
-                    <Ionicons name="trending-up" size={40} color={baseColor} style={styles.bgIconPhantom} />
+                {/* Linha Falsa Fantasma do Grafico igual arte IA (somente no vendas/custos/etc) */}
+                {(item.id === 'vendas' || item.id === 'relatorios') && (
+                    <Ionicons name={item.id === 'vendas' ? "trending-up" : "bar-chart"} size={50} color={customColor} style={styles.bgIconPhantom} />
                 )}
             </TouchableOpacity>
         );
     };
 
     return (
-        // FUNDO NEON ESRMERALDA MOCKUP VIBE (Gradiente Global)
-        <LinearGradient 
-            colors={['#071a14', '#141A1E', '#10161a']} 
-            start={{ x: 1, y: 0 }} end={{ x: 0, y: 1 }}
-            style={styles.container}
-        >
+        <View style={styles.container}>
+            {/* O SEGREDO DO MOCKUP: RADIAL GLOW NO FUNDO. Simulando com um view absoluto! */}
+            <LinearGradient colors={['#05110E', '#0B1F1A', '#030806']} style={StyleSheet.absoluteFill} />
+            <View style={[styles.ambientOrbTopRight, { backgroundColor: '#10B981', opacity: 0.20 }]} />
+            <View style={[styles.ambientOrbLeft, { backgroundColor: '#0B1F1A', opacity: 0.3 }]} />
+            
             <RNStatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
             {/* TOP NAVBAR Ouro */}
@@ -160,6 +167,25 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#05110E',
+    },
+    ambientOrbTopRight: {
+        position: 'absolute',
+        top: -150,
+        right: -100,
+        width: 450,
+        height: 450,
+        borderRadius: 225,
+        filter: 'blur(80px)' // Efeito de Orbe Neon Web pra igualar Fake Mockup
+    },
+    ambientOrbLeft: {
+        position: 'absolute',
+        top: '30%',
+        left: -150,
+        width: 350,
+        height: 350,
+        borderRadius: 175,
+        filter: 'blur(70px)'
     },
     topNav: {
         flexDirection: 'row',
@@ -218,60 +244,54 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between'
     },
     
-    // Emerald Card Style (O que o usuário tanto queria)
+    // Emerald Card Style - EXACT REPLICA OF THE IA ARTWORK
     cardBox: {
-        width: '31.5%',
-        backgroundColor: 'rgba(255, 255, 255, 0.04)',
-        borderRadius: 16,
-        padding: 12,
-        marginBottom: 12,
+        width: '48%',
+        backgroundColor: 'rgba(255, 255, 255, 0.035)',
+        borderRadius: 20,
+        padding: 16,
+        marginBottom: 16,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255, 0.08)',
+        borderColor: 'rgba(255,255,255, 0.05)',
+        borderTopColor: 'rgba(255,255,255, 0.08)',
         position: 'relative',
         overflow: 'hidden'
-        // shadowColor: '#000', // Sombra nativa as vezes não fica legal com opacity
-    },
-    cardGlowTop: {
-        position: 'absolute',
-        top: 0, left: 0, right: 0,
-        height: 3,
-        opacity: 0.8
     },
     cardHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 18
+        marginBottom: 16
     },
     iconWrap: {
-        width: 28, height: 28,
+        width: 30, height: 30,
         borderRadius: 8,
         justifyContent: 'center', alignItems: 'center',
-        marginRight: 6
+        marginRight: 10
     },
     cardTitle: {
         flex: 1,
-        fontSize: 11,
-        fontWeight: '700',
+        fontSize: 13,
+        fontWeight: '800',
         color: '#F8FAFC'
     },
     cardBody: {
-        marginBottom: 4
+        marginBottom: 2
+    },
+    cardValue: {
+        fontSize: 18,
+        fontWeight: '800',
+        lineHeight: 24,
     },
     cardSubTitle: {
         fontSize: 10,
-        color: '#94A3B8',
+        color: '#9CA3AF',
         marginBottom: 4
-    },
-    cardValue: {
-        fontSize: 14,
-        fontWeight: '900',
-        color: '#38BDF8' // Azul Neon claro para dar o ar de Dashboard moderno
     },
     bgIconPhantom: {
         position: 'absolute',
-        bottom: -5,
-        right: -5,
+        bottom: 5,
+        right: 0,
         opacity: 0.15,
-        transform: [{ scale: 1.2 }]
+        transform: [{ scale: 1.1 }]
     }
 });
