@@ -7,8 +7,11 @@ import { showToast } from '../ui/Toast';
 import { LinearGradient } from 'expo-linear-gradient';
 import { usePlantio } from '../modules/production/hooks/usePlantio';
 import { useInventory } from '../modules/inventory/hooks/useInventory';
+import { useTheme } from '../theme/ThemeContext';
+import AppHeader from '../components/ui/AppHeader';
 
 export default function PlantioScreen({ navigation }) {
+    const { colors } = useTheme();
     const { history, loading: loadingPlantio, loadHistory, registerPlanting, removePlanting } = usePlantio();
     const { items: stockItems, fetchStock: loadStock } = useInventory();
 
@@ -119,22 +122,13 @@ export default function PlantioScreen({ navigation }) {
     const memoHistory = useMemo(() => history, [history]);
 
     return (
-        <View style={styles.webContainer}>
-            <LinearGradient colors={['#1c2921', '#111b15', '#0a100d']} style={StyleSheet.absoluteFill} />
+        <View style={[styles.webContainer, { backgroundColor: colors.bg }]}>
+            <LinearGradient colors={[colors.headerBg[0], colors.bg, '#030712']} style={StyleSheet.absoluteFill} />
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             <View style={styles.mobileFrame}>
                 <SafeAreaView style={{ flex: 1 }}>
-                    <View style={styles.header}>
-                        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                            <Ionicons name="arrow-back" size={24} color="#D1FAE5" />
-                        </TouchableOpacity>
-                        <View style={{alignItems: 'center'}}>
-                            <Text style={styles.headerTitle}>Plantio</Text>
-                            <Text style={styles.headerSub}>Gestão de Culturas e Lotes</Text>
-                        </View>
-                        <View style={{width: 40}} />
-                    </View>
+                    <AppHeader title="Plantio" subtitle="Gestão de Culturas e Lotes" showBack={true} />
 
                     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                         
