@@ -237,6 +237,7 @@ export default function VendasScreen({ navigation }) {
                 </LinearGradient>
             </TouchableOpacity>
         </View>
+        </View>
     );
 
     const renderForm = () => (
