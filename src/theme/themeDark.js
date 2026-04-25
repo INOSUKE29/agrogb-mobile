@@ -1,10 +1,10 @@
 export const themeDark = {
     mode: 'dark',
     colors: {
-        bg: '#0B1F1A',                 // Fundo Principal Dark Verde Premium
-        headerBg: ['#04100D', '#0B1F1A'], // TopHeader Nav Gradient Ouro
-        cardBg: 'rgba(255,255,255,0.05)', // Background Cards semi-transparente
-        border: 'rgba(255,255,255,0.08)', // Bordas Suaves Glass
+        bg: '#141A1E',                 // Fundo Principal (Veludo Charcoal/Cinza Grafite Profundo)
+        headerBg: ['#091014', '#11222A'], // TopHeader Nav Gradient Velvet Esmeralda
+        cardBg: 'rgba(255,255,255,0.035)', // Background Cards semi-transparente fosco
+        border: 'rgba(255,255,255,0.06)', // Bordas Suaves Glass Edge
         textMain: '#FFFFFF',           // Textos Principais
         textSub: '#A7B0B5',            // Textos Neutros Secundarios
         accent: '#16A34A',             // Primary Ação / Gradient Start
@@ -19,8 +19,8 @@ export const themeDark = {
         
         // Legacy Support for backward compatibility on non-refactored screens
         primary: '#16A34A',
-        background: '#0B1F1A',
-        surface: 'rgba(255,255,255,0.05)',
+        background: '#141A1E',
+        surface: 'rgba(255,255,255,0.035)',
         textPrimary: '#FFFFFF',
         textSecondary: '#A7B0B5'
     }

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar as RNStatusBar, InteractionManager } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar as RNStatusBar, InteractionManager, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -104,6 +104,7 @@ export default function HomeScreen({ navigation }) {
                                 </TouchableOpacity>
                                 <View>
                                     <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                                        <Image source={require('../../assets/logo.png')} style={{ width: 30, height: 30, marginRight: 8, borderRadius: 6 }} resizeMode="contain" />
                                         <Text style={styles.brandText}>AgroGB</Text>
                                         <View style={styles.proTag}><Text style={styles.proTagText}>PRO</Text></View>
                                     </View>
