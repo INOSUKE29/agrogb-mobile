@@ -104,7 +104,7 @@ export default function HomeScreen({ navigation }) {
                                 </TouchableOpacity>
                                 <View>
                                     <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                                        <Image source={require('../../assets/logo.png')} style={{ width: 30, height: 30, marginRight: 8, borderRadius: 6 }} resizeMode="contain" />
+                                        <Image source={require('../../assets/logo.png')} style={{ width: 45, height: 45, marginRight: 10, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }} resizeMode="contain" />
                                         <Text style={styles.brandText}>AgroGB</Text>
                                         <View style={styles.proTag}><Text style={styles.proTagText}>PRO</Text></View>
                                     </View>
@@ -257,7 +257,7 @@ const getStyles = (colors) => StyleSheet.create({
         alignItems: 'center',
         borderWidth: 1,
         marginBottom: 8,
-        // Ocultar sombra brutal se o cardBg tiver glass effect na paleta escuturo
+        backgroundColor: 'rgba(255,255,255,0.025)', // Card super glass
         shadowColor: 'transparent',
     },
     gridIconCircle: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
