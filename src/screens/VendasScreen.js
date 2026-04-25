@@ -23,8 +23,11 @@ import ConfirmModal from '../ui/ConfirmModal';
 import { showToast } from '../ui/Toast';
 import { LinearGradient } from 'expo-linear-gradient';
 import SafeBlurView from '../ui/SafeBlurView';
+import { useTheme } from '../theme/ThemeContext';
+import AppHeader from '../components/ui/AppHeader';
 
 export default function VendasScreen({ navigation }) {
+    const { colors } = useTheme();
     const [cliente, setCliente] = useState('');
     const [clienteId, setClienteId] = useState(null);
     const [produto, setProduto] = useState('');
@@ -186,14 +189,9 @@ export default function VendasScreen({ navigation }) {
     };
 
     const renderList = () => (
-        <View style={{ flex: 1, paddingHorizontal: 22 }}>
-            <View style={[styles.header, { paddingHorizontal: 0 }]}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation?.goBack?.()}>
-                    <Ionicons name="chevron-back" size={24} color="#F8FAFC" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>HISTÓRICO DE VENDAS</Text>
-                <View style={{ width: 40 }} />
-            </View>
+        <View style={{ flex: 1 }}>
+            <AppHeader title="HISTÓRICO DE VENDAS" showBack={true} />
+            <View style={{ flex: 1, paddingHorizontal: 22 }}>
 
             {loadingHistory ? (
                 <ActivityIndicator color="#10B981" style={{ marginTop: 40 }} />
@@ -244,15 +242,11 @@ export default function VendasScreen({ navigation }) {
     const renderForm = () => (
         <View style={{ flex: 1 }}>
             {/* ── HEADER ── */}
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => setView('LIST')}>
-                    <Ionicons name="chevron-back" size={24} color="#F8FAFC" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{editingUuid ? 'EDITAR VENDA' : 'NOVA VENDA'}</Text>
-                <TouchableOpacity style={styles.headerRightBtn} onPress={() => handleSalvar(false)}>
-                    <Text style={styles.headerRightBtnText}>SALVAR</Text>
-                </TouchableOpacity>
-            </View>
+            <AppHeader 
+                title={editingUuid ? 'EDITAR VENDA' : 'NOVA VENDA'} 
+                rightIcon="save-outline" 
+                onRightPress={() => handleSalvar(false)} 
+            />
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
@@ -436,9 +430,11 @@ export default function VendasScreen({ navigation }) {
     );
 
     return (
-        <View style={styles.webContainer}>
+        <View style={[styles.webContainer, { backgroundColor: colors.bg }]}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            <LinearGradient colors={['#020617', '#0A0F1C', '#030712']} style={StyleSheet.absoluteFill} />
+            
+            {/* Fundo Global Velvet Esmeralda Aplicado */}
+            <LinearGradient colors={[colors.headerBg[0], colors.bg, '#030712']} style={StyleSheet.absoluteFill} />
 
             {/* 🌀 AMBIENT ORBS */}
             <View style={[styles.ambientOrb, { top: -40, right: -60, backgroundColor: '#10B981', opacity: 0.12 }]} />
