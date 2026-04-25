@@ -8,13 +8,6 @@ import { getDashboardStats } from '../database/database';
 import { pushLocalChanges, pullServerChanges } from '../services/SyncService';
 import { MenuConfigService } from '../services/MenuConfigService';
 
-const { width } = Dimensions.get('window');
-
-// Diminuir padding lateral
-const CARD_MARGIN = 6;
-// 2 colunas com espacamento
-const CARD_WIDTH = (width / 2) - 16 - CARD_MARGIN;
-
 export default function HomeScreen({ navigation }) {
     const { colors } = useTheme();
     
@@ -222,15 +215,16 @@ const styles = StyleSheet.create({
     gridBox: {
         flexDirection: 'row',
         flexWrap: 'wrap',
+        justifyContent: 'space-between'
     },
     
     // Emerald Card Style (O que o usuário tanto queria)
     cardBox: {
-        width: CARD_WIDTH,
+        width: '48%',
         backgroundColor: 'rgba(255, 255, 255, 0.04)',
         borderRadius: 18,
         padding: 16,
-        margin: CARD_MARGIN,
+        marginBottom: 12,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255, 0.08)',
         position: 'relative',
