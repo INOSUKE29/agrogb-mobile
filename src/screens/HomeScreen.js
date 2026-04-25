@@ -220,10 +220,10 @@ const styles = StyleSheet.create({
     
     // Emerald Card Style (O que o usuário tanto queria)
     cardBox: {
-        width: '48%',
+        width: '31.5%',
         backgroundColor: 'rgba(255, 255, 255, 0.04)',
-        borderRadius: 18,
-        padding: 16,
+        borderRadius: 16,
+        padding: 12,
         marginBottom: 12,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255, 0.08)',
@@ -243,14 +243,14 @@ const styles = StyleSheet.create({
         marginBottom: 18
     },
     iconWrap: {
-        width: 34, height: 34,
-        borderRadius: 10,
+        width: 28, height: 28,
+        borderRadius: 8,
         justifyContent: 'center', alignItems: 'center',
-        marginRight: 10
+        marginRight: 6
     },
     cardTitle: {
         flex: 1,
-        fontSize: 14,
+        fontSize: 11,
         fontWeight: '700',
         color: '#F8FAFC'
     },
@@ -258,13 +258,13 @@ const styles = StyleSheet.create({
         marginBottom: 4
     },
     cardSubTitle: {
-        fontSize: 12,
+        fontSize: 10,
         color: '#94A3B8',
         marginBottom: 4
     },
     cardValue: {
-        fontSize: 22,
-        fontWeight: '800',
+        fontSize: 14,
+        fontWeight: '900',
         color: '#38BDF8' // Azul Neon claro para dar o ar de Dashboard moderno
     },
     bgIconPhantom: {
