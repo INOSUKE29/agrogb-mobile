@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar as RNStatusBar, Image, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar as RNStatusBar, Image, Dimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../theme/ThemeContext';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { getDashboardStats } from '../database/database';
-import { MenuConfigService } from '../services/MenuConfigService';
 import FundoAnimado from '../components/FundoAnimado';
+
+const { width } = Dimensions.get('window');
 
 const MENU_COLORS = {
     caderno: '#00FF9D', colheita: '#34D399', vendas: '#FBBF24', estoque: '#3B82F6',
@@ -15,174 +15,143 @@ const MENU_COLORS = {
     relatorios: '#EC4899', cadastros: '#14B8A6', clientes: '#F472B6', areas: '#2DD4BF', sync: '#00FF9D'
 };
 
-const FALLBACK_MENU = [
+const MAIN_MENU = [
     { id: "caderno", label: "Caderno", icon: "book-outline", screen: "CadernoCampo" },
     { id: "colheita", label: "Colheita", icon: "leaf-outline", screen: "Colheita" },
-    { id: "vendas", label: "Vendas", icon: "cash-outline", screen: "Vendas" },
-    { id: "estoque", label: "Estoque", icon: "cube-outline", screen: "Estoque" },
     { id: "monitoramento", label: "Monitorar", icon: "camera-outline", screen: "Monitoramento" },
     { id: "adubacao", label: "Adubação", icon: "flask-outline", screen: "AdubacaoList" },
-    { id: "compras", label: "Compras", icon: "cart-outline", screen: "Compras" },
-    { id: "encomendas", label: "Encomendas", icon: "clipboard-outline", screen: "Encomendas" },
     { id: "plantio", label: "Plantio", icon: "nutrition-outline", screen: "Plantio" },
-    { id: "custos", label: "Custos", icon: "calculator-outline", screen: "Custos" },
     { id: "descarte", label: "Descarte", icon: "trash-outline", screen: "Descarte" },
+    { id: "vendas", label: "Vendas", icon: "cash-outline", screen: "Vendas" },
+    { id: "compras", label: "Compras", icon: "cart-outline", screen: "Compras" },
+    { id: "encomendas", label: "Entregas", icon: "clipboard-outline", screen: "Encomendas" },
+    { id: "estoque", label: "Estoque", icon: "cube-outline", screen: "Estoque" },
+    { id: "custos", label: "Custos", icon: "calculator-outline", screen: "Custos" },
     { id: "frota", label: "Frota", icon: "car-sport-outline", screen: "Frota" },
     { id: "relatorios", label: "Relatórios", icon: "pie-chart-outline", screen: "Relatorios" },
     { id: "cadastros", label: "Cadastros", icon: "create-outline", screen: "Cadastro" },
-    { id: "clientes", label: "Clientes", icon: "people-outline", screen: "Clientes" },
-    { id: "areas", label: "Áreas", icon: "map-outline", screen: "Culturas" },
-    { id: "sync", label: "Sync", icon: "cloud-upload-outline", screen: "Sync" }
+    { id: "areas", label: "Fazendas", icon: "map-outline", screen: "Culturas" },
+    { id: "sync", label: "Sincronia", icon: "cloud-upload-outline", screen: "Sync" }
 ];
 
 export default function HomeScreen({ navigation }) {
     const [stats, setStats] = useState({ vendasHoje: 0, colheitaHoje: 0 });
-    const [isReady, setIsReady] = useState(false);
-    const [menuItems, setMenuItems] = useState(FALLBACK_MENU);
 
-    const loadData = async () => {
-        try {
-            const data = await getDashboardStats();
-            if (data) setStats(data);
-            const cfg = await MenuConfigService.getMenuConfig();
-            if(cfg && cfg.menu_items?.length > 0) {
-                setMenuItems(cfg.menu_items.filter(i => i.enabled));
-            }
-        } catch (e) { }
-    };
+    useFocusEffect(useCallback(() => {
+        const fetch = async () => { try { const d = await getDashboardStats(); if(d) setStats(d); } catch(e){} };
+        fetch();
+    }, []));
 
-    useFocusEffect(useCallback(() => { setIsReady(true); loadData(); }, []));
-
-    const CATEGORIES = [
-        { title: 'PRODUÇÃO', keys: ['caderno', 'plantio', 'monitoramento', 'adubacao', 'colheita', 'descarte', 'cadastros'] },
-        { title: 'COMERCIAL', keys: ['vendas', 'encomendas', 'compras'] },
-        { title: 'CONTROLE', keys: ['estoque', 'custos', 'frota', 'relatorios'] },
-        { title: 'SISTEMA', keys: ['clientes', 'areas', 'sync'] }
-    ];
-
-    const getGroupedMenus = () => {
-        return CATEGORIES.map(cat => ({
-            title: cat.title,
-            items: menuItems.map(item => {
-                let sId = (item.id || '').toLowerCase();
-                if(!sId && item.screen) sId = item.screen.toLowerCase().replace('screen', '');
-                if(sId.includes('monitorar')) sId = 'monitoramento';
-                if(sId === 'cadastro') sId = 'cadastros';
-                if(sId === 'culturas') sId = 'areas';
-                return { ...item, normalizedId: sId };
-            }).filter(item => cat.keys.includes(item.normalizedId))
-        })).filter(g => g.items.length > 0); 
-    };
+    const StatCard = ({ icon, label, val, sub, color = '#00FF9D' }) => (
+        <View style={styles.statCard}>
+            <View style={styles.statCardHeader}>
+                <View style={[styles.statIconBox, { backgroundColor: color + '15' }]}>
+                    <Ionicons name={icon} size={18} color={color} />
+                </View>
+                <Text style={styles.statLabel}>{label}</Text>
+            </View>
+            <Text style={styles.statVal}>{val}</Text>
+            <Text style={styles.statSub}>{sub}</Text>
+        </View>
+    );
 
     return (
         <FundoAnimado>
             <RNStatusBar barStyle="light-content" translucent />
-            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+            
+            {/* TOP BAR LUXO */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={styles.roundBtn}>
+                    <Ionicons name="person-circle-outline" size={30} color="#FFF" />
+                </TouchableOpacity>
+                <View style={styles.logoBox}>
+                    <Image source={require('../../assets/logo.png')} style={styles.megaLogo} />
+                    <Text style={styles.brandTitle}>AgroGB</Text>
+                </View>
+                <TouchableOpacity onPress={() => navigation.navigate('Sync')} style={styles.roundBtn}>
+                    <Ionicons name="ellipsis-vertical" size={24} color="#FFF" />
+                </TouchableOpacity>
+            </View>
+            <Text style={styles.slogan}>Inteligência no campo</Text>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
                 
-                {/* HEADER UNIFICADO (Conforme versões anteriores de sucesso) */}
-                <View style={styles.header}>
-                    <TouchableOpacity style={styles.headerIconBtn} onPress={() => navigation.navigate('Profile')}>
-                        <Ionicons name="person-circle-outline" size={32} color="#FFF" />
-                    </TouchableOpacity>
-                    
-                    <View style={styles.logoContainer}>
-                        <Image source={require('../../assets/logo.png')} style={styles.logoMega} />
-                        <Text style={styles.brandText}>AgroGB</Text>
-                    </View>
+                {/* 🛰 DASHBOARD HORIZONTAL PRO */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dashScroll}>
+                    <StatCard icon="sunny" label="Previsão" val="25°C" sub="Sol entre nuvens" />
+                    <StatCard icon="analytics" label="Plantio" val="10.62 ha" sub="Safra 2026/01" color="#34D399" />
+                    <StatCard icon="wallet" label="Financeiro" val={`R$ ${stats.vendasHoje || '0'}`} sub="Vendas de hoje" color="#FBBF24" />
+                    <StatCard icon="alert-circle" label="Alertas" val="3 Ativos" sub="Ver pendências" color="#EF4444" />
+                </ScrollView>
 
-                    <TouchableOpacity style={styles.headerIconBtn} onPress={() => navigation.navigate('Sync')}>
-                        <Ionicons name="ellipsis-vertical" size={28} color="#FFF" />
-                    </TouchableOpacity>
-                </View>
-                <Text style={styles.slogan}>Inteligência no campo</Text>
-
-                {/* DASHBOARD UNIFICADO (Juntando Clima + Stats como solicitado) */}
-                <View style={styles.dashPanel}>
-                    <View style={styles.dashSec}>
-                        <Ionicons name="sunny" size={24} color="#00FF9D" />
-                        <Text style={styles.dashValText}>25°C</Text>
-                    </View>
-                    
-                    <View style={styles.dashDivider} />
-
-                    <View style={styles.dashSec}>
-                        <Text style={styles.dashLabelText}>COLHEITA</Text>
-                        <Text style={styles.dashValText}>{stats.colheitaHoje || 0}kg</Text>
-                    </View>
-
-                    <View style={styles.dashDivider} />
-
-                    <View style={styles.dashSec}>
-                        <Text style={styles.dashLabelText}>VENDAS</Text>
-                        <Text style={styles.dashValText}>R$ {stats.vendasHoje?.toFixed(0) || '0'}</Text>
+                <View style={styles.menuContainer}>
+                    <View style={styles.grid}>
+                        {MAIN_MENU.map((item) => {
+                            const accent = MENU_COLORS[item.id] || '#00FF9D';
+                            return (
+                                <TouchableOpacity key={item.id} style={styles.menuBtn} onPress={() => navigation.navigate(item.screen)} activeOpacity={0.7}>
+                                    <View style={styles.iconSquare}>
+                                        <Ionicons name={item.icon} size={28} color={accent} />
+                                    </View>
+                                    <Text style={styles.menuLabel}>{item.label}</Text>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
                 </View>
 
-                {isReady && getGroupedMenus().map((group, idx) => (
-                    <View key={idx} style={styles.section}>
-                        <Text style={styles.sectionTitle}>{group.title}</Text>
-                        <View style={styles.menuGrid}>
-                            {group.items.map(item => {
-                                const accent = MENU_COLORS[item.normalizedId] || '#00FF9D';
-                                return (
-                                    <TouchableOpacity key={item.id} style={styles.menuItem} onPress={() => navigation.navigate(item.screen)} activeOpacity={0.7}>
-                                        <View style={styles.iconCircle}>
-                                            <Ionicons name={item.icon} size={30} color={accent} />
-                                        </View>
-                                        <Text style={styles.menuLabel}>{item.label}</Text>
-                                    </TouchableOpacity>
-                                )
-                            })}
-                        </View>
-                    </View>
-                ))}
+                <View style={styles.footer}>
+                    <Text style={styles.footerTxt}>Versão Ouro • 2026.04</Text>
+                </View>
             </ScrollView>
         </FundoAnimado>
     );
 }
 
 const styles = StyleSheet.create({
-    scroll: { padding: 18, paddingTop: 20, paddingBottom: 100 },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 },
-    headerIconBtn: { width: 48, height: 48, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.06)', justifyContent: 'center', alignItems: 'center' },
-    logoContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flex: 1 },
-    logoMega: { width: 100, height: 100, marginRight: 10 },
-    brandText: { fontSize: 28, fontWeight: '900', color: '#FFF', letterSpacing: -0.5 },
-    slogan: { textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: -20, marginBottom: 25, fontWeight: '700' },
+    scroll: { paddingBottom: 100 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 40, marginBottom: 5 },
+    roundBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.06)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    logoBox: { flexDirection: 'row', alignItems: 'center' },
+    megaLogo: { width: 100, height: 100, marginRight: 10 },
+    brandTitle: { color: '#FFF', fontSize: 28, fontWeight: '900', letterSpacing: -1 },
+    slogan: { textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: '800', marginTop: -20, marginBottom: 20 },
 
-    // PAINEL UNIFICADO (RESTAURADO)
-    dashPanel: { 
+    dashScroll: { paddingHorizontal: 20, gap: 15, marginBottom: 35 },
+    statCard: { 
+        width: 160, 
         backgroundColor: 'rgba(255,255,255,0.06)', 
         borderRadius: 25, 
-        paddingVertical: 18, 
-        paddingHorizontal: 10,
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        justifyContent: 'space-around',
+        padding: 18, 
         borderWidth: 1, 
-        borderColor: 'rgba(255,255,255,0.08)',
-        marginBottom: 35
+        borderColor: 'rgba(255,255,255,0.1)',
+        shadowColor: '#000',
+        shadowOpacity: 0.2,
+        shadowRadius: 10
     },
-    dashSec: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    dashDivider: { width: 1, height: 25, backgroundColor: 'rgba(255,255,255,0.1)' },
-    dashLabelText: { fontSize: 8, fontWeight: '900', color: 'rgba(255,255,255,0.3)', letterSpacing: 1 },
-    dashValText: { color: '#FFF', fontSize: 16, fontWeight: '900', marginTop: 2 },
+    statCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+    statIconBox: { width: 32, height: 32, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+    statLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
+    statVal: { color: '#FFF', fontSize: 18, fontWeight: '900' },
+    statSub: { color: 'rgba(255,255,255,0.3)', fontSize: 9, marginTop: 2, fontWeight: 'bold' },
 
-    section: { marginTop: 30 },
-    sectionTitle: { fontSize: 12, fontWeight: '900', color: 'rgba(255,255,255,0.4)', letterSpacing: 2, marginBottom: 18, marginLeft: 5 },
-    menuGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
-    menuItem: { width: '30%', alignItems: 'center', marginBottom: 22 },
-    iconCircle: { 
-        width: 66, 
-        height: 66, 
+    menuContainer: { paddingHorizontal: 20 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+    menuBtn: { width: '31%', alignItems: 'center', marginBottom: 25 },
+    iconSquare: { 
+        width: 65, 
+        height: 65, 
         borderRadius: 22, 
         backgroundColor: '#FFF', 
         justifyContent: 'center', 
-        alignItems: 'center', 
-        shadowColor: '#00FF9D', 
-        shadowOpacity: 0.25, 
-        shadowRadius: 10, 
-        elevation: 10 
+        alignItems: 'center',
+        shadowColor: '#00FF9D',
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        elevation: 10
     },
-    menuLabel: { color: '#FFF', fontSize: 11, fontWeight: '800', marginTop: 10, textAlign: 'center' }
+    menuLabel: { color: '#FFF', fontSize: 11, fontWeight: '800', marginTop: 10, textAlign: 'center' },
+
+    footer: { marginTop: 40, alignItems: 'center' },
+    footerTxt: { color: 'rgba(255,255,255,0.1)', fontSize: 10, fontWeight: 'bold' }
 });
