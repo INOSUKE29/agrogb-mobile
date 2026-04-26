@@ -10,7 +10,6 @@ import { MenuConfigService } from '../services/MenuConfigService';
 
 export default function HomeScreen({ navigation }) {
     const { colors } = useTheme();
-    
     const [stats, setStats] = useState({});
     const [isReady, setIsReady] = useState(false);
     const [menuItems, setMenuItems] = useState([]);
@@ -56,70 +55,67 @@ export default function HomeScreen({ navigation }) {
     const getCardValue = (id) => {
         switch(id) {
             case 'vendas': return { val: formatBRL(stats.vendasHoje), sub: 'Vendas Mês' };
-            case 'colheita': return { val: `${stats.colheitaHoje || 0} kg`, sub: 'Colheita Hoje' };
-            case 'custos': return { val: formatBRL(stats.saldo || 0), sub: 'Saldo Atual' };
-            case 'plantio': return { val: `${stats.plantioAtivo || 0}`, sub: 'Lavouras Ativas' };
-            case 'frota': return stats.maquinasAlert > 0 ? { val: `${stats.maquinasAlert} maq`, sub: 'Revisão Necessária' } : { val: 'Ok', sub: 'Frota' };
-            default: return { val: 'Acessar', sub: 'Painel' };
+            case 'colheita': return { val: `${stats.colheitaHoje || 0} kg`, sub: 'Hoje' };
+            case 'custos': return { val: formatBRL(stats.saldo || 0), sub: 'Saldo' };
+            case 'plantio': return { val: `${stats.plantioAtivo || 0}`, sub: 'Lavouras' };
+            case 'frota': return { val: stats.maquinasAlert > 0 ? `${stats.maquinasAlert} Alertas` : 'Ok', sub: 'Frota' };
+            case 'estoque': return { val: 'Fértil', sub: 'Estoque' };
+            default: return { val: 'Abrir', sub: 'Gerenciar' };
         }
     };
 
     const renderCard = (item) => {
         const data = getCardValue(item.id);
-        let customColor = '#34D399';
-        if (item.id === 'vendas' || item.id === 'colheita' || item.id === 'financeiro') customColor = '#10B981';
-        if (item.id === 'relatorios' || item.id === 'estoque' || item.id === 'compras') customColor = '#3B82F6';
-        if (item.id === 'alertas' || item.id === 'descarte') customColor = '#EF4444';
+        let accent = '#34D399';
+        if (item.id === 'vendas' || item.id === 'colheita' || item.id === 'financeiro') accent = '#4ADE80';
+        if (item.id === 'relatorios' || item.id === 'estoque' || item.id === 'compras') accent = '#60A5FA';
+        if (item.id === 'alertas' || item.id === 'descarte') accent = '#F87171';
         
         return (
-            <TouchableOpacity key={item.id} style={styles.cardBox} onPress={() => navigation.navigate(item.screen)}>
-                {(item.id === 'vendas' || item.id === 'relatorios') && (
-                    <Ionicons name={item.id === 'vendas' ? "trending-up" : "bar-chart"} size={40} color={customColor} style={styles.bgIconPhantom} />
-                )}
+            <TouchableOpacity key={item.id} style={styles.cardBox} onPress={() => navigation.navigate(item.screen)} activeOpacity={0.75}>
                 <View style={styles.cardHeader}>
-                    <View style={[styles.iconWrap, { backgroundColor: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.15)', borderWidth: 1 }]}>
-                        <Ionicons name={item.icon} size={14} color={customColor} />
+                    <View style={[styles.iconBox, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
+                        <Ionicons name={item.icon} size={15} color={accent} />
                     </View>
-                    <Text style={styles.cardTitle} numberOfLines={1}>{item.label}</Text>
+                    <Text style={styles.cardTitle}>{item.label}</Text>
                 </View>
-                <View style={styles.cardBody}>
-                    <Text style={styles.cardValue} numberOfLines={1}>{data.val}</Text>
-                    <Text style={styles.cardSubTitle} numberOfLines={1}>{data.sub}</Text>
+                <View style={styles.cardInfo}>
+                    <Text style={styles.cardMainValue}>{data.val}</Text>
+                    <Text style={styles.cardSmallSub}>{data.sub}</Text>
                 </View>
+                {(item.id === 'vendas' || item.id === 'relatorios') && (
+                    <Ionicons name="trending-up" size={45} color={accent} style={styles.phantomIcon} />
+                )}
             </TouchableOpacity>
         );
     };
 
     return (
         <View style={styles.container}>
-            <LinearGradient 
-                colors={['#0A0F0D', '#0D1A15', '#0E291F', '#06110E']} 
-                start={{ x: 0.1, y: 0.1 }} end={{ x: 0.9, y: 0.9 }} 
-                style={StyleSheet.absoluteFill} 
-            />
+            <LinearGradient colors={['#064E3B', '#022C22', '#011F18', '#000000']} start={{ x: 1, y: 0 }} end={{ x: 0, y: 1 }} style={StyleSheet.absoluteFill} />
             <RNStatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-            <View style={styles.topNav}>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <Image source={require('../../assets/logo.png')} style={styles.logoImg} resizeMode="contain" />
-                    <Text style={styles.brandTitle}>AgroGB</Text>
+            
+            <View style={styles.headerBar}>
+                <View style={styles.logoRow}>
+                    <Image source={require('../../assets/logo.png')} style={styles.logoSquare} />
+                    <Text style={styles.appName}>AgroGB</Text>
                 </View>
-                <View style={{ flexDirection: 'row', gap: 20 }}>
-                     <TouchableOpacity><Ionicons name="search-outline" size={24} color="#A7B0B5" /></TouchableOpacity>
-                     <TouchableOpacity><Ionicons name="notifications-outline" size={24} color="#A7B0B5" /></TouchableOpacity>
+                <View style={styles.headerIcons}>
+                    <TouchableOpacity style={styles.iconBtn}><Ionicons name="search-outline" size={24} color="#FFF" /></TouchableOpacity>
+                    <TouchableOpacity style={styles.iconBtn}><Ionicons name="notifications-outline" size={24} color="#FFF" /></TouchableOpacity>
                 </View>
             </View>
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
+            <ScrollView contentContainerStyle={styles.scrollArea} showsVerticalScrollIndicator={false}>
                 {isReady ? (
-                    <View style={styles.groupsContainer}>
-                        {getGroupedMenus().map((group, index) => (
-                            <View key={index} style={styles.sectionWrap}>
-                                <Text style={styles.groupHead}>{group.title}</Text>
-                                <View style={styles.gridBox}>{group.items.map(renderCard)}</View>
-                            </View>
-                        ))}
-                    </View>
+                    getGroupedMenus().map((group, idx) => (
+                        <View key={idx} style={styles.groupContainer}>
+                            <Text style={styles.groupTitle}>{group.title}</Text>
+                            <View style={styles.cardGrid}>{group.items.map(renderCard)}</View>
+                        </View>
+                    ))
                 ) : (
-                    <View style={styles.loaderBox}><ActivityIndicator color="#10B981" size="large" /></View>
+                    <View style={styles.center}><ActivityIndicator color="#34D399" size="large" /></View>
                 )}
             </ScrollView>
         </View>
@@ -128,21 +124,37 @@ export default function HomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    topNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 55, paddingBottom: 20, zIndex: 10 },
-    logoImg: { width: 48, height: 48, borderRadius: 12, marginRight: 12 },
-    brandTitle: { fontSize: 26, fontWeight: 'bold', color: '#F8FAFC', letterSpacing: 0.5 },
-    scrollContent: { paddingHorizontal: 16, paddingBottom: 40 },
-    loaderBox: { marginTop: 100, alignItems: 'center' },
-    groupsContainer: { marginTop: 10 },
-    sectionWrap: { marginBottom: 26 },
-    groupHead: { fontSize: 16, fontWeight: '700', color: '#F1F5F9', letterSpacing: 1, marginBottom: 16, marginLeft: 4 },
-    gridBox: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-    cardBox: { width: '31.5%', backgroundColor: 'rgba(255, 255, 255, 0.06)', borderRadius: 18, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.12)', elevation: 8, position: 'relative', overflow: 'hidden' },
+    headerBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 60, paddingBottom: 15 },
+    logoRow: { flexDirection: 'row', alignItems: 'center' },
+    logoSquare: { width: 44, height: 44, borderRadius: 10, marginRight: 12 },
+    appName: { fontSize: 24, fontWeight: '900', color: '#FFF', letterSpacing: -0.5 },
+    headerIcons: { flexDirection: 'row', gap: 15 },
+    iconBtn: { padding: 4 },
+    scrollArea: { paddingHorizontal: 16, paddingBottom: 30 },
+    groupContainer: { marginBottom: 30 },
+    groupTitle: { fontSize: 13, fontWeight: '900', color: 'rgba(255,255,255,0.6)', letterSpacing: 2, marginBottom: 15, paddingLeft: 4 },
+    cardGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+    cardBox: { 
+        width: '31.5%', 
+        backgroundColor: 'rgba(255, 255, 255, 0.08)', 
+        borderRadius: 20, 
+        padding: 12, 
+        marginBottom: 12, 
+        borderWidth: 1.5, 
+        borderColor: 'rgba(255, 255, 255, 0.25)', 
+        shadowColor: "#FFF", 
+        shadowOffset: { width: 0, height: 0 }, 
+        shadowOpacity: 0.2, 
+        shadowRadius: 10, 
+        elevation: 10,
+        overflow: 'hidden'
+    },
     cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-    iconWrap: { width: 26, height: 26, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginRight: 8 },
-    cardTitle: { flex: 1, fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.9)' },
-    cardBody: { marginTop: 4 },
-    cardValue: { fontSize: 16, fontWeight: '800', color: '#FFFFFF', textShadowColor: 'rgba(255,255,255,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
-    cardSubTitle: { fontSize: 9, color: 'rgba(255,255,255,0.5)', marginTop: 2, fontWeight: '500' },
-    bgIconPhantom: { position: 'absolute', bottom: -5, right: -5, opacity: 0.08 }
+    iconBox: { width: 28, height: 28, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginRight: 6 },
+    cardTitle: { flex: 1, fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.95)' },
+    cardInfo: { marginTop: 2 },
+    cardMainValue: { fontSize: 15, fontWeight: '900', color: '#FFF' },
+    cardSmallSub: { fontSize: 8, color: 'rgba(255,255,255,0.4)', marginTop: 1, fontWeight: '700' },
+    phantomIcon: { position: 'absolute', bottom: -5, right: -5, opacity: 0.12 },
+    center: { marginTop: 80, alignItems: 'center' }
 });
