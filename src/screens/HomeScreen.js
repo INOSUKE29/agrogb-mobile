@@ -242,13 +242,13 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between'
     },
     
-    // Emerald Card Style - EXACT REPLICA OF THE IA ARTWORK
+    // Emerald Card Style - EXACT REPLICA OF THE IA ARTWORK (3 Column format)
     cardBox: {
-        width: '48%',
+        width: '31.5%',
         backgroundColor: 'rgba(255, 255, 255, 0.035)',
-        borderRadius: 20,
-        padding: 16,
-        marginBottom: 16,
+        borderRadius: 16,
+        padding: 12,
+        marginBottom: 12,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255, 0.05)',
         borderTopColor: 'rgba(255,255,255, 0.08)',
@@ -261,14 +261,14 @@ const styles = StyleSheet.create({
         marginBottom: 16
     },
     iconWrap: {
-        width: 30, height: 30,
+        width: 28, height: 28,
         borderRadius: 8,
         justifyContent: 'center', alignItems: 'center',
-        marginRight: 10
+        marginRight: 6
     },
     cardTitle: {
         flex: 1,
-        fontSize: 13,
+        fontSize: 11,
         fontWeight: '800',
         color: '#F8FAFC'
     },
@@ -276,9 +276,9 @@ const styles = StyleSheet.create({
         marginBottom: 2
     },
     cardValue: {
-        fontSize: 18,
-        fontWeight: '800',
-        lineHeight: 24,
+        fontSize: 14,
+        fontWeight: '900',
+        lineHeight: 20,
     },
     cardSubTitle: {
         fontSize: 10,
@@ -287,9 +287,9 @@ const styles = StyleSheet.create({
     },
     bgIconPhantom: {
         position: 'absolute',
-        bottom: 5,
-        right: 0,
+        bottom: 2,
+        right: -2,
         opacity: 0.15,
-        transform: [{ scale: 1.1 }]
+        transform: [{ scale: 1 }]
     }
 });
