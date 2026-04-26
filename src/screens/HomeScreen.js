@@ -114,11 +114,11 @@ export default function HomeScreen({ navigation }) {
                             {group.items.map(item => {
                                 const accent = MENU_COLORS[item.normalizedId] || '#00FF9D';
                                 return (
-                                    <TouchableOpacity key={item.id} style={styles.btn} onPress={() => navigation.navigate(item.screen)} activeOpacity={0.7}>
+                                    <TouchableOpacity key={item.id} style={styles.card} onPress={() => navigation.navigate(item.screen)} activeOpacity={0.7}>
                                         <View style={styles.iconCircle}>
-                                            <Ionicons name={item.icon} size={30} color={accent} />
+                                            <Ionicons name={item.icon} size={28} color={accent} />
                                         </View>
-                                        <Text style={styles.btnLab} numberOfLines={1}>{item.label}</Text>
+                                        <Text style={styles.cardLabel} numberOfLines={1}>{item.label}</Text>
                                     </TouchableOpacity>
                                 )
                             })}
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     sec: { marginTop: 35 },
     secTitle: { fontSize: 12, fontWeight: '900', color: '#FFF', letterSpacing: 2, marginBottom: 18, opacity: 0.6 },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 15 },
-    btn: { width: '30%', alignItems: 'center', marginBottom: 20 },
+    card: { width: '30%', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
     iconCircle: { 
         width: 65, 
         height: 65, 
@@ -158,9 +158,9 @@ const styles = StyleSheet.create({
         alignItems: 'center', 
         marginBottom: 10,
         shadowColor: '#00FF9D',
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
         elevation: 10
     },
-    btnLab: { color: '#FFF', fontSize: 11, fontWeight: '800', textAlign: 'center' }
+    cardLabel: { color: '#FFF', fontSize: 11, fontWeight: '800', textAlign: 'center', letterSpacing: 0.5 }
 });
