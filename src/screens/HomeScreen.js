@@ -2,39 +2,35 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar as RNStatusBar, Image, Dimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../theme/ThemeContext';
 import { getDashboardStats } from '../database/database';
 import FundoAnimado from '../components/FundoAnimado';
 
 const { width } = Dimensions.get('window');
 
-const MENU_COLORS = {
-    caderno: '#00FF9D', colheita: '#34D399', vendas: '#FBBF24', estoque: '#3B82F6',
-    monitoramento: '#A855F7', adubacao: '#06B6D4', compras: '#F87171', encomendas: '#FB923C',
-    plantio: '#10B981', custos: '#EF4444', descarte: '#94A3B8', frota: '#6366F1',
-    relatorios: '#EC4899', cadastros: '#14B8A6', clientes: '#F472B6', areas: '#2DD4BF', sync: '#00FF9D'
-};
-
-const MAIN_MENU = [
-    { id: "caderno", label: "Caderno", icon: "book-outline", screen: "CadernoCampo" },
-    { id: "colheita", label: "Colheita", icon: "leaf-outline", screen: "Colheita" },
-    { id: "monitoramento", label: "Monitorar", icon: "camera-outline", screen: "Monitoramento" },
-    { id: "adubacao", label: "Adubação", icon: "flask-outline", screen: "AdubacaoList" },
-    { id: "plantio", label: "Plantio", icon: "nutrition-outline", screen: "Plantio" },
-    { id: "descarte", label: "Descarte", icon: "trash-outline", screen: "Descarte" },
-    { id: "vendas", label: "Vendas", icon: "cash-outline", screen: "Vendas" },
-    { id: "compras", label: "Compras", icon: "cart-outline", screen: "Compras" },
-    { id: "encomendas", label: "Entregas", icon: "clipboard-outline", screen: "Encomendas" },
-    { id: "estoque", label: "Estoque", icon: "cube-outline", screen: "Estoque" },
-    { id: "custos", label: "Custos", icon: "calculator-outline", screen: "Custos" },
-    { id: "frota", label: "Frota", icon: "car-sport-outline", screen: "Frota" },
-    { id: "relatorios", label: "Relatórios", icon: "pie-chart-outline", screen: "Relatorios" },
-    { id: "cadastros", label: "Cadastros", icon: "create-outline", screen: "Cadastro" },
-    { id: "areas", label: "Fazendas", icon: "map-outline", screen: "Culturas" },
-    { id: "sync", label: "Sincronia", icon: "cloud-upload-outline", screen: "Sync" }
+const MENU_DATA = [
+    { id: "caderno", label: "Caderno", icon: "book-outline", color: "#10B981", cat: 'PRODUÇÃO' },
+    { id: "colheita", label: "Colheita", icon: "leaf-outline", color: "#34D399", cat: 'PRODUÇÃO' },
+    { id: "monitoramento", label: "Monitorar", icon: "camera-outline", color: "#8B5CF6", cat: 'PRODUÇÃO' },
+    { id: "adubacao", label: "Adubação", icon: "flask-outline", color: "#3B82F6", cat: 'PRODUÇÃO' },
+    { id: "plantio", label: "Plantio", icon: "nutrition-outline", color: "#F59E0B", cat: 'PRODUÇÃO' },
+    { id: "descarte", label: "Descarte", icon: "trash-outline", color: "#EF4444", cat: 'PRODUÇÃO' },
+    { id: "cadastros", label: "Cadastros", icon: "create-outline", color: "#10B981", cat: 'PRODUÇÃO' },
+    { id: "vendas", label: "Vendas", icon: "cash-outline", color: "#FBBF24", cat: 'COMERCIAL' },
+    { id: "compras", label: "Compras", icon: "cart-outline", color: "#3B82F6", cat: 'COMERCIAL' },
+    { id: "encomendas", label: "Encomendas", icon: "clipboard-outline", color: "#F472B6", cat: 'COMERCIAL' },
+    { id: "estoque", label: "Estoque", icon: "cube-outline", color: "#6366F1", cat: 'CONTROLE' },
+    { id: "custos", label: "Custos", icon: "calculator-outline", color: "#EF4444", cat: 'CONTROLE' },
+    { id: "frota", label: "Frota", icon: "car-sport-outline", color: "#3B82F6", cat: 'CONTROLE' },
+    { id: "relatorios", label: "Relatórios", icon: "pie-chart-outline", color: "#A855F7", cat: 'CONTROLE' },
+    { id: "clientes", label: "Clientes", icon: "people-outline", color: "#F472B6", cat: 'SISTEMA' },
+    { id: "areas", label: "Áreas", icon: "map-outline", color: "#10B981", cat: 'SISTEMA' },
+    { id: "sync", label: "Sync", icon: "cloud-upload-outline", color: "#14B8A6", cat: 'SISTEMA' }
 ];
 
 export default function HomeScreen({ navigation }) {
+    const { colors, isDarkMode, toggleTheme } = useTheme();
     const [stats, setStats] = useState({ vendasHoje: 0, colheitaHoje: 0 });
 
     useFocusEffect(useCallback(() => {
@@ -42,16 +38,16 @@ export default function HomeScreen({ navigation }) {
         fetch();
     }, []));
 
-    const StatCard = ({ icon, label, val, sub, color = '#00FF9D' }) => (
-        <View style={styles.statCard}>
-            <View style={styles.statCardHeader}>
-                <View style={[styles.statIconBox, { backgroundColor: color + '15' }]}>
-                    <Ionicons name={icon} size={18} color={color} />
-                </View>
-                <Text style={styles.statLabel}>{label}</Text>
-            </View>
-            <Text style={styles.statVal}>{val}</Text>
-            <Text style={styles.statSub}>{sub}</Text>
+    const renderGrid = (category) => (
+        <View style={styles.grid}>
+            {MENU_DATA.filter(item => item.cat === category).map(item => (
+                <TouchableOpacity key={item.id} style={styles.item} onPress={() => navigation.navigate(item.id === 'sync' ? 'Sync' : item.id === 'cadastros' ? 'Cadastro' : item.id)}>
+                    <View style={[styles.ball, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : '#FFF' }]}>
+                        <Ionicons name={item.icon} size={28} color={item.color} />
+                    </View>
+                    <Text style={[styles.label, { color: isDarkMode ? '#FFF' : '#374151' }]}>{item.label}</Text>
+                </TouchableOpacity>
+            ))}
         </View>
     );
 
@@ -59,99 +55,142 @@ export default function HomeScreen({ navigation }) {
         <FundoAnimado>
             <RNStatusBar barStyle="light-content" translucent />
             
-            {/* TOP BAR LUXO */}
+            {/* HEADER DESIGN TOP */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={styles.roundBtn}>
-                    <Ionicons name="person-circle-outline" size={30} color="#FFF" />
+                <TouchableOpacity style={styles.headerBtn} onPress={() => toggleTheme()}>
+                    <Ionicons name={isDarkMode ? "sunny" : "person-circle"} size={30} color="#FFF" />
                 </TouchableOpacity>
-                <View style={styles.logoBox}>
-                    <Image source={require('../../assets/logo.png')} style={styles.megaLogo} />
-                    <Text style={styles.brandTitle}>AgroGB</Text>
+                <View style={styles.branding}>
+                    <Image source={require('../../assets/logo.png')} style={styles.logo} />
+                    <View>
+                        <Text style={styles.brand}>AgroGB</Text>
+                        <Text style={styles.tagline}>Inteligência no campo</Text>
+                    </View>
                 </View>
-                <TouchableOpacity onPress={() => navigation.navigate('Sync')} style={styles.roundBtn}>
-                    <Ionicons name="ellipsis-vertical" size={24} color="#FFF" />
+                <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate('Sync')}>
+                    <Ionicons name="notifications-outline" size={26} color="#FFF" />
                 </TouchableOpacity>
             </View>
-            <Text style={styles.slogan}>Inteligência no campo</Text>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
                 
-                {/* 🛰 DASHBOARD HORIZONTAL PRO */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dashScroll}>
-                    <StatCard icon="sunny" label="Previsão" val="25°C" sub="Sol entre nuvens" />
-                    <StatCard icon="analytics" label="Plantio" val="10.62 ha" sub="Safra 2026/01" color="#34D399" />
-                    <StatCard icon="wallet" label="Financeiro" val={`R$ ${stats.vendasHoje || '0'}`} sub="Vendas de hoje" color="#FBBF24" />
-                    <StatCard icon="alert-circle" label="Alertas" val="3 Ativos" sub="Ver pendências" color="#EF4444" />
-                </ScrollView>
-
-                <View style={styles.menuContainer}>
-                    <View style={styles.grid}>
-                        {MAIN_MENU.map((item) => {
-                            const accent = MENU_COLORS[item.id] || '#00FF9D';
-                            return (
-                                <TouchableOpacity key={item.id} style={styles.menuBtn} onPress={() => navigation.navigate(item.screen)} activeOpacity={0.7}>
-                                    <View style={styles.iconSquare}>
-                                        <Ionicons name={item.icon} size={28} color={accent} />
-                                    </View>
-                                    <Text style={styles.menuLabel}>{item.label}</Text>
-                                </TouchableOpacity>
-                            );
-                        })}
+                {/* FLOATING GLASS DASHBOARD */}
+                <View style={[styles.dashCard, { backgroundColor: '#FFF' }]}>
+                    <View style={styles.dashItem}>
+                        <Ionicons name="sunny" size={24} color="#FBBF24" />
+                        <View style={styles.dashTextCol}>
+                            <Text style={styles.dashLabel}>Clima</Text>
+                            <Text style={styles.dashValue}>25°C</Text>
+                            <Text style={styles.dashSub}>Ensolarado</Text>
+                        </View>
+                    </View>
+                    <View style={styles.vertLine} />
+                    <View style={styles.dashItem}>
+                        <Ionicons name="leaf" size={24} color="#10B981" />
+                        <View style={styles.dashTextCol}>
+                            <Text style={styles.dashLabel}>Colheita</Text>
+                            <Text style={styles.dashValue}>{stats.colheitaHoje || 0} kg</Text>
+                            <Text style={styles.dashSub}>Total colhido</Text>
+                        </View>
+                    </View>
+                    <View style={styles.vertLine} />
+                    <View style={styles.dashItem}>
+                        <Ionicons name="cash" size={24} color="#10B981" />
+                        <View style={styles.dashTextCol}>
+                            <Text style={styles.dashLabel}>Vendas</Text>
+                            <Text style={styles.dashValue}>R$ {stats.vendasHoje || 0}</Text>
+                            <Text style={styles.dashSub}>Faturamento</Text>
+                        </View>
                     </View>
                 </View>
 
-                <View style={styles.footer}>
-                    <Text style={styles.footerTxt}>Versão Ouro • 2026.04</Text>
-                </View>
+                {['PRODUÇÃO', 'COMERCIAL', 'CONTROLE', 'SISTEMA'].map(cat => (
+                    <View key={cat} style={styles.section}>
+                        <View style={styles.secHeader}>
+                            <Text style={[styles.secTitle, { color: isDarkMode ? '#10B981' : '#166534' }]}>{cat}</Text>
+                            <TouchableOpacity><Text style={styles.verTudo}>Ver tudo {'>'}</Text></TouchableOpacity>
+                        </View>
+                        {renderGrid(cat)}
+                    </View>
+                ))}
             </ScrollView>
+
+            {/* BOTTOM NAV BAR (ESTILO IPHONE) */}
+            <View style={[styles.bottomNav, { backgroundColor: isDarkMode ? '#111' : '#FFF' }]}>
+                <View style={styles.navItem}>
+                    <Ionicons name="home" size={24} color="#10B981" />
+                    <Text style={styles.navTextActive}>Início</Text>
+                </View>
+                <View style={styles.navItem}>
+                    <Ionicons name="leaf-outline" size={24} color="#9CA3AF" />
+                    <Text style={styles.navText}>Atalhos</Text>
+                </View>
+                <View style={styles.navItem}>
+                    <Ionicons name="settings-outline" size={24} color="#9CA3AF" />
+                    <Text style={styles.navText}>Configs</Text>
+                </View>
+            </View>
         </FundoAnimado>
     );
 }
 
 const styles = StyleSheet.create({
-    scroll: { paddingBottom: 100 },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 40, marginBottom: 5 },
-    roundBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.06)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-    logoBox: { flexDirection: 'row', alignItems: 'center' },
-    megaLogo: { width: 100, height: 100, marginRight: 10 },
-    brandTitle: { color: '#FFF', fontSize: 28, fontWeight: '900', letterSpacing: -1 },
-    slogan: { textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: '800', marginTop: -20, marginBottom: 20 },
+    scroll: { padding: 20, paddingTop: 10, paddingBottom: 100 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 50, marginBottom: 20 },
+    headerBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
+    branding: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    logo: { width: 55, height: 55 },
+    brand: { color: '#FFF', fontSize: 24, fontWeight: '900' },
+    tagline: { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: '500' },
 
-    dashScroll: { paddingHorizontal: 20, gap: 15, marginBottom: 35 },
-    statCard: { 
-        width: 160, 
-        backgroundColor: 'rgba(255,255,255,0.06)', 
+    dashCard: { 
+        flexDirection: 'row', 
+        padding: 20, 
         borderRadius: 25, 
-        padding: 18, 
-        borderWidth: 1, 
-        borderColor: 'rgba(255,255,255,0.1)',
+        justifyContent: 'space-between',
         shadowColor: '#000',
-        shadowOpacity: 0.2,
-        shadowRadius: 10
+        shadowOpacity: 0.1,
+        shadowRadius: 15,
+        elevation: 10,
+        marginBottom: 30
     },
-    statCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-    statIconBox: { width: 32, height: 32, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-    statLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
-    statVal: { color: '#FFF', fontSize: 18, fontWeight: '900' },
-    statSub: { color: 'rgba(255,255,255,0.3)', fontSize: 9, marginTop: 2, fontWeight: 'bold' },
+    dashItem: { flex: 1, alignItems: 'center' },
+    dashTextCol: { alignItems: 'center', marginTop: 8 },
+    dashLabel: { fontSize: 9, fontWeight: 'bold', color: '#059669' },
+    dashValue: { fontSize: 18, fontWeight: '900', color: '#1F2937', marginVertical: 2 },
+    dashSub: { fontSize: 8, color: '#9CA3AF', fontWeight: 'bold' },
+    vertLine: { width: 1, height: '80%', backgroundColor: '#F3F4F6' },
 
-    menuContainer: { paddingHorizontal: 20 },
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-    menuBtn: { width: '31%', alignItems: 'center', marginBottom: 25 },
-    iconSquare: { 
-        width: 65, 
-        height: 65, 
-        borderRadius: 22, 
-        backgroundColor: '#FFF', 
+    section: { marginBottom: 30 },
+    secHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+    secTitle: { fontSize: 14, fontWeight: '900', letterSpacing: 1 },
+    verTudo: { fontSize: 10, color: '#10B981', fontWeight: 'bold' },
+
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    item: { width: '22%', alignItems: 'center', marginBottom: 20 },
+    ball: { 
+        width: 68, 
+        height: 68, 
+        borderRadius: 20, 
         justifyContent: 'center', 
         alignItems: 'center',
-        shadowColor: '#00FF9D',
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
-        elevation: 10
+        shadowColor: '#000',
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+        elevation: 3
     },
-    menuLabel: { color: '#FFF', fontSize: 11, fontWeight: '800', marginTop: 10, textAlign: 'center' },
+    label: { fontSize: 10, fontWeight: '800', marginTop: 8, textAlign: 'center' },
 
-    footer: { marginTop: 40, alignItems: 'center' },
-    footerTxt: { color: 'rgba(255,255,255,0.1)', fontSize: 10, fontWeight: 'bold' }
+    bottomNav: { 
+        flexDirection: 'row', 
+        height: 85, 
+        paddingBottom: 25, 
+        borderTopWidth: 1, 
+        borderColor: 'rgba(0,0,0,0.05)', 
+        justifyContent: 'space-around', 
+        alignItems: 'center' 
+    },
+    navItem: { alignItems: 'center' },
+    navText: { fontSize: 10, color: '#9CA3AF', marginTop: 4, fontWeight: '700' },
+    navTextActive: { fontSize: 10, color: '#10B981', marginTop: 4, fontWeight: '900' }
 });

@@ -8,75 +8,78 @@ import Animated, {
   withTiming,
   Easing,
 } from "react-native-reanimated";
+import { useTheme } from "../theme/ThemeContext";
 
 const { width, height } = Dimensions.get("window");
 
 export default function FundoAnimado({ children }) {
-  const glow1 = useSharedValue(0.4);
-  const glow2 = useSharedValue(0.2);
+  const { isDarkMode } = useTheme();
+  const intensity = useSharedValue(0.5);
 
   useEffect(() => {
-    glow1.value = withRepeat(withTiming(0.8, { duration: 6000, easing: Easing.inOut(Easing.ease) }), -1, true);
-    glow2.value = withRepeat(withTiming(0.5, { duration: 9000, easing: Easing.inOut(Easing.ease) }), -1, true);
+    intensity.value = withRepeat(
+      withTiming(0.8, { duration: 8000, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true
+    );
   }, []);
 
-  const animatedGlow1 = useAnimatedStyle(() => ({ opacity: glow1.value }));
-  const animatedGlow2 = useAnimatedStyle(() => ({ opacity: glow2.value }));
+  const animatedGlow = useAnimatedStyle(() => ({
+    opacity: intensity.value,
+  }));
 
+  // TEMA CLARO (Verde suave no topo)
+  if (!isDarkMode) {
+    return (
+      <View style={styles.containerLight}>
+        <LinearGradient
+          colors={["#0D5C3E", "#15803D", "#F8FAF8"]} // Degradê verde para branco
+          style={styles.headerGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 0.6 }}
+        />
+        {children}
+      </View>
+    );
+  }
+
+  // TEMA ESCURO (Dark Emerald Deep)
   return (
-    <View style={styles.container}>
-      {/* FUNDO BASE DARK (Como na imagem) */}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: '#111312' }]} />
-
-      {/* GRANDE EXPLOSÃO DE LUZ ESMERALDA NO CANTO SUPERIOR DIREITO */}
-      <Animated.View style={[styles.glowTop, animatedGlow1]}>
+    <View style={styles.containerDark}>
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: "#0D0D0D" }]} />
+      <Animated.View style={[styles.glow, animatedGlow]}>
         <LinearGradient
-          colors={['rgba(0, 255, 157, 0.35)', 'transparent']}
-          style={styles.full}
+          colors={["rgba(0, 255, 157, 0.15)", "transparent"]}
+          style={{ flex: 1 }}
         />
       </Animated.View>
-
-      {/* LUZ ESMERALDA NO CANTO INFERIOR ESQUERDO */}
-      <Animated.View style={[styles.glowBottom, animatedGlow2]}>
-        <LinearGradient
-          colors={['rgba(0, 255, 157, 0.2)', 'transparent']}
-          style={styles.full}
-        />
-      </Animated.View>
-
-      {/* RAIO DE LUZ DIAGONAL QUE CRUZA A TELA */}
-      <LinearGradient
-        colors={['transparent', 'rgba(0, 255, 157, 0.05)', 'transparent']}
-        start={{x: 0, y: 0}}
-        end={{x: 1, y: 1}}
-        style={StyleSheet.absoluteFill}
-      />
-
       {children}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  containerLight: {
     flex: 1,
-    backgroundColor: '#111312'
+    backgroundColor: "#F8FAF8",
   },
-  full: { flex: 1 },
-  glowTop: {
-    position: 'absolute',
-    top: -height * 0.3,
-    right: -width * 0.5,
-    width: width * 1.8,
-    height: width * 1.8,
-    borderRadius: width * 0.9,
+  containerDark: {
+    flex: 1,
+    backgroundColor: "#0D0D0D",
   },
-  glowBottom: {
-    position: 'absolute',
-    bottom: -height * 0.2,
-    left: -width * 0.4,
-    width: width * 1.6,
-    height: width * 1.6,
-    borderRadius: width * 0.8,
-  }
+  headerGradient: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: height * 0.45,
+  },
+  glow: {
+    position: "absolute",
+    top: -height * 0.2,
+    right: -width * 0.2,
+    width: width * 1.5,
+    height: width * 1.5,
+    borderRadius: width * 0.75,
+  },
 });
