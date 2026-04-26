@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar as RNStatusBar, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar as RNStatusBar, Dimensions, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,166 +8,146 @@ import { getDashboardStats } from '../database/database';
 
 const { width } = Dimensions.get('window');
 
-const SECTIONS = [
-    {
-        title: 'PRODUÇÃO',
-        items: [
-            { id: 'caderno', label: 'Caderno', icon: 'book', color: '#1B5E20' },
-            { id: 'colheita', label: 'Colheita', icon: 'leaf', color: '#1B5E20' },
-            { id: 'monitorar', label: 'Monitorar', icon: 'camera', color: '#1B5E20' },
-            { id: 'adubacao', label: 'Adubação', icon: 'flask', color: '#1B5E20' },
-            { id: 'plantio', label: 'Plantio', icon: 'sprout', color: '#1B5E20' },
-            { id: 'descarte', label: 'Descarte', icon: 'trash-can', color: '#1B5E20' },
-            { id: 'cadastros', label: 'Cadastros', icon: 'clipboard-text-outline', color: '#1B5E20' },
-        ]
-    },
-    {
-        title: 'COMERCIAL',
-        items: [
-            { id: 'vendas', label: 'Vendas', icon: 'cash', color: '#1B5E20' },
-            { id: 'compras', label: 'Compras', icon: 'cart', color: '#1B5E20' },
-            { id: 'encomendas', label: 'Encomendas', icon: 'clipboard-list', color: '#1B5E20' },
-        ]
-    },
-    {
-        title: 'CONTROLE',
-        items: [
-            { id: 'funcionarios', label: 'Funcionários', icon: 'account-group', color: '#1B5E20' },
-            { id: 'maquinas', label: 'Máquinas', icon: 'tractor', color: '#1B5E20' },
-            { id: 'relatorios', label: 'Relatórios', icon: 'chart-pie', color: '#1B5E20' },
-        ]
-    }
+const MENU_DATA = [
+    { title: 'PRODUÇÃO', items: [
+        { id: 'caderno', label: 'Caderno', icon: 'book-open-variant', color: '#2D6A4F' },
+        { id: 'colheita', label: 'Colheita', icon: 'leaf', color: '#2D6A4F' },
+        { id: 'monitorar', label: 'Monitorar', icon: 'camera', color: '#2D6A4F' },
+        { id: 'adubacao', label: 'Adubação', icon: 'flask-outline', color: '#2D6A4F' },
+        { id: 'plantio', label: 'Plantio', icon: 'sprout', color: '#2D6A4F' },
+        { id: 'descarte', label: 'Descarte', icon: 'trash-can-outline', color: '#2D6A4F' },
+        { id: 'cadastros', label: 'Cadastros', icon: 'clipboard-edit-outline', color: '#2D6A4F' },
+    ]},
+    { title: 'COMERCIAL', items: [
+        { id: 'vendas', label: 'Vendas', icon: 'cash-multiple', color: '#2D6A4F' },
+        { id: 'compras', label: 'Compras', icon: 'cart-outline', color: '#2D6A4F' },
+        { id: 'encomendas', label: 'Encomendas', icon: 'clipboard-text-clock-outline', color: '#2D6A4F' },
+    ]},
+    { title: 'CONTROLE', items: [
+        { id: 'funcionarios', label: 'Funcionários', icon: 'account-group', color: '#2D6A4F' },
+        { id: 'maquinas', label: 'Máquinas', icon: 'tractor', color: '#2D6A4F' },
+        { id: 'relatorios', label: 'Relatórios', icon: 'chart-pie', color: '#2D6A4F' },
+    ]}
 ];
 
 export default function HomeScreen({ navigation }) {
-    const { isDarkMode } = useTheme();
     const [stats, setStats] = useState({ vendasHoje: 0, colheitaHoje: 0 });
 
     useFocusEffect(useCallback(() => {
-        const fetchStats = async () => {
-            try {
-                const d = await getDashboardStats();
-                if (d) setStats(d);
-            } catch (e) {}
-        };
-        fetchStats();
+        const fetch = async () => { try { const d = await getDashboardStats(); if (d) setStats(d); } catch (e) {} };
+        fetch();
     }, []));
-
-    const MenuItem = ({ icon, label, id }) => (
-        <TouchableOpacity 
-            style={styles.card} 
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate(id === 'cadastros' ? 'Cadastro' : id === 'sync' ? 'Sync' : id)}
-        >
-            <View style={styles.iconWrapper}>
-                <MaterialCommunityIcons name={icon} size={24} color="#1B5E20" />
-            </View>
-            <Text style={styles.label}>{label}</Text>
-        </TouchableOpacity>
-    );
 
     return (
         <View style={styles.container}>
             <RNStatusBar barStyle="light-content" translucent />
             
-            {/* HEADER COM DEGRADÊ VERDE (FIDELIDADE MÁXIMA) */}
+            {/* HEADER CÊNICO (DEGRADÊ SUAVE IGUAL MOCKUP) */}
             <LinearGradient
-                colors={['#0F3D2E', '#1B5E20']}
-                style={styles.header}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
+                colors={['#0F3D2E', '#1B5E20', '#F5F6F7']} // Fundo que vaza para o branco
+                style={styles.headerGradient}
+                start={{ x: 0.5, y: 0 }}
+                end={{ x: 0.5, y: 1 }}
             >
                 <View style={styles.headerTop}>
-                    <TouchableOpacity style={styles.iconCircle}>
-                        <Ionicons name="person" size={20} color="#FFF" />
+                    <TouchableOpacity style={styles.topBtn}>
+                        <Ionicons name="person-circle" size={32} color="#FFF" />
                     </TouchableOpacity>
                     
-                    <View style={styles.brandingBox}>
+                    <View style={styles.brandingCenter}>
                         <View style={styles.logoRow}>
-                            <Image source={require('../../assets/logo.png')} style={styles.miniLogo} />
+                            <Image source={require('../../assets/logo.png')} style={styles.logoImg} />
                             <Text style={styles.brandTitle}>
                                 <Text style={{color: '#FFF'}}>Agro</Text>
                                 <Text style={{color: '#81C784'}}>GB</Text>
                             </Text>
                         </View>
-                        <Text style={styles.brandSub}>Inteligência no campo</Text>
+                        <Text style={styles.brandSubtitle}>Inteligência no campo</Text>
                     </View>
 
-                    <TouchableOpacity style={styles.iconCircle}>
-                        <Ionicons name="notifications" size={20} color="#FFF" />
-                        <View style={styles.notifDot} />
+                    <TouchableOpacity style={styles.topBtn}>
+                        <View style={styles.notifBadge} />
+                        <Ionicons name="notifications" size={28} color="#FFF" />
                     </TouchableOpacity>
                 </View>
             </LinearGradient>
 
-            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 
-                {/* CARD DE RESUMO (ESTILO FLOAT PRECISO) */}
-                <View style={styles.dashboardCard}>
-                    <View style={styles.dashItem}>
-                        <Ionicons name="sunny" size={26} color="#FFC107" />
-                        <View style={styles.dashTexts}>
-                            <Text style={styles.dashTitle}>Clima</Text>
-                            <Text style={styles.dashValue}>25°C</Text>
-                            <Text style={styles.dashMeta}>Ensolarado</Text>
+                {/* DASHBOARD CARD (ESTILO PREMIUM COM CORES REAIS) */}
+                <View style={styles.dashCard}>
+                    <View style={styles.dashSec}>
+                        <Ionicons name="sunny" size={30} color="#FDC010" />
+                        <View style={styles.dashTxts}>
+                            <Text style={styles.dashLabel}>Clima</Text>
+                            <Text style={styles.dashVal}>25°C</Text>
+                            <Text style={styles.dashSub}>Ensolarado</Text>
                         </View>
                     </View>
                     
-                    <View style={styles.vDivider} />
+                    <View style={styles.dashDivider} />
 
-                    <View style={styles.dashItem}>
-                        <MaterialCommunityIcons name="leaf" size={26} color="#4CAF50" />
-                        <View style={styles.dashTexts}>
-                            <Text style={styles.dashTitle}>Colheita</Text>
-                            <Text style={styles.dashValue}>{stats.colheitaHoje || 0} kg</Text>
-                            <Text style={styles.dashMeta}>Total colhido</Text>
+                    <View style={styles.dashSec}>
+                        <MaterialCommunityIcons name="leaf" size={28} color="#4CAF50" />
+                        <View style={styles.dashTxts}>
+                            <Text style={styles.dashLabel}>Colheita</Text>
+                            <Text style={styles.dashVal}>{stats.colheitaHoje || 0} kg</Text>
+                            <Text style={styles.dashSub}>Total colhido</Text>
                         </View>
                     </View>
 
-                    <View style={styles.vDivider} />
+                    <View style={styles.dashDivider} />
 
-                    <View style={styles.dashItem}>
-                        <MaterialCommunityIcons name="currency-usd" size={26} color="#2E7D32" />
-                        <View style={styles.dashTexts}>
-                            <Text style={styles.dashTitle}>Vendas</Text>
-                            <Text style={styles.dashValue}>R$ {stats.vendasHoje?.toFixed(2) || '0,00'}</Text>
-                            <Text style={styles.dashMeta}>Faturamento</Text>
+                    <View style={styles.dashSec}>
+                        <View style={styles.cashCircle}>
+                            <MaterialCommunityIcons name="currency-usd" size={22} color="#FFF" />
+                        </View>
+                        <View style={styles.dashTxts}>
+                            <Text style={styles.dashLabel}>Vendas</Text>
+                            <Text style={styles.dashVal}>R$ {stats.vendasHoje?.toFixed(2) || '0,00'}</Text>
+                            <Text style={styles.dashSub}>Faturamento</Text>
                         </View>
                     </View>
                 </View>
 
-                {SECTIONS.map((sec, idx) => (
-                    <View key={idx} style={styles.section}>
-                        <View style={styles.secHeader}>
-                            <Text style={styles.secTitle}>{sec.title}</Text>
-                            <TouchableOpacity style={styles.verTudoBox}>
+                {MENU_DATA.map((section, idx) => (
+                    <View key={idx} style={styles.sectionArea}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>{section.title}</Text>
+                            <TouchableOpacity style={styles.verTudo}>
                                 <Text style={styles.verTudoText}>Ver tudo</Text>
                                 <Ionicons name="chevron-forward" size={14} color="#1B5E20" />
                             </TouchableOpacity>
                         </View>
-                        <View style={styles.grid}>
-                            {sec.items.map((item, i) => (
-                                <MenuItem key={i} {...item} />
+                        <View style={styles.menuGrid}>
+                            {section.items.map((item, i) => (
+                                <TouchableOpacity key={i} style={styles.menuCard} activeOpacity={0.7} onPress={() => navigation.navigate(item.id === 'cadastros' ? 'Cadastro' : item.id)}>
+                                    <View style={styles.iconBalloon}>
+                                        <MaterialCommunityIcons name={item.icon} size={28} color="#1B5E20" />
+                                    </View>
+                                    <Text style={styles.menuLabelText}>{item.label}</Text>
+                                </TouchableOpacity>
                             ))}
                         </View>
                     </View>
                 ))}
             </ScrollView>
 
-            {/* BOTTOM NAV BAR (ESTILO IPHONE - PARIDADE 100%) */}
-            <View style={styles.bottomNav}>
-                <TouchableOpacity style={styles.navItem}>
+            {/* TAB BAR IPHONE (FIDELIDADE MÁXIMA) */}
+            <View style={styles.fixedBottomNav}>
+                <TouchableOpacity style={styles.tabBtn}>
                     <Ionicons name="home" size={24} color="#1B5E20" />
-                    <Text style={[styles.navText, {color: '#1B5E20'}]}>Início</Text>
+                    <Text style={[styles.tabLabel, {color: '#1B5E20'}]}>Início</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.navItem}>
-                    <Ionicons name="leaf-outline" size={24} color="#9E9E9E" />
-                    <Text style={styles.navText}>Atalhos</Text>
+                <TouchableOpacity style={styles.tabBtn}>
+                    <Ionicons name="leaf-outline" size={24} color="#90A4AE" />
+                    <Text style={styles.tabLabel}>Atalhos</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.navItem}>
-                    <Ionicons name="settings-outline" size={24} color="#9E9E9E" />
-                    <Text style={styles.navText}>Configurações</Text>
+                <TouchableOpacity style={styles.tabBtn}>
+                    <Ionicons name="settings-outline" size={24} color="#90A4AE" />
+                    <Text style={styles.tabLabel}>Configurações</Text>
                 </TouchableOpacity>
+                {Platform.OS === 'ios' && <View style={styles.iosIndicator} />}
             </View>
         </View>
     );
@@ -175,105 +155,93 @@ export default function HomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F5F6F7' },
-    header: {
-        paddingTop: 55,
-        paddingBottom: 55,
+    headerGradient: {
+        height: 220,
+        paddingTop: 50,
         paddingHorizontal: 20,
-        borderBottomLeftRadius: 30,
-        borderBottomRightRadius: 30,
     },
     headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    iconCircle: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: 'rgba(255,255,255,0.15)',
-        justifyContent: 'center',
-        alignItems: 'center'
-    },
-    brandingBox: { alignItems: 'center' },
+    topBtn: { width: 45, height: 45, borderRadius: 22.5, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
+    brandingCenter: { alignItems: 'center' },
     logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    miniLogo: { width: 38, height: 38, borderRadius: 12 },
-    brandTitle: { fontSize: 26, fontWeight: 'bold' },
-    brandSub: { color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: -2 },
-    notifDot: { 
-        position: 'absolute', 
-        top: 10, 
-        right: 12, 
-        width: 10, 
-        height: 10, 
-        borderRadius: 5, 
-        backgroundColor: '#4CAF50', 
-        borderWidth: 2, 
-        borderColor: '#0F3D2E' 
-    },
+    logoImg: { width: 45, height: 45, borderRadius: 12 },
+    brandTitle: { fontSize: 26, fontWeight: 'bold', letterSpacing: -0.5 },
+    brandSubtitle: { color: 'rgba(255,255,255,0.8)', fontSize: 11, marginTop: -2, fontWeight: '500' },
+    notifBadge: { position: 'absolute', top: 12, right: 12, width: 8, height: 8, borderRadius: 4, backgroundColor: '#4CAF50', zIndex: 1, borderWidth: 1.5, borderColor: '#1B5E20' },
 
-    scroll: { paddingHorizontal: 16, paddingBottom: 110 },
+    scrollContent: { paddingHorizontal: 16, paddingBottom: 110 },
     
-    dashboardCard: {
+    dashCard: {
         backgroundColor: '#FFF',
-        borderRadius: 22,
-        padding: 18,
+        borderRadius: 24,
+        padding: 20,
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: -40,
+        marginTop: -45, // Efeito flutuante profundo
         shadowColor: '#000',
         shadowOpacity: 0.08,
-        shadowRadius: 15,
-        elevation: 8,
-        marginBottom: 15
+        shadowRadius: 20,
+        shadowOffset: { width: 0, height: 10 },
+        elevation: 10,
+        marginBottom: 20
     },
-    dashItem: { flex: 1, alignItems: 'center' },
-    dashTexts: { alignItems: 'center', marginTop: 8 },
-    dashTitle: { fontSize: 10, color: '#1B5E20', fontWeight: '900' },
-    dashValue: { fontSize: 16, fontWeight: '900', color: '#333' },
-    dashMeta: { fontSize: 8, color: '#AAA', fontWeight: 'bold' },
-    vDivider: { width: 1, backgroundColor: '#F0F0F0', height: 40, alignSelf: 'center' },
+    dashSec: { flex: 1, alignItems: 'center' },
+    dashTxts: { alignItems: 'center', marginTop: 10 },
+    dashLabel: { fontSize: 10, color: '#1B5E20', fontWeight: 'bold', marginBottom: 2 },
+    dashVal: { fontSize: 16, fontWeight: 'bold', color: '#263238' },
+    dashSub: { fontSize: 9, color: '#90A4AE', fontWeight: '600' },
+    dashDivider: { width: 1, backgroundColor: '#ECEFF1', height: 40, alignSelf: 'center' },
+    cashCircle: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#2E7D32', justifyContent: 'center', alignItems: 'center' },
 
-    section: { marginTop: 25 },
-    secHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
-    secTitle: { fontSize: 15, fontWeight: 'bold', color: '#1B5E20', letterSpacing: 0.5 },
-    verTudoBox: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    sectionArea: { marginTop: 25 },
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+    sectionTitle: { fontSize: 15, fontWeight: 'bold', color: '#1B5E20', letterSpacing: 0.5 },
+    verTudo: { flexDirection: 'row', alignItems: 'center', gap: 2 },
     verTudoText: { color: '#1B5E20', fontSize: 12, fontWeight: 'bold' },
 
-    grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-    card: { 
-        width: '23.5%', // OBRIGA 4 COLUNAS
+    menuGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', marginHorizontal: -5 },
+    menuCard: { 
+        width: (width - 32 - 40) / 4, 
         backgroundColor: '#FFF', 
-        borderRadius: 18, 
-        paddingVertical: 15, 
+        borderRadius: 20, 
+        paddingVertical: 18, 
         alignItems: 'center', 
-        marginBottom: 10,
-        shadowColor: '#000',
-        shadowOpacity: 0.04,
-        shadowRadius: 6,
-        elevation: 2
-    },
-    iconWrapper: {
-        backgroundColor: 'rgba(76,175,80,0.1)',
-        padding: 12,
-        borderRadius: 20,
-        marginBottom: 8
-    },
-    label: { fontSize: 10, fontWeight: '800', color: '#444', textAlign: 'center' },
-
-    bottomNav: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        flexDirection: 'row',
-        backgroundColor: '#FFF',
-        height: 90,
-        paddingBottom: 30,
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        borderTopWidth: 1,
-        borderColor: '#F5F5F5',
+        marginBottom: 12,
+        marginHorizontal: 5,
         shadowColor: '#000',
         shadowOpacity: 0.05,
-        shadowRadius: 10
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 3
     },
-    navItem: { alignItems: 'center' },
-    navText: { fontSize: 10, color: '#9E9E9E', marginTop: 4, fontWeight: 'bold' }
+    iconBalloon: {
+        backgroundColor: 'rgba(46, 125, 50, 0.08)',
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 10
+    },
+    menuLabelText: { fontSize: 10, fontWeight: 'bold', color: '#455A64', textAlign: 'center' },
+
+    fixedBottomNav: {
+        position: 'absolute',
+        bottom: 0,
+        width: '100%',
+        backgroundColor: '#FFF',
+        height: 90,
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        paddingBottom: 25,
+        borderTopWidth: 1,
+        borderColor: '#F1F1F1',
+        shadowColor: '#000',
+        shadowOpacity: 0.05,
+        shadowRadius: 15
+    },
+    tabBtn: { alignItems: 'center' },
+    tabLabel: { fontSize: 11, fontWeight: 'bold', color: '#90A4AE', marginTop: 5 },
+    iosIndicator: { position: 'absolute', bottom: 8, width: 140, height: 5, borderRadius: 3, backgroundColor: '#EEE' }
 });
