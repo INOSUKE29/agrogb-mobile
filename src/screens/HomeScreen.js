@@ -20,7 +20,7 @@ const FALLBACK_MENU = [
     { id: "colheita", label: "Colheita", icon: "leaf-outline", screen: "Colheita" },
     { id: "vendas", label: "Vendas", icon: "cash-outline", screen: "Vendas" },
     { id: "estoque", label: "Estoque", icon: "cube-outline", screen: "Estoque" },
-    { id: "monitoramiento", label: "Monitorar", icon: "camera-outline", screen: "Monitoramento" },
+    { id: "monitoramento", label: "Monitorar", icon: "camera-outline", screen: "Monitoramento" },
     { id: "adubacao", label: "Adubação", icon: "flask-outline", screen: "AdubacaoList" },
     { id: "compras", label: "Compras", icon: "cart-outline", screen: "Compras" },
     { id: "encomendas", label: "Encomendas", icon: "clipboard-outline", screen: "Encomendas" },
@@ -78,31 +78,38 @@ export default function HomeScreen({ navigation }) {
         <FundoAnimado>
             <RNStatusBar barStyle="light-content" translucent />
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+                
+                {/* HEADER COM CONFIGURAÇÕES NAS PONTAS (Estilo Clássico) */}
                 <View style={styles.header}>
-                    <TouchableOpacity style={styles.miniBtn}><Ionicons name="menu-outline" size={24} color="#FFF" /></TouchableOpacity>
+                    <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate('Profile')}>
+                        <Ionicons name="person-circle-outline" size={28} color="#FFF" />
+                    </TouchableOpacity>
+                    
                     <View style={styles.branding}>
-                        <Image source={require('../../assets/logo.png')} style={styles.logoMega} />
+                        <Image source={require('../../assets/logo.png')} style={styles.logoGiant} />
                         <Text style={styles.brand}>AgroGB</Text>
                     </View>
-                    <TouchableOpacity style={styles.miniBtn} onPress={() => navigation.navigate('Sync')}><Ionicons name="ellipsis-vertical" size={20} color="#FFF" /></TouchableOpacity>
+
+                    <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate('Sync')}>
+                        <Ionicons name="ellipsis-vertical" size={24} color="#FFF" />
+                    </TouchableOpacity>
                 </View>
                 <Text style={styles.tagline}>Inteligência no campo</Text>
 
-                <View style={styles.dashHeader}>
-                    <View style={styles.weatherMini}>
-                        <Ionicons name="sunny" size={24} color="#FFD700" />
-                        <Text style={styles.weatherVal}>25°C</Text>
+                <View style={styles.dashPanel}>
+                    <View style={styles.dashItem}>
+                        <Ionicons name="sunny-outline" size={22} color="#FFD700" />
+                        <Text style={styles.dashVal}>25°C</Text>
                     </View>
-                    <View style={styles.statsMini}>
-                        <View style={styles.statCol}>
-                            <Text style={styles.statLab}>COLHEITA</Text>
-                            <Text style={styles.statVal}>{stats.colheitaHoje || 0}kg</Text>
-                        </View>
-                        <View style={styles.statLine} />
-                        <View style={styles.statCol}>
-                            <Text style={styles.statLab}>VENDAS</Text>
-                            <Text style={styles.statVal}>R$ {stats.vendasHoje?.toFixed(2) || '0.00'}</Text>
-                        </View>
+                    <View style={styles.dashLine} />
+                    <View style={styles.dashItem}>
+                        <Text style={styles.dashLab}>COLHEITA</Text>
+                        <Text style={styles.dashVal}>{stats.colheitaHoje || 0}kg</Text>
+                    </View>
+                    <View style={styles.dashLine} />
+                    <View style={styles.dashItem}>
+                        <Text style={styles.dashLab}>VENDAS</Text>
+                        <Text style={styles.dashVal}>R$ {stats.vendasHoje?.toFixed(0) || '0'}</Text>
                     </View>
                 </View>
 
@@ -113,11 +120,11 @@ export default function HomeScreen({ navigation }) {
                             {group.items.map(item => {
                                 const accent = MENU_COLORS[item.normalizedId] || '#34D399';
                                 return (
-                                    <TouchableOpacity key={item.id} style={styles.btn} onPress={() => navigation.navigate(item.screen)} activeOpacity={0.7}>
-                                        <View style={styles.iconBox}>
+                                    <TouchableOpacity key={item.id} style={styles.card} onPress={() => navigation.navigate(item.screen)} activeOpacity={0.7}>
+                                        <View style={styles.iconCircle}>
                                             <Ionicons name={item.icon} size={28} color={accent} />
                                         </View>
-                                        <Text style={styles.btnLab} numberOfLines={1}>{item.label}</Text>
+                                        <Text style={styles.cardLabel} numberOfLines={1}>{item.label}</Text>
                                     </TouchableOpacity>
                                 )
                             })}
@@ -130,27 +137,47 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    scroll: { padding: 15, paddingTop: 25, paddingBottom: 60 },
+    scroll: { padding: 15, paddingTop: 20, paddingBottom: 60 },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 },
-    miniBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', justifyContent: 'center', alignItems: 'center' },
+    headerBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.06)', justifyContent: 'center', alignItems: 'center' },
     branding: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flex: 1 },
-    logoMega: { width: 90, height: 90, marginRight: 10 },
+    logoGiant: { width: 90, height: 90, marginRight: 10 },
     brand: { fontSize: 26, fontWeight: '900', color: '#FFF' },
-    tagline: { textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: -15, marginBottom: 20 },
+    tagline: { textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 10, marginTop: -15, marginBottom: 20, fontWeight: 'bold' },
 
-    dashHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 10 },
-    weatherMini: { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 18, padding: 12, alignItems: 'center', flexDirection: 'row', gap: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-    weatherVal: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-    statsMini: { flex: 1, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 18, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-    statCol: { alignItems: 'center' },
-    statLab: { fontSize: 8, fontWeight: '900', color: 'rgba(255,255,255,0.3)', marginBottom: 2 },
-    statVal: { color: '#FFF', fontSize: 13, fontWeight: '800' },
-    statLine: { width: 1, height: 15, backgroundColor: 'rgba(255,255,255,0.1)' },
+    dashPanel: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 20, padding: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+    dashItem: { flex: 1, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 },
+    dashLab: { fontSize: 8, fontWeight: '900', color: 'rgba(255,255,255,0.4)' },
+    dashVal: { color: '#FFF', fontSize: 14, fontWeight: '800' },
+    dashLine: { width: 1, height: 20, backgroundColor: 'rgba(255,255,255,0.1)' },
 
-    sec: { marginTop: 25 },
-    secTitle: { fontSize: 11, fontWeight: '900', color: 'rgba(255,255,255,0.5)', letterSpacing: 1.5, marginBottom: 12, marginLeft: 5 },
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    btn: { width: '23.5%', alignItems: 'center', marginBottom: 10 },
-    iconBox: { width: 54, height: 54, borderRadius: 18, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', shadowColor: '#FFF', shadowOpacity: 0.2, shadowRadius: 8, elevation: 6 },
-    btnLab: { color: '#FFF', fontSize: 9, fontWeight: '700', marginTop: 8, textAlign: 'center' }
+    sec: { marginTop: 30 },
+    secTitle: { fontSize: 11, fontWeight: '900', color: 'rgba(255,255,255,0.4)', letterSpacing: 2.5, marginBottom: 15 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+    // VOLTA PARA 3 COLUNAS
+    card: { 
+        width: '31%', 
+        backgroundColor: 'rgba(255,255,255,0.1)', 
+        borderRadius: 24, 
+        paddingVertical: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#FFF',
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 6
+    },
+    iconCircle: { 
+        width: 54, 
+        height: 54, 
+        borderRadius: 18, 
+        backgroundColor: '#FFF',
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        marginBottom: 10,
+        shadowColor: '#FFF',
+        shadowOpacity: 0.2,
+        shadowRadius: 6
+    },
+    cardLabel: { color: '#FFF', fontSize: 10, fontWeight: '700', textAlign: 'center' }
 });

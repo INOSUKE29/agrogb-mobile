@@ -16,8 +16,8 @@ export default function FundoAnimado({ children }) {
 
   useEffect(() => {
     translate.value = withRepeat(
-      withTiming(width, {
-        duration: 8000,
+      withTiming(width * 1.5, {
+        duration: 10000,
         easing: Easing.bezier(0.42, 0, 0.58, 1),
       }),
       -1,
@@ -28,36 +28,42 @@ export default function FundoAnimado({ children }) {
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: translate.value },
-      { rotate: "35deg" },
+      { rotate: "-45deg" }, // Inclinação diagonal como na imagem
     ],
   }));
 
   return (
     <View style={styles.container}>
+      {/* FUNDO BASE ULTRA DARK GREEN */}
       <LinearGradient
         colors={[
-          "#02100C", // Preto Esmeralda Profundo
-          "#031F14",
-          "#052E1E",
-          "#031F14",
-          "#02100C",
+          "#010A05", // Quase preto esmeralda
+          "#021810",
+          "#010A05",
         ]}
         style={StyleSheet.absoluteFill}
-      >
-        {/* Faixa animada de brilho suave */}
-        <Animated.View style={[styles.luz, animatedStyle]}>
+      />
+
+      {/* RAIO DE LUZ DIAGONAL DINÂMICO (Efeito Luxo) */}
+      <Animated.View style={[styles.luzContainer, animatedStyle]}>
           <LinearGradient
             colors={[
               "transparent",
-              "rgba(255,255,255,0.03)",
+              "rgba(16, 185, 129, 0.08)", // Brilho Esmeralda Suave
+              "rgba(255, 255, 255, 0.03)", // Brilho Pérola no centro do raio
+              "rgba(16, 185, 129, 0.08)",
               "transparent",
             ]}
+            start={{x: 0, y: 0.5}}
+            end={{x: 1, y: 0.5}}
             style={styles.gradient}
           />
-        </Animated.View>
+      </Animated.View>
 
-        {children}
-      </LinearGradient>
+      {/* OVERLAY DE TEXTURA (Opcional, mas traz luxo) */}
+      <View style={styles.texture} />
+
+      {children}
     </View>
   );
 }
@@ -65,16 +71,20 @@ export default function FundoAnimado({ children }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000'
+    backgroundColor: '#010A05'
   },
-  luz: {
+  luzContainer: {
     position: "absolute",
-    width: width * 2,
-    height: height * 2,
-    top: -height / 2,
-    left: -width / 2,
+    width: width * 3,
+    height: height * 4,
+    top: -height,
+    left: -width,
   },
   gradient: {
     flex: 1,
   },
+  texture: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.02)',
+  }
 });

@@ -33,6 +33,7 @@ import ResetPasswordScreen from '../screens/ResetPasswordScreen';
 import CategoriasDespesaScreen from '../screens/CategoriasDespesaScreen';
 import VerifyCodeScreen from '../screens/VerifyCodeScreen';
 import FinancialAccountsScreen from '../screens/FinancialAccountsScreen';
+import DescarteScreen from '../screens/DescarteScreen';
 
 import FertilizationScreen from '../screens/FertilizationScreen';
 import RecipeFormScreen from '../screens/RecipeFormScreen';
@@ -90,6 +91,7 @@ export default function AppNavigator() {
             <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
             <Stack.Screen name="FinancialAccounts" component={FinancialAccountsScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Descarte" component={DescarteScreen} options={{ headerShown: false }} />
         </Stack.Navigator>
     );
 }
