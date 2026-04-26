@@ -12,56 +12,45 @@ import Animated, {
 const { width, height } = Dimensions.get("window");
 
 export default function FundoAnimado({ children }) {
-  const translate = useSharedValue(-width);
+  const glow1 = useSharedValue(0.4);
+  const glow2 = useSharedValue(0.2);
 
   useEffect(() => {
-    translate.value = withRepeat(
-      withTiming(width * 1.5, {
-        duration: 10000,
-        easing: Easing.bezier(0.42, 0, 0.58, 1),
-      }),
-      -1,
-      true
-    );
+    glow1.value = withRepeat(withTiming(0.8, { duration: 6000, easing: Easing.inOut(Easing.ease) }), -1, true);
+    glow2.value = withRepeat(withTiming(0.5, { duration: 9000, easing: Easing.inOut(Easing.ease) }), -1, true);
   }, []);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: translate.value },
-      { rotate: "-45deg" }, // Inclinação diagonal como na imagem
-    ],
-  }));
+  const animatedGlow1 = useAnimatedStyle(() => ({ opacity: glow1.value }));
+  const animatedGlow2 = useAnimatedStyle(() => ({ opacity: glow2.value }));
 
   return (
     <View style={styles.container}>
-      {/* FUNDO BASE ULTRA DARK GREEN */}
-      <LinearGradient
-        colors={[
-          "#010A05", // Quase preto esmeralda
-          "#021810",
-          "#010A05",
-        ]}
-        style={StyleSheet.absoluteFill}
-      />
+      {/* FUNDO BASE DARK (Como na imagem) */}
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: '#111312' }]} />
 
-      {/* RAIO DE LUZ DIAGONAL DINÂMICO (Efeito Luxo) */}
-      <Animated.View style={[styles.luzContainer, animatedStyle]}>
-          <LinearGradient
-            colors={[
-              "transparent",
-              "rgba(16, 185, 129, 0.08)", // Brilho Esmeralda Suave
-              "rgba(255, 255, 255, 0.03)", // Brilho Pérola no centro do raio
-              "rgba(16, 185, 129, 0.08)",
-              "transparent",
-            ]}
-            start={{x: 0, y: 0.5}}
-            end={{x: 1, y: 0.5}}
-            style={styles.gradient}
-          />
+      {/* GRANDE EXPLOSÃO DE LUZ ESMERALDA NO CANTO SUPERIOR DIREITO */}
+      <Animated.View style={[styles.glowTop, animatedGlow1]}>
+        <LinearGradient
+          colors={['rgba(0, 255, 157, 0.35)', 'transparent']}
+          style={styles.full}
+        />
       </Animated.View>
 
-      {/* OVERLAY DE TEXTURA (Opcional, mas traz luxo) */}
-      <View style={styles.texture} />
+      {/* LUZ ESMERALDA NO CANTO INFERIOR ESQUERDO */}
+      <Animated.View style={[styles.glowBottom, animatedGlow2]}>
+        <LinearGradient
+          colors={['rgba(0, 255, 157, 0.2)', 'transparent']}
+          style={styles.full}
+        />
+      </Animated.View>
+
+      {/* RAIO DE LUZ DIAGONAL QUE CRUZA A TELA */}
+      <LinearGradient
+        colors={['transparent', 'rgba(0, 255, 157, 0.05)', 'transparent']}
+        start={{x: 0, y: 0}}
+        end={{x: 1, y: 1}}
+        style={StyleSheet.absoluteFill}
+      />
 
       {children}
     </View>
@@ -71,20 +60,23 @@ export default function FundoAnimado({ children }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#010A05'
+    backgroundColor: '#111312'
   },
-  luzContainer: {
-    position: "absolute",
-    width: width * 3,
-    height: height * 4,
-    top: -height,
-    left: -width,
+  full: { flex: 1 },
+  glowTop: {
+    position: 'absolute',
+    top: -height * 0.3,
+    right: -width * 0.5,
+    width: width * 1.8,
+    height: width * 1.8,
+    borderRadius: width * 0.9,
   },
-  gradient: {
-    flex: 1,
-  },
-  texture: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.02)',
+  glowBottom: {
+    position: 'absolute',
+    bottom: -height * 0.2,
+    left: -width * 0.4,
+    width: width * 1.6,
+    height: width * 1.6,
+    borderRadius: width * 0.8,
   }
 });
