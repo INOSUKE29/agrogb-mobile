@@ -1,11 +1,33 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar as RNStatusBar, InteractionManager, Image, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { getDashboardStats } from '../database/database';
 import { MenuConfigService } from '../services/MenuConfigService';
 import FundoAnimado from '../components/FundoAnimado';
+
+// MAPA DE CORES VIBRANTES PARA CADA MENU
+const MENU_COLORS = {
+    caderno: '#34D399',      // Esmeralda
+    colheita: '#10B981',     // Verde Agro
+    vendas: '#FBBF24',       // Ouro/Vendas
+    estoque: '#6366F1',      // Índigo
+    monitoramento: '#8B5CF6', // Roxo
+    adubacao: '#06B6D4',     // Ciano
+    compras: '#F87171',      // Coral
+    encomendas: '#FB923C',   // Laranja
+    plantio: '#4ADE80',      // Lima
+    custos: '#EF4444',       // Red
+    descarte: '#94A3B8',     // Slate
+    frota: '#3B82F6',        // Blue
+    relatorios: '#EC4899',   // Rosa
+    cadastros: '#14B8A6',    // Teal
+    clientes: '#F472B6',     // Pink
+    areas: '#A855F7',        // Purple
+    sync: '#2DD4BF'          // Turquoise
+};
 
 const FALLBACK_MENU = [
     { id: "caderno", label: "Caderno", icon: "book-outline", screen: "CadernoCampo" },
@@ -61,24 +83,31 @@ export default function HomeScreen({ navigation }) {
     const getGroupedMenus = () => {
         return CATEGORIES.map(cat => ({
             title: cat.title,
-            items: menuItems.filter(item => {
+            items: menuItems.map(item => {
                 let sId = (item.id || '').toLowerCase();
                 if(!sId && item.screen) sId = item.screen.toLowerCase().replace('screen', '');
                 if(sId === 'monitorar') sId = 'monitoramento';
                 if(sId === 'cadastro') sId = 'cadastros';
                 if(sId === 'culturas') sId = 'areas';
-                return cat.keys.includes(sId);
-            })
+                return { ...item, normalizedId: sId };
+            }).filter(item => cat.keys.includes(item.normalizedId))
         })).filter(g => g.items.length > 0); 
     };
 
     const renderCard = (item) => {
-        let accent = '#34D399';
-        if (item.id?.includes('venda')) accent = '#FBBF24';
+        // COR DINÂMICA PARA CADA ÍCONE
+        const accent = MENU_COLORS[item.normalizedId] || '#34D399';
         
         return (
-            <TouchableOpacity key={item.id} style={styles.card} onPress={() => navigation.navigate(item.screen)} activeOpacity={0.7}>
-                <View style={styles.iconCircle}><Ionicons name={item.icon} size={22} color={accent} /></View>
+            <TouchableOpacity 
+                key={item.id} 
+                style={[styles.card, { borderColor: accent + '30' }]} 
+                onPress={() => navigation.navigate(item.screen)} 
+                activeOpacity={0.7}
+            >
+                <View style={[styles.iconCircle, { backgroundColor: accent + '10' }]}>
+                    <Ionicons name={item.icon} size={22} color={accent} />
+                </View>
                 <Text style={styles.cardLabel}>{item.label}</Text>
             </TouchableOpacity>
         );
@@ -89,14 +118,19 @@ export default function HomeScreen({ navigation }) {
             <RNStatusBar barStyle="light-content" translucent />
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
                 
-                {/* HEADER COM ESPAÇO REDUZIDO NO TOPO */}
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.menuBox}><Ionicons name="menu-outline" size={26} color="#FFF" /></TouchableOpacity>
                     <View style={styles.branding}>
                         <Image source={require('../../assets/logo.png')} style={styles.logoGiant} />
                         <Text style={styles.brand}>AgroGB</Text>
                     </View>
-                    <View style={{width: 44}} />
+                    {/* BOTÃO 3 PONTINHOS COMPATÍVEL COM O TEMA PREMIUM */}
+                    <TouchableOpacity 
+                        style={styles.menuBox} 
+                        onPress={() => navigation.navigate('Sync')}
+                    >
+                        <Ionicons name="ellipsis-vertical" size={22} color="#FFF" />
+                    </TouchableOpacity>
                 </View>
                 <Text style={styles.tagline}>Fazenda em tempo real</Text>
 
@@ -139,7 +173,7 @@ const styles = StyleSheet.create({
     menuBox: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.06)', justifyContent: 'center', alignItems: 'center' },
     branding: { flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'center' },
     logoGiant: { width: 100, height: 100, marginRight: 15 },
-    brand: { fontSize: 32, fontWeight: '900', color: '#FFF', letterSpacing: -1 },
+    brand: { fontSize: 28, fontWeight: '900', color: '#FFF', letterSpacing: -1 },
     tagline: { color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: -15, textAlign: 'center', marginBottom: 20 },
     
     weather: { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 24, padding: 20, marginTop: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
@@ -159,6 +193,6 @@ const styles = StyleSheet.create({
     secTitle: { fontSize: 14, fontWeight: '800', color: 'rgba(255,255,255,0.6)', letterSpacing: 1.5, marginBottom: 18 },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     card: { width: '31.3%', aspectRatio: 1, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 22, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.12)' },
-    iconCircle: { width: 44, height: 44, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.04)', justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+    iconCircle: { width: 44, height: 44, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
     cardLabel: { color: '#FFF', fontSize: 11, fontWeight: '700' }
 });

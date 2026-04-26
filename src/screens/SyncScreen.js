@@ -13,6 +13,8 @@ import { testConnection } from '../services/supabaseClient';
 import { syncAllMaster } from '../services/SyncService';
 import { BackupService } from '../services/BackupService';
 import { ErrorService } from '../services/ErrorService';
+import ScreenHeader from '../ui/ScreenHeader';
+import FundoAnimado from '../components/FundoAnimado';
 
 export default function SyncScreen({ navigation }) {
     const { theme, colors, setTheme } = useTheme();
@@ -239,7 +241,7 @@ export default function SyncScreen({ navigation }) {
     );
 
     return (
-        <AppContainer>
+        <FundoAnimado>
             <ScreenHeader title="Painel de Controle" onBack={() => navigation.goBack()} />
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -626,7 +628,7 @@ export default function SyncScreen({ navigation }) {
                     </SafeBlurView>
                 </View>
             </Modal>
-        </AppContainer>
+        </FundoAnimado>
     );
 }
 
