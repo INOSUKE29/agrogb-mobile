@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar as RNStatusBar, InteractionManager, Image, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { getDashboardStats } from '../database/database';
 import { MenuConfigService } from '../services/MenuConfigService';
+import FundoAnimado from '../components/FundoAnimado';
 
 const FALLBACK_MENU = [
     { id: "caderno", label: "Caderno", icon: "book-outline", screen: "CadernoCampo" },
@@ -73,9 +73,11 @@ export default function HomeScreen({ navigation }) {
     };
 
     const renderCard = (item) => {
-        let accent = '#059669';
+        let accent = '#34D399';
+        if (item.id?.includes('venda')) accent = '#FBBF24';
+        
         return (
-            <TouchableOpacity key={item.id} style={styles.card} onPress={() => navigation.navigate(item.screen)} activeOpacity={0.8}>
+            <TouchableOpacity key={item.id} style={styles.card} onPress={() => navigation.navigate(item.screen)} activeOpacity={0.7}>
                 <View style={styles.iconCircle}><Ionicons name={item.icon} size={22} color={accent} /></View>
                 <Text style={styles.cardLabel}>{item.label}</Text>
             </TouchableOpacity>
@@ -83,16 +85,15 @@ export default function HomeScreen({ navigation }) {
     };
 
     return (
-        <View style={styles.container}>
-            <LinearGradient colors={['#065F46', '#047857', '#F3F4F6', '#FFFFFF']} locations={[0, 0.4, 0.8, 1]} style={StyleSheet.absoluteFill} />
+        <FundoAnimado>
             <RNStatusBar barStyle="light-content" translucent />
-            
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+                
+                {/* HEADER COM ESPAÇO REDUZIDO NO TOPO */}
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.menuBox}><Ionicons name="menu-outline" size={26} color="#FFF" /></TouchableOpacity>
                     <View style={styles.branding}>
-                       {/* LOGO MEGA GIGANTE (120x120) */}
-                        <Image source={require('../../assets/logo.png')} style={styles.logoMega} />
+                        <Image source={require('../../assets/logo.png')} style={styles.logoGiant} />
                         <Text style={styles.brand}>AgroGB</Text>
                     </View>
                     <View style={{width: 44}} />
@@ -101,8 +102,8 @@ export default function HomeScreen({ navigation }) {
 
                 <View style={styles.weather}>
                     <View style={styles.wRow}>
-                        <Ionicons name="sunny-outline" size={42} color="#FFD700" />
-                        <View style={{marginLeft: 15}}>
+                        <Ionicons name="sunny-outline" size={38} color="#FFD700" />
+                        <View style={{marginLeft: 12}}>
                             <Text style={styles.temp}>25°C</Text>
                             <Text style={styles.loc}>Local</Text>
                         </View>
@@ -113,11 +114,11 @@ export default function HomeScreen({ navigation }) {
                 <View style={styles.quickStats}>
                     <View style={styles.qCard}>
                         <Text style={styles.qLabel}>COLHEITA (Hoje)</Text>
-                        <View style={styles.qRow}><Ionicons name="leaf" size={16} color="#059669" /><Text style={styles.qVal}>{stats.colheitaHoje || 0} kg</Text></View>
+                        <View style={styles.qRow}><Ionicons name="leaf" size={16} color="#10B981" /><Text style={styles.qVal}>{stats.colheitaHoje || 0} kg</Text></View>
                     </View>
                     <View style={styles.qCard}>
                         <Text style={styles.qLabel}>VENDAS (Hoje)</Text>
-                        <View style={styles.qRow}><Ionicons name="cash" size={16} color="#059669" /><Text style={styles.qVal}>{formatBRL(stats.vendasHoje)}</Text></View>
+                        <View style={styles.qRow}><Ionicons name="cash" size={16} color="#FBBF24" /><Text style={styles.qVal}>{formatBRL(stats.vendasHoje)}</Text></View>
                     </View>
                 </View>
 
@@ -128,37 +129,36 @@ export default function HomeScreen({ navigation }) {
                     </View>
                 ))}
             </ScrollView>
-        </View>
+        </FundoAnimado>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#FFF' },
-    scroll: { padding: 20, paddingTop: 50, paddingBottom: 100 },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-    menuBox: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
+    scroll: { padding: 20, paddingTop: 30, paddingBottom: 60 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 },
+    menuBox: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.06)', justifyContent: 'center', alignItems: 'center' },
     branding: { flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'center' },
-    logoMega: { width: 110, height: 110, marginRight: 15 }, // LOGO MEGA GIGANTE
-    brand: { fontSize: 36, fontWeight: '900', color: '#FFF' },
-    tagline: { color: 'rgba(255,255,255,0.7)', fontSize: 13, marginTop: -15, textAlign: 'center', marginBottom: 20 },
+    logoGiant: { width: 100, height: 100, marginRight: 15 },
+    brand: { fontSize: 32, fontWeight: '900', color: '#FFF', letterSpacing: -1 },
+    tagline: { color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: -15, textAlign: 'center', marginBottom: 20 },
     
-    weather: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 28, padding: 22, marginTop: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', shadowColor: '#000', shadowOffset: {width: 0, height: 5}, shadowOpacity: 0.1, shadowRadius: 10 },
+    weather: { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 24, padding: 20, marginTop: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
     wRow: { flexDirection: 'row', alignItems: 'center' },
-    temp: { fontSize: 34, fontWeight: 'bold', color: '#FFF' },
-    loc: { fontSize: 15, color: 'rgba(255,255,255,0.8)' },
-    time: { position: 'absolute', right: 0, top: 0, backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
+    temp: { fontSize: 30, fontWeight: 'bold', color: '#FFF' },
+    loc: { fontSize: 14, color: 'rgba(255,255,255,0.5)' },
+    time: { position: 'absolute', right: 0, top: 0, backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10 },
     timeTxt: { color: '#FFF', fontSize: 10, fontWeight: 'bold' },
 
-    quickStats: { flexDirection: 'row', gap: 15, marginTop: 25 },
-    qCard: { flex: 1, backgroundColor: '#FFF', borderRadius: 26, padding: 20, shadowColor: '#000', shadowOffset: {width: 0, height: 12}, shadowOpacity: 0.06, shadowRadius: 18, elevation: 6 },
-    qLabel: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', marginBottom: 10, letterSpacing: 1 },
-    qRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    qVal: { color: '#111827', fontSize: 18, fontWeight: '900' },
+    quickStats: { flexDirection: 'row', gap: 12, marginTop: 25 },
+    qCard: { flex: 1, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
+    qLabel: { fontSize: 10, fontWeight: 'bold', color: 'rgba(255,255,255,0.3)', marginBottom: 8 },
+    qRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    qVal: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
 
-    sec: { marginTop: 40 },
-    secTitle: { fontSize: 14, fontWeight: '900', color: '#4B5563', letterSpacing: 2, marginBottom: 20, marginLeft: 5 },
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-    card: { width: '31%', aspectRatio: 1, backgroundColor: '#FFFFFF', borderRadius: 26, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: {width: 0, height: 15}, shadowOpacity: 0.06, shadowRadius: 20, elevation: 8, borderWidth: 1, borderColor: '#F3F4F6' },
-    iconCircle: { width: 50, height: 50, borderRadius: 18, backgroundColor: '#F0FDF4', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-    cardLabel: { color: '#1F2937', fontSize: 11, fontWeight: '800' }
+    sec: { marginTop: 35 },
+    secTitle: { fontSize: 14, fontWeight: '800', color: 'rgba(255,255,255,0.6)', letterSpacing: 1.5, marginBottom: 18 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    card: { width: '31.3%', aspectRatio: 1, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 22, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.12)' },
+    iconCircle: { width: 44, height: 44, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.04)', justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+    cardLabel: { color: '#FFF', fontSize: 11, fontWeight: '700' }
 });
