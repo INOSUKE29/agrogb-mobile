@@ -91,8 +91,8 @@ export default function HomeScreen({ navigation }) {
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.menuBox}><Ionicons name="menu-outline" size={26} color="#FFF" /></TouchableOpacity>
                     <View style={styles.branding}>
-                       {/* LOGO GIGANTE CONFORME SOLICITADO */}
-                        <Image source={require('../../assets/logo.png')} style={styles.logoGiant} />
+                       {/* LOGO MEGA GIGANTE (120x120) */}
+                        <Image source={require('../../assets/logo.png')} style={styles.logoMega} />
                         <Text style={styles.brand}>AgroGB</Text>
                     </View>
                     <View style={{width: 44}} />
@@ -134,15 +134,15 @@ export default function HomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#FFF' },
-    scroll: { padding: 20, paddingTop: 55, paddingBottom: 100 },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 },
+    scroll: { padding: 20, paddingTop: 50, paddingBottom: 100 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
     menuBox: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
     branding: { flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'center' },
-    logoGiant: { width: 80, height: 80, marginRight: 15 }, // LOGO GIGANTE
-    brand: { fontSize: 32, fontWeight: '900', color: '#FFF' },
-    tagline: { color: 'rgba(255,255,255,0.7)', fontSize: 13, marginTop: -15, textAlign: 'center', marginBottom: 25 },
+    logoMega: { width: 110, height: 110, marginRight: 15 }, // LOGO MEGA GIGANTE
+    brand: { fontSize: 36, fontWeight: '900', color: '#FFF' },
+    tagline: { color: 'rgba(255,255,255,0.7)', fontSize: 13, marginTop: -15, textAlign: 'center', marginBottom: 20 },
     
-    weather: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 28, padding: 22, marginTop: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', shadowColor: '#000', shadowOffset: {width: 0, height: 5}, shadowOpacity: 0.1, shadowRadius: 10 },
+    weather: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 28, padding: 22, marginTop: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', shadowColor: '#000', shadowOffset: {width: 0, height: 5}, shadowOpacity: 0.1, shadowRadius: 10 },
     wRow: { flexDirection: 'row', alignItems: 'center' },
     temp: { fontSize: 34, fontWeight: 'bold', color: '#FFF' },
     loc: { fontSize: 15, color: 'rgba(255,255,255,0.8)' },
