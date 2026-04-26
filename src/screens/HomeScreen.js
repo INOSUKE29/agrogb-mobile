@@ -66,62 +66,61 @@ export default function HomeScreen({ navigation }) {
             case 'estoque': return { val: 'Gerenciador', sub: 'Volume' };
             default: return { val: 'Acessar', sub: 'Painel' };
         }
-    };
-
-    const renderCard = (item) => {
+       const renderCard = (item) => {
         const data = getCardValue(item.id);
         
-        let customColor = '#34D399'; // Base Emerald
-        let valColor = '#FFFFFF';
+        let customColor = '#34D399'; // Default Emerald
         if (item.id === 'vendas' || item.id === 'colheita' || item.id === 'financeiro' || item.id === 'adubacao') customColor = '#10B981';
-        if (item.id === 'relatorios' || item.id === 'estoque' || item.id === 'faturamento') { customColor = '#3B82F6'; valColor = '#FFF'; }
-        if (item.id === 'alertas' || item.id === 'pendentes' || item.id === 'descarte') { customColor = '#EF4444'; valColor = '#FFF'; }
-        if (data.error) { customColor = '#EF4444'; valColor = '#EF4444'; }
-        if (data.highlight) valColor = customColor; // Vendas / Colheita / Custos verde!
-
-        // Limpeza dos Textos Sub/Padroes para imitar a tela Limpa
-        const isDefault = data.sub === 'Painel' || data.sub === 'Painel';
+        if (item.id === 'relatorios' || item.id === 'estoque' || item.id === 'compras') { customColor = '#3B82F6'; }
+        if (item.id === 'alertas' || item.id === 'descarte') { customColor = '#EF4444'; }
         
         return (
             <TouchableOpacity
                 key={item.id}
                 style={styles.cardBox}
                 onPress={() => navigation.navigate(item.screen)}
-                activeOpacity={0.8}
+                activeOpacity={0.7}
             >
+                {/* Linha Falsa Fantasma do Grafico igual arte IA */}
+                {(item.id === 'vendas' || item.id === 'relatorios' || item.id === 'colheita') && (
+                    <Ionicons 
+                        name={item.id === 'vendas' ? "trending-up" : item.id === 'relatorios' ? "bar-chart" : "leaf"} 
+                        size={40} 
+                        color={customColor} 
+                        style={styles.bgIconPhantom} 
+                    />
+                )}
+
                 <View style={styles.cardHeader}>
-                    <View style={[styles.iconWrap, { backgroundColor: customColor + '1A', borderColor: customColor + '30', borderWidth: 1, shadowColor: customColor }]}>
-                        <Ionicons name={item.icon} size={15} color={customColor} />
+                    <View style={[styles.iconWrap, { backgroundColor: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.15)', borderWidth: 1 }]}>
+                        <Ionicons name={item.icon} size={14} color={customColor} />
                     </View>
                     <Text style={styles.cardTitle} numberOfLines={1}>{item.label}</Text>
                 </View>
                 
                 <View style={styles.cardBody}>
-                    {!isDefault && <Text style={styles.cardSubTitle}>{data.sub}</Text>}
-                    <Text style={[
-                        styles.cardValue, 
-                        { color: valColor, textShadowColor: valColor + '70', textShadowOffset: {width: 0, height: 0}, textShadowRadius: 8 },
-                        isDefault && { fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: '600', textShadowRadius: 0, marginTop: 5 }
-                    ]} numberOfLines={1}>
-                        {isDefault ? 'Acessar' : data.val}
+                    <Text style={styles.cardValue} numberOfLines={1}>
+                        {data.val}
+                    </Text>
+                    <Text style={styles.cardSubTitle} numberOfLines={1}>
+                        {data.sub}
                     </Text>
                 </View>
-                
-                {/* Linha Falsa Fantasma do Grafico igual arte IA (somente no vendas/custos/etc) */}
-                {(item.id === 'vendas' || item.id === 'relatorios') && (
-                    <Ionicons name={item.id === 'vendas' ? "trending-up" : "bar-chart"} size={50} color={customColor} style={styles.bgIconPhantom} />
-                )}
             </TouchableOpacity>
         );
     };
 
     return (
-        <LinearGradient 
-            colors={['#0E543A', '#0C201A', '#050D0A']} 
-            start={{ x: 1, y: 0.1 }} end={{ x: 0, y: 0.8 }}
-            style={styles.container}
-        >
-            <RNStatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <View style={styles.container}>
+            {/* Fundo com Degradê Radial/Diagonal para simular a luz verde da arte */}
+            <LinearGradient 
+                colors={['#0A0F0D', '#0D1A15', '#0E291F', '#0D1A15', '#0A0F0D']} 
+                start={{ x: 0, y: 0 }} 
+                end={{ x: 1, y: 1 }} 
+                style={StyleSheet.absoluteFill} 
+            />
+            
+            <RNStatusBar barStyle="light-content" backgroundColor="transparent" translucent />nt />
 
             {/* TOP NAVBAR Ouro */}
             <View style={styles.topNav}>
@@ -224,61 +223,61 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between'
     },
     
-    // Emerald Card Style - EXACT REPLICA OF THE IA ARTWORK (3 Column format)
+    // Glassmorphism Senior Style
     cardBox: {
         width: '31.5%',
-        backgroundColor: 'rgba(255, 255, 255, 0.035)',
-        borderRadius: 16,
+        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+        borderRadius: 18,
         padding: 12,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255, 0.05)',
-        borderTopColor: 'rgba(255,255,255, 0.08)',
+        borderColor: 'rgba(255, 255, 255, 0.12)',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        elevation: 8,
         position: 'relative',
         overflow: 'hidden'
     },
     cardHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 16
+        marginBottom: 12
     },
     iconWrap: {
-        width: 28, height: 28,
+        width: 26, height: 26,
         borderRadius: 8,
         justifyContent: 'center', alignItems: 'center',
-        marginRight: 6,
-        shadowOffset: {width: 0, height: 0},
-        shadowOpacity: 0.8,
-        shadowRadius: 10,
-        elevation: 5
+        marginRight: 8
     },
     cardTitle: {
         flex: 1,
         fontSize: 11,
-        fontWeight: '800',
-        color: '#F8FAFC',
-        textShadowColor: 'rgba(255,255,255,0.3)',
-        textShadowOffset: {width: 0, height: 0},
-        textShadowRadius: 6
+        fontWeight: '600',
+        color: 'rgba(255,255,255,0.9)'
     },
     cardBody: {
-        marginBottom: 2
+        marginTop: 4
     },
     cardValue: {
-        fontSize: 14,
-        fontWeight: '900',
-        lineHeight: 20,
+        fontSize: 16,
+        fontWeight: '800',
+        color: '#FFFFFF',
+        textShadowColor: 'rgba(255,255,255,0.3)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 3
     },
     cardSubTitle: {
-        fontSize: 10,
-        color: '#9CA3AF',
-        marginBottom: 4
+        fontSize: 9,
+        color: 'rgba(255,255,255,0.5)',
+        marginTop: 2,
+        fontWeight: '500'
     },
     bgIconPhantom: {
         position: 'absolute',
-        bottom: 0,
+        bottom: -5,
         right: -5,
-        opacity: 0.10,
-        transform: [{ scale: 1 }]
+        opacity: 0.08
     }
 });
