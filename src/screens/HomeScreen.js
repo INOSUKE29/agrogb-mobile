@@ -114,13 +114,13 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.container}>
             {/* Fundo com Degradê Radial/Diagonal para simular a luz verde da arte */}
             <LinearGradient 
-                colors={['#0A0F0D', '#0D1A15', '#0E291F', '#0D1A15', '#0A0F0D']} 
-                start={{ x: 0, y: 0 }} 
-                end={{ x: 1, y: 1 }} 
+                colors={['#0A0F0D', '#0D1A15', '#0E291F', '#06110E']} 
+                start={{ x: 0.1, y: 0.1 }} 
+                end={{ x: 0.9, y: 0.9 }} 
                 style={StyleSheet.absoluteFill} 
             />
             
-            <RNStatusBar barStyle="light-content" backgroundColor="transparent" translucent />nt />
+            <RNStatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
             {/* TOP NAVBAR Ouro */}
             <View style={styles.topNav}>
@@ -158,7 +158,7 @@ export default function HomeScreen({ navigation }) {
                 )}
 
             </ScrollView>
-        </LinearGradient>
+        </View>
     );
 }
 
