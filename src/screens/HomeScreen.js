@@ -8,7 +8,6 @@ import { getDashboardStats } from '../database/database';
 
 const { width } = Dimensions.get('window');
 
-// DADOS DO MENU CONFORME A IMAGEM
 const SECTIONS = [
     {
         title: 'PRODUÇÃO',
@@ -61,7 +60,7 @@ export default function HomeScreen({ navigation }) {
             onPress={() => navigation.navigate(id === 'cadastros' ? 'Cadastro' : id === 'sync' ? 'Sync' : id)}
         >
             <View style={styles.iconWrapper}>
-                <MaterialCommunityIcons name={icon} size={28} color="#1B5E20" />
+                <MaterialCommunityIcons name={icon} size={24} color="#1B5E20" />
             </View>
             <Text style={styles.label}>{label}</Text>
         </TouchableOpacity>
@@ -71,10 +70,12 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.container}>
             <RNStatusBar barStyle="light-content" translucent />
             
-            {/* HEADER COM DEGRADÊ VERDE (FIDO À IMAGEM) */}
+            {/* HEADER COM DEGRADÊ VERDE (FIDELIDADE MÁXIMA) */}
             <LinearGradient
                 colors={['#0F3D2E', '#1B5E20']}
                 style={styles.header}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
             >
                 <View style={styles.headerTop}>
                     <TouchableOpacity style={styles.iconCircle}>
@@ -86,7 +87,7 @@ export default function HomeScreen({ navigation }) {
                             <Image source={require('../../assets/logo.png')} style={styles.miniLogo} />
                             <Text style={styles.brandTitle}>
                                 <Text style={{color: '#FFF'}}>Agro</Text>
-                                <Text style={{color: '#4CAF50'}}>GB</Text>
+                                <Text style={{color: '#81C784'}}>GB</Text>
                             </Text>
                         </View>
                         <Text style={styles.brandSub}>Inteligência no campo</Text>
@@ -101,10 +102,10 @@ export default function HomeScreen({ navigation }) {
 
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
                 
-                {/* CARD DE RESUMO (FIDO À IMAGEM - FLUTUANTE) */}
+                {/* CARD DE RESUMO (ESTILO FLOAT PRECISO) */}
                 <View style={styles.dashboardCard}>
                     <View style={styles.dashItem}>
-                        <Ionicons name="sunny" size={30} color="#FFC107" />
+                        <Ionicons name="sunny" size={26} color="#FFC107" />
                         <View style={styles.dashTexts}>
                             <Text style={styles.dashTitle}>Clima</Text>
                             <Text style={styles.dashValue}>25°C</Text>
@@ -115,7 +116,7 @@ export default function HomeScreen({ navigation }) {
                     <View style={styles.vDivider} />
 
                     <View style={styles.dashItem}>
-                        <MaterialCommunityIcons name="leaf" size={30} color="#4CAF50" />
+                        <MaterialCommunityIcons name="leaf" size={26} color="#4CAF50" />
                         <View style={styles.dashTexts}>
                             <Text style={styles.dashTitle}>Colheita</Text>
                             <Text style={styles.dashValue}>{stats.colheitaHoje || 0} kg</Text>
@@ -126,7 +127,7 @@ export default function HomeScreen({ navigation }) {
                     <View style={styles.vDivider} />
 
                     <View style={styles.dashItem}>
-                        <MaterialCommunityIcons name="currency-usd" size={30} color="#2E7D32" />
+                        <MaterialCommunityIcons name="currency-usd" size={26} color="#2E7D32" />
                         <View style={styles.dashTexts}>
                             <Text style={styles.dashTitle}>Vendas</Text>
                             <Text style={styles.dashValue}>R$ {stats.vendasHoje?.toFixed(2) || '0,00'}</Text>
@@ -153,11 +154,11 @@ export default function HomeScreen({ navigation }) {
                 ))}
             </ScrollView>
 
-            {/* BOTTOM NAV BAR (ESTILO IPHONE - FIDELIDADE 100%) */}
+            {/* BOTTOM NAV BAR (ESTILO IPHONE - PARIDADE 100%) */}
             <View style={styles.bottomNav}>
                 <TouchableOpacity style={styles.navItem}>
                     <Ionicons name="home" size={24} color="#1B5E20" />
-                    <Text style={[styles.navText, {color: '#1B5E20', fontWeight: 'bold'}]}>Início</Text>
+                    <Text style={[styles.navText, {color: '#1B5E20'}]}>Início</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.navItem}>
                     <Ionicons name="leaf-outline" size={24} color="#9E9E9E" />
@@ -175,11 +176,11 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F5F6F7' },
     header: {
-        paddingTop: 50,
-        paddingBottom: 50,
+        paddingTop: 55,
+        paddingBottom: 55,
         paddingHorizontal: 20,
-        borderBottomLeftRadius: 25,
-        borderBottomRightRadius: 25,
+        borderBottomLeftRadius: 30,
+        borderBottomRightRadius: 30,
     },
     headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     iconCircle: {
@@ -191,71 +192,70 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     brandingBox: { alignItems: 'center' },
-    logoRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    miniLogo: { width: 35, height: 35, borderRadius: 10 },
-    brandTitle: { fontSize: 24, fontWeight: 'bold' },
-    brandSub: { color: '#C8E6C9', fontSize: 11, marginTop: -2 },
+    logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    miniLogo: { width: 38, height: 38, borderRadius: 12 },
+    brandTitle: { fontSize: 26, fontWeight: 'bold' },
+    brandSub: { color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: -2 },
     notifDot: { 
         position: 'absolute', 
         top: 10, 
-        right: 10, 
-        width: 8, 
-        height: 8, 
-        borderRadius: 4, 
+        right: 12, 
+        width: 10, 
+        height: 10, 
+        borderRadius: 5, 
         backgroundColor: '#4CAF50', 
-        borderWidth: 1.5, 
+        borderWidth: 2, 
         borderColor: '#0F3D2E' 
     },
 
-    scroll: { paddingHorizontal: 16, paddingBottom: 100 },
+    scroll: { paddingHorizontal: 16, paddingBottom: 110 },
     
     dashboardCard: {
         backgroundColor: '#FFF',
-        borderRadius: 20,
-        padding: 16,
+        borderRadius: 22,
+        padding: 18,
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: -35,
+        marginTop: -40,
         shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
-        marginBottom: 20
+        shadowOpacity: 0.08,
+        shadowRadius: 15,
+        elevation: 8,
+        marginBottom: 15
     },
     dashItem: { flex: 1, alignItems: 'center' },
-    dashTexts: { alignItems: 'center', marginTop: 5 },
-    dashTitle: { fontSize: 10, color: '#2E7D32', fontWeight: 'bold' },
-    dashValue: { fontSize: 16, fontWeight: 'bold', color: '#333', marginVertical: 2 },
-    dashMeta: { fontSize: 8, color: '#999', fontWeight: 'bold' },
-    vDivider: { width: 1, backgroundColor: '#F0F0F0', height: '80%', alignSelf: 'center' },
+    dashTexts: { alignItems: 'center', marginTop: 8 },
+    dashTitle: { fontSize: 10, color: '#1B5E20', fontWeight: '900' },
+    dashValue: { fontSize: 16, fontWeight: '900', color: '#333' },
+    dashMeta: { fontSize: 8, color: '#AAA', fontWeight: 'bold' },
+    vDivider: { width: 1, backgroundColor: '#F0F0F0', height: 40, alignSelf: 'center' },
 
     section: { marginTop: 25 },
-    secHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-    secTitle: { fontSize: 14, fontWeight: 'bold', color: '#1B5E20' },
-    verTudoBox: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-    verTudoText: { color: '#1B5E20', fontSize: 11, fontWeight: 'bold' },
+    secHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+    secTitle: { fontSize: 15, fontWeight: 'bold', color: '#1B5E20', letterSpacing: 0.5 },
+    verTudoBox: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    verTudoText: { color: '#1B5E20', fontSize: 12, fontWeight: 'bold' },
 
-    grid: { flexDirection: 'row', flexWrap: 'wrap' },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
     card: { 
-        width: (width - 32) / 4 - 8, 
+        width: '23.5%', // OBRIGA 4 COLUNAS
         backgroundColor: '#FFF', 
         borderRadius: 18, 
-        paddingVertical: 12, 
+        paddingVertical: 15, 
         alignItems: 'center', 
         marginBottom: 10,
-        marginHorizontal: 4,
         shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
         elevation: 2
     },
     iconWrapper: {
         backgroundColor: 'rgba(76,175,80,0.1)',
-        padding: 10,
-        borderRadius: 50,
-        marginBottom: 6
+        padding: 12,
+        borderRadius: 20,
+        marginBottom: 8
     },
-    label: { fontSize: 10, fontWeight: 'bold', color: '#333', textAlign: 'center' },
+    label: { fontSize: 10, fontWeight: '800', color: '#444', textAlign: 'center' },
 
     bottomNav: {
         position: 'absolute',
@@ -264,11 +264,15 @@ const styles = StyleSheet.create({
         right: 0,
         flexDirection: 'row',
         backgroundColor: '#FFF',
-        paddingTop: 12,
+        height: 90,
         paddingBottom: 30,
         justifyContent: 'space-around',
+        alignItems: 'center',
         borderTopWidth: 1,
-        borderColor: '#F0F0F0'
+        borderColor: '#F5F5F5',
+        shadowColor: '#000',
+        shadowOpacity: 0.05,
+        shadowRadius: 10
     },
     navItem: { alignItems: 'center' },
     navText: { fontSize: 10, color: '#9E9E9E', marginTop: 4, fontWeight: 'bold' }
