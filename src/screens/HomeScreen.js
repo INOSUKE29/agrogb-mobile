@@ -160,7 +160,7 @@ export default function HomeScreen({ navigation }) {
                 )}
 
             </ScrollView>
-        </LinearGradient>
+        </View>
     );
 }
 
@@ -175,8 +175,7 @@ const styles = StyleSheet.create({
         right: -100,
         width: 450,
         height: 450,
-        borderRadius: 225,
-        filter: 'blur(80px)' // Efeito de Orbe Neon Web pra igualar Fake Mockup
+        borderRadius: 225
     },
     ambientOrbLeft: {
         position: 'absolute',
@@ -184,8 +183,7 @@ const styles = StyleSheet.create({
         left: -150,
         width: 350,
         height: 350,
-        borderRadius: 175,
-        filter: 'blur(70px)'
+        borderRadius: 175
     },
     topNav: {
         flexDirection: 'row',
