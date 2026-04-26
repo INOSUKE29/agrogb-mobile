@@ -84,25 +84,18 @@ export default function HomeScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
-            {/* CORREÇÃO DO DEGRADÊ: Transição muito mais longa e suave para não atrapalhar a visão */}
-            <LinearGradient 
-                colors={['#065F46', '#047857', '#F3F4F6', '#FFFFFF']} 
-                locations={[0, 0.4, 0.8, 1]}
-                style={StyleSheet.absoluteFill} 
-            />
+            <LinearGradient colors={['#065F46', '#047857', '#F3F4F6', '#FFFFFF']} locations={[0, 0.4, 0.8, 1]} style={StyleSheet.absoluteFill} />
             <RNStatusBar barStyle="light-content" translucent />
             
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-                
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.menuBox}><Ionicons name="menu-outline" size={26} color="#FFF" /></TouchableOpacity>
                     <View style={styles.branding}>
-                       {/* LOGO AUMENTADA CONFORME SOLICITADO */}
-                        <Image source={require('../../assets/logo.png')} style={styles.logoLarge} />
+                       {/* LOGO GIGANTE CONFORME SOLICITADO */}
+                        <Image source={require('../../assets/logo.png')} style={styles.logoGiant} />
                         <Text style={styles.brand}>AgroGB</Text>
-                         {/* PALAVRA PRO REMOVIDA */}
                     </View>
-                    <View style={{width: 40}} />
+                    <View style={{width: 44}} />
                 </View>
                 <Text style={styles.tagline}>Fazenda em tempo real</Text>
 
@@ -144,10 +137,10 @@ const styles = StyleSheet.create({
     scroll: { padding: 20, paddingTop: 55, paddingBottom: 100 },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 },
     menuBox: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-    branding: { flexDirection: 'row', alignItems: 'center' },
-    logoLarge: { width: 38, height: 38, marginRight: 10 },
-    brand: { fontSize: 28, fontWeight: '900', color: '#FFF' },
-    tagline: { color: 'rgba(255,255,255,0.7)', fontSize: 13, marginTop: -5, marginLeft: 50, marginBottom: 20 },
+    branding: { flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'center' },
+    logoGiant: { width: 80, height: 80, marginRight: 15 }, // LOGO GIGANTE
+    brand: { fontSize: 32, fontWeight: '900', color: '#FFF' },
+    tagline: { color: 'rgba(255,255,255,0.7)', fontSize: 13, marginTop: -15, textAlign: 'center', marginBottom: 25 },
     
     weather: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 28, padding: 22, marginTop: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', shadowColor: '#000', shadowOffset: {width: 0, height: 5}, shadowOpacity: 0.1, shadowRadius: 10 },
     wRow: { flexDirection: 'row', alignItems: 'center' },
