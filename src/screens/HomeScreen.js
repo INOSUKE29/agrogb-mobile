@@ -79,7 +79,7 @@ export default function HomeScreen({ navigation }) {
             <RNStatusBar barStyle="light-content" translucent />
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
                 
-                {/* HEADER COM CONFIGURAÇÕES NAS PONTAS E LOGO MEGA */}
+                {/* HEADER COM CONFIGURAÇÕES NAS PONTAS E LOGO MEGA (RESTAURADO) */}
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate('Profile')}>
                         <Ionicons name="person-circle-outline" size={32} color="#FFF" />
@@ -94,11 +94,11 @@ export default function HomeScreen({ navigation }) {
                         <Ionicons name="ellipsis-vertical" size={28} color="#FFF" />
                     </TouchableOpacity>
                 </View>
-                <Text style={styles.tagline}>Fazenda em tempo real</Text>
+                <Text style={styles.tagline}>Inteligência no campo</Text>
 
                 <View style={styles.dashHeader}>
                     <View style={styles.weatherBox}>
-                        <Ionicons name="sunny" size={24} color="#00FF9D" />
+                        <Ionicons name="sunny" size={22} color="#00FF9D" />
                         <Text style={styles.dashVal}>25°C</Text>
                     </View>
                     <View style={styles.statsBox}>
@@ -123,7 +123,7 @@ export default function HomeScreen({ navigation }) {
                                 return (
                                     <TouchableOpacity key={item.id} style={styles.btn} onPress={() => navigation.navigate(item.screen)} activeOpacity={0.7}>
                                         <View style={styles.iconBox}>
-                                            <Ionicons name={item.icon} size={32} color={accent} />
+                                            <Ionicons name={item.icon} size={26} color={accent} />
                                         </View>
                                         <Text style={styles.btnLab}>{item.label}</Text>
                                     </TouchableOpacity>
@@ -138,38 +138,39 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    scroll: { padding: 15, paddingTop: 15, paddingBottom: 100 },
+    scroll: { padding: 12, paddingTop: 15, paddingBottom: 100 },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5, paddingHorizontal: 5 },
-    headerBtn: { width: 50, height: 50, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.08)', justifyContent: 'center', alignItems: 'center' },
+    headerBtn: { width: 50, height: 50, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.06)', justifyContent: 'center', alignItems: 'center' },
     branding: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flex: 1 },
-    logoMega: { width: 110, height: 110, marginRight: 15 }, // LOGO MEGA RESTAURADA
-    brand: { fontSize: 32, fontWeight: '900', color: '#FFF', letterSpacing: -1 },
-    tagline: { textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 13, marginTop: -20, marginBottom: 25, fontWeight: '800' },
+    logoMega: { width: 115, height: 115, marginRight: 10 }, 
+    brand: { fontSize: 30, fontWeight: '900', color: '#FFF' },
+    tagline: { textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 11, marginTop: -20, marginBottom: 25, fontWeight: '800' },
 
     dashHeader: { flexDirection: 'row', gap: 10, marginVertical: 10 },
-    weatherBox: { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 20, padding: 15, alignItems: 'center', flexDirection: 'row', gap: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-    dashVal: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-    statsBox: { flex: 1, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 20, padding: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    weatherBox: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 20, padding: 15, alignItems: 'center', flexDirection: 'row', gap: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+    dashVal: { color: '#FFF', fontSize: 15, fontWeight: 'bold' },
+    statsBox: { flex: 1, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 20, padding: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
     statCol: { alignItems: 'center' },
-    statLab: { fontSize: 8, fontWeight: '900', color: 'rgba(255,255,255,0.3)', letterSpacing: 1 },
+    statLab: { fontSize: 8, fontWeight: '900', color: 'rgba(255,255,255,0.3)' },
     statVal: { color: '#FFF', fontSize: 14, fontWeight: '900' },
-    statLine: { width: 1, height: 20, backgroundColor: 'rgba(255,255,255,0.1)' },
+    statLine: { width: 1, height: 18, backgroundColor: 'rgba(255,255,255,0.1)' },
 
-    sec: { marginTop: 30 },
-    secTitle: { fontSize: 12, fontWeight: '900', color: 'rgba(255,255,255,0.5)', letterSpacing: 2.5, marginBottom: 18, marginLeft: 10 },
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-    btn: { width: '31%', alignItems: 'center', marginBottom: 20 },
+    sec: { marginTop: 25 },
+    secTitle: { fontSize: 11, fontWeight: '900', color: 'rgba(255,255,255,0.4)', letterSpacing: 2.5, marginBottom: 15, marginLeft: 10 },
+    // VOLTA PARA 4 COLUNAS (O JEITO QUE ESTAVA BOM ANTES)
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    btn: { width: '23%', alignItems: 'center', marginBottom: 15 },
     iconBox: { 
-        width: 68, 
-        height: 68, 
-        borderRadius: 24, 
+        width: 58, 
+        height: 58, 
+        borderRadius: 20, 
         backgroundColor: '#FFF', 
         justifyContent: 'center', 
         alignItems: 'center', 
         shadowColor: '#00FF9D', 
-        shadowOpacity: 0.3, 
-        shadowRadius: 10, 
-        elevation: 12 
+        shadowOpacity: 0.2, 
+        shadowRadius: 8, 
+        elevation: 8 
     },
-    btnLab: { color: '#FFF', fontSize: 11, fontWeight: '800', marginTop: 10, textAlign: 'center' }
+    btnLab: { color: '#FFF', fontSize: 9, fontWeight: '800', marginTop: 8, textAlign: 'center' }
 });
