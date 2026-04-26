@@ -79,8 +79,8 @@ export default function HomeScreen({ navigation }) {
         if (data.error) { customColor = '#EF4444'; valColor = '#EF4444'; }
         if (data.highlight) valColor = customColor; // Vendas / Colheita / Custos verde!
 
-        // Limpeza dos Textos Sub/Padroes para imitar a tela Limpa da Esquerda do Mockup
-        const isDefault = data.sub === 'Painel';
+        // Limpeza dos Textos Sub/Padroes para imitar a tela Limpa
+        const isDefault = data.sub === 'Painel' || data.sub === 'Painel';
         
         return (
             <TouchableOpacity
@@ -90,8 +90,8 @@ export default function HomeScreen({ navigation }) {
                 activeOpacity={0.8}
             >
                 <View style={styles.cardHeader}>
-                    <View style={[styles.iconWrap, { backgroundColor: customColor + '18', borderColor: customColor + '40', borderWidth: 1 }]}>
-                        <Ionicons name={item.icon} size={16} color={customColor} />
+                    <View style={[styles.iconWrap, { backgroundColor: customColor + '1A', borderColor: customColor + '30', borderWidth: 1, shadowColor: customColor }]}>
+                        <Ionicons name={item.icon} size={15} color={customColor} />
                     </View>
                     <Text style={styles.cardTitle} numberOfLines={1}>{item.label}</Text>
                 </View>
@@ -100,10 +100,10 @@ export default function HomeScreen({ navigation }) {
                     {!isDefault && <Text style={styles.cardSubTitle}>{data.sub}</Text>}
                     <Text style={[
                         styles.cardValue, 
-                        { color: valColor },
-                        isDefault && { fontSize: 16, color: 'rgba(255,255,255,0.7)', fontWeight: '600', marginTop: 10 }
+                        { color: valColor, textShadowColor: valColor + '70', textShadowOffset: {width: 0, height: 0}, textShadowRadius: 8 },
+                        isDefault && { fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: '600', textShadowRadius: 0, marginTop: 5 }
                     ]} numberOfLines={1}>
-                        {isDefault ? 'Acessar módulo' : data.val}
+                        {isDefault ? 'Acessar' : data.val}
                     </Text>
                 </View>
                 
@@ -116,12 +116,11 @@ export default function HomeScreen({ navigation }) {
     };
 
     return (
-        <View style={styles.container}>
-            {/* O SEGREDO DO MOCKUP: RADIAL GLOW NO FUNDO. Simulando com um view absoluto! */}
-            <LinearGradient colors={['#05110E', '#0B1F1A', '#030806']} style={StyleSheet.absoluteFill} />
-            <View style={[styles.ambientOrbTopRight, { backgroundColor: '#10B981', opacity: 0.20 }]} />
-            <View style={[styles.ambientOrbLeft, { backgroundColor: '#0B1F1A', opacity: 0.3 }]} />
-            
+        <LinearGradient 
+            colors={['#0E543A', '#0C201A', '#050D0A']} 
+            start={{ x: 1, y: 0.1 }} end={{ x: 0, y: 0.8 }}
+            style={styles.container}
+        >
             <RNStatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
             {/* TOP NAVBAR Ouro */}
@@ -160,30 +159,13 @@ export default function HomeScreen({ navigation }) {
                 )}
 
             </ScrollView>
-        </View>
+        </LinearGradient>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#05110E',
-    },
-    ambientOrbTopRight: {
-        position: 'absolute',
-        top: -150,
-        right: -100,
-        width: 450,
-        height: 450,
-        borderRadius: 225
-    },
-    ambientOrbLeft: {
-        position: 'absolute',
-        top: '30%',
-        left: -150,
-        width: 350,
-        height: 350,
-        borderRadius: 175
     },
     topNav: {
         flexDirection: 'row',
@@ -264,13 +246,20 @@ const styles = StyleSheet.create({
         width: 28, height: 28,
         borderRadius: 8,
         justifyContent: 'center', alignItems: 'center',
-        marginRight: 6
+        marginRight: 6,
+        shadowOffset: {width: 0, height: 0},
+        shadowOpacity: 0.8,
+        shadowRadius: 10,
+        elevation: 5
     },
     cardTitle: {
         flex: 1,
         fontSize: 11,
         fontWeight: '800',
-        color: '#F8FAFC'
+        color: '#F8FAFC',
+        textShadowColor: 'rgba(255,255,255,0.3)',
+        textShadowOffset: {width: 0, height: 0},
+        textShadowRadius: 6
     },
     cardBody: {
         marginBottom: 2
@@ -287,9 +276,9 @@ const styles = StyleSheet.create({
     },
     bgIconPhantom: {
         position: 'absolute',
-        bottom: 2,
-        right: -2,
-        opacity: 0.15,
+        bottom: 0,
+        right: -5,
+        opacity: 0.10,
         transform: [{ scale: 1 }]
     }
 });
