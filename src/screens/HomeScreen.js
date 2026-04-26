@@ -79,53 +79,55 @@ export default function HomeScreen({ navigation }) {
             <RNStatusBar barStyle="light-content" translucent />
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
                 
-                {/* HEADER COM CONFIGURAÇÕES NAS PONTAS E LOGO MEGA (RESTAURADO) */}
+                {/* HEADER PREMIUM COM LOGO MEGA */}
                 <View style={styles.header}>
-                    <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate('Profile')}>
+                    <TouchableOpacity style={styles.headerIconBtn} onPress={() => navigation.navigate('Profile')}>
                         <Ionicons name="person-circle-outline" size={32} color="#FFF" />
                     </TouchableOpacity>
                     
-                    <View style={styles.branding}>
+                    <View style={styles.logoContainer}>
                         <Image source={require('../../assets/logo.png')} style={styles.logoMega} />
-                        <Text style={styles.brand}>AgroGB</Text>
+                        <Text style={styles.brandText}>AgroGB</Text>
                     </View>
 
-                    <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate('Sync')}>
+                    <TouchableOpacity style={styles.headerIconBtn} onPress={() => navigation.navigate('Sync')}>
                         <Ionicons name="ellipsis-vertical" size={28} color="#FFF" />
                     </TouchableOpacity>
                 </View>
-                <Text style={styles.tagline}>Inteligência no campo</Text>
+                <Text style={styles.slogan}>Inteligência no campo</Text>
 
-                <View style={styles.dashHeader}>
-                    <View style={styles.weatherBox}>
-                        <Ionicons name="sunny" size={22} color="#00FF9D" />
-                        <Text style={styles.dashVal}>25°C</Text>
+                {/* DASHBOARD EM DUAS PARTES (CONFORME SOLICITADO) */}
+                <View style={styles.dashRow}>
+                    <View style={styles.weatherCard}>
+                        <Ionicons name="sunny" size={24} color="#00FF9D" />
+                        <Text style={styles.dashTextMain}>25°C</Text>
                     </View>
-                    <View style={styles.statsBox}>
-                        <View style={styles.statCol}>
-                            <Text style={styles.statLab}>COLHEITA</Text>
-                            <Text style={styles.statVal}>{stats.colheitaHoje || 0}kg</Text>
+                    
+                    <View style={styles.statsCard}>
+                        <View style={styles.statItem}>
+                            <Text style={styles.statLabelText}>COLHEITA</Text>
+                            <Text style={styles.statValueText}>{stats.colheitaHoje || 0}kg</Text>
                         </View>
-                        <View style={styles.statLine} />
-                        <View style={styles.statCol}>
-                            <Text style={styles.statLab}>VENDAS</Text>
-                            <Text style={styles.statVal}>R$ {stats.vendasHoje?.toFixed(0) || '0'}</Text>
+                        <View style={styles.divider} />
+                        <View style={styles.statItem}>
+                            <Text style={styles.statLabelText}>VENDAS</Text>
+                            <Text style={styles.statValueText}>R$ {stats.vendasHoje?.toFixed(0) || '0'}</Text>
                         </View>
                     </View>
                 </View>
 
                 {isReady && getGroupedMenus().map((group, idx) => (
-                    <View key={idx} style={styles.sec}>
-                        <Text style={styles.secTitle}>{group.title}</Text>
-                        <View style={styles.grid}>
+                    <View key={idx} style={styles.section}>
+                        <Text style={styles.sectionTitle}>{group.title}</Text>
+                        <View style={styles.menuGrid}>
                             {group.items.map(item => {
                                 const accent = MENU_COLORS[item.normalizedId] || '#00FF9D';
                                 return (
-                                    <TouchableOpacity key={item.id} style={styles.btn} onPress={() => navigation.navigate(item.screen)} activeOpacity={0.7}>
-                                        <View style={styles.iconBox}>
-                                            <Ionicons name={item.icon} size={26} color={accent} />
+                                    <TouchableOpacity key={item.id} style={styles.menuItem} onPress={() => navigation.navigate(item.screen)} activeOpacity={0.7}>
+                                        <View style={styles.iconContainer}>
+                                            <Ionicons name={item.icon} size={30} color={accent} />
                                         </View>
-                                        <Text style={styles.btnLab}>{item.label}</Text>
+                                        <Text style={styles.menuLabel}>{item.label}</Text>
                                     </TouchableOpacity>
                                 )
                             })}
@@ -138,39 +140,58 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    scroll: { padding: 12, paddingTop: 15, paddingBottom: 100 },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5, paddingHorizontal: 5 },
-    headerBtn: { width: 50, height: 50, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.06)', justifyContent: 'center', alignItems: 'center' },
-    branding: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flex: 1 },
-    logoMega: { width: 115, height: 115, marginRight: 10 }, 
-    brand: { fontSize: 30, fontWeight: '900', color: '#FFF' },
-    tagline: { textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 11, marginTop: -20, marginBottom: 25, fontWeight: '800' },
+    scroll: { padding: 18, paddingTop: 20, paddingBottom: 100 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 },
+    headerIconBtn: { width: 48, height: 48, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.06)', justifyContent: 'center', alignItems: 'center' },
+    logoContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flex: 1 },
+    logoMega: { width: 100, height: 100, marginRight: 10 },
+    brandText: { fontSize: 28, fontWeight: '900', color: '#FFF', letterSpacing: -0.5 },
+    slogan: { textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: -20, marginBottom: 25, fontWeight: '700' },
 
-    dashHeader: { flexDirection: 'row', gap: 10, marginVertical: 10 },
-    weatherBox: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 20, padding: 15, alignItems: 'center', flexDirection: 'row', gap: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-    dashVal: { color: '#FFF', fontSize: 15, fontWeight: 'bold' },
-    statsBox: { flex: 1, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 20, padding: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-    statCol: { alignItems: 'center' },
-    statLab: { fontSize: 8, fontWeight: '900', color: 'rgba(255,255,255,0.3)' },
-    statVal: { color: '#FFF', fontSize: 14, fontWeight: '900' },
-    statLine: { width: 1, height: 18, backgroundColor: 'rgba(255,255,255,0.1)' },
+    dashRow: { flexDirection: 'row', gap: 12, marginBottom: 35 },
+    weatherCard: { 
+        backgroundColor: 'rgba(255,255,255,0.06)', 
+        borderRadius: 22, 
+        paddingHorizontal: 20, 
+        paddingVertical: 18, 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        gap: 10,
+        borderWidth: 1, 
+        borderColor: 'rgba(255,255,255,0.08)' 
+    },
+    dashTextMain: { color: '#FFF', fontSize: 18, fontWeight: '900' },
+    
+    statsCard: { 
+        flex: 1, 
+        backgroundColor: 'rgba(255,255,255,0.06)', 
+        borderRadius: 22, 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        justifyContent: 'space-around',
+        borderWidth: 1, 
+        borderColor: 'rgba(255,255,255,0.08)' 
+    },
+    statItem: { alignItems: 'center' },
+    statLabelText: { fontSize: 8, fontWeight: '900', color: 'rgba(255,255,255,0.3)', letterSpacing: 0.8 },
+    statValueText: { color: '#FFF', fontSize: 16, fontWeight: '900', marginTop: 2 },
+    divider: { width: 1, height: 24, backgroundColor: 'rgba(255,255,255,0.1)' },
 
-    sec: { marginTop: 25 },
-    secTitle: { fontSize: 11, fontWeight: '900', color: 'rgba(255,255,255,0.4)', letterSpacing: 2.5, marginBottom: 15, marginLeft: 10 },
-    // VOLTA PARA 4 COLUNAS (O JEITO QUE ESTAVA BOM ANTES)
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    btn: { width: '23%', alignItems: 'center', marginBottom: 15 },
-    iconBox: { 
-        width: 58, 
-        height: 58, 
-        borderRadius: 20, 
+    section: { marginTop: 30 },
+    sectionTitle: { fontSize: 12, fontWeight: '900', color: 'rgba(255,255,255,0.4)', letterSpacing: 2, marginBottom: 18, marginLeft: 5 },
+    menuGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
+    menuItem: { width: '30%', alignItems: 'center', marginBottom: 22 },
+    iconContainer: { 
+        width: 66, 
+        height: 66, 
+        borderRadius: 22, 
         backgroundColor: '#FFF', 
         justifyContent: 'center', 
         alignItems: 'center', 
         shadowColor: '#00FF9D', 
-        shadowOpacity: 0.2, 
-        shadowRadius: 8, 
-        elevation: 8 
+        shadowOpacity: 0.25, 
+        shadowRadius: 10, 
+        elevation: 10 
     },
-    btnLab: { color: '#FFF', fontSize: 9, fontWeight: '800', marginTop: 8, textAlign: 'center' }
+    menuLabel: { color: '#FFF', fontSize: 11, fontWeight: '800', marginTop: 10, textAlign: 'center' }
 });
