@@ -245,9 +245,6 @@ export default function SyncScreen({ navigation }) {
             <ScreenHeader title="Painel de Controle" onBack={() => navigation.goBack()} />
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                {/* 🌀 AMBIENT LIGHTING */}
-                <View style={[styles.orb, { top: 0, right: -40, backgroundColor: '#10B981', opacity: 0.15 }]} />
-                <View style={[styles.orb, { top: 400, left: -60, backgroundColor: '#3B82F6', opacity: 0.1 }]} />
 
                 <Text style={styles.sectionHeader}>SISTEMA & PREFERÊNCIAS</Text>
                 <SafeBlurView intensity={20} tint="dark" style={styles.sectionGlass}>

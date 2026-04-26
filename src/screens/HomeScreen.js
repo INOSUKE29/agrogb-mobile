@@ -101,11 +101,11 @@ export default function HomeScreen({ navigation }) {
         return (
             <TouchableOpacity 
                 key={item.id} 
-                style={[styles.card, { borderColor: accent + '30' }]} 
+                style={styles.card} 
                 onPress={() => navigation.navigate(item.screen)} 
                 activeOpacity={0.7}
             >
-                <View style={[styles.iconCircle, { backgroundColor: accent + '10' }]}>
+                <View style={styles.iconCircle}>
                     <Ionicons name={item.icon} size={22} color={accent} />
                 </View>
                 <Text style={styles.cardLabel}>{item.label}</Text>
@@ -192,7 +192,30 @@ const styles = StyleSheet.create({
     sec: { marginTop: 35 },
     secTitle: { fontSize: 14, fontWeight: '800', color: 'rgba(255,255,255,0.6)', letterSpacing: 1.5, marginBottom: 18 },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    card: { width: '31.3%', aspectRatio: 1, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 22, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.12)' },
-    iconCircle: { width: 44, height: 44, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+    card: { 
+        width: '31.3%', 
+        aspectRatio: 1, 
+        backgroundColor: 'rgba(255,255,255,0.12)', 
+        borderRadius: 22, 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        shadowColor: '#FFF', 
+        shadowOffset: { width: 0, height: 4 }, 
+        shadowOpacity: 0.2, 
+        shadowRadius: 10,
+        elevation: 8 
+    },
+    iconCircle: { 
+        width: 44, 
+        height: 44, 
+        borderRadius: 15, 
+        backgroundColor: '#FFF', // BRANCO BRILHANTE
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        marginBottom: 10,
+        shadowColor: '#FFF',
+        shadowOpacity: 0.3,
+        shadowRadius: 5
+    },
     cardLabel: { color: '#FFF', fontSize: 11, fontWeight: '700' }
 });
