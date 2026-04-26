@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar as RNStatusBar, InteractionManager, Image, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar as RNStatusBar, Image, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,25 +8,11 @@ import { getDashboardStats } from '../database/database';
 import { MenuConfigService } from '../services/MenuConfigService';
 import FundoAnimado from '../components/FundoAnimado';
 
-// MAPA DE CORES VIBRANTES PARA CADA MENU
 const MENU_COLORS = {
-    caderno: '#34D399',      // Esmeralda
-    colheita: '#10B981',     // Verde Agro
-    vendas: '#FBBF24',       // Ouro/Vendas
-    estoque: '#6366F1',      // Índigo
-    monitoramento: '#8B5CF6', // Roxo
-    adubacao: '#06B6D4',     // Ciano
-    compras: '#F87171',      // Coral
-    encomendas: '#FB923C',   // Laranja
-    plantio: '#4ADE80',      // Lima
-    custos: '#EF4444',       // Red
-    descarte: '#94A3B8',     // Slate
-    frota: '#3B82F6',        // Blue
-    relatorios: '#EC4899',   // Rosa
-    cadastros: '#14B8A6',    // Teal
-    clientes: '#F472B6',     // Pink
-    areas: '#A855F7',        // Purple
-    sync: '#2DD4BF'          // Turquoise
+    caderno: '#34D399', colheita: '#10B981', vendas: '#FBBF24', estoque: '#6366F1',
+    monitoramento: '#8B5CF6', adubacao: '#06B6D4', compras: '#F87171', encomendas: '#FB923C',
+    plantio: '#4ADE80', custos: '#EF4444', descarte: '#94A3B8', frota: '#3B82F6',
+    relatorios: '#EC4899', cadastros: '#14B8A6', clientes: '#F472B6', areas: '#A855F7', sync: '#2DD4BF'
 };
 
 const FALLBACK_MENU = [
@@ -34,7 +20,7 @@ const FALLBACK_MENU = [
     { id: "colheita", label: "Colheita", icon: "leaf-outline", screen: "Colheita" },
     { id: "vendas", label: "Vendas", icon: "cash-outline", screen: "Vendas" },
     { id: "estoque", label: "Estoque", icon: "cube-outline", screen: "Estoque" },
-    { id: "monitoramento", label: "Monitorar", icon: "camera-outline", screen: "Monitoramento" },
+    { id: "monitoramiento", label: "Monitorar", icon: "camera-outline", screen: "Monitoramento" },
     { id: "adubacao", label: "Adubação", icon: "flask-outline", screen: "AdubacaoList" },
     { id: "compras", label: "Compras", icon: "cart-outline", screen: "Compras" },
     { id: "encomendas", label: "Encomendas", icon: "clipboard-outline", screen: "Encomendas" },
@@ -50,7 +36,6 @@ const FALLBACK_MENU = [
 ];
 
 export default function HomeScreen({ navigation }) {
-    const { colors } = useTheme();
     const [stats, setStats] = useState({ vendasHoje: 0, colheitaHoje: 0 });
     const [isReady, setIsReady] = useState(false);
     const [menuItems, setMenuItems] = useState(FALLBACK_MENU);
@@ -60,18 +45,13 @@ export default function HomeScreen({ navigation }) {
             const data = await getDashboardStats();
             if (data) setStats(data);
             const cfg = await MenuConfigService.getMenuConfig();
-            if(cfg && cfg.menu_items && cfg.menu_items.length > 0) {
+            if(cfg && cfg.menu_items?.length > 0) {
                 setMenuItems(cfg.menu_items.filter(i => i.enabled));
             }
         } catch (e) { }
     };
 
-    useFocusEffect(useCallback(() => {
-        setIsReady(true);
-        loadData();
-    }, []));
-
-    const formatBRL = (v) => v != null ? v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00';
+    useFocusEffect(useCallback(() => { setIsReady(true); loadData(); }, []));
 
     const CATEGORIES = [
         { title: 'PRODUÇÃO', keys: ['caderno', 'plantio', 'monitoramento', 'adubacao', 'colheita', 'descarte', 'cadastros'] },
@@ -86,7 +66,7 @@ export default function HomeScreen({ navigation }) {
             items: menuItems.map(item => {
                 let sId = (item.id || '').toLowerCase();
                 if(!sId && item.screen) sId = item.screen.toLowerCase().replace('screen', '');
-                if(sId === 'monitorar') sId = 'monitoramento';
+                if(sId.includes('monitorar')) sId = 'monitoramento';
                 if(sId === 'cadastro') sId = 'cadastros';
                 if(sId === 'culturas') sId = 'areas';
                 return { ...item, normalizedId: sId };
@@ -94,72 +74,54 @@ export default function HomeScreen({ navigation }) {
         })).filter(g => g.items.length > 0); 
     };
 
-    const renderCard = (item) => {
-        // COR DINÂMICA PARA CADA ÍCONE
-        const accent = MENU_COLORS[item.normalizedId] || '#34D399';
-        
-        return (
-            <TouchableOpacity 
-                key={item.id} 
-                style={styles.card} 
-                onPress={() => navigation.navigate(item.screen)} 
-                activeOpacity={0.7}
-            >
-                <View style={styles.iconCircle}>
-                    <Ionicons name={item.icon} size={22} color={accent} />
-                </View>
-                <Text style={styles.cardLabel}>{item.label}</Text>
-            </TouchableOpacity>
-        );
-    };
-
     return (
         <FundoAnimado>
             <RNStatusBar barStyle="light-content" translucent />
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-                
                 <View style={styles.header}>
-                    <TouchableOpacity style={styles.menuBox}><Ionicons name="menu-outline" size={26} color="#FFF" /></TouchableOpacity>
+                    <TouchableOpacity style={styles.miniBtn}><Ionicons name="menu-outline" size={24} color="#FFF" /></TouchableOpacity>
                     <View style={styles.branding}>
-                        <Image source={require('../../assets/logo.png')} style={styles.logoGiant} />
+                        <Image source={require('../../assets/logo.png')} style={styles.logoMega} />
                         <Text style={styles.brand}>AgroGB</Text>
                     </View>
-                    {/* BOTÃO 3 PONTINHOS COMPATÍVEL COM O TEMA PREMIUM */}
-                    <TouchableOpacity 
-                        style={styles.menuBox} 
-                        onPress={() => navigation.navigate('Sync')}
-                    >
-                        <Ionicons name="ellipsis-vertical" size={22} color="#FFF" />
-                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.miniBtn} onPress={() => navigation.navigate('Sync')}><Ionicons name="ellipsis-vertical" size={20} color="#FFF" /></TouchableOpacity>
                 </View>
-                <Text style={styles.tagline}>Fazenda em tempo real</Text>
+                <Text style={styles.tagline}>Inteligência no campo</Text>
 
-                <View style={styles.weather}>
-                    <View style={styles.wRow}>
-                        <Ionicons name="sunny-outline" size={38} color="#FFD700" />
-                        <View style={{marginLeft: 12}}>
-                            <Text style={styles.temp}>25°C</Text>
-                            <Text style={styles.loc}>Local</Text>
+                <View style={styles.dashHeader}>
+                    <View style={styles.weatherMini}>
+                        <Ionicons name="sunny" size={24} color="#FFD700" />
+                        <Text style={styles.weatherVal}>25°C</Text>
+                    </View>
+                    <View style={styles.statsMini}>
+                        <View style={styles.statCol}>
+                            <Text style={styles.statLab}>COLHEITA</Text>
+                            <Text style={styles.statVal}>{stats.colheitaHoje || 0}kg</Text>
                         </View>
-                        <View style={styles.time}><Text style={styles.timeTxt}>18:51 (BRT)</Text></View>
-                    </View>
-                </View>
-
-                <View style={styles.quickStats}>
-                    <View style={styles.qCard}>
-                        <Text style={styles.qLabel}>COLHEITA (Hoje)</Text>
-                        <View style={styles.qRow}><Ionicons name="leaf" size={16} color="#10B981" /><Text style={styles.qVal}>{stats.colheitaHoje || 0} kg</Text></View>
-                    </View>
-                    <View style={styles.qCard}>
-                        <Text style={styles.qLabel}>VENDAS (Hoje)</Text>
-                        <View style={styles.qRow}><Ionicons name="cash" size={16} color="#FBBF24" /><Text style={styles.qVal}>{formatBRL(stats.vendasHoje)}</Text></View>
+                        <View style={styles.statLine} />
+                        <View style={styles.statCol}>
+                            <Text style={styles.statLab}>VENDAS</Text>
+                            <Text style={styles.statVal}>R$ {stats.vendasHoje?.toFixed(2) || '0.00'}</Text>
+                        </View>
                     </View>
                 </View>
 
                 {isReady && getGroupedMenus().map((group, idx) => (
                     <View key={idx} style={styles.sec}>
                         <Text style={styles.secTitle}>{group.title}</Text>
-                        <View style={styles.grid}>{group.items.map(renderCard)}</View>
+                        <View style={styles.grid}>
+                            {group.items.map(item => {
+                                const accent = MENU_COLORS[item.normalizedId] || '#34D399';
+                                return (
+                                    <TouchableOpacity key={item.id} style={styles.btn} onPress={() => navigation.navigate(item.screen)} activeOpacity={0.7}>
+                                        <View style={styles.iconBox}>
+                                            <Ionicons name={item.icon} size={28} color={accent} />
+                                        </View>
+                                        <Text style={styles.btnLab} numberOfLines={1}>{item.label}</Text>
+                                    </TouchableOpacity>
+                                )
+                            })}
+                        </View>
                     </View>
                 ))}
             </ScrollView>
@@ -168,54 +130,27 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    scroll: { padding: 20, paddingTop: 30, paddingBottom: 60 },
+    scroll: { padding: 15, paddingTop: 25, paddingBottom: 60 },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 },
-    menuBox: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.06)', justifyContent: 'center', alignItems: 'center' },
-    branding: { flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'center' },
-    logoGiant: { width: 100, height: 100, marginRight: 15 },
-    brand: { fontSize: 28, fontWeight: '900', color: '#FFF', letterSpacing: -1 },
-    tagline: { color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: -15, textAlign: 'center', marginBottom: 20 },
-    
-    weather: { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 24, padding: 20, marginTop: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-    wRow: { flexDirection: 'row', alignItems: 'center' },
-    temp: { fontSize: 30, fontWeight: 'bold', color: '#FFF' },
-    loc: { fontSize: 14, color: 'rgba(255,255,255,0.5)' },
-    time: { position: 'absolute', right: 0, top: 0, backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10 },
-    timeTxt: { color: '#FFF', fontSize: 10, fontWeight: 'bold' },
+    miniBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', justifyContent: 'center', alignItems: 'center' },
+    branding: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flex: 1 },
+    logoMega: { width: 90, height: 90, marginRight: 10 },
+    brand: { fontSize: 26, fontWeight: '900', color: '#FFF' },
+    tagline: { textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: -15, marginBottom: 20 },
 
-    quickStats: { flexDirection: 'row', gap: 12, marginTop: 25 },
-    qCard: { flex: 1, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
-    qLabel: { fontSize: 10, fontWeight: 'bold', color: 'rgba(255,255,255,0.3)', marginBottom: 8 },
-    qRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    qVal: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+    dashHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 10 },
+    weatherMini: { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 18, padding: 12, alignItems: 'center', flexDirection: 'row', gap: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    weatherVal: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+    statsMini: { flex: 1, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 18, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    statCol: { alignItems: 'center' },
+    statLab: { fontSize: 8, fontWeight: '900', color: 'rgba(255,255,255,0.3)', marginBottom: 2 },
+    statVal: { color: '#FFF', fontSize: 13, fontWeight: '800' },
+    statLine: { width: 1, height: 15, backgroundColor: 'rgba(255,255,255,0.1)' },
 
-    sec: { marginTop: 35 },
-    secTitle: { fontSize: 14, fontWeight: '800', color: 'rgba(255,255,255,0.6)', letterSpacing: 1.5, marginBottom: 18 },
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    card: { 
-        width: '31.3%', 
-        aspectRatio: 1, 
-        backgroundColor: 'rgba(255,255,255,0.12)', 
-        borderRadius: 22, 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        shadowColor: '#FFF', 
-        shadowOffset: { width: 0, height: 4 }, 
-        shadowOpacity: 0.2, 
-        shadowRadius: 10,
-        elevation: 8 
-    },
-    iconCircle: { 
-        width: 44, 
-        height: 44, 
-        borderRadius: 15, 
-        backgroundColor: '#FFF', // BRANCO BRILHANTE
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        marginBottom: 10,
-        shadowColor: '#FFF',
-        shadowOpacity: 0.3,
-        shadowRadius: 5
-    },
-    cardLabel: { color: '#FFF', fontSize: 11, fontWeight: '700' }
+    sec: { marginTop: 25 },
+    secTitle: { fontSize: 11, fontWeight: '900', color: 'rgba(255,255,255,0.5)', letterSpacing: 1.5, marginBottom: 12, marginLeft: 5 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    btn: { width: '23.5%', alignItems: 'center', marginBottom: 10 },
+    iconBox: { width: 54, height: 54, borderRadius: 18, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', shadowColor: '#FFF', shadowOpacity: 0.2, shadowRadius: 8, elevation: 6 },
+    btnLab: { color: '#FFF', fontSize: 9, fontWeight: '700', marginTop: 8, textAlign: 'center' }
 });
