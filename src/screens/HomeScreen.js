@@ -79,7 +79,7 @@ export default function HomeScreen({ navigation }) {
             <RNStatusBar barStyle="light-content" translucent />
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
                 
-                {/* HEADER PREMIUM COM LOGO MEGA */}
+                {/* HEADER UNIFICADO (Conforme versões anteriores de sucesso) */}
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.headerIconBtn} onPress={() => navigation.navigate('Profile')}>
                         <Ionicons name="person-circle-outline" size={32} color="#FFF" />
@@ -96,23 +96,25 @@ export default function HomeScreen({ navigation }) {
                 </View>
                 <Text style={styles.slogan}>Inteligência no campo</Text>
 
-                {/* DASHBOARD EM DUAS PARTES (CONFORME SOLICITADO) */}
-                <View style={styles.dashRow}>
-                    <View style={styles.weatherCard}>
+                {/* DASHBOARD UNIFICADO (Juntando Clima + Stats como solicitado) */}
+                <View style={styles.dashPanel}>
+                    <View style={styles.dashSec}>
                         <Ionicons name="sunny" size={24} color="#00FF9D" />
-                        <Text style={styles.dashTextMain}>25°C</Text>
+                        <Text style={styles.dashValText}>25°C</Text>
                     </View>
                     
-                    <View style={styles.statsCard}>
-                        <View style={styles.statItem}>
-                            <Text style={styles.statLabelText}>COLHEITA</Text>
-                            <Text style={styles.statValueText}>{stats.colheitaHoje || 0}kg</Text>
-                        </View>
-                        <View style={styles.divider} />
-                        <View style={styles.statItem}>
-                            <Text style={styles.statLabelText}>VENDAS</Text>
-                            <Text style={styles.statValueText}>R$ {stats.vendasHoje?.toFixed(0) || '0'}</Text>
-                        </View>
+                    <View style={styles.dashDivider} />
+
+                    <View style={styles.dashSec}>
+                        <Text style={styles.dashLabelText}>COLHEITA</Text>
+                        <Text style={styles.dashValText}>{stats.colheitaHoje || 0}kg</Text>
+                    </View>
+
+                    <View style={styles.dashDivider} />
+
+                    <View style={styles.dashSec}>
+                        <Text style={styles.dashLabelText}>VENDAS</Text>
+                        <Text style={styles.dashValText}>R$ {stats.vendasHoje?.toFixed(0) || '0'}</Text>
                     </View>
                 </View>
 
@@ -124,7 +126,7 @@ export default function HomeScreen({ navigation }) {
                                 const accent = MENU_COLORS[item.normalizedId] || '#00FF9D';
                                 return (
                                     <TouchableOpacity key={item.id} style={styles.menuItem} onPress={() => navigation.navigate(item.screen)} activeOpacity={0.7}>
-                                        <View style={styles.iconContainer}>
+                                        <View style={styles.iconCircle}>
                                             <Ionicons name={item.icon} size={30} color={accent} />
                                         </View>
                                         <Text style={styles.menuLabel}>{item.label}</Text>
@@ -148,40 +150,29 @@ const styles = StyleSheet.create({
     brandText: { fontSize: 28, fontWeight: '900', color: '#FFF', letterSpacing: -0.5 },
     slogan: { textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: -20, marginBottom: 25, fontWeight: '700' },
 
-    dashRow: { flexDirection: 'row', gap: 12, marginBottom: 35 },
-    weatherCard: { 
+    // PAINEL UNIFICADO (RESTAURADO)
+    dashPanel: { 
         backgroundColor: 'rgba(255,255,255,0.06)', 
-        borderRadius: 22, 
-        paddingHorizontal: 20, 
+        borderRadius: 25, 
         paddingVertical: 18, 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        gap: 10,
-        borderWidth: 1, 
-        borderColor: 'rgba(255,255,255,0.08)' 
-    },
-    dashTextMain: { color: '#FFF', fontSize: 18, fontWeight: '900' },
-    
-    statsCard: { 
-        flex: 1, 
-        backgroundColor: 'rgba(255,255,255,0.06)', 
-        borderRadius: 22, 
+        paddingHorizontal: 10,
         flexDirection: 'row', 
         alignItems: 'center', 
         justifyContent: 'space-around',
         borderWidth: 1, 
-        borderColor: 'rgba(255,255,255,0.08)' 
+        borderColor: 'rgba(255,255,255,0.08)',
+        marginBottom: 35
     },
-    statItem: { alignItems: 'center' },
-    statLabelText: { fontSize: 8, fontWeight: '900', color: 'rgba(255,255,255,0.3)', letterSpacing: 0.8 },
-    statValueText: { color: '#FFF', fontSize: 16, fontWeight: '900', marginTop: 2 },
-    divider: { width: 1, height: 24, backgroundColor: 'rgba(255,255,255,0.1)' },
+    dashSec: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    dashDivider: { width: 1, height: 25, backgroundColor: 'rgba(255,255,255,0.1)' },
+    dashLabelText: { fontSize: 8, fontWeight: '900', color: 'rgba(255,255,255,0.3)', letterSpacing: 1 },
+    dashValText: { color: '#FFF', fontSize: 16, fontWeight: '900', marginTop: 2 },
 
     section: { marginTop: 30 },
     sectionTitle: { fontSize: 12, fontWeight: '900', color: 'rgba(255,255,255,0.4)', letterSpacing: 2, marginBottom: 18, marginLeft: 5 },
     menuGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
     menuItem: { width: '30%', alignItems: 'center', marginBottom: 22 },
-    iconContainer: { 
+    iconCircle: { 
         width: 66, 
         height: 66, 
         borderRadius: 22, 
