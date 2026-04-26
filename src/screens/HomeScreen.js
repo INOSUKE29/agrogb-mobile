@@ -2,33 +2,38 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar as RNStatusBar, Dimensions, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { getDashboardStats } from '../database/database';
 
-const MENU_DATA = [
-    { title: 'PRODUÇÃO', items: [
-        { id: 'caderno', label: 'Caderno', icon: 'book-open-variant', color: '#1B5E20' },
-        { id: 'colheita', label: 'Colheita', icon: 'leaf', color: '#1B5E20' },
-        { id: 'monitorar', label: 'Monitorar', icon: 'camera', color: '#1B5E20' },
-        { id: 'adubacao', label: 'Adubação', icon: 'flask-outline', color: '#1B5E20' },
-        { id: 'plantio', label: 'Plantio', icon: 'sprout', color: '#1B5E20' },
-        { id: 'descarte', label: 'Descarte', icon: 'trash-can-outline', color: '#1B5E20' },
-        { id: 'cadastros', label: 'Cadastros', icon: 'clipboard-edit-outline', color: '#1B5E20' },
-    ]},
-    { title: 'COMERCIAL', items: [
-        { id: 'vendas', label: 'Vendas', icon: 'cash-multiple', color: '#1B5E20' },
-        { id: 'compras', label: 'Compras', icon: 'cart-outline', color: '#1B5E20' },
-        { id: 'encomendas', label: 'Encomendas', icon: 'clipboard-text-clock-outline', color: '#1B5E20' },
-    ]},
-    { title: 'CONTROLE', items: [
-        { id: 'funcionarios', label: 'Funcionários', icon: 'account-group', color: '#1B5E20' },
-        { id: 'maquinas', label: 'Máquinas', icon: 'tractor', color: '#1B5E20' },
-        { id: 'relatorios', label: 'Relatórios', icon: 'chart-pie', color: '#1B5E20' },
-    ]}
+const { width } = Dimensions.get('window');
+
+const SECTIONS = [
+    {
+        title: 'PRODUÇÃO',
+        items: [
+            { id: 'caderno', label: 'Caderno', icon: 'book-open-outline', color: '#10B981' },
+            { id: 'colheita', label: 'Colheita', icon: 'leaf-outline', color: '#1B5E20' },
+            { id: 'monitorar', label: 'Monitorar', icon: 'camera-outline', color: '#8B5CF6' },
+            { id: 'adubacao', label: 'Adubação', icon: 'flask-outline', color: '#3B82F6' },
+            { id: 'plantio', label: 'Plantio', icon: 'sprout-outline', color: '#F59E0B' },
+            { id: 'descarte', label: 'Descarte', icon: 'trash-can-outline', color: '#EF4444' },
+            { id: 'cadastros', label: 'Cadastros', icon: 'clipboard-edit-outline', color: '#14B8A6' },
+            { id: 'pragas', label: 'Pragas', icon: 'bug-outline', color: '#B91C1C' },
+        ]
+    },
+    {
+        title: 'COMERCIAL',
+        items: [
+            { id: 'vendas', label: 'Vendas', icon: 'cash-outline', color: '#059669' },
+            { id: 'compras', label: 'Compras', icon: 'cart-outline', color: '#3B82F6' },
+            { id: 'encomendas', label: 'Encomendas', icon: 'clipboard-text-outline', color: '#F472B6' },
+        ]
+    }
 ];
 
 export default function HomeScreen({ navigation }) {
+    const { isDarkMode } = useTheme();
     const [stats, setStats] = useState({ vendasHoje: 0, colheitaHoje: 0 });
 
     useFocusEffect(useCallback(() => {
@@ -36,203 +41,188 @@ export default function HomeScreen({ navigation }) {
         fetch();
     }, []));
 
+    const MenuItem = ({ item }) => (
+        <TouchableOpacity 
+            style={[styles.menuCard, { backgroundColor: isDarkMode ? '#1E1E1E' : '#FFF' }]} 
+            onPress={() => navigation.navigate(item.id === 'cadastros' ? 'Cadastro' : item.id === 'vendas' ? 'Financeiro' : item.id)}
+            activeOpacity={0.7}
+        >
+            <View style={[styles.iconBalloon, { backgroundColor: item.color + '15' }]}>
+                <Ionicons name={item.icon} size={26} color={item.color} />
+            </View>
+            <Text style={[styles.menuLabel, { color: isDarkMode ? '#FFF' : '#333' }]} numberOfLines={1}>{item.label}</Text>
+        </TouchableOpacity>
+    );
+
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: isDarkMode ? '#0D0D0D' : '#F5F6F7' }]}>
             <RNStatusBar barStyle="light-content" translucent />
             
-            {/* HEADER DESIGN ULTRA PREMIUM */}
+            {/* HEADER DESIGN FIDELIDADE MÁXIMA */}
             <LinearGradient
-                colors={['#0F3D2E', '#1B5E20']}
+                colors={isDarkMode ? ['#05150D', '#0D0D0D'] : ['#0D5C3E', '#166534']}
                 style={styles.header}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
             >
-                <View style={styles.headerRow}>
-                    <TouchableOpacity style={styles.roundIconBtn}>
-                        <Ionicons name="person" size={24} color="#FFF" />
+                <View style={styles.headerTop}>
+                    <TouchableOpacity style={styles.topBtn}>
+                        <Ionicons name="person-circle" size={30} color="#FFF" />
                     </TouchableOpacity>
                     
-                    <View style={styles.brandBox}>
-                        <View style={styles.logoRow}>
-                            <Image source={require('../../assets/logo.png')} style={styles.megaLogo} />
-                            <Text style={styles.logoText}>
+                    <View style={styles.branding}>
+                        <Image source={require('../../assets/logo.png')} style={styles.logoImg} />
+                        <View style={styles.brandTexts}>
+                            <Text style={styles.brandName}>
                                 <Text style={{color: '#FFF'}}>Agro</Text>
-                                <Text style={{color: '#81C784'}}>GB</Text>
+                                <Text style={{color: '#4CAF50'}}>GB</Text>
                             </Text>
+                            <Text style={styles.brandSub}>Inteligência no campo</Text>
                         </View>
-                        <Text style={styles.slogan}>Inteligência no campo</Text>
                     </View>
 
-                    <TouchableOpacity style={styles.roundIconBtn}>
-                        <View style={styles.notifDot} />
-                        <Ionicons name="notifications" size={24} color="#FFF" />
+                    <TouchableOpacity style={styles.topBtn}>
+                        <View style={styles.dot} />
+                        <Ionicons name="notifications-outline" size={26} color="#FFF" />
                     </TouchableOpacity>
                 </View>
             </LinearGradient>
 
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
                 
-                {/* DASHBOARD CARD UNIFICADO (FLUTUANTE) */}
-                <View style={styles.summaryCard}>
-                    <View style={styles.sumItem}>
-                        <Ionicons name="sunny" size={32} color="#FDC010" />
-                        <View style={styles.sumTexts}>
-                            <Text style={styles.sumTitle}>Clima</Text>
-                            <Text style={styles.sumVal}>25°C</Text>
-                            <Text style={styles.sumSub}>Ensolarado</Text>
+                {/* 💳 DASHBOARD FLUTUANTE PIXEL-PERFECT */}
+                <View style={[styles.dashCard, { backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF' }]}>
+                    <View style={styles.dashSec}>
+                        <Ionicons name="sunny" size={28} color="#FFC107" />
+                        <View style={styles.dashInfo}>
+                            <Text style={styles.dashTitle}>Clima</Text>
+                            <Text style={[styles.dashValue, {color: isDarkMode ? '#FFF' : '#000'}]}>25°C</Text>
+                            <Text style={styles.dashMeta}>Ensolarado</Text>
                         </View>
                     </View>
                     <View style={styles.divider} />
-                    <View style={styles.sumItem}>
-                        <MaterialCommunityIcons name="leaf" size={32} color="#4CAF50" />
-                        <View style={styles.sumTexts}>
-                            <Text style={styles.sumTitle}>Colheita</Text>
-                            <Text style={styles.sumVal}>{stats.colheitaHoje || 0} kg</Text>
-                            <Text style={styles.sumSub}>Total colhido</Text>
+                    <View style={styles.dashSec}>
+                        <Ionicons name="leaf" size={28} color="#4CAF50" />
+                        <View style={styles.dashInfo}>
+                            <Text style={[styles.dashTitle, {color: '#4CAF50'}]}>Colheita</Text>
+                            <Text style={[styles.dashValue, {color: isDarkMode ? '#FFF' : '#000'}]}>{stats.colheitaHoje || 0} kg</Text>
+                            <Text style={styles.dashMeta}>Total colhido</Text>
                         </View>
                     </View>
                     <View style={styles.divider} />
-                    <View style={styles.sumItem}>
-                        <MaterialCommunityIcons name="currency-usd-circle" size={32} color="#2E7D32" />
-                        <View style={styles.sumTexts}>
-                            <Text style={styles.sumTitle}>Vendas</Text>
-                            <Text style={styles.sumVal}>R$ {stats.vendasHoje?.toFixed(2) || '0,00'}</Text>
-                            <Text style={styles.sumSub}>Faturamento</Text>
+                    <View style={styles.dashSec}>
+                        <View style={styles.greenCircle}>
+                            <Text style={{color: '#FFF', fontWeight: 'bold', fontSize: 18}}>$</Text>
+                        </View>
+                        <View style={styles.dashInfo}>
+                            <Text style={[styles.dashTitle, {color: '#2E7D32'}]}>Vendas</Text>
+                            <Text style={[styles.dashValue, {color: isDarkMode ? '#FFF' : '#000'}]}>R$ {stats.vendasHoje || '0,00'}</Text>
+                            <Text style={styles.dashMeta}>Faturamento</Text>
                         </View>
                     </View>
                 </View>
 
-                {MENU_DATA.map((section, idx) => (
-                    <View key={idx} style={styles.sec}>
+                {SECTIONS.map((section, idx) => (
+                    <View key={idx} style={styles.sectionArea}>
                         <View style={styles.secHeader}>
                             <Text style={styles.secTitle}>{section.title}</Text>
-                            <TouchableOpacity><Text style={styles.verTudo}>Ver tudo {'>'}</Text></TouchableOpacity>
+                            <TouchableOpacity><Text style={styles.verTudoText}>Ver tudo {'>'}</Text></TouchableOpacity>
                         </View>
                         <View style={styles.grid}>
-                            {section.items.map((item, i) => (
-                                <TouchableOpacity key={i} style={styles.card} activeOpacity={0.7} onPress={() => navigation.navigate(item.id === 'cadastros' ? 'Cadastro' : item.id)}>
-                                    <View style={styles.balloon}>
-                                        <MaterialCommunityIcons name={item.icon} size={30} color="#1B5E20" />
-                                    </View>
-                                    <Text style={styles.label}>{item.label}</Text>
-                                </TouchableOpacity>
-                            ))}
+                            {section.items.map((item, i) => <MenuItem key={i} item={item} />)}
                         </View>
                     </View>
                 ))}
             </ScrollView>
 
-            {/* TAB BAR (NAV) */}
-            <View style={styles.tabBar}>
-                <TouchableOpacity style={styles.tabItem}>
-                    <Ionicons name="home" size={26} color="#1B5E20" />
-                    <Text style={[styles.tabLabel, {color: '#1B5E20'}]}>Início</Text>
+            {/* BARRA DE NAVEGAÇÃO IPHONE (ESTILO DESIGNER) */}
+            <View style={[styles.bottomBar, { backgroundColor: isDarkMode ? '#111' : '#FFF' }]}>
+                <View style={styles.tabItem}>
+                    <Ionicons name="home" size={24} color="#166534" />
+                    <Text style={[styles.tabLabel, {color: '#166534'}]}>Início</Text>
+                </View>
+                <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate('Financeiro')}>
+                    <Ionicons name="stats-chart-outline" size={24} color="#999" />
+                    <Text style={styles.tabLabel}>Finanças</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.tabItem}>
-                    <Ionicons name="leaf-outline" size={26} color="#90A4AE" />
-                    <Text style={styles.tabLabel}>Atalhos</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.tabItem}>
-                    <Ionicons name="settings-outline" size={26} color="#90A4AE" />
-                    <Text style={styles.tabLabel}>Configurações</Text>
-                </TouchableOpacity>
+                <View style={[styles.fab, {backgroundColor: '#166534'}]}>
+                    <Ionicons name="add" size={32} color="#FFF" />
+                </View>
+                <View style={styles.tabItem}>
+                    <Ionicons name="pie-chart-outline" size={24} color="#999" />
+                    <Text style={styles.tabLabel}>Relatórios</Text>
+                </View>
+                <View style={styles.tabItem}>
+                    <Ionicons name="menu" size={24} color="#999" />
+                    <Text style={styles.tabLabel}>Mais</Text>
+                </View>
             </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F5F7F8' },
-    header: {
-        paddingTop: 60,
-        paddingBottom: 60,
-        paddingHorizontal: 20,
-        borderBottomLeftRadius: 35,
-        borderBottomRightRadius: 35,
-    },
-    headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    roundIconBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-    brandBox: { alignItems: 'center' },
-    logoRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    megaLogo: { width: 45, height: 45, borderRadius: 12 },
-    logoText: { fontSize: 32, fontWeight: 'bold', letterSpacing: -1 },
-    slogan: { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '500', marginTop: -2 },
-    notifDot: { position: 'absolute', top: 12, right: 12, width: 10, height: 10, borderRadius: 5, backgroundColor: '#4CAF50', zIndex: 1, borderWidth: 2, borderColor: '#1B5E20' },
+    container: { flex: 1 },
+    header: { paddingTop: 50, paddingBottom: 60, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    topBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
+    branding: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    logoImg: { width: 42, height: 42, borderRadius: 12 },
+    brandTexts: { justifyContent: 'center' },
+    brandName: { fontSize: 26, fontWeight: '900', letterSpacing: -0.5 },
+    brandSub: { color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: -2 },
+    dot: { position: 'absolute', top: 10, right: 10, width: 9, height: 9, borderRadius: 5, backgroundColor: '#4CAF50', zIndex: 1, borderWidth: 2, borderColor: '#166534' },
 
-    scroll: { paddingHorizontal: 16, paddingBottom: 120 },
+    scroll: { paddingHorizontal: 16, paddingBottom: 110 },
     
-    summaryCard: {
-        backgroundColor: '#FFF',
-        borderRadius: 25,
-        padding: 20,
+    dashCard: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: -45,
+        padding: 20,
+        borderRadius: 22,
+        marginTop: -35,
+        justifyContent: 'space-around',
         shadowColor: '#000',
         shadowOpacity: 0.1,
         shadowRadius: 15,
-        elevation: 10,
+        elevation: 8,
         marginBottom: 20
     },
-    sumItem: { flex: 1, alignItems: 'center' },
-    sumTexts: { alignItems: 'center', marginTop: 10 },
-    sumTitle: { fontSize: 11, color: '#1B5E20', fontWeight: 'bold' },
-    sumVal: { fontSize: 18, fontWeight: 'bold', color: '#263238', marginVertical: 2 },
-    sumSub: { fontSize: 10, color: '#90A4AE', fontWeight: '600' },
-    divider: { width: 1, backgroundColor: '#F0F0F0', height: 45, alignSelf: 'center' },
+    dashSec: { flex: 1, alignItems: 'center' },
+    dashInfo: { alignItems: 'center', marginTop: 8 },
+    dashTitle: { fontSize: 10, color: '#166534', fontWeight: 'bold' },
+    dashValue: { fontSize: 16, fontWeight: 'bold', marginVertical: 2 },
+    dashMeta: { fontSize: 8, color: '#999', fontWeight: 'bold' },
+    divider: { width: 1, height: 40, backgroundColor: '#F0F0F0', alignSelf: 'center' },
+    greenCircle: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#2E7D32', justifyContent: 'center', alignItems: 'center' },
 
-    sec: { marginTop: 30 },
-    secHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 },
-    secTitle: { fontSize: 16, fontWeight: 'bold', color: '#1B5E20' },
-    verTudo: { color: '#1B5E20', fontSize: 13, fontWeight: 'bold' },
+    sectionArea: { marginTop: 25 },
+    secHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+    secTitle: { fontSize: 15, fontWeight: 'bold', color: '#166534' },
+    verTudoText: { color: '#166534', fontSize: 12, fontWeight: 'bold' },
 
-    // CORREÇÃO DO GRID: FLEX-DIRECTION ROW + FLEX-WRAP WRAP
-    grid: { 
-        flexDirection: 'row', 
-        flexWrap: 'wrap', 
-        justifyContent: 'flex-start',
-        marginHorizontal: -5 
-    },
-    card: { 
-        width: '22.5%', // OBRIGA 4 COLUNAS EM QUALQUER TELA
-        backgroundColor: '#FFF', 
-        borderRadius: 22, 
-        paddingVertical: 20, 
+    grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', marginHorizontal: -5 },
+    menuCard: { 
+        width: (width - 32 - 40) / 4, 
+        borderRadius: 18, 
+        paddingVertical: 18, 
         alignItems: 'center', 
         marginBottom: 12,
         marginHorizontal: 5,
         shadowColor: '#000',
-        shadowOpacity: 0.06,
-        shadowRadius: 10,
-        elevation: 3
-    },
-    balloon: {
-        backgroundColor: 'rgba(27, 94, 32, 0.08)',
-        width: 55,
-        height: 55,
-        borderRadius: 27.5,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 10
-    },
-    label: { fontSize: 11, fontWeight: 'bold', color: '#455A64', textAlign: 'center' },
-
-    tabBar: {
-        position: 'absolute',
-        bottom: 0,
-        width: '100%',
-        backgroundColor: '#FFF',
-        height: 100,
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        paddingBottom: 35,
-        borderTopWidth: 1,
-        borderColor: '#F1F1F1',
-        shadowColor: '#000',
         shadowOpacity: 0.05,
-        shadowRadius: 15
+        shadowRadius: 10,
+        elevation: 2
+    },
+    iconBalloon: { width: 52, height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+    menuLabel: { fontSize: 10, fontWeight: 'bold', textAlign: 'center' },
+
+    bottomBar: { 
+        position: 'absolute', bottom: 0, width: '100%', height: 95, 
+        flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center',
+        paddingBottom: 30, borderTopWidth: 1, borderColor: '#F0F0F0',
+        shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 15
     },
     tabItem: { alignItems: 'center' },
-    tabLabel: { fontSize: 12, fontWeight: 'bold', color: '#90A4AE', marginTop: 5 }
+    tabLabel: { fontSize: 11, fontWeight: 'bold', color: '#999', marginTop: 4 },
+    fab: { width: 55, height: 55, borderRadius: 28, marginTop: -40, justifyContent: 'center', alignItems: 'center', shadowColor: '#166534', shadowOpacity: 0.3, shadowRadius: 10, elevation: 5 }
 });

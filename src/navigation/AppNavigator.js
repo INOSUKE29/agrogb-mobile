@@ -8,6 +8,7 @@ import HomeScreen from '../screens/HomeScreen';
 import ColheitaScreen from '../screens/ColheitaScreen';
 import VendasScreen from '../screens/VendasScreen';
 import EstoqueScreen from '../screens/EstoqueScreen';
+import FinanceiroScreen from '../screens/FinanceiroScreen';
 import SyncScreen from '../screens/SyncScreen';
 import ComprasScreen from '../screens/ComprasScreen';
 import PlantioScreen from '../screens/PlantioScreen';
@@ -64,6 +65,7 @@ export default function AppNavigator() {
             <Stack.Screen name="Vendas" component={VendasScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Estoque" component={EstoqueScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Sync" component={SyncScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Financeiro" component={FinanceiroScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Compras" component={ComprasScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Plantio" component={PlantioScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Custos" component={CustosScreen} options={{ headerShown: false }} />
