@@ -43,6 +43,8 @@ import CadastroFormScreen from './src/screens/CadastroFormScreen';
 import MenuCadastrosScreen from './src/screens/MenuCadastrosScreen';
 import MenuOperacionalScreen from './src/screens/MenuOperacionalScreen';
 import MenuFinanceiroScreen from './src/screens/MenuFinanceiroScreen';
+import MenuAdubacaoScreen from './src/screens/MenuAdubacaoScreen';
+import MenuSistemaScreen from './src/screens/MenuSistemaScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import RecoverScreen from './src/screens/RecoverScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
@@ -207,7 +209,9 @@ export default function App() {
                                         <Stack.Screen name="CadernoCampo" component={CadernoCampoScreen} options={{ title: 'Caderno de Campo' }} />
                                         <Stack.Screen name="Frota" component={FrotaScreen} options={{ title: 'Gestão de Frota' }} />
                                         <Stack.Screen name="MaquinaForm" component={MaquinaFormScreen} options={{ title: 'Cadastro de Máquina' }} />
-                                        <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Meu Perfil' }} />
+                                        <Stack.Screen name="Profile" options={{ title: 'Meu Perfil' }}>
+                                            {(props) => <ProfileScreen {...props} onLogout={() => setUserSession(null)} />}
+                                        </Stack.Screen>
                                         <Stack.Screen name="AdubacaoList" component={AdubacaoListScreen} options={{ title: 'Planos de Adubação' }} />
                                         <Stack.Screen name="AdubacaoForm" component={AdubacaoFormScreen} options={{ title: 'Novo Plano' }} />
                                         <Stack.Screen name="AdubacaoDetail" component={AdubacaoDetailScreen} options={{ title: 'Detalhes do Plano' }} />
@@ -216,6 +220,8 @@ export default function App() {
                                         <Stack.Screen name="MenuCadastros" component={MenuCadastrosScreen} options={{ title: 'Menu de Cadastros' }} />
                                         <Stack.Screen name="MenuOperacional" component={MenuOperacionalScreen} options={{ title: 'Menu Operacional' }} />
                                         <Stack.Screen name="MenuFinanceiro" component={MenuFinanceiroScreen} options={{ title: 'Menu Financeiro' }} />
+                                        <Stack.Screen name="MenuAdubacao" component={MenuAdubacaoScreen} options={{ title: 'Menu Adubação' }} />
+                                        <Stack.Screen name="MenuSistema" component={MenuSistemaScreen} options={{ title: 'Menu do Sistema' }} />
                                         <Stack.Screen name="Encomendas" component={EncomendasScreen} options={{ title: 'Minhas Encomendas' }} />
                                         <Stack.Screen name="NovaEncomenda" component={NovaEncomendaScreen} options={{ title: 'Nova Encomenda' }} />
                                         <Stack.Screen name="Graficos" component={GraficosScreen} options={{ title: 'Resumo de Gráficos' }} />
