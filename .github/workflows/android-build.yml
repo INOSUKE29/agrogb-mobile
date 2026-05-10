@@ -7,6 +7,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   build:
     name: Build Android APK
@@ -15,8 +18,6 @@ jobs:
     steps:
       - name: 🏗 Setup Repo
         uses: actions/checkout@v4
-        with:
-          path: repo
 
       - name: 🧹 Free Disk Space
         run: |
@@ -29,9 +30,8 @@ jobs:
       - name: 🏗 Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
-          cache-dependency-path: repo/package-lock.json
 
       - name: 🏗 Setup Java
         uses: actions/setup-java@v4
@@ -41,13 +41,11 @@ jobs:
           cache: 'gradle'
 
       - name: 📦 Install Dependencies
-        working-directory: repo
         run: |
           npm install
           node patch_expo.js
 
       - name: ⚙️ Expo Prebuild
-        working-directory: repo
         run: |
           npx expo prebuild --platform android --clean
           node patch_gradle.js
@@ -55,7 +53,6 @@ jobs:
           NODE_OPTIONS: "--max-old-space-size=4096"
 
       - name: 🔑 Setup Release Keystore
-        working-directory: repo
         run: |
           # 1. Generate Keystore
           keytool -genkey -v -keystore android/app/release.keystore \
@@ -71,7 +68,7 @@ jobs:
           echo "MYAPP_UPLOAD_KEY_PASSWORD=android" >> android/gradle.properties
 
       - name: 🐘 Build APK
-        working-directory: repo/android
+        working-directory: android
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a --no-daemon --stacktrace
@@ -83,4 +80,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: agrogb-v7-release
-          path: repo/android/app/build/outputs/apk/release/app-release.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
