@@ -50,6 +50,10 @@
     "updates": {
       "url": "https://u.expo.dev/dd5b4ea9-8594-4f37-86a3-b5ef94900b23"
     },
+    "platforms": [
+      "android",
+      "ios"
+    ],
     "plugins": [
       "expo-font",
       [
@@ -73,7 +77,7 @@
           "android": {
             "kotlinVersion": "1.8.10",
             "extraGradleProps": {
-              "org.gradle.jvmargs": "-Xmx6g -XX:MaxMetaspaceSize=1g",
+              "org.gradle.jvmargs": "-Xmx4g -XX:MaxMetaspaceSize=1g",
               "org.gradle.daemon": "false"
             }
           }
