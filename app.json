@@ -76,11 +76,7 @@
         {
           "android": {
             "kotlinVersion": "1.8.10",
-            "ndkVersion": "25.2.9519653",
-            "extraGradleProps": {
-              "org.gradle.jvmargs": "-Xmx4g -XX:MaxMetaspaceSize=1g",
-              "org.gradle.daemon": "false"
-            }
+            "ndkVersion": "25.2.9519653"
           }
         }
       ]
