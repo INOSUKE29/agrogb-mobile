@@ -16,21 +16,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 🧹 Free Disk Space
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          # DO NOT delete /usr/local/lib/android as it contains the Android SDK!
-
       - name: 🏗 Setup Repo
         uses: actions/checkout@v4
-
-      - name: 🔍 Debug Files
-        run: |
-          echo "Current directory: $(pwd)"
-          ls -la
-          if [ -d "android" ]; then ls -la android; fi
 
       - name: 🏗 Setup Node
         uses: actions/setup-node@v4
