@@ -1,7 +1,6 @@
 // database.js - Gestão Rápida com Enforcamento de MAIÚSCULAS e Suporte a Usuários
 import * as SQLite from 'expo-sqlite';
 import { v4 as uuidv4 } from 'uuid';
-import { v4 as uuidv4 } from 'uuid';
 
 let db;
 
