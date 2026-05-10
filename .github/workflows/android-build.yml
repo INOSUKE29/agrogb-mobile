@@ -15,33 +15,47 @@ jobs:
     steps:
       - name: 🏗 Setup Repo
         uses: actions/checkout@v4
+        with:
+          path: repo
+
+      - name: 🧹 Free Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
       - name: 🏗 Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
+          cache-dependency-path: repo/package-lock.json
 
       - name: 🏗 Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
+          cache: 'gradle'
 
       - name: 📦 Install Dependencies
+        working-directory: repo
         run: |
           npm install
           node patch_expo.js
 
       - name: ⚙️ Expo Prebuild
+        working-directory: repo
         run: |
           npx expo prebuild --platform android --clean
           node patch_gradle.js
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
 
-
       - name: 🔑 Setup Release Keystore
+        working-directory: repo
         run: |
           # 1. Generate Keystore
           keytool -genkey -v -keystore android/app/release.keystore \
@@ -56,19 +70,17 @@ jobs:
           echo "MYAPP_UPLOAD_STORE_PASSWORD=android" >> android/gradle.properties
           echo "MYAPP_UPLOAD_KEY_PASSWORD=android" >> android/gradle.properties
 
-
       - name: 🐘 Build APK
-        working-directory: android
+        working-directory: repo/android
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon --stacktrace
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
-          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g"
-
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g"
 
       - name: 📤 Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: agrogb-v7-release
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: repo/android/app/build/outputs/apk/release/app-release.apk
