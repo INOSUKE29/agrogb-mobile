@@ -14,29 +14,30 @@ if (fs.existsSync(targetPath)) {
             keyPassword 'android'
         }
         release {
-            if (project.hasProperty('MYAPP_RELEASE_STORE_FILE')) {
-                storeFile file(MYAPP_RELEASE_STORE_FILE)
-                storePassword MYAPP_RELEASE_STORE_PASSWORD
-                keyAlias MYAPP_RELEASE_KEY_ALIAS
-                keyPassword MYAPP_RELEASE_KEY_PASSWORD
+            if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE')) {
+                storeFile file(MYAPP_UPLOAD_STORE_FILE)
+                storePassword MYAPP_UPLOAD_STORE_PASSWORD
+                keyAlias MYAPP_UPLOAD_KEY_ALIAS
+                keyPassword MYAPP_UPLOAD_KEY_PASSWORD
             }
         }
     }`;
 
     const buildTypesReplacement = `        release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig (project.hasProperty('MYAPP_RELEASE_STORE_FILE') ? signingConfigs.release : signingConfigs.debug)
-            shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
-            minifyEnabled enableProguardInReleaseBuilds
-            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }`;
 
-    content = content.replace(/signingConfigs\s*{[\s\S]*?debug\s*{[\s\S]*?}[\s\S]*?}/, signingConfigsReplacement);
-    content = content.replace(/release\s*{[\s\S]*?signingConfig signingConfigs\.debug[\s\S]*?}/, buildTypesReplacement);
+    // Target the entire signingConfigs block
+    content = content.replace(/signingConfigs\s*{[\s\S]*?release\s*{[\s\S]*?}[\s\S]*?}/, signingConfigsReplacement);
+    
+    // Target the release buildType block
+    content = content.replace(/release\s*{[\s\S]*?signingConfig.*?proguardFiles.*?}/, buildTypesReplacement);
 
     fs.writeFileSync(targetPath, content, 'utf8');
-    console.log('✅ build.gradle patched for release signing!');
+    console.log('✅ build.gradle patched with MYAPP_UPLOAD_* properties and correct signingConfig location!');
 } else {
     console.log('❌ build.gradle not found at ' + targetPath);
 }
