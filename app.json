@@ -13,8 +13,9 @@
       "backgroundColor": "#10B981"
     },
     "assetBundlePatterns": [
-      "**/*"
+      "assets/**/*"
     ],
+    "jsEngine": "jsc",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.agrogb.mobile"
