@@ -76,6 +76,7 @@ jobs:
             -PreactNativeArchitectures=armeabi-v7a,arm64-v8a \
             --no-daemon \
             --max-workers=1 \
+            --info \
             --stacktrace
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"

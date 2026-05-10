@@ -1,5 +1,7 @@
 // database.js - Gestão Rápida com Enforcamento de MAIÚSCULAS e Suporte a Usuários
 import * as SQLite from 'expo-sqlite';
+import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 let db;
 
@@ -592,7 +594,7 @@ const seedKnowledgeBasePro = async () => {
                 await executeQuery(
                     `INSERT INTO base_conhecimento_pro (uuid, tipo, titulo, sintomas, causas, controle, fonte, nivel_confianca, last_updated) 
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [require('uuid').v4(), s.tipo, s.titulo, s.sintomas, s.causas, s.controle, s.fonte, s.conf, new Date().toISOString()]
+                    [uuidv4(), s.tipo, s.titulo, s.sintomas, s.causas, s.controle, s.fonte, s.conf, new Date().toISOString()]
                 );
             }
             console.log('✅ Base de Conhecimento Seedada com sucesso!');

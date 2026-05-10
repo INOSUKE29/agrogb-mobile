@@ -15,7 +15,7 @@
     "assetBundlePatterns": [
       "assets/**/*"
     ],
-    "jsEngine": "jsc",
+    "jsEngine": "hermes",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.agrogb.mobile"
