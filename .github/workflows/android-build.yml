@@ -52,21 +52,31 @@ jobs:
           -keyalg RSA -keysize 2048 -validity 10000 \
           -dname "CN=AgroGB,O=AgroGB,C=BR"
 
-          # 2. Configure gradle.properties for Signing
+          # 2. Configure gradle.properties for Signing and Performance
           echo "" >> android/gradle.properties
           echo "MYAPP_UPLOAD_STORE_FILE=release.keystore" >> android/gradle.properties
           echo "MYAPP_UPLOAD_KEY_ALIAS=my-key-alias" >> android/gradle.properties
           echo "MYAPP_UPLOAD_STORE_PASSWORD=android" >> android/gradle.properties
           echo "MYAPP_UPLOAD_KEY_PASSWORD=android" >> android/gradle.properties
+          
+          # Performance and Stability tweaks
+          echo "org.gradle.daemon=false" >> android/gradle.properties
+          echo "org.gradle.parallel=false" >> android/gradle.properties
+          echo "org.gradle.configureondemand=false" >> android/gradle.properties
+          echo "org.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=512m" >> android/gradle.properties
 
       - name: 🐘 Build APK
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a --no-daemon --stacktrace
+          ./gradlew assembleRelease \
+            -PreactNativeArchitectures=armeabi-v7a,arm64-v8a \
+            --no-daemon \
+            --max-workers=1 \
+            --stacktrace
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
-          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g"
+
 
       - name: 📤 Upload Artifact
         uses: actions/upload-artifact@v4
