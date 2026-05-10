@@ -23,14 +23,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
 
       - name: 🏗 Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
-          cache: 'gradle'
+          # Removido o cache automático do gradle que estava causando erro de 'No file matched'
+          # devido ao nome do repositório possuir um ponto final (.)
 
       - name: 📦 Install Dependencies
         run: |
