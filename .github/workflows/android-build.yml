@@ -8,12 +8,13 @@ on:
   workflow_dispatch:
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   CI: 'true'
 
 jobs:
   build:
     name: Build Android APK
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: 🏗 Setup Repo
@@ -22,15 +23,13 @@ jobs:
       - name: 🏗 Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 24
 
       - name: 🏗 Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
-          # Removido o cache automático do gradle que estava causando erro de 'No file matched'
-          # devido ao nome do repositório possuir um ponto final (.)
 
       - name: 📦 Install Dependencies
         run: |
@@ -58,11 +57,11 @@ jobs:
           echo "MYAPP_UPLOAD_STORE_PASSWORD=android" >> android/gradle.properties
           echo "MYAPP_UPLOAD_KEY_PASSWORD=android" >> android/gradle.properties
           
-          # Performance and Stability tweaks
+          # Golden Performance and Stability tweaks from successful runs
           echo "org.gradle.daemon=false" >> android/gradle.properties
           echo "org.gradle.parallel=false" >> android/gradle.properties
           echo "org.gradle.configureondemand=false" >> android/gradle.properties
-          echo "org.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=512m" >> android/gradle.properties
+          echo "org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1024m" >> android/gradle.properties
 
       - name: 🐘 Build APK
         working-directory: android
@@ -79,7 +78,6 @@ jobs:
             --stacktrace
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
-
 
       - name: 📤 Upload Artifact
         uses: actions/upload-artifact@v4
