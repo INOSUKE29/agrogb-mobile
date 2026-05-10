@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, Dimensions, ImageBackground } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, Dimensions, ImageBackground, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { executeQuery, insertUsuario } from '../database/database';
 import AgroInput from '../components/AgroInput';
@@ -16,7 +16,8 @@ const { height } = Dimensions.get('window');
 
 // Fundo rural provisório (pode ser trocado por um asset local depois)
 // Fundo oficial (usuário deve colocar a imagem enviada em assets/login_bg.png)
-const RURAL_BG = require('../../assets/login_bg.png');
+// const RURAL_BG = require('../../assets/login_bg.png');
+const RURAL_BG = null; // Fundo sólido temporário para não travar o build
 // Logo oficial (se existir, senão usa ícone)
 const LOGO = require('../../assets/icon.png');
 
@@ -154,7 +155,7 @@ export default function LoginScreen({ navigation }) {
     };
 
     return (
-        <ImageBackground source={RURAL_BG} style={styles.container} resizeMode="cover">
+        <View style={[styles.container, { backgroundColor: '#064E3B' }]}>
             <View style={styles.overlay} />
 
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.inner}>
@@ -208,7 +209,7 @@ export default function LoginScreen({ navigation }) {
                     <Text style={styles.footerText}>Feito com ❤️ para o agro</Text>
                 </View>
             </KeyboardAvoidingView>
-        </ImageBackground>
+        </View>
     );
 }
 
