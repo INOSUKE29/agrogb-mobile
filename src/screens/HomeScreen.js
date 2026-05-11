@@ -84,7 +84,7 @@ export default function HomeScreen({ navigation }) {
     const formatBRL = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg ?? '#F3F4F6' }]}>
             <RNStatusBar barStyle="light-content" backgroundColor={THEME.headerBg[0]} />
 
             <LinearGradient colors={THEME.headerBg} style={styles.header}>
@@ -193,7 +193,7 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: THEME.bg },
+    container: { flex: 1 },
     header: { paddingHorizontal: 20, paddingTop: 50, paddingBottom: 30, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
     headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
     brand: { fontSize: 22, fontWeight: '900', color: '#FFF', letterSpacing: 0.5 },

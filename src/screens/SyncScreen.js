@@ -75,8 +75,8 @@ export default function SyncScreen({ navigation }) {
                 onPress={onPress}
                 activeOpacity={0.7}
             >
-                <View style={[styles.iconBox, { backgroundColor: danger ? '#FEE2E2' : theme.primary_color + '20' }]}>
-                    <Ionicons name={icon} size={24} color={danger ? '#EF4444' : theme.primary_color} />
+                <View style={[styles.iconBox, { backgroundColor: danger ? '#FEE2E2' : (theme?.primary_color ?? '#10B981') + '20' }]}>
+                    <Ionicons name={icon} size={24} color={danger ? '#EF4444' : (theme?.primary_color ?? '#10B981')} />
                 </View>
                 <View style={styles.cardInfo}>
                     <Text style={[styles.cardTitle, danger && { color: '#B91C1C' }]}>{label}</Text>
@@ -89,7 +89,7 @@ export default function SyncScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
-            <LinearGradient colors={[theme.primary_color, theme.primary_color + '90']} style={styles.header}>
+            <LinearGradient colors={[theme?.primary_color ?? '#10B981', (theme?.primary_color ?? '#10B981') + '90']} style={styles.header}>
                 <Text style={styles.headerTitle}>Painel de Controle</Text>
                 <Text style={styles.headerSub}>Ajustes Inteligentes da Operação</Text>
             </LinearGradient>
@@ -179,21 +179,21 @@ export default function SyncScreen({ navigation }) {
                         <ScrollView style={styles.modalBody}>
                             <Text style={styles.inputLabel}>NOME DA FAZENDA / PROPRIEDADE</Text>
                             <TextInput
-                                style={[styles.input, { borderColor: theme.primary_color }]}
+                                style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
                                 value={settings.fazenda_nome || ''}
                                 onChangeText={(t) => setSettings({ ...settings, fazenda_nome: t })}
                             />
 
                             <Text style={styles.inputLabel}>PRODUTOR / RAZÃO SOCIAL</Text>
                             <TextInput
-                                style={[styles.input, { borderColor: theme.primary_color }]}
+                                style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
                                 value={settings.fazenda_produtor || ''}
                                 onChangeText={(t) => setSettings({ ...settings, fazenda_produtor: t })}
                             />
 
                             <Text style={styles.inputLabel}>CPF / CNPJ</Text>
                             <TextInput
-                                style={[styles.input, { borderColor: theme.primary_color }]}
+                                style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
                                 value={settings.fazenda_documento || ''}
                                 keyboardType="numeric"
                                 onChangeText={(t) => setSettings({ ...settings, fazenda_documento: t })}
@@ -203,7 +203,7 @@ export default function SyncScreen({ navigation }) {
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.inputLabel}>TELEFONE</Text>
                                     <TextInput
-                                        style={[styles.input, { borderColor: theme.primary_color }]}
+                                        style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
                                         value={settings.fazenda_telefone || ''}
                                         keyboardType="phone-pad"
                                         onChangeText={(t) => setSettings({ ...settings, fazenda_telefone: t })}
@@ -212,7 +212,7 @@ export default function SyncScreen({ navigation }) {
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.inputLabel}>EMAIL (OPCIONAL)</Text>
                                     <TextInput
-                                        style={[styles.input, { borderColor: theme.primary_color }]}
+                                        style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
                                         value={settings.fazenda_email || ''}
                                         keyboardType="email-address"
                                         autoCapitalize="none"
@@ -222,7 +222,7 @@ export default function SyncScreen({ navigation }) {
                             </View>
 
                             <TouchableOpacity
-                                style={[styles.saveBtn, { backgroundColor: theme.primary_color }]}
+                                style={[styles.saveBtn, { backgroundColor: theme?.primary_color ?? '#10B981' }]}
                                 onPress={async () => {
                                     await updateAppSetting('fazenda_nome', settings.fazenda_nome);
                                     await updateAppSetting('fazenda_produtor', settings.fazenda_produtor);
@@ -285,7 +285,7 @@ export default function SyncScreen({ navigation }) {
                                         key={mode}
                                         style={[
                                             { flex: 1, padding: 15, borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', alignItems: 'center' },
-                                            theme.theme_mode === mode && { borderColor: theme.primary_color, backgroundColor: theme.primary_color + '10' }
+                                            theme?.theme_mode === mode && { borderColor: theme?.primary_color ?? '#10B981', backgroundColor: (theme?.primary_color ?? '#10B981') + '10' }
                                         ]}
                                         onPress={async () => {
                                             await saveTheme(mode, null);
@@ -294,7 +294,7 @@ export default function SyncScreen({ navigation }) {
                                         <Ionicons
                                             name={mode === 'light' ? 'sunny' : mode === 'dark' ? 'moon' : 'phone-portrait'}
                                             size={20}
-                                            color={theme.theme_mode === mode ? theme.primary_color : '#9CA3AF'}
+                                            color={theme?.theme_mode === mode ? (theme?.primary_color ?? '#10B981') : '#9CA3AF'}
                                         />
                                         <Text style={{ fontSize: 10, fontWeight: 'bold', marginTop: 5, color: theme.theme_mode === mode ? theme.primary_color : '#6B7280' }}>
                                             {mode.toUpperCase()}
@@ -325,7 +325,7 @@ export default function SyncScreen({ navigation }) {
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.inputLabel}>MOEDA PADRÃO</Text>
                                     <TextInput
-                                        style={[styles.input, { borderColor: theme.primary_color }]}
+                                        style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
                                         value={settings.fin_moeda || 'R$'}
                                         maxLength={3}
                                         onChangeText={(t) => setSettings({ ...settings, fin_moeda: t })}
@@ -334,7 +334,7 @@ export default function SyncScreen({ navigation }) {
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.inputLabel}>MÊS FISCAL (INÍCIO)</Text>
                                     <TextInput
-                                        style={[styles.input, { borderColor: theme.primary_color }]}
+                                        style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
                                         value={String(settings.fin_mes_fiscal || 1)}
                                         keyboardType="numeric"
                                         maxLength={2}
@@ -345,7 +345,7 @@ export default function SyncScreen({ navigation }) {
 
                             <Text style={styles.inputLabel}>META DE LUCRO MENSAL (OPCIONAL)</Text>
                             <TextInput
-                                style={[styles.input, { borderColor: theme.primary_color }]}
+                                style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
                                 value={settings.fin_meta_lucro ? String(settings.fin_meta_lucro) : ''}
                                 keyboardType="numeric"
                                 placeholder="0.00"
@@ -353,17 +353,17 @@ export default function SyncScreen({ navigation }) {
                             />
 
                             <TouchableOpacity
-                                style={[styles.input, { marginTop: 15, borderColor: theme.primary_color, backgroundColor: settings.fin_calc_margem ? theme.primary_color + '20' : '#F9FAFB' }]}
+                                style={[styles.input, { marginTop: 15, borderColor: theme?.primary_color ?? '#10B981', backgroundColor: settings.fin_calc_margem ? (theme?.primary_color ?? '#10B981') + '20' : '#F9FAFB' }]}
                                 onPress={() => setSettings({ ...settings, fin_calc_margem: settings.fin_calc_margem ? 0 : 1 })}
                             >
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <Text style={{ fontWeight: 'bold', color: '#1F2937' }}>Cálculo Automático de Margem</Text>
-                                    <Ionicons name={settings.fin_calc_margem ? "checkbox" : "square-outline"} size={24} color={theme.primary_color} />
+                                    <Ionicons name={settings.fin_calc_margem ? "checkbox" : "square-outline"} size={24} color={theme?.primary_color ?? '#10B981'} />
                                 </View>
                             </TouchableOpacity>
 
                             <TouchableOpacity
-                                style={[styles.saveBtn, { backgroundColor: theme.primary_color }]}
+                                style={[styles.saveBtn, { backgroundColor: theme?.primary_color ?? '#10B981' }]}
                                 onPress={async () => {
                                     await updateAppSetting('fin_moeda', settings.fin_moeda);
                                     await updateAppSetting('fin_mes_fiscal', isNaN(settings.fin_mes_fiscal) ? 1 : settings.fin_mes_fiscal);
@@ -394,18 +394,18 @@ export default function SyncScreen({ navigation }) {
                         <ScrollView style={styles.modalBody}>
 
                             <TouchableOpacity
-                                style={[styles.input, { borderColor: theme.primary_color, backgroundColor: settings.clima_ativo ? theme.primary_color + '20' : '#F9FAFB' }]}
+                                style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981', backgroundColor: settings.clima_ativo ? (theme?.primary_color ?? '#10B981') + '20' : '#F9FAFB' }]}
                                 onPress={() => setSettings({ ...settings, clima_ativo: settings.clima_ativo ? 0 : 1 })}
                             >
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <Text style={{ fontWeight: 'bold', color: '#1F2937' }}>Habilitar Widget de Clima Geral</Text>
-                                    <Ionicons name={settings.clima_ativo ? "radio-button-on" : "radio-button-off"} size={24} color={theme.primary_color} />
+                                    <Ionicons name={settings.clima_ativo ? "radio-button-on" : "radio-button-off"} size={24} color={theme?.primary_color ?? '#10B981'} />
                                 </View>
                             </TouchableOpacity>
 
                             <Text style={styles.inputLabel}>CHAVE DE API (OPENWEATHERMAP) - OPCIONAL</Text>
                             <TextInput
-                                style={[styles.input, { borderColor: theme.primary_color }]}
+                                style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
                                 value={settings.clima_api_key || ''}
                                 autoCapitalize="none"
                                 placeholder="Padrão do AgroGB será usado se vazio"
@@ -414,14 +414,14 @@ export default function SyncScreen({ navigation }) {
 
                             <Text style={styles.inputLabel}>CIDADE FIXA FORÇADA (DESATIVA O GPS AUTOMÁTICO)</Text>
                             <TextInput
-                                style={[styles.input, { borderColor: theme.primary_color }]}
+                                style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
                                 value={settings.clima_cidade || ''}
                                 placeholder="Basta digitar e salvar se o GPS falhar."
                                 onChangeText={(t) => setSettings({ ...settings, clima_cidade: t })}
                             />
 
                             <TouchableOpacity
-                                style={[styles.saveBtn, { backgroundColor: theme.primary_color }]}
+                                style={[styles.saveBtn, { backgroundColor: theme?.primary_color ?? '#10B981' }]}
                                 onPress={async () => {
                                     await updateAppSetting('clima_ativo', settings.clima_ativo);
                                     await updateAppSetting('clima_api_key', settings.clima_api_key);
