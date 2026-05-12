@@ -25,10 +25,12 @@ if (fs.existsSync(targetPath)) {
     }`;
 
     const buildTypesReplacement = `        release {
-            signingConfig signingConfigs.release
+            // Para testes, usar a assinatura debug para gerar um APK instalável
+            signingConfig signingConfigs.debug
             minifyEnabled false
             shrinkResources false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            debuggable false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }`;
 
     // 1. Replace the entire signingConfigs block
@@ -44,7 +46,7 @@ if (fs.existsSync(targetPath)) {
         console.log('✅ build.gradle successfully patched!');
         
         // Verification of key changes
-        if (content.includes('MYAPP_UPLOAD_STORE_FILE') && content.includes('signingConfig signingConfigs.release')) {
+        if (content.includes('MYAPP_UPLOAD_STORE_FILE') && content.includes('signingConfig signingConfigs.debug')) {
             console.log('✅ Verification passed: Correct signing properties and config location found.');
         } else {
             console.warn('⚠️ Verification warning: Some expected strings are missing after patch.');
