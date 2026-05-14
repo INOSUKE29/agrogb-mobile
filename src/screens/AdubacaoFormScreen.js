@@ -142,11 +142,11 @@ export default function AdubacaoFormScreen({ route, navigation }) {
                 ) : (
                     <View style={styles.attachButtons}>
                         <TouchableOpacity style={styles.attachBtn} onPress={takePhoto}>
-                            <Ionicons name="camera" size={24} color={theme.colors.primary} />
+                            <Ionicons name="camera" size={24} color={theme?.colors?.primary || '#10B981'} />
                             <Text style={styles.attachText}>CÂMERA</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.attachBtn} onPress={pickImage}>
-                            <Ionicons name="images" size={24} color={theme.colors.primary} />
+                            <Ionicons name="images" size={24} color={theme?.colors?.primary || '#10B981'} />
                             <Text style={styles.attachText}>GALERIA</Text>
                         </TouchableOpacity>
                     </View>
@@ -162,21 +162,21 @@ export default function AdubacaoFormScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.colors.background },
+    container: { flex: 1, backgroundColor: theme?.colors?.background || '#F3F4F6' },
     content: { padding: 20 },
-    title: { fontSize: 22, fontWeight: 'bold', color: theme.colors.textDark, marginBottom: 20 },
+    title: { fontSize: 22, fontWeight: 'bold', color: theme?.colors?.textDark || '#1F2937', marginBottom: 20 },
     row: { flexDirection: 'row' },
-    label: { fontSize: 10, fontWeight: 'bold', color: theme.colors.textMuted, marginBottom: 8, marginTop: 10 },
+    label: { fontSize: 10, fontWeight: 'bold', color: theme?.colors?.textMuted || '#6B7280', marginBottom: 8, marginTop: 10 },
     pillContainer: { flexDirection: 'row', marginBottom: 20, gap: 10 },
     pill: { flex: 1, padding: 12, borderRadius: 8, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#D1D5DB', alignItems: 'center' },
-    pillActive: { backgroundColor: '#ECFDF5', borderColor: theme.colors.primary },
-    pillText: { fontWeight: 'bold', color: theme.colors.textMuted, fontSize: 12 },
-    pillTextActive: { color: theme.colors.primary },
+    pillActive: { backgroundColor: '#ECFDF5', borderColor: theme?.colors?.primary || '#10B981' },
+    pillText: { fontWeight: 'bold', color: theme?.colors?.textMuted || '#6B7280', fontSize: 12 },
+    pillTextActive: { color: theme?.colors?.primary || '#10B981' },
     textAreaContainer: { marginBottom: 10 },
     attachContainer: { marginBottom: 30 },
     attachButtons: { flexDirection: 'row', gap: 15 },
     attachBtn: { flex: 1, backgroundColor: '#FFF', padding: 20, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#D1D5DB', borderStyle: 'dashed' },
-    attachText: { fontSize: 12, fontWeight: 'bold', color: theme.colors.primary, marginTop: 5 },
+    attachText: { fontSize: 12, fontWeight: 'bold', color: theme?.colors?.primary || '#10B981', marginTop: 5 },
     imagePreview: { position: 'relative' },
     removeBtn: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.6)', padding: 8, borderRadius: 20 }
 });

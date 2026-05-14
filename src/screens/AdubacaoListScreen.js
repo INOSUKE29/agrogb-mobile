@@ -109,7 +109,7 @@ export default function AdubacaoListScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.colors.background },
+    container: { flex: 1, backgroundColor: theme?.colors?.background || '#F3F4F6' },
     listContent: { padding: 15, paddingBottom: 100 },
     card: {
         backgroundColor: '#FFF',
@@ -133,21 +133,21 @@ const styles = StyleSheet.create({
         marginRight: 12
     },
     cardContent: { flex: 1 },
-    cardTitle: { fontSize: 16, fontWeight: 'bold', color: theme.colors.textDark },
-    cardSubtitle: { fontSize: 12, color: theme.colors.textMuted, marginTop: 2 },
+    cardTitle: { fontSize: 16, fontWeight: 'bold', color: theme?.colors?.textDark || '#1F2937' },
+    cardSubtitle: { fontSize: 12, color: theme?.colors?.textMuted || '#6B7280', marginTop: 2 },
     statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: '#F3F4F6' },
     statusText: { fontSize: 10, fontWeight: 'bold' },
     textPlanned: { color: '#F59E0B' },
     textApplied: { color: '#10B981' },
-    localText: { marginTop: 10, fontSize: 12, color: theme.colors.textMuted, fontStyle: 'italic' },
+    localText: { marginTop: 10, fontSize: 12, color: theme?.colors?.textMuted || '#6B7280', fontStyle: 'italic' },
     fab: {
         position: 'absolute', bottom: 20, right: 20,
         width: 56, height: 56, borderRadius: 28,
-        backgroundColor: theme.colors.primary,
+        backgroundColor: theme?.colors?.primary || '#10B981',
         alignItems: 'center', justifyContent: 'center',
         elevation: 5, shadowColor: '#000', shadowOpacity: 0.3
     },
     emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 100 },
-    emptyText: { marginTop: 20, fontSize: 16, fontWeight: 'bold', color: theme.colors.textMuted },
+    emptyText: { marginTop: 20, fontSize: 16, fontWeight: 'bold', color: theme?.colors?.textMuted || '#6B7280' },
     emptySub: { marginTop: 5, fontSize: 14, color: '#9CA3AF' }
 });

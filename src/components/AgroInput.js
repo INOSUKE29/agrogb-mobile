@@ -19,11 +19,11 @@ export default function AgroInput({
     const [isFocused, setIsFocused] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
-    // Cor da borda dinâmica
+    // Cor da borda dinâmica (com fallbacks seguros)
     const borderColor = error
-        ? theme.colors.error
+        ? (theme?.colors?.error || '#EF4444')
         : isFocused
-            ? theme.colors.primary
+            ? (theme?.colors?.primary || '#10B981')
             : '#E5E7EB';
 
     const actualSecureTextEntry = secureTextEntry && !isPasswordVisible;
@@ -33,7 +33,7 @@ export default function AgroInput({
             {label && <Text style={styles.label}>{label.toUpperCase()}</Text>}
 
             <View style={[styles.inputContainer, { borderColor: borderColor }]}>
-                {icon && <Ionicons name={icon} size={20} color={isFocused ? theme.colors.primary : '#9CA3AF'} style={styles.icon} />}
+                {icon && <Ionicons name={icon} size={20} color={isFocused ? (theme?.colors?.primary || '#10B981') : '#9CA3AF'} style={styles.icon} />}
                 
                 <TextInput
                     style={styles.input}
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
         padding: 5,
     },
     errorText: {
-        color: theme.colors.error,
+        color: theme?.colors?.error || '#EF4444',
         fontSize: 12,
         marginTop: 4,
     }

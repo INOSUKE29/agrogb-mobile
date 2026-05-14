@@ -7,23 +7,7 @@ if (fs.existsSync(targetPath)) {
     let content = fs.readFileSync(targetPath, 'utf8');
     const originalContent = content;
 
-    const signingConfigsReplacement = `    signingConfigs {
-        debug {
-            storeFile file('debug.keystore')
-            storePassword 'android'
-            keyAlias 'androiddebugkey'
-            keyPassword 'android'
-        }
-        release {
-            if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE')) {
-                storeFile file(MYAPP_UPLOAD_STORE_FILE)
-                storePassword MYAPP_UPLOAD_STORE_PASSWORD
-                keyAlias MYAPP_UPLOAD_KEY_ALIAS
-                keyPassword MYAPP_UPLOAD_KEY_PASSWORD
-            }
-        }
-    }`;
-
+    // Force release to use debug signing configuration for easy testing/installation
     const buildTypesReplacement = `        release {
             // Para testes, usar a assinatura debug para gerar um APK instalável
             signingConfig signingConfigs.debug
@@ -33,28 +17,24 @@ if (fs.existsSync(targetPath)) {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }`;
 
-    // 1. Replace the entire signingConfigs block
-    // This regex matches "signingConfigs {" followed by any content including a "release {" block, until the closing brace of signingConfigs.
-    content = content.replace(/signingConfigs\s*{[\s\S]*?release\s*{[\s\S]*?}[\s\S]*?}/, signingConfigsReplacement);
-    
-    // 2. Replace the release buildType block
-    // This regex specifically targets the "release {" block inside buildTypes that contains signingConfig and proguardFiles.
+    // Replace the release buildType block
+    // This regex specifically targets the "release {" block inside buildTypes
     content = content.replace(/release\s*{[\s\S]*?signingConfig.*?proguardFiles.*?}/, buildTypesReplacement);
 
     if (content !== originalContent) {
         fs.writeFileSync(targetPath, content, 'utf8');
-        console.log('✅ build.gradle successfully patched!');
+        console.log('✅ build.gradle successfully patched for stable release build!');
         
         // Verification of key changes
-        if (content.includes('MYAPP_UPLOAD_STORE_FILE') && content.includes('signingConfig signingConfigs.debug')) {
-            console.log('✅ Verification passed: Correct signing properties and config location found.');
+        if (content.includes('signingConfig signingConfigs.debug')) {
+            console.log('✅ Verification passed: Correct signing config applied.');
         } else {
-            console.warn('⚠️ Verification warning: Some expected strings are missing after patch.');
+            console.warn('⚠️ Verification warning: signingConfigs.debug not found after patch.');
         }
     } else {
         console.log('ℹ️ No changes needed or patterns not found in build.gradle.');
     }
 } else {
     console.log('❌ build.gradle not found at ' + targetPath);
-    process.exit(1); // Exit with error if file not found in CI
+    process.exit(1);
 }

@@ -13,18 +13,18 @@ export default function AgroButton({
     const isPrimary = variant === 'primary';
     const isDanger = variant === 'danger';
 
-    // Define cores com base na variante
-    let bg = theme.colors.primary;
+    // Define cores com base na variante (com fallbacks seguros)
+    let bg = theme?.colors?.primary || '#10B981';
     let txt = '#FFF';
     let border = 'transparent';
 
     if (variant === 'secondary') {
         bg = 'transparent';
-        txt = theme.colors.primaryDeep;
-        border = theme.colors.primary;
+        txt = theme?.colors?.primaryDeep || '#059669';
+        border = theme?.colors?.primary || '#10B981';
     } else if (variant === 'danger') {
         bg = '#FEE2E2';
-        txt = theme.colors.error;
+        txt = theme?.colors?.error || '#EF4444';
     }
 
     // Estado desativado
@@ -58,8 +58,8 @@ export default function AgroButton({
 
 const styles = StyleSheet.create({
     container: {
-        height: theme.metrics.buttonHeight,
-        borderRadius: theme.metrics.radius,
+        height: theme?.metrics?.buttonHeight || 55,
+        borderRadius: theme?.metrics?.radius || 12,
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 20,
