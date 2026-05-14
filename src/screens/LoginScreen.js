@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, Dimensions, Image, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, Dimensions, Image, StatusBar, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { executeQuery, insertUsuario } from '../database/database';
 import AgroInput from '../components/AgroInput';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -11,6 +10,7 @@ import { translateAuthError } from '../utils/errorHelpers';
 
 const { width, height } = Dimensions.get('window');
 const LOGO = require('../../assets/icon.png');
+const RURAL_BG = require('../../assets/login_bg.png');
 const BIO_KEY = 'agrogb_biometric_credentials';
 
 export default function LoginScreen({ navigation }) {
@@ -137,7 +137,8 @@ export default function LoginScreen({ navigation }) {
     };
 
     return (
-        <LinearGradient colors={['#064E3B', '#065F46', '#047857']} style={styles.container}>
+        <ImageBackground source={RURAL_BG} style={styles.container} resizeMode="cover">
+            <View style={styles.overlay} />
             <StatusBar barStyle="light-content" />
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.inner}>
                 
@@ -194,12 +195,13 @@ export default function LoginScreen({ navigation }) {
                 </View>
 
             </KeyboardAvoidingView>
-        </LinearGradient>
+        </ImageBackground>
     );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
+    overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.45)' },
     inner: { flex: 1, justifyContent: 'center', padding: 25 },
     header: { alignItems: 'center', marginBottom: 40 },
     logoContainer: {
@@ -253,7 +255,7 @@ const styles = StyleSheet.create({
     linkText: { fontSize: 14, color: '#6B7280' },
     linkTextBold: { color: '#10B981', fontWeight: 'bold' },
     footer: { position: 'absolute', bottom: 30, left: 0, right: 0, alignItems: 'center' },
-    footerText: { color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: 'bold' }
+    footerText: { color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 'bold' }
 });
 
 
