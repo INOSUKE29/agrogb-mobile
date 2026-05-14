@@ -36,7 +36,7 @@ jobs:
 
       - name: ⚙️ Expo Prebuild
         run: |
-          npx expo prebuild --platform android --clean
+          npx expo prebuild --platform android
           node patch_gradle.js
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
