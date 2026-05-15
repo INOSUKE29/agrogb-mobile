@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { theme } from '../styles/theme';
+import { theme } from '../../styles/theme';
 
 export default function AgroButton({
     title,

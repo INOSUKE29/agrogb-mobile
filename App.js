@@ -5,8 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
 import { initDB } from './src/database/database';
-import AgroInput from './src/components/common/AgroInput';
-import AgroButton from './src/components/common/AgroButton';
+
 import LoginScreen from './src/screens/LoginScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import ColheitaScreen from './src/screens/ColheitaScreen';
