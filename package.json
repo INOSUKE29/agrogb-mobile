@@ -38,7 +38,6 @@
     "expo-local-authentication": "~13.8.0",
     "expo-location": "~16.5.5",
     "expo-media-library": "~15.9.2",
-    "expo-modules-core": "~1.11.0",
     "expo-print": "~12.8.1",
     "expo-secure-store": "~12.8.1",
     "expo-sharing": "~11.10.0",

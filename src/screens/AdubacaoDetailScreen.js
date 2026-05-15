@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Image, Alert, Share } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { theme } from '../styles/theme';
-import AgroButton from '../components/AgroButton';
+import AgroButton from '../components/common/AgroButton';
 import { updatePlanoAdubacao } from '../database/database';
 
 export default function AdubacaoDetailScreen({ route, navigation }) {
