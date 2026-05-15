@@ -10,7 +10,7 @@ import { translateAuthError } from '../utils/errorHelpers';
 
 const { width, height } = Dimensions.get('window');
 const LOGO = require('../../assets/icon.png');
-const RURAL_BG = require('../../assets/login_bg.png');
+const RURAL_BG = require('../../assets/login_bg.jpg');
 const BIO_KEY = 'agrogb_biometric_credentials';
 
 export default function LoginScreen({ navigation }) {
