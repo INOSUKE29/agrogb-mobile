@@ -625,6 +625,7 @@ const createTables = async () => {
             console.log('✅ Coluna geoloc adicionada em monitoramento_entidade');
         } catch (e) { }
 
+        try {
             // Seed das categorias padrão
             const countCat = await executeQuery('SELECT COUNT(*) as c FROM cost_categories');
             if (countCat.rows.item(0).c === 0) {
@@ -1195,14 +1196,6 @@ export const getDadosPendentes = async () => {
         res.total = total;
         return res;
     } catch (e) { return { total: 0 }; }
-};
-
-// --- CADERNO NOTAS ---
-export const insertCadernoNota = async (n) => {
-    await executeQuery(
-        `INSERT INTO caderno_notas (uuid, observacao, data, last_updated, sync_status, is_deleted) VALUES (?, ?, ?, ?, ?, ?)`,
-        [require('uuid').v4(), up(n.observacao), n.data, new Date().toISOString(), 0, 0]
-    );
 };
 
 // --- FROTA (NOVO MÓDULO) ---
