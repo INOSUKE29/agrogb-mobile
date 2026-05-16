@@ -1,13 +1,7 @@
 /**
  * DashboardService
- * Centraliza a lógica de busca de dados para o Dashboard Executivo.
- * Inicialmente utiliza dados mockados realistas para definição de UI/UX.
+ * Centraliza a lógica de busca de dados para o Dashboard Executivo do banco de dados local.
  */
-
-export const DashboardService = {
-    /**
-     * Busca dados consolidados do dashboard
-     */
 import { executeQuery } from '../database/database';
 
 export const DashboardService = {
@@ -85,20 +79,6 @@ export const DashboardService = {
                 });
             }
 
-            return {
-                financial: {
-                    revenue,
-                    expenses,
-                    netResult,
-                    trend: 0, // Implementar logica de comparativo se necessário
-                    trendType: netResult >= 0 ? 'up' : 'down'
-                },
-                kpis: [
-                    { id: '1', title: 'Produção Total', value: `${producaoTotal.toLocaleString()} kg`, icon: 'leaf', trend: '---', trendType: 'up', color: '#10B981' },
-                    { id: '2', title: 'Receita Operacional', value: `R$ ${revenue.toLocaleString()}`, icon: 'cash', trend: '---', trendType: 'up', color: '#3B82F6' },
-                    { id: '3', title: 'Despesas Gerais', value: `R$ ${expenses.toLocaleString()}`, icon: 'cart', trend: '---', trendType: 'down', color: '#EF4444' },
-                    { id: '4', title: 'Margem Líquida', value: revenue > 0 ? `${((netResult / revenue) * 100).toFixed(1)}%` : '0%', icon: 'pie-chart', trend: '---', trendType: 'up', color: '#8B5CF6' }
-                ],
             // 5. ALERTAS INTELIGENTES
             const alerts = [];
             
@@ -116,20 +96,40 @@ export const DashboardService = {
 
             // Alerta: Irrigação Pendente (Exemplo: se não houve irrigação hoje)
             const today = new Date().toISOString().split('T')[0];
-            const resIrrig = await executeQuery('SELECT COUNT(*) as c FROM irrigacao WHERE data = ?', [today]);
-            if (resIrrig.rows.item(0).c === 0) {
-                alerts.push({
-                    id: 'a-irrig',
-                    type: 'info',
-                    title: 'Irrigação Diária',
-                    message: 'Nenhum turno de irrigação registrado hoje.',
-                    screen: 'Irrigacao'
-                });
+            // Nota: Se a tabela irrigacao não existir, isso vai dar erro, mas o try/catch segura.
+            try {
+                const resIrrig = await executeQuery('SELECT COUNT(*) as c FROM irrigacao WHERE data = ?', [today]);
+                if (resIrrig.rows.item(0).c === 0) {
+                    alerts.push({
+                        id: 'a-irrig',
+                        type: 'info',
+                        title: 'Irrigação Diária',
+                        message: 'Nenhum turno de irrigação registrado hoje.',
+                        screen: 'Irrigacao'
+                    });
+                }
+            } catch (e) {
+                // Tabela irrigação pode não existir ainda no esquema
             }
 
             if (alerts.length === 0) {
                 alerts.push({ id: 'a1', type: 'success', title: 'Operação Normal', message: 'Tudo em ordem com a sua fazenda.', screen: 'Home' });
             }
+
+            return {
+                financial: {
+                    revenue,
+                    expenses,
+                    netResult,
+                    trend: 0,
+                    trendType: netResult >= 0 ? 'up' : 'down'
+                },
+                kpis: [
+                    { id: '1', title: 'Produção Total', value: `${producaoTotal.toLocaleString()} kg`, icon: 'leaf', trend: '---', trendType: 'up', color: '#10B981' },
+                    { id: '2', title: 'Receita Operacional', value: `R$ ${revenue.toLocaleString()}`, icon: 'cash', trend: '---', trendType: 'up', color: '#3B82F6' },
+                    { id: '3', title: 'Despesas Gerais', value: `R$ ${expenses.toLocaleString()}`, icon: 'cart', trend: '---', trendType: 'down', color: '#EF4444' },
+                    { id: '4', title: 'Margem Líquida', value: revenue > 0 ? `${((netResult / revenue) * 100).toFixed(1)}%` : '0%', icon: 'pie-chart', trend: '---', trendType: 'up', color: '#8B5CF6' }
+                ],
                 alerts: alerts,
                 activities: activities.sort((a,b) => b.time.localeCompare(a.time)),
                 chartData: await DashboardService.getProductionChartData()
