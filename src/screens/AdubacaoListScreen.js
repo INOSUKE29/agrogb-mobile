@@ -1,14 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Alert } from 'react-native';
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons'; // FontAwesome5 for specific agro icons
-import { theme } from '../styles/theme';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Alert, ActivityIndicator } from 'react-native';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 import { getPlanosAdubacao, deletePlanoAdubacao } from '../database/database';
-import { useIsFocused } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+
+// Design System
+import Card from '../components/common/Card';
+import MetricCard from '../components/common/MetricCard';
 
 export default function AdubacaoListScreen({ navigation }) {
+    const { theme } = useTheme();
     const [planos, setPlanos] = useState([]);
     const [loading, setLoading] = useState(false);
-    const isFocused = useIsFocused(); // Recarrega ao voltar
 
     const loadPlanos = async () => {
         setLoading(true);
@@ -22,9 +27,9 @@ export default function AdubacaoListScreen({ navigation }) {
         }
     };
 
-    useEffect(() => {
-        if (isFocused) loadPlanos();
-    }, [isFocused]);
+    useFocusEffect(useCallback(() => {
+        loadPlanos();
+    }, []));
 
     const handleDelete = (plano) => {
         Alert.alert(
@@ -44,110 +49,128 @@ export default function AdubacaoListScreen({ navigation }) {
         );
     };
 
+    const appliedCount = planos.filter(p => p.status === 'APLICADO').length;
+
     const renderItem = ({ item }) => {
         const isApplied = item.status === 'APLICADO';
 
         return (
-            <TouchableOpacity
-                style={[styles.card, isApplied && styles.cardApplied]}
+            <Card 
+                style={[styles.card, isApplied && styles.cardApplied]} 
+                noPadding
                 onPress={() => navigation.navigate('AdubacaoDetail', { plano: item })}
                 onLongPress={() => handleDelete(item)}
             >
-                <View style={styles.cardHeader}>
-                    <View style={styles.iconContainer}>
-                        <FontAwesome5
-                            name={item.tipo_aplicacao === 'GOTEJO' ? 'faucet' : 'spray-can'}
-                            size={20}
-                            color={isApplied ? '#059669' : '#F59E0B'}
-                        />
+                <View style={styles.cardContent}>
+                    <View style={styles.cardHeader}>
+                        <View style={[styles.iconContainer, { backgroundColor: isApplied ? '#F0FDF4' : '#FFFBEB' }]}>
+                            <FontAwesome5
+                                name={item.tipo_aplicacao === 'GOTEJO' ? 'faucet' : 'spray-can'}
+                                size={18}
+                                color={isApplied ? '#10B981' : '#F59E0B'}
+                            />
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 12 }}>
+                            <Text style={styles.cardTitle}>{item.nome_plano}</Text>
+                            <Text style={styles.cardSubtitle}>
+                                {item.cultura} • {item.tipo_aplicacao}
+                            </Text>
+                        </View>
+                        <View style={[styles.statusBadge, { backgroundColor: isApplied ? '#F0FDF4' : '#FFFBEB' }]}>
+                            <Text style={[styles.statusText, { color: isApplied ? '#10B981' : '#F59E0B' }]}>
+                                {item.status}
+                            </Text>
+                        </View>
                     </View>
-                    <View style={styles.cardContent}>
-                        <Text style={styles.cardTitle}>{item.nome_plano}</Text>
-                        <Text style={styles.cardSubtitle}>
-                            {item.cultura} • {item.tipo_aplicacao}
-                        </Text>
-                    </View>
-                    <View style={styles.statusBadge}>
-                        <Text style={[styles.statusText, isApplied ? styles.textApplied : styles.textPlanned]}>
-                            {item.status}
-                        </Text>
-                    </View>
-                </View>
 
-                {item.area_local ? (
-                    <Text style={styles.localText}>📍 {item.area_local}</Text>
-                ) : null}
-            </TouchableOpacity>
+                    {item.area_local && (
+                        <View style={styles.localRow}>
+                            <Ionicons name="location-outline" size={14} color="#9CA3AF" />
+                            <Text style={styles.localText}>{item.area_local}</Text>
+                        </View>
+                    )}
+                </View>
+            </Card>
         );
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
+            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
+                <View style={styles.headerTop}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>ADUBAÇÃO</Text>
+                    <TouchableOpacity onPress={() => navigation.navigate('AdubacaoForm')}>
+                        <Ionicons name="add-circle" size={28} color="#FFF" />
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.summaryRow}>
+                    <MetricCard 
+                        title="Total Planos" 
+                        value={planos.length.toString()} 
+                        icon="list" 
+                        color="#FFF"
+                        style={styles.summaryCard}
+                    />
+                    <MetricCard 
+                        title="Realizados" 
+                        value={appliedCount.toString()} 
+                        icon="checkmark-done" 
+                        color="#FFF"
+                        style={styles.summaryCard}
+                    />
+                </View>
+            </LinearGradient>
+
             <FlatList
                 data={planos}
                 keyExtractor={(item) => item.uuid}
                 renderItem={renderItem}
                 contentContainerStyle={styles.listContent}
-                refreshControl={<RefreshControl refreshing={loading} onRefresh={loadPlanos} />}
+                refreshControl={<RefreshControl refreshing={loading} onRefresh={loadPlanos} colors={[theme?.colors?.primary]} />}
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
                         <Ionicons name="flask-outline" size={64} color="#D1D5DB" />
-                        <Text style={styles.emptyText}>Nenhum plano de adubação criado.</Text>
-                        <Text style={styles.emptySub}>Toque no + para criar uma receita.</Text>
+                        <Text style={styles.emptyText}>Nenhum plano criado.</Text>
+                        <Text style={styles.emptySub}>Comece criando uma nova receita.</Text>
                     </View>
                 }
             />
 
             <TouchableOpacity
-                style={styles.fab}
+                style={[styles.fab, { backgroundColor: theme?.colors?.primary || '#10B981' }]}
                 onPress={() => navigation.navigate('AdubacaoForm')}
             >
-                <Ionicons name="add" size={30} color="#FFF" />
+                <Ionicons name="add" size={32} color="#FFF" />
             </TouchableOpacity>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme?.colors?.background || '#F3F4F6' },
-    listContent: { padding: 15, paddingBottom: 100 },
-    card: {
-        backgroundColor: '#FFF',
-        borderRadius: 12,
-        padding: 15,
-        marginBottom: 12,
-        elevation: 2,
-        shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4,
-        borderLeftWidth: 4,
-        borderLeftColor: '#F59E0B' // Padrão: Planejado (Amber)
-    },
-    cardApplied: {
-        borderLeftColor: '#10B981', // Verde
-        opacity: 0.8
-    },
+    container: { flex: 1 },
+    header: { paddingTop: 50, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
+    summaryRow: { flexDirection: 'row', gap: 10 },
+    summaryCard: { flex: 1, height: 90, marginHorizontal: 0 },
+    listContent: { padding: 20, paddingBottom: 100 },
+    card: { marginBottom: 15, borderLeftWidth: 4, borderLeftColor: '#F59E0B' },
+    cardApplied: { borderLeftColor: '#10B981' },
+    cardContent: { padding: 15 },
     cardHeader: { flexDirection: 'row', alignItems: 'center' },
-    iconContainer: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: '#F3F4F6',
-        alignItems: 'center', justifyContent: 'center',
-        marginRight: 12
-    },
-    cardContent: { flex: 1 },
-    cardTitle: { fontSize: 16, fontWeight: 'bold', color: theme?.colors?.textDark || '#1F2937' },
-    cardSubtitle: { fontSize: 12, color: theme?.colors?.textMuted || '#6B7280', marginTop: 2 },
-    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: '#F3F4F6' },
-    statusText: { fontSize: 10, fontWeight: 'bold' },
-    textPlanned: { color: '#F59E0B' },
-    textApplied: { color: '#10B981' },
-    localText: { marginTop: 10, fontSize: 12, color: theme?.colors?.textMuted || '#6B7280', fontStyle: 'italic' },
-    fab: {
-        position: 'absolute', bottom: 20, right: 20,
-        width: 56, height: 56, borderRadius: 28,
-        backgroundColor: theme?.colors?.primary || '#10B981',
-        alignItems: 'center', justifyContent: 'center',
-        elevation: 5, shadowColor: '#000', shadowOpacity: 0.3
-    },
+    iconContainer: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+    cardTitle: { fontSize: 15, fontWeight: '800', color: '#1F2937' },
+    cardSubtitle: { fontSize: 11, color: '#9CA3AF', fontWeight: 'bold', marginTop: 2 },
+    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+    statusText: { fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
+    localRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, backgroundColor: '#F9FAFB', padding: 8, borderRadius: 8 },
+    localText: { fontSize: 11, color: '#6B7280', fontWeight: '600', marginLeft: 5 },
+    fab: { position: 'absolute', bottom: 30, right: 30, width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', elevation: 10, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10 },
     emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 100 },
-    emptyText: { marginTop: 20, fontSize: 16, fontWeight: 'bold', color: theme?.colors?.textMuted || '#6B7280' },
-    emptySub: { marginTop: 5, fontSize: 14, color: '#9CA3AF' }
+    emptyText: { marginTop: 20, fontSize: 16, fontWeight: 'bold', color: '#4B5563' },
+    emptySub: { marginTop: 5, fontSize: 14, color: '#9CA3AF', textAlign: 'center' }
 });

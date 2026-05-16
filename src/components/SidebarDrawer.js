@@ -5,16 +5,19 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { executeQuery } from '../database/database';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import { PermissionService } from '../services/PermissionService';
 
 const { width, height } = Dimensions.get('window');
 const DRAWER_WIDTH = width * 0.75;
 
 export default function SidebarDrawer({ visible, onClose }) {
     const { theme } = useTheme();
+    const { role, logout } = useAuth();
     const navigation = useNavigation();
 
     const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current; // Start hidden (left)
-    const [user, setUser] = useState({ name: 'Usuário', email: 'agrogb@sistema.com' });
+    const [profile, setProfile] = useState({ nome: 'Usuário', email: 'agrogb@sistema.com' });
 
     useEffect(() => {
         if (visible) {
@@ -43,13 +46,13 @@ export default function SidebarDrawer({ visible, onClose }) {
                 const res = await executeQuery('SELECT * FROM usuarios WHERE id = ?', [session.id]);
                 if (res.rows.length > 0) {
                     const u = res.rows.item(0);
-                    setUser({
+                    setProfile({
                         nome: u.nome_completo || u.usuario,
                         email: u.email || 'agrogb@sistema.com',
                         avatar: u.avatar || null
                     });
                 } else {
-                    setUser({ nome: session.nome, email: 'agrogb@sistema.com', avatar: null });
+                    setProfile({ nome: session.nome, email: 'agrogb@sistema.com', avatar: null });
                 }
             }
         } catch (e) { console.error('Sidebar Profile Error:', e); }
@@ -89,15 +92,19 @@ export default function SidebarDrawer({ visible, onClose }) {
         );
     };
 
-    const MenuItem = ({ icon, label, screen, badge }) => (
-        <TouchableOpacity style={styles.menuItem} onPress={() => handleNavigation(screen)}>
-            <View style={{ width: 30, alignItems: 'center' }}>
-                <Ionicons name={icon} size={22} color={theme?.colors?.text ?? "#374151"} />
-            </View>
-            <Text style={[styles.menuText, { color: theme?.colors?.text ?? "#374151" }]}>{label}</Text>
-            {badge && <View style={[styles.badge, { backgroundColor: theme?.colors?.error ?? "#EF4444" }]}><Text style={styles.badgeText}>{badge}</Text></View>}
-        </TouchableOpacity>
-    );
+    const MenuItem = ({ icon, label, screen, badge }) => {
+        if (!PermissionService.canAccess(role, screen)) return null;
+
+        return (
+            <TouchableOpacity style={styles.menuItem} onPress={() => handleNavigation(screen)}>
+                <View style={{ width: 30, alignItems: 'center' }}>
+                    <Ionicons name={icon} size={22} color={theme?.colors?.text ?? "#374151"} />
+                </View>
+                <Text style={[styles.menuText, { color: theme?.colors?.text ?? "#374151" }]}>{label}</Text>
+                {badge && <View style={[styles.badge, { backgroundColor: theme?.colors?.error ?? "#EF4444" }]}><Text style={styles.badgeText}>{badge}</Text></View>}
+            </TouchableOpacity>
+        );
+    };
 
     if (!visible) return null;
 
@@ -114,15 +121,15 @@ export default function SidebarDrawer({ visible, onClose }) {
                     <View style={[styles.header, { backgroundColor: theme?.colors?.primary ?? '#059669' }]}>
 
                         <View style={styles.avatar}>
-                            {user.avatar ? (
-                                <Image source={{ uri: user.avatar }} style={{ width: 50, height: 50, borderRadius: 25 }} />
+                            {profile.avatar ? (
+                                <Image source={{ uri: profile.avatar }} style={{ width: 50, height: 50, borderRadius: 25 }} />
                             ) : (
                                 <Ionicons name="person" size={30} color="#FFF" />
                             )}
                         </View>
                         <View>
-                            <Text style={styles.userName}>{user.nome || 'AgroGB User'}</Text>
-                            <Text style={styles.userEmail}>{user.email || 'Online'}</Text>
+                            <Text style={styles.userName}>{profile.nome || 'AgroGB User'}</Text>
+                            <Text style={styles.userEmail}>{profile.email || 'Online'}</Text>
                         </View>
                         <TouchableOpacity onPress={onClose} style={{ position: 'absolute', top: 20, right: 10 }}>
                             <Ionicons name="close" size={24} color="#FFF" />
@@ -134,15 +141,24 @@ export default function SidebarDrawer({ visible, onClose }) {
                         <Text style={styles.sectionTitle}>NAVEGAÇÃO</Text>
                         <MenuItem icon="home-outline" label="Painel / Início" screen="Home" />
                         <MenuItem icon="camera-outline" label="Monitoramento" screen="Monitoramento" />
+                        <MenuItem icon="water-outline" label="Irrigação" screen="Irrigacao" />
+                        <MenuItem icon="flask-outline" label="Fertirrigação" screen="Fertirrigacao" />
+                        <MenuItem icon="shield-checkmark-outline" label="Aplicações" screen="Aplicacoes" />
                         <MenuItem icon="cube-outline" label="Estoque" screen="Estoque" />
                         <MenuItem icon="cart-outline" label="Compras" screen="Compras" />
                         <MenuItem icon="people-outline" label="Clientes" screen="Clientes" />
+                        <MenuItem icon="people-circle-outline" label="Equipes" screen="Equipes" />
+                        <MenuItem icon="business-outline" label="Fornecedores" screen="Fornecedores" />
+                        <MenuItem icon="map-outline" label="Talhões" screen="Talhoes" />
+                        <MenuItem icon="cash-outline" label="Contas Pagar/Rec" screen="FinanceiroLancamentos" />
+                        <MenuItem icon="stats-chart-outline" label="Financeiro Pro" screen="FinanceiroDashboard" />
 
                         <View style={styles.divider} />
 
                         <Text style={styles.sectionTitle}>SISTEMA</Text>
                         <MenuItem icon="person-outline" label="Meu Perfil" screen="Profile" />
-                        <MenuItem icon="settings-outline" label="Configurações" screen="Sync" />
+                        <MenuItem icon="bar-chart-outline" label="BI Avançado" screen="BIRelatoriosAvancados" />
+                        <MenuItem icon="sync-outline" label="Sincronizar" screen="Sync" />
                         <MenuItem icon="information-circle-outline" label="Sobre" screen="Help" />
                     </ScrollView>
 

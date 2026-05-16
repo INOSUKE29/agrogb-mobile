@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../styles/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 
-export default function DashboardHeader({ userName, propertyName, onProfilePress, onNotifyPress }) {
+export default function DashboardHeader({ userName, propertyName, onProfilePress, onNotifyPress, isSyncing }) {
     const greeting = () => {
         const hour = new Date().getHours();
         if (hour < 12) return 'Bom dia';
@@ -29,6 +29,12 @@ export default function DashboardHeader({ userName, propertyName, onProfilePress
                 </TouchableOpacity>
 
                 <View style={styles.actions}>
+                    {isSyncing && (
+                        <View style={styles.syncBadge}>
+                            <Ionicons name="sync" size={14} color="#FFF" style={styles.spin} />
+                            <Text style={styles.syncText}>SINC...</Text>
+                        </View>
+                    )}
                     <TouchableOpacity style={styles.iconBtn} onPress={onNotifyPress}>
                         <Ionicons name="notifications-outline" size={24} color="#FFF" />
                         <View style={styles.badge} />
@@ -123,6 +129,21 @@ const styles = StyleSheet.create({
         backgroundColor: '#F87171',
         borderWidth: 1,
         borderColor: '#059669',
+    },
+    syncBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.2)',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 12,
+        marginRight: 5,
+    },
+    syncText: {
+        color: '#FFF',
+        fontSize: 10,
+        fontWeight: '900',
+        marginLeft: 5,
     },
     propertySelector: {
         flexDirection: 'row',

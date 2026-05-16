@@ -7,7 +7,11 @@ import { StatusBar } from 'expo-status-bar';
 import { initDB } from './src/database/database';
 
 import LoginScreen from './src/screens/LoginScreen';
+import SplashScreen from './src/screens/SplashScreen';
 import HomeScreen from './src/screens/HomeScreen';
+import FinanceiroDashboardScreen from './src/screens/FinanceiroDashboardScreen';
+import FinanceiroLancamentosScreen from './src/screens/FinanceiroLancamentosScreen';
+import CentroCustosScreen from './src/screens/CentroCustosScreen';
 import ColheitaScreen from './src/screens/ColheitaScreen';
 import VendasScreen from './src/screens/VendasScreen';
 import EstoqueScreen from './src/screens/EstoqueScreen';
@@ -31,10 +35,19 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import AdubacaoListScreen from './src/screens/AdubacaoListScreen';
 import AdubacaoFormScreen from './src/screens/AdubacaoFormScreen';
 import AdubacaoDetailScreen from './src/screens/AdubacaoDetailScreen';
+import TalhoesScreen from './src/screens/TalhoesScreen';
+import FornecedoresScreen from './src/screens/FornecedoresScreen';
+import IrrigacaoScreen from './src/screens/IrrigacaoScreen';
+import FertirrigacaoScreen from './src/screens/FertirrigacaoScreen';
+import AplicacoesScreen from './src/screens/AplicacoesScreen';
+import EquipesScreen from './src/screens/EquipesScreen';
+import BIRelatoriosAvancadosScreen from './src/screens/BIRelatoriosAvancadosScreen';
+import { SyncProvider } from './src/context/SyncContext';
 
 import ErrorBoundary from './src/components/common/ErrorBoundary';
 import { WeatherProvider } from './src/context/WeatherContext';
 import { ThemeProvider } from './src/context/ThemeContext';
+import { AuthProvider } from './src/context/AuthContext';
 
 const Stack = createStackNavigator();
 
@@ -45,110 +58,60 @@ export default function App() {
 
     return (
         <ErrorBoundary>
-            <ThemeProvider>
-                <WeatherProvider>
-                    <StatusBar style="light" />
-                    <NavigationContainer>
-                        <Stack.Navigator
-                            initialRouteName="Login"
-                            screenOptions={{
-                                headerStyle: { backgroundColor: '#10B981' }, // Será dinâmico futuramente usando styled headers
-                                headerTintColor: '#fff',
-                                headerTitleStyle: { fontWeight: 'bold' }
-                            }}
-                        >
-                            <Stack.Screen
-                                name="Login"
-                                component={LoginScreen}
-                                options={{ headerShown: false }}
-                            />
-                            <Stack.Screen
-                                name="Register"
-                                component={RegisterScreen}
-                                options={{ headerShown: false }}
-                            />
-                            <Stack.Screen
-                                name="Home"
-                                component={HomeScreen}
-                                options={{ headerShown: false }}
-                            />
-                            <Stack.Screen
-                                name="Colheita"
-                                component={ColheitaScreen}
-                                options={{ title: 'Registrar Colheita' }}
-                            />
-                            <Stack.Screen
-                                name="Vendas"
-                                component={VendasScreen}
-                                options={{ title: 'Registrar Venda' }}
-                            />
-                            <Stack.Screen
-                                name="Estoque"
-                                component={EstoqueScreen}
-                                options={{ title: 'Consultar Estoque' }}
-                            />
-                            <Stack.Screen
-                                name="Sync"
-                                component={SyncScreen}
-                                options={{ title: 'Sincronizar Dados' }}
-                            />
-                            <Stack.Screen
-                                name="Compras"
-                                component={ComprasScreen}
-                                options={{ title: 'Registrar Compra' }}
-                            />
-                            <Stack.Screen
-                                name="Plantio"
-                                component={PlantioScreen}
-                                options={{ title: 'Registrar Plantio' }}
-                            />
-                            <Stack.Screen
-                                name="Custos"
-                                component={CustosScreen}
-                                options={{ title: 'Registrar Custo' }}
-                            />
-                            <Stack.Screen
-                                name="Descarte"
-                                component={DescarteScreen}
-                                options={{ title: 'Registrar Descarte' }}
-                            />
-                            <Stack.Screen
-                                name="Cadastro"
-                                component={CadastroScreen}
-                                options={{ title: 'Cadastros Gerais' }}
-                            />
-                            <Stack.Screen
-                                name="Clientes"
-                                component={ClientesScreen}
-                                options={{ title: 'Gerenciar Clientes' }}
-                            />
-                            <Stack.Screen
-                                name="Culturas"
-                                component={CulturasScreen}
-                                options={{ title: 'Culturas e Áreas' }}
-                            />
-                            <Stack.Screen
-                                name="Relatorios"
-                                component={RelatoriosScreen}
-                                options={{ title: 'Relatórios' }}
-                            />
-                            <Stack.Screen name="Usuarios" component={UsuariosScreen} options={{ title: 'Controle de Usuários' }} />
-                            <Stack.Screen name="Monitoramento" component={MonitoramentoScreen} options={{ title: 'Monitoramento' }} />
-                            <Stack.Screen name="Ocr" component={OcrScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="Scanner" component={ScannerScreen} options={{ headerShown: false }} />
-                            <Stack.Screen name="CadernoCampo" component={CadernoCampoScreen} options={{ title: 'Caderno de Campo' }} />
-                            <Stack.Screen name="Frota" component={FrotaScreen} options={{ title: 'Gestão de Frota' }} />
-                            <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Meu Perfil UltraPro' }} />
-
-                            {/* ADUBAÇÃO v5.4 */}
-                            <Stack.Screen name="AdubacaoList" component={AdubacaoListScreen} options={{ title: 'Planos de Adubação' }} />
-                            <Stack.Screen name="AdubacaoForm" component={AdubacaoFormScreen} options={{ title: 'Novo Plano' }} />
-                            <Stack.Screen name="AdubacaoDetail" component={AdubacaoDetailScreen} options={{ title: 'Detalhes do Plano' }} />
-
-                        </Stack.Navigator>
-                    </NavigationContainer>
-                </WeatherProvider>
-            </ThemeProvider>
+            <AuthProvider>
+                <SyncProvider>
+                    <ThemeProvider>
+                        <WeatherProvider>
+                            <StatusBar style="light" />
+                            <NavigationContainer>
+                                <Stack.Navigator
+                                    initialRouteName="Splash"
+                                    screenOptions={{
+                                        headerShown: false,
+                                    }}
+                                >
+                                    <Stack.Screen name="Splash" component={SplashScreen} />
+                                    <Stack.Screen name="Login" component={LoginScreen} />
+                                    <Stack.Screen name="Register" component={RegisterScreen} />
+                                    <Stack.Screen name="Home" component={HomeScreen} />
+                                    <Stack.Screen name="FinanceiroDashboard" component={FinanceiroDashboardScreen} />
+                                    <Stack.Screen name="Colheita" component={ColheitaScreen} />
+                                    <Stack.Screen name="Vendas" component={VendasScreen} />
+                                    <Stack.Screen name="Estoque" component={EstoqueScreen} />
+                                    <Stack.Screen name="Sync" component={SyncScreen} />
+                                    <Stack.Screen name="Compras" component={ComprasScreen} />
+                                    <Stack.Screen name="Plantio" component={PlantioScreen} />
+                                    <Stack.Screen name="Custos" component={CustosScreen} />
+                                    <Stack.Screen name="Descarte" component={DescarteScreen} />
+                                    <Stack.Screen name="Cadastro" component={CadastroScreen} />
+                                    <Stack.Screen name="Clientes" component={ClientesScreen} />
+                                    <Stack.Screen name="Culturas" component={CulturasScreen} />
+                                    <Stack.Screen name="Relatorios" component={RelatoriosScreen} />
+                                    <Stack.Screen name="Usuarios" component={UsuariosScreen} />
+                                    <Stack.Screen name="Monitoramento" component={MonitoramentoScreen} />
+                                    <Stack.Screen name="Ocr" component={OcrScreen} />
+                                    <Stack.Screen name="Scanner" component={ScannerScreen} />
+                                    <Stack.Screen name="CadernoCampo" component={CadernoCampoScreen} />
+                                    <Stack.Screen name="Frota" component={FrotaScreen} />
+                                    <Stack.Screen name="Profile" component={ProfileScreen} />
+                                    <Stack.Screen name="AdubacaoList" component={AdubacaoListScreen} />
+                                    <Stack.Screen name="AdubacaoForm" component={AdubacaoFormScreen} />
+                                    <Stack.Screen name="AdubacaoDetail" component={AdubacaoDetailScreen} />
+                                    <Stack.Screen name="Talhoes" component={TalhoesScreen} />
+                                    <Stack.Screen name="Fornecedores" component={FornecedoresScreen} />
+                                    <Stack.Screen name="Irrigacao" component={IrrigacaoScreen} />
+                                    <Stack.Screen name="Fertirrigacao" component={FertirrigacaoScreen} />
+                                    <Stack.Screen name="Aplicacoes" component={AplicacoesScreen} />
+                                    <Stack.Screen name="FinanceiroLancamentos" component={FinanceiroLancamentosScreen} />
+                                    <Stack.Screen name="CentroCustos" component={CentroCustosScreen} />
+                                    <Stack.Screen name="Equipes" component={EquipesScreen} />
+                                    <Stack.Screen name="BIRelatoriosAvancados" component={BIRelatoriosAvancadosScreen} />
+                                </Stack.Navigator>
+                            </NavigationContainer>
+                        </WeatherProvider>
+                    </ThemeProvider>
+                </SyncProvider>
+            </AuthProvider>
         </ErrorBoundary>
     );
 }

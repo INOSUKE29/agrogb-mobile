@@ -5,40 +5,40 @@ import { insertColheita, getCadastro, getConfig, setConfig, insertDescarte, getC
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext';
 
-const up = (t, setter) => setter(t.toUpperCase());
-
+// Design System
+import Card from '../components/common/Card';
+import MetricCard from '../components/common/MetricCard';
+import AgroButton from '../components/common/AgroButton';
+import AgroInput from '../components/common/AgroInput';
 
 export default function ColheitaScreen({ navigation }) {
+    const { theme } = useTheme();
     const [talhao, setTalhao] = useState('');
     const [produto, setProduto] = useState('');
     const [quantidade, setQuantidade] = useState('');
     const [observacao, setObservacao] = useState('');
-
-    // Novas Variáveis
     const [congelado, setCongelado] = useState('');
     const [descarte, setDescarte] = useState('');
     const [qtdCaixas, setQtdCaixas] = useState('');
-    const [fatorAtual, setFatorAtual] = useState(1); // Fator do produto selecionado
-    // const [pesoCaixa, setPesoCaixa] = useState('0'); // Deprecated Global Config
-
+    const [fatorAtual, setFatorAtual] = useState(1);
     const [history, setHistory] = useState([]);
+    const [summary, setSummary] = useState({ total: 0, discard: 0 });
+    const [loading, setLoading] = useState(true);
     const [editingUuid, setEditingUuid] = useState(null);
 
     // Modal States
     const [productModalVisible, setProductModalVisible] = useState(false);
     const [areaModalVisible, setAreaModalVisible] = useState(false);
-    const [configModal, setConfigModal] = useState(false);
     const [quickAddModal, setQuickAddModal] = useState(false);
     const [newItemName, setNewItemName] = useState('');
     const [newItemFator, setNewItemFator] = useState('1');
 
     // Lists
-    const [productsDB, setProductsDB] = useState([]); // Do cadastro
-    const [areasDB, setAreasDB] = useState([]); // Da tabela de culturas
-
+    const [productsDB, setProductsDB] = useState([]);
+    const [areasDB, setAreasDB] = useState([]);
     const [searchText, setSearchText] = useState('');
-    const [loading, setLoading] = useState(false);
 
     useFocusEffect(useCallback(() => {
         loadData();
@@ -47,34 +47,33 @@ export default function ColheitaScreen({ navigation }) {
     const loadData = async () => {
         setLoading(true);
         try {
-            // Load Products (Cadastro)
             const allItems = await getCadastro();
-            // Strict Filter: Only PRODUTO for Colheita
-            const prods = allItems.filter(i => i.tipo === 'PRODUTO');
-            setProductsDB(Array.isArray(prods) ? prods : []);
-
-            // Load Areas (Culturas Table)
-            const areas = await getCulturas();
-            setAreasDB(Array.isArray(areas) ? areas : []);
-
-            // Load History
+            setProductsDB(allItems.filter(i => i.tipo === 'PRODUTO'));
+            const resTalhoes = await executeQuery('SELECT * FROM talhoes WHERE is_deleted = 0 ORDER BY nome ASC');
+            const areas = [];
+            for (let i = 0; i < resTalhoes.rows.length; i++) areas.push(resTalhoes.rows.item(i));
+            setAreasDB(areas);
             const hist = await getColheitasRecentes();
-            setHistory(Array.isArray(hist) ? hist : []);
+            setHistory(hist);
+
+            const today = new Date().toISOString().split('T')[0];
+            const todayCol = hist.filter(h => h.data === today);
+            const total = todayCol.reduce((acc, curr) => acc + (curr.quantidade || 0), 0);
+            setSummary({ total, discard: 0 }); // Descarte seria somado de outra tabela ou campo futuro
         } catch (e) {
-            console.error("Colheita Load Error:", e);
-            Alert.alert('Erro ao carregar', 'Falha ao buscar dados. Tente reiniciar o app.');
+            console.error(e);
         } finally {
             setLoading(false);
         }
     };
 
-    // Calculate Weight automatically when boxes change
+    const up = (t, setter) => setter(t.toUpperCase());
+
     const handleCaixasChange = (txt) => {
         setQtdCaixas(txt);
         const boxes = parseFloat(txt) || 0;
-        const weight = fatorAtual || 1;
         if (boxes > 0) {
-            setQuantidade((boxes * weight).toFixed(2));
+            setQuantidade((boxes * fatorAtual).toFixed(2));
         } else {
             setQuantidade('');
         }
@@ -84,58 +83,8 @@ export default function ColheitaScreen({ navigation }) {
         setProduto(item.nome);
         setFatorAtual(item.fator_conversao || 1);
         setProductModalVisible(false);
-
-        // Recalculate if boxes exist
         if (qtdCaixas) {
-            const boxes = parseFloat(qtdCaixas) || 0;
-            setQuantidade((boxes * (item.fator_conversao || 1)).toFixed(2));
-        }
-    };
-
-    const saveConfig = async () => {
-        // Deprecated - Config is now in Cadastro
-        setConfigModal(false);
-        Alert.alert('Info', 'Agora configure o peso/fator diretamente no Cadastro do Produto.');
-    };
-
-    const getFilteredProducts = () => {
-        if (!searchText) return productsDB;
-        if (!searchText) return productsDB || [];
-        return (productsDB || []).filter(i => i && i.nome && i.nome.toUpperCase().includes(searchText.toUpperCase()));
-    };
-
-
-
-
-    const quickSave = async () => {
-        if (!newItemName.trim()) { Alert.alert('Ops', 'Nome é obrigatório'); return; }
-        const newUuid = uuidv4();
-        try {
-            await insertCadastros({
-                uuid: newUuid,
-                nome: newItemName,
-                tipo: 'PRODUTO',
-                fator_conversao: parseFloat(newItemFator) || 1,
-                unidade: 'CX',
-                observacao: 'Cadastrado no Quick Add',
-                estocavel: 1,
-                vendavel: 1
-            });
-            // Reload and Select
-            // Reload Strict
-            const allItems = await getCadastro();
-            const prods = allItems.filter(i => i.tipo === 'PRODUTO');
-            setProductsDB(Array.isArray(prods) ? prods : []);
-
-            // Find and click
-            const newItem = prods.find(p => p.uuid === newUuid) || { nome: newItemName, fator_conversao: parseFloat(newItemFator) || 1 };
-            handleProdutoSelect(newItem);
-
-            setQuickAddModal(false);
-            setNewItemName('');
-            setNewItemFator('1');
-        } catch (e) {
-            Alert.alert('Erro', 'Falha ao criar produto.');
+            setQuantidade((parseFloat(qtdCaixas) * (item.fator_conversao || 1)).toFixed(2));
         }
     };
 
@@ -158,12 +107,9 @@ export default function ColheitaScreen({ navigation }) {
         try {
             if (editingUuid) {
                 await updateColheita(editingUuid, dados);
-                Alert.alert('Sucesso', 'Registro atualizado!');
                 setEditingUuid(null);
             } else {
                 await insertColheita(dados);
-
-                // Salvar Descarte se houver
                 const qtdDescarte = parseFloat(descarte);
                 if (qtdDescarte > 0) {
                     await insertDescarte({
@@ -173,34 +119,15 @@ export default function ColheitaScreen({ navigation }) {
                         motivo: 'APONTAMENTO DE CAMPO',
                         data: new Date().toISOString().split('T')[0]
                     });
-                    Alert.alert('Sucesso', `Colheita e ${qtdDescarte}kg de descarte registrados.`);
-                } else {
-                    Alert.alert('Sucesso', 'Colheita registrada!');
                 }
             }
 
-            // Reset
-            setQtdCaixas('');
-            setQuantidade('');
-            setCongelado('');
-            setDescarte('');
-            setObservacao('');
-
-            // Reload History
-            const hist = await getColheitasRecentes();
-            setHistory(hist);
+            Alert.alert('Sucesso', 'Registro salvo com sucesso!');
+            setQtdCaixas(''); setQuantidade(''); setCongelado(''); setDescarte(''); setObservacao('');
+            loadData();
         } catch (error) {
             Alert.alert('Erro', 'Falha ao salvar registro.');
         }
-    };
-
-    const handleEdit = (item) => {
-        setEditingUuid(item.uuid);
-        setTalhao(item.cultura);
-        setProduto(item.produto);
-        setQuantidade(item.quantidade.toString());
-        setCongelado(item.congelado ? item.congelado.toString() : '');
-        setObservacao(item.observacao || '');
     };
 
     const handleDelete = (item) => {
@@ -217,140 +144,166 @@ export default function ColheitaScreen({ navigation }) {
         ]);
     };
 
+    const quickSave = async () => {
+        if (!newItemName.trim()) return Alert.alert('Ops', 'Nome é obrigatório');
+        try {
+            const uuid = uuidv4();
+            await insertCadastros({
+                uuid, nome: newItemName, tipo: 'PRODUTO', fator_conversao: parseFloat(newItemFator) || 1,
+                unidade: 'CX', estocavel: 1, vendavel: 1, observacao: 'QUICK ADD'
+            });
+            setQuickAddModal(false);
+            loadData();
+            handleProdutoSelect({ nome: newItemName, fator_conversao: parseFloat(newItemFator) || 1 });
+        } catch (e) { Alert.alert('Erro', 'Falha ao criar produto.'); }
+    };
+
+    if (loading) {
+        return (
+            <View style={styles.loading}>
+                <ActivityIndicator size="large" color={theme?.colors?.primary || '#10B981'} />
+            </View>
+        );
+    }
+
     return (
-        <View style={styles.container}>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-                <View style={styles.card}>
-                    <LinearGradient colors={['#10B981', '#059669']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.cardHeader}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <View>
-                                <Text style={styles.headerTitle}>{editingUuid ? 'EDITAR APONTAMENTO' : 'REGISTRO DE CAMPO'}</Text>
-                                <Text style={styles.headerSub}>Colheita, Descarte e Congelados</Text>
-                            </View>
-                            <TouchableOpacity style={styles.configBtn} onPress={() => setConfigModal(true)}>
-                                <Ionicons name="settings-sharp" size={20} color="#FFF" />
-                            </TouchableOpacity>
-                        </View>
-                    </LinearGradient>
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
+            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
+                <View style={styles.headerTop}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>REGISTRO DE CAMPO</Text>
+                    <TouchableOpacity onPress={() => navigation.navigate('Culturas')}>
+                        <Ionicons name="settings-outline" size={20} color="#FFF" />
+                    </TouchableOpacity>
+                </View>
+                
+                <View style={styles.summaryRow}>
+                    <MetricCard 
+                        title="Colheita Hoje" 
+                        value={`${summary.total.toLocaleString()} kg`} 
+                        icon="leaf" 
+                        color="#FFF"
+                        style={styles.summaryCard}
+                    />
+                    <MetricCard 
+                        title="Status" 
+                        value="Operacional" 
+                        icon="checkmark-circle" 
+                        color="#FFF"
+                        style={styles.summaryCard}
+                    />
+                </View>
+            </LinearGradient>
 
-                    <View style={styles.form}>
-                        {/* AREA SELECTOR */}
-                        <View style={styles.field}>
-                            <Text style={styles.label}>LOCAL / ÁREA (ONDE?)</Text>
-                            <TouchableOpacity style={styles.selectBtn} onPress={() => setAreaModalVisible(true)}>
-                                <Text style={[styles.selectText, !talhao && { color: '#9CA3AF' }]}>
-                                    {talhao || "SELECIONAR ÁREA..."}
-                                </Text>
-                                <Ionicons name="map" size={20} color="#6B7280" />
-                            </TouchableOpacity>
-                        </View>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+                <Card style={styles.formCard}>
+                    <Text style={styles.sectionTitle}>{editingUuid ? 'EDITAR APONTAMENTO' : 'NOVO APONTAMENTO'}</Text>
+                    
+                    <AgroInput 
+                        label="Local / Área *"
+                        value={talhao}
+                        placeholder="SELECIONAR TALHÃO..."
+                        icon="map"
+                        style={{ marginBottom: 10 }}
+                        editable={false}
+                        onPressIn={() => setAreaModalVisible(true)}
+                    />
 
-                        {/* PRODUCT SELECTOR */}
-                        <View style={styles.field}>
-                            <Text style={styles.label}>VARIEDADE / PRODUTO (O QUE?)</Text>
-                            <TouchableOpacity style={styles.selectBtn} onPress={() => setProductModalVisible(true)}>
-                                <Text style={[styles.selectText, !produto && { color: '#9CA3AF' }]}>
-                                    {produto || "SELECIONAR PRODUTO..."}
-                                </Text>
-                                <Ionicons name="leaf" size={20} color="#6B7280" />
-                            </TouchableOpacity>
-                        </View>
+                    <AgroInput 
+                        label="Variedade / Produto *"
+                        value={produto}
+                        placeholder="SELECIONAR PRODUTO..."
+                        icon="leaf"
+                        style={{ marginBottom: 10 }}
+                        editable={false}
+                        onPressIn={() => setProductModalVisible(true)}
+                    />
 
-                        {/* CONVERSION ROW */}
-                        <View style={styles.row}>
-                            <View style={[styles.field, { flex: 1, marginRight: 10 }]}>
-                                <Text style={styles.label}>QTD VOLUMES / CAIXAS</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="0"
-                                    value={qtdCaixas}
-                                    onChangeText={handleCaixasChange}
-                                    keyboardType="decimal-pad"
-                                />
-                                <Text style={styles.helper}>Fator: {fatorAtual} Kg/Un</Text>
-                            </View>
-                            <View style={[styles.field, { flex: 1 }]}>
-                                <Text style={styles.label}>TOTAL KG *</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="0.00"
-                                    value={quantidade}
-                                    onChangeText={setQuantidade}
-                                    keyboardType="decimal-pad"
-                                />
-                            </View>
+                    <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 10 }}>
+                            <AgroInput 
+                                label=" volumes (CX) "
+                                value={qtdCaixas}
+                                onChangeText={handleCaixasChange}
+                                placeholder="0"
+                                keyboardType="decimal-pad"
+                            />
+                            <Text style={styles.fatorText}>Fator: {fatorAtual} Kg</Text>
                         </View>
-
-                        <View style={styles.row}>
-                            <View style={[styles.field, { flex: 1, marginRight: 10 }]}>
-                                <Text style={styles.label}>DESCARTE (KG)</Text>
-                                <TextInput
-                                    style={[styles.input, { borderColor: '#FCA5A5', backgroundColor: '#FEF2F2' }]}
-                                    placeholder="0.00"
-                                    value={descarte}
-                                    onChangeText={setDescarte}
-                                    keyboardType="decimal-pad"
-                                />
-                            </View>
-                            <View style={[styles.field, { flex: 1 }]}>
-                                <Text style={styles.label}>CONGELADO (KG)</Text>
-                                <TextInput
-                                    style={[styles.input, { borderColor: '#93C5FD', backgroundColor: '#EFF6FF' }]}
-                                    placeholder="0.00"
-                                    value={congelado}
-                                    onChangeText={setCongelado}
-                                    keyboardType="decimal-pad"
-                                />
-                            </View>
-                        </View>
-
-                        <View style={styles.field}>
-                            <Text style={styles.label}>OBSERVAÇÕES TÉCNICAS</Text>
-                            <TextInput
-                                style={[styles.input, styles.textArea]}
-                                placeholder="DETALHES DA COLHEITA..."
-                                value={observacao}
-                                onChangeText={(t) => up(t, setObservacao)}
-                                multiline
-                                autoCapitalize="characters"
+                        <View style={{ flex: 1 }}>
+                            <AgroInput 
+                                label="Total Kg *"
+                                value={quantidade}
+                                onChangeText={setQuantidade}
+                                placeholder="0.00"
+                                keyboardType="decimal-pad"
                             />
                         </View>
-
-                        <View style={styles.row}>
-                            {editingUuid && (
-                                <TouchableOpacity style={[styles.btn, { backgroundColor: '#EF4444', flex: 1, marginRight: 10 }]} onPress={() => { setEditingUuid(null); setTalhao(''); setProduto(''); setQuantidade(''); setCongelado(''); setDescarte(''); setObservacao(''); setQtdCaixas(''); }}>
-                                    <Text style={styles.btnText}>CANCELAR</Text>
-                                </TouchableOpacity>
-                            )}
-                            <TouchableOpacity style={[styles.btn, { flex: 2 }]} onPress={salvar}>
-                                <Text style={styles.btnText}>{editingUuid ? 'SALVAR ALTERAÇÕES' : 'CONFIRMAR REGISTRO'}</Text>
-                            </TouchableOpacity>
-                        </View>
                     </View>
-                </View>
 
-                {/* HISTÓRICO */}
-                <Text style={styles.historyTitle}>REGISTROS DE CAMPO</Text>
-                {history.map(item => (
-                    <View key={item.uuid} style={styles.historyItem}>
+                    <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 10 }}>
+                            <AgroInput 
+                                label="Descarte (kg)"
+                                value={descarte}
+                                onChangeText={setDescarte}
+                                placeholder="0.00"
+                                keyboardType="decimal-pad"
+                                style={{ backgroundColor: '#FEF2F2' }}
+                            />
+                        </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.hProd}>{item?.produto || 'Produto?'}</Text>
-                            <Text style={styles.hSub}>{item?.cultura || '?'} • {item?.data ? new Date(item.data).toLocaleDateString() : '-'}</Text>
-                            <Text style={styles.hVal}>{item?.quantidade || 0} Kg {item?.congelado > 0 ? `(+${item.congelado}kg Cong)` : ''}</Text>
-                        </View>
-                        <View style={styles.actions}>
-                            <TouchableOpacity onPress={() => handleEdit(item)} style={styles.actionBtn}>
-                                <Ionicons name="create-outline" size={20} color="#10B981" />
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => handleDelete(item)} style={styles.actionBtn}>
-                                <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                            </TouchableOpacity>
+                            <AgroInput 
+                                label="Congelado (kg)"
+                                value={congelado}
+                                onChangeText={setCongelado}
+                                placeholder="0.00"
+                                keyboardType="decimal-pad"
+                                style={{ backgroundColor: '#EFF6FF' }}
+                            />
                         </View>
                     </View>
+
+                    <AgroInput 
+                        label="Observações"
+                        value={observacao}
+                        onChangeText={(t) => up(t, setObservacao)}
+                        placeholder="DETALHES TÉCNICOS..."
+                        icon="document-text"
+                        style={{ marginBottom: 20 }}
+                    />
+
+                    <AgroButton 
+                        title={editingUuid ? "SALVAR ALTERAÇÕES" : "CONFIRMAR REGISTRO"}
+                        onPress={salvar}
+                    />
+                </Card>
+
+                <Text style={styles.historyTitle}>ÚLTIMOS APONTAMENTOS</Text>
+                {history.map(item => (
+                    <Card key={item.uuid} style={styles.historyCard} noPadding>
+                        <View style={styles.historyContent}>
+                            <View style={styles.historyIcon}>
+                                <Ionicons name="leaf" size={20} color="#10B981" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.hProd}>{item.produto}</Text>
+                                <Text style={styles.hSub}>{item.cultura} • {new Date(item.data).toLocaleDateString('pt-BR')}</Text>
+                                <Text style={styles.hVal}>{item.quantidade} kg {item.congelado > 0 ? `(+${item.congelado}kg Cong)` : ''}</Text>
+                            </View>
+                            <View style={styles.historyActions}>
+                                <TouchableOpacity onPress={() => handleDelete(item)} style={styles.actionBtn}>
+                                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </Card>
                 ))}
             </ScrollView>
 
-            {/* PRODUCT MODAL */}
+            {/* MODALS */}
             <Modal visible={productModalVisible} animationType="slide" transparent>
                 <View style={styles.overlay}>
                     <View style={styles.modalBg}>
@@ -358,30 +311,28 @@ export default function ColheitaScreen({ navigation }) {
                             <Text style={styles.modalTitle}>SELECIONAR PRODUTO</Text>
                             <View style={{ flexDirection: 'row', gap: 15 }}>
                                 <TouchableOpacity onPress={() => { setProductModalVisible(false); setQuickAddModal(true); }}>
-                                    <Ionicons name="add-circle" size={28} color="#10B981" />
+                                    <Ionicons name="add-circle" size={24} color="#10B981" />
                                 </TouchableOpacity>
                                 <TouchableOpacity onPress={() => setProductModalVisible(false)}>
                                     <Ionicons name="close" size={24} color="#374151" />
                                 </TouchableOpacity>
                             </View>
                         </View>
-                        <TextInput style={styles.searchBar} placeholder="Buscar produto..." value={searchText} onChangeText={t => up(t, setSearchText)} autoCapitalize="characters" />
+                        <TextInput style={styles.searchBar} placeholder="Buscar..." value={searchText} onChangeText={t => up(t, setSearchText)} />
                         <FlatList
-                            data={getFilteredProducts()}
+                            data={productsDB.filter(p => p.nome.includes(searchText.toUpperCase()))}
                             keyExtractor={i => i.uuid || i.id.toString()}
                             renderItem={({ item }) => (
-                                <TouchableOpacity style={styles.itemRow} onPress={() => handleProdutoSelect(item || {})}>
-                                    <Text style={styles.itemText}>{item?.nome || 'Sem Nome'}</Text>
-                                    <Text style={styles.itemSub}>{item?.tipo || 'OUTROS'} • Fator: {item?.fator_conversao || 1}</Text>
+                                <TouchableOpacity style={styles.itemRow} onPress={() => handleProdutoSelect(item)}>
+                                    <Text style={styles.itemText}>{item.nome}</Text>
+                                    <Text style={styles.itemSub}>Fator: {item.fator_conversao || 1} Kg</Text>
                                 </TouchableOpacity>
                             )}
-                            ListEmptyComponent={<Text style={styles.empty}>Nenhum produto cadastrado.</Text>}
                         />
                     </View>
                 </View>
             </Modal>
 
-            {/* AREA MODAL (CULTURAS) */}
             <Modal visible={areaModalVisible} animationType="slide" transparent>
                 <View style={styles.overlay}>
                     <View style={styles.modalBg}>
@@ -396,63 +347,30 @@ export default function ColheitaScreen({ navigation }) {
                             keyExtractor={i => i.uuid || i.id.toString()}
                             renderItem={({ item }) => (
                                 <TouchableOpacity style={styles.itemRow} onPress={() => { setTalhao(item.nome); setAreaModalVisible(false); }}>
-                                    <Text style={styles.itemText}>{item?.nome || 'Sem Nome'}</Text>
-                                    <Text style={styles.itemSub}>{item?.observacao || 'Sem obs'}</Text>
+                                    <Text style={styles.itemText}>{item.nome}</Text>
+                                    <Text style={styles.itemSub}>{item.observacao}</Text>
                                 </TouchableOpacity>
                             )}
-                            ListEmptyComponent={
-                                <TouchableOpacity style={styles.empty} onPress={() => { setAreaModalVisible(false); navigation.navigate('Culturas'); }}>
-                                    <Text style={{ color: '#10B981' }}>Nenhuma área cadastrada. Clique para adicionar.</Text>
-                                </TouchableOpacity>
-                            }
                         />
                     </View>
                 </View>
             </Modal>
 
-            {/* CONFIG MODAL */}
-            <Modal visible={configModal} animationType="fade" transparent>
+            <Modal visible={quickAddModal} animationType="fade" transparent>
                 <View style={styles.overlayCenter}>
-                    <View style={styles.miniModal}>
-                        <Text style={styles.modalTitle}>Configuração</Text>
-                        <Text style={[styles.label, { marginTop: 20 }]}>NOTA:</Text>
-                        <Text style={{ textAlign: 'center', color: '#6B7280', marginVertical: 10 }}>
-                            A configuração de peso agora é feita individualmente no CADASTRO DE CADA PRODUTO.
-                        </Text>
-                        <View style={styles.row}>
-                            <TouchableOpacity style={[styles.btn, { backgroundColor: '#9CA3AF', flex: 1, marginRight: 10, marginTop: 20 }]} onPress={() => setConfigModal(false)}>
-                                <Text style={styles.btnText}>CANCELAR</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.btn, { marginTop: 20, flex: 1 }]} onPress={saveConfig}>
-                                <Text style={styles.btnText}>SALVAR</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* QUICK ADD MODAL */}
-            <Modal visible={quickAddModal} animationType="slide" transparent>
-                <View style={styles.overlayCenter}>
-                    <View style={styles.miniModal}>
+                    <Card style={styles.miniModal}>
                         <Text style={styles.modalTitle}>NOVO PRODUTO RÁPIDO</Text>
-                        <View style={styles.field}>
-                            <Text style={styles.label}>NOME DO PRODUTO</Text>
-                            <TextInput style={styles.input} value={newItemName} onChangeText={t => up(t, setNewItemName)} autoCapitalize="characters" placeholder="EX: MORANGO ESPEC" />
-                        </View>
-                        <View style={styles.field}>
-                            <Text style={styles.label}>FATOR (KG POR UNIDADE)</Text>
-                            <TextInput style={styles.input} value={newItemFator} onChangeText={setNewItemFator} keyboardType="decimal-pad" placeholder="1.0" />
-                        </View>
+                        <AgroInput label="Nome" value={newItemName} onChangeText={t => up(t, setNewItemName)} placeholder="EX: MORANGO" />
+                        <AgroInput label="Kg por Caixa" value={newItemFator} onChangeText={setNewItemFator} keyboardType="decimal-pad" placeholder="1.0" />
                         <View style={styles.row}>
-                            <TouchableOpacity style={[styles.btn, { backgroundColor: '#EF4444', flex: 1, marginRight: 10 }]} onPress={() => setQuickAddModal(false)}>
+                            <TouchableOpacity style={[styles.miniBtn, { backgroundColor: '#9CA3AF' }]} onPress={() => setQuickAddModal(false)}>
                                 <Text style={styles.btnText}>CANCELAR</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={[styles.btn, { flex: 1 }]} onPress={quickSave}>
+                            <TouchableOpacity style={styles.miniBtn} onPress={quickSave}>
                                 <Text style={styles.btnText}>SALVAR</Text>
                             </TouchableOpacity>
                         </View>
-                    </View>
+                    </Card>
                 </View>
             </Modal>
         </View>
@@ -460,39 +378,36 @@ export default function ColheitaScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F9FAFB', padding: 20 },
-    card: { backgroundColor: '#FFF', borderRadius: 32, overflow: 'hidden', elevation: 8, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 20, marginBottom: 30 },
-    cardHeader: { padding: 30 },
-    headerTitle: { fontSize: 18, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
-    headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 5, fontWeight: 'bold' },
-    configBtn: { padding: 10, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12 },
-    form: { padding: 25 },
-    field: { marginBottom: 20 },
+    container: { flex: 1 },
+    loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    header: { paddingTop: 50, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
+    summaryRow: { flexDirection: 'row', gap: 10 },
+    summaryCard: { flex: 1, height: 90, marginHorizontal: 0 },
+    sectionTitle: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1, marginBottom: 15 },
+    formCard: { padding: 20 },
     row: { flexDirection: 'row' },
-    label: { fontSize: 9, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1.5, marginBottom: 8 },
-    input: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 16, padding: 16, fontSize: 15, color: '#111827' },
-    textArea: { height: 100, textAlignVertical: 'top' },
-    btn: { backgroundColor: '#10B981', paddingVertical: 18, borderRadius: 18, alignItems: 'center', marginTop: 10 },
-    btnText: { color: '#FFF', fontSize: 13, fontWeight: '900', letterSpacing: 1 },
-    selectBtn: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 16, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    selectText: { fontSize: 15, fontWeight: '600', color: '#111827' },
-    helper: { fontSize: 10, color: '#059669', marginTop: 4, fontWeight: 'bold', marginLeft: 4 },
+    fatorText: { fontSize: 9, color: '#10B981', fontWeight: 'bold', marginLeft: 10, marginBottom: 10 },
+    historyTitle: { fontSize: 12, fontWeight: '900', color: '#6B7280', letterSpacing: 1, marginTop: 25, marginBottom: 15, marginLeft: 5 },
+    historyCard: { marginBottom: 12 },
+    historyContent: { flexDirection: 'row', alignItems: 'center', padding: 15 },
+    historyIcon: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#F0FDF4', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    hProd: { fontSize: 14, fontWeight: 'bold', color: '#1F2937' },
+    hSub: { fontSize: 11, color: '#9CA3AF', marginTop: 2 },
+    hVal: { fontSize: 12, fontWeight: '900', color: '#059669', marginTop: 4 },
+    historyActions: { marginLeft: 10 },
+    actionBtn: { padding: 8, backgroundColor: '#FEF2F2', borderRadius: 8 },
     overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    overlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 30 },
+    overlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
     modalBg: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '80%', padding: 20 },
-    miniModal: { backgroundColor: '#FFF', borderRadius: 24, padding: 30 },
+    miniModal: { padding: 25 },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
     modalTitle: { fontSize: 16, fontWeight: '900', color: '#1F2937' },
     searchBar: { backgroundColor: '#F3F4F6', padding: 12, borderRadius: 12, marginBottom: 10, fontSize: 14 },
     itemRow: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
     itemText: { fontSize: 14, fontWeight: 'bold', color: '#374151' },
     itemSub: { fontSize: 10, color: '#9CA3AF' },
-    empty: { textAlign: 'center', marginTop: 20, color: '#9CA3AF' },
-    historyTitle: { fontSize: 12, fontWeight: '900', color: '#6B7280', letterSpacing: 1, marginBottom: 15, marginLeft: 10 },
-    historyItem: { backgroundColor: '#FFF', padding: 15, borderRadius: 16, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 5, elevation: 2 },
-    hProd: { fontSize: 14, fontWeight: 'bold', color: '#1F2937' },
-    hSub: { fontSize: 11, color: '#9CA3AF' },
-    hVal: { fontSize: 12, fontWeight: '900', color: '#059669', marginTop: 4 },
-    actions: { flexDirection: 'row', gap: 10 },
-    actionBtn: { padding: 8, backgroundColor: '#F3F4F6', borderRadius: 8 }
+    miniBtn: { flex: 1, backgroundColor: '#10B981', padding: 15, borderRadius: 12, alignItems: 'center', marginTop: 15, marginHorizontal: 5 },
+    btnText: { color: '#FFF', fontWeight: 'bold' }
 });

@@ -11,9 +11,10 @@ let supabaseInstance = null;
 
 export const getSupabase = () => {
     if (!supabaseInstance) {
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
         supabaseInstance = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
             auth: {
-                storage: null,
+                storage: AsyncStorage,
                 autoRefreshToken: true,
                 persistSession: true,
                 detectSessionInUrl: false,
@@ -58,10 +59,7 @@ export const syncTable = async (tableName) => {
     } catch (e) { console.log(`⚠️ Aviso local ${tableName}:`, e.message || e); }
 
     // 2. PULL: Baixa dados novos da nuvem
-    // (Simplificado: baixa tudo que mudou recentemente, ou tudo se for pequeno. 
-    // Ideal: Usar 'last_updated' local máximo para filtrar)
     try {
-        // Pega o maior last_updated local
         const resLast = await executeQuery(`SELECT MAX(last_updated) as max_date FROM ${tableName}`);
         const lastDate = resLast.rows.item(0).max_date || '1970-01-01T00:00:00.000Z';
 
@@ -71,15 +69,16 @@ export const syncTable = async (tableName) => {
             .gt('last_updated', lastDate);
 
         if (data && data.length > 0) {
+            const { genericUpsert } = require('../database/database');
             for (const item of data) {
-                // Insere ou Atualiza Local
-                // Precisamos montar a query de insert dinamicamente ou ter funções específicas no database.js
-                // Por simplicidade, vamos assumir que o usuário vai recarregar o app ou implementar update genérico
-                // AQUI É UM PONTO CRÍTICO: Generic Insert/Update no SQLite é chato sem ORM.
-                // Vou focar no upload por enquanto ou implementar um insert genérico no SyncScreen.
+                // Marca como sincronizado ao salvar localmente
+                await genericUpsert(tableName, { ...item, sync_status: 1 });
             }
+            console.log(`📥 Sincronizados ${data.length} registros de ${tableName}`);
         }
-    } catch (e) { }
+    } catch (e) { 
+        console.log(`❌ Erro no Pull de ${tableName}:`, e.message);
+    }
 };
 
 export const testConnection = async () => {

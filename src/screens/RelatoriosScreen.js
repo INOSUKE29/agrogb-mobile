@@ -4,12 +4,24 @@ import { executeQuery } from '../database/database';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { generatePDFAgro } from '../services/ReportService';
+import { ExportService } from '../services/exportService';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
+
+// Design System
+import Card from '../components/common/Card';
+import MetricCard from '../components/common/MetricCard';
+import AgroButton from '../components/common/AgroButton';
+import AgroInput from '../components/common/AgroInput';
 
 const { width } = Dimensions.get('window');
 
-export default function RelatoriosScreen() {
+export default function RelatoriosScreen({ navigation }) {
+    const { theme } = useTheme();
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState({ prod: 0, vendas: 0, custos: 0, perdas: 0 });
+    const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
 
     const loadData = async () => {
         setLoading(true);
@@ -34,24 +46,6 @@ export default function RelatoriosScreen() {
 
     useFocusEffect(useCallback(() => { loadData(); }, []));
 
-    const StatCard = ({ title, value, unit, color, icon }) => (
-        <View style={styles.card}>
-            <View style={[styles.iconBox, { backgroundColor: color + '15' }]}>
-                <Text style={styles.icon}>{icon}</Text>
-            </View>
-            <View style={styles.cardInfo}>
-                <Text style={styles.cardLabel}>{title}</Text>
-                <View style={styles.valueRow}>
-                    <Text style={styles.cardValue}>{value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</Text>
-                    <Text style={styles.cardUnit}>{unit}</Text>
-                </View>
-            </View>
-        </View>
-    );
-
-    const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
-
     const handlePreset = (days) => {
         const end = new Date();
         const start = new Date();
@@ -60,94 +54,182 @@ export default function RelatoriosScreen() {
         setStartDate(start.toISOString().split('T')[0]);
     };
 
+    const handleExportExcel = async () => {
+        try {
+            const res = await executeQuery('SELECT cultura, produto, quantidade, data, observacao FROM colheitas WHERE is_deleted = 0 ORDER BY data DESC');
+            const rows = [];
+            for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+            await ExportService.exportToExcel(rows, 'Relatorio_Colheitas_AgroGB');
+        } catch (e) { Alert.alert('Erro', 'Falha ao exportar dados.'); }
+    };
+
+    const profit = data.vendas - data.custos;
+
     return (
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-            <View style={styles.header}>
-                <Text style={styles.title}>BI RURAL PERFORMANCE</Text>
-                <Text style={styles.sub}>Análise de Resultados e Produtividade</Text>
-            </View>
-
-            {loading ? <ActivityIndicator size="large" color="#F59E0B" style={{ marginTop: 100 }} /> : (
-                <View style={styles.content}>
-                    <StatCard title="PRODUÇÃO TOTAL" value={data.prod} unit="KG" color="#10B981" icon="🌾" />
-                    <StatCard title="FATURAMENTO" value={data.vendas} unit="R$" color="#3B82F6" icon="💰" />
-                    <StatCard title="CUSTOS OPERACIONAIS" value={data.custos} unit="R$" color="#EF4444" icon="💸" />
-                    <StatCard title="QUEBRAS / PERDAS" value={data.perdas} unit="KG" color="#7F1D1D" icon="📉" />
-
-                    <View style={styles.insightBox}>
-                        <LinearGradient colors={['#F59E0B', '#D97706']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.insightHeader}>
-                            <Text style={styles.insightTitle}>INSIGHT DO DIA</Text>
-                        </LinearGradient>
-                        <View style={styles.insightBody}>
-                            <Text style={styles.insightTxt}>
-                                {data.vendas > data.custos
-                                    ? 'LUCRATIVIDADE OPERACIONAL POSITIVA EM R$ ' + (data.vendas - data.custos).toFixed(2)
-                                    : 'ATENÇÃO: CUSTOS EXCEDENDO FATURAMENTO. REVISE SUAS ENTRADAS.'}
-                            </Text>
-                        </View>
-                    </View>
-
-                    {/* PDF REPORTS SECTION */}
-                    <View style={styles.pdfSection}>
-                        <Text style={styles.sectionTitle}>RELATÓRIOS OFICIAIS (PDF)</Text>
-
-                        <View style={styles.presetRow}>
-                            <TouchableOpacity style={styles.presetBtn} onPress={() => handlePreset(0)}><Text style={styles.presetText}>Hoje</Text></TouchableOpacity>
-                            <TouchableOpacity style={styles.presetBtn} onPress={() => handlePreset(7)}><Text style={styles.presetText}>7 Dias</Text></TouchableOpacity>
-                            <TouchableOpacity style={styles.presetBtn} onPress={() => handlePreset(30)}><Text style={styles.presetText}>30 Dias</Text></TouchableOpacity>
-                        </View>
-
-                        <View style={styles.dateRow}>
-                            <TextInput style={styles.dateInput} value={startDate} onChangeText={setStartDate} placeholder="AAAA-MM-DD" keyboardType="numeric" />
-                            <Text style={{ alignSelf: 'center', fontWeight: 'bold', color: '#9CA3AF' }}>ATÉ</Text>
-                            <TextInput style={styles.dateInput} value={endDate} onChangeText={setEndDate} placeholder="AAAA-MM-DD" keyboardType="numeric" />
-                        </View>
-
-                        <TouchableOpacity style={styles.pdfBtn} onPress={() => generatePDFAgro('VENDAS', startDate, endDate)}>
-                            <Text style={{ fontSize: 20 }}>📄</Text>
-                            <Text style={styles.pdfBtnText}>GERAR RELATÓRIO DE VENDAS</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={[styles.pdfBtn, styles.stockBtn]} onPress={() => generatePDFAgro('ESTOQUE', startDate, endDate)}>
-                            <Text style={{ fontSize: 20 }}>📦</Text>
-                            <Text style={styles.pdfBtnText}>POSIÇÃO DE ESTOQUE ATUAL</Text>
-                        </TouchableOpacity>
-                    </View>
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
+            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
+                <View style={styles.headerTop}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>BI RURAL PERFORMANCE</Text>
+                    <TouchableOpacity onPress={loadData}>
+                        <Ionicons name="refresh" size={24} color="#FFF" />
+                    </TouchableOpacity>
                 </View>
-            )}
-        </ScrollView>
+                <Text style={styles.headerSub}>Análise executiva de resultados e lucratividade</Text>
+            </LinearGradient>
+
+            <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 50 }}>
+                {loading ? (
+                    <ActivityIndicator size="large" color={theme?.colors?.primary} style={{ marginTop: 50 }} />
+                ) : (
+                    <View style={styles.content}>
+                        <View style={styles.metricGrid}>
+                            <MetricCard 
+                                title="PRODUÇÃO" 
+                                value={`${data.prod.toLocaleString('pt-BR')} KG`} 
+                                icon="leaf" 
+                                color={theme?.colors?.primary}
+                                style={styles.metricItem}
+                            />
+                            <MetricCard 
+                                title="VENDAS" 
+                                value={`R$ ${data.vendas.toLocaleString('pt-BR')}`} 
+                                icon="cash" 
+                                color="#3B82F6"
+                                style={styles.metricItem}
+                            />
+                            <MetricCard 
+                                title="CUSTOS" 
+                                value={`R$ ${data.custos.toLocaleString('pt-BR')}`} 
+                                icon="trending-down" 
+                                color="#EF4444"
+                                style={styles.metricItem}
+                            />
+                            <MetricCard 
+                                title="PERDAS" 
+                                value={`${data.perdas.toLocaleString('pt-BR')} KG`} 
+                                icon="alert-circle" 
+                                color="#7C3AED"
+                                style={styles.metricItem}
+                            />
+                        </View>
+
+                        <Card style={styles.insightCard} noPadding>
+                            <LinearGradient 
+                                colors={profit >= 0 ? ['#10B981', '#059669'] : ['#EF4444', '#DC2626']} 
+                                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                                style={styles.insightHeader}
+                            >
+                                <Ionicons name="bulb-outline" size={20} color="#FFF" />
+                                <Text style={styles.insightTitle}>INSIGHT EXECUTIVO</Text>
+                            </LinearGradient>
+                            <View style={styles.insightBody}>
+                                <Text style={styles.insightValue}>
+                                    {profit >= 0 ? 'RESULTADO LÍQUIDO POSITIVO' : 'RESULTADO LÍQUIDO NEGATIVO'}
+                                </Text>
+                                <Text style={[styles.profitValue, { color: profit >= 0 ? '#10B981' : '#EF4444' }]}>
+                                    R$ {Math.abs(profit).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </Text>
+                                <Text style={styles.insightDesc}>
+                                    {profit >= 0 
+                                        ? 'Sua operação está gerando lucro líquido. Mantenha o controle de custos.' 
+                                        : 'Atenção: Os custos operacionais excederam o faturamento no período.'}
+                                </Text>
+                            </View>
+                        </Card>
+
+                        <View style={styles.section}>
+                            <Text style={styles.sectionLabel}>GERAR RELATÓRIOS OFICIAIS (PDF)</Text>
+                            <Card style={styles.pdfCard}>
+                                <View style={styles.presetRow}>
+                                    {[{label: 'Hoje', d: 0}, {label: '7 Dias', d: 7}, {label: '30 Dias', d: 30}].map(p => (
+                                        <TouchableOpacity key={p.label} style={styles.presetBtn} onPress={() => handlePreset(p.d)}>
+                                            <Text style={styles.presetText}>{p.label}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+
+                                <View style={styles.dateGrid}>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.inputLabel}>INÍCIO</Text>
+                                        <TextInput style={styles.dateInput} value={startDate} onChangeText={setStartDate} placeholder="AAAA-MM-DD" />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.inputLabel}>FIM</Text>
+                                        <TextInput style={styles.dateInput} value={endDate} onChangeText={setEndDate} placeholder="AAAA-MM-DD" />
+                                    </View>
+                                </View>
+
+                                <AgroButton 
+                                    title="RELATÓRIO DE VENDAS" 
+                                    onPress={() => generatePDFAgro('VENDAS', startDate, endDate)}
+                                    icon="document-text-outline"
+                                    style={{ marginBottom: 10 }}
+                                />
+                                <AgroButton 
+                                    title="POSIÇÃO DE ESTOQUE" 
+                                    variant="secondary"
+                                    onPress={() => generatePDFAgro('ESTOQUE', startDate, endDate)}
+                                    icon="cube-outline"
+                                    style={{ marginBottom: 10 }}
+                                />
+                                <AgroButton 
+                                    title="RELATÓRIO DRE (PDF)" 
+                                    onPress={async () => {
+                                        const exportData = [
+                                            { "Indicador": "Receitas Brutas", "Valor": `R$ ${data.vendas.toLocaleString('pt-BR')}` },
+                                            { "Indicador": "Custos Totais", "Valor": `R$ ${data.custos.toLocaleString('pt-BR')}` },
+                                            { "Indicador": "Resultado Líquido", "Valor": `R$ ${profit.toLocaleString('pt-BR')}` },
+                                            { "Indicador": "Produção Total", "Valor": `${data.prod.toLocaleString('pt-BR')} KG` },
+                                            { "Indicador": "Perdas Registradas", "Valor": `${data.perdas.toLocaleString('pt-BR')} KG` }
+                                        ];
+                                        await ExportService.exportToPDF('DEMONSTRATIVO DE RESULTADOS (RESUMO)', exportData, 'DRE_RESUMO_AGROGB');
+                                    }}
+                                    icon="bar-chart-outline"
+                                    style={{ marginBottom: 10, backgroundColor: '#064E3B' }}
+                                />
+                                <AgroButton 
+                                    title="EXPORTAR EXCEL (FULL)" 
+                                    variant="secondary"
+                                    onPress={handleExportExcel}
+                                    icon="grid-outline"
+                                    style={{ borderColor: '#10B981' }}
+                                />
+                            </Card>
+                        </View>
+                    </View>
+                )}
+            </ScrollView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F9FAFB' },
-    header: { padding: 30, paddingTop: 50 },
-    title: { fontSize: 22, fontWeight: '900', color: '#1F2937' },
-    sub: { fontSize: 11, color: '#9CA3AF', letterSpacing: 1, marginTop: 5 },
-    content: { padding: 25 },
-    card: { backgroundColor: '#FFF', borderRadius: 28, padding: 25, marginBottom: 20, flexDirection: 'row', alignItems: 'center', elevation: 3, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10 },
-    iconBox: { width: 60, height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginRight: 20 },
-    icon: { fontSize: 28 },
-    cardInfo: { flex: 1 },
-    cardLabel: { fontSize: 9, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1.5, marginBottom: 8 },
-    valueRow: { flexDirection: 'row', alignItems: 'baseline' },
-    cardValue: { fontSize: 22, fontWeight: '800', color: '#1F2937' },
-    cardUnit: { fontSize: 10, fontWeight: 'bold', color: '#9CA3AF', marginLeft: 8 },
-    insightBox: { backgroundColor: '#FFF', borderRadius: 28, overflow: 'hidden', marginTop: 10, elevation: 4 },
-    insightHeader: { padding: 15, alignItems: 'center' },
-    insightTitle: { fontSize: 10, fontWeight: '900', color: '#FFF', letterSpacing: 2 },
-    insightBody: { padding: 25, alignItems: 'center' },
-    insightTxt: { fontSize: 13, fontWeight: '800', color: '#4B5563', textAlign: 'center', lineHeight: 22 },
-
-    // PDF Section Styles
-    pdfSection: { marginTop: 30, marginBottom: 50 },
-    sectionTitle: { fontSize: 14, fontWeight: '900', color: '#374151', marginBottom: 15, letterSpacing: 1 },
-    dateRow: { flexDirection: 'row', gap: 10, marginBottom: 15 },
-    dateInput: { flex: 1, backgroundColor: '#FFF', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#E5E7EB', textAlign: 'center' },
-    pdfBtn: { backgroundColor: '#10B981', padding: 16, borderRadius: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10, elevation: 2, marginBottom: 10 },
-    pdfBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 14 },
-    stockBtn: { backgroundColor: '#3B82F6' },
-    presetRow: { flexDirection: 'row', gap: 8, marginBottom: 15, justifyContent: 'center' },
-    presetBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#E5E7EB', borderRadius: 20 },
-    presetText: { fontSize: 10, fontWeight: 'bold', color: '#4B5563' }
+    container: { flex: 1 },
+    header: { paddingTop: 50, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+    headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
+    headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 'bold' },
+    scroll: { flex: 1 },
+    content: { padding: 20 },
+    metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
+    metricItem: { width: (width - 50) / 2, height: 110, marginHorizontal: 0 },
+    insightCard: { marginBottom: 25 },
+    insightHeader: { padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+    insightTitle: { fontSize: 10, fontWeight: '900', color: '#FFF', letterSpacing: 1.5 },
+    insightBody: { padding: 20, alignItems: 'center' },
+    insightValue: { fontSize: 12, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1 },
+    profitValue: { fontSize: 28, fontWeight: '900', marginVertical: 8 },
+    insightDesc: { fontSize: 12, color: '#6B7280', textAlign: 'center', fontWeight: '500' },
+    section: { marginTop: 10 },
+    sectionLabel: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', marginBottom: 15, letterSpacing: 1 },
+    pdfCard: { padding: 20 },
+    presetRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+    presetBtn: { flex: 1, paddingVertical: 10, backgroundColor: '#F3F4F6', borderRadius: 10, alignItems: 'center' },
+    presetText: { fontSize: 11, fontWeight: '900', color: '#4B5563' },
+    dateGrid: { flexDirection: 'row', gap: 15, marginBottom: 25 },
+    inputLabel: { fontSize: 9, fontWeight: '900', color: '#9CA3AF', marginBottom: 8, letterSpacing: 1 },
+    dateInput: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 12, fontSize: 13, fontWeight: 'bold', color: '#1F2937', textAlign: 'center' }
 });

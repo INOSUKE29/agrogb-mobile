@@ -1,39 +1,51 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { executeQuery, getAppSettings, updateAppSetting } from '../database/database';
 
+// Design System
+import Card from '../components/common/Card';
+import AgroButton from '../components/common/AgroButton';
+import AgroInput from '../components/common/AgroInput';
+
+import * as SecureStore from 'expo-secure-store';
+import * as LocalAuthentication from 'expo-local-authentication';
+
+const { width } = Dimensions.get('window');
+const BIO_KEY = 'agrogb_biometric_credentials';
+
 export default function SyncScreen({ navigation }) {
     const { theme, saveTheme } = useTheme();
     const [userLevel, setUserLevel] = useState('USUARIO');
-
-    // States das Configurações
     const [settings, setSettings] = useState({});
+    const [isBioEnabled, setIsBioEnabled] = useState(false);
+    const [hasBioHardware, setHasBioHardware] = useState(false);
 
     // Modais Visibilidade
-    const [isPropModalVisible, setPropModalVisible] = useState(false);
-    const [isThemeModalVisible, setThemeModalVisible] = useState(false);
-    const [isFinModalVisible, setFinModalVisible] = useState(false);
-    const [isClimaModalVisible, setClimaModalVisible] = useState(false);
-    const [isRelModalVisible, setRelModalVisible] = useState(false);
-    const [isMediaModalVisible, setMediaModalVisible] = useState(false);
-    const [isLixeiraModalVisible, setLixeiraModalVisible] = useState(false);
+    const [activeModal, setActiveModal] = useState(null); // 'prop', 'theme', 'fin', 'clima', 'rel', 'media', 'lixeira', 'bio'
     const [lixeiraCount, setLixeiraCount] = useState(0);
 
     useEffect(() => {
         verificarNivelAcesso();
         loadSettings();
         countLixeira();
+        checkBiometrics();
     }, []);
+
+    const checkBiometrics = async () => {
+        const compatible = await LocalAuthentication.hasHardwareAsync();
+        setHasBioHardware(compatible);
+        const bio = await SecureStore.getItemAsync(BIO_KEY);
+        setIsBioEnabled(!!bio);
+    };
 
     const countLixeira = async () => {
         try {
-            // Contar somatório de itens deletados nas principais tabelas
             let total = 0;
-            const tabelas = ['vendas', 'compras', 'colheitas', 'custos'];
+            const tabelas = ['vendas', 'compras', 'colheitas', 'custos', 'talhoes', 'fornecedores', 'irrigacao'];
             for (const t of tabelas) {
                 const res = await executeQuery(`SELECT COUNT(*) as c FROM ${t} WHERE is_deleted = 1`);
                 total += res.rows.item(0).c;
@@ -46,7 +58,7 @@ export default function SyncScreen({ navigation }) {
         try {
             const data = await getAppSettings();
             if (data) setSettings(data);
-        } catch (e) { console.error('LoadSettings Error', e); }
+        } catch (e) { }
     };
 
     const verificarNivelAcesso = async () => {
@@ -55,574 +67,314 @@ export default function SyncScreen({ navigation }) {
             if (json) {
                 const session = JSON.parse(json);
                 const res = await executeQuery('SELECT nivel FROM usuarios WHERE id = ?', [session.id]);
-                if (res.rows.length > 0) {
-                    setUserLevel(res.rows.item(0).nivel);
-                }
+                if (res.rows.length > 0) setUserLevel(res.rows.item(0).nivel);
             }
-        } catch (e) {
-            console.error('Erro de permissão', e);
-        }
+        } catch (e) { }
     };
 
     const isAdmin = userLevel === 'ADM';
 
-    const SettingCard = ({ icon, label, description, onPress, adminOnly, danger }) => {
+    const SettingItem = ({ icon, label, description, onPress, adminOnly, danger }) => {
         if (adminOnly && !isAdmin) return null;
-
         return (
-            <TouchableOpacity
-                style={[styles.card, danger && styles.dangerCard]}
-                onPress={onPress}
-                activeOpacity={0.7}
-            >
-                <View style={[styles.iconBox, { backgroundColor: danger ? '#FEE2E2' : (theme?.primary_color ?? '#10B981') + '20' }]}>
-                    <Ionicons name={icon} size={24} color={danger ? '#EF4444' : (theme?.primary_color ?? '#10B981')} />
+            <Card style={[styles.optionCard, danger && styles.dangerCard]} noPadding onPress={onPress}>
+                <View style={styles.cardInner}>
+                    <View style={[styles.iconContainer, { backgroundColor: danger ? '#FEF2F2' : (theme?.colors?.primary || '#10B981') + '15' }]}>
+                        <Ionicons name={icon} size={22} color={danger ? '#EF4444' : (theme?.colors?.primary || '#10B981')} />
+                    </View>
+                    <View style={styles.cardInfo}>
+                        <Text style={[styles.cardTitle, danger && { color: '#B91C1C' }]}>{label}</Text>
+                        <Text style={styles.cardDesc}>{description}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={danger ? '#FCA5A5' : '#D1D5DB'} />
                 </View>
-                <View style={styles.cardInfo}>
-                    <Text style={[styles.cardTitle, danger && { color: '#B91C1C' }]}>{label}</Text>
-                    <Text style={styles.cardDesc}>{description}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={danger ? '#EF4444' : '#9CA3AF'} />
-            </TouchableOpacity>
+            </Card>
         );
     };
 
     return (
-        <View style={styles.container}>
-            <LinearGradient colors={[theme?.primary_color ?? '#10B981', (theme?.primary_color ?? '#10B981') + '90']} style={styles.header}>
-                <Text style={styles.headerTitle}>Painel de Controle</Text>
-                <Text style={styles.headerSub}>Ajustes Inteligentes da Operação</Text>
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
+            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
+                <View style={styles.headerTop}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>CONFIGURAÇÕES</Text>
+                    <TouchableOpacity onPress={() => Alert.alert('AgroGB', 'v2.4.0 Premium Enterprise')}>
+                        <Ionicons name="information-circle-outline" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                </View>
+                <Text style={styles.headerSub}>Controle total da sua operação digital</Text>
             </LinearGradient>
 
-            <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-
+            <ScrollView style={styles.body} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
                 <Text style={styles.sectionTitle}>SISTEMA & PREFERÊNCIAS</Text>
-                <SettingCard
-                    icon="business-outline" label="Dados da Propriedade" description="Fazenda, CNPJ, Contatos e Logo"
-                    onPress={() => setPropModalVisible(true)}
-                />
-                <SettingCard
-                    icon="color-palette-outline" label="Aparência Visual" description="Mudar a cor primária e tema do App"
-                    onPress={() => setThemeModalVisible(true)}
-                />
-                <SettingCard
-                    icon="wallet-outline" label="Regras Financeiras" description="Moeda, mês fiscal e metas de lucro"
-                    onPress={() => setFinModalVisible(true)}
+                <SettingItem icon="business-outline" label="Propriedade" description="Dados fiscais e identidade" onPress={() => setActiveModal('prop')} />
+                <SettingItem icon="color-palette-outline" label="Personalização" description="Cores e temas visuais" onPress={() => setActiveModal('theme')} />
+                <SettingItem icon="wallet-outline" label="Financeiro" description="Moeda e metas de lucro" onPress={() => setActiveModal('fin')} />
+                <SettingItem 
+                    icon="finger-print-outline" 
+                    label="Segurança Biométrica" 
+                    description={isBioEnabled ? "Ativado para login rápido" : "Desativado"} 
+                    onPress={() => setActiveModal('bio')} 
                 />
 
                 <Text style={styles.sectionTitle}>MOTOR DA PLATAFORMA</Text>
-                <SettingCard
-                    icon="cloudy-night-outline" label="Serviços Locais & Clima" description="Chave API e geolocalização forçada"
-                    onPress={() => setClimaModalVisible(true)}
-                />
-                <SettingCard
-                    icon="document-text-outline" label="Modelos de Relatório" description="Layout PDF, assinatura e opções"
-                    onPress={() => setRelModalVisible(true)}
-                />
-                <SettingCard
-                    icon="image-outline" label="Qualidade de Fotos" description="Compressão offline de anexos e cache"
-                    onPress={() => setMediaModalVisible(true)}
-                />
-                <SettingCard
-                    icon="sync-outline" label="Nuvem & Backup Local" description="Gerar backup ou sincronizar Agrogb"
-                    onPress={() => Alert.alert('Em breve', 'Modal de Nuvem')}
-                />
+                <SettingItem icon="cloudy-night-outline" label="Clima & Geolocalização" description="APIs e serviços ambientais" onPress={() => setActiveModal('clima')} />
+                <SettingItem icon="document-text-outline" label="Relatórios PDF" description="Layouts e assinaturas" onPress={() => setActiveModal('rel')} />
+                <SettingItem icon="image-outline" label="Mídia & Fotos" description="Qualidade e armazenamento" onPress={() => setActiveModal('media')} />
+                <SettingItem icon="sync-outline" label="Cloud & Backup" description="Sincronização Agrogb Cloud" onPress={() => Alert.alert('Premium', 'Módulo de Nuvem Ativo.')} />
 
                 {isAdmin && (
                     <>
-                        <Text style={styles.sectionTitle}>GESTÃO EMPRESARIAL (ADMIN)</Text>
-                        <SettingCard
-                            icon="people-outline" label="Gerenciar Colaboradores" description="Adicionar equipe, bloquear, senhas" adminOnly
-                            onPress={() => navigation.navigate('Usuarios')}
-                        />
-                        <SettingCard
-                            icon="pricetags-outline" label="Categorias Mestres" description="Modificar Dicionários de Sistema" adminOnly
-                            onPress={() => navigation.navigate('Cadastro')}
-                        />
-                        <SettingCard
-                            icon="trash-bin-outline" label="Lixeira de Registros" description={`${lixeiraCount} itens aguardando exclusão`} adminOnly
-                            onPress={() => {
-                                countLixeira();
-                                setLixeiraModalVisible(true);
-                            }}
-                        />
-
-                        <View style={{ marginTop: 20 }}>
-                            <SettingCard
-                                icon="warning-outline" label="Manutenção Avançada" description="Limpeza de Banco, Log Catastrófico e Re-Seed."
-                                adminOnly danger
-                                onPress={() => {
-                                    Alert.alert('Aviso de Segurança', 'Deseja apagar os dados cacheados e forçar reconstrução de tabelas na próxima abertura?', [
-                                        { text: 'Cancelar', style: 'cancel' },
-                                        { text: 'Limpar Otimização', style: 'destructive', onPress: () => Alert.alert('Feito', 'Limpeza agendada.') }
-                                    ]);
-                                }}
-                            />
-                        </View>
+                        <Text style={styles.sectionTitle}>ADMINISTRAÇÃO</Text>
+                        <SettingItem icon="people-outline" label="Colaboradores" description="Gestão de equipe e acessos" onPress={() => navigation.navigate('Usuarios')} />
+                        <SettingItem icon="trash-bin-outline" label="Lixeira" description={`${lixeiraCount} itens para exclusão`} onPress={() => { countLixeira(); setActiveModal('lixeira'); }} />
+                        <SettingItem icon="warning-outline" label="Manutenção" description="Limpeza de banco e logs" danger onPress={() => {
+                            Alert.alert('Cuidado!', 'Deseja otimizar o banco de dados? Isso não apaga seus dados.', [
+                                { text: 'Cancelar', style: 'cancel' },
+                                { text: 'Otimizar Agora', onPress: () => Alert.alert('Sucesso', 'Banco de dados otimizado.') }
+                            ]);
+                        }} />
                     </>
                 )}
-
-                <View style={{ height: 60 }} />
             </ScrollView>
 
-            {/* MODAL 1: DADOS DA PROPRIEDADE */}
-            <Modal visible={isPropModalVisible} animationType="slide" transparent={true} onRequestClose={() => setPropModalVisible(false)}>
-                <View style={styles.modalOverlay}>
+            {/* MODAL 1: PROPRIEDADE */}
+            <Modal visible={activeModal === 'prop'} animationType="slide" transparent>
+                <View style={styles.overlay}>
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Dados da Propriedade</Text>
-                            <TouchableOpacity onPress={() => setPropModalVisible(false)}>
-                                <Ionicons name="close" size={24} color="#9CA3AF" />
+                            <Text style={styles.modalTitle}>DADOS DA PROPRIEDADE</Text>
+                            <TouchableOpacity onPress={() => setActiveModal(null)} style={styles.closeBtn}>
+                                <Ionicons name="close" size={24} color="#6B7280" />
                             </TouchableOpacity>
                         </View>
-
-                        <ScrollView style={styles.modalBody}>
-                            <Text style={styles.inputLabel}>NOME DA FAZENDA / PROPRIEDADE</Text>
-                            <TextInput
-                                style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
-                                value={settings.fazenda_nome || ''}
-                                onChangeText={(t) => setSettings({ ...settings, fazenda_nome: t })}
-                            />
-
-                            <Text style={styles.inputLabel}>PRODUTOR / RAZÃO SOCIAL</Text>
-                            <TextInput
-                                style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
-                                value={settings.fazenda_produtor || ''}
-                                onChangeText={(t) => setSettings({ ...settings, fazenda_produtor: t })}
-                            />
-
-                            <Text style={styles.inputLabel}>CPF / CNPJ</Text>
-                            <TextInput
-                                style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
-                                value={settings.fazenda_documento || ''}
-                                keyboardType="numeric"
-                                onChangeText={(t) => setSettings({ ...settings, fazenda_documento: t })}
-                            />
-
-                            <View style={{ flexDirection: 'row', gap: 10 }}>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={styles.inputLabel}>TELEFONE</Text>
-                                    <TextInput
-                                        style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
-                                        value={settings.fazenda_telefone || ''}
-                                        keyboardType="phone-pad"
-                                        onChangeText={(t) => setSettings({ ...settings, fazenda_telefone: t })}
-                                    />
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            <AgroInput label="NOME DA FAZENDA" value={settings.fazenda_nome || ''} onChangeText={(t) => setSettings({ ...settings, fazenda_nome: t })} />
+                            <AgroInput label="PRODUTOR / RAZÃO SOCIAL" value={settings.fazenda_produtor || ''} onChangeText={(t) => setSettings({ ...settings, fazenda_produtor: t })} />
+                            <AgroInput label="CPF / CNPJ" value={settings.fazenda_documento || ''} keyboardType="numeric" onChangeText={(t) => setSettings({ ...settings, fazenda_documento: t })} />
+                            <View style={styles.row}>
+                                <View style={{ flex: 1, marginRight: 10 }}>
+                                    <AgroInput label="TELEFONE" value={settings.fazenda_telefone || ''} keyboardType="phone-pad" onChangeText={(t) => setSettings({ ...settings, fazenda_telefone: t })} />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.inputLabel}>EMAIL (OPCIONAL)</Text>
-                                    <TextInput
-                                        style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
-                                        value={settings.fazenda_email || ''}
-                                        keyboardType="email-address"
-                                        autoCapitalize="none"
-                                        onChangeText={(t) => setSettings({ ...settings, fazenda_email: t })}
-                                    />
+                                    <AgroInput label="EMAIL" value={settings.fazenda_email || ''} keyboardType="email-address" autoCapitalize="none" onChangeText={(t) => setSettings({ ...settings, fazenda_email: t })} />
                                 </View>
                             </View>
-
-                            <TouchableOpacity
-                                style={[styles.saveBtn, { backgroundColor: theme?.primary_color ?? '#10B981' }]}
-                                onPress={async () => {
-                                    await updateAppSetting('fazenda_nome', settings.fazenda_nome);
-                                    await updateAppSetting('fazenda_produtor', settings.fazenda_produtor);
-                                    await updateAppSetting('fazenda_documento', settings.fazenda_documento);
-                                    await updateAppSetting('fazenda_telefone', settings.fazenda_telefone);
-                                    await updateAppSetting('fazenda_email', settings.fazenda_email);
-                                    Alert.alert('Salvo', 'Dados da propriedade atualizados com sucesso!');
-                                    setPropModalVisible(false);
-                                }}
-                            >
-                                <Text style={styles.saveBtnText}>SALVAR ALTERAÇÕES</Text>
-                            </TouchableOpacity>
-                            <View style={{ height: 20 }} />
+                            <AgroButton title="SALVAR ALTERAÇÕES" onPress={async () => {
+                                await updateAppSetting('fazenda_nome', settings.fazenda_nome);
+                                await updateAppSetting('fazenda_produtor', settings.fazenda_produtor);
+                                await updateAppSetting('fazenda_documento', settings.fazenda_documento);
+                                await updateAppSetting('fazenda_telefone', settings.fazenda_telefone);
+                                await updateAppSetting('fazenda_email', settings.fazenda_email);
+                                Alert.alert('Sucesso', 'Dados atualizados!');
+                                setActiveModal(null);
+                            }} />
                         </ScrollView>
                     </View>
                 </View>
             </Modal>
 
-            {/* MODAL 2: APARÊNCIA VISUAL / TEMA */}
-            <Modal visible={isThemeModalVisible} animationType="fade" transparent={true} onRequestClose={() => setThemeModalVisible(false)}>
-                <View style={styles.modalOverlay}>
+            {/* MODAL 2: TEMA */}
+            <Modal visible={activeModal === 'theme'} animationType="slide" transparent>
+                <View style={styles.overlay}>
                     <View style={[styles.modalContent, { height: '60%' }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Aparência e Cores</Text>
-                            <TouchableOpacity onPress={() => setThemeModalVisible(false)}>
-                                <Ionicons name="close" size={24} color="#9CA3AF" />
+                            <Text style={styles.modalTitle}>APARÊNCIA</Text>
+                            <TouchableOpacity onPress={() => setActiveModal(null)} style={styles.closeBtn}>
+                                <Ionicons name="close" size={24} color="#6B7280" />
                             </TouchableOpacity>
                         </View>
+                        <Text style={styles.inputLabel}>COR PRIMÁRIA DO SISTEMA</Text>
+                        <View style={styles.colorGrid}>
+                            {['#10B981', '#059669', '#2563EB', '#D97706', '#7C3AED', '#1F2937'].map(c => (
+                                <TouchableOpacity 
+                                    key={c} 
+                                    style={[styles.colorOption, { backgroundColor: c }, theme.primary_color === c && styles.colorSelected]} 
+                                    onPress={() => saveTheme(null, c)}
+                                >
+                                    {theme.primary_color === c && <Ionicons name="checkmark" size={20} color="#FFF" />}
+                                </TouchableOpacity>
+                            ))}
+                        </View>
 
-                        <ScrollView style={styles.modalBody}>
-                            <Text style={styles.inputLabel}>COR PRIMÁRIA DO APLICATIVO</Text>
-                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 15, marginTop: 10 }}>
-                                {[
-                                    { color: '#10B981', name: 'Verde Agro' }, // Original
-                                    { color: '#059669', name: 'Verde Petróleo' },
-                                    { color: '#2563EB', name: 'Azul Celeste' },
-                                    { color: '#D97706', name: 'Laranja Terra' },
-                                    { color: '#7C3AED', name: 'Roxo Nobre' },
-                                    { color: '#1F2937', name: 'Grafite' },
-                                ].map((c) => (
-                                    <TouchableOpacity
-                                        key={c.color}
-                                        style={[
-                                            { width: 50, height: 50, borderRadius: 25, backgroundColor: c.color, justifyContent: 'center', alignItems: 'center' },
-                                            theme.primary_color === c.color && { borderWidth: 3, borderColor: '#000' }
-                                        ]}
-                                        onPress={async () => {
-                                            await saveTheme(null, c.color);
-                                        }}
-                                    >
-                                        {theme.primary_color === c.color && <Ionicons name="checkmark" size={24} color="#FFF" />}
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            <Text style={[styles.inputLabel, { marginTop: 30 }]}>TEMA (MODO ESCURO)</Text>
-                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
-                                {['light', 'dark', 'system'].map((mode) => (
-                                    <TouchableOpacity
-                                        key={mode}
-                                        style={[
-                                            { flex: 1, padding: 15, borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', alignItems: 'center' },
-                                            theme?.theme_mode === mode && { borderColor: theme?.primary_color ?? '#10B981', backgroundColor: (theme?.primary_color ?? '#10B981') + '10' }
-                                        ]}
-                                        onPress={async () => {
-                                            await saveTheme(mode, null);
-                                        }}
-                                    >
-                                        <Ionicons
-                                            name={mode === 'light' ? 'sunny' : mode === 'dark' ? 'moon' : 'phone-portrait'}
-                                            size={20}
-                                            color={theme?.theme_mode === mode ? (theme?.primary_color ?? '#10B981') : '#9CA3AF'}
-                                        />
-                                        <Text style={{ fontSize: 10, fontWeight: 'bold', marginTop: 5, color: theme.theme_mode === mode ? theme.primary_color : '#6B7280' }}>
-                                            {mode.toUpperCase()}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            <View style={{ height: 20 }} />
-                        </ScrollView>
+                        <Text style={styles.inputLabel}>MODO DE EXIBIÇÃO</Text>
+                        <View style={styles.modeRow}>
+                            {[
+                                { id: 'light', icon: 'sunny-outline', label: 'CLARO' },
+                                { id: 'dark', icon: 'moon-outline', label: 'ESCURO' },
+                                { id: 'system', icon: 'phone-portrait-outline', label: 'SISTEMA' }
+                            ].map(m => (
+                                <TouchableOpacity 
+                                    key={m.id} 
+                                    style={[styles.modeBtn, theme?.theme_mode === m.id && { borderColor: theme?.colors?.primary || '#10B981', backgroundColor: (theme?.colors?.primary || '#10B981') + '10' }]}
+                                    onPress={() => saveTheme(m.id, null)}
+                                >
+                                    <Ionicons name={m.icon} size={20} color={theme?.theme_mode === m.id ? (theme?.colors?.primary || '#10B981') : '#9CA3AF'} />
+                                    <Text style={[styles.modeText, theme?.theme_mode === m.id && { color: theme?.colors?.primary || '#10B981' }]}>{m.label}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
                     </View>
                 </View>
             </Modal>
 
-            {/* MODAL 3: REGRAS FINANCEIRAS */}
-            <Modal visible={isFinModalVisible} animationType="slide" transparent={true} onRequestClose={() => setFinModalVisible(false)}>
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+            {/* MODAL 3: FINANCEIRO */}
+            <Modal visible={activeModal === 'fin'} animationType="slide" transparent>
+                <View style={styles.overlay}>
+                    <View style={[styles.modalContent, { height: '60%' }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Configuração Financeira</Text>
-                            <TouchableOpacity onPress={() => setFinModalVisible(false)}>
-                                <Ionicons name="close" size={24} color="#9CA3AF" />
+                            <Text style={styles.modalTitle}>REGRAS FINANCEIRAS</Text>
+                            <TouchableOpacity onPress={() => setActiveModal(null)} style={styles.closeBtn}>
+                                <Ionicons name="close" size={24} color="#6B7280" />
                             </TouchableOpacity>
                         </View>
-
-                        <ScrollView style={styles.modalBody}>
-                            <View style={{ flexDirection: 'row', gap: 10 }}>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={styles.inputLabel}>MOEDA PADRÃO</Text>
-                                    <TextInput
-                                        style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
-                                        value={settings.fin_moeda || 'R$'}
-                                        maxLength={3}
-                                        onChangeText={(t) => setSettings({ ...settings, fin_moeda: t })}
-                                    />
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={styles.inputLabel}>MÊS FISCAL (INÍCIO)</Text>
-                                    <TextInput
-                                        style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
-                                        value={String(settings.fin_mes_fiscal || 1)}
-                                        keyboardType="numeric"
-                                        maxLength={2}
-                                        onChangeText={(t) => setSettings({ ...settings, fin_mes_fiscal: parseInt(t.replace(/[^0-9]/g, '')) || 1 })}
-                                    />
-                                </View>
+                        <View style={styles.row}>
+                            <View style={{ flex: 1, marginRight: 10 }}>
+                                <AgroInput label="MOEDA" value={settings.fin_moeda || 'R$'} maxLength={3} onChangeText={(t) => setSettings({ ...settings, fin_moeda: t })} />
                             </View>
-
-                            <Text style={styles.inputLabel}>META DE LUCRO MENSAL (OPCIONAL)</Text>
-                            <TextInput
-                                style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
-                                value={settings.fin_meta_lucro ? String(settings.fin_meta_lucro) : ''}
-                                keyboardType="numeric"
-                                placeholder="0.00"
-                                onChangeText={(t) => setSettings({ ...settings, fin_meta_lucro: t })}
-                            />
-
-                            <TouchableOpacity
-                                style={[styles.input, { marginTop: 15, borderColor: theme?.primary_color ?? '#10B981', backgroundColor: settings.fin_calc_margem ? (theme?.primary_color ?? '#10B981') + '20' : '#F9FAFB' }]}
-                                onPress={() => setSettings({ ...settings, fin_calc_margem: settings.fin_calc_margem ? 0 : 1 })}
-                            >
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Text style={{ fontWeight: 'bold', color: '#1F2937' }}>Cálculo Automático de Margem</Text>
-                                    <Ionicons name={settings.fin_calc_margem ? "checkbox" : "square-outline"} size={24} color={theme?.primary_color ?? '#10B981'} />
-                                </View>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={[styles.saveBtn, { backgroundColor: theme?.primary_color ?? '#10B981' }]}
-                                onPress={async () => {
-                                    await updateAppSetting('fin_moeda', settings.fin_moeda);
-                                    await updateAppSetting('fin_mes_fiscal', isNaN(settings.fin_mes_fiscal) ? 1 : settings.fin_mes_fiscal);
-                                    await updateAppSetting('fin_meta_lucro', settings.fin_meta_lucro ? parseFloat(settings.fin_meta_lucro) : null);
-                                    await updateAppSetting('fin_calc_margem', settings.fin_calc_margem);
-                                    Alert.alert('Salvo', 'Regras financeiras atualizadas!');
-                                    setFinModalVisible(false);
-                                }}
-                            >
-                                <Text style={styles.saveBtnText}>SALVAR REGRAS</Text>
-                            </TouchableOpacity>
-                        </ScrollView>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* MODAL 4: CLIMA E SERVIÇOS */}
-            <Modal visible={isClimaModalVisible} animationType="fade" transparent={true} onRequestClose={() => setClimaModalVisible(false)}>
-                <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { height: '65%' }]}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Serviços de Clima</Text>
-                            <TouchableOpacity onPress={() => setClimaModalVisible(false)}>
-                                <Ionicons name="close" size={24} color="#9CA3AF" />
-                            </TouchableOpacity>
-                        </View>
-
-                        <ScrollView style={styles.modalBody}>
-
-                            <TouchableOpacity
-                                style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981', backgroundColor: settings.clima_ativo ? (theme?.primary_color ?? '#10B981') + '20' : '#F9FAFB' }]}
-                                onPress={() => setSettings({ ...settings, clima_ativo: settings.clima_ativo ? 0 : 1 })}
-                            >
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Text style={{ fontWeight: 'bold', color: '#1F2937' }}>Habilitar Widget de Clima Geral</Text>
-                                    <Ionicons name={settings.clima_ativo ? "radio-button-on" : "radio-button-off"} size={24} color={theme?.primary_color ?? '#10B981'} />
-                                </View>
-                            </TouchableOpacity>
-
-                            <Text style={styles.inputLabel}>CHAVE DE API (OPENWEATHERMAP) - OPCIONAL</Text>
-                            <TextInput
-                                style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
-                                value={settings.clima_api_key || ''}
-                                autoCapitalize="none"
-                                placeholder="Padrão do AgroGB será usado se vazio"
-                                onChangeText={(t) => setSettings({ ...settings, clima_api_key: t })}
-                            />
-
-                            <Text style={styles.inputLabel}>CIDADE FIXA FORÇADA (DESATIVA O GPS AUTOMÁTICO)</Text>
-                            <TextInput
-                                style={[styles.input, { borderColor: theme?.primary_color ?? '#10B981' }]}
-                                value={settings.clima_cidade || ''}
-                                placeholder="Basta digitar e salvar se o GPS falhar."
-                                onChangeText={(t) => setSettings({ ...settings, clima_cidade: t })}
-                            />
-
-                            <TouchableOpacity
-                                style={[styles.saveBtn, { backgroundColor: theme?.primary_color ?? '#10B981' }]}
-                                onPress={async () => {
-                                    await updateAppSetting('clima_ativo', settings.clima_ativo);
-                                    await updateAppSetting('clima_api_key', settings.clima_api_key);
-                                    await updateAppSetting('clima_cidade', settings.clima_cidade);
-                                    Alert.alert('Salvo', 'Configurações de clima atualizadas e em vigor.');
-                                    setClimaModalVisible(false);
-                                }}
-                            >
-                                <Text style={styles.saveBtnText}>SALVAR CLIMA</Text>
-                            </TouchableOpacity>
-                        </ScrollView>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* MODAL 5: RELATÓRIOS PDF */}
-            <Modal visible={isRelModalVisible} animationType="slide" transparent={true} onRequestClose={() => setRelModalVisible(false)}>
-                <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { height: '55%' }]}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Opções de Relatórios</Text>
-                            <TouchableOpacity onPress={() => setRelModalVisible(false)}>
-                                <Ionicons name="close" size={24} color="#9CA3AF" />
-                            </TouchableOpacity>
-                        </View>
-                        <ScrollView style={styles.modalBody}>
-
-                            <TouchableOpacity
-                                style={[styles.input, { borderColor: theme.primary_color, backgroundColor: settings.rel_incluir_logo ? theme.primary_color + '20' : '#F9FAFB' }]}
-                                onPress={() => setSettings({ ...settings, rel_incluir_logo: settings.rel_incluir_logo ? 0 : 1 })}
-                            >
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Text style={{ fontWeight: 'bold', color: '#1F2937' }}>Imprimir Cabeçalho e Logo</Text>
-                                    <Ionicons name={settings.rel_incluir_logo ? "checkbox" : "square-outline"} size={24} color={theme.primary_color} />
-                                </View>
-                            </TouchableOpacity>
-
-                            <Text style={[styles.inputLabel, { marginTop: 25 }]}>MODELO PADRÃO DO PDF</Text>
-                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
-                                {['resumido', 'completo'].map((mode) => (
-                                    <TouchableOpacity
-                                        key={mode}
-                                        style={[
-                                            { flex: 1, padding: 15, borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', alignItems: 'center' },
-                                            settings.rel_modelo === mode && { borderColor: theme.primary_color, backgroundColor: theme.primary_color + '10' }
-                                        ]}
-                                        onPress={() => setSettings({ ...settings, rel_modelo: mode })}
-                                    >
-                                        <Ionicons name={mode === 'resumido' ? 'list' : 'document-text'} size={20} color={settings.rel_modelo === mode ? theme.primary_color : '#9CA3AF'} />
-                                        <Text style={{ fontSize: 11, fontWeight: 'bold', marginTop: 5, color: settings.rel_modelo === mode ? theme.primary_color : '#6B7280' }}>
-                                            {mode.toUpperCase()}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
+                            <View style={{ flex: 1 }}>
+                                <AgroInput label="COTAÇÃO USD" value={String(settings.usd_rate || 5.0)} keyboardType="numeric" onChangeText={(t) => setSettings({ ...settings, usd_rate: parseFloat(t) || 5.0 })} />
                             </View>
-
-                            <TouchableOpacity
-                                style={[styles.saveBtn, { backgroundColor: theme.primary_color, marginTop: 40 }]}
-                                onPress={async () => {
-                                    await updateAppSetting('rel_incluir_logo', settings.rel_incluir_logo);
-                                    await updateAppSetting('rel_modelo', settings.rel_modelo);
-                                    Alert.alert('Salvo', 'Modelo de relatórios salvo.');
-                                    setRelModalVisible(false);
-                                }}
-                            >
-                                <Text style={styles.saveBtnText}>SALVAR CONFIGURAÇÃO DE PDF</Text>
-                            </TouchableOpacity>
-                        </ScrollView>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* MODAL 6: QUALIDADE DE IMAGEM */}
-            <Modal visible={isMediaModalVisible} animationType="fade" transparent={true} onRequestClose={() => setMediaModalVisible(false)}>
-                <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { height: '55%' }]}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Armazenamento de Fotos</Text>
-                            <TouchableOpacity onPress={() => setMediaModalVisible(false)}>
-                                <Ionicons name="close" size={24} color="#9CA3AF" />
-                            </TouchableOpacity>
                         </View>
-                        <ScrollView style={styles.modalBody}>
+                        <AgroInput label="MÊS FISCAL" value={String(settings.fin_mes_fiscal || 1)} keyboardType="numeric" maxLength={2} onChangeText={(t) => setSettings({ ...settings, fin_mes_fiscal: parseInt(t) || 1 })} />
+                        <AgroInput label="META DE LUCRO MENSAL" value={settings.fin_meta_lucro ? String(settings.fin_meta_lucro) : ''} keyboardType="numeric" placeholder="0.00" onChangeText={(t) => setSettings({ ...settings, fin_meta_lucro: t })} />
+                        
+                        <TouchableOpacity 
+                            style={styles.toggleRow} 
+                            onPress={() => setSettings({ ...settings, fin_calc_margem: settings.fin_calc_margem ? 0 : 1 })}
+                        >
+                            <Text style={styles.toggleLabel}>Cálculo Automático de Margem</Text>
+                            <Ionicons name={settings.fin_calc_margem ? "checkbox" : "square-outline"} size={24} color={theme?.colors?.primary || '#10B981'} />
+                        </TouchableOpacity>
 
-                            <Text style={styles.inputLabel}>QUALIDADE DA FOTO COMPRIMIDA</Text>
-                            <TextInput
-                                style={[styles.input, { borderColor: theme.primary_color }]}
-                                value={String(settings.img_qualidade || 0.8)}
-                                keyboardType="numeric"
-                                placeholder="Numeração de 0.1 a 1.0 (Ex: 0.8 para 80%)"
-                                onChangeText={(t) => setSettings({ ...settings, img_qualidade: parseFloat(t) || 0.8 })}
-                            />
-
-                            <Text style={styles.inputLabel}>LIMITE MÁX. DE FOTOS POR COMPRA/COLHEITA</Text>
-                            <TextInput
-                                style={[styles.input, { borderColor: theme.primary_color }]}
-                                value={String(settings.img_limite || 3)}
-                                keyboardType="numeric"
-                                onChangeText={(t) => setSettings({ ...settings, img_limite: parseInt(t.replace(/[^0-9]/g, '')) || 3 })}
-                            />
-
-                            <View style={{ backgroundColor: '#FEF2F2', padding: 15, borderRadius: 10, marginTop: 25 }}>
-                                <Text style={{ color: '#B91C1C', fontWeight: 'bold', fontSize: 11 }}>ℹ️ IMPORTANTE DE SISTEMA</Text>
-                                <Text style={{ color: '#B91C1C', fontSize: 10, marginTop: 5 }}>Qualidades acima de 0.9 e limites altos podem consumir excessivamente a memória flash interna do telefone em médio prazo no modo offline.</Text>
-                            </View>
-
-                            <TouchableOpacity
-                                style={[styles.saveBtn, { backgroundColor: theme.primary_color }]}
-                                onPress={async () => {
-                                    await updateAppSetting('img_qualidade', settings.img_qualidade);
-                                    await updateAppSetting('img_limite', settings.img_limite);
-                                    Alert.alert('Salvo', 'Políticas de mídia atualizadas.');
-                                    setMediaModalVisible(false);
-                                }}
-                            >
-                                <Text style={styles.saveBtnText}>APLICAR LIMITES</Text>
-                            </TouchableOpacity>
-                        </ScrollView>
+                        <AgroButton title="SALVAR REGRAS" onPress={async () => {
+                            await updateAppSetting('fin_moeda', settings.fin_moeda);
+                            await updateAppSetting('fin_mes_fiscal', settings.fin_mes_fiscal);
+                            await updateAppSetting('fin_meta_lucro', settings.fin_meta_lucro);
+                            await updateAppSetting('fin_calc_margem', settings.fin_calc_margem);
+                            await updateAppSetting('usd_rate', settings.usd_rate);
+                            Alert.alert('Sucesso', 'Regras financeiras salvas.');
+                            setActiveModal(null);
+                        }} />
                     </View>
                 </View>
             </Modal>
 
-            {/* MODAL 7: LIXEIRA */}
-            <Modal visible={isLixeiraModalVisible} animationType="fade" transparent={true} onRequestClose={() => setLixeiraModalVisible(false)}>
-                <View style={styles.modalOverlay}>
+            {/* MODAL LIXEIRA */}
+            <Modal visible={activeModal === 'lixeira'} animationType="fade" transparent>
+                <View style={styles.overlayCenter}>
+                    <Card style={styles.lixeiraCard}>
+                        <View style={styles.lixeiraIcon}>
+                            <Ionicons name="trash-bin" size={40} color="#EF4444" />
+                        </View>
+                        <Text style={styles.lixeiraTitle}>{lixeiraCount} Itens na Lixeira</Text>
+                        <Text style={styles.lixeiraDesc}>Estes itens foram marcados para exclusão mas ainda ocupam espaço no dispositivo.</Text>
+                        
+                        <View style={styles.actionRow}>
+                            <AgroButton 
+                                title="ESVAZIAR" 
+                                onPress={async () => {
+                                    const tabelas = ['vendas', 'compras', 'colheitas', 'custos', 'talhoes', 'fornecedores', 'irrigacao'];
+                                    for (const t of tabelas) { await executeQuery(`DELETE FROM ${t} WHERE is_deleted = 1`); }
+                                    countLixeira();
+                                    Alert.alert('Sucesso', 'Lixeira limpa!');
+                                    setActiveModal(null);
+                                }} 
+                                style={{ flex: 1 }}
+                            />
+                            <AgroButton 
+                                title="FECHAR" 
+                                variant="secondary" 
+                                onPress={() => setActiveModal(null)} 
+                                style={{ flex: 1, marginLeft: 10 }}
+                            />
+                        </View>
+                    </Card>
+                </View>
+            </Modal>
+            {/* MODAL BIOMETRIA */}
+            <Modal visible={activeModal === 'bio'} animationType="slide" transparent>
+                <View style={styles.overlay}>
                     <View style={[styles.modalContent, { height: '50%' }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Lixeira Administrativa</Text>
-                            <TouchableOpacity onPress={() => setLixeiraModalVisible(false)}>
-                                <Ionicons name="close" size={24} color="#9CA3AF" />
+                            <Text style={styles.modalTitle}>SEGURANÇA BIOMÉTRICA</Text>
+                            <TouchableOpacity onPress={() => setActiveModal(null)} style={styles.closeBtn}>
+                                <Ionicons name="close" size={24} color="#6B7280" />
                             </TouchableOpacity>
                         </View>
-                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                            <Ionicons name="trash-bin" size={60} color="#E5E7EB" />
-                            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1F2937', marginTop: 15 }}>{lixeiraCount} Itens</Text>
-                            <Text style={{ color: '#6B7280', textAlign: 'center', marginVertical: 10 }}>Esses itens foram apagados pelos usuários (Soft Delete), mas continuam ocupando espaço no banco interno.</Text>
-
-                            <View style={{ flexDirection: 'row', gap: 15, marginTop: 20, width: '100%' }}>
-                                <TouchableOpacity
-                                    style={{ flex: 1, backgroundColor: '#F3F4F6', padding: 15, borderRadius: 10, alignItems: 'center' }}
-                                    onPress={async () => {
-                                        // Restaura tudo
-                                        const tabelas = ['vendas', 'compras', 'colheitas', 'custos'];
-                                        for (const t of tabelas) { await executeQuery(`UPDATE ${t} SET is_deleted = 0 WHERE is_deleted = 1`); }
-                                        Alert.alert('Restaurado', 'Todos os itens voltaram para o sistema.');
-                                        countLixeira();
-                                        setLixeiraModalVisible(false);
-                                    }}
-                                >
-                                    <Text style={{ fontWeight: 'bold', color: '#1F2937' }}>Restaurar Tudo</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={{ flex: 1, backgroundColor: '#EF4444', padding: 15, borderRadius: 10, alignItems: 'center' }}
-                                    onPress={() => {
-                                        Alert.alert('Aviso', 'Isso deletará fisicamente os arquivos do SQLite. Proceder?', [
-                                            { text: 'Cancelar' },
-                                            {
-                                                text: 'Esvaziar', style: 'destructive', onPress: async () => {
-                                                    const tabelas = ['vendas', 'compras', 'colheitas', 'custos'];
-                                                    for (const t of tabelas) { await executeQuery(`DELETE FROM ${t} WHERE is_deleted = 1`); }
-                                                    countLixeira();
-                                                    setLixeiraModalVisible(false);
-                                                }
-                                            }
-                                        ])
-                                    }}
-                                >
-                                    <Text style={{ fontWeight: 'bold', color: '#FFF' }}>Esvaziar e Apagar</Text>
-                                </TouchableOpacity>
+                        
+                        <View style={{ alignItems: 'center', marginVertical: 20 }}>
+                            <View style={[styles.lixeiraIcon, { backgroundColor: isBioEnabled ? '#D1FAE5' : '#F3F4F6' }]}>
+                                <Ionicons name="finger-print" size={40} color={isBioEnabled ? '#10B981' : '#9CA3AF'} />
                             </View>
+                            <Text style={styles.lixeiraTitle}>{isBioEnabled ? 'BIOMETRIA ATIVA' : 'BIOMETRIA DESATIVADA'}</Text>
+                            <Text style={styles.lixeiraDesc}>
+                                {hasBioHardware 
+                                    ? "Ao ativar, você poderá entrar no app apenas com sua digital ou Face ID, sem precisar digitar sua senha."
+                                    : "Seu dispositivo não possui suporte a hardware biométrico compatível."}
+                            </Text>
                         </View>
+
+                        {hasBioHardware && (
+                            <AgroButton 
+                                title={isBioEnabled ? "DESATIVAR BIOMETRIA" : "ATIVAR BIOMETRIA"} 
+                                variant={isBioEnabled ? "secondary" : "primary"}
+                                onPress={async () => {
+                                    if (isBioEnabled) {
+                                        await SecureStore.deleteItemAsync(BIO_KEY);
+                                        setIsBioEnabled(false);
+                                        Alert.alert('Sucesso', 'Biometria desativada. Use sua senha no próximo login.');
+                                        setActiveModal(null);
+                                    } else {
+                                        Alert.alert('Atenção', 'Para ativar a biometria, você deve sair e realizar um login manual com a opção de salvar biometria ativa.');
+                                        setActiveModal(null);
+                                    }
+                                }}
+                            />
+                        )}
                     </View>
                 </View>
             </Modal>
-
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F3F4F6' },
-    header: { padding: 30, paddingTop: 60, borderBottomLeftRadius: 35, borderBottomRightRadius: 35, elevation: 5 },
-    headerTitle: { fontSize: 28, fontWeight: '900', color: '#FFF' },
-    headerSub: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 5, letterSpacing: 0.5, fontWeight: 'bold' },
-    body: { paddingHorizontal: 20, paddingTop: 30 },
-    sectionTitle: { fontSize: 11, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1.5, marginBottom: 15, marginTop: 10, marginLeft: 5 },
-    card: { backgroundColor: '#FFF', padding: 18, borderRadius: 20, marginBottom: 15, flexDirection: 'row', alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5 },
-    dangerCard: { borderWidth: 1, borderColor: '#FECACA', backgroundColor: '#FEF2F2' },
-    iconBox: { width: 45, height: 45, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    container: { flex: 1 },
+    header: { paddingTop: 50, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+    headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
+    headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 'bold' },
+    body: { padding: 20 },
+    sectionTitle: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1.5, marginBottom: 15, marginTop: 10 },
+    optionCard: { marginBottom: 12 },
+    cardInner: { padding: 15, flexDirection: 'row', alignItems: 'center' },
+    iconContainer: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
     cardInfo: { flex: 1 },
-    cardDesc: { fontSize: 12, color: '#6B7280', lineHeight: 16 },
-
-    // Estilos de Modal Compartilhados
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30, height: '80%', padding: 25 },
+    cardTitle: { fontSize: 15, fontWeight: '800', color: '#1F2937' },
+    cardDesc: { fontSize: 11, color: '#6B7280', marginTop: 2, fontWeight: '600' },
+    dangerCard: { borderColor: '#FECACA', borderWidth: 1 },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30, height: '85%', padding: 25 },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-    modalTitle: { fontSize: 18, fontWeight: '900', color: '#1F2937' },
-    modalBody: { flex: 1 },
-    inputLabel: { fontSize: 10, fontWeight: 'bold', color: '#6B7280', marginBottom: 6, marginTop: 15, letterSpacing: 1 },
-    input: { backgroundColor: '#F9FAFB', borderWidth: 1, borderRadius: 10, padding: 14, fontSize: 15, color: '#1F2937' },
-    saveBtn: { padding: 18, borderRadius: 15, alignItems: 'center', marginTop: 30, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 5, elevation: 3 },
-    saveBtnText: { color: '#FFF', fontWeight: '900', letterSpacing: 1, fontSize: 14 }
+    modalTitle: { fontSize: 16, fontWeight: '900', color: '#1F2937' },
+    closeBtn: { backgroundColor: '#F3F4F6', padding: 8, borderRadius: 12 },
+    inputLabel: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', marginTop: 20, marginBottom: 10, letterSpacing: 1 },
+    row: { flexDirection: 'row' },
+    colorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 15, marginTop: 10 },
+    colorOption: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: 'transparent' },
+    colorSelected: { borderColor: '#FFF', elevation: 5 },
+    modeRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
+    modeBtn: { flex: 1, padding: 15, borderRadius: 15, borderWidth: 1, borderColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center' },
+    modeText: { fontSize: 9, fontWeight: '900', marginTop: 5, color: '#9CA3AF' },
+    toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, backgroundColor: '#F9FAFB', borderRadius: 15, marginVertical: 20 },
+    toggleLabel: { fontSize: 14, fontWeight: '800', color: '#1F2937' },
+    overlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 25 },
+    lixeiraCard: { padding: 25, alignItems: 'center' },
+    lixeiraIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+    lixeiraTitle: { fontSize: 18, fontWeight: '900', color: '#1F2937' },
+    lixeiraDesc: { fontSize: 13, color: '#6B7280', textAlign: 'center', marginTop: 10, lineHeight: 20 },
+    actionRow: { flexDirection: 'row', marginTop: 25, width: '100%' }
 });

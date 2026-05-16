@@ -31,12 +31,25 @@ export default function LoginScreen({ navigation }) {
     };
 
     const initApp = async () => {
+        // 1. Verificar se já existe uma sessão ativa
         const userJson = await AsyncStorage.getItem('user_session');
         if (userJson) {
             navigation.replace('Home');
             return;
         }
 
+        // 2. Se não houver sessão, verificar se a biometria está ativada para auto-login
+        try {
+            const bioCreds = await SecureStore.getItemAsync(BIO_KEY);
+            if (bioCreds && isBiometricSupported) {
+                // Pequeno delay para garantir que a UI carregou
+                setTimeout(() => handleBiometricLogin(true), 500);
+            }
+        } catch (e) {
+            console.log('Erro ao checar auto-bio:', e);
+        }
+
+        // Inicializar Admin se banco estiver vazio
         try {
             const res = await executeQuery('SELECT COUNT(*) as qtd FROM usuarios');
             if (res.rows.item(0).qtd === 0) {
@@ -85,15 +98,27 @@ export default function LoginScreen({ navigation }) {
                         const bioEnabled = await SecureStore.getItemAsync(BIO_KEY);
                         if (!bioEnabled) {
                             Alert.alert(
-                                'Biometria',
-                                'Deseja ativar o acesso rápido por biometria?',
+                                '🚀 Acesso Rápido',
+                                'Deseja ativar o login por biometria (Digital/FaceID) para entrar automaticamente nos próximos acessos?',
                                 [
-                                    { text: 'Agora não', onPress: () => navigation.replace('Home') },
+                                    { text: 'Agora não', onPress: () => navigation.replace('Home'), style: 'cancel' },
                                     {
-                                        text: 'Ativar',
+                                        text: 'ATIVAR AGORA',
                                         onPress: async () => {
-                                            await SecureStore.setItemAsync(BIO_KEY, JSON.stringify({ usuario: userTrim, senha: passTrim }));
-                                            navigation.replace('Home');
+                                            try {
+                                                const auth = await LocalAuthentication.authenticateAsync({
+                                                    promptMessage: 'Confirme sua biometria para ativar',
+                                                });
+                                                if (auth.success) {
+                                                    await SecureStore.setItemAsync(BIO_KEY, JSON.stringify({ usuario: userTrim, senha: passTrim }));
+                                                    Alert.alert('Sucesso', 'Login biométrico ativado!');
+                                                    navigation.replace('Home');
+                                                } else {
+                                                    navigation.replace('Home');
+                                                }
+                                            } catch (e) {
+                                                navigation.replace('Home');
+                                            }
                                         }
                                     }
                                 ]
@@ -115,24 +140,32 @@ export default function LoginScreen({ navigation }) {
         }
     };
 
-    const handleBiometricLogin = async () => {
+    const handleBiometricLogin = async (isAuto = false) => {
         try {
             const bioCreds = await SecureStore.getItemAsync(BIO_KEY);
-            if (!bioCreds) return Alert.alert('Atenção', 'Biometria não configurada.');
+            if (!bioCreds) {
+                if (!isAuto) Alert.alert('Atenção', 'Biometria não configurada.');
+                return;
+            }
 
             const result = await LocalAuthentication.authenticateAsync({
-                promptMessage: 'AgroGB Autenticação',
-                fallbackLabel: 'Usar Senha',
+                promptMessage: 'AgroGB Autenticação Biométrica',
+                fallbackLabel: 'Usar Senha Manual',
+                disableDeviceFallback: false,
             });
 
             if (result.success) {
                 const { usuario: bioUser, senha: bioPass } = JSON.parse(bioCreds);
                 setUsuario(bioUser);
                 setSenha(bioPass);
+                // Executar login com os dados recuperados
                 setTimeout(() => handleLogin(true), 100);
+            } else if (!isAuto) {
+                Alert.alert('Autenticação', 'Não foi possível autenticar biometria.');
             }
         } catch (e) {
-            Alert.alert('Erro', 'Falha na biometria.');
+            console.log('Erro Bio:', e);
+            if (!isAuto) Alert.alert('Erro', 'Falha técnica na biometria.');
         }
     };
 

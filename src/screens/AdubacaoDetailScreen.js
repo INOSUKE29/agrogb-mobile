@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Image, Alert, Share } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Image, Alert, Share, TouchableOpacity } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { theme } from '../styles/theme';
-import AgroButton from '../components/common/AgroButton';
+import { useTheme } from '../context/ThemeContext';
+import { LinearGradient } from 'expo-linear-gradient';
 import { updatePlanoAdubacao } from '../database/database';
 
+// Design System
+import Card from '../components/common/Card';
+import AgroButton from '../components/common/AgroButton';
+
 export default function AdubacaoDetailScreen({ route, navigation }) {
+    const { theme } = useTheme();
     const { plano } = route.params;
     const [currentPlano, setCurrentPlano] = useState(plano);
     const [loading, setLoading] = useState(false);
@@ -27,10 +32,15 @@ export default function AdubacaoDetailScreen({ route, navigation }) {
                             status: 'APLICADO',
                             data_aplicacao: new Date().toISOString()
                         };
-                        await updatePlanoAdubacao(currentPlano.uuid, updated);
-                        setCurrentPlano(updated);
-                        setLoading(false);
-                        Alert.alert('Sucesso', 'Plano marcado como APLICADO!');
+                        try {
+                            await updatePlanoAdubacao(currentPlano.uuid, updated);
+                            setCurrentPlano(updated);
+                            Alert.alert('Sucesso', 'Plano marcado como APLICADO!');
+                        } catch (e) {
+                            Alert.alert('Erro', 'Falha ao atualizar plano.');
+                        } finally {
+                            setLoading(false);
+                        }
                     }
                 }
             ]
@@ -48,107 +58,127 @@ export default function AdubacaoDetailScreen({ route, navigation }) {
                 `*RECEITA/ORIENTAÇÃO:*\n${currentPlano.descricao_tecnica}\n\n` +
                 `Status: ${currentPlano.status}`;
 
-            await Share.share({
-                message: message,
-            });
+            await Share.share({ message });
         } catch (error) {
-            alert(error.message);
+            Alert.alert('Erro', error.message);
         }
     };
 
     return (
-        <View style={styles.container}>
-            <ScrollView contentContainerStyle={styles.content}>
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
+            <LinearGradient 
+                colors={isApplied ? ['#10B981', '#059669'] : ['#F59E0B', '#D97706']} 
+                style={styles.header}
+            >
+                <View style={styles.headerTop}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>DETALHES DO PLANO</Text>
+                    <TouchableOpacity onPress={handleShare}>
+                        <Ionicons name="share-social-outline" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                </View>
 
-                {/* STATUS BAR */}
-                <View style={[styles.statusBar, isApplied ? styles.bgApplied : styles.bgPlanned]}>
+                <View style={styles.statusBadge}>
                     <Ionicons name={isApplied ? "checkmark-circle" : "time"} size={20} color="#FFF" />
                     <Text style={styles.statusText}>
                         {isApplied
                             ? `APLICADO EM ${new Date(currentPlano.data_aplicacao).toLocaleDateString()}`
-                            : 'PLANEJADO - AGUARDANDO APLICAÇÃO'}
+                            : 'PLANEJADO - AGUARDANDO'}
                     </Text>
                 </View>
+            </LinearGradient>
 
-                {/* HEADER */}
-                <View style={styles.header}>
-                    <View style={styles.iconBox}>
-                        <FontAwesome5
-                            name={currentPlano.tipo_aplicacao === 'GOTEJO' ? 'faucet' : 'spray-can'}
-                            size={24}
-                            color={theme.colors.primary}
-                        />
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <Card style={styles.mainInfoCard}>
+                    <View style={styles.infoRow}>
+                        <View style={[styles.iconBox, { backgroundColor: isApplied ? '#F0FDF4' : '#FFFBEB' }]}>
+                            <FontAwesome5
+                                name={currentPlano.tipo_aplicacao === 'GOTEJO' ? 'faucet' : 'spray-can'}
+                                size={22}
+                                color={isApplied ? '#10B981' : '#F59E0B'}
+                            />
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 15 }}>
+                            <Text style={styles.title}>{currentPlano.nome_plano}</Text>
+                            <Text style={styles.subtitle}>{currentPlano.cultura} • {currentPlano.area_local || 'Área Geral'}</Text>
+                        </View>
                     </View>
-                    <View>
-                        <Text style={styles.title}>{currentPlano.nome_plano}</Text>
-                        <Text style={styles.subtitle}>{currentPlano.cultura} • {currentPlano.area_local || 'Sem local definido'}</Text>
-                    </View>
-                </View>
+                </Card>
 
-                {/* RECEITA */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>ORIENTAÇÃO TÉCNICA</Text>
-                    <View style={styles.card}>
-                        <Text style={styles.description}>{currentPlano.descricao_tecnica}</Text>
-                    </View>
+                    <Text style={styles.sectionLabel}>ORIENTAÇÃO TÉCNICA / RECEITA</Text>
+                    <Card style={styles.descriptionCard}>
+                        <Text style={styles.descriptionText}>{currentPlano.descricao_tecnica}</Text>
+                    </Card>
                 </View>
 
-                {/* ANEXOS */}
                 {currentPlano.anexos_uri && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>ANEXO / FOTO</Text>
-                        <Image
-                            source={{ uri: currentPlano.anexos_uri }}
-                            style={styles.image}
-                            resizeMode="cover"
-                        />
+                        <Text style={styles.sectionLabel}>ANEXO / COMPROVANTE</Text>
+                        <Card noPadding style={styles.imageCard}>
+                            <Image
+                                source={{ uri: currentPlano.anexos_uri }}
+                                style={styles.image}
+                                resizeMode="cover"
+                            />
+                        </Card>
                     </View>
                 )}
-
             </ScrollView>
 
             <View style={styles.footer}>
-                {!isApplied ? (
+                {!isApplied && (
                     <AgroButton
                         title="MARCAR COMO APLICADO"
                         onPress={handleApply}
                         loading={loading}
-                    />
-                ) : (
-                    <AgroButton
-                        title="COMPARTILHAR REGISTRO"
-                        variant="secondary"
-                        onPress={handleShare}
+                        style={{ marginBottom: 12 }}
                     />
                 )}
-
-                <AgroButton
-                    title="EDITAR"
-                    variant="secondary"
-                    style={{ marginTop: 0 }}
-                    disabled={isApplied} // Desabilita edição se já aplicado (regra de segurança)
-                    onPress={() => navigation.navigate('AdubacaoForm', { plano: currentPlano })}
-                />
+                
+                <View style={styles.footerRow}>
+                    <AgroButton
+                        title="EDITAR"
+                        variant="secondary"
+                        disabled={isApplied}
+                        onPress={() => navigation.navigate('AdubacaoForm', { plano: currentPlano })}
+                        style={{ flex: 1 }}
+                    />
+                    {isApplied && (
+                        <AgroButton
+                            title="COMPARTILHAR"
+                            variant="primary"
+                            onPress={handleShare}
+                            style={{ flex: 1, marginLeft: 10 }}
+                        />
+                    )}
+                </View>
             </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F9FAFB' },
-    content: { paddingBottom: 100 },
-    statusBar: { padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-    bgPlanned: { backgroundColor: '#F59E0B' },
-    bgApplied: { backgroundColor: '#10B981' },
-    statusText: { color: '#FFF', fontWeight: 'bold', fontSize: 12 },
-    header: { padding: 20, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-    iconBox: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center', marginRight: 15 },
-    title: { fontSize: 20, fontWeight: 'bold', color: '#111827' },
-    subtitle: { fontSize: 14, color: '#6B7280' },
-    section: { padding: 20 },
-    sectionTitle: { fontSize: 12, fontWeight: 'bold', color: '#6B7280', marginBottom: 10, letterSpacing: 1 },
-    card: { backgroundColor: '#FFF', padding: 20, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', minHeight: 100 },
-    description: { fontSize: 16, color: '#374151', lineHeight: 24, fontFamily: 'System' }, // Monospaced? No, System is better for reading
-    image: { width: '100%', height: 300, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB' },
-    footer: { padding: 20, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#E5E7EB' }
+    container: { flex: 1 },
+    header: { paddingTop: 50, paddingBottom: 30, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
+    statusBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, alignSelf: 'center' },
+    statusText: { color: '#FFF', fontWeight: '900', fontSize: 11, marginLeft: 8 },
+    scrollContent: { padding: 20, paddingBottom: 120 },
+    mainInfoCard: { marginBottom: 20 },
+    infoRow: { flexDirection: 'row', alignItems: 'center' },
+    iconBox: { width: 50, height: 50, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+    title: { fontSize: 18, fontWeight: '900', color: '#1F2937' },
+    subtitle: { fontSize: 13, color: '#6B7280', marginTop: 2, fontWeight: '600' },
+    section: { marginBottom: 25 },
+    sectionLabel: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', marginBottom: 10, letterSpacing: 1 },
+    descriptionCard: { padding: 20 },
+    descriptionText: { fontSize: 15, color: '#374151', lineHeight: 24, fontWeight: '500' },
+    imageCard: { overflow: 'hidden', height: 300 },
+    image: { width: '100%', height: '100%' },
+    footer: { padding: 20, backgroundColor: '#FFF', borderTopLeftRadius: 25, borderTopRightRadius: 25, elevation: 20, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, position: 'absolute', bottom: 0, width: '100%' },
+    footerRow: { flexDirection: 'row' }
 });

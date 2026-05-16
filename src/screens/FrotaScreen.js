@@ -1,10 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertMaquina, getMaquinas, updateMaquinaRevisao, deleteMaquina, insertManutencaoFrota, getHistoricoManutencoes } from '../database/database';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
+import { useFocusEffect } from '@react-navigation/native';
 
-export default function FrotaScreen() {
+// Design System
+import Card from '../components/common/Card';
+import MetricCard from '../components/common/MetricCard';
+import AgroButton from '../components/common/AgroButton';
+import AgroInput from '../components/common/AgroInput';
+
+export default function FrotaScreen({ navigation }) {
+    const { theme } = useTheme();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -20,18 +30,25 @@ export default function FrotaScreen() {
     const [horimetro, setHorimetro] = useState('');
     const [revisao, setRevisao] = useState('');
 
-    const [selectedId, setSelectedId] = useState(null); // For actions
+    const [selectedId, setSelectedId] = useState(null);
     const [servicoDesc, setServicoDesc] = useState('');
     const [servicoValor, setServicoValor] = useState('');
     const [novoHorimetro, setNovoHorimetro] = useState('');
 
-    useEffect(() => { loadData(); }, []);
+    useFocusEffect(useCallback(() => { loadData(); }, []));
 
     const up = (t, setter) => setter(t.toUpperCase());
 
     const loadData = async () => {
         setLoading(true);
-        try { const data = await getMaquinas(); setItems(data); } catch (e) { } finally { setLoading(false); }
+        try { 
+            const data = await getMaquinas(); 
+            setItems(data); 
+        } catch (e) { 
+            console.error(e);
+        } finally { 
+            setLoading(false); 
+        }
     };
 
     const handleSave = async () => {
@@ -46,16 +63,17 @@ export default function FrotaScreen() {
                 intervalo_revisao: parseFloat(revisao || 0)
             });
             setModalVisible(false); cleanForms(); loadData();
+            Alert.alert('Sucesso', 'Veículo cadastrado!');
         } catch (e) { Alert.alert('Erro', 'Falha ao salvar veículo.'); }
     };
 
     const handleUpdateKM = async () => {
         if (!novoHorimetro.trim()) return;
         try {
-            // Find current revisao interval
             const currentItem = items.find(i => i.uuid === selectedId);
             await updateMaquinaRevisao(selectedId, parseFloat(novoHorimetro), currentItem ? currentItem.intervalo_revisao : 10000);
             setUpdateModalVisible(false); setNovoHorimetro(''); loadData();
+            Alert.alert('Sucesso', 'KM/Horímetro atualizado!');
         } catch (e) { Alert.alert('Erro', 'Falha ao atualizar.'); }
     };
 
@@ -69,13 +87,15 @@ export default function FrotaScreen() {
                 descricao: servicoDesc,
                 valor: parseFloat(servicoValor.replace(',', '.') || 0)
             });
-            setServiceModalVisible(false); setServicoDesc(''); setServicoValor(''); Alert.alert('Sucesso', 'Manutenção registrada!');
+            setServiceModalVisible(false); setServicoDesc(''); setServicoValor(''); 
+            Alert.alert('Sucesso', 'Manutenção registrada!');
         } catch (e) { Alert.alert('Erro', 'Falha ao registrar serviço.'); }
     };
 
     const deleteItem = (uuid) => {
         Alert.alert('Excluir', 'Confirmar exclusão?', [
-            { text: 'Não' }, { text: 'Sim', onPress: async () => { await deleteMaquina(uuid); loadData(); } }
+            { text: 'Não' }, 
+            { text: 'Sim', style: 'destructive', onPress: async () => { await deleteMaquina(uuid); loadData(); } }
         ]);
     };
 
@@ -85,19 +105,45 @@ export default function FrotaScreen() {
 
     const getStatusColor = (h, r) => {
         const diff = r - h;
-        if (diff < 0) return { bg: '#FEF2F2', text: '#DC2626', label: 'ATRASADO', bar: '#EF4444' };
-        if (diff < (r * 0.1)) return { bg: '#FFFBEB', text: '#D97706', label: 'ATENÇÃO', bar: '#F59E0B' };
-        return { bg: '#ECFDF5', text: '#059669', label: 'EM DIA', bar: '#10B981' };
+        if (diff < 0) return { bg: '#FEF2F2', text: '#EF4444', label: 'ATRASADO', bar: '#EF4444' };
+        if (diff < (r * 0.15)) return { bg: '#FFFBEB', text: '#F59E0B', label: 'ATENÇÃO', bar: '#F59E0B' };
+        return { bg: '#F0FDF4', text: '#10B981', label: 'EM DIA', bar: '#10B981' };
     };
 
-    return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>GESTÃO DE FROTA</Text>
-                <Text style={styles.sub}>Controle de Veículos e Máquinas</Text>
-            </View>
+    const alertCount = items.filter(i => (i.intervalo_revisao - i.horimetro_atual) < (i.intervalo_revisao * 0.15)).length;
 
-            {loading ? <ActivityIndicator size="large" color="#6366F1" style={{ marginTop: 50 }} /> :
+    return (
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
+            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
+                <View style={styles.headerTop}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>GESTÃO DE FROTA</Text>
+                    <TouchableOpacity onPress={() => setModalVisible(true)}>
+                        <Ionicons name="add-circle" size={28} color="#FFF" />
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.summaryRow}>
+                    <MetricCard 
+                        title="Alertas" 
+                        value={alertCount.toString()} 
+                        icon="warning" 
+                        color="#FFF"
+                        style={styles.summaryCard}
+                    />
+                    <MetricCard 
+                        title="Total Veículos" 
+                        value={items.length.toString()} 
+                        icon="bus" 
+                        color="#FFF"
+                        style={styles.summaryCard}
+                    />
+                </View>
+            </LinearGradient>
+
+            {loading ? <ActivityIndicator size="large" color={theme?.colors?.primary} style={{ marginTop: 50 }} /> :
                 <FlatList
                     data={items}
                     keyExtractor={item => item.uuid}
@@ -109,121 +155,135 @@ export default function FrotaScreen() {
                         const remaining = item.intervalo_revisao - item.horimetro_atual;
 
                         return (
-                            <View style={styles.card}>
-                                <View style={styles.cardHeader}>
-                                    <View style={styles.iconBox}>
-                                        <Text style={{ fontSize: 24 }}>{isCar ? '🚘' : '🚜'}</Text>
+                            <Card style={styles.card} noPadding>
+                                <View style={styles.cardContent}>
+                                    <View style={styles.cardHeader}>
+                                        <View style={styles.iconBox}>
+                                            <Ionicons name={isCar ? "car" : "construct"} size={24} color={theme?.colors?.primary} />
+                                        </View>
+                                        <View style={{ flex: 1, marginLeft: 12 }}>
+                                            <Text style={styles.cardTitle}>{item.nome}</Text>
+                                            <Text style={styles.cardSub}>{item.tipo} {item.placa ? `• ${item.placa}` : ''}</Text>
+                                        </View>
+                                        <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
+                                            <Text style={[styles.statusText, { color: st.text }]}>{st.label}</Text>
+                                        </View>
                                     </View>
-                                    <View style={{ flex: 1, marginLeft: 12 }}>
-                                        <Text style={styles.cardTitle}>{item.nome}</Text>
-                                        <Text style={styles.cardSub}>{item.tipo} {item.placa ? `• ${item.placa}` : ''}</Text>
+
+                                    <View style={styles.statsRow}>
+                                        <View>
+                                            <Text style={styles.statVal}>{item.horimetro_atual.toLocaleString()} <Text style={styles.statUnit}>{unit}</Text></Text>
+                                            <Text style={styles.statLabel}>Atual</Text>
+                                        </View>
+                                        <View style={{ alignItems: 'flex-end' }}>
+                                            <Text style={styles.statVal}>{item.intervalo_revisao.toLocaleString()} <Text style={styles.statUnit}>{unit}</Text></Text>
+                                            <Text style={styles.statLabel}>Próx. Revisão</Text>
+                                        </View>
                                     </View>
-                                    <View style={[styles.badge, { backgroundColor: st.bg }]}>
-                                        <Text style={[styles.badgeText, { color: st.text }]}>{st.label}</Text>
+
+                                    <View style={styles.progressContainer}>
+                                        <View style={styles.progressBar}>
+                                            <View style={[styles.progressFill, { width: `${pct * 100}%`, backgroundColor: st.bar }]} />
+                                        </View>
+                                        <Text style={[styles.remainText, { color: st.text }]}>
+                                            {remaining >= 0 ? `Faltam ${remaining} ${unit}` : `Vencido há ${Math.abs(remaining)} ${unit}`}
+                                        </Text>
+                                    </View>
+
+                                    <View style={styles.actions}>
+                                        <AgroButton 
+                                            title={`+ ${unit}`} 
+                                            variant="secondary" 
+                                            onPress={() => { setSelectedId(item.uuid); setUpdateModalVisible(true); }}
+                                            style={{ flex: 1, height: 40 }}
+                                        />
+                                        <AgroButton 
+                                            title="SERVIÇO" 
+                                            onPress={() => { setSelectedId(item.uuid); setServiceModalVisible(true); }}
+                                            style={{ flex: 1, height: 40 }}
+                                        />
+                                        <TouchableOpacity style={styles.deleteBtn} onPress={() => deleteItem(item.uuid)}>
+                                            <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                        </TouchableOpacity>
                                     </View>
                                 </View>
-
-                                <View style={styles.stats}>
-                                    <Text style={styles.statVal}>{item.horimetro_atual} <Text style={styles.statUnit}>{unit}</Text></Text>
-                                    <Text style={styles.statLabel}>Próx. Revisão: {item.intervalo_revisao} {unit}</Text>
-                                </View>
-
-                                <View style={styles.barBg}>
-                                    <View style={[styles.barFill, { flex: pct, backgroundColor: st.bar }]} />
-                                </View>
-                                <Text style={styles.remainText}>{remaining >= 0 ? `Faltam ${remaining} ${unit}` : `Passou ${Math.abs(remaining)} ${unit}`}</Text>
-
-                                <View style={styles.actions}>
-                                    <TouchableOpacity style={[styles.actBtn, { backgroundColor: '#EFF6FF' }]} onPress={() => { setSelectedId(item.uuid); setUpdateModalVisible(true); }}>
-                                        <Text style={[styles.actText, { color: '#3B82F6' }]}>ATUALIZAR {unit}</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={[styles.actBtn, { backgroundColor: '#F0FDF4' }]} onPress={() => { setSelectedId(item.uuid); setServiceModalVisible(true); }}>
-                                        <Text style={[styles.actText, { color: '#16A34A' }]}>SERVIÇO</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={[styles.actBtn, { backgroundColor: '#FEF2F2', width: 40 }]} onPress={() => deleteItem(item.uuid)}>
-                                        <Text style={[styles.actText, { color: '#DC2626' }]}>✕</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
+                            </Card>
                         );
                     }}
-                    contentContainerStyle={{ padding: 20 }}
+                    contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
                     ListEmptyComponent={<Text style={styles.empty}>Nenhum veículo cadastrado.</Text>}
-                />}
-
-            <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
-                <Text style={styles.fabText}>+</Text>
-            </TouchableOpacity>
+                />
+            }
 
             {/* MODAL NOVOS */}
             <Modal visible={modalVisible} transparent animationType="slide">
                 <View style={styles.overlay}>
-                    <View style={styles.modal}>
+                    <Card style={styles.modalContent}>
                         <Text style={styles.modalTitle}>NOVO VEÍCULO</Text>
-                        <Text style={styles.label}>NOME DO VEÍCULO</Text>
-                        <TextInput style={styles.input} value={nome} onChangeText={t => up(t, setNome)} autoCapitalize="characters" />
-
+                        
+                        <AgroInput label="Nome" value={nome} onChangeText={t => up(t, setNome)} placeholder="EX: TRATOR CASE" />
+                        
                         <Text style={styles.label}>TIPO</Text>
-                        <View style={styles.row}>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
                             {['TRATOR', 'CARRO', 'CAMINHAO', 'OUTRO'].map(t => (
-                                <TouchableOpacity key={t} onPress={() => setTipo(t)} style={[styles.chip, tipo === t && styles.chipActive]}>
+                                <TouchableOpacity key={t} onPress={() => setTipo(t)} style={[styles.chip, tipo === t && { backgroundColor: theme?.colors?.primary }]}>
                                     <Text style={[styles.chipText, tipo === t && { color: '#FFF' }]}>{t}</Text>
                                 </TouchableOpacity>
                             ))}
-                        </View>
+                        </ScrollView>
 
-                        <Text style={[styles.label, { marginTop: 15, fontSize: 9, fontWeight: '900', color: '#9CA3AF' }]}>PLACA (OPCIONAL)</Text>
-                        <TextInput style={styles.input} value={placa} onChangeText={t => up(t, setPlaca)} autoCapitalize="characters" />
+                        <AgroInput label="Placa" value={placa} onChangeText={t => up(t, setPlaca)} placeholder="OPCIONAL" />
 
                         <View style={styles.row}>
                             <View style={{ flex: 1, marginRight: 10 }}>
-                                <Text style={styles.label}>ATUAL (KM/H)</Text>
-                                <TextInput style={styles.input} keyboardType="numeric" value={horimetro} onChangeText={setHorimetro} />
+                                <AgroInput label="Atual (KM/H)" keyboardType="numeric" value={horimetro} onChangeText={setHorimetro} />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.label}>PRÓX. REVISÃO</Text>
-                                <TextInput style={styles.input} keyboardType="numeric" value={revisao} onChangeText={setRevisao} placeholder="Ex: 10000" />
+                                <AgroInput label="Próx. Revisão" keyboardType="numeric" value={revisao} onChangeText={setRevisao} placeholder="10000" />
                             </View>
                         </View>
 
-                        <View style={styles.modalBtns}>
-                            <TouchableOpacity style={[styles.btn, styles.btnBack]} onPress={() => setModalVisible(false)}><Text style={styles.btnText}>CANCELAR</Text></TouchableOpacity>
-                            <TouchableOpacity style={[styles.btn, styles.btnSave]} onPress={handleSave}><Text style={[styles.btnText, { color: '#FFF' }]}>SALVAR</Text></TouchableOpacity>
+                        <View style={styles.modalActions}>
+                            <AgroButton title="CANCELAR" variant="secondary" onPress={() => setModalVisible(false)} style={{ flex: 1 }} />
+                            <AgroButton title="SALVAR" onPress={handleSave} style={{ flex: 1 }} />
                         </View>
-                    </View>
+                    </Card>
                 </View>
             </Modal>
 
             {/* MODAL UPDATE KM */}
             <Modal visible={updateModalVisible} transparent animationType="fade">
                 <View style={styles.overlay}>
-                    <View style={[styles.modal, { padding: 25 }]}>
-                        <Text style={styles.modalTitle}>ATUALIZAR HORÍMETRO/KM</Text>
-                        <TextInput style={styles.input} keyboardType="numeric" value={novoHorimetro} onChangeText={setNovoHorimetro} placeholder="Novo valor total..." autoFocus />
-                        <View style={styles.modalBtns}>
-                            <TouchableOpacity style={[styles.btn, styles.btnBack]} onPress={() => setUpdateModalVisible(false)}><Text style={styles.btnText}>CANCELAR</Text></TouchableOpacity>
-                            <TouchableOpacity style={[styles.btn, styles.btnSave]} onPress={handleUpdateKM}><Text style={[styles.btnText, { color: '#FFF' }]}>ATUALIZAR</Text></TouchableOpacity>
+                    <Card style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>ATUALIZAR KM/HORÍMETRO</Text>
+                        <AgroInput 
+                            placeholder="Novo valor total..." 
+                            keyboardType="numeric" 
+                            value={novoHorimetro} 
+                            onChangeText={setNovoHorimetro}
+                            autoFocus
+                        />
+                        <View style={styles.modalActions}>
+                            <AgroButton title="CANCELAR" variant="secondary" onPress={() => setUpdateModalVisible(false)} style={{ flex: 1 }} />
+                            <AgroButton title="ATUALIZAR" onPress={handleUpdateKM} style={{ flex: 1 }} />
                         </View>
-                    </View>
+                    </Card>
                 </View>
             </Modal>
 
             {/* MODAL SERVICO */}
             <Modal visible={serviceModalVisible} transparent animationType="slide">
                 <View style={styles.overlay}>
-                    <View style={styles.modal}>
+                    <Card style={styles.modalContent}>
                         <Text style={styles.modalTitle}>REGISTRAR MANUTENÇÃO</Text>
-                        <Text style={styles.label}>DESCRIÇÃO DO SERVIÇO</Text>
-                        <TextInput style={styles.input} value={servicoDesc} onChangeText={t => up(t, setServicoDesc)} autoCapitalize="characters" placeholder="Ex: TROCA DE ÓLEO" />
-
-                        <Text style={styles.label}>CUSTO TOTAL (R$)</Text>
-                        <TextInput style={styles.input} keyboardType="numeric" value={servicoValor} onChangeText={setServicoValor} placeholder="0,00" />
-
-                        <View style={styles.modalBtns}>
-                            <TouchableOpacity style={[styles.btn, styles.btnBack]} onPress={() => setServiceModalVisible(false)}><Text style={styles.btnText}>CANCELAR</Text></TouchableOpacity>
-                            <TouchableOpacity style={[styles.btn, styles.btnSave]} onPress={handleSaveService}><Text style={[styles.btnText, { color: '#FFF' }]}>SALVAR</Text></TouchableOpacity>
+                        <AgroInput label="Descrição" value={servicoDesc} onChangeText={t => up(t, setServicoDesc)} placeholder="EX: TROCA DE ÓLEO" />
+                        <AgroInput label="Valor (R$)" keyboardType="numeric" value={servicoValor} onChangeText={setServicoValor} placeholder="0,00" />
+                        
+                        <View style={styles.modalActions}>
+                            <AgroButton title="CANCELAR" variant="secondary" onPress={() => setServiceModalVisible(false)} style={{ flex: 1 }} />
+                            <AgroButton title="CONFIRMAR" onPress={handleSaveService} style={{ flex: 1 }} />
                         </View>
-                    </View>
+                    </Card>
                 </View>
             </Modal>
         </View>
@@ -231,42 +291,38 @@ export default function FrotaScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F9FAFB' },
-    header: { padding: 25, paddingTop: 50 },
-    title: { fontSize: 22, fontWeight: '900', color: '#1F2937' },
-    sub: { fontSize: 11, color: '#9CA3AF', letterSpacing: 1, marginTop: 5 },
-    card: { backgroundColor: '#FFF', borderRadius: 20, padding: 18, marginBottom: 12, elevation: 2, borderWidth: 1, borderColor: '#F3F4F6' },
-    cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
-    iconBox: { width: 48, height: 48, borderRadius: 12, backgroundColor: '#F8FAFC', justifyContent: 'center', alignItems: 'center' },
+    container: { flex: 1 },
+    header: { paddingTop: 50, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
+    summaryRow: { flexDirection: 'row', gap: 10 },
+    summaryCard: { flex: 1, height: 90, marginHorizontal: 0 },
+    card: { marginBottom: 15 },
+    cardContent: { padding: 20 },
+    cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+    iconBox: { width: 48, height: 48, borderRadius: 12, backgroundColor: '#F0FDF4', justifyContent: 'center', alignItems: 'center' },
     cardTitle: { fontSize: 15, fontWeight: '800', color: '#1F2937' },
-    cardSub: { fontSize: 11, color: '#9CA3AF', fontWeight: 'bold' },
-    badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-    badgeText: { fontSize: 9, fontWeight: '900' },
-    stats: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 },
-    statVal: { fontSize: 18, fontWeight: '900', color: '#374151' },
+    cardSub: { fontSize: 11, color: '#9CA3AF', fontWeight: 'bold', marginTop: 2 },
+    statusBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
+    statusText: { fontSize: 10, fontWeight: '900' },
+    statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
+    statVal: { fontSize: 18, fontWeight: '900', color: '#1F2937' },
     statUnit: { fontSize: 11, color: '#9CA3AF' },
-    statLabel: { fontSize: 10, color: '#6B7280' },
-    barBg: { height: 6, backgroundColor: '#F3F4F6', borderRadius: 3, overflow: 'hidden', marginBottom: 5 },
-    barFill: { height: 6, borderRadius: 3 },
-    remainText: { fontSize: 10, color: '#9CA3AF', textAlign: 'right', marginBottom: 15 },
-    actions: { flexDirection: 'row', gap: 8 },
-    actBtn: { flex: 1, padding: 10, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-    actText: { fontSize: 10, fontWeight: '900' },
-    fab: { position: 'absolute', bottom: 30, right: 30, width: 64, height: 64, borderRadius: 32, backgroundColor: '#4B5563', justifyContent: 'center', alignItems: 'center', elevation: 10 },
-    fabText: { fontSize: 32, color: '#FFF' },
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 20 },
-    modal: { backgroundColor: '#FFF', borderRadius: 24, padding: 25 },
-    modalTitle: { fontSize: 16, fontWeight: '900', marginBottom: 20, textAlign: 'center' },
-    label: { fontSize: 9, fontWeight: '900', color: '#9CA3AF', marginBottom: 6, letterSpacing: 1 },
-    input: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 12, marginBottom: 15, fontSize: 14, color: '#111827' },
-    row: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
-    modalBtns: { flexDirection: 'row', gap: 10, marginTop: 10 },
-    btn: { flex: 1, padding: 16, borderRadius: 14, alignItems: 'center' },
-    btnBack: { backgroundColor: '#F3F4F6' },
-    btnSave: { backgroundColor: '#4B5563' },
-    btnText: { fontWeight: 'bold', fontSize: 11 },
-    chip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: '#F3F4F6', marginRight: 5, marginBottom: 5 },
-    chipActive: { backgroundColor: '#4B5563' },
-    chipText: { fontSize: 10, fontWeight: 'bold', color: '#6B7280' },
-    empty: { textAlign: 'center', marginTop: 100, color: '#9CA3AF' }
+    statLabel: { fontSize: 10, color: '#9CA3AF', marginTop: 2 },
+    progressContainer: { marginBottom: 20 },
+    progressBar: { height: 8, backgroundColor: '#F3F4F6', borderRadius: 4, overflow: 'hidden', marginBottom: 8 },
+    progressFill: { height: '100%', borderRadius: 4 },
+    remainText: { fontSize: 11, fontWeight: 'bold', textAlign: 'right' },
+    actions: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+    deleteBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center' },
+    empty: { textAlign: 'center', marginTop: 100, color: '#9CA3AF' },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
+    modalContent: { padding: 25 },
+    modalTitle: { fontSize: 16, fontWeight: '900', marginBottom: 25, textAlign: 'center', color: '#1F2937' },
+    label: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', marginBottom: 10, letterSpacing: 1 },
+    row: { flexDirection: 'row' },
+    modalActions: { flexDirection: 'row', gap: 10, marginTop: 10 },
+    chipScroll: { marginBottom: 20 },
+    chip: { paddingHorizontal: 15, paddingVertical: 8, borderRadius: 10, backgroundColor: '#F3F4F6', marginRight: 10 },
+    chipText: { fontSize: 11, fontWeight: 'bold', color: '#6B7280' }
 });

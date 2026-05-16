@@ -1,28 +1,39 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator, Vibration } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator, Dimensions } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertCompra, getCadastro, getComprasRecentes, updateCompra, deleteCompra, insertCadastro as insertCadastros } from '../database/database';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext';
+
+// Design System
+import Card from '../components/common/Card';
+import AgroButton from '../components/common/AgroButton';
+import AgroInput from '../components/common/AgroInput';
+
+const { width } = Dimensions.get('window');
 
 export default function ComprasScreen({ navigation }) {
+    const { theme } = useTheme();
     const [item, setItem] = useState('');
     const [quantidade, setQuantidade] = useState('');
     const [valor, setValor] = useState('');
     const [cultura, setCultura] = useState('');
     const [observacao, setObservacao] = useState('');
-    const [detalhes, setDetalhes] = useState(''); // Bula / Info Técnica
+    const [detalhes, setDetalhes] = useState('');
+    const [fornecedor, setFornecedor] = useState({ uuid: '', nome: '' });
     const [editingUuid, setEditingUuid] = useState(null);
-
     const [history, setHistory] = useState([]);
 
     // Selection Modal State
     const [modalVisible, setModalVisible] = useState(false);
     const [items, setItems] = useState([]);
+    const [fornecedores, setFornecedores] = useState([]);
+    const [modalType, setModalType] = useState('MATERIAL'); // 'MATERIAL' or 'FORNECEDOR'
     const [searchText, setSearchText] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [loadingModal, setLoadingModal] = useState(false);
 
     // Quick Add State
     const [quickAddModal, setQuickAddModal] = useState(false);
@@ -45,13 +56,17 @@ export default function ComprasScreen({ navigation }) {
     }, []);
 
     const loadItems = async () => {
-        setLoading(true);
+        setLoadingModal(true);
         try {
             const all = await getCadastro();
-            // Strict Filter: INSUMO or EMBALAGEM for Compras
             const inputs = all.filter(i => ['INSUMO', 'EMBALAGEM'].includes(i.tipo));
             setItems(inputs);
-        } catch (e) { } finally { setLoading(false); }
+
+            const resF = await executeQuery('SELECT * FROM fornecedores WHERE is_deleted = 0 ORDER BY nome ASC');
+            const rowsF = [];
+            for (let i = 0; i < resF.rows.length; i++) rowsF.push(resF.rows.item(i));
+            setFornecedores(rowsF);
+        } catch (e) { } finally { setLoadingModal(false); }
     };
 
     const loadHistory = async () => {
@@ -67,10 +82,7 @@ export default function ComprasScreen({ navigation }) {
                 allowsEditing: true,
                 aspect: [3, 4],
             });
-
-            if (!result.canceled) {
-                setAnexoUri(result.assets[0].uri);
-            }
+            if (!result.canceled) setAnexoUri(result.assets[0].uri);
         } catch (error) {
             Alert.alert('Erro', 'Não foi possível capturar a nota.');
         }
@@ -81,32 +93,21 @@ export default function ComprasScreen({ navigation }) {
         return items.filter(i => i.nome.includes(searchText.toUpperCase()));
     };
 
-    const up = (t, setter) => setter(t.toUpperCase());
-
     const quickSave = async () => {
         if (!newItemName.trim()) { Alert.alert('Ops', 'Nome é obrigatório'); return; }
-        const newUuid = uuidv4();
         try {
             await insertCadastros({
-                uuid: newUuid,
-                nome: newItemName,
+                uuid: uuidv4(),
+                nome: newItemName.toUpperCase(),
                 tipo: 'INSUMO',
                 unidade: 'UN',
-                observacao: 'Cadastrado na Compra (Quick)',
+                observacao: 'CADASTRO RÁPIDO VIA COMPRAS',
                 estocavel: 1,
                 vendavel: 0
             });
-            // Reload
-            // Reload Strict
-            const all = await getCadastro();
-            const inputs = all.filter(i => ['INSUMO', 'EMBALAGEM'].includes(i.tipo));
-            setItems(inputs);
-
-            // Select
-            // Select
-            handleEdit({ item: newItemName, uuid: null, quantidade: '', valor: '', cultura: '', observacao: '', detalhes: '' }); // Just set item name really
-            setItem(newItemName);
-            setModalVisible(false); // Close main modal
+            await loadItems();
+            setItem(newItemName.toUpperCase());
+            setModalVisible(false);
             setQuickAddModal(false);
             setNewItemName('');
         } catch (e) { Alert.alert('Erro', 'Falha ao criar item.'); }
@@ -124,8 +125,9 @@ export default function ComprasScreen({ navigation }) {
             quantidade: parseFloat(quantidade) || 0,
             valor: parseFloat(valor) || 0,
             cultura: (cultura || 'GERAL').toUpperCase(),
-            observacao: observacao.toUpperCase(),
             detalhes: detalhes.toUpperCase(),
+            fornecedor_uuid: fornecedor.uuid,
+            observacao: (fornecedor.nome ? `FORNECEDOR: ${fornecedor.nome} | ` : '') + observacao.toUpperCase(),
             data: new Date().toISOString().split('T')[0],
             anexo: anexoUri
         };
@@ -137,21 +139,20 @@ export default function ComprasScreen({ navigation }) {
                 setEditingUuid(null);
             } else {
                 await insertCompra(dados);
-                Alert.alert('Sucesso', 'Entrada registrada.');
+                
+                // Automação: Gerar Conta a Pagar
+                await executeQuery(
+                    'INSERT INTO financeiro_transacoes (uuid, tipo, descricao, valor, vencimento, entidade_nome, categoria, origem_uuid, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    [uuidv4(), 'PAGAR', `COMPRA: ${dados.item}`, dados.valor, dados.data, (fornecedor.nome || 'DIVERSOS').toUpperCase(), 'COMPRAS', dados.uuid, new Date().toISOString()]
+                );
+                
+                Alert.alert('Sucesso', 'Entrada registrada e gerada no Contas a Pagar.');
             }
-
-            setItem('');
-            setQuantidade('');
-            setValor('');
-            setQuantidade('');
-            setValor('');
-            setObservacao('');
-            setDetalhes('');
-            setAnexoUri(null);
-
+            setItem(''); setQuantidade(''); setValor(''); setObservacao(''); setDetalhes(''); setCultura(''); setAnexoUri(null); setFornecedor({ uuid: '', nome: '' });
             loadHistory();
-        } catch (error) {
-            Alert.alert('Erro', 'Falha ao salvar compra.');
+        } catch (error) { 
+            console.error(error);
+            Alert.alert('Erro', 'Falha ao salvar compra.'); 
         }
     };
 
@@ -167,208 +168,180 @@ export default function ComprasScreen({ navigation }) {
     };
 
     const handleDelete = (rec) => {
-        Alert.alert('Excluir', 'Confirmar exclusão?', [
+        Alert.alert('Excluir', 'Confirmar exclusão desta compra?', [
             { text: 'Não', style: 'cancel' },
-            {
-                text: 'Sim',
-                style: 'destructive',
-                onPress: async () => {
-                    await deleteCompra(rec.uuid);
-                    loadHistory();
-                }
-            }
+            { text: 'Sim, Excluir', style: 'destructive', onPress: async () => { await deleteCompra(rec.uuid); loadHistory(); } }
         ]);
     };
 
     return (
-        <View style={styles.container}>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-                <View style={styles.card}>
-                    <LinearGradient colors={['#6366F1', '#4F46E5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.cardHeader}>
-                        <Text style={styles.headerTitle}>{editingUuid ? 'EDITAR COMPRA' : 'ENTRADA DE INSUMOS'}</Text>
-                        <Text style={styles.headerSub}>Compras e Suprimentos da Fazenda</Text>
-                    </LinearGradient>
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
+            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
+                <View style={styles.headerTop}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>{editingUuid ? 'EDITAR COMPRA' : 'ENTRADA DE INSUMOS'}</Text>
+                    <View style={{ width: 24 }} />
+                </View>
+                <Text style={styles.headerSub}>Gerenciamento de suprimentos e estoques</Text>
+            </LinearGradient>
 
-                    <View style={styles.form}>
-                        {/* CAMERA BUTTON */}
-                        <TouchableOpacity style={[styles.scanBtn, anexoUri ? { borderColor: '#10B981', backgroundColor: '#ECFDF5' } : null]} onPress={() => {
-                            if (!hasPermission) {
-                                Alert.alert('Permissão', 'Acesso à câmera necessário.');
-                                return;
-                            }
-                            anexarNota();
-                        }}>
-                            <Ionicons name={anexoUri ? "checkmark-circle" : "camera"} size={20} color={anexoUri ? "#10B981" : "#4F46E5"} />
-                            <Text style={[styles.scanText, anexoUri ? { color: '#10B981' } : null]}>
-                                {anexoUri ? 'NOTA ANEXADA COM SUCESSO' : 'ANEXAR FOTO DA NOTA (OPCIONAL)'}
+            <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 50 }}>
+                <View style={styles.content}>
+                    <Card style={styles.formCard}>
+                        <TouchableOpacity 
+                            style={[styles.cameraBtn, anexoUri ? { borderColor: '#10B981', backgroundColor: '#ECFDF5' } : null]} 
+                            onPress={() => hasPermission ? anexarNota() : Alert.alert('Permissão', 'Acesso à câmera necessário.')}
+                        >
+                            <Ionicons name={anexoUri ? "checkmark-circle" : "camera"} size={20} color={anexoUri ? "#10B981" : theme?.colors?.primary} />
+                            <Text style={[styles.cameraBtnText, anexoUri ? { color: '#10B981' } : null]}>
+                                {anexoUri ? 'NOTA ANEXADA' : 'ANEXAR FOTO DA NOTA (OPCIONAL)'}
                             </Text>
                         </TouchableOpacity>
 
                         <View style={styles.field}>
                             <Text style={styles.label}>PRODUTO / INSUMO COMPRADO *</Text>
-                            <TouchableOpacity style={styles.selectBtn} onPress={() => setModalVisible(true)}>
+                            <TouchableOpacity style={styles.selectBtn} onPress={() => { setModalType('MATERIAL'); setModalVisible(true); }}>
                                 <Text style={[styles.selectText, !item && { color: '#9CA3AF' }]}>
-                                    {item || "SELECIONAR ITEM..."}
+                                     {item || "SELECIONAR MATERIAL..."}
+                                 </Text>
+                                 <Ionicons name="chevron-down" size={20} color="#6B7280" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.field}>
+                            <Text style={styles.label}>FORNECEDOR (DE QUEM?)</Text>
+                            <TouchableOpacity style={styles.selectBtn} onPress={() => { setModalType('FORNECEDOR'); setModalVisible(true); }}>
+                                <Text style={[styles.selectText, !fornecedor.nome && { color: '#9CA3AF' }]}>
+                                    {fornecedor.nome || "SELECIONAR FORNECEDOR..."}
                                 </Text>
-                                <Ionicons name="chevron-down" size={20} color="#6B7280" />
+                                <Ionicons name="business-outline" size={20} color="#6B7280" />
                             </TouchableOpacity>
                         </View>
 
                         <View style={styles.row}>
-                            <View style={[styles.field, { flex: 1, marginRight: 10 }]}>
-                                <Text style={styles.label}>QUANTIDADE *</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="0"
-                                    value={quantidade}
-                                    onChangeText={setQuantidade}
-                                    keyboardType="decimal-pad"
-                                />
+                            <View style={{ flex: 1, marginRight: 10 }}>
+                                <AgroInput label="QUANTIDADE *" value={quantidade} onChangeText={setQuantidade} keyboardType="decimal-pad" placeholder="0" />
                             </View>
-                            <View style={[styles.field, { flex: 1 }]}>
-                                <Text style={styles.label}>VALOR TOTAL R$ *</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="0.00"
-                                    value={valor}
-                                    onChangeText={setValor}
-                                    keyboardType="decimal-pad"
-                                />
+                            <View style={{ flex: 1 }}>
+                                <AgroInput label="VALOR TOTAL R$ *" value={valor} onChangeText={setValor} keyboardType="decimal-pad" placeholder="0.00" />
                             </View>
                         </View>
 
-                        <View style={styles.field}>
-                            <Text style={styles.label}>VINCULAR À CULTURA</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="EX: MORANGO ALBION ou GERAL"
-                                value={cultura}
-                                onChangeText={(t) => up(t, setCultura)}
-                                autoCapitalize="characters"
-                            />
-                        </View>
+                        <AgroInput label="VINCULAR À CULTURA" value={cultura} onChangeText={setCultura} placeholder="EX: MORANGO ou GERAL" />
+                        <AgroInput label="DETALHES TÉCNICOS / BULA" value={detalhes} onChangeText={setDetalhes} placeholder="EX: NPK 04-14-08" />
+                        <AgroInput label="OBSERVAÇÕES / FORNECEDOR" value={observacao} onChangeText={setObservacao} multiline style={{ height: 80 }} />
 
-                        <View style={styles.field}>
-                            <Text style={styles.label}>DETALHES TÉCNICOS / BULA</Text>
-                            <TextInput
-                                style={[styles.input, { height: 60 }]}
-                                placeholder="EX: NPK 04-14-08, APLICAÇÃO FOLIAR..."
-                                value={detalhes}
-                                onChangeText={(t) => up(t, setDetalhes)}
-                                multiline
-                                autoCapitalize="characters"
+                        <View style={styles.actionRow}>
+                            <AgroButton 
+                                title={editingUuid ? "SALVAR ALTERAÇÕES" : "REGISTRAR ENTRADA"} 
+                                onPress={salvar} 
+                                style={{ flex: 2 }}
                             />
-                        </View>
-
-                        <View style={styles.field}>
-                            <Text style={styles.label}>DETALHES / FORNECEDOR / NOTA</Text>
-                            <TextInput
-                                style={[styles.input, styles.textArea]}
-                                placeholder="NOTAS SOBRE A COMPRA..."
-                                value={observacao}
-                                onChangeText={(t) => up(t, setObservacao)}
-                                multiline
-                                autoCapitalize="characters"
-                            />
-                        </View>
-
-                        <View style={styles.row}>
                             {editingUuid && (
-                                <TouchableOpacity style={[styles.btn, { backgroundColor: '#EF4444', flex: 1, marginRight: 10 }]} onPress={() => { setEditingUuid(null); setItem(''); setQuantidade(''); setValor(''); setObservacao(''); setDetalhes(''); setCultura(''); setAnexoUri(null); }}>
-                                    <Text style={styles.btnText}>CANCELAR</Text>
-                                </TouchableOpacity>
+                                <AgroButton 
+                                    title="X" 
+                                    variant="secondary" 
+                                    onPress={() => { setEditingUuid(null); setItem(''); setQuantidade(''); setValor(''); setObservacao(''); setDetalhes(''); setCultura(''); setAnexoUri(null); }}
+                                    style={{ flex: 0.5, marginLeft: 10 }}
+                                />
                             )}
-                            <TouchableOpacity style={[styles.btn, { flex: 2 }]} onPress={salvar}>
-                                <Text style={styles.btnText}>{editingUuid ? 'SALVAR ALTERAÇÕES' : 'REGISTRAR ENTRADA'}</Text>
-                            </TouchableOpacity>
                         </View>
-                    </View>
+                    </Card>
+
+                    <Text style={styles.histTitle}>ENTRADAS RECENTES</Text>
+                    {history.map(rec => (
+                        <Card key={rec.uuid} style={styles.histCard} noPadding onPress={() => handleEdit(rec)}>
+                            <View style={styles.histInner}>
+                                <View style={{ flex: 1 }}>
+                                    <View style={styles.histHeader}>
+                                        <Text style={styles.hProd}>{rec.item}</Text>
+                                        <Text style={styles.hDate}>{new Date(rec.data).toLocaleDateString('pt-BR').slice(0, 5)}</Text>
+                                    </View>
+                                    <Text style={styles.hCultura}>{rec.cultura || 'GERAL'}</Text>
+                                    <View style={styles.valBadge}>
+                                        <Text style={styles.hVal}>{rec.quantidade} UN • R$ {rec.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</Text>
+                                    </View>
+                                </View>
+                                <View style={styles.histActions}>
+                                    <TouchableOpacity onPress={() => handleDelete(rec)} style={styles.delBtn}>
+                                        <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </Card>
+                    ))}
                 </View>
-
-                {/* HISTÓRICO */}
-                <Text style={styles.historyTitle}>ENTRADAS RECENTES</Text>
-                {history.map(rec => (
-                    <View key={rec.uuid} style={styles.historyItem}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.hProd}>{rec.item}</Text>
-                            <Text style={styles.hSub}>{new Date(rec.data).toLocaleDateString()} • {rec.cultura || 'Geral'}</Text>
-                            <Text style={styles.hVal}>{rec.quantidade} un • R$ {rec.valor.toFixed(2)}</Text>
-                            {rec.detalhes ? <Text style={[styles.hObs, { color: '#4B5563', fontWeight: 'bold' }]}>📦 {rec.detalhes}</Text> : null}
-                            {rec.observacao ? <Text style={styles.hObs}>📝 {rec.observacao}</Text> : null}
-                        </View>
-                        <View style={styles.actions}>
-                            <TouchableOpacity onPress={() => handleEdit(rec)} style={styles.actionBtn}>
-                                <Ionicons name="create-outline" size={20} color="#4F46E5" />
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => handleDelete(rec)} style={styles.actionBtn}>
-                                <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                ))}
             </ScrollView>
-
-
 
             {/* SELECTION MODAL */}
             <Modal visible={modalVisible} animationType="slide" transparent>
                 <View style={styles.overlay}>
-                    <View style={styles.modalBg}>
+                    <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>SELECIONAR MATERIAL</Text>
+                            <Text style={styles.modalTitle}>SELECIONAR {modalType}</Text>
                             <View style={{ flexDirection: 'row', gap: 15 }}>
-                                <TouchableOpacity onPress={() => { setModalVisible(false); setQuickAddModal(true); }}>
-                                    <Ionicons name="add-circle" size={28} color="#6366F1" />
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                    <Ionicons name="close" size={24} color="#374151" />
+                                {modalType === 'MATERIAL' && (
+                                    <TouchableOpacity onPress={() => { setModalVisible(false); setQuickAddModal(true); }}>
+                                        <Ionicons name="add-circle" size={28} color={theme?.colors?.primary} />
+                                    </TouchableOpacity>
+                                )}
+                                <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
+                                    <Ionicons name="close" size={24} color="#6B7280" />
                                 </TouchableOpacity>
                             </View>
                         </View>
 
                         <TextInput
                             style={styles.searchBar}
-                            placeholder="Buscar item..."
+                            placeholder="Buscar material..."
                             value={searchText}
-                            onChangeText={t => up(t, setSearchText)}
+                            onChangeText={setSearchText}
                             autoCapitalize="characters"
                         />
 
-                        {loading ? <ActivityIndicator color="#6366F1" /> :
+                        {loadingModal ? (
+                            <ActivityIndicator color={theme?.colors?.primary} style={{ marginTop: 50 }} />
+                        ) : (
                             <FlatList
-                                data={getFilteredItems()}
+                                data={modalType === 'MATERIAL' ? getFilteredItems() : fornecedores.filter(f => f.nome.includes(searchText.toUpperCase()))}
                                 keyExtractor={i => i.uuid || i.id.toString()}
+                                contentContainerStyle={{ paddingBottom: 50 }}
                                 renderItem={({ item }) => (
-                                    <TouchableOpacity style={styles.itemRow} onPress={() => { setItem(item.nome); setModalVisible(false); }}>
-                                        <Text style={styles.itemText}>{item.nome}</Text>
-                                        <Text style={styles.itemSub}>{item.tipo} • {item.unidade}</Text>
+                                    <TouchableOpacity 
+                                        style={styles.itemRow} 
+                                        onPress={() => { 
+                                            if (modalType === 'MATERIAL') setItem(item.nome);
+                                            else setFornecedor({ uuid: item.uuid, nome: item.nome });
+                                            setModalVisible(false); 
+                                        }}
+                                    >
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.itemText}>{item.nome}</Text>
+                                            <Text style={styles.itemSub}>{modalType === 'MATERIAL' ? `${item.tipo} • ${item.unidade}` : item.contato}</Text>
+                                        </View>
+                                        <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
                                     </TouchableOpacity>
                                 )}
-                                ListEmptyComponent={<Text style={styles.empty}>Nenhum material encontrado.</Text>}
+                                ListEmptyComponent={<Text style={styles.empty}>Nenhum item encontrado.</Text>}
                             />
-                        }
+                        )}
                     </View>
                 </View>
             </Modal>
 
             {/* QUICK ADD MODAL */}
             <Modal visible={quickAddModal} animationType="slide" transparent>
-                <View style={styles.overlay}>
-                    <View style={[styles.modalBg, { height: 'auto', paddingBottom: 40 }]}>
-                        <Text style={styles.modalTitle}>NOVO INSUMO RÁPIDO</Text>
-                        <View style={styles.field}>
-                            <Text style={styles.label}>NOME DO ITEM</Text>
-                            <TextInput style={styles.input} value={newItemName} onChangeText={t => up(t, setNewItemName)} autoCapitalize="characters" placeholder="EX: ADUBO ORGANICO" />
+                <View style={styles.overlayCenter}>
+                    <Card style={styles.quickModal}>
+                        <Text style={styles.modalTitleCenter}>NOVO INSUMO RÁPIDO</Text>
+                        <AgroInput label="NOME DO ITEM" value={newItemName} onChangeText={setNewItemName} placeholder="EX: ADUBO ORGANICO" />
+                        <View style={styles.actionRow}>
+                            <AgroButton title="SALVAR" onPress={quickSave} style={{ flex: 1 }} />
+                            <AgroButton title="CANCELAR" variant="secondary" onPress={() => setQuickAddModal(false)} style={{ flex: 1, marginLeft: 10 }} />
                         </View>
-                        <View style={styles.row}>
-                            <TouchableOpacity style={[styles.btn, { backgroundColor: '#EF4444', flex: 1, marginRight: 10 }]} onPress={() => setQuickAddModal(false)}>
-                                <Text style={styles.btnText}>CANCELAR</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.btn, { flex: 1 }]} onPress={quickSave}>
-                                <Text style={styles.btnText}>SALVAR</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+                    </Card>
                 </View>
             </Modal>
         </View>
@@ -376,42 +349,44 @@ export default function ComprasScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F9FAFB', padding: 20 },
-    card: { backgroundColor: '#FFF', borderRadius: 32, overflow: 'hidden', elevation: 8, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 20, marginBottom: 30 },
-    cardHeader: { padding: 30 },
-    headerTitle: { fontSize: 18, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
-    headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 5, fontWeight: 'bold' },
-    form: { padding: 25 },
-    field: { marginBottom: 20 },
+    container: { flex: 1 },
+    header: { paddingTop: 50, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+    headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
+    headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 'bold' },
+    scroll: { flex: 1 },
+    content: { padding: 20 },
+    formCard: { padding: 20, marginBottom: 25 },
+    cameraBtn: { flexDirection: 'row', backgroundColor: '#F3F4F6', padding: 12, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginBottom: 20, borderStyle: 'dashed', borderWidth: 1, borderColor: '#D1D5DB' },
+    cameraBtnText: { color: '#6B7280', fontWeight: '800', marginLeft: 8, fontSize: 11, letterSpacing: 0.5 },
+    field: { marginBottom: 15 },
+    label: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', marginBottom: 8, letterSpacing: 1 },
+    selectBtn: { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' },
+    selectText: { fontSize: 14, fontWeight: '700', color: '#1F2937' },
     row: { flexDirection: 'row' },
-    label: { fontSize: 9, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1.5, marginBottom: 8 },
-    input: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 16, padding: 16, fontSize: 15, color: '#111827' },
-    textArea: { height: 80, textAlignVertical: 'top' },
-    btn: { backgroundColor: '#6366F1', paddingVertical: 18, borderRadius: 18, alignItems: 'center', marginTop: 10 },
-    btnText: { color: '#FFF', fontSize: 13, fontWeight: '900', letterSpacing: 1 },
-    selectBtn: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 16, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    selectText: { fontSize: 15, fontWeight: '600', color: '#111827' },
-    scanBtn: { flexDirection: 'row', backgroundColor: '#EEF2FF', padding: 12, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 20, borderWidth: 1, borderColor: '#C7D2FE' },
-    scanText: { color: '#4F46E5', fontWeight: 'bold', marginLeft: 8, fontSize: 12, letterSpacing: 0.5 },
+    actionRow: { flexDirection: 'row', marginTop: 15 },
+    histTitle: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', marginBottom: 15, letterSpacing: 1.5 },
+    histCard: { marginBottom: 12 },
+    histInner: { padding: 15, flexDirection: 'row', alignItems: 'center' },
+    histHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    hProd: { fontSize: 15, fontWeight: '800', color: '#1F2937', flex: 1 },
+    hDate: { fontSize: 10, fontWeight: '900', color: '#9CA3AF' },
+    hCultura: { fontSize: 11, color: '#6B7280', fontWeight: 'bold', marginTop: 2 },
+    valBadge: { backgroundColor: '#F0FDF4', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginTop: 8, alignSelf: 'flex-start' },
+    hVal: { fontSize: 11, fontWeight: '900', color: '#10B981' },
+    histActions: { marginLeft: 15 },
+    delBtn: { backgroundColor: '#FEF2F2', padding: 10, borderRadius: 12 },
     overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    modalBg: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '80%', padding: 20 },
+    modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30, height: '80%', padding: 25 },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
     modalTitle: { fontSize: 16, fontWeight: '900', color: '#1F2937' },
-    searchBar: { backgroundColor: '#F3F4F6', padding: 12, borderRadius: 12, marginBottom: 10, fontSize: 14 },
-    itemRow: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-    itemText: { fontSize: 14, fontWeight: 'bold', color: '#374151' },
-    itemSub: { fontSize: 10, color: '#9CA3AF' },
-    empty: { textAlign: 'center', marginTop: 20, color: '#9CA3AF' },
-    historyTitle: { fontSize: 12, fontWeight: '900', color: '#6B7280', letterSpacing: 1, marginBottom: 15, marginLeft: 10 },
-    historyItem: { backgroundColor: '#FFF', padding: 15, borderRadius: 16, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 5, elevation: 2 },
-    hProd: { fontSize: 14, fontWeight: 'bold', color: '#1F2937' },
-    hSub: { fontSize: 11, color: '#9CA3AF' },
-    hVal: { fontSize: 12, fontWeight: '900', color: '#059669', marginTop: 4 },
-    hObs: { fontSize: 10, color: '#6B7280', marginTop: 2, fontStyle: 'italic' },
-    actions: { flexDirection: 'row', gap: 10 },
-    actionBtn: { padding: 8, backgroundColor: '#F3F4F6', borderRadius: 8 },
-    cameraOverlay: { flex: 1, backgroundColor: 'transparent', justifyContent: 'center', alignItems: 'center' },
-    scanBox: { width: 250, height: 250, borderWidth: 2, borderColor: '#FFF', borderRadius: 20 },
-    closeCamera: { position: 'absolute', bottom: 50, backgroundColor: '#FFF', paddingHorizontal: 30, paddingVertical: 15, borderRadius: 30 },
-    closeCameraText: { color: '#000', fontWeight: 'bold' }
+    closeBtn: { backgroundColor: '#F3F4F6', padding: 8, borderRadius: 12 },
+    searchBar: { backgroundColor: '#F9FAFB', padding: 14, borderRadius: 15, marginBottom: 15, fontSize: 14, fontWeight: '700', borderWidth: 1, borderColor: '#E5E7EB' },
+    itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+    itemText: { fontSize: 14, fontWeight: '800', color: '#374151' },
+    itemSub: { fontSize: 11, color: '#9CA3AF', fontWeight: 'bold', marginTop: 2 },
+    empty: { textAlign: 'center', marginTop: 30, color: '#9CA3AF', fontWeight: 'bold' },
+    overlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 25 },
+    quickModal: { padding: 25 },
+    modalTitleCenter: { fontSize: 16, fontWeight: '900', color: '#1F2937', textAlign: 'center', marginBottom: 20 }
 });

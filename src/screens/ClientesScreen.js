@@ -1,12 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Dimensions, ScrollView } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertCliente, getClientes, deleteCliente } from '../database/database';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
-export default function ClientesScreen() {
+// Design System
+import Card from '../components/common/Card';
+import AgroButton from '../components/common/AgroButton';
+import AgroInput from '../components/common/AgroInput';
+
+const { width } = Dimensions.get('window');
+
+export default function ClientesScreen({ navigation }) {
+    const { theme } = useTheme();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
+    
+    // Form State
     const [nome, setNome] = useState('');
     const [telefone, setTelefone] = useState('');
     const [endereco, setEndereco] = useState('');
@@ -14,79 +27,127 @@ export default function ClientesScreen() {
 
     useEffect(() => { loadData(); }, []);
 
-    const up = (t, setter) => setter(t.toUpperCase());
-
     const loadData = async () => {
         setLoading(true);
-        try { const data = await getClientes(); setItems(data); } catch (e) { } finally { setLoading(false); }
+        try {
+            const data = await getClientes();
+            setItems(data);
+        } catch (e) {
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSave = async () => {
-        if (!nome.trim()) return Alert.alert('Erro', 'Nome do cliente é obrigatório.');
+        if (!nome.trim()) return Alert.alert('Atenção', 'O nome do cliente ou empresa é obrigatório.');
         try {
-            await insertCliente({ uuid: uuidv4(), nome, telefone, endereco, cpf_cnpj: cpf, observacao: '' });
-            setModalVisible(false); setNome(''); setTelefone(''); setEndereco(''); setCpf(''); loadData();
-        } catch (e) { Alert.alert('Erro', 'Falha ao salvar cliente.'); }
+            await insertCliente({
+                uuid: uuidv4(),
+                nome: nome.toUpperCase(),
+                telefone,
+                endereco: endereco.toUpperCase(),
+                cpf_cnpj: cpf,
+                observacao: ''
+            });
+            setModalVisible(false);
+            setNome('');
+            setTelefone('');
+            setEndereco('');
+            setCpf('');
+            loadData();
+            Alert.alert('Sucesso', 'Parceiro comercial cadastrado!');
+        } catch (e) {
+            Alert.alert('Erro', 'Falha ao salvar dados do cliente.');
+        }
     };
 
-    const handleDelete = (id) => {
-        Alert.alert('Excluir Contato', 'Remover este parceiro da base de dados?', [
-            { text: 'Cancelar' }, { text: 'Remover', style: 'destructive', onPress: async () => { await deleteCliente(id); loadData(); } }
+    const handleDelete = (item) => {
+        Alert.alert('Remover Parceiro', `Deseja realmente excluir ${item.nome} da sua lista de contatos?`, [
+            { text: 'Cancelar', style: 'cancel' },
+            { 
+                text: 'Remover Agora', 
+                style: 'destructive', 
+                onPress: async () => { 
+                    await deleteCliente(item.id); 
+                    loadData(); 
+                } 
+            }
         ]);
     };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>CLIENTES E PARCEIROS</Text>
-                <Text style={styles.sub}>Gestão de Contatos Comerciais</Text>
-            </View>
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
+            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#064E3B']} style={styles.header}>
+                <View style={styles.headerTop}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>CLIENTES E PARCEIROS</Text>
+                    <View style={{ width: 24 }} />
+                </View>
+                <Text style={styles.headerSub}>Gestão Inteligente de Contatos Comerciais</Text>
+            </LinearGradient>
 
-            {loading ? <ActivityIndicator size="large" color="#EC4899" style={{ marginTop: 50 }} /> :
+            {loading ? (
+                <View style={styles.center}><ActivityIndicator size="large" color={theme?.colors?.primary} /></View>
+            ) : (
                 <FlatList
                     data={items}
                     keyExtractor={item => item.id.toString()}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.list}
                     renderItem={({ item }) => (
-                        <View style={styles.card}>
-                            <View style={styles.avatar}><Text style={styles.avatarTxt}>{item.nome.charAt(0)}</Text></View>
-                            <View style={styles.cardBody}>
-                                <Text style={styles.cardTitle}>{item.nome}</Text>
-                                <Text style={styles.cardSub}>{item.telefone || 'SEM TELEFONE'}</Text>
+                        <Card style={styles.itemCard} noPadding onPress={() => Alert.alert('Info', `Detalhes de ${item.nome}`)}>
+                            <View style={styles.cardInner}>
+                                <View style={[styles.avatarBox, { backgroundColor: (theme?.colors?.primary || '#10B981') + '15' }]}>
+                                    <Text style={[styles.avatarTxt, { color: theme?.colors?.primary }]}>{item.nome.charAt(0)}</Text>
+                                </View>
+                                <View style={styles.cardBody}>
+                                    <Text style={styles.cardTitle}>{item.nome}</Text>
+                                    <View style={styles.cardInfoRow}>
+                                        <Ionicons name="call-outline" size={12} color="#9CA3AF" />
+                                        <Text style={styles.cardSub}>{item.telefone || 'SEM TELEFONE'}</Text>
+                                    </View>
+                                </View>
+                                <TouchableOpacity onPress={() => handleDelete(item)} style={styles.deleteBtn}>
+                                    <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                </TouchableOpacity>
                             </View>
-                            <TouchableOpacity onPress={() => handleDelete(item.id)}>
-                                <Text style={styles.delIcon}>✕</Text>
-                            </TouchableOpacity>
-                        </View>
+                        </Card>
                     )}
-                    contentContainerStyle={{ padding: 20 }}
-                    ListEmptyComponent={<Text style={styles.empty}>Nenhum cliente cadastrado.</Text>}
-                />}
+                    ListEmptyComponent={
+                        <View style={styles.emptyBox}>
+                            <MaterialCommunityIcons name="account-group-outline" size={60} color="#D1D5DB" />
+                            <Text style={styles.emptyTxt}>Nenhum parceiro comercial cadastrado.</Text>
+                        </View>
+                    }
+                />
+            )}
 
-            <TouchableOpacity style={[styles.fab, { backgroundColor: '#EC4899' }]} onPress={() => setModalVisible(true)}>
-                <Text style={styles.fabText}>+</Text>
+            <TouchableOpacity style={[styles.fab, { backgroundColor: theme?.colors?.primary || '#10B981' }]} onPress={() => setModalVisible(true)}>
+                <Ionicons name="add" size={32} color="#FFF" />
             </TouchableOpacity>
 
             <Modal visible={modalVisible} transparent animationType="slide">
                 <View style={styles.overlay}>
-                    <View style={styles.modal}>
-                        <Text style={styles.modalTitle}>NOVO PARCEIRO</Text>
-
-                        <Text style={styles.label}>NOME COMPLETO / EMPRESA *</Text>
-                        <TextInput style={styles.input} value={nome} onChangeText={t => up(t, setNome)} autoCapitalize="characters" />
-
-                        <Text style={styles.label}>TELEFONE / WHATSAPP</Text>
-                        <TextInput style={styles.input} value={telefone} onChangeText={setTelefone} keyboardType="phone-pad" />
-
-                        <Text style={styles.label}>ENDEREÇO / LOCALIZAÇÃO</Text>
-                        <TextInput style={styles.input} value={endereco} onChangeText={t => up(t, setEndereco)} autoCapitalize="characters" />
-
-                        <Text style={styles.label}>CPF / CNPJ</Text>
-                        <TextInput style={styles.input} value={cpf} onChangeText={setCpf} />
-
-                        <View style={styles.modalBtns}>
-                            <TouchableOpacity style={[styles.btn, styles.btnBack]} onPress={() => setModalVisible(false)}><Text style={styles.btnText}>VOLTAR</Text></TouchableOpacity>
-                            <TouchableOpacity style={[styles.btn, { backgroundColor: '#EC4899' }]} onPress={handleSave}><Text style={[styles.btnText, { color: '#FFF' }]}>SALVAR</Text></TouchableOpacity>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>NOVO PARCEIRO</Text>
+                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                                <Ionicons name="close-circle" size={30} color="#9CA3AF" />
+                            </TouchableOpacity>
                         </View>
+
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            <Card style={{ marginBottom: 20 }}>
+                                <AgroInput label="NOME COMPLETO / EMPRESA *" value={nome} onChangeText={t => setNome(t.toUpperCase())} autoCapitalize="characters" icon="person-outline" />
+                                <AgroInput label="TELEFONE / WHATSAPP" value={telefone} onChangeText={setTelefone} keyboardType="phone-pad" icon="call-outline" />
+                                <AgroInput label="ENDEREÇO / LOCALIZAÇÃO" value={endereco} onChangeText={t => setEndereco(t.toUpperCase())} autoCapitalize="characters" icon="location-outline" />
+                                <AgroInput label="CPF / CNPJ" value={cpf} onChangeText={setCpf} icon="card-outline" />
+                            </Card>
+
+                            <AgroButton title="CADASTRAR PARCEIRO" onPress={handleSave} />
+                        </ScrollView>
                     </View>
                 </View>
             </Modal>
@@ -95,27 +156,27 @@ export default function ClientesScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F9FAFB' },
-    header: { padding: 25, paddingTop: 50 },
-    title: { fontSize: 22, fontWeight: '900', color: '#1F2937' },
-    sub: { fontSize: 11, color: '#9CA3AF', letterSpacing: 1, marginTop: 5 },
-    card: { backgroundColor: '#FFF', borderRadius: 24, padding: 20, marginBottom: 12, flexDirection: 'row', alignItems: 'center', elevation: 2 },
-    avatar: { width: 45, height: 45, borderRadius: 15, backgroundColor: '#FCE7F3', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-    avatarTxt: { fontSize: 18, fontWeight: 'bold', color: '#EC4899' },
+    container: { flex: 1 },
+    header: { paddingTop: 60, paddingBottom: 30, paddingHorizontal: 25, borderBottomLeftRadius: 35, borderBottomRightRadius: 35 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+    headerTitle: { fontSize: 13, fontWeight: '900', color: '#FFF', letterSpacing: 1.5 },
+    headerSub: { fontSize: 16, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
+    list: { padding: 20, paddingBottom: 100 },
+    itemCard: { marginBottom: 12 },
+    cardInner: { flexDirection: 'row', alignItems: 'center', padding: 15 },
+    avatarBox: { width: 50, height: 50, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    avatarTxt: { fontSize: 22, fontWeight: '900' },
     cardBody: { flex: 1 },
     cardTitle: { fontSize: 16, fontWeight: '800', color: '#1F2937' },
-    cardSub: { fontSize: 12, color: '#9CA3AF', fontWeight: 'bold', marginTop: 2 },
-    delIcon: { color: '#EF4444', fontWeight: 'bold', fontSize: 18, padding: 10 },
-    fab: { position: 'absolute', bottom: 30, right: 30, width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', elevation: 10 },
-    fabText: { fontSize: 32, color: '#FFF' },
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 20 },
-    modal: { backgroundColor: '#FFF', borderRadius: 32, padding: 30 },
-    modalTitle: { fontSize: 18, fontWeight: '900', marginBottom: 25 },
-    label: { fontSize: 9, fontWeight: '900', color: '#9CA3AF', marginBottom: 6, letterSpacing: 1 },
-    input: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 14, padding: 14, marginBottom: 15, fontSize: 15 },
-    modalBtns: { flexDirection: 'row', gap: 10, marginTop: 10 },
-    btn: { flex: 1, padding: 18, borderRadius: 16, alignItems: 'center' },
-    btnBack: { backgroundColor: '#F3F4F6' },
-    btnText: { fontWeight: 'bold', fontSize: 12 },
-    empty: { textAlign: 'center', marginTop: 100, color: '#9CA3AF' }
+    cardInfoRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
+    cardSub: { fontSize: 12, color: '#9CA3AF', fontWeight: 'bold' },
+    deleteBtn: { padding: 10, backgroundColor: '#FEF2F2', borderRadius: 12 },
+    fab: { position: 'absolute', bottom: 30, right: 25, width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', elevation: 8 },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+    modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 35, borderTopRightRadius: 35, padding: 25, height: '80%' },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
+    modalTitle: { fontSize: 12, fontWeight: '900', color: '#111827', letterSpacing: 1.5 },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    emptyBox: { alignItems: 'center', marginTop: 80, opacity: 0.4 },
+    emptyTxt: { color: '#6B7280', marginTop: 15, fontWeight: '700', fontSize: 14 }
 });

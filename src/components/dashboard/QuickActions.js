@@ -1,16 +1,21 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../../styles/theme';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTheme } from '../../context/ThemeContext';
 
 const ACTIONS = [
-    { id: '1', title: 'Lançamento', icon: 'add-circle', color: '#10B981', screen: 'Custos' },
-    { id: '2', title: 'Operação', icon: 'construct', color: '#3B82F6', screen: 'Monitoramento' },
-    { id: '3', title: 'Cliente', icon: 'people', color: '#F59E0B', screen: 'Clientes' },
-    { id: '4', title: 'Colheita', icon: 'leaf', color: '#8B5CF6', screen: 'Colheita' },
+    { id: '1', title: 'Adubação', icon: 'flask-outline', type: 'ionicon', color: '#10B981', screen: 'AdubacaoList' },
+    { id: '2', title: 'Vendas', icon: 'cash-outline', type: 'ionicon', color: '#3B82F6', screen: 'Vendas' },
+    { id: '3', title: 'Aplicações', icon: 'shield-checkmark-outline', type: 'ionicon', color: '#F59E0B', screen: 'Aplicacoes' },
+    { id: '4', title: 'Ferti', icon: 'water-outline', type: 'ionicon', color: '#0EA5E9', screen: 'Fertirrigacao' },
+    { id: '5', title: 'Monitorar', icon: 'eye-outline', type: 'ionicon', color: '#8B5CF6', screen: 'Monitoramento' },
+    { id: '6', title: 'Colheita', icon: 'leaf-outline', type: 'ionicon', color: '#EF4444', screen: 'Colheita' },
+    { id: '7', title: 'Estoque', icon: 'cube-outline', type: 'ionicon', color: '#6B7280', screen: 'Estoque' },
 ];
 
 export default function QuickActions({ navigation }) {
+    const { theme } = useTheme();
+
     return (
         <View style={styles.container}>
             <Text style={styles.sectionTitle}>AÇÕES RÁPIDAS</Text>
@@ -21,10 +26,10 @@ export default function QuickActions({ navigation }) {
                         style={styles.actionBtn}
                         onPress={() => navigation.navigate(action.screen)}
                     >
-                        <View style={[styles.iconCircle, { backgroundColor: `${action.color}15` }]}>
-                            <Ionicons name={action.icon} size={24} color={action.color} />
+                        <View style={[styles.iconCircle, { backgroundColor: '#FFF' }]}>
+                            <Ionicons name={action.icon} size={26} color={action.color} />
                         </View>
-                        <Text style={styles.actionText}>{action.title}</Text>
+                        <Text style={styles.actionText}>{action.title.toUpperCase()}</Text>
                     </TouchableOpacity>
                 ))}
             </ScrollView>
@@ -34,41 +39,41 @@ export default function QuickActions({ navigation }) {
 
 const styles = StyleSheet.create({
     container: {
-        marginVertical: 15,
+        marginVertical: 20,
     },
     sectionTitle: {
         fontSize: 10,
         fontWeight: '900',
         color: '#6B7280',
-        letterSpacing: 1,
+        letterSpacing: 1.5,
         marginBottom: 15,
-        marginLeft: 20,
+        marginLeft: 25,
     },
     scroll: {
-        paddingHorizontal: 15,
+        paddingHorizontal: 20,
+        gap: 5
     },
     actionBtn: {
         alignItems: 'center',
-        marginHorizontal: 5,
         width: 85,
     },
     iconCircle: {
-        width: 60,
-        height: 60,
-        borderRadius: 20,
+        width: 64,
+        height: 64,
+        borderRadius: 22,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#FFF',
-        elevation: 2,
+        elevation: 4,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
-        marginBottom: 10,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        marginBottom: 12,
     },
     actionText: {
-        fontSize: 11,
-        fontWeight: 'bold',
+        fontSize: 9,
+        fontWeight: '900',
         color: '#4B5563',
+        letterSpacing: 0.5
     }
 });

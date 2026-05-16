@@ -3,8 +3,16 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar as RNSt
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { executeQuery, insertCadernoNota } from '../database/database';
+import { useTheme } from '../context/ThemeContext';
+import { LinearGradient } from 'expo-linear-gradient';
+
+// Design System
+import Card from '../components/common/Card';
+import AgroButton from '../components/common/AgroButton';
+import AgroInput from '../components/common/AgroInput';
 
 export default function CadernoCampoScreen({ navigation }) {
+    const { theme } = useTheme();
     const [timeline, setTimeline] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
@@ -13,7 +21,6 @@ export default function CadernoCampoScreen({ navigation }) {
     const loadTimeline = async () => {
         setLoading(true);
         try {
-            // MOCK UNIFIED TIMELINE: Lendo Colheitas, Vendas, Custos, Plantio e Anotações
             const query = `
                 SELECT 'COLHEITA' as tipo, data, cultura || ' - ' || produto || ' (' || quantidade || 'kg)' as descricao, observacao
                 FROM colheitas WHERE is_deleted = 0
@@ -53,89 +60,81 @@ export default function CadernoCampoScreen({ navigation }) {
 
     const getIcon = (tipo) => {
         switch (tipo) {
-            case 'COLHEITA': return { name: 'leaf', color: '#10B981', bg: '#D1FAE5' };
-            case 'VENDA': return { name: 'cash', color: '#3B82F6', bg: '#DBEAFE' };
-            case 'CUSTO': return { name: 'trending-down', color: '#EF4444', bg: '#FEE2E2' };
-            case 'COMPRA': return { name: 'cart', color: '#F59E0B', bg: '#FEF3C7' };
-            case 'PLANTIO': return { name: 'analytics', color: '#8B5CF6', bg: '#EDE9FE' };
+            case 'COLHEITA': return { name: 'leaf', color: '#10B981', bg: '#F0FDF4' };
+            case 'VENDA': return { name: 'cash', color: '#3B82F6', bg: '#EFF6FF' };
+            case 'CUSTO': return { name: 'trending-down', color: '#EF4444', bg: '#FEF2F2' };
+            case 'COMPRA': return { name: 'cart', color: '#F59E0B', bg: '#FFFBEB' };
+            case 'PLANTIO': return { name: 'analytics', color: '#8B5CF6', bg: '#F5F3FF' };
             case 'ANOTAÇÃO': return { name: 'document-text', color: '#6B7280', bg: '#F3F4F6' };
             default: return { name: 'ellipse', color: '#9CA3AF', bg: '#F9FAFB' };
         }
     };
 
     const handleSaveNota = async () => {
-        if (!notaTexto.trim()) {
-            Alert.alert('Aviso', 'Escreva algo para salvar.');
-            return;
-        }
+        if (!notaTexto.trim()) return Alert.alert('Aviso', 'Escreva algo para salvar.');
         try {
-            await insertCadernoNota({
-                observacao: notaTexto.trim(),
-                data: new Date().toISOString()
-            });
-            setNotaTexto('');
-            setModalVisible(false);
-            loadTimeline();
-        } catch (e) {
-            console.error(e);
-            Alert.alert('Erro', 'Não foi possível salvar a anotação.');
-        }
+            await insertCadernoNota({ observacao: notaTexto.trim(), data: new Date().toISOString() });
+            setNotaTexto(''); setModalVisible(false); loadTimeline();
+        } catch (e) { Alert.alert('Erro', 'Falha ao salvar nota.'); }
     };
 
     return (
-        <View style={styles.container}>
-            <RNStatusBar barStyle="light-content" backgroundColor="#064E3B" />
-
-            {/* HEADER */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Ionicons name="arrow-back" size={24} color="#FFF" />
-                </TouchableOpacity>
-                <View>
-                    <Text style={styles.headerTitle}>Caderno Agrícola</Text>
-                    <Text style={styles.headerSub}>Histórico Cronológico Auto</Text>
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
+            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
+                <View style={styles.headerTop}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>CADERNO AGRÍCOLA</Text>
+                    <TouchableOpacity onPress={() => setModalVisible(true)}>
+                        <Ionicons name="create-outline" size={24} color="#FFF" />
+                    </TouchableOpacity>
                 </View>
-                <View style={{ width: 24 }} />
-            </View>
+                <Text style={styles.headerSub}>Histórico cronológico unificado da propriedade</Text>
+            </LinearGradient>
 
             {loading ? (
                 <View style={styles.center}>
-                    <ActivityIndicator size="large" color="#10B981" />
+                    <ActivityIndicator size="large" color={theme?.colors?.primary} />
                 </View>
             ) : (
-                <ScrollView contentContainerStyle={styles.scroll}>
+                <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
                     {timeline.length === 0 ? (
                         <View style={styles.emptyState}>
-                            <Ionicons name="journal-outline" size={60} color="#D1D5DB" />
-                            <Text style={styles.emptyText}>Nenhum registro no caderno ainda.</Text>
-                            <Text style={styles.emptySub}>Comece lançando colheitas, vendas ou compras.</Text>
+                            <Ionicons name="journal-outline" size={64} color="#D1D5DB" />
+                            <Text style={styles.emptyText}>Sem registros no momento.</Text>
+                            <Text style={styles.emptySub}>Atividades registradas aparecerão aqui.</Text>
                         </View>
                     ) : (
                         timeline.map((item, index) => {
                             const iconConfig = getIcon(item.tipo);
-                            let dateLabel = item.data;
-                            if (dateLabel && dateLabel.includes('T')) dateLabel = dateLabel.split('T')[0];
+                            const date = item.data?.includes('T') ? item.data.split('T')[0] : item.data;
+                            const formattedDate = date ? date.split('-').reverse().join('/') : '--/--/--';
 
                             return (
-                                <View key={index} style={styles.timelineItem}>
+                                <View key={index} style={styles.timelineRow}>
                                     <View style={styles.timelineLeft}>
                                         <View style={[styles.iconCircle, { backgroundColor: iconConfig.bg }]}>
                                             <Ionicons name={iconConfig.name} size={18} color={iconConfig.color} />
                                         </View>
-                                        {index < timeline.length - 1 && <View style={styles.timelineLine} />}
+                                        {index < timeline.length - 1 && <View style={styles.verticalLine} />}
                                     </View>
 
                                     <View style={styles.timelineContent}>
-                                        <Text style={styles.dateText}>{dateLabel ? dateLabel.split('-').reverse().join('/') : '--'}</Text>
-                                        <View style={styles.card}>
-                                            <View style={styles.cardTop}>
-                                                <Text style={[styles.tipoBadge, { color: iconConfig.color }]}>{item.tipo}</Text>
+                                        <Text style={styles.dateText}>{formattedDate}</Text>
+                                        <Card style={styles.itemCard} noPadding>
+                                            <View style={styles.cardPadding}>
+                                                <View style={styles.cardHeader}>
+                                                    <Text style={[styles.tipoBadge, { color: iconConfig.color }]}>{item.tipo}</Text>
+                                                </View>
+                                                <Text style={styles.descText}>{item.descricao}</Text>
+                                                {item.observacao && (
+                                                    <View style={styles.obsBox}>
+                                                        <Text style={styles.obsText}>{item.observacao}</Text>
+                                                    </View>
+                                                )}
                                             </View>
-                                            <Text style={styles.descText}>{item.descricao}</Text>
-                                            {item.observacao ? (
-                                                <Text style={styles.obsText}>"{item.observacao}"</Text>
-                                            ) : null}
-                                        </View>
+                                        </Card>
                                     </View>
                                 </View>
                             );
@@ -144,34 +143,35 @@ export default function CadernoCampoScreen({ navigation }) {
                 </ScrollView>
             )}
 
-            {/* FAB MANUAIS */}
-            <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
+            <TouchableOpacity style={[styles.fab, { backgroundColor: theme?.colors?.primary || '#10B981' }]} onPress={() => setModalVisible(true)}>
                 <Ionicons name="pencil" size={24} color="#FFF" />
             </TouchableOpacity>
 
-            {/* MODAL NOVA NOTA */}
-            <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Nova Anotação de Campo</Text>
+            <Modal visible={modalVisible} transparent animationType="slide">
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.overlay}>
+                    <Card style={styles.modalContent}>
+                        <View style={styles.modalHeaderRow}>
+                            <Text style={styles.modalTitle}>NOVA ANOTAÇÃO</Text>
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
                                 <Ionicons name="close" size={24} color="#6B7280" />
                             </TouchableOpacity>
                         </View>
-                        <TextInput
-                            style={styles.inputArea}
-                            placeholder="Descreva observações, anomalias climáticas ou lembretes da lavoura..."
-                            placeholderTextColor="#9CA3AF"
-                            multiline
-                            textAlignVertical="top"
+                        
+                        <AgroInput 
+                            label="O que aconteceu hoje?"
+                            placeholder="Descreva detalhes climáticos, observações ou lembretes..."
                             value={notaTexto}
                             onChangeText={setNotaTexto}
+                            multiline
+                            style={{ height: 120, textAlignVertical: 'top' }}
                         />
-                        <TouchableOpacity style={styles.saveBtn} onPress={handleSaveNota}>
-                            <Text style={styles.saveBtnText}>Salvar no Caderno</Text>
-                        </TouchableOpacity>
-                    </View>
+
+                        <AgroButton 
+                            title="SALVAR NO CADERNO" 
+                            onPress={handleSaveNota}
+                            style={{ marginTop: 20 }}
+                        />
+                    </Card>
                 </KeyboardAvoidingView>
             </Modal>
         </View>
@@ -179,44 +179,33 @@ export default function CadernoCampoScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F9FAFB' },
-    header: { backgroundColor: '#064E3B', paddingTop: 50, paddingBottom: 20, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    headerTitle: { color: '#FFF', fontSize: 20, fontWeight: 'bold' },
-    headerSub: { color: '#A7F3D0', fontSize: 12 },
-    backBtn: { padding: 4 },
+    container: { flex: 1 },
+    header: { paddingTop: 50, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+    headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
+    headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 'bold' },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     scroll: { padding: 20, paddingBottom: 100 },
-
-    // Timeline
-    timelineItem: { flexDirection: 'row', marginBottom: 0 },
+    timelineRow: { flexDirection: 'row' },
     timelineLeft: { alignItems: 'center', width: 40, marginRight: 15 },
-    iconCircle: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', zIndex: 10 },
-    timelineLine: { width: 2, flex: 1, backgroundColor: '#E5E7EB', marginTop: -5, marginBottom: -10 },
-
+    iconCircle: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', zIndex: 10, elevation: 2, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5 },
+    verticalLine: { width: 2, flex: 1, backgroundColor: '#E5E7EB', marginVertical: -5 },
     timelineContent: { flex: 1, paddingBottom: 25 },
-    dateText: { fontSize: 12, fontWeight: 'bold', color: '#6B7280', marginBottom: 8 },
-    card: { backgroundColor: '#FFF', borderRadius: 12, padding: 15, elevation: 1, borderWidth: 1, borderColor: '#F3F4F6' },
-    cardTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 },
-    tipoBadge: { fontSize: 10, fontWeight: 'bold', letterSpacing: 0.5 },
-    descText: { fontSize: 15, color: '#1F2937', fontWeight: '500' },
-    obsText: { fontSize: 13, color: '#6B7280', marginTop: 8, fontStyle: 'italic', backgroundColor: '#F9FAFB', padding: 8, borderRadius: 6 },
-
-    emptyState: { alignItems: 'center', marginTop: 50 },
-    emptyText: { fontSize: 16, fontWeight: 'bold', color: '#4B5563', marginTop: 15 },
-    emptySub: { fontSize: 14, color: '#9CA3AF', marginTop: 5, textAlign: 'center' },
-
-    fab: {
-        position: 'absolute', bottom: 30, right: 30,
-        backgroundColor: '#10B981', width: 60, height: 60, borderRadius: 30,
-        justifyContent: 'center', alignItems: 'center', elevation: 5
-    },
-
-    // Modal
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 25, minHeight: 300 },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-    modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#1F2937' },
-    inputArea: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 10, padding: 15, height: 120, fontSize: 16, color: '#1F2937', marginBottom: 20 },
-    saveBtn: { backgroundColor: '#10B981', padding: 15, borderRadius: 10, alignItems: 'center' },
-    saveBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' }
+    dateText: { fontSize: 11, fontWeight: '900', color: '#9CA3AF', marginBottom: 8, letterSpacing: 1 },
+    itemCard: { borderLeftWidth: 4, borderLeftColor: '#E5E7EB' },
+    cardPadding: { padding: 15 },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 },
+    tipoBadge: { fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+    descText: { fontSize: 14, color: '#1F2937', fontWeight: 'bold' },
+    obsBox: { marginTop: 10, padding: 10, backgroundColor: '#F9FAFB', borderRadius: 8, borderLeftWidth: 2, borderLeftColor: '#E5E7EB' },
+    obsText: { fontSize: 12, color: '#6B7280', fontStyle: 'italic' },
+    emptyState: { alignItems: 'center', marginTop: 100 },
+    emptyText: { fontSize: 16, fontWeight: 'bold', color: '#4B5563', marginTop: 20 },
+    emptySub: { fontSize: 13, color: '#9CA3AF', marginTop: 5, textAlign: 'center' },
+    fab: { position: 'absolute', bottom: 30, right: 30, width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 10, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10 },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    modalContent: { padding: 25, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
+    modalHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
+    modalTitle: { fontSize: 15, fontWeight: '900', color: '#1F2937', letterSpacing: 1 }
 });
+

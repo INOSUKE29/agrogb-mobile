@@ -1,137 +1,202 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, Dimensions, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { AntDesign, Ionicons } from '@expo/vector-icons';
-import { insertUsuario } from '../database/database';
-import { Link } from '@react-navigation/native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { getSupabase } from '../services/supabase';
+import { validateRegister, getPasswordStrength } from '../utils/validation';
 import AgroInput from '../components/common/AgroInput';
 import AgroButton from '../components/common/AgroButton';
-import { translateAuthError } from '../utils/errorHelpers';
+import Card from '../components/common/Card';
+import { useTheme } from '../context/ThemeContext';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 export default function RegisterScreen({ navigation }) {
-    const [name, setName] = useState('');
-    const [phone, setPhone] = useState('');
-    const [city, setCity] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
+    const { theme } = useTheme();
+    const [form, setForm] = useState({
+        fullName: '', birthYear: '', email: '', phone: '',
+        password: '', confirmPassword: '', farmName: '', username: '',
+        acceptTerms: false
+    });
     const [loading, setLoading] = useState(false);
 
     const handleRegister = async () => {
-        if (!name || !phone || !password || !confirmPassword) {
-            return Alert.alert('Campos Obrigatórios', 'Informe Nome, Telefone e Senha.');
-        }
-
-        if (password !== confirmPassword) {
-            return Alert.alert('Erro', 'As senhas não conferem.');
+        const { isValid, errors } = validateRegister(form);
+        if (!isValid) {
+            const firstError = Object.values(errors)[0];
+            return Alert.alert('Validação', firstError);
         }
 
         setLoading(true);
         try {
-            // Usa o TELEFONE como identificador único (usuario) para o login
-            const phoneClean = phone.replace(/\D/g, ''); // Remove formatação se houver
-
-            await insertUsuario({
-                usuario: phoneClean, // Login é o telefone limpo
-                senha: password,
-                nivel: 'USUARIO',
-                nome_completo: name.toUpperCase(),
-                telefone: phone,
-                endereco: city ? city.toUpperCase() : ''
+            const supabase = getSupabase();
+            
+            // 1. Criar Usuário no Auth
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email: form.email,
+                password: form.password,
+                options: {
+                    data: { full_name: form.fullName }
+                }
             });
 
-            Alert.alert('Sucesso!', 'Conta criada. Use seu TELEFONE para entrar.', [
+            if (authError) throw authError;
+
+            // 2. Criar Perfil na Tabela profiles
+            const { error: profileError } = await supabase.from('profiles').insert([{
+                id: authData.user.id,
+                full_name: form.fullName,
+                birth_year: parseInt(form.birthYear),
+                email: form.email,
+                phone: form.phone,
+                username: form.username || null,
+                farm_name: form.farmName || null
+            }]);
+
+            if (profileError) throw profileError;
+
+            Alert.alert('🚀 Sucesso!', 'Conta criada com sucesso. Verifique seu e-mail para confirmar o cadastro.', [
                 { text: 'FAZER LOGIN', onPress: () => navigation.navigate('Login') }
             ]);
         } catch (error) {
-            console.error('Erro no cadastro:', error);
-            const friendlyMsg = translateAuthError(error.message || error.toString());
-
-            if (friendlyMsg === 'Conta já registrada.') {
-                Alert.alert(
-                    'Conta já registrada',
-                    'Já existe uma conta cadastrada com este telefone. Faça login ou utilize a opção "Esqueci minha senha".',
-                    [
-                        { text: 'ENTRAR', onPress: () => navigation.navigate('Login') },
-                        { text: 'RECUPERAR SENHA', onPress: () => Alert.alert('Recuperar Senha', 'Funcionalidade em desenvolvimento.') },
-                        { text: 'CANCELAR', style: 'cancel' }
-                    ]
-                );
-            } else {
-                Alert.alert('Atenção', friendlyMsg);
-            }
+            Alert.alert('Erro no Cadastro', error.message);
         } finally {
             setLoading(false);
         }
     };
 
+    const strength = getPasswordStrength(form.password);
 
     return (
         <View style={styles.container}>
-            <LinearGradient colors={['#10B981', '#059669']} style={styles.headerBg}>
+            <LinearGradient colors={['#064E3B', '#10B981']} style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Ionicons name="chevron-back" size={28} color="#FFF" />
+                    <Ionicons name="arrow-back" size={24} color="#FFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Nova Conta</Text>
-                <Text style={styles.headerSub}>Crie seu acesso ao AgroGB Pro</Text>
+                <Text style={styles.title}>NOVA CONTA AGROGB</Text>
+                <Text style={styles.subtitle}>Junte-se à elite da gestão agrícola digital.</Text>
             </LinearGradient>
 
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-                <View style={styles.form}>
-                    <AgroInput
-                        label="NOME (OU NOME DA PROPRIEDADE)"
-                        placeholder="Ex: Fazenda Santa Maria"
-                        value={name}
-                        onChangeText={(t) => setName(t.toUpperCase())}
-                        autoCapitalize="words"
-                    />
-
-                    <AgroInput
-                        label="TELEFONE (SEU LOGIN)"
-                        placeholder="(xx) 9xxxx-xxxx"
-                        value={phone}
-                        onChangeText={setPhone}
-                        keyboardType="phone-pad"
-                    />
-
-                    <AgroInput
-                        label="CIDADE / ESTADO (OPCIONAL)"
-                        placeholder="Ex: Goiânia - GO"
-                        value={city}
-                        onChangeText={(t) => setCity(t.toUpperCase())}
-                        autoCapitalize="words"
-                    />
-
-                    <AgroInput
-                        label="SENHA"
-                        placeholder="••••••••"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                    />
-
-                    <AgroInput
-                        label="CONFIRMAR SENHA"
-                        placeholder="••••••••"
-                        value={confirmPassword}
-                        onChangeText={setConfirmPassword}
-                        secureTextEntry
-                    />
-
-                    <AgroButton
-                        title="CRIAR MINHA CONTA"
-                        onPress={handleRegister}
-                        loading={loading}
-                    />
-
-                    <View style={styles.footerLink}>
-                        <Text style={styles.secondaryText}>Já tem conta? </Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                            <Text style={styles.linkText}>Entrar</Text>
-                        </TouchableOpacity>
+                <Card style={styles.card}>
+                    <View style={styles.sectionHeader}>
+                        <Ionicons name="person-circle-outline" size={20} color="#10B981" />
+                        <Text style={styles.sectionTitle}>INFORMAÇÕES PESSOAIS</Text>
                     </View>
-                </View>
+                    
+                    <AgroInput 
+                        label="NOME COMPLETO" 
+                        placeholder="Como deseja ser chamado?"
+                        value={form.fullName} 
+                        onChangeText={t => setForm({...form, fullName: t})} 
+                        icon="person-outline" 
+                    />
+                    
+                    <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 10 }}>
+                            <AgroInput 
+                                label="ANO NASC." 
+                                placeholder="1990"
+                                value={form.birthYear} 
+                                keyboardType="numeric" 
+                                maxLength={4} 
+                                onChangeText={t => setForm({...form, birthYear: t})} 
+                            />
+                        </View>
+                        <View style={{ flex: 2 }}>
+                            <AgroInput 
+                                label="WHATSAPP / CELULAR" 
+                                placeholder="(00) 00000-0000"
+                                value={form.phone} 
+                                keyboardType="phone-pad" 
+                                onChangeText={t => setForm({...form, phone: t})} 
+                                icon="logo-whatsapp" 
+                            />
+                        </View>
+                    </View>
+
+                    <View style={styles.sectionHeader}>
+                        <Ionicons name="leaf-outline" size={20} color="#10B981" />
+                        <Text style={styles.sectionTitle}>IDENTIDADE RURAL (OPCIONAL)</Text>
+                    </View>
+                    
+                    <AgroInput 
+                        label="NOME DA FAZENDA" 
+                        placeholder="Ex: Fazenda Santa Maria"
+                        value={form.farmName} 
+                        onChangeText={t => setForm({...form, farmName: t})} 
+                        icon="business-outline" 
+                    />
+                    
+                    <AgroInput 
+                        label="NOME DE USUÁRIO (@)" 
+                        placeholder="Ex: bruno_agro"
+                        value={form.username} 
+                        autoCapitalize="none" 
+                        onChangeText={t => setForm({...form, username: t})} 
+                        icon="at-outline" 
+                    />
+
+                    <View style={styles.sectionHeader}>
+                        <Ionicons name="lock-closed-outline" size={20} color="#10B981" />
+                        <Text style={styles.sectionTitle}>SEGURANÇA DA CONTA</Text>
+                    </View>
+                    
+                    <AgroInput 
+                        label="E-MAIL" 
+                        placeholder="seu@email.com"
+                        value={form.email} 
+                        keyboardType="email-address" 
+                        autoCapitalize="none" 
+                        onChangeText={t => setForm({...form, email: t})} 
+                        icon="mail-outline" 
+                    />
+                    
+                    <AgroInput 
+                        label="SENHA" 
+                        placeholder="Mínimo 8 caracteres"
+                        value={form.password} 
+                        secureTextEntry 
+                        onChangeText={t => setForm({...form, password: t})} 
+                        icon="key-outline" 
+                    />
+                    
+                    {/* Indicador de Força */}
+                    <View style={styles.strengthContainer}>
+                        <View style={[styles.strengthBar, { width: `${strength * 100}%`, backgroundColor: strength > 0.7 ? '#10B981' : (strength > 0.4 ? '#F59E0B' : '#EF4444') }]} />
+                    </View>
+
+                    <AgroInput 
+                        label="CONFIRMAR SENHA" 
+                        placeholder="Repita sua senha"
+                        value={form.confirmPassword} 
+                        secureTextEntry 
+                        onChangeText={t => setForm({...form, confirmPassword: t})} 
+                        icon="checkmark-shield-outline" 
+                    />
+
+                    <TouchableOpacity 
+                        style={styles.termsRow} 
+                        onPress={() => setForm({...form, acceptTerms: !form.acceptTerms})}
+                    >
+                        <Ionicons 
+                            name={form.acceptTerms ? "checkbox" : "square-outline"} 
+                            size={22} 
+                            color="#10B981" 
+                        />
+                        <Text style={styles.termsText}>Li e aceito os <Text style={{ color: '#10B981' }}>Termos de Uso</Text> e <Text style={{ color: '#10B981' }}>Política de Privacidade</Text>.</Text>
+                    </TouchableOpacity>
+
+                    <AgroButton 
+                        title="CRIAR MINHA CONTA AGORA" 
+                        onPress={handleRegister} 
+                        loading={loading} 
+                    />
+
+                    <TouchableOpacity style={styles.loginLink} onPress={() => navigation.navigate('Login')}>
+                        <Text style={styles.loginLinkText}>Já tem uma conta? <Text style={{ fontWeight: '900', color: '#10B981' }}>Fazer Login</Text></Text>
+                    </TouchableOpacity>
+                </Card>
             </ScrollView>
         </View>
     );
@@ -139,13 +204,19 @@ export default function RegisterScreen({ navigation }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F3F4F6' },
-    headerBg: { height: height * 0.25, justifyContent: 'center', paddingHorizontal: 30, paddingTop: 40 },
-    backBtn: { position: 'absolute', top: 50, left: 20 },
-    headerTitle: { fontSize: 24, fontWeight: '900', color: '#FFF' },
-    headerSub: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 5, fontWeight: 'bold' },
-    scroll: { flexGrow: 1, paddingBottom: 50 },
-    form: { marginTop: -30, backgroundColor: '#FFF', borderTopLeftRadius: 40, borderTopRightRadius: 40, padding: 30, elevation: 10 },
-    footerLink: { flexDirection: 'row', justifyContent: 'center', marginTop: 25 },
-    secondaryText: { fontSize: 14, color: '#6B7280' },
-    linkText: { fontSize: 14, color: '#10B981', fontWeight: 'bold' }
+    header: { paddingTop: 60, paddingBottom: 40, paddingHorizontal: 25, borderBottomLeftRadius: 40, borderBottomRightRadius: 40 },
+    backBtn: { marginBottom: 20 },
+    title: { color: '#FFF', fontSize: 20, fontWeight: '900', letterSpacing: 2 },
+    subtitle: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 5, fontWeight: '600' },
+    scroll: { padding: 20, paddingBottom: 100 },
+    card: { padding: 25, marginTop: -30, borderRadius: 30 },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 25, marginBottom: 15 },
+    sectionTitle: { fontSize: 10, fontWeight: '900', color: '#6B7280', letterSpacing: 1.5 },
+    row: { flexDirection: 'row' },
+    strengthContainer: { height: 4, backgroundColor: '#E5E7EB', borderRadius: 2, marginBottom: 15, marginTop: -10 },
+    strengthBar: { height: '100%', borderRadius: 2 },
+    termsRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 25 },
+    termsText: { marginLeft: 10, fontSize: 12, color: '#6B7280', fontWeight: '600', flex: 1 },
+    loginLink: { alignSelf: 'center', marginTop: 20, padding: 10 },
+    loginLinkText: { fontSize: 14, color: '#4B5563', fontWeight: '600' }
 });

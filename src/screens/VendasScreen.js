@@ -5,8 +5,16 @@ import { insertVenda, getCadastro, getClientes, insertCliente, getVendasRecentes
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext';
+
+// Design System
+import Card from '../components/common/Card';
+import MetricCard from '../components/common/MetricCard';
+import AgroButton from '../components/common/AgroButton';
+import AgroInput from '../components/common/AgroInput';
 
 export default function VendasScreen({ navigation }) {
+    const { theme } = useTheme();
     const [cliente, setCliente] = useState('');
     const [produto, setProduto] = useState('');
     const [quantidade, setQuantidade] = useState('');
@@ -16,12 +24,13 @@ export default function VendasScreen({ navigation }) {
 
     // Data State
     const [history, setHistory] = useState([]);
-    const [refreshing, setRefreshing] = useState(false);
+    const [summary, setSummary] = useState({ total: 0, count: 0 });
+    const [loading, setLoading] = useState(true);
 
     // Modal States
-    const [modalVisible, setModalVisible] = useState(false); // Product
-    const [clientModalVisible, setClientModalVisible] = useState(false); // Client
-    const [newClientModal, setNewClientModal] = useState(false); // New Client Form
+    const [modalVisible, setModalVisible] = useState(false);
+    const [clientModalVisible, setClientModalVisible] = useState(false);
+    const [newClientModal, setNewClientModal] = useState(false);
 
     // Lists
     const [items, setItems] = useState([]);
@@ -30,26 +39,33 @@ export default function VendasScreen({ navigation }) {
     // Search
     const [searchText, setSearchText] = useState('');
     const [clientSearchText, setClientSearchText] = useState('');
-    const [loading, setLoading] = useState(false);
 
     // New Client Form State
     const [newClientName, setNewClientName] = useState('');
     const [newClientPhone, setNewClientPhone] = useState('');
 
     useFocusEffect(useCallback(() => {
-        loadInitialData();
-        loadHistory();
+        loadData();
     }, []));
 
-    const loadInitialData = async () => {
+    const loadData = async () => {
         setLoading(true);
         try {
             const allItems = await getCadastro();
-            const sellable = allItems.filter(i => i.vendavel === 1 || i.vendavel === true || i.vendavel === "1");
-            setItems(sellable);
-
+            setItems(allItems.filter(i => i.vendavel == 1));
+            
             const allClients = await getClientes();
             setClients(allClients);
+
+            const data = await getVendasRecentes();
+            setHistory(data);
+
+            // Calcular resumo do dia
+            const today = new Date().toISOString().split('T')[0];
+            const todaySales = data.filter(v => v.data === today);
+            const total = todaySales.reduce((acc, curr) => acc + (curr.valor * curr.quantidade), 0);
+            setSummary({ total, count: todaySales.length });
+
         } catch (e) {
             console.error(e);
         } finally {
@@ -57,38 +73,7 @@ export default function VendasScreen({ navigation }) {
         }
     };
 
-    const loadHistory = async () => {
-        const data = await getVendasRecentes();
-        setHistory(data);
-    };
-
     const up = (t, setter) => setter(t.toUpperCase());
-
-    const handleSaveClient = async () => {
-        if (!newClientName.trim()) return Alert.alert('Erro', 'Nome do cliente obrigatório');
-        try {
-            const uuid = uuidv4();
-            await insertCliente({
-                uuid,
-                nome: newClientName,
-                telefone: newClientPhone,
-                endereco: '',
-                cpf_cnpj: '',
-                observacao: 'CADASTRADO NA VENDA'
-            });
-            setNewClientName('');
-            setNewClientPhone('');
-            setNewClientModal(false);
-
-            // Reload clients and select the new one
-            const updatedClients = await getClientes();
-            setClients(updatedClients);
-            setCliente(newClientName.toUpperCase());
-            setClientModalVisible(false);
-        } catch (e) {
-            Alert.alert('Erro', 'Falha ao criar cliente');
-        }
-    };
 
     const salvar = async () => {
         if (!produto || !quantidade || !valor) {
@@ -113,30 +98,26 @@ export default function VendasScreen({ navigation }) {
                 setEditingUuid(null);
             } else {
                 await insertVenda(dados);
-                Alert.alert('Sucesso', 'Venda registrada!');
+                
+                // Automação: Gerar Conta a Receber
+                await executeQuery(
+                    'INSERT INTO financeiro_transacoes (uuid, tipo, descricao, valor, vencimento, entidade_nome, categoria, origem_uuid, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    [uuidv4(), 'RECEBER', `VENDA: ${dados.produto}`, dados.valor * dados.quantidade, dados.data, dados.cliente, 'VENDAS', dados.uuid, new Date().toISOString()]
+                );
+
+                Alert.alert('Sucesso', 'Venda registrada e gerada no Contas a Receber!');
             }
 
-            // Reset Form (keep Client maybe? No, reset all for fresh sale)
             setProduto('');
             setQuantidade('');
             setValor('');
             setObservacao('');
-            // setCliente(''); // Optional: keep client selected for rapid entry
-
-            loadHistory();
+            setCliente('');
+            loadData();
         } catch (error) {
+            console.error(error);
             Alert.alert('Erro', 'Falha ao processar venda.');
         }
-    };
-
-    const handleEdit = (item) => {
-        setEditingUuid(item.uuid);
-        setCliente(item.cliente);
-        setProduto(item.produto);
-        setQuantidade(item.quantidade.toString());
-        setValor(item.valor.toString());
-        setObservacao(item.observacao || '');
-        // Scroll to top?
     };
 
     const handleDelete = (item) => {
@@ -147,122 +128,133 @@ export default function VendasScreen({ navigation }) {
                 style: 'destructive',
                 onPress: async () => {
                     await deleteVenda(item.uuid);
-                    loadHistory();
+                    loadData();
                 }
             }
         ]);
     };
 
-    const getFilteredItems = () => {
-        if (!searchText) return items;
-        return items.filter(i => i.nome.includes(searchText.toUpperCase()));
-    };
-
-    const getFilteredClients = () => {
-        if (!clientSearchText) return clients;
-        return clients.filter(c => c.nome.includes(clientSearchText.toUpperCase()));
-    };
+    if (loading) {
+        return (
+            <View style={styles.loading}>
+                <ActivityIndicator size="large" color={theme?.colors?.primary || '#10B981'} />
+            </View>
+        );
+    }
 
     return (
-        <View style={styles.container}>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-                <View style={styles.card}>
-                    <LinearGradient colors={['#3B82F6', '#2563EB']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.cardHeader}>
-                        <Text style={styles.headerTitle}>{editingUuid ? 'EDITAR VENDA' : 'FLUXO DE VENDAS'}</Text>
-                        <Text style={styles.headerSub}>{editingUuid ? 'Alterando registro existente' : 'Faturamento e Saída de Estoque'}</Text>
-                    </LinearGradient>
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
+            <LinearGradient colors={[theme?.colors?.primary || '#10B981', theme?.colors?.primaryDeep || '#059669']} style={styles.header}>
+                <View style={styles.headerTop}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>FLUXO DE VENDAS</Text>
+                    <View style={{ width: 24 }} />
+                </View>
+                
+                <View style={styles.summaryRow}>
+                    <MetricCard 
+                        title="Vendas Hoje" 
+                        value={summary.count.toString()} 
+                        icon="cart" 
+                        color="#FFF"
+                        style={styles.summaryCard}
+                    />
+                    <MetricCard 
+                        title="Total R$" 
+                        value={summary.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} 
+                        icon="cash" 
+                        color="#FFF"
+                        style={styles.summaryCard}
+                    />
+                </View>
+            </LinearGradient>
 
-                    <View style={styles.form}>
-                        <View style={styles.field}>
-                            <Text style={styles.label}>CLIENTE / PARCEIRO</Text>
-                            <TouchableOpacity style={styles.selectBtn} onPress={() => setClientModalVisible(true)}>
-                                <Text style={[styles.selectText, !cliente && { color: '#9CA3AF' }]}>
-                                    {cliente || "SELECIONAR CLIENTE..."}
-                                </Text>
-                                <Ionicons name="people" size={20} color="#6B7280" />
-                            </TouchableOpacity>
-                        </View>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+                <Card style={styles.formCard}>
+                    <Text style={styles.sectionTitle}>{editingUuid ? 'EDITAR REGISTRO' : 'NOVA VENDA'}</Text>
+                    
+                    <AgroInput 
+                        label="Cliente / Parceiro"
+                        value={cliente}
+                        placeholder="SELECIONAR OU BALCÃO"
+                        icon="people"
+                        style={{ marginBottom: 10 }}
+                        editable={false}
+                        onPressIn={() => setClientModalVisible(true)}
+                    />
 
-                        <View style={styles.field}>
-                            <Text style={styles.label}>PRODUTO VENDIDO *</Text>
-                            <TouchableOpacity style={styles.selectBtn} onPress={() => setModalVisible(true)}>
-                                <Text style={[styles.selectText, !produto && { color: '#9CA3AF' }]}>
-                                    {produto || "SELECIONAR PRODUTO..."}
-                                </Text>
-                                <Ionicons name="chevron-down" size={20} color="#6B7280" />
-                            </TouchableOpacity>
-                        </View>
+                    <AgroInput 
+                        label="Produto Sold *"
+                        value={produto}
+                        placeholder="SELECIONAR PRODUTO..."
+                        icon="cube"
+                        style={{ marginBottom: 10 }}
+                        editable={false}
+                        onPressIn={() => setModalVisible(true)}
+                    />
 
-                        <View style={styles.row}>
-                            <View style={[styles.field, { flex: 1, marginRight: 10 }]}>
-                                <Text style={styles.label}>QTD *</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="0.00"
-                                    value={quantidade}
-                                    onChangeText={setQuantidade}
-                                    keyboardType="decimal-pad"
-                                />
-                            </View>
-                            <View style={[styles.field, { flex: 1 }]}>
-                                <Text style={styles.label}>VALOR R$ *</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="0.00"
-                                    value={valor}
-                                    onChangeText={setValor}
-                                    keyboardType="decimal-pad"
-                                />
-                            </View>
-                        </View>
-
-                        <View style={styles.field}>
-                            <Text style={styles.label}>NOTAS / OBSERVAÇÃO</Text>
-                            <TextInput
-                                style={[styles.input, styles.textArea]}
-                                placeholder="Detalhes..."
-                                value={observacao}
-                                onChangeText={(t) => up(t, setObservacao)}
-                                multiline
-                                autoCapitalize="characters"
+                    <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 10 }}>
+                            <AgroInput 
+                                label="Qtd *"
+                                value={quantidade}
+                                onChangeText={setQuantidade}
+                                placeholder="0.00"
+                                keyboardType="decimal-pad"
                             />
                         </View>
-
-                        <View style={styles.row}>
-                            {editingUuid && (
-                                <TouchableOpacity style={[styles.btn, { backgroundColor: '#EF4444', flex: 1, marginRight: 10 }]} onPress={() => { setEditingUuid(null); setProduto(''); setQuantidade(''); setValor(''); setObservacao(''); }}>
-                                    <Text style={styles.btnText}>CANCELAR</Text>
-                                </TouchableOpacity>
-                            )}
-                            <TouchableOpacity style={[styles.btn, { flex: 2 }]} onPress={salvar}>
-                                <Text style={styles.btnText}>{editingUuid ? 'SALVAR ALTERAÇÕES' : 'CONFIRMAR VENDA'}</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-
-                {/* HISTÓRICO */}
-                <Text style={styles.historyTitle}>ÚLTIMAS VENDAS</Text>
-                {history.map(item => (
-                    <View key={item.uuid} style={styles.historyItem}>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.hProd}>{item.produto}</Text>
-                            <Text style={styles.hSub}>{item.cliente} • {new Date(item.data).toLocaleDateString()}</Text>
-                            <Text style={styles.hVal}>{item.quantidade} x R$ {item.valor.toFixed(2)}</Text>
-                        </View>
-                        <View style={styles.actions}>
-                            <TouchableOpacity onPress={() => handleEdit(item)} style={styles.actionBtn}>
-                                <Ionicons name="create-outline" size={20} color="#3B82F6" />
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => handleDelete(item)} style={styles.actionBtn}>
-                                <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                            </TouchableOpacity>
+                            <AgroInput 
+                                label="Valor Unit. R$ *"
+                                value={valor}
+                                onChangeText={setValor}
+                                placeholder="0.00"
+                                keyboardType="decimal-pad"
+                            />
                         </View>
                     </View>
+
+                    <AgroInput 
+                        label="Observação"
+                        value={observacao}
+                        onChangeText={(t) => up(t, setObservacao)}
+                        placeholder="DETALHES ADICIONAIS..."
+                        icon="document-text"
+                        style={{ marginBottom: 20 }}
+                    />
+
+                    <AgroButton 
+                        title={editingUuid ? "SALVAR ALTERAÇÕES" : "REGISTRAR VENDA"}
+                        onPress={salvar}
+                        variant={editingUuid ? 'secondary' : 'primary'}
+                    />
+                </Card>
+
+                <Text style={styles.historyTitle}>HISTÓRICO RECENTE</Text>
+                {history.map(item => (
+                    <Card key={item.uuid} style={styles.historyCard} noPadding>
+                        <View style={styles.historyContent}>
+                            <View style={styles.historyIcon}>
+                                <Ionicons name="receipt" size={20} color={theme?.colors?.primary || '#10B981'} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.hProd}>{item.produto}</Text>
+                                <Text style={styles.hSub}>{item.cliente} • {new Date(item.data).toLocaleDateString('pt-BR')}</Text>
+                                <Text style={styles.hVal}>{item.quantidade} x R$ {item.valor.toFixed(2)}</Text>
+                            </View>
+                            <View style={styles.historyActions}>
+                                <TouchableOpacity onPress={() => handleDelete(item)} style={styles.actionBtn}>
+                                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </Card>
                 ))}
             </ScrollView>
 
-            {/* PRODUCT MODAL */}
+            {/* MODALS (Product and Client) kept as they are functional */}
             <Modal visible={modalVisible} animationType="slide" transparent>
                 <View style={styles.overlay}>
                     <View style={styles.modalBg}>
@@ -272,9 +264,9 @@ export default function VendasScreen({ navigation }) {
                                 <Ionicons name="close" size={24} color="#374151" />
                             </TouchableOpacity>
                         </View>
-                        <TextInput style={styles.searchBar} placeholder="Buscar..." value={searchText} onChangeText={t => up(t, setSearchText)} autoCapitalize="characters" />
+                        <TextInput style={styles.searchBar} placeholder="Buscar..." value={searchText} onChangeText={t => up(t, setSearchText)} />
                         <FlatList
-                            data={getFilteredItems()}
+                            data={items.filter(i => i.nome.includes(searchText.toUpperCase()))}
                             keyExtractor={i => i.uuid || i.id.toString()}
                             renderItem={({ item }) => (
                                 <TouchableOpacity style={styles.itemRow} onPress={() => { setProduto(item.nome); setModalVisible(false); }}>
@@ -287,7 +279,6 @@ export default function VendasScreen({ navigation }) {
                 </View>
             </Modal>
 
-            {/* CLIENT MODAL */}
             <Modal visible={clientModalVisible} animationType="slide" transparent>
                 <View style={styles.overlay}>
                     <View style={styles.modalBg}>
@@ -297,16 +288,9 @@ export default function VendasScreen({ navigation }) {
                                 <Ionicons name="close" size={24} color="#374151" />
                             </TouchableOpacity>
                         </View>
-
-                        <TouchableOpacity style={styles.newClientBtn} onPress={() => setNewClientModal(true)}>
-                            <Ionicons name="add-circle" size={24} color="#FFF" />
-                            <Text style={styles.newClientText}>CADASTRAR NOVO CLIENTE</Text>
-                        </TouchableOpacity>
-
-                        <TextInput style={styles.searchBar} placeholder="Buscar cliente..." value={clientSearchText} onChangeText={t => up(t, setClientSearchText)} autoCapitalize="characters" />
-
+                        <TextInput style={styles.searchBar} placeholder="Buscar cliente..." value={clientSearchText} onChangeText={t => up(t, setClientSearchText)} />
                         <FlatList
-                            data={getFilteredClients()}
+                            data={clients.filter(c => c.nome.includes(clientSearchText.toUpperCase()))}
                             keyExtractor={i => i.uuid || i.id.toString()}
                             renderItem={({ item }) => (
                                 <TouchableOpacity style={styles.itemRow} onPress={() => { setCliente(item.nome); setClientModalVisible(false); }}>
@@ -317,70 +301,43 @@ export default function VendasScreen({ navigation }) {
                             ListHeaderComponent={
                                 <TouchableOpacity style={styles.itemRow} onPress={() => { setCliente('BALCÃO'); setClientModalVisible(false); }}>
                                     <Text style={styles.itemText}>BALCÃO / AVULSO</Text>
-                                    <Text style={styles.itemSub}>Venda sem cadastro</Text>
+                                    <Text style={styles.itemSub}>Sem cadastro prévio</Text>
                                 </TouchableOpacity>
                             }
                         />
                     </View>
                 </View>
             </Modal>
-
-            {/* NEW CLIENT MINI-FORM */}
-            <Modal visible={newClientModal} animationType="fade" transparent>
-                <View style={styles.overlayCenter}>
-                    <View style={styles.miniModal}>
-                        <Text style={styles.modalTitle}>Novo Cliente</Text>
-                        <TextInput style={[styles.input, { marginTop: 20 }]} placeholder="Nome *" value={newClientName} onChangeText={t => up(t, setNewClientName)} />
-                        <TextInput style={[styles.input, { marginTop: 10 }]} placeholder="Telefone" value={newClientPhone} onChangeText={setNewClientPhone} keyboardType="phone-pad" />
-                        <View style={styles.row}>
-                            <TouchableOpacity style={[styles.btn, { backgroundColor: '#9CA3AF', flex: 1, marginRight: 10 }]} onPress={() => setNewClientModal(false)}>
-                                <Text style={styles.btnText}>CANCELAR</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.btn, { flex: 1 }]} onPress={handleSaveClient}>
-                                <Text style={styles.btnText}>SALVAR</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F9FAFB', padding: 20 },
-    card: { backgroundColor: '#FFF', borderRadius: 32, overflow: 'hidden', elevation: 8, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 20, marginBottom: 30 },
-    cardHeader: { padding: 30 },
-    headerTitle: { fontSize: 18, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
-    headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 5, fontWeight: 'bold' },
-    form: { padding: 25 },
-    field: { marginBottom: 20 },
+    container: { flex: 1 },
+    loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    header: { paddingTop: 50, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
+    summaryRow: { flexDirection: 'row', gap: 10 },
+    summaryCard: { flex: 1, height: 90, marginHorizontal: 0 },
+    sectionTitle: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1, marginBottom: 15 },
+    formCard: { padding: 20 },
     row: { flexDirection: 'row' },
-    label: { fontSize: 9, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1.5, marginBottom: 8 },
-    input: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 16, padding: 16, fontSize: 15, color: '#111827' },
-    textArea: { height: 80, textAlignVertical: 'top' },
-    btn: { backgroundColor: '#3B82F6', paddingVertical: 18, borderRadius: 18, alignItems: 'center', marginTop: 10 },
-    btnText: { color: '#FFF', fontSize: 13, fontWeight: '900', letterSpacing: 1 },
-    selectBtn: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 16, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    selectText: { fontSize: 15, fontWeight: '600', color: '#111827' },
+    historyTitle: { fontSize: 12, fontWeight: '900', color: '#6B7280', letterSpacing: 1, marginTop: 25, marginBottom: 15, marginLeft: 5 },
+    historyCard: { marginBottom: 12 },
+    historyContent: { flexDirection: 'row', alignItems: 'center', padding: 15 },
+    historyIcon: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#F9FAFB', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    hProd: { fontSize: 14, fontWeight: 'bold', color: '#1F2937' },
+    hSub: { fontSize: 11, color: '#9CA3AF', marginTop: 2 },
+    hVal: { fontSize: 12, fontWeight: '900', color: '#10B981', marginTop: 4 },
+    historyActions: { marginLeft: 10 },
+    actionBtn: { padding: 8, backgroundColor: '#FEF2F2', borderRadius: 8 },
     overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    overlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 30 },
     modalBg: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '80%', padding: 20 },
-    miniModal: { backgroundColor: '#FFF', borderRadius: 24, padding: 30 },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
     modalTitle: { fontSize: 16, fontWeight: '900', color: '#1F2937' },
     searchBar: { backgroundColor: '#F3F4F6', padding: 12, borderRadius: 12, marginBottom: 10, fontSize: 14 },
     itemRow: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
     itemText: { fontSize: 14, fontWeight: 'bold', color: '#374151' },
-    itemSub: { fontSize: 10, color: '#9CA3AF' },
-    newClientBtn: { flexDirection: 'row', backgroundColor: '#3B82F6', padding: 15, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 15 },
-    newClientText: { color: '#FFF', fontWeight: 'bold', marginLeft: 10, fontSize: 12 },
-    historyTitle: { fontSize: 12, fontWeight: '900', color: '#6B7280', letterSpacing: 1, marginBottom: 15, marginLeft: 10 },
-    historyItem: { backgroundColor: '#FFF', padding: 15, borderRadius: 16, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 5, elevation: 2 },
-    hProd: { fontSize: 14, fontWeight: 'bold', color: '#1F2937' },
-    hSub: { fontSize: 11, color: '#9CA3AF' },
-    hVal: { fontSize: 12, fontWeight: '900', color: '#059669', marginTop: 4 },
-    actions: { flexDirection: 'row', gap: 10 },
-    actionBtn: { padding: 8, backgroundColor: '#F3F4F6', borderRadius: 8 }
+    itemSub: { fontSize: 10, color: '#9CA3AF' }
 });

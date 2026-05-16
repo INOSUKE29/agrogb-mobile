@@ -1,9 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SectionList, FlatList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, ScrollView, Platform } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, SectionList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, ScrollView, Platform, Dimensions } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertCadastro, getCadastro, deleteCadastro, updateCadastro, insertReceita, getReceita, deleteItemReceita } from '../database/database';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
+
+// Design System
+import Card from '../components/common/Card';
+import AgroButton from '../components/common/AgroButton';
+import AgroInput from '../components/common/AgroInput';
+
+const { width } = Dimensions.get('window');
 
 // --- CONFIGURAÇÃO DE CATEGORIAS (UX) ---
 const CATEGORIES = {
@@ -17,22 +25,18 @@ const CATEGORIES = {
     AREA: { label: 'Área / Talhão', icon: 'map-outline', color: '#059669', bg: '#D1FAE5' }
 };
 
-// Padrões de Mercado 
 const MARKET_STANDARDS = [
-    { label: '🏞️ Área / Talhão', unit: 'HA', weight: '1' },
-    { label: '🍓 Cx Morango Padrão', unit: 'CX', weight: '1.2' },
-    { label: '🍅 Cx Tomate (K)', unit: 'CX', weight: '20' },
-    { label: '🥦 Cx Legumes (Madeira)', unit: 'CX', weight: '12' },
-    { label: '📦 Cx Papelão G', unit: 'CX', weight: '5' },
-    { label: '🧪 Saco Adubo', unit: 'SC', weight: '50' },
-    { label: '🌽 Saco Grãos/Milho', unit: 'SC', weight: '60' },
-    { label: '🛢️ Galão Pequeno', unit: 'LT', weight: '5' },
-    { label: '🛢️ Galão Grande', unit: 'LT', weight: '20' },
-    { label: '🧱 Milheiro', unit: 'MIL', weight: '1000' },
-    { label: '❓ Unitário', unit: 'UNI', weight: '1' }
+    { label: 'Area / Talhão', unit: 'HA', weight: '1' },
+    { label: 'Cx Morango Padrão', unit: 'CX', weight: '1.2' },
+    { label: 'Cx Tomate (K)', unit: 'CX', weight: '20' },
+    { label: 'Cx Legumes', unit: 'CX', weight: '12' },
+    { label: 'Saco Adubo', unit: 'SC', weight: '50' },
+    { label: 'Galão Pequeno', unit: 'LT', weight: '5' },
+    { label: 'Unitário', unit: 'UNI', weight: '1' }
 ];
 
-export default function CadastroScreen() {
+export default function CadastroScreen({ navigation }) {
+    const { theme } = useTheme();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -46,13 +50,13 @@ export default function CadastroScreen() {
     const [editingItem, setEditingItem] = useState(null);
     const [nome, setNome] = useState('');
     const [unidade, setUnidade] = useState('KG');
-    const [tipo, setTipo] = useState('INSUMO'); // Default safe
+    const [tipo, setTipo] = useState('INSUMO');
     const [observacao, setObservacao] = useState('');
     const [fator, setFator] = useState('1');
     const [estocavel, setEstocavel] = useState(true);
-    const [vendavel, setVendavel] = useState(true);
+    const [vendavel, setVendavel] = useState(false);
 
-    // Form Extended (Novos Campos)
+    // Form Extended
     const [principioAtivo, setPrincipioAtivo] = useState('');
     const [classeToxicologica, setClasseToxicologica] = useState('');
     const [composicao, setComposicao] = useState('');
@@ -67,8 +71,6 @@ export default function CadastroScreen() {
 
     useEffect(() => { loadData(); }, []);
 
-    const up = (t, setter) => setter(t ? t.toUpperCase() : '');
-
     const loadData = async () => {
         setLoading(true);
         try { const data = await getCadastro(); setItems(data); } catch (e) { } finally { setLoading(false); }
@@ -79,13 +81,13 @@ export default function CadastroScreen() {
         try {
             const data = {
                 uuid: editingItem ? editingItem.uuid : uuidv4(),
-                nome, unidade, tipo, observacao,
+                nome: nome.toUpperCase(), unidade, tipo, observacao: observacao.toUpperCase(),
                 fator_conversao: parseFloat(fator) || 1,
                 estocavel: estocavel ? 1 : 0,
                 vendavel: vendavel ? 1 : 0,
-                principio_ativo: principioAtivo,
-                classe_toxicologica: classeToxicologica,
-                composicao: composicao,
+                principio_ativo: principioAtivo.toUpperCase(),
+                classe_toxicologica: classeToxicologica.toUpperCase(),
+                composicao: composicao.toUpperCase(),
                 preco_venda: parseFloat(precoVenda) || 0
             };
 
@@ -103,417 +105,326 @@ export default function CadastroScreen() {
     };
 
     const resetForm = () => {
-        setEditingItem(null);
-        setNome(''); setObservacao(''); setFator('1');
-        setEstocavel(true); setVendavel(false);
-        setUnidade('KG'); setTipo('INSUMO');
-        setPrincipioAtivo(''); setClasseToxicologica('');
-        setComposicao(''); setPrecoVenda('');
+        setEditingItem(null); setNome(''); setObservacao(''); setFator('1');
+        setEstocavel(true); setVendavel(false); setUnidade('KG'); setTipo('INSUMO');
+        setPrincipioAtivo(''); setClasseToxicologica(''); setComposicao(''); setPrecoVenda('');
     };
 
     const handleEdit = (item) => {
-        setEditingItem(item);
-        setNome(item.nome);
-        setUnidade(item.unidade);
-        setTipo(item.tipo);
-        setObservacao(item.observacao || '');
-        setFator((item.fator_conversao || 1).toString());
-        setEstocavel(item.estocavel === 1);
-        setVendavel(item.vendavel === 1);
-
-        // Extended
-        setPrincipioAtivo(item.principio_ativo || '');
-        setClasseToxicologica(item.classe_toxicologica || '');
-        setComposicao(item.composicao || '');
-        setPrecoVenda(item.preco_venda ? item.preco_venda.toString() : '');
-
+        setEditingItem(item); setNome(item.nome); setUnidade(item.unidade); setTipo(item.tipo);
+        setObservacao(item.observacao || ''); setFator((item.fator_conversao || 1).toString());
+        setEstocavel(item.estocavel === 1); setVendavel(item.vendavel === 1);
+        setPrincipioAtivo(item.principio_ativo || ''); setClasseToxicologica(item.classe_toxicologica || '');
+        setComposicao(item.composicao || ''); setPrecoVenda(item.preco_venda ? item.preco_venda.toString() : '');
         setModalVisible(true);
     };
 
     const handleDelete = (id) => {
-        Alert.alert('Excluir', 'Remover item permanentemente?', [
-            { text: 'Não' }, { text: 'Sim', onPress: async () => { await deleteCadastro(id); loadData(); } }
+        Alert.alert('Excluir', 'Remover item permanentemente do catálogo?', [
+            { text: 'Não', style: 'cancel' }, 
+            { text: 'Sim, Excluir', style: 'destructive', onPress: async () => { await deleteCadastro(id); loadData(); } }
         ]);
     };
 
-    // UX Helpers
-    const getCategoryConfig = (t) => CATEGORIES[t] || CATEGORIES['INSUMO'];
-
     const selectCategory = (key) => {
-        setTipo(key);
-        setCategoryModalVisible(false);
-        // Auto-sets based on category
+        setTipo(key); setCategoryModalVisible(false);
         const cfg = CATEGORIES[key];
         if (cfg.preCheck?.includes('vendavel')) setVendavel(true);
     };
 
-    return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <View>
-                    <Text style={styles.title}>CATÁLOGO GERAL</Text>
-                    <Text style={styles.sub}>Insumos, Produtos e Embalagens</Text>
-                </View>
-                <TouchableOpacity
-                    style={{ backgroundColor: '#10B981', padding: 8, borderRadius: 12, justifyContent: 'center', alignItems: 'center' }}
-                    onPress={() => navigation.navigate('Scanner', {
-                        onScanComplete: (data) => {
-                            // Preencher formulário com dados da IA
-                            setNome(data.nome);
-                            setTipo(data.tipo);
-                            setObservacao(data.observacao);
-                            setModalVisible(true); // Abre o modal de edição já preenchido
-                        }
-                    })}
-                >
-                    <Ionicons name="scan-outline" size={24} color="#FFF" />
-                </TouchableOpacity>
-            </View>
+    const sections = Object.values(items.reduce((acc, item) => {
+        if (!acc[item.tipo]) acc[item.tipo] = { title: item.tipo, data: [] };
+        acc[item.tipo].data.push(item);
+        return acc;
+    }, {})).sort((a, b) => a.title.localeCompare(b.title));
 
-            {loading ? <ActivityIndicator size="large" color="#15803D" style={{ marginTop: 50 }} /> :
+    return (
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
+            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
+                <View style={styles.headerTop}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>CATÁLOGO RURAL</Text>
+                    <TouchableOpacity 
+                        style={styles.scanBtn}
+                        onPress={() => navigation.navigate('Scanner', {
+                            onScanComplete: (data) => {
+                                setNome(data.nome); setTipo(data.tipo); setObservacao(data.observacao);
+                                setModalVisible(true);
+                            }
+                        })}
+                    >
+                        <Ionicons name="scan-outline" size={20} color="#FFF" />
+                    </TouchableOpacity>
+                </View>
+                <Text style={styles.headerSub}>Gerencie insumos, áreas e produtos finais</Text>
+            </LinearGradient>
+
+            {loading ? <ActivityIndicator size="large" color={theme?.colors?.primary} style={{ marginTop: 50 }} /> :
                 <SectionList
-                    sections={Object.values(items.reduce((acc, item) => {
-                        if (!acc[item.tipo]) acc[item.tipo] = { title: item.tipo, data: [] };
-                        acc[item.tipo].data.push(item);
-                        return acc;
-                    }, {})).sort((a, b) => a.title.localeCompare(b.title))}
+                    sections={sections}
                     keyExtractor={item => item.id.toString()}
+                    stickySectionHeadersEnabled={false}
+                    contentContainerStyle={styles.listContent}
                     renderSectionHeader={({ section: { title } }) => {
-                        const cfg = getCategoryConfig(title);
+                        const cfg = CATEGORIES[title] || CATEGORIES.INSUMO;
                         return (
-                            <View style={[styles.sectionHeader, { backgroundColor: cfg.bg }]}>
-                                <Ionicons name={cfg.icon} size={16} color={cfg.color} style={{ marginRight: 5 }} />
-                                <Text style={[styles.sectionTitle, { color: cfg.color }]}>{cfg.label}</Text>
+                            <View style={styles.sectionHeader}>
+                                <View style={[styles.sectionIcon, { backgroundColor: cfg.color }]}>
+                                    <Ionicons name={cfg.icon} size={14} color="#FFF" />
+                                </View>
+                                <Text style={[styles.sectionTitle, { color: cfg.color }]}>{cfg.label.toUpperCase()}</Text>
                             </View>
                         );
                     }}
                     renderItem={({ item }) => (
-                        <View style={styles.card}>
-                            <TouchableOpacity style={styles.cardBody} onPress={() => handleEdit(item)}>
-                                <Text style={styles.cardTitle}>{item.nome}</Text>
-                                <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
-                                    <View style={styles.miniTag}><Text style={styles.miniTagText}>{item.unidade}</Text></View>
-                                    {item.estocavel === 1 && <View style={[styles.miniTag, { backgroundColor: '#DCFCE7' }]}><Text style={[styles.miniTagText, { color: '#166534' }]}>Estoque</Text></View>}
-                                    {item.vendavel === 1 && <View style={[styles.miniTag, { backgroundColor: '#DBEAFE' }]}><Text style={[styles.miniTagText, { color: '#1E40AF' }]}>$ Venda</Text></View>}
+                        <Card style={styles.itemCard} noPadding onPress={() => handleEdit(item)}>
+                            <View style={styles.cardInner}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.cardName}>{item.nome}</Text>
+                                    <View style={styles.tagRow}>
+                                        <View style={styles.unitBadge}><Text style={styles.unitText}>{item.unidade}</Text></View>
+                                        {item.estocavel === 1 && <View style={[styles.tag, { backgroundColor: '#F0FDF4' }]}><Text style={[styles.tagText, { color: '#10B981' }]}>ESTOQUE</Text></View>}
+                                        {item.vendavel === 1 && <View style={[styles.tag, { backgroundColor: '#EFF6FF' }]}><Text style={[styles.tagText, { color: '#3B82F6' }]}>VENDÁVEL</Text></View>}
+                                    </View>
                                 </View>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => handleDelete(item.id)} style={{ padding: 10 }}>
-                                <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                            </TouchableOpacity>
-                        </View>
+                                <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.deleteBtn}>
+                                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                                </TouchableOpacity>
+                            </View>
+                        </Card>
                     )}
-                    contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
-                    ListEmptyComponent={<Text style={styles.empty}>Nenhum item cadastrado.</Text>}
+                    ListEmptyComponent={<Text style={styles.empty}>Nenhum item cadastrado no catálogo.</Text>}
                 />}
 
-            <TouchableOpacity style={styles.fab} onPress={() => { resetForm(); setModalVisible(true); }}>
+            <TouchableOpacity style={[styles.fab, { backgroundColor: theme?.colors?.primary || '#10B981' }]} onPress={() => { resetForm(); setModalVisible(true); }}>
                 <Ionicons name="add" size={32} color="#FFF" />
             </TouchableOpacity>
 
             {/* MODAL EDITOR PRINCIPAL */}
             <Modal visible={modalVisible} transparent animationType="slide">
                 <View style={styles.overlay}>
-                    <View style={styles.modal}>
-                        <ScrollView showsVerticalScrollIndicator={false}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>{editingItem ? 'EDITAR ITEM' : 'NOVO ITEM'}</Text>
+                            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
+                                <Ionicons name="close" size={24} color="#6B7280" />
+                            </TouchableOpacity>
+                        </View>
 
-                            {/* 1. SELEÇÃO DE CATEGORIA (UX MELHORADA) */}
-                            <Text style={styles.label}>CATEGORIA / TIPO</Text>
-                            <TouchableOpacity style={[styles.selectorBtn, { borderColor: getCategoryConfig(tipo).color }]} onPress={() => setCategoryModalVisible(true)}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <View style={[styles.iconBox, { backgroundColor: getCategoryConfig(tipo).bg }]}>
-                                        <Ionicons name={getCategoryConfig(tipo).icon} size={20} color={getCategoryConfig(tipo).color} />
+                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 50 }}>
+                            <Text style={styles.inputLabel}>CATEGORIA / TIPO</Text>
+                            <TouchableOpacity 
+                                style={[styles.categorySelector, { borderColor: CATEGORIES[tipo]?.color || '#E5E7EB' }]} 
+                                onPress={() => setCategoryModalVisible(true)}
+                            >
+                                <View style={styles.catInfo}>
+                                    <View style={[styles.catIconBox, { backgroundColor: (CATEGORIES[tipo] || CATEGORIES.INSUMO).color + '20' }]}>
+                                        <Ionicons name={(CATEGORIES[tipo] || CATEGORIES.INSUMO).icon} size={20} color={(CATEGORIES[tipo] || CATEGORIES.INSUMO).color} />
                                     </View>
-                                    <View style={{ marginLeft: 10 }}>
-                                        <Text style={[styles.selectorLabel, { color: getCategoryConfig(tipo).color }]}>{getCategoryConfig(tipo).label}</Text>
-                                        <Text style={{ fontSize: 10, color: '#9CA3AF' }}>Toque para alterar</Text>
-                                    </View>
+                                    <Text style={[styles.catName, { color: (CATEGORIES[tipo] || CATEGORIES.INSUMO).color }]}>
+                                        {(CATEGORIES[tipo] || CATEGORIES.INSUMO).label}
+                                    </Text>
                                 </View>
                                 <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
                             </TouchableOpacity>
 
-                            {/* 2. DADOS BÁSICOS */}
-                            <Text style={styles.label}>IDENTIFICAÇÃO</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Nome do Item (Ex: Adubo 20-00-20)"
-                                value={nome}
-                                onChangeText={t => up(t, setNome)}
-                            />
+                            <AgroInput label="NOME DO ITEM" value={nome} onChangeText={setNome} placeholder="EX: FERTILIZANTE NPK 04-14-08" />
 
-                            <View style={styles.row}>
-                                <View style={{ flex: 1, marginRight: 10 }}>
-                                    <Text style={styles.label}>UNIDADE</Text>
-                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row' }}>
-                                        {['KG', 'LT', 'CX', 'SC', 'UNI'].map(u => (
-                                            <TouchableOpacity key={u} onPress={() => setUnidade(u)} style={[styles.unitChip, unidade === u && styles.unitChipActive]}>
-                                                <Text style={[styles.unitText, unidade === u && { color: '#FFF' }]}>{u}</Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </ScrollView>
-                                </View>
+                            <View style={styles.unitSection}>
+                                <Text style={styles.inputLabel}>UNIDADE DE MEDIDA</Text>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.unitScroll}>
+                                    {['KG', 'LT', 'CX', 'SC', 'UNI', 'HA'].map(u => (
+                                        <TouchableOpacity 
+                                            key={u} 
+                                            onPress={() => setUnidade(u)} 
+                                            style={[styles.unitChip, unidade === u && { backgroundColor: theme?.colors?.primary, borderColor: theme?.colors?.primary }]}
+                                        >
+                                            <Text style={[styles.unitChipText, unidade === u && { color: '#FFF' }]}>{u}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
                             </View>
 
-                            {/* 3. CAMPOS ESPECÍFICOS (LÓGICA CONDICIONAL) */}
-
-                            {/* Defensivos */}
-                            {getCategoryConfig(tipo).fields?.includes('principio') && (
-                                <View style={styles.extraSection}>
-                                    <Text style={styles.sectionHeader}>DADOS DO DEFENSIVO</Text>
-                                    <Text style={styles.label}>PRINCÍPIO ATIVO</Text>
-                                    <TextInput style={styles.input} placeholder="Ex: Glifosato" value={principioAtivo} onChangeText={t => up(t, setPrincipioAtivo)} />
-                                    <Text style={styles.label}>CLASSE TOXICOLÓGICA</Text>
-                                    <TextInput style={styles.input} placeholder="Ex: Classe I, II..." value={classeToxicologica} onChangeText={t => up(t, setClasseToxicologica)} />
-                                </View>
+                            {CATEGORIES[tipo]?.fields?.includes('principio') && (
+                                <Card style={styles.extraCard}>
+                                    <Text style={styles.extraTitle}>DADOS TÉCNICOS</Text>
+                                    <AgroInput label="PRINCÍPIO ATIVO" value={principioAtivo} onChangeText={setPrincipioAtivo} />
+                                    <AgroInput label="CLASSE TOXICOLÓGICA" value={classeToxicologica} onChangeText={setClasseToxicologica} />
+                                </Card>
                             )}
 
-                            {/* Fertilizantes / Nutrientes */}
-                            {getCategoryConfig(tipo).fields?.includes('composicao') && (
-                                <View style={styles.extraSection}>
-                                    <Text style={styles.sectionHeader}>COMPOSIÇÃO QUÍMICA</Text>
-                                    <TextInput style={styles.input} placeholder="Ex: NPK 04-14-08 + Micronutrientes" value={composicao} onChangeText={t => up(t, setComposicao)} />
-                                </View>
+                            {CATEGORIES[tipo]?.fields?.includes('composicao') && (
+                                <Card style={styles.extraCard}>
+                                    <Text style={styles.extraTitle}>COMPOSIÇÃO QUÍMICA</Text>
+                                    <AgroInput label="DETALHES" value={composicao} onChangeText={setComposicao} multiline />
+                                </Card>
                             )}
 
-                            {/* Produtos Vendáveis */}
                             {(tipo === 'PRODUTO' || vendavel) && (
-                                <View style={styles.extraSection}>
-                                    <Text style={styles.sectionHeader}>VENDAS</Text>
-                                    <Text style={styles.label}>PREÇO DE VENDA SUGERIDO (R$)</Text>
-                                    <TextInput style={styles.input} placeholder="0.00" keyboardType="numeric" value={precoVenda} onChangeText={setPrecoVenda} />
+                                <Card style={styles.extraCard}>
+                                    <Text style={styles.extraTitle}>FINANCEIRO</Text>
+                                    <AgroInput label="PREÇO DE VENDA (R$)" value={precoVenda} onChangeText={setPrecoVenda} keyboardType="numeric" />
+                                </Card>
+                            )}
+
+                            <View style={styles.factorSection}>
+                                <Text style={styles.inputLabel}>PESO DA EMBALAGEM / FATOR</Text>
+                                <View style={styles.factorRow}>
+                                    <TextInput 
+                                        style={styles.factorInput} 
+                                        value={fator} 
+                                        onChangeText={setFator} 
+                                        keyboardType="numeric" 
+                                    />
+                                    <TouchableOpacity style={[styles.stdBtn, { backgroundColor: theme?.colors?.primary }]} onPress={() => setAssistantVisible(true)}>
+                                        <Ionicons name="bulb-outline" size={18} color="#FFF" />
+                                        <Text style={styles.stdBtnText}>PADRÕES</Text>
+                                    </TouchableOpacity>
                                 </View>
-                            )}
+                            </View>
 
-                            {/* 4. CONVERSÃO E SWITCHES */}
-                            <Text style={styles.label}>CONTEÚDO DA EMBALAGEM</Text>
-                            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 15 }}>
-                                <TextInput style={[styles.input, { flex: 1, marginBottom: 0 }]} value={fator} onChangeText={setFator} keyboardType="numeric" />
-                                <TouchableOpacity style={styles.assistantBtn} onPress={() => setAssistantVisible(true)}>
-                                    <Ionicons name="bulb-outline" size={18} color="#FFF" />
-                                    <Text style={styles.assistantText}>Padrões</Text>
+                            <View style={styles.toggleRow}>
+                                <TouchableOpacity style={[styles.toggleBox, estocavel && styles.toggleActive]} onPress={() => setEstocavel(!estocavel)}>
+                                    <Ionicons name="cube-outline" size={18} color={estocavel ? '#FFF' : '#6B7280'} />
+                                    <Text style={[styles.toggleText, estocavel && { color: '#FFF' }]}>ESTOCÁVEL</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.toggleBox, vendavel && styles.toggleActive]} onPress={() => setVendavel(!vendavel)}>
+                                    <Ionicons name="cash-outline" size={18} color={vendavel ? '#FFF' : '#6B7280'} />
+                                    <Text style={[styles.toggleText, vendavel && { color: '#FFF' }]}>VENDÁVEL</Text>
                                 </TouchableOpacity>
                             </View>
 
-                            <View style={[styles.row, { marginBottom: 15, justifyContent: 'space-between' }]}>
-                                <TouchableOpacity style={[styles.toggleBtn, estocavel && styles.toggleActive]} onPress={() => setEstocavel(!estocavel)}>
-                                    <Text style={[styles.toggleLabel, estocavel && { color: '#FFF' }]}>📦 ESTOCÁVEL</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[styles.toggleBtn, vendavel && styles.toggleActive]} onPress={() => setVendavel(!vendavel)}>
-                                    <Text style={[styles.toggleLabel, vendavel && { color: '#FFF' }]}>💲 VENDÁVEL</Text>
-                                </TouchableOpacity>
-                            </View>
-
-                            {/* 5. RECEITA (Só Produto) */}
                             {editingItem && tipo === 'PRODUTO' && (
-                                <TouchableOpacity style={styles.recipeBtn} onPress={() => openRecipeModal(editingItem)}>
-                                    <Ionicons name="construct-outline" size={20} color="#FFF" />
-                                    <Text style={styles.recipeBtnText}>ENGENHARIA / RECEITA</Text>
-                                </TouchableOpacity>
+                                <AgroButton 
+                                    title="FICHA TÉCNICA / RECEITA" 
+                                    onPress={() => { setRecipeModalVisible(true); loadRecipeData(editingItem.uuid); }}
+                                    icon="construct-outline"
+                                    variant="secondary"
+                                    style={{ marginVertical: 15 }}
+                                />
                             )}
 
-                            {/* 6. OBSERVAÇÃO (UX LEITURA) */}
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Text style={styles.label}>OBSERVAÇÕES (Toque para ler)</Text>
-                                <TouchableOpacity onPress={() => setObsModalVisible(true)}>
-                                    <Ionicons name="expand" size={18} color="#4B5563" />
-                                </TouchableOpacity>
-                            </View>
-                            <TouchableOpacity activeOpacity={0.8} onLongPress={() => setObsModalVisible(true)} onPress={() => { }}>
-                                <TextInput
-                                    style={[styles.input, { height: 80 }]}
-                                    value={observacao}
-                                    onChangeText={t => up(t, setObservacao)}
-                                    multiline
-                                    placeholder="Detalhes adicionais..."
-                                />
-                            </TouchableOpacity>
+                            <AgroInput label="OBSERVAÇÕES" value={observacao} onChangeText={setObservacao} multiline style={{ height: 100 }} />
 
-                            <View style={styles.modalBtns}>
-                                <TouchableOpacity style={[styles.btn, styles.btnBack]} onPress={() => setModalVisible(false)}><Text style={styles.btnText}>CANCELAR</Text></TouchableOpacity>
-                                <TouchableOpacity style={[styles.btn, styles.btnSave]} onPress={handleSave}><Text style={[styles.btnText, { color: '#FFF' }]}>SALVAR</Text></TouchableOpacity>
+                            <View style={styles.actionRow}>
+                                <AgroButton title="SALVAR ITEM" onPress={handleSave} style={{ flex: 1 }} />
+                                <AgroButton title="FECHAR" variant="secondary" onPress={() => setModalVisible(false)} style={{ flex: 1, marginLeft: 10 }} />
                             </View>
-                            <View style={{ height: 50 }} />
                         </ScrollView>
                     </View>
                 </View>
             </Modal>
 
-            {/* MODAL CATEGORIAS (UX SELEÇÃO) */}
+            {/* MODAL CATEGORIAS GRID */}
             <Modal visible={categoryModalVisible} transparent animationType="fade">
-                <View style={styles.overlay}>
-                    <View style={styles.modal}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                            <Text style={styles.modalTitle}>SELECIONE A CATEGORIA</Text>
-                            <TouchableOpacity onPress={() => setCategoryModalVisible(false)}><Ionicons name="close" size={24} /></TouchableOpacity>
-                        </View>
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
+                <View style={styles.overlayCenter}>
+                    <Card style={styles.gridModal}>
+                        <Text style={styles.modalTitleCenter}>CATEGORIAS</Text>
+                        <View style={styles.catGrid}>
                             {Object.keys(CATEGORIES).map(key => {
                                 const cat = CATEGORIES[key];
                                 return (
-                                    <TouchableOpacity key={key} style={styles.catGridItem} onPress={() => selectCategory(key)}>
-                                        <View style={[styles.catIconBig, { backgroundColor: cat.bg }]}>
-                                            <Ionicons name={cat.icon} size={28} color={cat.color} />
+                                    <TouchableOpacity key={key} style={styles.gridItem} onPress={() => selectCategory(key)}>
+                                        <View style={[styles.gridIcon, { backgroundColor: cat.bg }]}>
+                                            <Ionicons name={cat.icon} size={24} color={cat.color} />
                                         </View>
-                                        <Text style={styles.catLabelSmall}>{cat.label}</Text>
+                                        <Text style={styles.gridLabel}>{cat.label}</Text>
                                     </TouchableOpacity>
                                 )
                             })}
                         </View>
-                    </View>
+                        <AgroButton title="CANCELAR" variant="secondary" onPress={() => setCategoryModalVisible(false)} />
+                    </Card>
                 </View>
             </Modal>
 
-            {/* MODAL LEITURA OBSERVAÇÃO */}
-            <Modal visible={obsModalVisible} transparent animationType="fade">
-                <View style={styles.overlay}>
-                    <View style={styles.modal}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 }}>
-                            <Text style={styles.modalTitle}>OBSERVAÇÃO COMPLETA</Text>
-                            <TouchableOpacity onPress={() => setObsModalVisible(false)}><Ionicons name="close" size={24} /></TouchableOpacity>
-                        </View>
-                        <ScrollView style={{ maxHeight: 300, backgroundColor: '#F9FAFB', padding: 15, borderRadius: 10 }}>
-                            <Text style={{ fontSize: 16, lineHeight: 24, color: '#374151' }}>{observacao || 'Nenhuma observação registrada.'}</Text>
-                        </ScrollView>
-                        <TouchableOpacity style={[styles.btn, styles.btnBack, { marginTop: 20 }]} onPress={() => setObsModalVisible(false)}>
-                            <Text style={styles.btnText}>FECHAR</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* MODAIS AUXILIARES (Padrões e Receita - Mantidos Similares) */}
+            {/* MODAL PADRÕES */}
             <Modal visible={assistantVisible} transparent animationType="fade">
-                <View style={[styles.overlay]}>
-                    <View style={styles.modal}>
-                        <Text style={styles.modalTitle}>PADRÕES IDEAIS</Text>
-                        <FlatList data={MARKET_STANDARDS} keyExtractor={i => i.label} renderItem={({ item }) => (
-                            <TouchableOpacity style={styles.stdItem} onPress={() => { setUnidade(item.unit); setFator(item.weight); setAssistantVisible(false); }}>
-                                <Text>{item.label}</Text>
-                                <Text style={{ fontWeight: 'bold' }}>{item.weight} {item.unit}</Text>
-                            </TouchableOpacity>
-                        )} />
-                        <TouchableOpacity onPress={() => setAssistantVisible(false)} style={{ alignSelf: 'center', padding: 10 }}><Text>Cancelar</Text></TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* --- RECEITA MANAGER (Simplified for brevity, same logic typically) --- */}
-            <Modal visible={recipeModalVisible} transparent animationType="slide">
-                <View style={styles.overlay}>
-                    <View style={[styles.modal, { height: '85%' }]}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text style={styles.modalTitle}>FICHA TÉCNICA 🏗️</Text>
-                            <TouchableOpacity onPress={() => setRecipeModalVisible(false)}><Ionicons name="close" size={28} /></TouchableOpacity>
-                        </View>
-                        <FlatList
-                            data={currentRecipe}
-                            keyExtractor={i => i.id.toString()}
-                            ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 50, color: '#9CA3AF' }}>Sem ingredientes.</Text>}
+                <View style={styles.overlayCenter}>
+                    <Card style={styles.stdModal}>
+                        <Text style={styles.modalTitleCenter}>PADRÕES DE MERCADO</Text>
+                        <FlatList 
+                            data={MARKET_STANDARDS} 
+                            keyExtractor={i => i.label} 
                             renderItem={({ item }) => (
-                                <View style={styles.stdItem}>
-                                    <Text>{item.nome_filho} ({item.quantidade} {item.unidade_filho})</Text>
-                                    <TouchableOpacity onPress={() => removeIngredient(item.id)}><Ionicons name="trash" size={18} color="red" /></TouchableOpacity>
-                                </View>
-                            )}
+                                <TouchableOpacity style={styles.stdRow} onPress={() => { setUnidade(item.unit); setFator(item.weight); setAssistantVisible(false); }}>
+                                    <Text style={styles.stdName}>{item.label}</Text>
+                                    <View style={styles.stdBadge}><Text style={styles.stdValue}>{item.weight} {item.unit}</Text></View>
+                                </TouchableOpacity>
+                            )} 
                         />
-                        <TouchableOpacity style={styles.addIngBtn} onPress={() => setAddIngModal(true)}><Text style={styles.addIngText}>+ INGREDIENTE</Text></TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
-
-            <Modal visible={addIngModal} transparent animationType="fade">
-                <View style={styles.overlay}>
-                    <View style={styles.modal}>
-                        <Text style={styles.modalTitle}>ADICIONAR</Text>
-                        {!selectedIng ? (
-                            <FlatList data={items.filter(i => i.uuid !== editingItem?.uuid)} keyExtractor={i => i.uuid} renderItem={({ item }) => (
-                                <TouchableOpacity style={styles.stdItem} onPress={() => setSelectedIng(item)}><Text>{item.nome}</Text></TouchableOpacity>
-                            )} style={{ height: 200 }} />
-                        ) : (
-                            <View>
-                                <Text>Qtd de {selectedIng.nome}?</Text>
-                                <TextInput style={styles.input} value={qtdIng} onChangeText={setQtdIng} keyboardType="numeric" autoFocus />
-                                <TouchableOpacity style={styles.btnSave} onPress={confirmAddIngredient}><Text style={{ color: '#FFF' }}>CONFIRMAR</Text></TouchableOpacity>
-                            </View>
-                        )}
-                        <TouchableOpacity onPress={() => { setAddIngModal(false); setSelectedIng(null) }} style={{ padding: 10, alignSelf: 'center' }}><Text>Cancelar</Text></TouchableOpacity>
-                    </View>
+                        <AgroButton title="FECHAR" variant="secondary" onPress={() => setAssistantVisible(false)} style={{ marginTop: 15 }} />
+                    </Card>
                 </View>
             </Modal>
         </View>
     );
 
-    async function openRecipeModal(item) { setRecipeModalVisible(true); loadRecipeData(item.uuid); }
     async function loadRecipeData(paiUuid) {
         try { const data = await getReceita(paiUuid); setCurrentRecipe(data); } catch (e) { }
     }
-    async function confirmAddIngredient() {
-        if (!qtdIng) return;
-        await insertReceita(editingItem.uuid, selectedIng.uuid, parseFloat(qtdIng));
-        setAddIngModal(false); setSelectedIng(null); setQtdIng(''); loadRecipeData(editingItem.uuid);
-    }
-    async function removeIngredient(id) { await deleteItemReceita(id); loadRecipeData(editingItem.uuid); }
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F9FAFB' },
-    header: { padding: 25, paddingTop: 50 },
-    title: { fontSize: 22, fontWeight: '900', color: '#1F2937' },
-    sub: { fontSize: 11, color: '#9CA3AF', letterSpacing: 1, marginTop: 5 },
-
-    // Lista
-    sectionHeader: { flexDirection: 'row', alignItems: 'center', padding: 8, borderRadius: 8, marginTop: 15, marginBottom: 5 },
-    sectionTitle: { fontWeight: 'bold', fontSize: 12, letterSpacing: 1 },
-    card: { backgroundColor: '#FFF', borderRadius: 16, padding: 15, marginBottom: 8, flexDirection: 'row', alignItems: 'center', elevation: 1 },
-    cardBody: { flex: 1 },
-    cardTitle: { fontSize: 15, fontWeight: '700', color: '#1F2937' },
-    miniTag: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: '#F3F4F6' },
-    miniTagText: { fontSize: 10, fontWeight: 'bold', color: '#6B7280' },
-    empty: { textAlign: 'center', marginTop: 50, color: '#9CA3AF' },
-    fab: { position: 'absolute', bottom: 30, right: 30, width: 60, height: 60, borderRadius: 30, backgroundColor: '#15803D', justifyContent: 'center', alignItems: 'center', elevation: 5 },
-
-    // Modal
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
-    modal: { backgroundColor: '#FFF', borderRadius: 24, padding: 25, maxHeight: '90%' },
-    modalTitle: { fontSize: 18, fontWeight: '900', marginBottom: 20, color: '#111827' },
-    label: { fontSize: 10, fontWeight: '800', color: '#9CA3AF', marginBottom: 8, marginTop: 15, letterSpacing: 0.5 },
-    input: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 12, fontSize: 15, color: '#1F2937', marginBottom: 5 },
-
-    // Selector
-    selectorBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderWidth: 1, borderRadius: 16, backgroundColor: '#FFF' },
-    iconBox: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-    selectorLabel: { fontWeight: 'bold', fontSize: 14 },
-
-    // Category Modal Grid
-    catGridItem: { width: '45%', backgroundColor: '#F9FAFB', padding: 15, borderRadius: 16, alignItems: 'center', marginBottom: 15, borderWidth: 1, borderColor: '#F3F4F6' },
-    catIconBig: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-    catLabelSmall: { fontSize: 12, fontWeight: 'bold', color: '#374151', textAlign: 'center' },
-
-    // Extra Fields
-    extraSection: { backgroundColor: '#F0FDF4', padding: 15, borderRadius: 12, marginTop: 10, borderWidth: 1, borderColor: '#DCFCE7' },
-
-    row: { flexDirection: 'row' },
-    unitChip: { padding: 10, borderRadius: 10, backgroundColor: '#F3F4F6', marginRight: 8, minWidth: 40, alignItems: 'center' },
-    unitChipActive: { backgroundColor: '#4B5563' },
-    unitText: { fontSize: 12, fontWeight: 'bold', color: '#6B7280' },
-
-    assistantBtn: { backgroundColor: '#F59E0B', paddingHorizontal: 15, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexDirection: 'row', gap: 5 },
-    assistantText: { color: '#FFF', fontWeight: 'bold', fontSize: 12 },
-
-    toggleBtn: { flex: 0.48, padding: 15, borderRadius: 12, backgroundColor: '#F3F4F6', alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
-    toggleActive: { backgroundColor: '#10B981', borderColor: '#059669' },
-    toggleLabel: { fontSize: 11, fontWeight: '900', color: '#6B7280' },
-
-    modalBtns: { flexDirection: 'row', gap: 10, marginTop: 25 },
-    btn: { flex: 1, padding: 16, borderRadius: 14, alignItems: 'center' },
-    btnBack: { backgroundColor: '#E5E7EB' },
-    btnSave: { backgroundColor: '#1F2937' },
-    btnText: { fontWeight: '900', fontSize: 12 },
-
-    stdItem: { padding: 15, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', flexDirection: 'row', justifyContent: 'space-between' },
-
-    recipeBtn: { backgroundColor: '#4F46E5', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 15, borderRadius: 14, marginTop: 15, gap: 10 },
-    recipeBtnText: { color: '#FFF', fontWeight: 'bold' },
-    addIngBtn: { backgroundColor: '#10B981', padding: 15, borderRadius: 12, alignItems: 'center', marginTop: 15 },
-    addIngText: { color: '#FFF', fontWeight: 'bold' }
+    container: { flex: 1 },
+    header: { paddingTop: 50, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+    headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
+    headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 'bold' },
+    scanBtn: { backgroundColor: 'rgba(255,255,255,0.2)', padding: 8, borderRadius: 12 },
+    listContent: { padding: 20, paddingBottom: 100 },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, marginTop: 20 },
+    sectionIcon: { width: 24, height: 24, borderRadius: 6, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+    sectionTitle: { fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
+    itemCard: { marginBottom: 10 },
+    cardInner: { padding: 15, flexDirection: 'row', alignItems: 'center' },
+    cardName: { fontSize: 15, fontWeight: '800', color: '#1F2937' },
+    tagRow: { flexDirection: 'row', gap: 8, marginTop: 6 },
+    unitBadge: { backgroundColor: '#F3F4F6', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+    unitText: { fontSize: 9, fontWeight: '900', color: '#6B7280' },
+    tag: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+    tagText: { fontSize: 9, fontWeight: '900' },
+    deleteBtn: { padding: 10 },
+    empty: { textAlign: 'center', marginTop: 50, color: '#9CA3AF', fontWeight: 'bold' },
+    fab: { position: 'absolute', bottom: 30, right: 30, width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', elevation: 10 },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30, height: '90%', padding: 25 },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    modalTitle: { fontSize: 16, fontWeight: '900', color: '#1F2937', letterSpacing: 1 },
+    closeBtn: { backgroundColor: '#F3F4F6', padding: 8, borderRadius: 12 },
+    inputLabel: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', marginBottom: 10, marginTop: 15, letterSpacing: 1 },
+    categorySelector: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderWidth: 1, borderRadius: 15, backgroundColor: '#F9FAFB' },
+    catInfo: { flexDirection: 'row', alignItems: 'center' },
+    catIconBox: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+    catName: { fontSize: 14, fontWeight: '800' },
+    unitSection: { marginTop: 5 },
+    unitScroll: { flexDirection: 'row' },
+    unitChip: { paddingHorizontal: 15, paddingVertical: 10, borderRadius: 12, backgroundColor: '#F3F4F6', marginRight: 10, borderWidth: 1, borderColor: '#E5E7EB' },
+    unitChipText: { fontSize: 11, fontWeight: '900', color: '#6B7280' },
+    extraCard: { marginTop: 15, padding: 15, backgroundColor: '#F9FAFB', borderStyle: 'dashed' },
+    extraTitle: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', marginBottom: 15 },
+    factorSection: { marginTop: 5 },
+    factorRow: { flexDirection: 'row', gap: 10 },
+    factorInput: { flex: 1, backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 15, padding: 12, fontSize: 15, fontWeight: '800', color: '#1F2937' },
+    stdBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, borderRadius: 15, gap: 8 },
+    stdBtnText: { color: '#FFF', fontWeight: '900', fontSize: 10 },
+    toggleRow: { flexDirection: 'row', gap: 10, marginTop: 20 },
+    toggleBox: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 15, borderRadius: 15, backgroundColor: '#F3F4F6', gap: 8 },
+    toggleActive: { backgroundColor: '#10B981' },
+    toggleText: { fontSize: 11, fontWeight: '900', color: '#6B7280' },
+    actionRow: { flexDirection: 'row', marginTop: 30 },
+    overlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 25 },
+    gridModal: { padding: 25 },
+    modalTitleCenter: { fontSize: 16, fontWeight: '900', color: '#1F2937', textAlign: 'center', marginBottom: 25, letterSpacing: 1 },
+    catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 25 },
+    gridItem: { width: (width - 100) / 2, backgroundColor: '#F9FAFB', padding: 15, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: '#F3F4F6' },
+    gridIcon: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+    gridLabel: { fontSize: 11, fontWeight: '800', color: '#4B5563', textAlign: 'center' },
+    stdModal: { padding: 25, maxHeight: '80%' },
+    stdRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+    stdName: { fontSize: 14, fontWeight: '700', color: '#374151' },
+    stdBadge: { backgroundColor: '#F3F4F6', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+    stdValue: { fontSize: 11, fontWeight: '900', color: '#10B981' }
 });

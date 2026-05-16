@@ -3,6 +3,11 @@ import * as SQLite from 'expo-sqlite';
 import { v4 as uuidv4 } from 'uuid';
 
 let db;
+let currentUserUuid = 'SISTEMA';
+
+export const setCurrentUserUuid = (uuid) => {
+    currentUserUuid = uuid;
+};
 
 // Função auxiliar para promissificar o executeSql
 export const executeQuery = (sql, params = []) => {
@@ -16,9 +21,22 @@ export const executeQuery = (sql, params = []) => {
             tx.executeSql(
                 sql,
                 params,
-                (_, result) => resolve(result),
+                (_, result) => {
+                    // Log de Auditoria Automático
+                    const upperSql = sql.toUpperCase().trim();
+                    if (upperSql.startsWith('INSERT') || upperSql.startsWith('UPDATE') || upperSql.startsWith('DELETE')) {
+                        const tableMatch = upperSql.match(/(?:INSERT INTO|UPDATE|FROM)\s+([a-zA-Z0-9_]+)/);
+                        const table = tableMatch ? tableMatch[1] : 'UNKNOWN';
+                        const action = upperSql.startsWith('INSERT') ? 'INSERT' : upperSql.startsWith('UPDATE') ? 'UPDATE' : 'DELETE';
+                        
+                        tx.executeSql(
+                            'INSERT INTO audit_logs (usuario_uuid, acao, tabela, detalhes, data) VALUES (?, ?, ?, ?, ?)',
+                            [currentUserUuid, action, table, `SQL: ${sql.substring(0, 100)}...`, new Date().toISOString()]
+                        );
+                    }
+                    resolve(result);
+                },
                 (_, error) => {
-                    // Silenciando o RedBox do React Native p/ erros triviais de Schema (Duplicate Column)
                     if (__DEV__) {
                         console.log('⚠️ Aviso SQL Interno:', sql, error.message);
                     }
@@ -102,6 +120,7 @@ const createTables = async () => {
                 cultura TEXT,
                 data TEXT NOT NULL,
                 observacao TEXT,
+                fornecedor_uuid TEXT,
                 last_updated TEXT NOT NULL,
                 sync_status INTEGER DEFAULT 0
             );`,
@@ -199,6 +218,107 @@ const createTables = async () => {
                 sync_status INTEGER DEFAULT 0,
                 FOREIGN KEY(produto_pai_uuid) REFERENCES cadastro(uuid) ON DELETE CASCADE,
                 FOREIGN KEY(item_filho_uuid) REFERENCES cadastro(uuid) ON DELETE CASCADE
+            );`,
+            `CREATE TABLE IF NOT EXISTS talhoes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                nome TEXT NOT NULL,
+                area_ha REAL,
+                cultura_id TEXT,
+                status TEXT DEFAULT 'ATIVO',
+                observacao TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS fornecedores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                nome TEXT NOT NULL,
+                contato TEXT,
+                telefone TEXT,
+                email TEXT,
+                observacao TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS irrigacao (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                talhao_uuid TEXT,
+                turno TEXT,
+                duracao_min INTEGER,
+                volumetria_m3 REAL,
+                status TEXT DEFAULT 'CONCLUIDO',
+                data TEXT NOT NULL,
+                observacao TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS financeiro_transacoes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                tipo TEXT NOT NULL, -- 'PAGAR' ou 'RECEBER'
+                descricao TEXT NOT NULL,
+                valor REAL NOT NULL,
+                vencimento TEXT NOT NULL,
+                data_pagamento TEXT,
+                status TEXT DEFAULT 'PENDENTE', -- 'PENDENTE', 'PAGO', 'ATRASADO', 'CANCELADO'
+                categoria TEXT,
+                origem_uuid TEXT, -- Link para uuid de Compra ou Venda
+                entidade_nome TEXT, -- Nome do Fornecedor ou Cliente
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS fertirrigacao (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                talhao_uuid TEXT NOT NULL,
+                formula TEXT, -- Mistura/Receita
+                volume_agua_l REAL,
+                dosagem_insumo_kg REAL,
+                data TEXT NOT NULL,
+                status TEXT DEFAULT 'CONCLUIDO',
+                observacao TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS aplicacoes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                talhao_uuid TEXT NOT NULL,
+                produto_nome TEXT NOT NULL,
+                praga_alvo TEXT,
+                dose_ha REAL,
+                volume_calda_l REAL,
+                data TEXT NOT NULL,
+                carencia_dias INTEGER, -- Dias de carência
+                data_liberacao TEXT, -- Data calculada para colheita segura
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS equipes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                nome TEXT NOT NULL,
+                cargo TEXT NOT NULL, -- 'GERENTE', 'CAPATAZ', 'OPERADOR'
+                documento TEXT,
+                status TEXT DEFAULT 'ATIVO',
+                last_updated TEXT NOT NULL,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS audit_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                usuario_uuid TEXT,
+                acao TEXT NOT NULL, -- 'INSERT', 'UPDATE', 'DELETE'
+                tabela TEXT NOT NULL,
+                detalhes TEXT,
+                data TEXT NOT NULL
             );`
         ];
 
@@ -221,6 +341,12 @@ const createTables = async () => {
             await executeQuery('ALTER TABLE cadastro ADD COLUMN estocavel INTEGER DEFAULT 1');
             await executeQuery('ALTER TABLE cadastro ADD COLUMN vendavel INTEGER DEFAULT 1');
             console.log('✅ Colunas estocavel/vendavel adicionadas');
+        } catch (e) { }
+
+        // MIGRATION: Compras Fornecedor (v7.1)
+        try {
+            await executeQuery('ALTER TABLE compras ADD COLUMN fornecedor_uuid TEXT');
+            console.log('✅ Coluna fornecedor_uuid adicionada em compras');
         } catch (e) { }
 
         // MIGRATION: Perfil de Usuário (v4.1)
@@ -315,25 +441,6 @@ const createTables = async () => {
             console.log('✅ Tabela planos_adubacao criada/verificada');
         } catch (e) { console.error('Erro table planos_adubacao:', e); }
 
-        // MIGRATION: Adubação (v5.4)
-        try {
-            await executeQuery(`CREATE TABLE IF NOT EXISTS planos_adubacao (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE NOT NULL,
-                nome_plano TEXT NOT NULL,
-                cultura TEXT,
-                tipo_aplicacao TEXT,
-                area_local TEXT,
-                descricao_tecnica TEXT,
-                status TEXT DEFAULT 'PLANEJADO',
-                data_criacao TEXT NOT NULL,
-                data_aplicacao TEXT,
-                anexos_uri TEXT,
-                last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0
-            )`);
-            console.log('✅ Tabela planos_adubacao criada/verificada');
-        } catch (e) { console.error('Erro table planos_adubacao:', e); }
 
         // --- ARQUITETURA PROFISSIONAL MONITORAMENTO v6.0 ---
 
@@ -353,6 +460,7 @@ const createTables = async () => {
                 observacao_usuario TEXT,
                 status TEXT DEFAULT 'RASCUNHO', -- RASCUNHO / CONFIRMADO
                 nivel_confianca TEXT DEFAULT 'TÉCNICO', -- INFORMATIVO / TÉCNICO / VALIDADO
+                geoloc TEXT, -- Latitude,Longitude
                 criado_em TEXT NOT NULL,
                 sync_status INTEGER DEFAULT 0,
                 last_updated TEXT NOT NULL
@@ -508,6 +616,14 @@ const createTables = async () => {
                 is_deleted INTEGER DEFAULT 0,
                 FOREIGN KEY(category_id) REFERENCES cost_categories(id)
             )`);
+            console.log('✅ Tabelas de Custos V8.0 verificadas');
+        } catch (e) { }
+
+        // MIGRATION: Monitoramento Geoloc (v7.2)
+        try {
+            await executeQuery('ALTER TABLE monitoramento_entidade ADD COLUMN geoloc TEXT');
+            console.log('✅ Coluna geoloc adicionada em monitoramento_entidade');
+        } catch (e) { }
 
             // Seed das categorias padrão
             const countCat = await executeQuery('SELECT COUNT(*) as c FROM cost_categories');
@@ -546,6 +662,22 @@ const createTables = async () => {
                 is_deleted INTEGER DEFAULT 0
             )`);
             console.log('✅ Tabela caderno_notas verificada/criada');
+        } catch (e) { }
+
+        // MIGRATION: Sync Support for Legacy Tables (v8.2)
+        try {
+            await executeQuery('ALTER TABLE usuarios ADD COLUMN uuid TEXT');
+            await executeQuery('ALTER TABLE usuarios ADD COLUMN sync_status INTEGER DEFAULT 0');
+        } catch (e) { }
+
+        try {
+            await executeQuery('ALTER TABLE estoque ADD COLUMN uuid TEXT');
+            await executeQuery('ALTER TABLE estoque ADD COLUMN sync_status INTEGER DEFAULT 0');
+        } catch (e) { }
+
+        try {
+            await executeQuery('ALTER TABLE app_settings ADD COLUMN usd_rate REAL DEFAULT 5.0');
+            console.log('✅ Coluna usd_rate adicionada');
         } catch (e) { }
 
     } catch (error) {
@@ -628,6 +760,26 @@ export const getPlanosAdubacao = async () => {
 
 export const deletePlanoAdubacao = async (uuid) => {
     await executeQuery('DELETE FROM planos_adubacao WHERE uuid = ?', [uuid]);
+};
+
+// --- CADERNO DE NOTAS (v8.1) ---
+
+export const insertCadernoNota = async (d) => {
+    await executeQuery(
+        `INSERT INTO caderno_notas (uuid, observacao, data, last_updated, sync_status) VALUES (?, ?, ?, ?, ?)`,
+        [d.uuid || uuidv4(), up(d.observacao), d.data, new Date().toISOString(), 0]
+    );
+};
+
+export const getCadernoNotas = async () => {
+    const res = await executeQuery('SELECT * FROM caderno_notas WHERE is_deleted = 0 ORDER BY data DESC');
+    const rows = [];
+    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    return rows;
+};
+
+export const deleteCadernoNota = async (uuid) => {
+    await executeQuery('UPDATE caderno_notas SET is_deleted = 1, sync_status = 0 WHERE uuid = ?', [uuid]);
 };
 
 // --- HELPER PARA MAIÚSCULAS ---
@@ -1201,5 +1353,23 @@ export const updateAppSetting = async (column, value) => {
     } catch (error) {
         console.error(`Erro ao atualizar app_setting [${column}]:`, error);
         throw error;
+    }
+};
+
+// --- GENERIC UPSERT FOR SYNC ---
+export const genericUpsert = async (tableName, item) => {
+    try {
+        const columns = Object.keys(item);
+        const placeholders = columns.map(() => '?').join(', ');
+        const setClause = columns.map(col => `${col} = ?`).join(', ');
+        const values = Object.values(item);
+
+        // SQLite doesn't have UPSERT for multiple keys easily, so we use INSERT OR REPLACE 
+        // OR a manual check if uuid exists.
+        // Given we use UUID as unique key:
+        const sql = `INSERT OR REPLACE INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders})`;
+        await executeQuery(sql, values);
+    } catch (e) {
+        console.error(`Upsert Error [${tableName}]:`, e.message);
     }
 };

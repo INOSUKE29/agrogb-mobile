@@ -10,6 +10,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../context/ThemeContext';
 import { useDashboardData } from '../hooks/useDashboardData';
+import SyncService from '../services/SyncService';
 
 // Componentes do Dashboard
 import DashboardHeader from '../components/dashboard/DashboardHeader';
@@ -20,6 +21,7 @@ import SmartAlerts from '../components/dashboard/SmartAlerts';
 import RecentActivities from '../components/dashboard/RecentActivities';
 import SkeletonDashboard from '../components/dashboard/SkeletonDashboard';
 import SidebarDrawer from '../components/SidebarDrawer';
+import ProductionChart from '../components/dashboard/ProductionChart';
 
 export default function HomeScreen({ navigation }) {
     const { theme } = useTheme();
@@ -27,9 +29,12 @@ export default function HomeScreen({ navigation }) {
     
     const [user, setUser] = useState(null);
     const [drawerVisible, setDrawerVisible] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
 
     useEffect(() => {
         loadUser();
+        const unsubscribe = SyncService.subscribe(status => setIsSyncing(status));
+        return () => unsubscribe();
     }, []);
 
     const loadUser = async () => {
@@ -67,6 +72,7 @@ export default function HomeScreen({ navigation }) {
                     propertyName="Fazenda Santa Maria" 
                     onProfilePress={() => setDrawerVisible(true)}
                     onNotifyPress={() => Alert.alert('Notificações', 'Você não tem novas mensagens.')}
+                    isSyncing={isSyncing}
                 />
 
                 {data && (
@@ -80,6 +86,8 @@ export default function HomeScreen({ navigation }) {
                         />
 
                         <QuickActions navigation={navigation} />
+
+                        <ProductionChart data={data.chartData} />
 
                         <KPIGrid kpis={data.kpis} />
 
