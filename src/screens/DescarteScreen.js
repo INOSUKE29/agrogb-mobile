@@ -125,5 +125,3 @@ const styles = StyleSheet.create({
     cancelBtn: { alignSelf: 'center', marginTop: 25, padding: 10 },
     cancelTxt: { fontSize: 12, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1 }
 });
- 1 }
-});
