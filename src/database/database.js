@@ -64,6 +64,7 @@ const createTables = async () => {
         const queries = [
             `CREATE TABLE IF NOT EXISTS usuarios (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE,
                 usuario TEXT UNIQUE NOT NULL,
                 senha TEXT NOT NULL,
                 nivel TEXT DEFAULT 'USUARIO',
@@ -351,10 +352,12 @@ const createTables = async () => {
 
         // MIGRATION: Perfil de Usuário (v4.1)
         try {
+            await executeQuery('ALTER TABLE usuarios ADD COLUMN uuid TEXT');
+            await executeQuery('CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_uuid ON usuarios(uuid)');
             await executeQuery('ALTER TABLE usuarios ADD COLUMN nome_completo TEXT');
             await executeQuery('ALTER TABLE usuarios ADD COLUMN telefone TEXT');
             await executeQuery('ALTER TABLE usuarios ADD COLUMN endereco TEXT');
-            console.log('✅ Colunas de perfil adicionadas');
+            console.log('✅ Colunas de perfil e UUID adicionadas');
         } catch (e) { }
 
         // MIGRATION: Colheita Congelado (v4.1)
@@ -800,13 +803,14 @@ export const getConfig = async (chave) => {
 
 // --- USUÁRIOS ---
 export const insertUsuario = async (u) => {
-    await executeQuery(`INSERT INTO usuarios (usuario, senha, nivel, email, nome_completo, telefone, endereco, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [up(u.usuario), u.senha, up(u.nivel), u.email ? u.email.trim() : null, up(u.nome_completo), u.telefone, up(u.endereco), new Date().toISOString()]);
+    const uuid = u.uuid || uuidv4();
+    await executeQuery(`INSERT INTO usuarios (uuid, usuario, senha, nivel, email, nome_completo, telefone, endereco, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [uuid, up(u.usuario), u.senha, up(u.nivel), u.email ? u.email.trim() : null, up(u.nome_completo), u.telefone, up(u.endereco), new Date().toISOString()]);
 };
 
 export const updateUsuario = async (u) => {
-    await executeQuery(`UPDATE usuarios SET senha = ?, nivel = ?, email = ?, nome_completo = ?, telefone = ?, endereco = ?, last_updated = ? WHERE id = ?`,
-        [u.senha, up(u.nivel), u.email ? u.email.trim() : null, up(u.nome_completo), u.telefone, up(u.endereco), new Date().toISOString(), u.id]);
+    await executeQuery(`UPDATE usuarios SET senha = ?, nivel = ?, email = ?, nome_completo = ?, telefone = ?, endereco = ?, last_updated = ? WHERE uuid = ?`,
+        [u.senha, up(u.nivel), u.email ? u.email.trim() : null, up(u.nome_completo), u.telefone, up(u.endereco), new Date().toISOString(), u.uuid]);
 };
 
 export const getUsuarios = async () => {
@@ -816,8 +820,12 @@ export const getUsuarios = async () => {
     return rows;
 };
 
-export const deleteUsuario = async (id) => {
-    await executeQuery('UPDATE usuarios SET is_deleted = 1 WHERE id = ?', [id]);
+export const deleteUsuario = async (identifier) => {
+    if (typeof identifier === 'string' && identifier.length > 10) {
+        await executeQuery('UPDATE usuarios SET is_deleted = 1 WHERE uuid = ?', [identifier]);
+    } else {
+        await executeQuery('UPDATE usuarios SET is_deleted = 1 WHERE id = ?', [identifier]);
+    }
 };
 
 // --- OPERAÇÕES (TODAS COM up()) ---

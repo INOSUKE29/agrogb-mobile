@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { WeatherService } from '../services/weatherService';
+import { WeatherService } from '../services/WeatherService';
 
 const WeatherContext = createContext();
 

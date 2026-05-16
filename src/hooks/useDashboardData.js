@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { DashboardService } from '../services/dashboardService';
+import { DashboardService } from '../services/DashboardService';
 
 /**
  * Hook para gerenciar dados do Dashboard Executivo

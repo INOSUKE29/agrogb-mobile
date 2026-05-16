@@ -12,8 +12,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { useTheme } from '../context/ThemeContext';
-import { FinanceService } from '../services/financeService';
-import { ExportService } from '../services/exportService';
+import { FinanceService } from '../services/FinanceService';
+import { ExportService } from '../services/ExportService';
 import Card from '../components/common/Card';
 
 const { width } = Dimensions.get('window');

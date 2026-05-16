@@ -42,20 +42,35 @@ export default function RegisterScreen({ navigation }) {
 
             if (authError) throw authError;
 
-            // 2. Criar Perfil na Tabela profiles
-            const { error: profileError } = await supabase.from('profiles').insert([{
-                id: authData.user.id,
-                full_name: form.fullName,
-                birth_year: parseInt(form.birthYear),
-                email: form.email,
-                phone: form.phone,
-                username: form.username || null,
-                farm_name: form.farmName || null
+            // 2. Criar Perfil na Tabela usuarios do Supabase
+            const { error: profileError } = await supabase.from('usuarios').insert([{
+                uuid: authData.user.id,
+                usuario: form.username || form.email.split('@')[0],
+                senha: form.password, // Recomenda-se hash no backend, mas mantendo paridade com local
+                nivel: 'USUARIO',
+                nome_completo: form.fullName.toUpperCase(),
+                email: form.email.toLowerCase(),
+                telefone: form.phone,
+                endereco: form.farmName ? form.farmName.toUpperCase() : null,
+                last_updated: new Date().toISOString()
             }]);
 
             if (profileError) throw profileError;
 
-            Alert.alert('🚀 Sucesso!', 'Conta criada com sucesso. Verifique seu e-mail para confirmar o cadastro.', [
+            // 3. Salvar localmente para permitir login imediato
+            const { insertUsuario } = require('../database/database');
+            await insertUsuario({
+                uuid: authData.user.id,
+                usuario: form.username || form.email.split('@')[0],
+                senha: form.password,
+                nivel: 'USUARIO',
+                nome_completo: form.fullName,
+                email: form.email,
+                telefone: form.phone,
+                endereco: form.farmName
+            });
+
+            Alert.alert('🚀 Sucesso!', 'Conta criada com sucesso. Bem-vindo ao AgroGB!', [
                 { text: 'FAZER LOGIN', onPress: () => navigation.navigate('Login') }
             ]);
         } catch (error) {

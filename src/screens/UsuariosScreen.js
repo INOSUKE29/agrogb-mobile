@@ -20,6 +20,7 @@ export default function UsuariosScreen({ navigation }) {
 
     // Form States
     const [id, setId] = useState(null);
+    const [uuid, setUuid] = useState(null);
     const [usuario, setUsuario] = useState('');
     const [senha, setSenha] = useState('');
     const [nivel, setNivel] = useState('USUARIO');
@@ -44,6 +45,7 @@ export default function UsuariosScreen({ navigation }) {
     const handleOpenModal = (item = null) => {
         if (item) {
             setId(item.id);
+            setUuid(item.uuid);
             setUsuario(item.usuario);
             setSenha(item.senha);
             setNivel(item.nivel);
@@ -53,6 +55,7 @@ export default function UsuariosScreen({ navigation }) {
             setEmail(item.email || '');
         } else {
             setId(null);
+            setUuid(null);
             setUsuario('');
             setSenha('');
             setNivel('USUARIO');
@@ -68,7 +71,7 @@ export default function UsuariosScreen({ navigation }) {
         if (!usuario.trim() || !senha.trim()) return Alert.alert('Erro', 'Preencha login e senha.');
 
         const dados = {
-            id,
+            uuid,
             usuario: usuario.toUpperCase(),
             senha,
             nivel,
@@ -99,7 +102,7 @@ export default function UsuariosScreen({ navigation }) {
             { text: 'Cancelar', style: 'cancel' },
             {
                 text: 'Excluir Agora', style: 'destructive', onPress: async () => {
-                    await deleteUsuario(item.id);
+                    await deleteUsuario(item.uuid || item.id);
                     loadData();
                 }
             }

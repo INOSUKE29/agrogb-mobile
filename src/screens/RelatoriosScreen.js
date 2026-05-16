@@ -4,7 +4,7 @@ import { executeQuery } from '../database/database';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { generatePDFAgro } from '../services/ReportService';
-import { ExportService } from '../services/exportService';
+import { ExportService } from '../services/ExportService';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 
