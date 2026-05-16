@@ -28,7 +28,7 @@ export default function SplashScreen({ navigation }) {
         <View style={styles.container}>
             <StatusBar style="light" transparent />
             <ImageBackground 
-                source={require('../../assets/splash_premium.png')} 
+                source={require('../../assets/splash_premium.jpg')} 
                 style={styles.background}
                 resizeMode="cover"
             >
