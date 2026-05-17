@@ -10,10 +10,23 @@ export const DashboardService = {
      */
     getDashboardData: async (propertyId = 'all', period = 'month') => {
         try {
-            // Data de início (simplificada: últimos 30 dias para "mês")
             const date = new Date();
-            date.setDate(date.getDate() - 30);
-            const startDate = date.toISOString().split('T')[0];
+            let startDate;
+
+            if (period === 'month') {
+                date.setDate(date.getDate() - 30);
+                startDate = date.toISOString().split('T')[0];
+            } else if (period === 'year') {
+                date.setFullYear(date.getFullYear() - 1);
+                startDate = date.toISOString().split('T')[0];
+            } else if (period === 'safra') {
+                // Safra padrão: últimos 6 meses (exemplo)
+                date.setMonth(date.getMonth() - 6);
+                startDate = date.toISOString().split('T')[0];
+            } else {
+                // All time (fallback)
+                startDate = '1970-01-01';
+            }
             
             // 1. FINANCEIRO (Receitas de Vendas)
             const resVendas = await executeQuery(

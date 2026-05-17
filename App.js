@@ -42,6 +42,16 @@ import FertirrigacaoScreen from './src/screens/FertirrigacaoScreen';
 import AplicacoesScreen from './src/screens/AplicacoesScreen';
 import EquipesScreen from './src/screens/EquipesScreen';
 import BIRelatoriosAvancadosScreen from './src/screens/BIRelatoriosAvancadosScreen';
+import PlanoAdubacaoScreen from './src/screens/PlanoAdubacaoScreen';
+import RecipeFormScreen from './src/screens/RecipeFormScreen';
+import EncomendasScreen from './src/screens/EncomendasScreen';
+import NovaEncomendaScreen from './src/screens/NovaEncomendaScreen';
+import IntelligenceScreen from './src/screens/IntelligenceScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
+import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
+import RecoverScreen from './src/screens/RecoverScreen';
+import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
+import VerifyCodeScreen from './src/screens/VerifyCodeScreen';
 import { SyncProvider } from './src/context/SyncContext';
 
 import ErrorBoundary from './src/components/common/ErrorBoundary';
@@ -51,9 +61,13 @@ import { AuthProvider } from './src/context/AuthContext';
 
 const Stack = createStackNavigator();
 
+import AutoSyncService from './src/services/AutoSyncService';
+
 export default function App() {
     useEffect(() => {
-        initDB().catch(console.error);
+        initDB().then(() => {
+            AutoSyncService.start();
+        }).catch(console.error);
     }, []);
 
     return (
@@ -106,6 +120,16 @@ export default function App() {
                                     <Stack.Screen name="CentroCustos" component={CentroCustosScreen} />
                                     <Stack.Screen name="Equipes" component={EquipesScreen} />
                                     <Stack.Screen name="BIRelatoriosAvancados" component={BIRelatoriosAvancadosScreen} />
+                                    <Stack.Screen name="PlanoAdubacao" component={PlanoAdubacaoScreen} />
+                                    <Stack.Screen name="RecipeForm" component={RecipeFormScreen} />
+                                    <Stack.Screen name="Encomendas" component={EncomendasScreen} />
+                                    <Stack.Screen name="NovaEncomenda" component={NovaEncomendaScreen} />
+                                    <Stack.Screen name="Intelligence" component={IntelligenceScreen} />
+                                    <Stack.Screen name="Settings" component={SettingsScreen} />
+                                    <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+                                    <Stack.Screen name="Recover" component={RecoverScreen} />
+                                    <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+                                    <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
                                 </Stack.Navigator>
                             </NavigationContainer>
                         </WeatherProvider>

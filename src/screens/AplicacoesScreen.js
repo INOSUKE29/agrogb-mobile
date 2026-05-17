@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, FlatList, StatusBar, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
@@ -12,6 +12,8 @@ import AgroInput from '../components/common/AgroInput';
 
 export default function AplicacoesScreen({ navigation }) {
     const { theme } = useTheme();
+    const activeColors = theme?.colors || {};
+    
     const [talhoes, setTalhoes] = useState([]);
     const [history, setHistory] = useState([]);
     const [modalTalhao, setModalTalhao] = useState(false);
@@ -73,28 +75,40 @@ export default function AplicacoesScreen({ navigation }) {
         } catch (e) { Alert.alert('Erro', 'Falha ao salvar aplicação.'); }
     };
 
+    const isDark = theme?.theme_mode === 'dark';
+    const textColor = activeColors.text || '#1E293B';
+    const textMutedColor = activeColors.textMuted || '#64748B';
+    const cardBg = activeColors.card || '#FFFFFF';
+    const borderCol = activeColors.border || 'rgba(0,0,0,0.1)';
+
     return (
-        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
-            <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.header}>
-                <View style={styles.headerTop}>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <Ionicons name="arrow-back" size={24} color="#FFF" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>APLICAÇÃO DE DEFENSIVOS</Text>
-                    <View style={{ width: 24 }} />
-                </View>
-                <Text style={styles.headerSub}>Controle fitossanitário e carência de colheita</Text>
+        <View style={[styles.container, { backgroundColor: activeColors.bg || '#F3F4F6' }]}>
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+            <LinearGradient colors={[activeColors.warning || '#F59E0B', activeColors.warningDeep || '#D97706']} style={styles.header}>
+                <SafeAreaView>
+                    <View style={styles.headerTop}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
+                            <Ionicons name="arrow-back" size={22} color="#FFF" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>APLICAÇÃO DE DEFENSIVOS</Text>
+                        <View style={{ width: 38 }} />
+                    </View>
+                    <Text style={styles.headerSub}>Controle fitossanitário e carência de colheita</Text>
+                </SafeAreaView>
             </LinearGradient>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
                 <Card style={styles.formCard}>
-                    <Text style={styles.sectionTitle}>NOVA APLICAÇÃO</Text>
+                    <Text style={[styles.sectionTitle, { color: textMutedColor }]}>NOVA APLICAÇÃO</Text>
                     
-                    <TouchableOpacity style={styles.selectBtn} onPress={() => setModalTalhao(true)}>
-                        <Text style={[styles.selectText, !form.talhao_nome && { color: '#9CA3AF' }]}>
+                    <TouchableOpacity 
+                        style={[styles.selectBtn, { backgroundColor: cardBg, borderColor: borderCol, borderWidth: isDark ? 1 : 1 }]} 
+                        onPress={() => setModalTalhao(true)}
+                    >
+                        <Text style={[styles.selectText, { color: form.talhao_nome ? textColor : textMutedColor }]}>
                             {form.talhao_nome || "SELECIONAR TALHÃO / ÁREA..."}
                         </Text>
-                        <Ionicons name="location-outline" size={20} color="#6B7280" />
+                        <Ionicons name="location-outline" size={20} color={textMutedColor} />
                     </TouchableOpacity>
 
                     <AgroInput label="PRODUTO / DEFENSIVO" value={form.produto_nome} onChangeText={t => setForm({...form, produto_nome: t})} />
@@ -112,20 +126,20 @@ export default function AplicacoesScreen({ navigation }) {
                     <AgroButton title="REGISTRAR APLICAÇÃO" onPress={handleSave} />
                 </Card>
 
-                <Text style={styles.historyTitle}>HISTÓRICO DE MANEJO</Text>
+                <Text style={[styles.historyTitle, { color: textColor }]}>HISTÓRICO DE MANEJO</Text>
                 {history.map(item => (
                     <Card key={item.uuid} style={styles.histCard}>
                         <View style={styles.histRow}>
-                            <View style={styles.histIcon}>
-                                <Ionicons name="shield-checkmark-outline" size={20} color="#F59E0B" />
+                            <View style={[styles.histIcon, { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.12)' : '#FFF7ED' }]}>
+                                <Ionicons name="shield-checkmark-outline" size={20} color={activeColors.warning || '#F59E0B'} />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.histTalhao}>{item.talhao_nome}</Text>
-                                <Text style={styles.histProd}>{item.produto_nome}</Text>
-                                <Text style={styles.histCarencia}>Carência: {item.carencia_dias} dias • Liberação: {item.data_liberacao.split('-').reverse().join('/')}</Text>
+                                <Text style={[styles.histTalhao, { color: textColor }]}>{item.talhao_nome}</Text>
+                                <Text style={[styles.histProd, { color: activeColors.warning || '#D97706' }]}>{item.produto_nome}</Text>
+                                <Text style={[styles.histCarencia, { color: textMutedColor }]}>Carência: {item.carencia_dias} dias • Liberação: {item.data_liberacao.split('-').reverse().join('/')}</Text>
                             </View>
-                            <View style={styles.statusBadge}>
-                                <Text style={styles.statusText}>ATIVO</Text>
+                            <View style={[styles.statusBadge, { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.12)' : '#FEF3C7' }]}>
+                                <Text style={[styles.statusText, { color: isDark ? '#FBBF24' : '#D97706' }]}>ATIVO</Text>
                             </View>
                         </View>
                     </Card>
@@ -134,18 +148,18 @@ export default function AplicacoesScreen({ navigation }) {
 
             <Modal visible={modalTalhao} animationType="fade" transparent>
                 <View style={styles.overlay}>
-                    <View style={styles.modal}>
-                        <Text style={styles.modalTitle}>SELECIONAR ÁREA</Text>
+                    <View style={[styles.modal, { backgroundColor: cardBg }]}>
+                        <Text style={[styles.modalTitle, { color: textColor }]}>SELECIONAR ÁREA</Text>
                         <FlatList
                             data={talhoes}
                             keyExtractor={i => i.uuid}
                             renderItem={({ item }) => (
                                 <TouchableOpacity 
-                                    style={styles.talhaoItem} 
+                                    style={[styles.talhaoItem, { borderBottomColor: borderCol }]} 
                                     onPress={() => { setForm({...form, talhao_uuid: item.uuid, talhao_nome: item.nome}); setModalTalhao(false); }}
                                 >
-                                    <Text style={styles.talhaoText}>{item.nome}</Text>
-                                    <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
+                                    <Text style={[styles.talhaoText, { color: textColor }]}>{item.nome}</Text>
+                                    <Ionicons name="chevron-forward" size={16} color={textMutedColor} />
                                 </TouchableOpacity>
                             )}
                         />
@@ -159,27 +173,35 @@ export default function AplicacoesScreen({ navigation }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    header: { paddingTop: 60, paddingBottom: 30, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    header: { paddingTop: 40, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
     headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
     headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
-    headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '600', textAlign: 'center' },
+    headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: '600', textAlign: 'center' },
+    iconBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     formCard: { padding: 20 },
-    sectionTitle: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1.5, marginBottom: 15 },
-    selectBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 15, padding: 15, marginBottom: 15 },
-    selectText: { fontSize: 13, fontWeight: '800', color: '#1F2937' },
+    sectionTitle: { fontSize: 10, fontWeight: '900', letterSpacing: 1.5, marginBottom: 15 },
+    selectBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderRadius: 15, padding: 15, marginBottom: 15 },
+    selectText: { fontSize: 13, fontWeight: '800' },
     row: { flexDirection: 'row' },
-    historyTitle: { fontSize: 12, fontWeight: '900', color: '#6B7280', letterSpacing: 1, marginTop: 25, marginBottom: 15 },
+    historyTitle: { fontSize: 12, fontWeight: '900', letterSpacing: 1, marginTop: 25, marginBottom: 15 },
     histCard: { marginBottom: 10, padding: 15 },
     histRow: { flexDirection: 'row', alignItems: 'center' },
-    histIcon: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF7ED', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-    histTalhao: { fontSize: 14, fontWeight: 'bold', color: '#1F2937' },
-    histProd: { fontSize: 11, color: '#D97706', fontWeight: '900', marginTop: 2 },
-    histCarencia: { fontSize: 10, color: '#6B7280', marginTop: 2 },
-    statusBadge: { backgroundColor: '#FEF3C7', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-    statusText: { fontSize: 9, fontWeight: '900', color: '#D97706' },
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 25 },
-    modal: { backgroundColor: '#FFF', borderRadius: 25, padding: 25, maxHeight: '80%' },
-    modalTitle: { fontSize: 16, fontWeight: '900', color: '#1F2937', marginBottom: 20, textAlign: 'center' },
-    talhaoItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-    talhaoText: { fontSize: 14, fontWeight: '800', color: '#374151' }
+    histIcon: { width: 40, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    histTalhao: { fontSize: 14, fontWeight: 'bold' },
+    histProd: { fontSize: 11, fontWeight: '900', marginTop: 2 },
+    histCarencia: { fontSize: 10, marginTop: 2 },
+    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+    statusText: { fontSize: 9, fontWeight: '900' },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 25 },
+    modal: { borderRadius: 25, padding: 25, maxHeight: '80%' },
+    modalTitle: { fontSize: 16, fontWeight: '900', marginBottom: 20, textAlign: 'center' },
+    talhaoItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1 },
+    talhaoText: { fontSize: 14, fontWeight: '800' }
 });

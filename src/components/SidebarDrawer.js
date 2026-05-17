@@ -138,20 +138,35 @@ export default function SidebarDrawer({ visible, onClose }) {
 
                     {/* Menu Items */}
                     <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-                        <Text style={styles.sectionTitle}>NAVEGAÇÃO</Text>
+                        <Text style={styles.sectionTitle}>OPERACIONAL</Text>
                         <MenuItem icon="home-outline" label="Painel / Início" screen="Home" />
+                        <MenuItem icon="leaf-outline" label="Plantio" screen="Plantio" />
                         <MenuItem icon="camera-outline" label="Monitoramento" screen="Monitoramento" />
                         <MenuItem icon="water-outline" label="Irrigação" screen="Irrigacao" />
                         <MenuItem icon="flask-outline" label="Fertirrigação" screen="Fertirrigacao" />
+                        <MenuItem icon="color-filter-outline" label="Adubação" screen="AdubacaoList" />
                         <MenuItem icon="shield-checkmark-outline" label="Aplicações" screen="Aplicacoes" />
+                        <MenuItem icon="basket-outline" label="Colheita" screen="Colheita" />
+                        <MenuItem icon="book-outline" label="Caderno de Campo" screen="CadernoCampo" />
+
+                        <View style={styles.divider} />
+                        
+                        <Text style={styles.sectionTitle}>ADMINISTRATIVO</Text>
                         <MenuItem icon="cube-outline" label="Estoque" screen="Estoque" />
                         <MenuItem icon="cart-outline" label="Compras" screen="Compras" />
+                        <MenuItem icon="barcode-outline" label="Vendas" screen="Vendas" />
                         <MenuItem icon="people-outline" label="Clientes" screen="Clientes" />
-                        <MenuItem icon="people-circle-outline" label="Equipes" screen="Equipes" />
                         <MenuItem icon="business-outline" label="Fornecedores" screen="Fornecedores" />
                         <MenuItem icon="map-outline" label="Talhões" screen="Talhoes" />
+                        <MenuItem icon="car-outline" label="Frota / Máquinas" screen="Frota" />
+                        <MenuItem icon="people-circle-outline" label="Equipes" screen="Equipes" />
+
+                        <View style={styles.divider} />
+
+                        <Text style={styles.sectionTitle}>FINANCEIRO</Text>
                         <MenuItem icon="cash-outline" label="Contas Pagar/Rec" screen="FinanceiroLancamentos" />
                         <MenuItem icon="stats-chart-outline" label="Financeiro Pro" screen="FinanceiroDashboard" />
+                        <MenuItem icon="document-text-outline" label="Relatórios / PDF" screen="Relatorios" />
 
                         <View style={styles.divider} />
 
@@ -159,7 +174,8 @@ export default function SidebarDrawer({ visible, onClose }) {
                         <MenuItem icon="person-outline" label="Meu Perfil" screen="Profile" />
                         <MenuItem icon="bar-chart-outline" label="BI Avançado" screen="BIRelatoriosAvancados" />
                         <MenuItem icon="sync-outline" label="Sincronizar" screen="Sync" />
-                        <MenuItem icon="information-circle-outline" label="Sobre" screen="Help" />
+                        <MenuItem icon="shield-outline" label="Auditoria Logs" screen="Audit" />
+                        <MenuItem icon="settings-outline" label="Configurações" screen="Settings" />
                     </ScrollView>
 
                     {/* Footer: Logout */}

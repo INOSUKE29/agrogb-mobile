@@ -1,52 +1,64 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../../styles/theme';
+import { useTheme } from '../../context/ThemeContext';
 import Card from '../common/Card';
 
 export default function FinancialSummary({ revenue, expenses, netResult, trend, trendType }) {
+    const { theme } = useTheme();
+    const activeColors = theme?.colors || {};
+
     const formatCurrency = (val) => {
         return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     };
 
+    // Estilo da tag de tendência adaptativa
+    const trendBg = trendType === 'up' 
+        ? 'rgba(16, 185, 129, 0.15)' 
+        : 'rgba(239, 68, 68, 0.15)';
+    
+    const trendColor = trendType === 'up' 
+        ? '#10B981' 
+        : '#F87171';
+
     return (
         <Card style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>RESUMO FINANCEIRO</Text>
-                <View style={[styles.trendBadge, { backgroundColor: trendType === 'up' ? '#D1FAE5' : '#FEE2E2' }]}>
+                <Text style={[styles.title, { color: activeColors.textMuted || '#6B7280' }]}>RESUMO FINANCEIRO</Text>
+                <View style={[styles.trendBadge, { backgroundColor: trendBg }]}>
                     <Ionicons 
                         name={trendType === 'up' ? 'arrow-up' : 'arrow-down'} 
                         size={12} 
-                        color={trendType === 'up' ? '#059669' : '#B91C1C'} 
+                        color={trendColor} 
                     />
-                    <Text style={[styles.trendText, { color: trendType === 'up' ? '#059669' : '#B91C1C' }]}>
+                    <Text style={[styles.trendText, { color: trendColor }]}>
                         {trend}%
                     </Text>
                 </View>
             </View>
 
             <View style={styles.mainValueContainer}>
-                <Text style={styles.mainLabel}>RESULTADO LÍQUIDO</Text>
-                <Text style={[styles.mainValue, { color: netResult >= 0 ? '#10B981' : '#EF4444' }]}>
+                <Text style={[styles.mainLabel, { color: activeColors.textMuted || '#9CA3AF' }]}>RESULTADO LÍQUIDO</Text>
+                <Text style={[styles.mainValue, { color: netResult >= 0 ? (activeColors.success || '#10B981') : (activeColors.error || '#EF4444') }]}>
                     {formatCurrency(netResult)}
                 </Text>
             </View>
 
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: activeColors.border || '#F3F4F6' }]}/ >
 
             <View style={styles.detailsRow}>
                 <View style={styles.detailItem}>
-                    <View style={[styles.dot, { backgroundColor: '#10B981' }]} />
+                    <View style={[styles.dot, { backgroundColor: activeColors.success || '#10B981' }]} />
                     <View>
-                        <Text style={styles.detailLabel}>RECEITAS</Text>
-                        <Text style={styles.detailValue}>{formatCurrency(revenue)}</Text>
+                        <Text style={[styles.detailLabel, { color: activeColors.textMuted || '#9CA3AF' }]}>RECEITAS</Text>
+                        <Text style={[styles.detailValue, { color: activeColors.text || '#374151' }]}>{formatCurrency(revenue)}</Text>
                     </View>
                 </View>
                 <View style={styles.detailItem}>
-                    <View style={[styles.dot, { backgroundColor: '#F87171' }]} />
+                    <View style={[styles.dot, { backgroundColor: activeColors.error || '#F87171' }]} />
                     <View>
-                        <Text style={styles.detailLabel}>DESPESAS</Text>
-                        <Text style={styles.detailValue}>{formatCurrency(expenses)}</Text>
+                        <Text style={[styles.detailLabel, { color: activeColors.textMuted || '#9CA3AF' }]}>DESPESAS</Text>
+                        <Text style={[styles.detailValue, { color: activeColors.text || '#374151' }]}>{formatCurrency(expenses)}</Text>
                     </View>
                 </View>
             </View>
@@ -68,7 +80,6 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 10,
         fontWeight: '900',
-        color: '#6B7280',
         letterSpacing: 1,
     },
     trendBadge: {
@@ -88,7 +99,6 @@ const styles = StyleSheet.create({
     },
     mainLabel: {
         fontSize: 11,
-        color: '#9CA3AF',
         fontWeight: 'bold',
         marginBottom: 4,
     },
@@ -98,7 +108,6 @@ const styles = StyleSheet.create({
     },
     divider: {
         height: 1,
-        backgroundColor: '#F3F4F6',
         marginBottom: 15,
     },
     detailsRow: {
@@ -119,12 +128,10 @@ const styles = StyleSheet.create({
     detailLabel: {
         fontSize: 9,
         fontWeight: 'bold',
-        color: '#9CA3AF',
         marginBottom: 2,
     },
     detailValue: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#374151',
     }
 });

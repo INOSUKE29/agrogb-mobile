@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Dimensions, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Dimensions, ScrollView, StatusBar, SafeAreaView } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertCliente, getClientes, deleteCliente } from '../database/database';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,6 +15,8 @@ const { width } = Dimensions.get('window');
 
 export default function ClientesScreen({ navigation }) {
     const { theme } = useTheme();
+    const activeColors = theme?.colors || {};
+    
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
@@ -75,21 +77,30 @@ export default function ClientesScreen({ navigation }) {
         ]);
     };
 
+    const isDark = theme?.theme_mode === 'dark';
+    const textColor = activeColors.text || '#1E293B';
+    const textMutedColor = activeColors.textMuted || '#64748B';
+    const cardBg = activeColors.card || '#FFFFFF';
+    const borderCol = activeColors.border || 'rgba(0,0,0,0.1)';
+
     return (
-        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
-            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#064E3B']} style={styles.header}>
-                <View style={styles.headerTop}>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <Ionicons name="arrow-back" size={24} color="#FFF" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>CLIENTES E PARCEIROS</Text>
-                    <View style={{ width: 24 }} />
-                </View>
-                <Text style={styles.headerSub}>Gestão Inteligente de Contatos Comerciais</Text>
+        <View style={[styles.container, { backgroundColor: activeColors.bg || '#F3F4F6' }]}>
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+            <LinearGradient colors={[activeColors.primary || '#10B981', activeColors.primaryDeep || '#064E3B']} style={styles.header}>
+                <SafeAreaView>
+                    <View style={styles.headerTop}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
+                            <Ionicons name="arrow-back" size={22} color="#FFF" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>CLIENTES E PARCEIROS</Text>
+                        <View style={{ width: 38 }} />
+                    </View>
+                    <Text style={styles.headerSub}>Gestão Inteligente de Contatos Comerciais</Text>
+                </SafeAreaView>
             </LinearGradient>
 
             {loading ? (
-                <View style={styles.center}><ActivityIndicator size="large" color={theme?.colors?.primary} /></View>
+                <View style={styles.center}><ActivityIndicator size="large" color={activeColors.primary} /></View>
             ) : (
                 <FlatList
                     data={items}
@@ -99,42 +110,45 @@ export default function ClientesScreen({ navigation }) {
                     renderItem={({ item }) => (
                         <Card style={styles.itemCard} noPadding onPress={() => Alert.alert('Info', `Detalhes de ${item.nome}`)}>
                             <View style={styles.cardInner}>
-                                <View style={[styles.avatarBox, { backgroundColor: (theme?.colors?.primary || '#10B981') + '15' }]}>
-                                    <Text style={[styles.avatarTxt, { color: theme?.colors?.primary }]}>{item.nome.charAt(0)}</Text>
+                                <View style={[styles.avatarBox, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.08)' }]}>
+                                    <Text style={[styles.avatarTxt, { color: activeColors.primary }]}>{item.nome.charAt(0)}</Text>
                                 </View>
                                 <View style={styles.cardBody}>
-                                    <Text style={styles.cardTitle}>{item.nome}</Text>
+                                    <Text style={[styles.cardTitle, { color: textColor }]}>{item.nome}</Text>
                                     <View style={styles.cardInfoRow}>
-                                        <Ionicons name="call-outline" size={12} color="#9CA3AF" />
-                                        <Text style={styles.cardSub}>{item.telefone || 'SEM TELEFONE'}</Text>
+                                        <Ionicons name="call-outline" size={12} color={textMutedColor} />
+                                        <Text style={[styles.cardSub, { color: textMutedColor }]}>{item.telefone || 'SEM TELEFONE'}</Text>
                                     </View>
                                 </View>
-                                <TouchableOpacity onPress={() => handleDelete(item)} style={styles.deleteBtn}>
-                                    <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                <TouchableOpacity 
+                                    onPress={() => handleDelete(item)} 
+                                    style={[styles.deleteBtn, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2' }]}
+                                >
+                                    <Ionicons name="trash-outline" size={20} color={activeColors.error || '#EF4444'} />
                                 </TouchableOpacity>
                             </View>
                         </Card>
                     )}
                     ListEmptyComponent={
                         <View style={styles.emptyBox}>
-                            <MaterialCommunityIcons name="account-group-outline" size={60} color="#D1D5DB" />
-                            <Text style={styles.emptyTxt}>Nenhum parceiro comercial cadastrado.</Text>
+                            <MaterialCommunityIcons name="account-group-outline" size={60} color={textMutedColor} style={{ opacity: 0.5 }} />
+                            <Text style={[styles.emptyTxt, { color: textMutedColor }]}>Nenhum parceiro comercial cadastrado.</Text>
                         </View>
                     }
                 />
             )}
 
-            <TouchableOpacity style={[styles.fab, { backgroundColor: theme?.colors?.primary || '#10B981' }]} onPress={() => setModalVisible(true)}>
+            <TouchableOpacity style={[styles.fab, { backgroundColor: activeColors.primary || '#10B981' }]} onPress={() => setModalVisible(true)}>
                 <Ionicons name="add" size={32} color="#FFF" />
             </TouchableOpacity>
 
             <Modal visible={modalVisible} transparent animationType="slide">
                 <View style={styles.overlay}>
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>NOVO PARCEIRO</Text>
+                            <Text style={[styles.modalTitle, { color: textColor }]}>NOVO PARCEIRO</Text>
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <Ionicons name="close-circle" size={30} color="#9CA3AF" />
+                                <Ionicons name="close-circle" size={30} color={textMutedColor} />
                             </TouchableOpacity>
                         </View>
 
@@ -157,26 +171,34 @@ export default function ClientesScreen({ navigation }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    header: { paddingTop: 60, paddingBottom: 30, paddingHorizontal: 25, borderBottomLeftRadius: 35, borderBottomRightRadius: 35 },
+    header: { paddingTop: 40, paddingBottom: 25, paddingHorizontal: 25, borderBottomLeftRadius: 35, borderBottomRightRadius: 35 },
     headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
     headerTitle: { fontSize: 13, fontWeight: '900', color: '#FFF', letterSpacing: 1.5 },
-    headerSub: { fontSize: 16, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
+    headerSub: { fontSize: 16, color: 'rgba(255,255,255,0.85)', fontWeight: '600' },
+    iconBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     list: { padding: 20, paddingBottom: 100 },
     itemCard: { marginBottom: 12 },
     cardInner: { flexDirection: 'row', alignItems: 'center', padding: 15 },
     avatarBox: { width: 50, height: 50, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
     avatarTxt: { fontSize: 22, fontWeight: '900' },
     cardBody: { flex: 1 },
-    cardTitle: { fontSize: 16, fontWeight: '800', color: '#1F2937' },
+    cardTitle: { fontSize: 16, fontWeight: '800' },
     cardInfoRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
-    cardSub: { fontSize: 12, color: '#9CA3AF', fontWeight: 'bold' },
-    deleteBtn: { padding: 10, backgroundColor: '#FEF2F2', borderRadius: 12 },
+    cardSub: { fontSize: 12, fontWeight: 'bold' },
+    deleteBtn: { padding: 10, borderRadius: 12 },
     fab: { position: 'absolute', bottom: 30, right: 25, width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', elevation: 8 },
     overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-    modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 35, borderTopRightRadius: 35, padding: 25, height: '80%' },
+    modalContent: { borderTopLeftRadius: 35, borderTopRightRadius: 35, padding: 25, height: '80%' },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
-    modalTitle: { fontSize: 12, fontWeight: '900', color: '#111827', letterSpacing: 1.5 },
+    modalTitle: { fontSize: 12, fontWeight: '900', letterSpacing: 1.5 },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     emptyBox: { alignItems: 'center', marginTop: 80, opacity: 0.4 },
-    emptyTxt: { color: '#6B7280', marginTop: 15, fontWeight: '700', fontSize: 14 }
+    emptyTxt: { marginTop: 15, fontWeight: '700', fontSize: 14 }
 });

@@ -1,10 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../../styles/theme';
+import { useTheme } from '../../context/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
-export default function DashboardHeader({ userName, propertyName, onProfilePress, onNotifyPress, isSyncing }) {
+export default function DashboardHeader({ userName, propertyName, onProfilePress, onNotifyPress, isSyncing, selectedPeriod, onPeriodChange }) {
+    const { theme } = useTheme();
+    const activeColors = theme?.colors || {};
+
     const greeting = () => {
         const hour = new Date().getHours();
         if (hour < 12) return 'Bom dia';
@@ -12,9 +15,15 @@ export default function DashboardHeader({ userName, propertyName, onProfilePress
         return 'Boa noite';
     };
 
+    const periods = [
+        { label: 'Mês', value: 'month' },
+        { label: 'Safra', value: 'safra' },
+        { label: 'Ano', value: 'year' }
+    ];
+
     return (
         <LinearGradient 
-            colors={[theme?.colors?.primary || '#10B981', theme?.colors?.primaryDeep || '#059669']} 
+            colors={[activeColors.primary || '#10B981', activeColors.primaryDeep || '#064E3B']} 
             style={styles.container}
         >
             <View style={styles.topRow}>
@@ -31,13 +40,13 @@ export default function DashboardHeader({ userName, propertyName, onProfilePress
                 <View style={styles.actions}>
                     {isSyncing && (
                         <View style={styles.syncBadge}>
-                            <Ionicons name="sync" size={14} color="#FFF" style={styles.spin} />
+                            <Ionicons name="sync" size={14} color="#FFF" />
                             <Text style={styles.syncText}>SINC...</Text>
                         </View>
                     )}
                     <TouchableOpacity style={styles.iconBtn} onPress={onNotifyPress}>
                         <Ionicons name="notifications-outline" size={24} color="#FFF" />
-                        <View style={styles.badge} />
+                        <View style={[styles.badge, { borderColor: activeColors.primary || '#059669' }]} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.iconBtn}>
                         <Ionicons name="calendar-outline" size={24} color="#FFF" />
@@ -54,9 +63,18 @@ export default function DashboardHeader({ userName, propertyName, onProfilePress
             </TouchableOpacity>
 
             <View style={styles.periodRow}>
-                {['Mês', 'Safra', 'Ano'].map((p, i) => (
-                    <TouchableOpacity key={i} style={[styles.periodBtn, i === 0 && styles.periodBtnActive]}>
-                        <Text style={[styles.periodText, i === 0 && styles.periodTextActive]}>{p}</Text>
+                {periods.map((p, i) => (
+                    <TouchableOpacity 
+                        key={i} 
+                        style={[styles.periodBtn, selectedPeriod === p.value && styles.periodBtnActive]}
+                        onPress={() => onPeriodChange && onPeriodChange(p.value)}
+                    >
+                        <Text style={[
+                            styles.periodText, 
+                            selectedPeriod === p.value && { color: activeColors.primary || '#059669' }
+                        ]}>
+                            {p.label}
+                        </Text>
                     </TouchableOpacity>
                 ))}
             </View>
@@ -128,7 +146,6 @@ const styles = StyleSheet.create({
         borderRadius: 4,
         backgroundColor: '#F87171',
         borderWidth: 1,
-        borderColor: '#059669',
     },
     syncBadge: {
         flexDirection: 'row',
@@ -180,8 +197,5 @@ const styles = StyleSheet.create({
         color: 'rgba(255,255,255,0.7)',
         fontSize: 12,
         fontWeight: 'bold',
-    },
-    periodTextActive: {
-        color: '#059669',
     }
 });

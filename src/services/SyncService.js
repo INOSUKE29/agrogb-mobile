@@ -20,6 +20,7 @@ const TABLES_TO_SYNC = [
     'maquinas', 
     'manutencao_frota', 
     'planos_adubacao', 
+    'etapas_adubacao',
     'equipes', 
     'caderno_notas', 
     'financeiro_transacoes'
@@ -95,4 +96,5 @@ const SyncService = {
     }
 };
 
+export const performSync = SyncService.performSync;
 export default SyncService;

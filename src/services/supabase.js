@@ -3,9 +3,9 @@ import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import { executeQuery } from '../database/database';
 
-// ⚠️ CHAVES REAIS DO SUPABASE ⚠️
-const SUPABASE_URL = 'https://bybryyvmwkahoohgtmpc.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_QdNitBVoMJmfgG7vE4cPUg_bIwVA7sn';
+// ⚠️ CHAVES REAIS DO SUPABASE (RECUPERADAS HISTORICAMENTE) ⚠️
+const SUPABASE_URL = 'https://uklygrvibmiknwarzqap.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_6e3KZkbHgcfd_-xaOeIBLA_2AJeN9Ew';
 
 let supabaseInstance = null;
 

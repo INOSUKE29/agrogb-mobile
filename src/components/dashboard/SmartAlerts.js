@@ -1,22 +1,44 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../../styles/theme';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function SmartAlerts({ alerts, navigation }) {
+    const { theme } = useTheme();
+    const activeColors = theme?.colors || {};
+
     if (!alerts || alerts.length === 0) return null;
 
     const getColors = (type) => {
+        const isDark = theme?.theme_mode === 'dark';
         switch (type) {
-            case 'danger': return { bg: '#FEE2E2', text: '#991B1B', icon: 'alert-circle', border: '#F87171' };
-            case 'warning': return { bg: '#FEF3C7', text: '#92400E', icon: 'warning', border: '#F59E0B' };
-            default: return { bg: '#DBEAFE', text: '#1E40AF', icon: 'information-circle', border: '#60A5FA' };
+            case 'danger': 
+                return { 
+                    bg: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2', 
+                    text: isDark ? '#F87171' : '#991B1B', 
+                    icon: 'alert-circle', 
+                    border: '#EF4444' 
+                };
+            case 'warning': 
+                return { 
+                    bg: isDark ? 'rgba(245, 158, 11, 0.15)' : '#FEF3C7', 
+                    text: isDark ? '#FBBF24' : '#92400E', 
+                    icon: 'warning', 
+                    border: '#F59E0B' 
+                };
+            default: 
+                return { 
+                    bg: isDark ? 'rgba(59, 130, 246, 0.15)' : '#DBEAFE', 
+                    text: isDark ? '#60A5FA' : '#1E40AF', 
+                    icon: 'information-circle', 
+                    border: '#3B82F6' 
+                };
         }
     };
 
     return (
         <View style={styles.container}>
-            <Text style={styles.sectionTitle}>ALERTAS INTELIGENTES</Text>
+            <Text style={[styles.sectionTitle, { color: activeColors.textMuted || '#6B7280' }]}>ALERTAS INTELIGENTES</Text>
             {alerts.map((alert) => {
                 const colors = getColors(alert.type);
                 return (
@@ -46,7 +68,6 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 10,
         fontWeight: '900',
-        color: '#6B7280',
         letterSpacing: 1,
         marginBottom: 15,
     },

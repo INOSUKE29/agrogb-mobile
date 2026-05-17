@@ -26,6 +26,33 @@ export const theme = {
         info: '#3B82F6',         
         success: '#10B981',      
     },
+    // Novos modos estendidos para suporte a temas Claro e Escuro
+    light: {
+        primary: '#059669',      // Emerald 600
+        primaryDeep: '#064E3B',
+        accent: '#D4AF37',       // Dourado Agro
+        background: '#F8FAFC',   // Slate 50 (White-Ice)
+        card: '#FFFFFF',         // Branco Puro
+        text: '#0F172A',         // Slate 900
+        textMuted: '#64748B',    // Slate 500
+        border: '#E2E8F0',       // Slate 200
+        error: '#EF4444',
+        warning: '#F59E0B',
+        success: '#10B981',
+    },
+    dark: {
+        primary: '#10B981',      // Emerald 500
+        primaryDeep: '#022C22',  // Cyber Deep Green
+        accent: '#D4AF37',       // Dourado Agro
+        background: '#020617',   // Slate 950 (Midnight-Slate)
+        card: '#0F172A',         // Slate 900
+        text: '#F8FAFC',         // Slate 50
+        textMuted: '#94A3B8',    // Slate 400
+        border: '#1E293B',       // Slate 800
+        error: '#F87171',
+        warning: '#F59E0B',
+        success: '#10B981',
+    },
     // Métricas / Spacing
     metrics: {
         radius: 12,

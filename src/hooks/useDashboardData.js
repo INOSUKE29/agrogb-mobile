@@ -4,7 +4,7 @@ import { DashboardService } from '../services/DashboardService';
 /**
  * Hook para gerenciar dados do Dashboard Executivo
  */
-export function useDashboardData() {
+export function useDashboardData(period = 'month') {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -17,7 +17,7 @@ export function useDashboardData() {
         setError(null);
         
         try {
-            const dashboardData = await DashboardService.getDashboardData();
+            const dashboardData = await DashboardService.getDashboardData('all', period);
             setData(dashboardData);
         } catch (err) {
             console.error('Error loading dashboard data:', err);
@@ -26,7 +26,7 @@ export function useDashboardData() {
             setLoading(false);
             setRefreshing(false);
         }
-    }, []);
+    }, [period]);
 
     useEffect(() => {
         loadData();

@@ -1,29 +1,28 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { theme } from '../../styles/theme';
+import { View } from 'react-native';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function Card({ children, style, noPadding = false }) {
+    const { theme } = useTheme();
+
     return (
         <View style={[
-            styles.card, 
-            noPadding && { padding: 0 },
+            {
+                backgroundColor: theme?.colors?.card || '#FFFFFF',
+                borderRadius: theme?.metrics?.radius || 12,
+                padding: noPadding ? 0 : (theme?.spacing?.md || 16),
+                borderColor: theme?.colors?.border || '#E2E8F0',
+                borderWidth: theme?.theme_mode === 'dark' ? 1 : 0,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: theme?.theme_mode === 'dark' ? 0.2 : 0.05,
+                shadowRadius: 10,
+                elevation: 3,
+                marginBottom: theme?.spacing?.md || 16,
+            },
             style
         ]}>
             {children}
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    card: {
-        backgroundColor: theme?.colors?.card || '#FFFFFF',
-        borderRadius: theme?.metrics?.radius || 12,
-        padding: theme?.spacing?.md || 16,
-        marginBottom: theme?.spacing?.md || 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-        elevation: 3,
-    }
-});

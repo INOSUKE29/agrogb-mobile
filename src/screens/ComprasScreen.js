@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator, Dimensions, StatusBar, SafeAreaView } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
-import { insertCompra, getCadastro, getComprasRecentes, updateCompra, deleteCompra, insertCadastro as insertCadastros } from '../database/database';
+import { insertCompra, getCadastro, getComprasRecentes, updateCompra, deleteCompra, insertCadastro as insertCadastros, executeQuery } from '../database/database';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -17,6 +17,8 @@ const { width } = Dimensions.get('window');
 
 export default function ComprasScreen({ navigation }) {
     const { theme } = useTheme();
+    const activeColors = theme?.colors || {};
+    
     const [item, setItem] = useState('');
     const [quantidade, setQuantidade] = useState('');
     const [valor, setValor] = useState('');
@@ -174,49 +176,68 @@ export default function ComprasScreen({ navigation }) {
         ]);
     };
 
+    const isDark = theme?.theme_mode === 'dark';
+    const textColor = activeColors.text || '#1E293B';
+    const textMutedColor = activeColors.textMuted || '#64748B';
+    const cardBg = activeColors.card || '#FFFFFF';
+    const borderCol = activeColors.border || 'rgba(0,0,0,0.1)';
+
     return (
-        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
-            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
-                <View style={styles.headerTop}>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <Ionicons name="arrow-back" size={24} color="#FFF" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>{editingUuid ? 'EDITAR COMPRA' : 'ENTRADA DE INSUMOS'}</Text>
-                    <View style={{ width: 24 }} />
-                </View>
-                <Text style={styles.headerSub}>Gerenciamento de suprimentos e estoques</Text>
+        <View style={[styles.container, { backgroundColor: activeColors.bg || '#F3F4F6' }]}>
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+            <LinearGradient colors={[activeColors.primary || '#10B981', activeColors.primaryDeep || '#059669']} style={styles.header}>
+                <SafeAreaView>
+                    <View style={styles.headerTop}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
+                            <Ionicons name="arrow-back" size={22} color="#FFF" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>{editingUuid ? 'EDITAR COMPRA' : 'ENTRADA DE INSUMOS'}</Text>
+                        <View style={{ width: 38 }} />
+                    </View>
+                    <Text style={styles.headerSub}>Gerenciamento de suprimentos e estoques</Text>
+                </SafeAreaView>
             </LinearGradient>
 
             <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 50 }}>
                 <View style={styles.content}>
                     <Card style={styles.formCard}>
                         <TouchableOpacity 
-                            style={[styles.cameraBtn, anexoUri ? { borderColor: '#10B981', backgroundColor: '#ECFDF5' } : null]} 
+                            style={[
+                                styles.cameraBtn, 
+                                { borderColor: borderCol, backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F3F4F6' },
+                                anexoUri ? { borderColor: activeColors.primary || '#10B981', backgroundColor: isDark ? 'rgba(16,185,129,0.15)' : '#ECFDF5' } : null
+                            ]} 
                             onPress={() => hasPermission ? anexarNota() : Alert.alert('Permissão', 'Acesso à câmera necessário.')}
                         >
-                            <Ionicons name={anexoUri ? "checkmark-circle" : "camera"} size={20} color={anexoUri ? "#10B981" : theme?.colors?.primary} />
-                            <Text style={[styles.cameraBtnText, anexoUri ? { color: '#10B981' } : null]}>
+                            <Ionicons name={anexoUri ? "checkmark-circle" : "camera"} size={20} color={anexoUri ? (activeColors.primary || "#10B981") : (activeColors.textMuted || '#6B7280')} />
+                            <Text style={[styles.cameraBtnText, { color: textMutedColor }, anexoUri ? { color: activeColors.primary || '#10B981' } : null]}>
                                 {anexoUri ? 'NOTA ANEXADA' : 'ANEXAR FOTO DA NOTA (OPCIONAL)'}
                             </Text>
                         </TouchableOpacity>
 
                         <View style={styles.field}>
-                            <Text style={styles.label}>PRODUTO / INSUMO COMPRADO *</Text>
-                            <TouchableOpacity style={styles.selectBtn} onPress={() => { setModalType('MATERIAL'); setModalVisible(true); }}>
-                                <Text style={[styles.selectText, !item && { color: '#9CA3AF' }]}>
+                            <Text style={[styles.label, { color: textMutedColor }]}>PRODUTO / INSUMO COMPRADO *</Text>
+                            <TouchableOpacity 
+                                style={[styles.selectBtn, { backgroundColor: cardBg, borderColor: borderCol }]} 
+                                onPress={() => { setModalType('MATERIAL'); setModalVisible(true); }}
+                            >
+                                <Text style={[styles.selectText, { color: item ? textColor : textMutedColor }]}>
                                      {item || "SELECIONAR MATERIAL..."}
                                  </Text>
-                                 <Ionicons name="chevron-down" size={20} color="#6B7280" />
+                                 <Ionicons name="chevron-down" size={20} color={textMutedColor} />
                             </TouchableOpacity>
                         </View>
 
                         <View style={styles.field}>
-                            <Text style={styles.label}>FORNECEDOR (DE QUEM?)</Text>
-                            <TouchableOpacity style={styles.selectBtn} onPress={() => { setModalType('FORNECEDOR'); setModalVisible(true); }}>
-                                <Text style={[styles.selectText, !fornecedor.nome && { color: '#9CA3AF' }]}>
+                            <Text style={[styles.label, { color: textMutedColor }]}>FORNECEDOR (DE QUEM?)</Text>
+                            <TouchableOpacity 
+                                style={[styles.selectBtn, { backgroundColor: cardBg, borderColor: borderCol }]} 
+                                onPress={() => { setModalType('FORNECEDOR'); setModalVisible(true); }}
+                            >
+                                <Text style={[styles.selectText, { color: fornecedor.nome ? textColor : textMutedColor }]}>
                                     {fornecedor.nome || "SELECIONAR FORNECEDOR..."}
                                 </Text>
-                                <Ionicons name="business-outline" size={20} color="#6B7280" />
+                                <Ionicons name="business-outline" size={20} color={textMutedColor} />
                             </TouchableOpacity>
                         </View>
 
@@ -250,23 +271,26 @@ export default function ComprasScreen({ navigation }) {
                         </View>
                     </Card>
 
-                    <Text style={styles.histTitle}>ENTRADAS RECENTES</Text>
+                    <Text style={[styles.histTitle, { color: textColor }]}>ENTRADAS RECENTES</Text>
                     {history.map(rec => (
                         <Card key={rec.uuid} style={styles.histCard} noPadding onPress={() => handleEdit(rec)}>
                             <View style={styles.histInner}>
                                 <View style={{ flex: 1 }}>
                                     <View style={styles.histHeader}>
-                                        <Text style={styles.hProd}>{rec.item}</Text>
-                                        <Text style={styles.hDate}>{new Date(rec.data).toLocaleDateString('pt-BR').slice(0, 5)}</Text>
+                                        <Text style={[styles.hProd, { color: textColor }]}>{rec.item}</Text>
+                                        <Text style={[styles.hDate, { color: textMutedColor }]}>{new Date(rec.data).toLocaleDateString('pt-BR').slice(0, 5)}</Text>
                                     </View>
-                                    <Text style={styles.hCultura}>{rec.cultura || 'GERAL'}</Text>
-                                    <View style={styles.valBadge}>
-                                        <Text style={styles.hVal}>{rec.quantidade} UN • R$ {rec.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</Text>
+                                    <Text style={[styles.hCultura, { color: textMutedColor }]}>{rec.cultura || 'GERAL'}</Text>
+                                    <View style={[styles.valBadge, { backgroundColor: isDark ? 'rgba(16,185,129,0.15)' : '#F0FDF4' }]}>
+                                        <Text style={[styles.hVal, { color: activeColors.primary || '#10B981' }]}>{rec.quantidade} UN • R$ {rec.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</Text>
                                     </View>
                                 </View>
                                 <View style={styles.histActions}>
-                                    <TouchableOpacity onPress={() => handleDelete(rec)} style={styles.delBtn}>
-                                        <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                                    <TouchableOpacity 
+                                        onPress={() => handleDelete(rec)} 
+                                        style={[styles.delBtn, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2' }]}
+                                    >
+                                        <Ionicons name="trash-outline" size={18} color={activeColors.error || '#EF4444'} />
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -278,31 +302,32 @@ export default function ComprasScreen({ navigation }) {
             {/* SELECTION MODAL */}
             <Modal visible={modalVisible} animationType="slide" transparent>
                 <View style={styles.overlay}>
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>SELECIONAR {modalType}</Text>
+                            <Text style={[styles.modalTitle, { color: textColor }]}>SELECIONAR {modalType}</Text>
                             <View style={{ flexDirection: 'row', gap: 15 }}>
                                 {modalType === 'MATERIAL' && (
                                     <TouchableOpacity onPress={() => { setModalVisible(false); setQuickAddModal(true); }}>
-                                        <Ionicons name="add-circle" size={28} color={theme?.colors?.primary} />
+                                        <Ionicons name="add-circle" size={28} color={activeColors.primary} />
                                     </TouchableOpacity>
                                 )}
-                                <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
-                                    <Ionicons name="close" size={24} color="#6B7280" />
+                                <TouchableOpacity onPress={() => setModalVisible(false)} style={[styles.closeBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F3F4F6' }]}>
+                                    <Ionicons name="close" size={24} color={textMutedColor} />
                                 </TouchableOpacity>
                             </View>
                         </View>
 
                         <TextInput
-                            style={styles.searchBar}
+                            style={[styles.searchBar, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F9FAFB', borderColor: borderCol, color: textColor }]}
                             placeholder="Buscar material..."
+                            placeholderTextColor={textMutedColor}
                             value={searchText}
                             onChangeText={setSearchText}
                             autoCapitalize="characters"
                         />
 
                         {loadingModal ? (
-                            <ActivityIndicator color={theme?.colors?.primary} style={{ marginTop: 50 }} />
+                            <ActivityIndicator color={activeColors.primary} style={{ marginTop: 50 }} />
                         ) : (
                             <FlatList
                                 data={modalType === 'MATERIAL' ? getFilteredItems() : fornecedores.filter(f => f.nome.includes(searchText.toUpperCase()))}
@@ -310,7 +335,7 @@ export default function ComprasScreen({ navigation }) {
                                 contentContainerStyle={{ paddingBottom: 50 }}
                                 renderItem={({ item }) => (
                                     <TouchableOpacity 
-                                        style={styles.itemRow} 
+                                        style={[styles.itemRow, { borderBottomColor: borderCol }]} 
                                         onPress={() => { 
                                             if (modalType === 'MATERIAL') setItem(item.nome);
                                             else setFornecedor({ uuid: item.uuid, nome: item.nome });
@@ -318,13 +343,13 @@ export default function ComprasScreen({ navigation }) {
                                         }}
                                     >
                                         <View style={{ flex: 1 }}>
-                                            <Text style={styles.itemText}>{item.nome}</Text>
-                                            <Text style={styles.itemSub}>{modalType === 'MATERIAL' ? `${item.tipo} • ${item.unidade}` : item.contato}</Text>
+                                            <Text style={[styles.itemText, { color: textColor }]}>{item.nome}</Text>
+                                            <Text style={[styles.itemSub, { color: textMutedColor }]}>{modalType === 'MATERIAL' ? `${item.tipo} • ${item.unidade}` : item.contato}</Text>
                                         </View>
-                                        <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
+                                        <Ionicons name="chevron-forward" size={16} color={textMutedColor} />
                                     </TouchableOpacity>
                                 )}
-                                ListEmptyComponent={<Text style={styles.empty}>Nenhum item encontrado.</Text>}
+                                ListEmptyComponent={<Text style={[styles.empty, { color: textMutedColor }]}>Nenhum item encontrado.</Text>}
                             />
                         )}
                     </View>
@@ -335,7 +360,7 @@ export default function ComprasScreen({ navigation }) {
             <Modal visible={quickAddModal} animationType="slide" transparent>
                 <View style={styles.overlayCenter}>
                     <Card style={styles.quickModal}>
-                        <Text style={styles.modalTitleCenter}>NOVO INSUMO RÁPIDO</Text>
+                        <Text style={[styles.modalTitleCenter, { color: textColor }]}>NOVO INSUMO RÁPIDO</Text>
                         <AgroInput label="NOME DO ITEM" value={newItemName} onChangeText={setNewItemName} placeholder="EX: ADUBO ORGANICO" />
                         <View style={styles.actionRow}>
                             <AgroButton title="SALVAR" onPress={quickSave} style={{ flex: 1 }} />
@@ -350,43 +375,51 @@ export default function ComprasScreen({ navigation }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    header: { paddingTop: 50, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    header: { paddingTop: 40, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
     headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
     headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
-    headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 'bold' },
+    headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.85)', fontWeight: 'bold' },
+    iconBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     scroll: { flex: 1 },
     content: { padding: 20 },
     formCard: { padding: 20, marginBottom: 25 },
-    cameraBtn: { flexDirection: 'row', backgroundColor: '#F3F4F6', padding: 12, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginBottom: 20, borderStyle: 'dashed', borderWidth: 1, borderColor: '#D1D5DB' },
-    cameraBtnText: { color: '#6B7280', fontWeight: '800', marginLeft: 8, fontSize: 11, letterSpacing: 0.5 },
+    cameraBtn: { flexDirection: 'row', padding: 12, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginBottom: 20, borderStyle: 'dashed', borderWidth: 1 },
+    cameraBtnText: { fontWeight: '800', marginLeft: 8, fontSize: 11, letterSpacing: 0.5 },
     field: { marginBottom: 15 },
-    label: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', marginBottom: 8, letterSpacing: 1 },
-    selectBtn: { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' },
-    selectText: { fontSize: 14, fontWeight: '700', color: '#1F2937' },
+    label: { fontSize: 10, fontWeight: '900', marginBottom: 8, letterSpacing: 1 },
+    selectBtn: { borderRadius: 12, padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1 },
+    selectText: { fontSize: 14, fontWeight: '700' },
     row: { flexDirection: 'row' },
     actionRow: { flexDirection: 'row', marginTop: 15 },
-    histTitle: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', marginBottom: 15, letterSpacing: 1.5 },
+    histTitle: { fontSize: 10, fontWeight: '900', marginBottom: 15, letterSpacing: 1.5 },
     histCard: { marginBottom: 12 },
     histInner: { padding: 15, flexDirection: 'row', alignItems: 'center' },
     histHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    hProd: { fontSize: 15, fontWeight: '800', color: '#1F2937', flex: 1 },
-    hDate: { fontSize: 10, fontWeight: '900', color: '#9CA3AF' },
-    hCultura: { fontSize: 11, color: '#6B7280', fontWeight: 'bold', marginTop: 2 },
-    valBadge: { backgroundColor: '#F0FDF4', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginTop: 8, alignSelf: 'flex-start' },
-    hVal: { fontSize: 11, fontWeight: '900', color: '#10B981' },
+    hProd: { fontSize: 15, fontWeight: '800', flex: 1 },
+    hDate: { fontSize: 10, fontWeight: '900' },
+    hCultura: { fontSize: 11, fontWeight: 'bold', marginTop: 2 },
+    valBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginTop: 8, alignSelf: 'flex-start' },
+    hVal: { fontSize: 11, fontWeight: '900' },
     histActions: { marginLeft: 15 },
-    delBtn: { backgroundColor: '#FEF2F2', padding: 10, borderRadius: 12 },
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30, height: '80%', padding: 25 },
+    delBtn: { padding: 10, borderRadius: 12 },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+    modalContent: { borderTopLeftRadius: 30, borderTopRightRadius: 30, height: '80%', padding: 25 },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-    modalTitle: { fontSize: 16, fontWeight: '900', color: '#1F2937' },
-    closeBtn: { backgroundColor: '#F3F4F6', padding: 8, borderRadius: 12 },
-    searchBar: { backgroundColor: '#F9FAFB', padding: 14, borderRadius: 15, marginBottom: 15, fontSize: 14, fontWeight: '700', borderWidth: 1, borderColor: '#E5E7EB' },
-    itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-    itemText: { fontSize: 14, fontWeight: '800', color: '#374151' },
-    itemSub: { fontSize: 11, color: '#9CA3AF', fontWeight: 'bold', marginTop: 2 },
-    empty: { textAlign: 'center', marginTop: 30, color: '#9CA3AF', fontWeight: 'bold' },
-    overlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 25 },
+    modalTitle: { fontSize: 16, fontWeight: '900' },
+    closeBtn: { padding: 8, borderRadius: 12 },
+    searchBar: { padding: 14, borderRadius: 15, marginBottom: 15, fontSize: 14, fontWeight: '700', borderWidth: 1 },
+    itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 18, borderBottomWidth: 1 },
+    itemText: { fontSize: 14, fontWeight: '800' },
+    itemSub: { fontSize: 11, fontWeight: 'bold', marginTop: 2 },
+    empty: { textAlign: 'center', marginTop: 30, fontWeight: 'bold' },
+    overlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 25 },
     quickModal: { padding: 25 },
-    modalTitleCenter: { fontSize: 16, fontWeight: '900', color: '#1F2937', textAlign: 'center', marginBottom: 20 }
+    modalTitleCenter: { fontSize: 16, fontWeight: '900', textAlign: 'center', marginBottom: 20 }
 });

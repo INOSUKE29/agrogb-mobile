@@ -320,6 +320,76 @@ const createTables = async () => {
                 tabela TEXT NOT NULL,
                 detalhes TEXT,
                 data TEXT NOT NULL
+            );`,
+            `CREATE TABLE IF NOT EXISTS etapas_adubacao (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                plano_uuid TEXT NOT NULL,
+                ordem INTEGER NOT NULL,
+                descricao TEXT,
+                status TEXT DEFAULT 'PENDENTE',
+                data_prevista TEXT,
+                data_realizada TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                FOREIGN KEY(plano_uuid) REFERENCES planos_adubacao(uuid) ON DELETE CASCADE
+            );`,
+            `CREATE TABLE IF NOT EXISTS profiles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                bio_enabled INTEGER DEFAULT 0,
+                last_login TEXT,
+                last_updated TEXT NOT NULL
+            );`,
+            `CREATE TABLE IF NOT EXISTS areas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                nome TEXT NOT NULL,
+                hectares REAL,
+                cultura_principal TEXT,
+                last_updated TEXT NOT NULL,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS categorias_despesa (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                nome TEXT NOT NULL,
+                tipo TEXT, -- 'VARIAVEL' ou 'FIXA'
+                last_updated TEXT NOT NULL,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS activity_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                usuario_uuid TEXT,
+                acao TEXT,
+                data TEXT NOT NULL
+            );`,
+            `CREATE TABLE IF NOT EXISTS error_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                usuario_id TEXT,
+                tela TEXT,
+                erro TEXT,
+                stack TEXT,
+                created_at TEXT NOT NULL,
+                data TEXT NOT NULL
+            );`,
+            `CREATE TABLE IF NOT EXISTS unidades_medida (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                nome TEXT NOT NULL,
+                sigla TEXT NOT NULL,
+                last_updated TEXT NOT NULL
+            );`,
+            `CREATE TABLE IF NOT EXISTS movimentacao_estoque (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                produto_uuid TEXT NOT NULL,
+                tipo TEXT NOT NULL, -- 'ENTRADA' ou 'SAIDA'
+                quantidade REAL NOT NULL,
+                motivo TEXT,
+                data TEXT NOT NULL,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0
             );`
         ];
 

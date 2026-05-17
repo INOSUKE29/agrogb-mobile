@@ -1,13 +1,19 @@
 import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
+import { useTheme } from '../../context/ThemeContext';
 import MetricCard from '../common/MetricCard';
 
 export default function KPIGrid({ kpis }) {
+    const { theme } = useTheme();
+    const activeColors = theme?.colors || {};
+
     if (!kpis || kpis.length === 0) return null;
 
     return (
         <View style={styles.container}>
-            <Text style={styles.sectionTitle}>INDICADORES DE PERFORMANCE</Text>
+            <Text style={[styles.sectionTitle, { color: activeColors.textMuted || '#6B7280' }]}>
+                INDICADORES DE PERFORMANCE
+            </Text>
             <View style={styles.grid}>
                 {kpis.map((kpi) => (
                     <View key={kpi.id} style={styles.gridItem}>
@@ -34,7 +40,6 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 10,
         fontWeight: '900',
-        color: '#6B7280',
         letterSpacing: 1,
         marginBottom: 15,
         marginLeft: 5,

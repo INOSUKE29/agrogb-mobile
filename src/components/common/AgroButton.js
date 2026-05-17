@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { theme } from '../../styles/theme';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function AgroButton({
     title,
@@ -10,27 +10,30 @@ export default function AgroButton({
     disabled = false,
     style
 }) {
+    const { theme } = useTheme();
+    const activeColors = theme?.colors || {};
+
     const isPrimary = variant === 'primary';
     const isDanger = variant === 'danger';
 
-    // Define cores com base na variante (com fallbacks seguros)
-    let bg = theme?.colors?.primary || '#10B981';
-    let txt = '#FFF';
+    // Cores Dinâmicas baseadas no tema e variante
+    let bg = activeColors.primary || '#10B981';
+    let txt = '#FFFFFF';
     let border = 'transparent';
 
     if (variant === 'secondary') {
         bg = 'transparent';
-        txt = theme?.colors?.primaryDeep || '#059669';
-        border = theme?.colors?.primary || '#10B981';
+        txt = activeColors.primary || '#10B981';
+        border = activeColors.primary || '#10B981';
     } else if (variant === 'danger') {
-        bg = '#FEE2E2';
-        txt = theme?.colors?.error || '#EF4444';
+        bg = theme?.theme_mode === 'dark' ? 'rgba(248, 113, 113, 0.15)' : '#FEE2E2';
+        txt = activeColors.error || '#EF4444';
     }
 
-    // Estado desativado
+    // Estado desativado dinâmico por tema
     if (disabled) {
-        bg = '#E5E7EB';
-        txt = '#9CA3AF';
+        bg = theme?.theme_mode === 'dark' ? '#1E293B' : '#E2E8F0';
+        txt = theme?.theme_mode === 'dark' ? '#475569' : '#94A3B8';
         border = 'transparent';
     }
 
@@ -38,7 +41,13 @@ export default function AgroButton({
         <TouchableOpacity
             style={[
                 styles.container,
-                { backgroundColor: bg, borderColor: border, borderWidth: variant === 'secondary' ? 1 : 0 },
+                { 
+                    backgroundColor: bg, 
+                    borderColor: border, 
+                    borderWidth: variant === 'secondary' ? 1.5 : 0,
+                    borderRadius: theme?.metrics?.radius || 12,
+                    height: theme?.metrics?.buttonHeight || 55,
+                },
                 style
             ]}
             onPress={onPress}
@@ -58,16 +67,19 @@ export default function AgroButton({
 
 const styles = StyleSheet.create({
     container: {
-        height: theme?.metrics?.buttonHeight || 55,
-        borderRadius: theme?.metrics?.radius || 12,
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 20,
         marginVertical: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 1,
     },
     text: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: 'bold',
-        letterSpacing: 1,
+        letterSpacing: 1.2,
     }
 });

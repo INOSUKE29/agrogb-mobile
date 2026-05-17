@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator, StatusBar, SafeAreaView } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
-import { insertVenda, getCadastro, getClientes, insertCliente, getVendasRecentes, deleteVenda, updateVenda } from '../database/database';
+import { insertVenda, getCadastro, getClientes, insertCliente, getVendasRecentes, deleteVenda, updateVenda, executeQuery } from '../database/database';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
@@ -15,6 +15,8 @@ import AgroInput from '../components/common/AgroInput';
 
 export default function VendasScreen({ navigation }) {
     const { theme } = useTheme();
+    const activeColors = theme?.colors || {};
+    
     const [cliente, setCliente] = useState('');
     const [produto, setProduto] = useState('');
     const [quantidade, setQuantidade] = useState('');
@@ -30,7 +32,6 @@ export default function VendasScreen({ navigation }) {
     // Modal States
     const [modalVisible, setModalVisible] = useState(false);
     const [clientModalVisible, setClientModalVisible] = useState(false);
-    const [newClientModal, setNewClientModal] = useState(false);
 
     // Lists
     const [items, setItems] = useState([]);
@@ -39,10 +40,6 @@ export default function VendasScreen({ navigation }) {
     // Search
     const [searchText, setSearchText] = useState('');
     const [clientSearchText, setClientSearchText] = useState('');
-
-    // New Client Form State
-    const [newClientName, setNewClientName] = useState('');
-    const [newClientPhone, setNewClientPhone] = useState('');
 
     useFocusEffect(useCallback(() => {
         loadData();
@@ -60,7 +57,6 @@ export default function VendasScreen({ navigation }) {
             const data = await getVendasRecentes();
             setHistory(data);
 
-            // Calcular resumo do dia
             const today = new Date().toISOString().split('T')[0];
             const todaySales = data.filter(v => v.data === today);
             const total = todaySales.reduce((acc, curr) => acc + (curr.valor * curr.quantidade), 0);
@@ -99,7 +95,6 @@ export default function VendasScreen({ navigation }) {
             } else {
                 await insertVenda(dados);
                 
-                // Automação: Gerar Conta a Receber
                 await executeQuery(
                     'INSERT INTO financeiro_transacoes (uuid, tipo, descricao, valor, vencimento, entidade_nome, categoria, origem_uuid, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
                     [uuidv4(), 'RECEBER', `VENDA: ${dados.produto}`, dados.valor * dados.quantidade, dados.data, dados.cliente, 'VENDAS', dados.uuid, new Date().toISOString()]
@@ -134,46 +129,55 @@ export default function VendasScreen({ navigation }) {
         ]);
     };
 
+    const isDark = theme?.theme_mode === 'dark';
+    const textColor = activeColors.text || '#1E293B';
+    const textMutedColor = activeColors.textMuted || '#64748B';
+    const cardBg = activeColors.card || '#FFFFFF';
+    const borderCol = activeColors.border || 'rgba(0,0,0,0.1)';
+
     if (loading) {
         return (
-            <View style={styles.loading}>
-                <ActivityIndicator size="large" color={theme?.colors?.primary || '#10B981'} />
+            <View style={[styles.loading, { backgroundColor: activeColors.bg || '#F3F4F6' }]}>
+                <ActivityIndicator size="large" color={activeColors.primary || '#10B981'} />
             </View>
         );
     }
 
     return (
-        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
-            <LinearGradient colors={[theme?.colors?.primary || '#10B981', theme?.colors?.primaryDeep || '#059669']} style={styles.header}>
-                <View style={styles.headerTop}>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <Ionicons name="arrow-back" size={24} color="#FFF" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>FLUXO DE VENDAS</Text>
-                    <View style={{ width: 24 }} />
-                </View>
-                
-                <View style={styles.summaryRow}>
-                    <MetricCard 
-                        title="Vendas Hoje" 
-                        value={summary.count.toString()} 
-                        icon="cart" 
-                        color="#FFF"
-                        style={styles.summaryCard}
-                    />
-                    <MetricCard 
-                        title="Total R$" 
-                        value={summary.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} 
-                        icon="cash" 
-                        color="#FFF"
-                        style={styles.summaryCard}
-                    />
-                </View>
+        <View style={[styles.container, { backgroundColor: activeColors.bg || '#F3F4F6' }]}>
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+            <LinearGradient colors={[activeColors.primary || '#10B981', activeColors.primaryDeep || '#059669']} style={styles.header}>
+                <SafeAreaView>
+                    <View style={styles.headerTop}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
+                            <Ionicons name="arrow-back" size={22} color="#FFF" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>FLUXO DE VENDAS</Text>
+                        <View style={{ width: 38 }} />
+                    </View>
+                    
+                    <View style={styles.summaryRow}>
+                        <MetricCard 
+                            title="Vendas Hoje" 
+                            value={summary.count.toString()} 
+                            icon="cart" 
+                            color="#FFF"
+                            style={styles.summaryCard}
+                        />
+                        <MetricCard 
+                            title="Total R$" 
+                            value={summary.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} 
+                            icon="cash" 
+                            color="#FFF"
+                            style={styles.summaryCard}
+                        />
+                    </View>
+                </SafeAreaView>
             </LinearGradient>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
                 <Card style={styles.formCard}>
-                    <Text style={styles.sectionTitle}>{editingUuid ? 'EDITAR REGISTRO' : 'NOVA VENDA'}</Text>
+                    <Text style={[styles.sectionTitle, { color: textMutedColor }]}>{editingUuid ? 'EDITAR REGISTRO' : 'NOVA VENDA'}</Text>
                     
                     <AgroInput 
                         label="Cliente / Parceiro"
@@ -232,21 +236,24 @@ export default function VendasScreen({ navigation }) {
                     />
                 </Card>
 
-                <Text style={styles.historyTitle}>HISTÓRICO RECENTE</Text>
+                <Text style={[styles.historyTitle, { color: textColor }]}>HISTÓRICO RECENTE</Text>
                 {history.map(item => (
                     <Card key={item.uuid} style={styles.historyCard} noPadding>
                         <View style={styles.historyContent}>
-                            <View style={styles.historyIcon}>
-                                <Ionicons name="receipt" size={20} color={theme?.colors?.primary || '#10B981'} />
+                            <View style={[styles.historyIcon, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#F9FAFB' }]}>
+                                <Ionicons name="receipt" size={20} color={activeColors.primary || '#10B981'} />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.hProd}>{item.produto}</Text>
-                                <Text style={styles.hSub}>{item.cliente} • {new Date(item.data).toLocaleDateString('pt-BR')}</Text>
-                                <Text style={styles.hVal}>{item.quantidade} x R$ {item.valor.toFixed(2)}</Text>
+                                <Text style={[styles.hProd, { color: textColor }]}>{item.produto}</Text>
+                                <Text style={[styles.hSub, { color: textMutedColor }]}>{item.cliente} • {new Date(item.data).toLocaleDateString('pt-BR')}</Text>
+                                <Text style={[styles.hVal, { color: activeColors.primary || '#10B981' }]}>{item.quantidade} x R$ {item.valor.toFixed(2)}</Text>
                             </View>
                             <View style={styles.historyActions}>
-                                <TouchableOpacity onPress={() => handleDelete(item)} style={styles.actionBtn}>
-                                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                                <TouchableOpacity 
+                                    onPress={() => handleDelete(item)} 
+                                    style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2' }]}
+                                >
+                                    <Ionicons name="trash-outline" size={18} color={activeColors.error || '#EF4444'} />
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -254,24 +261,29 @@ export default function VendasScreen({ navigation }) {
                 ))}
             </ScrollView>
 
-            {/* MODALS (Product and Client) kept as they are functional */}
             <Modal visible={modalVisible} animationType="slide" transparent>
                 <View style={styles.overlay}>
-                    <View style={styles.modalBg}>
+                    <View style={[styles.modalBg, { backgroundColor: cardBg }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>SELECIONAR PRODUTO</Text>
+                            <Text style={[styles.modalTitle, { color: textColor }]}>SELECIONAR PRODUTO</Text>
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <Ionicons name="close" size={24} color="#374151" />
+                                <Ionicons name="close" size={24} color={textMutedColor} />
                             </TouchableOpacity>
                         </View>
-                        <TextInput style={styles.searchBar} placeholder="Buscar..." value={searchText} onChangeText={t => up(t, setSearchText)} />
+                        <TextInput 
+                            style={[styles.searchBar, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F3F4F6', color: textColor }]} 
+                            placeholder="Buscar..." 
+                            placeholderTextColor={textMutedColor} 
+                            value={searchText} 
+                            onChangeText={t => up(t, setSearchText)} 
+                        />
                         <FlatList
                             data={items.filter(i => i.nome.includes(searchText.toUpperCase()))}
                             keyExtractor={i => i.uuid || i.id.toString()}
                             renderItem={({ item }) => (
-                                <TouchableOpacity style={styles.itemRow} onPress={() => { setProduto(item.nome); setModalVisible(false); }}>
-                                    <Text style={styles.itemText}>{item.nome}</Text>
-                                    <Text style={styles.itemSub}>{item.unidade}</Text>
+                                <TouchableOpacity style={[styles.itemRow, { borderBottomColor: borderCol }]} onPress={() => { setProduto(item.nome); setModalVisible(false); }}>
+                                    <Text style={[styles.itemText, { color: textColor }]}>{item.nome}</Text>
+                                    <Text style={[styles.itemSub, { color: textMutedColor }]}>{item.unidade}</Text>
                                 </TouchableOpacity>
                             )}
                         />
@@ -281,27 +293,33 @@ export default function VendasScreen({ navigation }) {
 
             <Modal visible={clientModalVisible} animationType="slide" transparent>
                 <View style={styles.overlay}>
-                    <View style={styles.modalBg}>
+                    <View style={[styles.modalBg, { backgroundColor: cardBg }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>SELECIONAR CLIENTE</Text>
+                            <Text style={[styles.modalTitle, { color: textColor }]}>SELECIONAR CLIENTE</Text>
                             <TouchableOpacity onPress={() => setClientModalVisible(false)}>
-                                <Ionicons name="close" size={24} color="#374151" />
+                                <Ionicons name="close" size={24} color={textMutedColor} />
                             </TouchableOpacity>
                         </View>
-                        <TextInput style={styles.searchBar} placeholder="Buscar cliente..." value={clientSearchText} onChangeText={t => up(t, setClientSearchText)} />
+                        <TextInput 
+                            style={[styles.searchBar, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F3F4F6', color: textColor }]} 
+                            placeholder="Buscar cliente..." 
+                            placeholderTextColor={textMutedColor} 
+                            value={clientSearchText} 
+                            onChangeText={t => up(t, setClientSearchText)} 
+                        />
                         <FlatList
                             data={clients.filter(c => c.nome.includes(clientSearchText.toUpperCase()))}
                             keyExtractor={i => i.uuid || i.id.toString()}
                             renderItem={({ item }) => (
-                                <TouchableOpacity style={styles.itemRow} onPress={() => { setCliente(item.nome); setClientModalVisible(false); }}>
-                                    <Text style={styles.itemText}>{item.nome}</Text>
-                                    <Text style={styles.itemSub}>{item.telefone || 'Sem telefone'}</Text>
+                                <TouchableOpacity style={[styles.itemRow, { borderBottomColor: borderCol }]} onPress={() => { setCliente(item.nome); setClientModalVisible(false); }}>
+                                    <Text style={[styles.itemText, { color: textColor }]}>{item.nome}</Text>
+                                    <Text style={[styles.itemSub, { color: textMutedColor }]}>{item.telefone || 'Sem telefone'}</Text>
                                 </TouchableOpacity>
                             )}
                             ListHeaderComponent={
-                                <TouchableOpacity style={styles.itemRow} onPress={() => { setCliente('BALCÃO'); setClientModalVisible(false); }}>
-                                    <Text style={styles.itemText}>BALCÃO / AVULSO</Text>
-                                    <Text style={styles.itemSub}>Sem cadastro prévio</Text>
+                                <TouchableOpacity style={[styles.itemRow, { borderBottomColor: borderCol }]} onPress={() => { setCliente('BALCÃO'); setClientModalVisible(false); }}>
+                                    <Text style={[styles.itemText, { color: textColor }]}>BALCÃO / AVULSO</Text>
+                                    <Text style={[styles.itemSub, { color: textMutedColor }]}>Sem cadastro prévio</Text>
                                 </TouchableOpacity>
                             }
                         />
@@ -315,29 +333,37 @@ export default function VendasScreen({ navigation }) {
 const styles = StyleSheet.create({
     container: { flex: 1 },
     loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    header: { paddingTop: 50, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    header: { paddingTop: 40, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
     headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
     headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
+    iconBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     summaryRow: { flexDirection: 'row', gap: 10 },
     summaryCard: { flex: 1, height: 90, marginHorizontal: 0 },
-    sectionTitle: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1, marginBottom: 15 },
+    sectionTitle: { fontSize: 10, fontWeight: '900', letterSpacing: 1, marginBottom: 15 },
     formCard: { padding: 20 },
     row: { flexDirection: 'row' },
-    historyTitle: { fontSize: 12, fontWeight: '900', color: '#6B7280', letterSpacing: 1, marginTop: 25, marginBottom: 15, marginLeft: 5 },
+    historyTitle: { fontSize: 12, fontWeight: '900', letterSpacing: 1, marginTop: 25, marginBottom: 15, marginLeft: 5 },
     historyCard: { marginBottom: 12 },
     historyContent: { flexDirection: 'row', alignItems: 'center', padding: 15 },
-    historyIcon: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#F9FAFB', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-    hProd: { fontSize: 14, fontWeight: 'bold', color: '#1F2937' },
-    hSub: { fontSize: 11, color: '#9CA3AF', marginTop: 2 },
-    hVal: { fontSize: 12, fontWeight: '900', color: '#10B981', marginTop: 4 },
+    historyIcon: { width: 40, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    hProd: { fontSize: 14, fontWeight: 'bold' },
+    hSub: { fontSize: 11, marginTop: 2 },
+    hVal: { fontSize: 12, fontWeight: '900', marginTop: 4 },
     historyActions: { marginLeft: 10 },
-    actionBtn: { padding: 8, backgroundColor: '#FEF2F2', borderRadius: 8 },
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    modalBg: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '80%', padding: 20 },
+    actionBtn: { padding: 8, borderRadius: 8 },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+    modalBg: { borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '80%', padding: 20 },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-    modalTitle: { fontSize: 16, fontWeight: '900', color: '#1F2937' },
-    searchBar: { backgroundColor: '#F3F4F6', padding: 12, borderRadius: 12, marginBottom: 10, fontSize: 14 },
-    itemRow: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-    itemText: { fontSize: 14, fontWeight: 'bold', color: '#374151' },
-    itemSub: { fontSize: 10, color: '#9CA3AF' }
+    modalTitle: { fontSize: 16, fontWeight: '900' },
+    searchBar: { padding: 12, borderRadius: 12, marginBottom: 10, fontSize: 14 },
+    itemRow: { paddingVertical: 15, borderBottomWidth: 1 },
+    itemText: { fontSize: 14, fontWeight: 'bold' },
+    itemSub: { fontSize: 10 }
 });

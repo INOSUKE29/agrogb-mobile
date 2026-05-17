@@ -25,11 +25,12 @@ import ProductionChart from '../components/dashboard/ProductionChart';
 
 export default function HomeScreen({ navigation }) {
     const { theme } = useTheme();
-    const { data, loading, refreshing, onRefresh } = useDashboardData();
+    const [period, setPeriod] = useState('month');
+    const { data, loading, refreshing, onRefresh } = useDashboardData(period);
     
-    const [user, setUser] = useState(null);
-    const [drawerVisible, setDrawerVisible] = useState(false);
-    const [isSyncing, setIsSyncing] = useState(false);
+     const [user, setUser] = useState(null);
+     const [drawerVisible, setDrawerVisible] = useState(false);
+     const [isSyncing, setIsSyncing] = useState(false);
 
     useEffect(() => {
         loadUser();
@@ -73,6 +74,8 @@ export default function HomeScreen({ navigation }) {
                     onProfilePress={() => setDrawerVisible(true)}
                     onNotifyPress={() => Alert.alert('Notificações', 'Você não tem novas mensagens.')}
                     isSyncing={isSyncing}
+                    selectedPeriod={period}
+                    onPeriodChange={setPeriod}
                 />
 
                 {data && (
