@@ -38,7 +38,11 @@ const ROLE_PERMISSIONS = {
 
 export const PermissionService = {
     canAccess: (userRole, screenName) => {
-        const permissions = ROLE_PERMISSIONS[userRole] || ROLE_PERMISSIONS['OPERADOR'];
+        let normalizedRole = userRole;
+        if (userRole === 'ADMIN' || userRole === 'USUARIO' || userRole === 'ADMINISTRADOR') {
+            normalizedRole = 'ADM';
+        }
+        const permissions = ROLE_PERMISSIONS[normalizedRole] || ROLE_PERMISSIONS['OPERADOR'];
         
         if (permissions.all) return true;
         if (permissions.modules && permissions.modules.includes(screenName)) return true;
@@ -50,7 +54,11 @@ export const PermissionService = {
     },
 
     isFinancialVisible: (userRole) => {
-        const permissions = ROLE_PERMISSIONS[userRole] || ROLE_PERMISSIONS['OPERADOR'];
+        let normalizedRole = userRole;
+        if (userRole === 'ADMIN' || userRole === 'USUARIO' || userRole === 'ADMINISTRADOR') {
+            normalizedRole = 'ADM';
+        }
+        const permissions = ROLE_PERMISSIONS[normalizedRole] || ROLE_PERMISSIONS['OPERADOR'];
         return !!permissions.financial;
     }
 };

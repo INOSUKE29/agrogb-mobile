@@ -74,7 +74,15 @@ export default function RegisterScreen({ navigation }) {
                 { text: 'FAZER LOGIN', onPress: () => navigation.navigate('Login') }
             ]);
         } catch (error) {
-            Alert.alert('Erro no Cadastro', error.message);
+            let errorMsg = error.message || '';
+            if (errorMsg.includes('User already registered') || errorMsg.includes('already exists') || errorMsg.includes('already registered')) {
+                Alert.alert(
+                    'E-mail já cadastrado',
+                    'Este e-mail já possui uma conta. Faça login ou recupere sua senha.'
+                );
+                return;
+            }
+            Alert.alert('Erro no Cadastro', errorMsg);
         } finally {
             setLoading(false);
         }

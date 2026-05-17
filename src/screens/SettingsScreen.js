@@ -23,7 +23,7 @@ import { LoggingService } from '../modules/system/services/LoggingService';
 import { StorageHelper } from '../services/storageHelper';
 
 export default function SettingsScreen({ navigation }) {
-    const { colors, theme, setTheme } = useTheme();
+    const { theme, saveTheme } = useTheme();
     const [loading, setLoading] = useState(false);
     const [user, setUser] = useState({ 
         nome: 'Carregando...', 
@@ -226,7 +226,7 @@ export default function SettingsScreen({ navigation }) {
 
                 {/* 👤 PERFIL/APP */}
                 <SettingsGroup icon="person-outline" title="Perfil">
-                    <SettingsItem icon="sunny-outline" label="Tema" value={theme === 'dark' ? 'Escuro' : (theme === 'light' ? 'Claro' : 'Automático')} onPress={() => setTheme(theme === 'dark' ? 'light' : (theme === 'light' ? 'system' : 'dark'))} iconColor="#EAB308" />
+                    <SettingsItem icon="sunny-outline" label="Tema" value={theme?.theme_mode === 'dark' ? 'Escuro' : 'Claro'} onPress={() => saveTheme(theme?.theme_mode === 'dark' ? 'light' : 'dark')} iconColor="#EAB308" />
                     <SettingsItem icon="globe-outline" label="Idioma" value="Português" onPress={() => {}} />
                     <SettingsItem icon="layers-outline" label="Unidade" value="kg" onPress={() => {}} iconColor="#10B981" />
                     <SettingsItem icon="calendar-outline" label="Safra" value="2024/25" isLast onPress={() => {}} />

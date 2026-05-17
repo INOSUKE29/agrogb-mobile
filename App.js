@@ -52,6 +52,7 @@ import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import RecoverScreen from './src/screens/RecoverScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 import VerifyCodeScreen from './src/screens/VerifyCodeScreen';
+import AuditScreen from './src/screens/AuditScreen';
 import { SyncProvider } from './src/context/SyncContext';
 
 import ErrorBoundary from './src/components/common/ErrorBoundary';
@@ -130,6 +131,7 @@ export default function App() {
                                     <Stack.Screen name="Recover" component={RecoverScreen} />
                                     <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
                                     <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
+                                    <Stack.Screen name="Audit" component={AuditScreen} />
                                 </Stack.Navigator>
                             </NavigationContainer>
                         </WeatherProvider>
