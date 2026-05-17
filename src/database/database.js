@@ -390,6 +390,16 @@ const createTables = async () => {
                 data TEXT NOT NULL,
                 last_updated TEXT NOT NULL,
                 sync_status INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS production_fertilization_items (
+                id TEXT PRIMARY KEY,
+                plano_uuid TEXT NOT NULL,
+                produto_id TEXT NOT NULL,
+                quantidade REAL NOT NULL,
+                unidade TEXT,
+                criado_em TEXT DEFAULT (datetime('now')),
+                sync_status INTEGER DEFAULT 0,
+                FOREIGN KEY(plano_uuid) REFERENCES planos_adubacao(uuid)
             );`
         ];
 
