@@ -49,9 +49,9 @@ Ele deve ser:
 ### Mobile (Prioridade Atual e Ativa)
 
 *   **Tecnologia:** Expo + React Native.
-*   **Banco Local:** SQLite local gerenciado de forma assíncrona pelo driver Nativo em `src/database/database.js`.
-*   **Banco em Nuvem:** PostgreSQL hospedado no Supabase.
-*   **Arquitetura:** *Offline-First* com sincronização em segundo plano via `SyncService.js`.
+*   **Banco Local:** SQLite local gerenciado em `src/database/database.js`.
+*   **Banco em Nuvem:** Supabase Cloud PostgreSQL.
+*   **Arquitetura:** Offline-First com sincronização em segundo plano via `SyncService.js`.
 *   **Diretório Ativo:** `c:\Users\Bruno\Documents\AgroGB\agrogb-mobile.-main`
 
 ### Desktop/Web (Roadmap)
@@ -63,37 +63,26 @@ Ele deve ser:
 
 # 4. VISÃO DO PRODUTO
 
-O AgroGB é um ERP agrícola inteligente para gestão completa da propriedade rural, focado em unificar a tomada de decisão no campo e no escritório de forma transparente, visualmente deslumbrante e resiliente à conectividade instável do campo.
+O AgroGB é um ERP agrícola inteligente para gestão completa da propriedade rural, unindo o monitoramento de campo, faturamento comercial, explosão de estoque por receitas, controle de insumos NPK e lançamentos financeiros automatizados offline/online.
 
 ## Áreas cobertas
 
-*   **Agronomia:** Plantios, colheitas, dosagens e aplicações.
-*   **Fertirrigação & Adubação:** Nutrição mineral inteligente por hectare com cálculos químicos.
-*   **Estoque:** Abastecimento automático, baixa física, lotes e controle de validade/toxicidade.
-*   **Financeiro:** Contas a pagar/receber, conciliação e geração automática de fluxo de caixa.
-*   **Comercial:** Compras de insumos, vendas de produção agrícola e logística de encomendas.
-*   **BI & Inteligência:** Painéis dinâmicos de faturamento, ROI por talhão e predição de safras.
-*   **IA Generativa:** Análise de imagens e diagnóstico de pragas integrado a um chat inteligente.
-*   **Sincronização & Segurança:** Criptografia biométrica, sessões seguras e backups locais offline.
+*   **Agronomia:** Dosagens de adubação, cálculos NPK por talhão, colheita e plantio.
+*   **Comercial:** Compras de insumos, vendas de safras e logística de encomendas com faturamento rápido.
+*   **Estoque:** Baixas automáticas (carrinho de adubação, vendas e descarte) e ajuste manual direto.
+*   **Financeiro:** Demonstrativos DRE, contas a pagar e contas a receber automáticas.
+*   **Inteligência Artificial:** Análise diagnóstica de lavouras e pragas.
 
 ---
 
 # 5. PRINCÍPIOS DE ARQUITETURA
 
-## Offline-first
-O aplicativo móvel opera 100% de suas funções de forma local. Ele nunca bloqueia uma tela de cadastro ou inserção por falta de internet.
-
-## Sync automático
-A sincronização com a nuvem do Supabase usa campos de carimbo de data/hora (`last_updated`) e flags (`sync_status = 0` para pendente de sincronismo, `1` para sincronizado).
-
-## UUIDs
-Para evitar colisões de chaves primárias quando múltiplos dispositivos inserem registros offline ao mesmo tempo, todas as tabelas locais e remotas usam identificadores universais em texto **UUID (v4)**.
-
-## Auditoria
-Toda movimentação crítica de estoque ou alteração financeira gera um registro histórico de auditoria (na tabela `movimentacao_estoque` ou log descritivo no `caderno_notas`).
-
-## Design System Premium
-As telas seguem uma linguagem visual de vanguarda (estilo Diamond Pro / Neo-Brutalist): gradientes elegantes escuros (`#020617`, `#0A0F1C`), desfoques dinâmicos (`BlurView`), orbs ambientais brilhantes e componentes customizados reutilizáveis.
+*   **Offline-first:** O sistema móvel opera de forma autônoma sem internet e grava todas as transações no SQLite local.
+*   **Sync automático:** Sincronização transparente com o Supabase Cloud baseada em timestamps (`last_updated`).
+*   **UUIDs:** Chaves primárias em UUID (v4) geradas localmente para evitar colisões no sync offline.
+*   **Auditoria:** Registro permanente de histórico de estoque (`movimentacao_estoque`) e caderno de notas (`caderno_notas`).
+*   **Design System Premium:** Padrão Diamond Pro baseado em gradientes elegantes escuros, BlurViews desfocadas e orbs ambientais.
+*   **Reutilização:** Lógica de persistência e validações centralizada em serviços e funções exportadas em `database.js`.
 
 ---
 
@@ -102,10 +91,9 @@ As telas seguem uma linguagem visual de vanguarda (estilo Diamond Pro / Neo-Brut
 1.  [`AGROGB_MASTER_MEMORY_MAP.md`](file:///c:/Users/Bruno/Documents/AgroGB/agrogb-mobile.-main/AGROGB_MASTER_MEMORY_MAP.md) (Esta fonte permanente de conhecimento)
 2.  [`src/database/database.js`](file:///c:/Users/Bruno/Documents/AgroGB/agrogb-mobile.-main/src/database/database.js) (O motor local SQLite e suas queries de banco)
 3.  [`src/services/EstoqueService.js`](file:///c:/Users/Bruno/Documents/AgroGB/agrogb-mobile.-main/src/services/EstoqueService.js) (Serviço de baixa e movimentações físicas)
-4.  [`src/screens/PlanoAdubacaoScreen.js`](file:///c:/Users/Bruno/Documents/AgroGB/agrogb-mobile.-main/src/screens/PlanoAdubacaoScreen.js) & [`src/screens/AdubacaoFormScreen.js`](file:///c:/Users/Bruno/Documents/AgroGB/agrogb-mobile.-main/src/screens/AdubacaoFormScreen.js) (Os formulários de receitas e cálculos de NPK)
-5.  [`src/screens/EncomendasScreen.js`](file:///c:/Users/Bruno/Documents/AgroGB/agrogb-mobile.-main/src/screens/EncomendasScreen.js) & [`src/screens/NovaEncomendaScreen.js`](file:///c:/Users/Bruno/Documents/AgroGB/agrogb-mobile.-main/src/screens/NovaEncomendaScreen.js) (Gestão de cargas de logística)
-6.  [`src/screens/VendasScreen.js`](file:///c:/Users/Bruno/Documents/AgroGB/agrogb-mobile.-main/src/screens/VendasScreen.js) & [`src/screens/ComprasScreen.js`](file:///c:/Users/Bruno/Documents/AgroGB/agrogb-mobile.-main/src/screens/ComprasScreen.js) (Os módulos comerciais inteligentes)
-7.  [`src/services/SyncService.js`](file:///c:/Users/Bruno/Documents/AgroGB/agrogb-mobile.-main/src/services/SyncService.js) (Gerenciador de sincronismo Supabase)
+4.  [`src/screens/PlanoAdubacaoScreen.js`](file:///c:/Users/Bruno/Documents/AgroGB/agrogb-mobile.-main/src/screens/PlanoAdubacaoScreen.js) & [`src/screens/AdubacaoFormScreen.js`](file:///c:/Users/Bruno/Documents/AgroGB/agrogb-mobile.-main/src/screens/AdubacaoFormScreen.js) & [`src/screens/AdubacaoDetailScreen.js`](file:///c:/Users/Bruno/Documents/AgroGB/agrogb-mobile.-main/src/screens/AdubacaoDetailScreen.js) (Lógica agronômica e NPK)
+5.  [`src/screens/EncomendasScreen.js`](file:///c:/Users/Bruno/Documents/AgroGB/agrogb-mobile.-main/src/screens/EncomendasScreen.js) & [`src/screens/NovaEncomendaScreen.js`](file:///c:/Users/Bruno/Documents/AgroGB/agrogb-mobile.-main/src/screens/NovaEncomendaScreen.js) (Logística)
+6.  [`src/screens/VendasScreen.js`](file:///c:/Users/Bruno/Documents/AgroGB/agrogb-mobile.-main/src/screens/VendasScreen.js) & [`src/screens/ComprasScreen.js`](file:///c:/Users/Bruno/Documents/AgroGB/agrogb-mobile.-main/src/screens/ComprasScreen.js) (Módulos Comerciais)
 
 ---
 
@@ -113,103 +101,90 @@ As telas seguem uma linguagem visual de vanguarda (estilo Diamond Pro / Neo-Brut
 
 ```text
 AgroGB
-├── Autenticação (Login, Register, ForgotPassword, Biometria)
-├── Dashboard (KPIs de Custo, Receita, Faturamento, Gráficos de Safra)
-├── Cadastros (Clientes, Culturas, Insumos, Fornecedores, Talhões, Equipes)
-├── Operacional (Plantio, Colheita, Adubação, Irrigação, Caderno de Campo)
-├── Estoque (Entradas, Saídas, Movimentações, Ajustes Diretos, Alertas)
-├── Financeiro (Contas a Pagar/Receber, Transações DRE, Fluxo de Caixa)
-├── Comercial (Compras de Insumos, Vendas, Encomendas, Logística)
-├── Relatórios (Relatórios PDF, Excel, Histórico e Auditoria)
-├── Inteligência Artificial (Diagnósticos de Doenças, Recomendador NPK)
-├── Sync & Backup (Sincronismo Supabase Cloud, Limpeza, Restore SQLite)
-└── Configurações (Configurações Gerais, Temas Escuro/Claro, Moedas)
+├── Autenticação
+├── Dashboard
+├── Cadastros
+├── Operacional
+├── Estoque
+├── Financeiro
+├── Comercial
+├── Relatórios
+├── Inteligência Artificial
+├── Sync & Backup
+└── Configurações
 ```
 
 ---
 
 # 8. MÓDULOS DO SISTEMA
 
-### 8.1 Autenticação
-*   **Telas:** `LoginScreen.js`, `RegisterScreen.js`, `ForgotPasswordScreen.js`, `RecoverScreen.js`.
-*   **Regras:** Suporta validação em tempo real de idade/CPF, login biométrico seguro persistindo tokens em Keychain, e Error Boundary customizado para evitar falhas em cascata de renderização de temas.
+## 8.1 Autenticação
+*   **Descrição:** Cadastro e login biométrico integrado ao Supabase Auth com persistência offline e Error Boundary de resiliência.
 
-### 8.2 Dashboard
-*   **Telas:** `DashboardScreen.js`, `src/components/dashboard/QuickActions.js`.
-*   **Regras:** Exibe KPIs de faturamento e alertas críticos de estoque baixo em tempo real, integrando gráficos dinâmicos de safras vigentes e botões de atalho rápido Diamond Pro.
+## 8.2 Dashboard
+*   **Descrição:** Métricas Diamond Pro de ROI, faturamento consolidado, gráficos de safra e listagem de alertas rápidos.
 
-### 8.3 Cadastros
-*   **Telas:** `CadastroScreen.js` (Catálogo Geral), `ClientesScreen.js`, `EquipesScreen.js`.
-*   **Regras:** Registra e edita fichas cadastrais completas configurando estocabilidade (`estocavel = 1`) e vendabilidade (`vendavel = 1`) para alimentação de outros fluxos.
+## 8.3 Cadastros
+*   **Descrição:** Gerenciamento de Clientes, Fornecedores, Talhões, Equipes e Catálogo de Itens configuráveis.
 
-### 8.4 Operacional
-*   **Telas:** `PlantioScreen.js`, `ColheitaScreen.js`, `PlanoAdubacaoScreen.js`, `AdubacaoFormScreen.js`, `AdubacaoDetailScreen.js`, `MonitoramentoScreen.js`.
-*   **Regras:** Lida com todo o ciclo agronômico real. O monitoramento suporta integração de IA generativa para imagens de folhas infectadas de pragas.
+## 8.4 Operacional
+*   **Descrição:** Lançamentos de Plantio, Monitoramento IA, Planos de Adubação, Aplicação e Colheita com escrita no Caderno de Notas.
 
-### 8.5 Estoque
-*   **Telas:** `EstoqueScreen.js`, `database.js` (`atualizarEstoque`).
-*   **Regras:** Monitoramento de saldos por insumo/produto com alertas visuais dinâmicos (*Esgotado, Baixo, Normal*) e recurso de ajuste/inicialização rápida de saldo manual (sem nota fiscal).
+## 8.5 Estoque
+*   **Descrição:** Entradas e saídas físicas baseadas na função `atualizarEstoque()`, integrando alertas automáticos de saldo baixo.
 
-### 8.6 Financeiro
-*   **Telas:** `FinanceiroScreen.js`.
-*   **Regras:** Lançamentos de despesas e receitas. Toda alteração comercial e física com impacto financeiro cria de forma autônoma uma entrada correspondente no caixa geral.
+## 8.6 Financeiro
+*   **Descrição:** Integração e DRE. Toda movimentação comercial gera automaticamente lançamentos de débito ou crédito.
 
-### 8.7 Comercial
-*   **Telas:** `ComprasScreen.js`, `VendasScreen.js`, `EncomendasScreen.js`, `NovaEncomendaScreen.js`.
-*   **Regras:** Entrada de compras (aumentando estoque e gerando contas a pagar) e saída de vendas (reduzindo estoque física ou por receitas explosivas e gerando contas a receber).
+## 8.7 Comercial
+*   **Descrição:** Compras rápidas e Vendas integradas a receitas, além da logística e faturamento de Encomendas.
 
-### 8.8 Relatórios
-*   **Telas:** Exportação de fluxos locais e relatórios do DRE em PDF/Excel.
+## 8.8 Relatórios
+*   **Descrição:** Geração local e compartilhamento de relatórios DRE e movimentações do livro de campo.
 
-### 8.9 Inteligência Artificial
-*   **Telas:** `MonitoramentoScreen.js` integrado à biblioteca de câmera para diagnósticos rápidos de lavoura.
+## 8.9 Inteligência Artificial
+*   **Descrição:** Análise de lavoura para pragas diretamente da câmera integrado à nuvem de diagnóstico.
 
-### 8.10 Sync e Backup
-*   **Serviços:** `SyncService.js`.
-*   **Regras:** Disparado de forma transparente e assíncrona. Resolve conflitos de concorrência priorizando o carimbo de data/hora mais recente de atualização (`last_updated`).
+## 8.10 Sync e Backup
+*   **Descrição:** Sincronismo inteligente resolvendo concorrências priorizando o registro de timestamp (`last_updated`) mais novo.
 
-### 8.11 Configurações
-*   **Telas:** Preferências de layout, troca instantânea de cores do design system e alteração de senha de segurança.
+## 8.11 Configurações
+*   **Descrição:** Seleção de layout, tema dinâmico Dark/Light e alteração de parâmetros gerais.
 
 ---
 
 # 9. REGRAS DE NEGÓCIO CRÍTICAS
 
-## Adubação & Nutrição (Fórmula NPK)
-Ao criar e aplicar uma etapa do Plano de Adubação:
-1.  **Cálculo NPK Dinâmico:** O sistema calcula a carga nutricional multiplicando a dosagem por hectare aplicada pela área do talhão, decompondo os elementos químicos (N, P, K) na proporção de 10% padrão de cada insumo utilizado.
-2.  **Verificação de Saldo:** Verifica se a quantidade necessária para cobrir a área do talhão existe fisicamente no estoque. Se faltar insumo, exibe alerta vermelho e bloqueia a finalização da aplicação.
-3.  **Abate Físico:** Reduz automaticamente a quantidade necessária do estoque usando `atualizarEstoque()`.
-4.  **Log de Livro de Campo:** Gera e insere um registro descritivo detalhado com data, talhão, área e dosagens aplicadas na tabela `caderno_notas`.
+## Adubação (Fórmula NPK e Livro de Campo)
+1.  **Baixa de Estoque:** Abate cada insumo da receita proporcionalmente à dosagem e área do talhão.
+2.  **Verificação de Saldo:** Se o insumo requisitado for maior do que o saldo físico, bloqueia a operação e alerta o agrônomo.
+3.  **Auditoria Caderno:** Cria e grava automaticamente o log descritivo da aplicação em `caderno_notas`.
+4.  **Cálculo NPK:** Decompõe e exibe a carga de Nitrogênio (N), Fósforo (P) e Potássio (K) com base em 10% padrão de cada insumo.
 
-## Vendas (Carrinho & Explosão de Receitas)
-Ao registrar uma Venda:
-1.  **Explosão de Receita:** O sistema verifica se o produto vendido possui uma receita cadastrada na tabela `receitas`. 
-    *   *Se houver receita:* Ele calcula e deduz do estoque as quantidades dos **ingredientes que compõem o produto** (Ex: Venda de Caixa de Morango ➔ Abate embalagem plástica + fita adesiva + morangos in natura do estoque).
-    *   *Se não houver receita:* Deduz a quantidade diretamente do item vendido no estoque.
-2.  **Lançamento Financeiro:** Insere automaticamente um lançamento de crédito (**`RECEBER`**) na tabela `financeiro_transacoes` com o valor total calculado da venda.
+## Compras & Insumos
+1.  **Estoque:** Adiciona fisicamente a quantidade de insumos na tabela `estoque`.
+2.  **Financeiro:** Cria lançamento automático do tipo **`PAGAR`** em `financeiro_transacoes`.
+3.  **Cadastro Rápido:** Permite registrar um novo item no catálogo diretamente na tela de compras.
 
-## Compras & Entrada de Insumos
-Ao registrar uma Compra:
-1.  **Entrada de Estoque:** Adiciona fisicamente a quantidade de insumos comprada na tabela de estoque.
-2.  **Lançamento Financeiro:** Insere automaticamente um lançamento de débito (**`PAGAR`**) na tabela `financeiro_transacoes` com a data de vencimento da fatura.
-3.  **Cadastro On-The-Fly:** Se o fornecedor entregar um insumo que ainda não está no catálogo, a tela de compras permite registrá-lo rapidamente sem fechar a operação.
+## Vendas com Explosão de Receitas
+1.  **Explosão de Receita:** Verifica se o produto vendido possui uma receita em `receitas`. Se sim, abate proporcionalmente cada ingrediente/embalagem do estoque; se não, abate o produto diretamente.
+2.  **Financeiro:** Cria lançamento automático do tipo **`RECEBER`** em `financeiro_transacoes`.
 
 ## Controle de Estoque Seguro
-1.  **Segurança Antinegativa:** Se uma saída de estoque for maior do que a quantidade física disponível, a função zera o estoque (`0`) em vez de permitir números negativos.
-2.  **Proteção de Histórico:** Lançamentos com data de referência anteriores a `2026-01-01` são ignorados no cálculo de estoque atual para evitar que relatórios antigos de safras passadas alterem os saldos reais vigentes do estoque físico.
+1.  **Regra Antinegativa:** Se uma saída de estoque tentar deixar o saldo negativo, a quantidade é fixada em `0`.
+2.  **Data de Corte:** Registros históricos anteriores a `2026-01-01` são ignorados no cálculo físico para não bagunçar o estoque atual.
 
 ---
 
 # 10. DESIGN SYSTEM OFICIAL
 
 ## Referência Visual
-A tela de **Menu / Dashboard Principal** é o padrão oficial de design system do AgroGB ( Diamond Pro). Componentes customizados devem seguir o visual escuro elegante, combinando vidro fosco e contrastes sutis em verde menta (`#10B981` ou `#34D399`) e dourado elegante para botões de destaque e ícones de peso.
+O padrão visual oficial baseia-se na tela de **Dashboard Diamond Pro**. Componentes customizados devem seguir o visual escuro elegante, usando gradientes escuros, desfoque dinâmico e contornos em verde menta (`#10B981`) ou dourado para elementos de faturamento.
 
-## Componentes Oficiais
-*   `AgroButton` ➔ Botão com gradiente, borda interna e feedback tátil.
-*   `Card` & `SafeBlurView` ➔ Cards com efeito translúcido desfocado (`BlurView`) e bordas suaves semi-transparentes de 1px.
-*   `MetricCard` ➔ Exibição de KPIs com badges de porcentagem positivos/negativos.
+## Componentes
+*   `AgroButton` (Botão premium tátil)
+*   `Card` & `SafeBlurView` (Cards translúcidos desfocados com bordas de 1px)
+*   `MetricCard` (Cards numéricos de KPIs)
 
 ---
 
@@ -217,49 +192,41 @@ A tela de **Menu / Dashboard Principal** é o padrão oficial de design system d
 
 | Módulo | Status | Notas Técnicas |
 | :--- | :--- | :--- |
-| **Autenticação** | 🟢 Estável | Suporta biometria e recuperação segura de contas via Supabase Auth. |
-| **Dashboard** | 🟢 Estável | KPIs consolidados e gráficos de colheita rápidos operando offline. |
-| **Adubação** | 🟢 Estável | Lógicas agronômicas de NPK, carrinho de dosagem e escrita no caderno restaurados. |
-| **Estoque** | 🟢 Estável | Ajuste direto de saldos, alertas de estoque baixo e regras de datas de corte ativas. |
-| **Financeiro** | 🟡 Refinamento | Fluxo de DRE consolidado; integração autônoma de contas a pagar/receber operacional. |
-| **Compras** | 🟢 Operacional | Entrada física integrada ao financeiro e cadastro de itens rápidos na tela de entrada. |
-| **Vendas** | 🟢 Operacional | Baixas inteligentes por receitas explosivas e criação de contas a receber automatizada. |
-| **Sync** | 🟢 Estável | Tratamento de conflitos de banco de dados offline/online ativo no Supabase. |
+| Autenticação | 🟢 Estável | Suporta biometria e tratamento de erros do Supabase Auth. |
+| Dashboard | 🟢 Estável | KPIs de DRE e gráficos rápidos operando em modo offline. |
+| Adubação | 🟢 Estável | Lógicas agronômicas de NPK e carrinho de dosagem restaurados com sucesso. |
+| Estoque | 🟢 Estável | Ajuste direto de saldos, alertas de estoque baixo e regras de datas de corte ativas. |
+| Financeiro | 🟡 Refinamento | Integração autônoma de contas a pagar/receber operacional; DRE consolidado. |
+| Compras | 🟢 Operacional | Entrada física integrada ao financeiro e cadastro de itens rápidos na tela de entrada. |
+| Vendas | 🟢 Operacional | Baixas inteligentes por receitas explosivas e criação de contas a receber automatizada. |
+| Sync | 🟢 Estável | Tratamento de concorrência e push/pull offline e online com Supabase ativo. |
 
 ---
 
 # 12. ROADMAP ESTRATÉGICO
 
-## Fase 1 — Estabilização (Concluída)
-*   Remoção de bugs e correção de sintaxe de empacotamento no build do GitHub Actions.
-
-## Fase 2 — Recuperação de Lógica Histórica (Concluída)
-*   Reincorporação integral das regras de adubação, NPK, explosão de vendas e baixas no caderno de notas.
-
-## Fase 3 — Limpeza e Reinicialização Operacional (Concluída)
-*   Zeramento total seguro de bases de dados do Supabase e SQLite desktop local para novos testes sem resíduos de dados fictícios.
-
-## Fase 4 — Testes de Campo (Em Andamento)
-*   Instalação da nova build de produção gerada pelo APK para testes físicos na propriedade rural.
-
-## Fase 5 — Versão Desktop Completa (Roadmap)
-*   Portabilidade da lógica de serviços unificada para o ecossistema desktop Python.
+*   **Fase 1 — Estabilização (Concluída):** Correção de bugs de sintaxe e de empacotamento no build do GitHub Actions.
+*   **Fase 2 — Recuperação de Lógica Histórica (Concluída):** Reincorporação das regras de adubação, NPK, receitas de vendas e baixas no caderno de notas.
+*   **Fase 3 — Limpeza e Reinicialização Operacional (Concluída):** Zeramento completo das 17 tabelas ativas no Supabase e banco local.
+*   **Fase 4 — Testes de Campo (Em Andamento):** Testes de campo com a nova build APK gerada no GitHub.
+*   **Fase 5 — Versão Desktop (Roadmap):** Portabilidade unificada das regras de negócio para a interface em Python.
 
 ---
 
 # 13. LOG DE DECISÕES
 
 ### 2026-05-17
-*   **Limpeza de Testes:** Realizado o zeramento completo de todas as 17 tabelas ativas no Supabase na nuvem e o SQLite desktop local para permitir novos cadastros operacionais limpos.
-*   **Segurança de Login Permanente:** Definido e mantido o login **`ADMIN`** com a senha **`1234`** na tabela `usuarios` local e na nuvem como conta master permanente para testes rápidos.
+*   **Limpeza das Bases de Dados:** Realizado o zeramento completo de todas as tabelas ativas em nuvem no Supabase e do SQLite desktop local.
+*   **Segurança de Login Permanente:** Mantida a conta **`ADMIN`** com a senha **`1234`** na tabela `usuarios` para simulações e testes rápidos sem bloqueio.
 *   **Criação do Cérebro Ativo:** Estabelecido este arquivo `AGROGB_MASTER_MEMORY_MAP.md` e enviado ao repositório GitHub para servir como a base definitiva e inabalável de inteligência de IAs do AgroGB.
 
 ---
 
 # 14. IDEIAS FUTURAS
-*   Recomendações automatizadas de fertilização preditiva baseadas em análise química de solo carregada por foto ou arquivo PDF.
-*   ROI real por talhão cruzando dados financeiros diretos de aplicações de insumos contra lucros de colheita.
-*   Suporte a mapas de satélite offline para georeferenciamento de talhões em áreas sem rede de dados celular.
+
+*   Recomendações automáticas de adubação baseadas em uploads de PDFs de laudo químico de solo.
+*   ROI por talhão cruzando dados financeiros de compras contra lucros de colheita.
+*   Mapas offline para geolocalização de talhões em áreas rurais remotas sem sinal.
 
 ---
 
@@ -279,13 +246,10 @@ Continue o projeto exatamente do ponto onde ele parou.
 
 # 16. CHECKLIST DE ATUALIZAÇÃO
 
-Sempre que houver alteração importante:
-*   [ ] Atualizar funcionalidades.
-*   [ ] Atualizar regras de negócio.
-*   [ ] Atualizar status dos módulos.
-*   [ ] Atualizar roadmap.
-*   [ ] Registrar decisões.
-*   [ ] Registrar novas ideias.
+*   [ ] Atualizar seções de regras de negócio.
+*   [ ] Atualizar matrizes de funcionalidades e status dos módulos.
+*   [ ] Registrar as novas decisões de arquitetura.
+*   [ ] Atualizar o Changelog Permanente com a data e impacto esperado.
 
 ---
 
@@ -309,3 +273,151 @@ O AgroGB será um ecossistema completo de gestão rural, unindo: Agronomia, Fina
 
 Objetivo final:
 > **Tornar o AgroGB a plataforma de referência definitiva no agronegócio brasileiro.**
+
+---
+
+# 19. GOVERNANÇA DA MEMÓRIA (OBRIGATÓRIO)
+
+Este documento deve seguir regras rígidas de governança para evitar perda de conhecimento.
+
+## Regras Absolutas
+
+1.  **Nunca apagar** seções históricas relevantes ou logs anteriores.
+2.  **Nunca sobrescrever** funcionalidades sem registrar formalmente a justificativa no log de decisões.
+3.  **Sempre atualizar** o status de cada módulo ao alterar seu código correspondente.
+4.  **Sempre registrar** a data e o impacto esperado da alteração no Changelog.
+5.  **Sempre preservar** retrocompatibilidade de banco de dados e dados locais do SQLite.
+6.  **Toda IA deve ler** este documento como primeiro passo obrigatório antes de alterar qualquer código do repositório.
+
+---
+
+# 20. CHANGELOG PERMANENTE
+
+## 2026-05-17
+### Alteração
+Restauradas as lógicas agronômicas de adubação, receitas de vendas, faturamento rápido de encomendas e zeramento total das bases de dados.
+
+### Arquivos Alterados
+- `src/database/database.js`
+- `src/screens/AdubacaoFormScreen.js`
+- `src/screens/AdubacaoDetailScreen.js`
+- `src/screens/PlanoAdubacaoScreen.js`
+- `src/screens/EncomendasScreen.js`
+- `src/screens/NovaEncomendaScreen.js`
+- `src/services/EstoqueService.js` (Novo Serviço)
+- `AGROGB_MASTER_MEMORY_MAP.md` (Novo Documento)
+
+### Regras de Negócio Impactadas
+- **Adubação:** Lógica NPK, carrinho de dosagem física por talhão e logs em cuaderno_notas.
+- **Vendas:** Explosão automática de receitas de itens filhos.
+- **Estoque:** Regra antinegativa de proteção e data de corte de 2026.
+- **Financeiro:** Entrada de contas a pagar/receber automáticas em compras/vendas.
+
+### Motivo
+Restaurar as regras de negócio agronômicas e comerciais históricas perdidas durante a fase de modernização do layout e garantir um banco limpo do zero para testes estáveis.
+
+### Impacto Esperado
+O sistema mobile recuperou toda a inteligência agronômica Diamond Pro operando sobre um banco de dados perfeitamente higienizado e livre de resíduos antigos.
+
+---
+
+# 21. MATRIZ DE FUNCIONALIDADES
+
+| Funcionalidade | Status | Arquivos Envolvidos | Tabelas SQLite/Nuvem | Serviços Envolvidos | Última Validação |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Login Biométrico** | 🟢 Estável | `LoginScreen.js`, `database.js` | `usuarios` | Supabase Auth, Biometrics | 17/05/2026 |
+| **Aplicações NPK** | 🟢 Estável | `AdubacaoFormScreen.js` | `etapas_adubacao`, `cadastro` | `EstoqueService.js` | 17/05/2026 |
+| **Faturamento Encomendas** | 🟢 Estável | `EncomendasScreen.js` | `orders`, `clientes` | Baixa automatizada de Vendas | 17/05/2026 |
+| **Explosão Receitas** | 🟢 Estável | `VendasScreen.js` | `receitas`, `estoque` | `EstoqueService.js` | 17/05/2026 |
+| **Auto-Post Financeiro** | 🟢 Estável | `ComprasScreen.js`, `VendasScreen.js`| `financeiro_transacoes`| Caixa Automático | 17/05/2026 |
+| **Sincronismo Cloud** | 🟢 Estável | `SyncService.js` | Todas | `SyncService.js` | 17/05/2026 |
+
+---
+
+# 22. MATRIZ DE DECISÕES ARQUITETURAIS
+
+*   **Offline-first:** Persistência total e imediata em banco SQLite local (`agrogb_mobile.db`).
+*   **UUID como Chave Primária:** Chaves universais v4 para evitar colisões e duplicidades em lançamentos paralelos offline.
+*   **Nuvem Supabase (BaaS):** Autenticação e sincronismo bidirecional do banco remoto.
+*   **Padrão Visual Diamond Pro:** Uso mandatório de layouts escuros elegantes com BlurViews e contornos em verde menta.
+*   **Contas Master Permanente:** Permanência da conta `ADMIN` (senha `1234`) para facilidade de simulações rápidas.
+
+---
+
+# 23. MATRIZ DE REGRAS DE NEGÓCIO
+
+| Regra | Disparo | Processo Executado | Tabelas Afetadas | Serviços Envolvidos | Resultado Esperado |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **NPK Decoupling** | Exibição de etapa de adubação | Multiplica dosagem por área e extrai 10% de N, P e K por ingrediente | N/A | Front-end render | Exibição da carga mineral na tela |
+| **Estoque Antinegativo**| `atualizarEstoque` com delta < 0 | Compara saldo atual com delta. Se ficar menor que 0, fixa em 0 | `estoque` | `EstoqueService.js` | Saldo nunca negativo |
+| **Histórico Protegido** | `atualizarEstoque` com data antiga | Se data de referência < `2026-01-01`, ignora o ajuste de estoque | `estoque` | `EstoqueService` | Estoque físico intocado |
+| **Caixa Automático** | Salvar Compra ou Venda | Insere débito/crédito na tabela financeira baseado no valor da nota | `financeiro_transacoes`| Automação Financeira | Contas atualizadas no DRE |
+
+---
+
+# 24. MATRIZ DE INTEGRAÇÕES
+
+*   **Supabase Cloud:** Gerencia conexões PostgreSQL remotas e autenticação biometrica via Supabase Auth.
+*   **SQLite Local:** Mecanismo de persistência nativo com processamento concorrente offline.
+*   **Expo Local Authentication:** Interface segura nativa para leitura de biometria facial/digital no celular.
+*   **Expo Camera:** Controle e captura de fotos em alta definição para IA de pragas no monitoramento.
+*   **Geração PDF/Excel:** Conversão nativa local de matrizes DRE para relatórios portáteis.
+
+---
+
+# 25. MATRIZ DE TESTES DE ACEITAÇÃO
+
+| Módulo | Cenário | Passos de Teste | Resultado Esperado | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Adubação** | Falta de Insumo no Estoque | Tentar aplicar receita sem saldo no estoque físico | Exibição de alerta vermelho de falta de insumo e bloqueio de ação | 🟢 Passou |
+| **Vendas** | Explosão de Produto com Receita | Registrar venda de item que possui ingredientes cadastrados | Abate proporcional de cada insumo no estoque e gravação de venda | 🟢 Passou |
+| **Estoque** | Lançamento Histórico Retroativo | Registrar movimentação com data em `2025-12-15` | Movimentação gravada no log, mas estoque atual permanece intacto | 🟢 Passou |
+| **Encomendas**| Fluxo rápido de "Dar Baixa" | Clicar em "Dar Baixa" na encomenda pendente | Redirecionamento com campos auto-preenchidos na tela de vendas | 🟢 Passou |
+
+---
+
+# 26. MATRIZ DE BUGS CONHECIDOS
+
+*   *Nenhum bug impeditivo ou sintático conhecido em ambiente de homologação. Todas as dependências e empacotamento estão em status de compilação 100% verde no GitHub Actions.*
+
+---
+
+# 27. MATRIZ DE ROADMAP
+
+*   🟢 **Em Produção:** Login Biométrico, Painel Diamond Pro, Carrinho de Nutrição NPK, Baixa física antinegativa de estoque, Explosão de receitas de vendas e Sincronismo Supabase.
+*   🟡 **Em Desenvolvimento:** Expansão de relatórios DRE por centro de custos móvel.
+*   🔵 **Planejada:** Portabilidade da inteligência local para a plataforma Desktop baseada em Python.
+
+---
+
+# 28. BACKUP E PROTEÇÃO DO CONHECIMENTO
+
+*   **Nuvem GitHub:** Repositório oficial versionado e integrado ao pipeline automático de compilação de APKs.
+*   **Backup Local do Workspace:** Cópia permanente de diretórios no computador local de desenvolvimento.
+*   **Documento Mestre Permanente:** Versionamento ativo e contínuo deste arquivo `AGROGB_MASTER_MEMORY_MAP.md`.
+
+---
+
+# 29. PROCEDIMENTO OBRIGATÓRIO PARA QUALQUER IA
+
+Antes de iniciar qualquer alteração, correção ou inclusão de código neste repositório:
+1.  **Ler integralmente** o arquivo `AGROGB_MASTER_MEMORY_MAP.md`.
+2.  **Identificar e respeitar** as regras de negócio críticas listadas na Seção 9.
+3.  **Seguir a governança** de não remover dados históricos relevantes e registrar novas decisões de arquitetura.
+4.  **Atualizar o Changelog** permanente e os status de módulo no encerramento da tarefa.
+
+---
+
+# 30. CHECKLIST DE ENCERRAMENTO DE CADA SESSÃO
+
+Ao finalizar qualquer atividade de desenvolvimento no AgroGB:
+*   [ ] **Atualizar o Changelog Permanente** (Seção 20) com a data, descrição e impacto.
+*   [ ] **Atualizar os Status dos Módulos** (Seção 11) se houver alguma evolução ou refatoração.
+*   [ ] **Registrar novas Decisões Arquiteturais** (Seção 22) se houver alterações estruturais.
+*   [ ] **Validar a integridade das regras críticas** contra regressões de lógica.
+
+---
+
+# 31. REGRA DE OURO
+
+> **Nenhuma funcionalidade, regra de negócio, decisão técnica ou aprendizado importante pode ser perdido. Tudo deve ser documentado, preservado e incorporado ativamente ao AGROGB_MASTER_MEMORY_MAP.md para perpetuação da inteligência do AgroGB.**
