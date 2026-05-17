@@ -1,4 +1,4 @@
-import { Platform, ToastAndroid, Alert } from 'react-native';
+import { Platform, Alert } from 'react-native';
 
 /**
  * showToast - Feedback Visual Rápido e Não Bloqueante 📡🔔
@@ -9,7 +9,12 @@ export function showToast(message) {
     if (!message) return;
     
     if (Platform.OS === 'android') {
-        ToastAndroid.show(message, ToastAndroid.SHORT);
+        try {
+            const { ToastAndroid } = require('react-native');
+            ToastAndroid.show(message, ToastAndroid.SHORT);
+        } catch (e) {
+            console.log(`[AgroGB Toast Android Error] ${message}`);
+        }
     } else {
         console.log(`[AgroGB Toast] ${message}`);
         // Alerta não bloqueante rápido para iOS e Web

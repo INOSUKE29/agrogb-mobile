@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgroGB v7.0 Premium Dashboard Preview</title>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: #131a26;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --primary: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* Container simulating a high-end mobile device screen */
+        .mobile-frame {
+            width: 410px;
+            height: 840px;
+            background-color: var(--bg-color);
+            border-radius: 40px;
+            border: 12px solid #1e293b;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+            position: relative;
+            scrollbar-width: none; /* Hide scrollbar for Firefox */
+        }
+
+        .mobile-frame::-webkit-scrollbar {
+            display: none; /* Hide scrollbar for Chrome/Safari */
+        }
+
+        /* Top Notch/StatusBar */
+        .status-bar {
+            height: 44px;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-main);
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-color);
+            z-index: 10;
+        }
+
+        .status-icons {
+            display: flex;
+            gap: 6px;
+        }
+
+        /* Dashboard Header */
+        .header {
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .profile-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 800;
+            font-size: 16px;
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+        }
+
+        .profile-info h1 {
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .profile-info p {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 2px;
+        }
+
+        .notify-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .notify-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Quick Actions Classified Sections */
+        .section-container {
+            padding: 0 20px;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            padding-left: 4px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .action-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            height: 68px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+        }
+
+        .action-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(16, 185, 129, 0.4);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.1);
+        }
+
+        .action-card:active {
+            transform: scale(0.97);
+        }
+
+        .icon-circle {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .card-content {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .card-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: 0.2px;
+        }
+
+        .card-desc {
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Footer Info Alert popup */
+        .toast {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: #10b981;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 700;
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="mobile-frame">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <span>08:45</span>
+            <div class="status-icons">
+                <i class="fa-solid fa-signal"></i>
+                <i class="fa-solid fa-wifi"></i>
+                <i class="fa-solid fa-battery-three-quarters"></i>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <div class="profile-section">
+                <div class="avatar">B</div>
+                <div class="profile-info">
+                    <h1>Olá, Bruno</h1>
+                    <p>Fazenda Santa Maria <i class="fa-solid fa-circle-check" style="font-size: 10px;"></i></p>
+                </div>
+            </div>
+            <div class="notify-btn" onclick="showToast('Notificações: nenhuma nova mensagem')">
+                <i class="fa-regular fa-bell" style="font-size: 18px;"></i>
+            </div>
+        </div>
+
+        <!-- 🌿 GESTÃO OPERACIONAL -->
+        <div class="section-container">
+            <div class="section-title">Gestão Operacional</div>
+            <div class="grid">
+                <div class="action-card" onclick="showToast('Abrindo Caderno de Campo...')">
+                    <div class="icon-circle" style="background-color: rgba(16, 185, 129, 0.15); color: #10b981;">
+                        <i class="fa-solid fa-book"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-title">Caderno</span>
+                        <span class="card-desc">Caderno de Campo</span>
+                    </div>
+                </div>
+
+                <div class="action-card" onclick="showToast('Abrindo Registro de Colheita...')">
+                    <div class="icon-circle" style="background-color: rgba(239, 68, 68, 0.15); color: #EF4444;">
+                        <i class="fa-solid fa-leaf"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-title">Colheita</span>
+                        <span class="card-desc">Registro de Colheita</span>
+                    </div>
+                </div>
+
+                <div class="action-card" onclick="showToast('Abrindo Controle de Plantios...')">
+                    <div class="icon-circle" style="background-color: rgba(37, 99, 235, 0.15); color: #2563EB;">
+                        <i class="fa-solid fa-seedling"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-title">Plantio</span>
+                        <span class="card-desc">Controle de Plantios</span>
+                    </div>
+                </div>
+
+                <div class="action-card" onclick="showToast('Abrindo Monitoramento de Pragas...')">
+                    <div class="icon-circle" style="background-color: rgba(139, 92, 246, 0.15); color: #8B5CF6;">
+                        <i class="fa-solid fa-eye"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-title">Monitorar</span>
+                        <span class="card-desc">Monitorar Pragas</span>
+                    </div>
+                </div>
+
+                <div class="action-card" onclick="showToast('Abrindo Estoque...')">
+                    <div class="icon-circle" style="background-color: rgba(202, 138, 4, 0.15); color: #CA8A04;">
+                        <i class="fa-solid fa-box"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-title">Estoque</span>
+                        <span class="card-desc">Prateleiras Digitais</span>
+                    </div>
+                </div>
+
+                <div class="action-card" onclick="showToast('Abrindo Catálogo Rural...')">
+                    <div class="icon-circle" style="background-color: rgba(75, 85, 99, 0.15); color: #4B5563;">
+                        <i class="fa-solid fa-screwdriver-wrench"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-title">Cadastros</span>
+                        <span class="card-desc">Catálogo Rural</span>
+                    </div>
+                </div>
+
+                <div class="action-card" onclick="showToast('Abrindo Adubação e Nutrição...')" style="grid-column: span 2;">
+                    <div class="icon-circle" style="background-color: rgba(14, 165, 233, 0.15); color: #0EA5E9;">
+                        <i class="fa-solid fa-flask"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-title">Adubação</span>
+                        <span class="card-desc">Plano de Nutrição</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 💼 COMERCIAL & VENDAS -->
+        <div class="section-container">
+            <div class="section-title">Comercial & Vendas</div>
+            <div class="grid">
+                <div class="action-card" onclick="showToast('Abrindo Vendas...')">
+                    <div class="icon-circle" style="background-color: rgba(16, 185, 129, 0.15); color: #10b981;">
+                        <i class="fa-solid fa-money-bill-wave"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-title">Vendas</span>
+                        <span class="card-desc">Faturamento de Vendas</span>
+                    </div>
+                </div>
+
+                <div class="action-card" onclick="showToast('Abrindo Compras de Insumos...')">
+                    <div class="icon-circle" style="background-color: rgba(59, 130, 246, 0.15); color: #3B82F6;">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-title">Compras</span>
+                        <span class="card-desc">Compras de Insumos</span>
+                    </div>
+                </div>
+
+                <div class="action-card" onclick="showToast('Abrindo Centro de Custos...')">
+                    <div class="icon-circle" style="background-color: rgba(245, 158, 11, 0.15); color: #F59E0B;">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-title">Custos</span>
+                        <span class="card-desc">Centro de Custos</span>
+                    </div>
+                </div>
+
+                <div class="action-card" onclick="showToast('Abrindo Carteira de Clientes...')">
+                    <div class="icon-circle" style="background-color: rgba(139, 92, 246, 0.15); color: #8B5CF6;">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-title">Clientes</span>
+                        <span class="card-desc">Carteira de Clientes</span>
+                    </div>
+                </div>
+
+                <div class="action-card" onclick="showToast('Abrindo Pedidos Pendentes...')">
+                    <div class="icon-circle" style="background-color: rgba(236, 72, 153, 0.15); color: #EC4899;">
+                        <i class="fa-regular fa-envelope-open"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-title">Encomendas</span>
+                        <span class="card-desc">Pedidos Pendentes</span>
+                    </div>
+                </div>
+
+                <div class="action-card" onclick="showToast('Abrindo Exportação de Relatórios...')">
+                    <div class="icon-circle" style="background-color: rgba(107, 114, 128, 0.15); color: #6B7280;">
+                        <i class="fa-regular fa-file-lines"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-title">Relatórios</span>
+                        <span class="card-desc">Exportar Relatórios</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ⚙️ SISTEMA & FROTA -->
+        <div class="section-container" style="margin-bottom: 60px;">
+            <div class="section-title">Sistema & Frota</div>
+            <div class="grid">
+                <div class="action-card" onclick="showToast('Abrindo Controle de Frota...')">
+                    <div class="icon-circle" style="background-color: rgba(14, 165, 233, 0.15); color: #0EA5E9;">
+                        <i class="fa-solid fa-truck-monster"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-title">Frota</span>
+                        <span class="card-desc">Frota & Máquinas</span>
+                    </div>
+                </div>
+
+                <div class="action-card" onclick="showToast('Abrindo Scanner OCR...')">
+                    <div class="icon-circle" style="background-color: rgba(16, 185, 129, 0.15); color: #10b981;">
+                        <i class="fa-solid fa-expand"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-title">Scanner</span>
+                        <span class="card-desc">Escanear Insumos</span>
+                    </div>
+                </div>
+
+                <div class="action-card" onclick="showToast('Abrindo Tipos de Culturas...')">
+                    <div class="icon-circle" style="background-color: rgba(202, 138, 4, 0.15); color: #CA8A04;">
+                        <i class="fa-solid fa-wheat-awn"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-title">Culturas</span>
+                        <span class="card-desc">Tipos de Culturas</span>
+                    </div>
+                </div>
+
+                <div class="action-card" onclick="showToast('Abrindo Gestão de Equipes...')">
+                    <div class="icon-circle" style="background-color: rgba(245, 158, 11, 0.15); color: #F59E0B;">
+                        <i class="fa-solid fa-users-gear"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-title">Equipe</span>
+                        <span class="card-desc">Gerenciar Usuários</span>
+                    </div>
+                </div>
+
+                <div class="action-card" onclick="showToast('Iniciando Sincronização...')">
+                    <div class="icon-circle" style="background-color: rgba(59, 130, 246, 0.15); color: #3B82F6;">
+                        <i class="fa-solid fa-rotate"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-title">Sincronizar</span>
+                        <span class="card-desc">Sincronizar Supabase</span>
+                    </div>
+                </div>
+
+                <div class="action-card" onclick="showToast('Abrindo Ajustes do Sistema...')">
+                    <div class="icon-circle" style="background-color: rgba(107, 114, 128, 0.15); color: #6B7280;">
+                        <i class="fa-solid fa-gears"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-title">Ajustes</span>
+                        <span class="card-desc">Configurar Sistema</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification popup -->
+        <div id="toast" class="toast">Feed de Sistema</div>
+    </div>
+
+    <script>
+        let toastTimeout;
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.classList.add('show');
+            
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
