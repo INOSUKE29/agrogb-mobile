@@ -219,11 +219,15 @@ O padrão visual oficial baseia-se na tela de **Dashboard Diamond Pro**. Compone
 
 # 12. ROADMAP ESTRATÉGICO
 
-*   **Fase 1 — Estabilização (Concluída):** Correção de bugs de sintaxe e de empacotamento no build do GitHub Actions.
-*   **Fase 2 — Recuperação de Lógica Histórica (Concluída):** Reincorporação das regras de adubação, NPK, receitas de vendas e baixas no caderno de notas.
-*   **Fase 3 — Limpeza e Reinicialização Operacional (Concluída):** Zeramento completo das 17 tabelas ativas no Supabase e banco local.
-*   **Fase 4 — Testes de Campo (Em Andamento):** Testes de campo com a nova build APK gerada no GitHub.
-*   **Fase 5 — Versão Desktop (Roadmap):** Portabilidade unificada das regras de negócio para a interface em Python.
+*   **Fase 1 — Consolidar Base Atual do Mobile (Concluída/Estável):** Alinhamento visual, correção de menus, unificação de Configurações e validação sintática do Metro Bundler.
+*   **Fase 2 — Estrutura de Banco Unificada (Em Execução):** Sincronismo das novas tabelas (`farms`, `fields`, `plantings`, `recommendations`) com suporte offline-first no SQLite local e campos de auditoria multiplataforma (`source_platform`, `created_by`, `updated_by`).
+*   **Fase 3 — Controle de Perfis (RBAC):** Restrições e visualizações dinâmicas no celular baseadas na role (`ADMIN`, `AGRONOMO`, `CLIENTE`, `STAFF`).
+*   **Fase 4 — Permissões Granulares:** Proteção estrita do banco e do estoque (leitura "Somente Leitura" de insumos para agrônomos, sem acesso financeiro ou de custos).
+*   **Fase 5 — Biblioteca Global e Local:** Implementação do cadastro leve de insumos locais e envio automático para fila de curadoria (`product_curation_queue`).
+*   **Fase 6 — Recomendações Agronômicas:** Interface de prescrição rígida separada por abas (Gotejo vs. Foliar) e envio de receitas formatadas via app/WhatsApp.
+*   **Fase 7 — Auditoria Completa:** Histórico permanente de transações físicas e comerciais com rastreio de origem.
+*   **Fase 8 — Integração Desktop:** Construção do painel web Bruno/Agrônomo consumindo a mesma base de dados unificada do Supabase.
+
 
 ---
 
@@ -307,6 +311,17 @@ Este documento deve seguir regras rígidas de governança para evitar perda de c
 
 # 20. CHANGELOG PERMANENTE
 
+## 2026-05-18 (Quinta Alteração)
+### Alteração
+Aprovação e consolidação do **Master Blueprint da Arquitetura Modular e Unificada** do AgroGB (Mobile & Desktop). Estruturação do desenvolvimento em 8 fases de evolução, com governança de segurança por Row Level Security (RLS) unificada em nuvem Supabase. Planejamento do módulo de recomendações técnicas com abas rígidas de dosagem (Gotejo vs. Foliar) e unidades flexíveis (`ml`, `gr`, `lt`, `kg`, `m²`), além do fluxo de curadoria local-global de insumos. Disparo da compilação local autônoma do APK Android Debug (`gradlew assembleDebug`) no computador do desenvolvedor para testes prévios estáveis.
+
+### Arquivos Alterados
+- `implementation_plan.md`
+- `task.md`
+- `AGROGB_MASTER_MEMORY_MAP.md`
+
+---
+
 ## 2026-05-18 (Quarta Alteração)
 ### Alteração
 Unificação completa e simplificação do painel de Configurações (`SettingsScreen.js`). Descontinuação da tela antiga duplicada (`SyncScreen.js`). Implementação do Tema Global Dinâmico (Claro/Escuro/Sistema) e ativação de 100% dos controles funcionais integrados ao SQLite local e nuvem Supabase em tempo real (Auto-Sync, Ping Latency, Lixeira com expurgo físico, otimização por SQL VACUUM, Senha e Biometria).
@@ -321,6 +336,7 @@ Unificação completa e simplificação do painel de Configurações (`SettingsS
 - **Configurações:** Escrita instantânea das preferências (Idioma, Unidade e Safra) no SQLite e AsyncStorage.
 - **Sincronismo:** Motor de Auto-Sync que envia atualizações locais em segundo plano imediatamente após modificações.
 - **Manutenção:** Execução de compactação de disco por SQLite VACUUM e purga definitiva de dados logicamente deletados (`is_deleted = 1`).
+
 
 ---
 

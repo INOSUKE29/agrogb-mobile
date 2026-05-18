@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Dimensions, ScrollView } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
-import { insertCultura, getCulturas, deleteCultura } from '../database/database';
+import { insertCultura, getCulturas, deleteCultura, updateCultura } from '../database/database';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -10,6 +10,7 @@ import { useTheme } from '../context/ThemeContext';
 import Card from '../components/common/Card';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
+import AgroOptionsModal from '../components/common/AgroOptionsModal';
 
 const { width } = Dimensions.get('window');
 
@@ -20,6 +21,8 @@ export default function CulturasScreen({ navigation }) {
     const [modalVisible, setModalVisible] = useState(false);
     const [nome, setNome] = useState('');
     const [observacao, setObservacao] = useState('');
+    const [selectedItemActions, setSelectedItemActions] = useState(null);
+    const [editingItem, setEditingItem] = useState(null);
 
     useEffect(() => { loadData(); }, []);
 
@@ -34,15 +37,39 @@ export default function CulturasScreen({ navigation }) {
         }
     };
 
+    const resetForm = () => {
+        setEditingItem(null);
+        setNome('');
+        setObservacao('');
+    };
+
+    const handleEdit = (item) => {
+        setEditingItem(item);
+        setNome(item.nome);
+        setObservacao(item.observacao || '');
+        setModalVisible(true);
+    };
+
     const handleSave = async () => {
         if (!nome.trim()) return Alert.alert('Atenção', 'O nome da cultura ou área é obrigatório.');
         try {
-            await insertCultura({ uuid: uuidv4(), nome: nome.toUpperCase(), observacao: observacao.toUpperCase() });
+            const payload = {
+                uuid: editingItem ? editingItem.uuid : uuidv4(),
+                nome: nome.toUpperCase(),
+                observacao: observacao.toUpperCase()
+            };
+
+            if (editingItem) {
+                await updateCultura(payload);
+                Alert.alert('Sucesso', 'Área/Cultura atualizada com sucesso!');
+            } else {
+                await insertCultura(payload);
+                Alert.alert('Sucesso', 'Área/Cultura cadastrada com sucesso!');
+            }
+
             setModalVisible(false); 
-            setNome(''); 
-            setObservacao(''); 
+            resetForm(); 
             loadData();
-            Alert.alert('Sucesso', 'Área/Cultura cadastrada com sucesso!');
         } catch (e) { 
             Alert.alert('Erro', 'Não foi possível salvar os dados.'); 
         }
@@ -84,7 +111,12 @@ export default function CulturasScreen({ navigation }) {
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.list}
                     renderItem={({ item }) => (
-                        <Card style={styles.itemCard} noPadding onPress={() => Alert.alert('Info', item.nome)}>
+                        <Card 
+                            style={styles.itemCard} 
+                            noPadding 
+                            onPress={() => handleEdit(item)}
+                            onLongPress={() => setSelectedItemActions(item)}
+                        >
                             <View style={styles.cardInner}>
                                 <View style={[styles.iconBox, { backgroundColor: (theme?.colors?.primary || '#14B8A6') + '15' }]}>
                                     <MaterialCommunityIcons name="sprout" size={24} color={theme?.colors?.primary} />
@@ -93,9 +125,6 @@ export default function CulturasScreen({ navigation }) {
                                     <Text style={styles.cardTitle}>{item.nome}</Text>
                                     <Text style={styles.cardSub} numberOfLines={1}>{item.observacao || 'SEM OBSERVAÇÕES TÉCNICAS'}</Text>
                                 </View>
-                                <TouchableOpacity onPress={() => handleDelete(item)} style={styles.deleteBtn}>
-                                    <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                                </TouchableOpacity>
                             </View>
                         </Card>
                     )}
@@ -108,7 +137,7 @@ export default function CulturasScreen({ navigation }) {
                 />
             )}
 
-            <TouchableOpacity style={[styles.fab, { backgroundColor: theme?.colors?.primary || '#14B8A6' }]} onPress={() => setModalVisible(true)}>
+            <TouchableOpacity style={[styles.fab, { backgroundColor: theme?.colors?.primary || '#14B8A6' }]} onPress={() => { resetForm(); setModalVisible(true); }}>
                 <Ionicons name="add" size={32} color="#FFF" />
             </TouchableOpacity>
 
@@ -116,7 +145,7 @@ export default function CulturasScreen({ navigation }) {
                 <View style={styles.overlay}>
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>NOVA ÁREA / CULTURA</Text>
+                            <Text style={styles.modalTitle}>{editingItem ? 'EDITAR ÁREA / CULTURA' : 'NOVA ÁREA / CULTURA'}</Text>
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
                                 <Ionicons name="close-circle" size={30} color="#9CA3AF" />
                             </TouchableOpacity>
@@ -142,11 +171,23 @@ export default function CulturasScreen({ navigation }) {
                                 />
                             </Card>
 
-                            <AgroButton title="SALVAR ATIVO DE PRODUÇÃO" onPress={handleSave} />
+                            <AgroButton title={editingItem ? "SALVAR ALTERAÇÕES" : "SALVAR ATIVO DE PRODUÇÃO"} onPress={handleSave} />
                         </ScrollView>
                     </View>
                 </View>
             </Modal>
+
+            {/* OPTIONS MODAL DE TOQUE LONGO */}
+            <AgroOptionsModal
+                visible={!!selectedItemActions}
+                onClose={() => setSelectedItemActions(null)}
+                title={selectedItemActions?.nome || ''}
+                subtitle={selectedItemActions?.observacao || 'Sem observações'}
+                onEdit={() => handleEdit(selectedItemActions)}
+                onDelete={() => handleDelete(selectedItemActions)}
+                editLabel="Editar Área"
+                deleteLabel="Excluir Área"
+            />
         </View>
     );
 }

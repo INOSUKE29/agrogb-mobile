@@ -17,6 +17,7 @@ import { v4 as uuidv4 } from 'uuid';
 import Card from '../components/common/Card';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
+import AgroOptionsModal from '../components/common/AgroOptionsModal';
 
 export default function TalhoesScreen({ navigation }) {
     const { theme } = useTheme();
@@ -24,6 +25,13 @@ export default function TalhoesScreen({ navigation }) {
     const [modalVisible, setModalVisible] = useState(false);
     const [editItem, setEditItem] = useState(null);
     const [form, setForm] = useState({ nome: '', area_ha: '', observacao: '' });
+    const [selectedItemActions, setSelectedItemActions] = useState(null);
+
+    const handleEdit = (item) => {
+        setEditItem(item);
+        setForm({ ...item, area_ha: String(item.area_ha) });
+        setModalVisible(true);
+    };
 
     useEffect(() => {
         loadTalhoes();
@@ -78,21 +86,19 @@ export default function TalhoesScreen({ navigation }) {
     };
 
     const renderItem = ({ item }) => (
-        <Card style={styles.itemCard}>
+        <Card 
+            style={styles.itemCard}
+            onPress={() => handleEdit(item)}
+            onLongPress={() => setSelectedItemActions(item)}
+        >
             <View style={styles.itemHeader}>
                 <View style={styles.iconContainer}>
                     <Ionicons name="map-outline" size={24} color="#059669" />
                 </View>
                 <View style={{ flex: 1 }}>
                     <Text style={styles.itemName}>{item.nome}</Text>
-                    <Text style={styles.itemSub}>{item.area_ha} ha • {item.status}</Text>
+                    <Text style={styles.itemSub}>{item.area_ha} ha • {item.status || 'ATIVO'}</Text>
                 </View>
-                <TouchableOpacity onPress={() => { setEditItem(item); setForm({ ...item, area_ha: String(item.area_ha) }); setModalVisible(true); }}>
-                    <Ionicons name="create-outline" size={20} color="#6B7280" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleDelete(item)} style={{ marginLeft: 15 }}>
-                    <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                </TouchableOpacity>
             </View>
         </Card>
     );
@@ -119,6 +125,10 @@ export default function TalhoesScreen({ navigation }) {
                 ListEmptyComponent={<Text style={styles.empty}>Nenhum talhão cadastrado.</Text>}
             />
 
+            <TouchableOpacity style={[styles.fab, { backgroundColor: theme?.colors?.primary || '#10B981' }]} onPress={() => { setEditItem(null); setForm({ nome: '', area_ha: '', observacao: '' }); setModalVisible(true); }}>
+                <Ionicons name="add" size={32} color="#FFF" />
+            </TouchableOpacity>
+
             <Modal visible={modalVisible} animationType="slide" transparent>
                 <View style={styles.overlay}>
                     <View style={styles.modal}>
@@ -134,6 +144,18 @@ export default function TalhoesScreen({ navigation }) {
                     </View>
                 </View>
             </Modal>
+
+            {/* OPTIONS MODAL DE TOQUE LONGO */}
+            <AgroOptionsModal
+                visible={!!selectedItemActions}
+                onClose={() => setSelectedItemActions(null)}
+                title={selectedItemActions?.nome || ''}
+                subtitle={`${selectedItemActions?.area_ha || 0} ha`}
+                onEdit={() => handleEdit(selectedItemActions)}
+                onDelete={() => handleDelete(selectedItemActions)}
+                editLabel="Editar Talhão"
+                deleteLabel="Excluir Talhão"
+            />
         </View>
     );
 }
@@ -143,7 +165,7 @@ const styles = StyleSheet.create({
     header: { paddingTop: 60, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
     headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
-    list: { padding: 20 },
+    list: { padding: 20, paddingBottom: 100 },
     itemCard: { marginBottom: 12, padding: 15 },
     itemHeader: { flexDirection: 'row', alignItems: 'center' },
     iconContainer: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#D1FAE5', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
@@ -153,5 +175,6 @@ const styles = StyleSheet.create({
     overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 25 },
     modal: { backgroundColor: '#FFF', borderRadius: 25, padding: 25 },
     modalTitle: { fontSize: 18, fontWeight: '900', color: '#1F2937', marginBottom: 20, textAlign: 'center' },
-    modalButtons: { flexDirection: 'row', marginTop: 20 }
+    modalButtons: { flexDirection: 'row', marginTop: 20 },
+    fab: { position: 'absolute', bottom: 30, right: 30, width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', elevation: 10 }
 });

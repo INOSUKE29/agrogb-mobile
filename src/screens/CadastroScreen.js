@@ -10,6 +10,7 @@ import { useTheme } from '../context/ThemeContext';
 import Card from '../components/common/Card';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
+import AgroOptionsModal from '../components/common/AgroOptionsModal';
 
 const { width } = Dimensions.get('window');
 
@@ -45,6 +46,7 @@ export default function CadastroScreen({ navigation }) {
     const [categoryModalVisible, setCategoryModalVisible] = useState(false);
     const [obsModalVisible, setObsModalVisible] = useState(false);
     const [assistantVisible, setAssistantVisible] = useState(false);
+    const [selectedItemActions, setSelectedItemActions] = useState(null);
 
     // Form Item
     const [editingItem, setEditingItem] = useState(null);
@@ -179,7 +181,12 @@ export default function CadastroScreen({ navigation }) {
                         );
                     }}
                     renderItem={({ item }) => (
-                        <Card style={styles.itemCard} noPadding onPress={() => handleEdit(item)}>
+                        <Card 
+                            style={styles.itemCard} 
+                            noPadding 
+                            onPress={() => handleEdit(item)}
+                            onLongPress={() => setSelectedItemActions(item)}
+                        >
                             <View style={styles.cardInner}>
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.cardName}>{item.nome}</Text>
@@ -189,9 +196,6 @@ export default function CadastroScreen({ navigation }) {
                                         {item.vendavel === 1 && <View style={[styles.tag, { backgroundColor: '#EFF6FF' }]}><Text style={[styles.tagText, { color: '#3B82F6' }]}>VENDÁVEL</Text></View>}
                                     </View>
                                 </View>
-                                <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.deleteBtn}>
-                                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
-                                </TouchableOpacity>
                             </View>
                         </Card>
                     )}
@@ -471,6 +475,18 @@ export default function CadastroScreen({ navigation }) {
                     </Card>
                 </View>
             </Modal>
+
+            {/* OPTIONS MODAL DE TOQUE LONGO */}
+            <AgroOptionsModal
+                visible={!!selectedItemActions}
+                onClose={() => setSelectedItemActions(null)}
+                title={selectedItemActions?.nome || ''}
+                subtitle={CATEGORIES[selectedItemActions?.tipo]?.label || selectedItemActions?.tipo || ''}
+                onEdit={() => handleEdit(selectedItemActions)}
+                onDelete={() => handleDelete(selectedItemActions.id)}
+                editLabel="Editar Item"
+                deleteLabel="Excluir Item"
+            />
         </View>
     );
 

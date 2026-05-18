@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Dimensions, ScrollView, StatusBar, SafeAreaView } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
-import { insertCliente, getClientes, deleteCliente } from '../database/database';
+import { insertCliente, getClientes, deleteCliente, updateCliente } from '../database/database';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -10,6 +10,7 @@ import { useTheme } from '../context/ThemeContext';
 import Card from '../components/common/Card';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
+import AgroOptionsModal from '../components/common/AgroOptionsModal';
 
 const { width } = Dimensions.get('window');
 
@@ -27,6 +28,9 @@ export default function ClientesScreen({ navigation }) {
     const [endereco, setEndereco] = useState('');
     const [cpf, setCpf] = useState('');
 
+    const [selectedItemActions, setSelectedItemActions] = useState(null);
+    const [editingItem, setEditingItem] = useState(null);
+
     useEffect(() => { loadData(); }, []);
 
     const loadData = async () => {
@@ -40,24 +44,46 @@ export default function ClientesScreen({ navigation }) {
         }
     };
 
+    const resetForm = () => {
+        setEditingItem(null);
+        setNome('');
+        setTelefone('');
+        setEndereco('');
+        setCpf('');
+    };
+
+    const handleEdit = (item) => {
+        setEditingItem(item);
+        setNome(item.nome);
+        setTelefone(item.telefone || '');
+        setEndereco(item.endereco || '');
+        setCpf(item.cpf_cnpj || '');
+        setModalVisible(true);
+    };
+
     const handleSave = async () => {
         if (!nome.trim()) return Alert.alert('Atenção', 'O nome do cliente ou empresa é obrigatório.');
         try {
-            await insertCliente({
-                uuid: uuidv4(),
+            const payload = {
+                uuid: editingItem ? editingItem.uuid : uuidv4(),
                 nome: nome.toUpperCase(),
                 telefone,
                 endereco: endereco.toUpperCase(),
                 cpf_cnpj: cpf,
                 observacao: ''
-            });
+            };
+
+            if (editingItem) {
+                await updateCliente(payload);
+                Alert.alert('Sucesso', 'Parceiro comercial atualizado!');
+            } else {
+                await insertCliente(payload);
+                Alert.alert('Sucesso', 'Parceiro comercial cadastrado!');
+            }
+
             setModalVisible(false);
-            setNome('');
-            setTelefone('');
-            setEndereco('');
-            setCpf('');
+            resetForm();
             loadData();
-            Alert.alert('Sucesso', 'Parceiro comercial cadastrado!');
         } catch (e) {
             Alert.alert('Erro', 'Falha ao salvar dados do cliente.');
         }
@@ -108,7 +134,12 @@ export default function ClientesScreen({ navigation }) {
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.list}
                     renderItem={({ item }) => (
-                        <Card style={styles.itemCard} noPadding onPress={() => Alert.alert('Info', `Detalhes de ${item.nome}`)}>
+                        <Card 
+                            style={styles.itemCard} 
+                            noPadding 
+                            onPress={() => handleEdit(item)}
+                            onLongPress={() => setSelectedItemActions(item)}
+                        >
                             <View style={styles.cardInner}>
                                 <View style={[styles.avatarBox, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.08)' }]}>
                                     <Text style={[styles.avatarTxt, { color: activeColors.primary }]}>{item.nome.charAt(0)}</Text>
@@ -120,12 +151,6 @@ export default function ClientesScreen({ navigation }) {
                                         <Text style={[styles.cardSub, { color: textMutedColor }]}>{item.telefone || 'SEM TELEFONE'}</Text>
                                     </View>
                                 </View>
-                                <TouchableOpacity 
-                                    onPress={() => handleDelete(item)} 
-                                    style={[styles.deleteBtn, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2' }]}
-                                >
-                                    <Ionicons name="trash-outline" size={20} color={activeColors.error || '#EF4444'} />
-                                </TouchableOpacity>
                             </View>
                         </Card>
                     )}
@@ -138,7 +163,7 @@ export default function ClientesScreen({ navigation }) {
                 />
             )}
 
-            <TouchableOpacity style={[styles.fab, { backgroundColor: activeColors.primary || '#10B981' }]} onPress={() => setModalVisible(true)}>
+            <TouchableOpacity style={[styles.fab, { backgroundColor: activeColors.primary || '#10B981' }]} onPress={() => { resetForm(); setModalVisible(true); }}>
                 <Ionicons name="add" size={32} color="#FFF" />
             </TouchableOpacity>
 
@@ -146,7 +171,7 @@ export default function ClientesScreen({ navigation }) {
                 <View style={styles.overlay}>
                     <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={[styles.modalTitle, { color: textColor }]}>NOVO PARCEIRO</Text>
+                            <Text style={[styles.modalTitle, { color: textColor }]}>{editingItem ? 'EDITAR PARCEIRO' : 'NOVO PARCEIRO'}</Text>
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
                                 <Ionicons name="close-circle" size={30} color={textMutedColor} />
                             </TouchableOpacity>
@@ -160,11 +185,23 @@ export default function ClientesScreen({ navigation }) {
                                 <AgroInput label="CPF / CNPJ" value={cpf} onChangeText={setCpf} icon="card-outline" />
                             </Card>
 
-                            <AgroButton title="CADASTRAR PARCEIRO" onPress={handleSave} />
+                            <AgroButton title={editingItem ? "SALVAR ALTERAÇÕES" : "CADASTRAR PARCEIRO"} onPress={handleSave} />
                         </ScrollView>
                     </View>
                 </View>
             </Modal>
+
+            {/* OPTIONS MODAL DE TOQUE LONGO */}
+            <AgroOptionsModal
+                visible={!!selectedItemActions}
+                onClose={() => setSelectedItemActions(null)}
+                title={selectedItemActions?.nome || ''}
+                subtitle={selectedItemActions?.telefone || 'Sem Telefone'}
+                onEdit={() => handleEdit(selectedItemActions)}
+                onDelete={() => handleDelete(selectedItemActions)}
+                editLabel="Editar Contato"
+                deleteLabel="Excluir Contato"
+            />
         </View>
     );
 }

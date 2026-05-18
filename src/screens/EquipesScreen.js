@@ -1,5 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Alert, StatusBar, SafeAreaView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Alert, StatusBar, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
@@ -9,6 +11,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import Card from '../components/common/Card';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
+import AgroOptionsModal from '../components/common/AgroOptionsModal';
 
 export default function EquipesScreen({ navigation }) {
     const { theme } = useTheme();
@@ -17,6 +20,19 @@ export default function EquipesScreen({ navigation }) {
     const [equipe, setEquipe] = useState([]);
     const [modalVisible, setModalVisible] = useState(false);
     const [form, setForm] = useState({ nome: '', cargo: 'OPERADOR', documento: '' });
+    const [editItem, setEditItem] = useState(null);
+    const [selectedItemActions, setSelectedItemActions] = useState(null);
+
+    const resetForm = () => {
+        setEditItem(null);
+        setForm({ nome: '', cargo: 'OPERADOR', documento: '' });
+    };
+
+    const handleEdit = (item) => {
+        setEditItem(item);
+        setForm({ nome: item.nome, cargo: item.cargo, documento: item.documento || '' });
+        setModalVisible(true);
+    };
 
     useFocusEffect(useCallback(() => {
         loadData();
@@ -35,14 +51,37 @@ export default function EquipesScreen({ navigation }) {
         if (!form.nome) return Alert.alert('Aviso', 'Nome é obrigatório');
         try {
             const now = new Date().toISOString();
-            await executeQuery(
-                'INSERT INTO equipes (uuid, nome, cargo, documento, last_updated) VALUES (?, ?, ?, ?, ?)',
-                [uuidv4(), form.nome.toUpperCase(), form.cargo, form.documento, now]
-            );
+            if (editItem) {
+                await executeQuery(
+                    'UPDATE equipes SET nome = ?, cargo = ?, documento = ?, last_updated = ? WHERE uuid = ?',
+                    [form.nome.toUpperCase(), form.cargo, form.documento, now, editItem.uuid]
+                );
+                Alert.alert('Sucesso', 'Colaborador atualizado!');
+            } else {
+                await executeQuery(
+                    'INSERT INTO equipes (uuid, nome, cargo, documento, last_updated) VALUES (?, ?, ?, ?, ?)',
+                    [uuidv4(), form.nome.toUpperCase(), form.cargo, form.documento, now]
+                );
+                Alert.alert('Sucesso', 'Colaborador cadastrado!');
+            }
             setModalVisible(false);
-            setForm({ nome: '', cargo: 'OPERADOR', documento: '' });
+            resetForm();
             loadData();
         } catch (e) { Alert.alert('Erro', 'Falha ao salvar colaborador'); }
+    };
+
+    const handleDelete = (item) => {
+        Alert.alert('Excluir Colaborador', `Deseja realmente remover o colaborador ${item.nome}?`, [
+            { text: 'Cancelar', style: 'cancel' },
+            { 
+                text: 'Remover', 
+                style: 'destructive',
+                onPress: async () => {
+                    await executeQuery('UPDATE equipes SET is_deleted = 1 WHERE uuid = ?', [item.uuid]);
+                    loadData();
+                }
+            }
+        ]);
     };
 
     const isDark = theme?.theme_mode === 'dark';
@@ -51,7 +90,11 @@ export default function EquipesScreen({ navigation }) {
     const cardBg = activeColors.card || '#FFFFFF';
 
     const renderItem = ({ item }) => (
-        <Card style={styles.itemCard}>
+        <Card 
+            style={styles.itemCard}
+            onPress={() => handleEdit(item)}
+            onLongPress={() => setSelectedItemActions(item)}
+        >
             <View style={styles.itemHeader}>
                 <View style={[styles.avatar, { backgroundColor: activeColors.primary || '#10B981' }]}>
                     <Text style={styles.avatarText}>{item.nome.substring(0, 2)}</Text>
@@ -64,9 +107,6 @@ export default function EquipesScreen({ navigation }) {
                         </View>
                     </View>
                 </View>
-                <TouchableOpacity onPress={() => Alert.alert('Ações', 'Deseja editar ou remover?', [{ text: 'Editar' }, { text: 'Remover', style: 'destructive' }])}>
-                    <Ionicons name="ellipsis-vertical" size={20} color={textMutedColor} />
-                </TouchableOpacity>
             </View>
         </Card>
     );
@@ -81,9 +121,7 @@ export default function EquipesScreen({ navigation }) {
                             <Ionicons name="arrow-back" size={22} color="#FFF" />
                         </TouchableOpacity>
                         <Text style={styles.headerTitle}>GESTÃO DE EQUIPES</Text>
-                        <TouchableOpacity onPress={() => setModalVisible(true)}>
-                            <Ionicons name="person-add" size={24} color="#FFF" />
-                        </TouchableOpacity>
+                        <View style={{ width: 38 }} />
                     </View>
                     <Text style={styles.headerSub}>Hierarquia e controle de acesso</Text>
                 </SafeAreaView>
@@ -97,10 +135,14 @@ export default function EquipesScreen({ navigation }) {
                 ListEmptyComponent={<Text style={[styles.empty, { color: textMutedColor }]}>Nenhum colaborador cadastrado.</Text>}
             />
 
+            <TouchableOpacity style={[styles.fab, { backgroundColor: activeColors.primary || '#10B981' }]} onPress={() => { resetForm(); setModalVisible(true); }}>
+                <Ionicons name="add" size={32} color="#FFF" />
+            </TouchableOpacity>
+
             <Modal visible={modalVisible} animationType="slide" transparent>
                 <View style={styles.overlay}>
                     <View style={[styles.modal, { backgroundColor: cardBg }]}>
-                        <Text style={[styles.modalTitle, { color: textColor }]}>NOVO COLABORADOR</Text>
+                        <Text style={[styles.modalTitle, { color: textColor }]}>{editItem ? 'EDITAR COLABORADOR' : 'NOVO COLABORADOR'}</Text>
                         <AgroInput label="NOME COMPLETO" value={form.nome} onChangeText={t => setForm({...form, nome: t})} />
                         <AgroInput label="DOCUMENTO (CPF/RG)" value={form.documento} onChangeText={t => setForm({...form, documento: t})} />
                         
@@ -119,11 +161,23 @@ export default function EquipesScreen({ navigation }) {
 
                         <View style={styles.modalButtons}>
                             <AgroButton title="CANCELAR" variant="secondary" onPress={() => setModalVisible(false)} style={{ flex: 1, marginRight: 10 }} />
-                            <AgroButton title="SALVAR" onPress={handleSave} style={{ flex: 1 }} />
+                            <AgroButton title={editItem ? "SALVAR ALTERAÇÕES" : "SALVAR"} onPress={handleSave} style={{ flex: 1 }} />
                         </View>
                     </View>
                 </View>
             </Modal>
+
+            {/* OPTIONS MODAL DE TOQUE LONGO */}
+            <AgroOptionsModal
+                visible={!!selectedItemActions}
+                onClose={() => setSelectedItemActions(null)}
+                title={selectedItemActions?.nome || ''}
+                subtitle={selectedItemActions?.cargo || ''}
+                onEdit={() => handleEdit(selectedItemActions)}
+                onDelete={() => handleDelete(selectedItemActions)}
+                editLabel="Editar Colaborador"
+                deleteLabel="Excluir Colaborador"
+            />
         </View>
     );
 }
@@ -142,7 +196,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    list: { padding: 20 },
+    list: { padding: 20, paddingBottom: 100 },
     itemCard: { marginBottom: 12, padding: 15 },
     itemHeader: { flexDirection: 'row', alignItems: 'center' },
     avatar: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
@@ -160,5 +214,6 @@ const styles = StyleSheet.create({
     cargoBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 10 },
     cargoText: { fontSize: 9, fontWeight: '900' },
     cargoTextActive: { color: '#FFF' },
-    modalButtons: { flexDirection: 'row', marginTop: 10 }
+    modalButtons: { flexDirection: 'row', marginTop: 10 },
+    fab: { position: 'absolute', bottom: 30, right: 25, width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', elevation: 8 }
 });

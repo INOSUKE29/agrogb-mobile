@@ -11,6 +11,7 @@ import Card from '../components/common/Card';
 import MetricCard from '../components/common/MetricCard';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
+import AgroOptionsModal from '../components/common/AgroOptionsModal';
 
 export default function EstoqueScreen({ navigation }) {
     const { theme } = useTheme();
@@ -27,6 +28,7 @@ export default function EstoqueScreen({ navigation }) {
     const [selectedItem, setSelectedItem] = useState(null);
     const [actionType, setActionType] = useState('ENTRADA');
     const [qty, setQty] = useState('');
+    const [selectedItemActions, setSelectedItemActions] = useState(null);
 
     const loadData = async () => {
         setLoading(true);
@@ -169,7 +171,12 @@ export default function EstoqueScreen({ navigation }) {
                     renderItem={({ item }) => {
                         const st = getStatusInfo(item.quantidade);
                         return (
-                            <Card style={styles.itemCard} noPadding>
+                            <Card 
+                                style={styles.itemCard} 
+                                noPadding
+                                onPress={() => openModal(item, 'ENTRADA')}
+                                onLongPress={() => setSelectedItemActions(item)}
+                            >
                                 <View style={styles.row}>
                                     <View style={styles.itemInfo}>
                                         <Text style={[styles.itemName, { color: textColor }]}>{item.produto}</Text>
@@ -205,6 +212,10 @@ export default function EstoqueScreen({ navigation }) {
                 />
             }
 
+            <TouchableOpacity style={[styles.fab, { backgroundColor: activeColors.primary || '#10B981' }]} onPress={() => navigation.navigate('Cadastro')}>
+                <Ionicons name="add" size={32} color="#FFF" />
+            </TouchableOpacity>
+
             {/* ADJUSTMENT MODAL */}
             <Modal visible={modalVisible} transparent animationType="fade">
                 <View style={styles.overlay}>
@@ -233,6 +244,18 @@ export default function EstoqueScreen({ navigation }) {
                     </Card>
                 </View>
             </Modal>
+
+            {/* OPTIONS MODAL DE TOQUE LONGO */}
+            <AgroOptionsModal
+                visible={!!selectedItemActions}
+                onClose={() => setSelectedItemActions(null)}
+                title={selectedItemActions?.produto || ''}
+                subtitle={`${selectedItemActions?.quantidade || 0} ${selectedItemActions?.unidade || 'un'}`}
+                onEdit={() => openModal(selectedItemActions, 'ENTRADA')}
+                onDelete={() => openModal(selectedItemActions, 'SAIDA')}
+                editLabel="Lançar Entrada"
+                deleteLabel="Lançar Saída"
+            />
         </View>
     );
 }
@@ -275,5 +298,6 @@ const styles = StyleSheet.create({
     modalTitle: { fontSize: 16, fontWeight: '900', textAlign: 'center' },
     modalSub: { fontSize: 12, textAlign: 'center', marginBottom: 20 },
     modalInput: { textAlign: 'center', fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-    modalActions: { flexDirection: 'row', gap: 10 }
+    modalActions: { flexDirection: 'row', gap: 10 },
+    fab: { position: 'absolute', bottom: 30, right: 25, width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', elevation: 8 }
 });

@@ -19,6 +19,7 @@ import { v4 as uuidv4 } from 'uuid';
 import Card from '../components/common/Card';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
+import AgroOptionsModal from '../components/common/AgroOptionsModal';
 
 export default function FornecedoresScreen({ navigation }) {
     const { theme } = useTheme();
@@ -28,6 +29,13 @@ export default function FornecedoresScreen({ navigation }) {
     const [modalVisible, setModalVisible] = useState(false);
     const [editItem, setEditItem] = useState(null);
     const [form, setForm] = useState({ nome: '', contato: '', telefone: '', email: '', observacao: '' });
+    const [selectedItemActions, setSelectedItemActions] = useState(null);
+
+    const handleEdit = (item) => {
+        setEditItem(item);
+        setForm(item);
+        setModalVisible(true);
+    };
 
     useEffect(() => {
         loadData();
@@ -85,7 +93,11 @@ export default function FornecedoresScreen({ navigation }) {
     const borderCol = activeColors.border || 'rgba(0,0,0,0.1)';
 
     const renderItem = ({ item }) => (
-        <Card style={styles.itemCard}>
+        <Card 
+            style={styles.itemCard}
+            onPress={() => handleEdit(item)}
+            onLongPress={() => setSelectedItemActions(item)}
+        >
             <View style={styles.itemHeader}>
                 <View style={[styles.iconContainer, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.08)' }]}>
                     <Ionicons name="business-outline" size={24} color={activeColors.primary || '#10B981'} />
@@ -94,12 +106,6 @@ export default function FornecedoresScreen({ navigation }) {
                     <Text style={[styles.itemName, { color: textColor }]}>{item.nome}</Text>
                     <Text style={[styles.itemSub, { color: textMutedColor }]}>{item.contato || 'Sem contato'} • {item.telefone || 'Sem fone'}</Text>
                 </View>
-                <TouchableOpacity onPress={() => { setEditItem(item); setForm(item); setModalVisible(true); }}>
-                    <Ionicons name="create-outline" size={20} color={textMutedColor} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleDelete(item)} style={{ marginLeft: 15 }}>
-                    <Ionicons name="trash-outline" size={20} color={activeColors.error || '#EF4444'} />
-                </TouchableOpacity>
             </View>
         </Card>
     );
@@ -129,6 +135,10 @@ export default function FornecedoresScreen({ navigation }) {
                 ListEmptyComponent={<Text style={[styles.empty, { color: textMutedColor }]}>Nenhum fornecedor cadastrado.</Text>}
             />
 
+            <TouchableOpacity style={[styles.fab, { backgroundColor: activeColors.primary || '#10B981' }]} onPress={() => { setEditItem(null); setForm({ nome: '', contato: '', telefone: '', email: '', observacao: '' }); setModalVisible(true); }}>
+                <Ionicons name="add" size={32} color="#FFF" />
+            </TouchableOpacity>
+
             <Modal visible={modalVisible} animationType="slide" transparent>
                 <View style={styles.overlay}>
                     <View style={[styles.modal, { backgroundColor: cardBg }]}>
@@ -154,6 +164,18 @@ export default function FornecedoresScreen({ navigation }) {
                     </View>
                 </View>
             </Modal>
+
+            {/* OPTIONS MODAL DE TOQUE LONGO */}
+            <AgroOptionsModal
+                visible={!!selectedItemActions}
+                onClose={() => setSelectedItemActions(null)}
+                title={selectedItemActions?.nome || ''}
+                subtitle={selectedItemActions?.contato || 'Sem Contato'}
+                onEdit={() => handleEdit(selectedItemActions)}
+                onDelete={() => handleDelete(selectedItemActions)}
+                editLabel="Editar Fornecedor"
+                deleteLabel="Excluir Fornecedor"
+            />
         </View>
     );
 }
@@ -171,7 +193,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    list: { padding: 20 },
+    list: { padding: 20, paddingBottom: 100 },
     itemCard: { marginBottom: 12, padding: 15 },
     itemHeader: { flexDirection: 'row', alignItems: 'center' },
     iconContainer: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
@@ -182,5 +204,6 @@ const styles = StyleSheet.create({
     modal: { borderRadius: 25, padding: 25, maxHeight: '80%' },
     modalTitle: { fontSize: 18, fontWeight: '900', marginBottom: 20, textAlign: 'center' },
     modalButtons: { flexDirection: 'row', marginTop: 20, marginBottom: 10 },
-    row: { flexDirection: 'row' }
+    row: { flexDirection: 'row' },
+    fab: { position: 'absolute', bottom: 30, right: 25, width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', elevation: 8 }
 });

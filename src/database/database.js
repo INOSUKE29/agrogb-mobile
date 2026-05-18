@@ -1110,6 +1110,11 @@ export const insertCultura = async (d) => {
         [d.uuid, up(d.nome), up(d.observacao), new Date().toISOString(), 0]);
 };
 
+export const updateCultura = async (d) => {
+    await executeQuery(`UPDATE culturas SET nome = ?, observacao = ?, last_updated = ?, sync_status = 0 WHERE uuid = ?`,
+        [up(d.nome), up(d.observacao), new Date().toISOString(), d.uuid]);
+};
+
 export const getCulturas = async () => {
     const res = await executeQuery('SELECT * FROM culturas WHERE is_deleted = 0 ORDER BY nome ASC');
     const rows = [];
@@ -1122,6 +1127,11 @@ export const deleteCultura = async (id) => { await executeQuery('UPDATE culturas
 export const insertCliente = async (d) => {
     await executeQuery(`INSERT INTO clientes (uuid, nome, telefone, endereco, cpf_cnpj, observacao, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [d.uuid, up(d.nome), d.telefone, up(d.endereco), d.cpf_cnpj, up(d.observacao), new Date().toISOString(), 0]);
+};
+
+export const updateCliente = async (d) => {
+    await executeQuery(`UPDATE clientes SET nome = ?, telefone = ?, endereco = ?, cpf_cnpj = ?, observacao = ?, last_updated = ?, sync_status = 0 WHERE uuid = ?`,
+        [up(d.nome), d.telefone, up(d.endereco), d.cpf_cnpj, up(d.observacao), new Date().toISOString(), d.uuid]);
 };
 
 export const getClientes = async () => {
