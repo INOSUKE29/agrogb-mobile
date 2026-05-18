@@ -17,6 +17,7 @@ export default function RegisterScreen({ navigation }) {
     const [form, setForm] = useState({
         fullName: '', birthYear: '', email: '', phone: '',
         password: '', confirmPassword: '', farmName: '', username: '',
+        role: 'CLIENTE',
         acceptTerms: false
     });
     const [loading, setLoading] = useState(false);
@@ -41,7 +42,8 @@ export default function RegisterScreen({ navigation }) {
                         full_name: form.fullName,
                         username: form.username || form.email.split('@')[0],
                         phone: form.phone,
-                        farm_name: form.farmName
+                        farm_name: form.farmName,
+                        role: form.role
                     }
                 }
             });
@@ -54,6 +56,7 @@ export default function RegisterScreen({ navigation }) {
                 username: form.username || form.email.split('@')[0],
                 nome_completo: form.fullName.toUpperCase(),
                 email: form.email.toLowerCase(),
+                role: form.role,
                 updated_at: new Date().toISOString()
             }]);
 
@@ -65,7 +68,8 @@ export default function RegisterScreen({ navigation }) {
                 uuid: authData.user.id,
                 usuario: form.username || form.email.split('@')[0],
                 senha: form.password,
-                nivel: 'USUARIO',
+                nivel: form.role === 'AGRONOMO' ? 'AGRONOMO' : 'USUARIO',
+                role: form.role,
                 nome_completo: form.fullName,
                 email: form.email,
                 telefone: form.phone,
@@ -131,6 +135,51 @@ export default function RegisterScreen({ navigation }) {
                                 icon="logo-whatsapp" 
                             />
                         </View>
+                    </View>
+
+                    <View style={styles.sectionHeader}>
+                        <Ionicons name="shield-checkmark-outline" size={20} color="#10B981" />
+                        <Text style={styles.sectionTitle}>TIPO DE CONTA (PERFIL)</Text>
+                    </View>
+                    
+                    <View style={styles.roleContainer}>
+                        <TouchableOpacity 
+                            activeOpacity={0.8}
+                            style={[
+                                styles.roleOption, 
+                                form.role === 'CLIENTE' && styles.roleOptionActive
+                            ]} 
+                            onPress={() => setForm({...form, role: 'CLIENTE'})}
+                        >
+                            <Ionicons 
+                                name="leaf" 
+                                size={18} 
+                                color={form.role === 'CLIENTE' ? '#FFF' : '#10B981'} 
+                            />
+                            <Text style={[
+                                styles.roleText, 
+                                form.role === 'CLIENTE' && styles.roleTextActive
+                            ]}>PRODUTOR RURAL</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity 
+                            activeOpacity={0.8}
+                            style={[
+                                styles.roleOption, 
+                                form.role === 'AGRONOMO' && styles.roleOptionActive
+                            ]} 
+                            onPress={() => setForm({...form, role: 'AGRONOMO'})}
+                        >
+                            <Ionicons 
+                                name="ribbon" 
+                                size={18} 
+                                color={form.role === 'AGRONOMO' ? '#FFF' : '#10B981'} 
+                            />
+                            <Text style={[
+                                styles.roleText, 
+                                form.role === 'AGRONOMO' && styles.roleTextActive
+                            ]}>AGRÔNOMO / TÉCNICO</Text>
+                        </TouchableOpacity>
                     </View>
 
                     <View style={styles.sectionHeader}>
@@ -231,6 +280,11 @@ const styles = StyleSheet.create({
     sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 25, marginBottom: 15 },
     sectionTitle: { fontSize: 10, fontWeight: '900', color: '#6B7280', letterSpacing: 1.5 },
     row: { flexDirection: 'row' },
+    roleContainer: { flexDirection: 'row', gap: 10, marginBottom: 15 },
+    roleOption: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 14, borderRadius: 15, borderWidth: 1.5, borderColor: '#10B981', backgroundColor: '#FFF' },
+    roleOptionActive: { backgroundColor: '#10B981', borderColor: '#10B981' },
+    roleText: { fontSize: 10, fontWeight: '900', color: '#10B981', letterSpacing: 0.5 },
+    roleTextActive: { color: '#FFF' },
     strengthContainer: { height: 4, backgroundColor: '#E5E7EB', borderRadius: 2, marginBottom: 15, marginTop: -10 },
     strengthBar: { height: '100%', borderRadius: 2 },
     termsRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 25 },

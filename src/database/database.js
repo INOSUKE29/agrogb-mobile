@@ -400,6 +400,105 @@ const createTables = async () => {
                 criado_em TEXT DEFAULT (datetime('now')),
                 sync_status INTEGER DEFAULT 0,
                 FOREIGN KEY(plano_uuid) REFERENCES planos_adubacao(uuid)
+            );`,
+            `CREATE TABLE IF NOT EXISTS farms (
+                uuid TEXT PRIMARY KEY,
+                owner_id TEXT NOT NULL,
+                nome TEXT NOT NULL,
+                cidade TEXT,
+                estado TEXT,
+                area_total REAL DEFAULT 0,
+                source_platform TEXT DEFAULT 'mobile',
+                created_by TEXT,
+                updated_by TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS fields (
+                uuid TEXT PRIMARY KEY,
+                farm_uuid TEXT NOT NULL,
+                nome TEXT NOT NULL,
+                area REAL DEFAULT 0,
+                plant_count INTEGER DEFAULT 0,
+                source_platform TEXT DEFAULT 'mobile',
+                created_by TEXT,
+                updated_by TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0,
+                FOREIGN KEY(farm_uuid) REFERENCES farms(uuid) ON DELETE CASCADE
+            );`,
+            `CREATE TABLE IF NOT EXISTS plantings (
+                uuid TEXT PRIMARY KEY,
+                field_uuid TEXT NOT NULL,
+                crop_name TEXT NOT NULL,
+                variety_name TEXT NOT NULL,
+                planting_date TEXT NOT NULL,
+                expected_yield REAL DEFAULT 0,
+                status TEXT DEFAULT 'ATIVO',
+                source_platform TEXT DEFAULT 'mobile',
+                created_by TEXT,
+                updated_by TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0,
+                FOREIGN KEY(field_uuid) REFERENCES fields(uuid) ON DELETE CASCADE
+            );`,
+            `CREATE TABLE IF NOT EXISTS agronomist_codes (
+                uuid TEXT PRIMARY KEY,
+                agronomist_id TEXT UNIQUE NOT NULL,
+                invite_code TEXT UNIQUE NOT NULL,
+                created_at TEXT NOT NULL
+            );`,
+            `CREATE TABLE IF NOT EXISTS agronomist_client_links (
+                uuid TEXT PRIMARY KEY,
+                agronomist_id TEXT NOT NULL,
+                client_id TEXT NOT NULL,
+                status TEXT DEFAULT 'PENDING',
+                permissions TEXT DEFAULT '{}',
+                created_at TEXT NOT NULL,
+                approved_at TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS products (
+                uuid TEXT PRIMARY KEY,
+                nome TEXT NOT NULL,
+                fabricante TEXT NOT NULL,
+                categoria TEXT NOT NULL,
+                tags TEXT,
+                owner_id TEXT,
+                curation_status TEXT DEFAULT 'approved',
+                source_platform TEXT DEFAULT 'mobile',
+                created_by TEXT,
+                updated_by TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS recommendations (
+                uuid TEXT PRIMARY KEY,
+                agronomist_id TEXT,
+                client_id TEXT NOT NULL,
+                farm_uuid TEXT NOT NULL,
+                field_uuid TEXT NOT NULL,
+                planting_uuid TEXT,
+                title TEXT NOT NULL,
+                description TEXT,
+                application_type TEXT NOT NULL,
+                recipe_data TEXT NOT NULL,
+                scheduled_date TEXT NOT NULL,
+                status TEXT DEFAULT 'PENDING',
+                source_platform TEXT DEFAULT 'mobile',
+                created_by TEXT,
+                updated_by TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0,
+                FOREIGN KEY(farm_uuid) REFERENCES farms(uuid) ON DELETE CASCADE,
+                FOREIGN KEY(field_uuid) REFERENCES fields(uuid) ON DELETE CASCADE,
+                FOREIGN KEY(planting_uuid) REFERENCES plantings(uuid) ON DELETE SET NULL
             );`
         ];
 
@@ -790,6 +889,12 @@ const createTables = async () => {
             console.log('✅ Coluna usd_rate adicionada');
         } catch (e) { }
 
+        // MIGRATION: User Roles Support (v9.0)
+        try {
+            await executeQuery("ALTER TABLE usuarios ADD COLUMN role TEXT DEFAULT 'CLIENTE'");
+            console.log('✅ Coluna role adicionada em usuarios');
+        } catch (e) { }
+
     } catch (error) {
         console.error('❌ Erro ao criar tabelas:', error);
     }
@@ -910,13 +1015,13 @@ export const getConfig = async (chave) => {
 // --- USUÁRIOS ---
 export const insertUsuario = async (u) => {
     const uuid = u.uuid || uuidv4();
-    await executeQuery(`INSERT INTO usuarios (uuid, usuario, senha, nivel, email, nome_completo, telefone, endereco, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [uuid, up(u.usuario), u.senha, up(u.nivel), u.email ? u.email.trim() : null, up(u.nome_completo), u.telefone, up(u.endereco), new Date().toISOString()]);
+    await executeQuery(`INSERT INTO usuarios (uuid, usuario, senha, nivel, role, email, nome_completo, telefone, endereco, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [uuid, up(u.usuario), u.senha, up(u.nivel), u.role || 'CLIENTE', u.email ? u.email.trim() : null, up(u.nome_completo), u.telefone, up(u.endereco), new Date().toISOString()]);
 };
 
 export const updateUsuario = async (u) => {
-    await executeQuery(`UPDATE usuarios SET senha = ?, nivel = ?, email = ?, nome_completo = ?, telefone = ?, endereco = ?, last_updated = ? WHERE uuid = ?`,
-        [u.senha, up(u.nivel), u.email ? u.email.trim() : null, up(u.nome_completo), u.telefone, up(u.endereco), new Date().toISOString(), u.uuid]);
+    await executeQuery(`UPDATE usuarios SET senha = ?, nivel = ?, role = ?, email = ?, nome_completo = ?, telefone = ?, endereco = ?, last_updated = ? WHERE uuid = ?`,
+        [u.senha, up(u.nivel), u.role || 'CLIENTE', u.email ? u.email.trim() : null, up(u.nome_completo), u.telefone, up(u.endereco), new Date().toISOString(), u.uuid]);
 };
 
 export const getUsuarios = async () => {
@@ -1307,7 +1412,11 @@ export const deleteCost = async (id) => {
 
 export const getDadosPendentes = async () => {
     try {
-        const t = ['colheitas', 'vendas', 'compras', 'plantio', 'custos', 'descarte', 'clientes', 'culturas', 'cadastro', 'caderno_notas'];
+        const t = [
+            'colheitas', 'vendas', 'compras', 'plantio', 'custos', 'descarte', 
+            'clientes', 'culturas', 'cadastro', 'caderno_notas',
+            'farms', 'fields', 'plantings', 'agronomist_client_links', 'products', 'recommendations'
+        ];
         let total = 0;
         const res = {};
         for (const tab of t) {

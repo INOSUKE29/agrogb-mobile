@@ -84,6 +84,7 @@ export default function LoginScreen({ navigation }) {
                     usuario: 'ADMIN',
                     nome: 'ADMINISTRADOR PADRÃO',
                     nivel: 'ADM',
+                    role: 'ADMIN',
                     timestamp: new Date().getTime()
                 };
                 await AsyncStorage.setItem('user_session', JSON.stringify(sessionData));
@@ -152,6 +153,7 @@ export default function LoginScreen({ navigation }) {
                         usuario: userRow.usuario,
                         nome: userRow.nome_completo || userRow.usuario,
                         nivel: userRow.nivel,
+                        role: userRow.role || 'CLIENTE',
                         timestamp: new Date().getTime()
                     };
                     await AsyncStorage.setItem('user_session', JSON.stringify(sessionData));
@@ -181,7 +183,8 @@ export default function LoginScreen({ navigation }) {
                 uuid: authData.user.id,
                 usuario: (profileData && profileData.username) || targetEmail.split('@')[0],
                 senha: passTrim,
-                nivel: 'USUARIO',
+                nivel: (profileData && profileData.role === 'AGRONOMO') ? 'AGRONOMO' : 'USUARIO',
+                role: (profileData && profileData.role) || 'CLIENTE',
                 nome_completo: (profileData && profileData.nome_completo) || 'USUÁRIO AGROGB',
                 email: targetEmail.toLowerCase(),
                 telefone: authData.user.user_metadata?.phone || authData.user.phone || '',
@@ -190,18 +193,18 @@ export default function LoginScreen({ navigation }) {
 
             if (localCheck.rows.length > 0) {
                 await executeQuery(
-                    `UPDATE usuarios SET senha = ?, email = ?, nome_completo = ?, telefone = ?, endereco = ?, last_updated = ? WHERE uuid = ?`,
-                    [userPayload.senha, userPayload.email, userPayload.nome_completo, userPayload.telefone, userPayload.endereco, new Date().toISOString(), userPayload.uuid]
+                    `UPDATE usuarios SET senha = ?, nivel = ?, role = ?, email = ?, nome_completo = ?, telefone = ?, endereco = ?, last_updated = ? WHERE uuid = ?`,
+                    [userPayload.senha, userPayload.nivel, userPayload.role, userPayload.email, userPayload.nome_completo, userPayload.telefone, userPayload.endereco, new Date().toISOString(), userPayload.uuid]
                 );
             } else {
                 await executeQuery(
-                    `INSERT INTO usuarios (uuid, usuario, senha, nivel, email, nome_completo, telefone, endereco, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [userPayload.uuid, userPayload.usuario, userPayload.senha, userPayload.nivel, userPayload.email, userPayload.nome_completo, userPayload.telefone, userPayload.endereco, new Date().toISOString()]
+                    `INSERT INTO usuarios (uuid, usuario, senha, nivel, role, email, nome_completo, telefone, endereco, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [userPayload.uuid, userPayload.usuario, userPayload.senha, userPayload.nivel, userPayload.role, userPayload.email, userPayload.nome_completo, userPayload.telefone, userPayload.endereco, new Date().toISOString()]
                 );
             }
 
             // Recupera o ID do SQLite local recém inserido/atualizado para manter consistência da sessão
-            const finalCheck = await executeQuery('SELECT id, usuario, nome_completo, nivel FROM usuarios WHERE uuid = ?', [authData.user.id]);
+            const finalCheck = await executeQuery('SELECT id, usuario, nome_completo, nivel, role FROM usuarios WHERE uuid = ?', [authData.user.id]);
             const userRow = finalCheck.rows.item(0);
 
             const sessionData = {
@@ -209,6 +212,7 @@ export default function LoginScreen({ navigation }) {
                 usuario: userRow.usuario,
                 nome: userRow.nome_completo,
                 nivel: userRow.nivel,
+                role: userRow.role || 'CLIENTE',
                 timestamp: new Date().getTime()
             };
             await AsyncStorage.setItem('user_session', JSON.stringify(sessionData));

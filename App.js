@@ -53,6 +53,9 @@ import RecoverScreen from './src/screens/RecoverScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 import VerifyCodeScreen from './src/screens/VerifyCodeScreen';
 import AuditScreen from './src/screens/AuditScreen';
+import AgronomistLinkScreen from './src/screens/AgronomistLinkScreen';
+import CreateRecommendationScreen from './src/screens/CreateRecommendationScreen';
+import RecommendationsListScreen from './src/screens/RecommendationsListScreen';
 import { SyncProvider } from './src/context/SyncContext';
 
 import ErrorBoundary from './src/components/common/ErrorBoundary';
@@ -132,6 +135,9 @@ export default function App() {
                                     <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
                                     <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
                                     <Stack.Screen name="Audit" component={AuditScreen} />
+                                    <Stack.Screen name="AgronomistLink" component={AgronomistLinkScreen} />
+                                    <Stack.Screen name="CreateRecommendation" component={CreateRecommendationScreen} />
+                                    <Stack.Screen name="RecommendationsList" component={RecommendationsListScreen} />
                                 </Stack.Navigator>
                             </NavigationContainer>
                         </WeatherProvider>

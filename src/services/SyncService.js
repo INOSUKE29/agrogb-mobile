@@ -23,7 +23,14 @@ const TABLES_TO_SYNC = [
     'etapas_adubacao',
     'equipes', 
     'caderno_notas', 
-    'financeiro_transacoes'
+    'financeiro_transacoes',
+    'farms',
+    'fields',
+    'plantings',
+    'agronomist_codes',
+    'agronomist_client_links',
+    'products',
+    'recommendations'
 ];
 
 let isSyncing = false;

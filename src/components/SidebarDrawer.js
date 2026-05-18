@@ -148,6 +148,8 @@ export default function SidebarDrawer({ visible, onClose }) {
                         <MenuItem icon="shield-checkmark-outline" label="Aplicações" screen="Aplicacoes" />
                         <MenuItem icon="basket-outline" label="Colheita" screen="Colheita" />
                         <MenuItem icon="book-outline" label="Caderno de Campo" screen="CadernoCampo" />
+                        <MenuItem icon="link-outline" label="Vincular Agrônomo" screen="AgronomistLink" />
+                        <MenuItem icon="receipt-outline" label="Receitas e Prescrições" screen="RecommendationsList" />
 
                         <View style={styles.divider} />
                         

@@ -19,7 +19,7 @@ import ScreenHeader from '../ui/ScreenHeader';
 import { showToast } from '../ui/Toast';
 import { AuthService } from '../services/authService';
 import { executeQuery, getAppSettings, updateAppSetting } from '../database/database';
-import { getSupabase } from '../database/supabase';
+import { getSupabase } from '../services/supabase';
 import { pushLocalChanges, pullServerChanges } from '../services/SyncService';
 import { LoggingService } from '../modules/system/services/LoggingService';
 import { StorageHelper } from '../services/storageHelper';
