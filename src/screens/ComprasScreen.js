@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator, Dimensions, StatusBar, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Dimensions, StatusBar, SafeAreaView } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
-import { insertCompra, getCadastro, getComprasRecentes, updateCompra, deleteCompra, insertCadastro as insertCadastros, executeQuery } from '../database/database';
+import { insertCompra, getComprasRecentes, updateCompra, deleteCompra, executeQuery } from '../database/database';
+import SmartAutocomplete from '../components/common/SmartAutocomplete';
+import { ProductLibraryService, FornecedorLibraryService } from '../services/LibraryServices';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -29,24 +31,13 @@ export default function ComprasScreen({ navigation }) {
     const [editingUuid, setEditingUuid] = useState(null);
     const [history, setHistory] = useState([]);
 
-    // Selection Modal State
-    const [modalVisible, setModalVisible] = useState(false);
-    const [items, setItems] = useState([]);
-    const [fornecedores, setFornecedores] = useState([]);
-    const [modalType, setModalType] = useState('MATERIAL'); // 'MATERIAL' or 'FORNECEDOR'
-    const [searchText, setSearchText] = useState('');
-    const [loadingModal, setLoadingModal] = useState(false);
 
-    // Quick Add State
-    const [quickAddModal, setQuickAddModal] = useState(false);
-    const [newItemName, setNewItemName] = useState('');
 
     // Camera State
     const [hasPermission, setHasPermission] = useState(null);
     const [anexoUri, setAnexoUri] = useState(null);
 
     useFocusEffect(useCallback(() => {
-        loadItems();
         loadHistory();
     }, []));
 
@@ -57,19 +48,6 @@ export default function ComprasScreen({ navigation }) {
         })();
     }, []);
 
-    const loadItems = async () => {
-        setLoadingModal(true);
-        try {
-            const all = await getCadastro();
-            const inputs = all.filter(i => ['INSUMO', 'EMBALAGEM'].includes(i.tipo));
-            setItems(inputs);
-
-            const resF = await executeQuery('SELECT * FROM fornecedores WHERE is_deleted = 0 ORDER BY nome ASC');
-            const rowsF = [];
-            for (let i = 0; i < resF.rows.length; i++) rowsF.push(resF.rows.item(i));
-            setFornecedores(rowsF);
-        } catch (e) { } finally { setLoadingModal(false); }
-    };
 
     const loadHistory = async () => {
         const data = await getComprasRecentes();
@@ -90,30 +68,7 @@ export default function ComprasScreen({ navigation }) {
         }
     };
 
-    const getFilteredItems = () => {
-        if (!searchText) return items;
-        return items.filter(i => i.nome.includes(searchText.toUpperCase()));
-    };
 
-    const quickSave = async () => {
-        if (!newItemName.trim()) { Alert.alert('Ops', 'Nome é obrigatório'); return; }
-        try {
-            await insertCadastros({
-                uuid: uuidv4(),
-                nome: newItemName.toUpperCase(),
-                tipo: 'INSUMO',
-                unidade: 'UN',
-                observacao: 'CADASTRO RÁPIDO VIA COMPRAS',
-                estocavel: 1,
-                vendavel: 0
-            });
-            await loadItems();
-            setItem(newItemName.toUpperCase());
-            setModalVisible(false);
-            setQuickAddModal(false);
-            setNewItemName('');
-        } catch (e) { Alert.alert('Erro', 'Falha ao criar item.'); }
-    };
 
     const salvar = async () => {
         if (!item || !quantidade || !valor) {
@@ -215,31 +170,36 @@ export default function ComprasScreen({ navigation }) {
                             </Text>
                         </TouchableOpacity>
 
-                        <View style={styles.field}>
-                            <Text style={[styles.label, { color: textMutedColor }]}>PRODUTO / INSUMO COMPRADO *</Text>
-                            <TouchableOpacity 
-                                style={[styles.selectBtn, { backgroundColor: cardBg, borderColor: borderCol }]} 
-                                onPress={() => { setModalType('MATERIAL'); setModalVisible(true); }}
-                            >
-                                <Text style={[styles.selectText, { color: item ? textColor : textMutedColor }]}>
-                                     {item || "SELECIONAR MATERIAL..."}
-                                 </Text>
-                                 <Ionicons name="chevron-down" size={20} color={textMutedColor} />
-                            </TouchableOpacity>
-                        </View>
+                                                <SmartAutocomplete
+                            label="PRODUTO / INSUMO COMPRADO *"
+                            value={item}
+                            onSelect={val => setItem(val ? val.nome : '')}
+                            service={ProductLibraryService}
+                            filterType="INSUMO"
+                            title="SELECIONAR MATERIAL"
+                            placeholder="SELECIONAR MATERIAL..."
+                            icon="cube-outline"
+                            quickAddFields={[
+                                { key: 'nome', label: 'NOME DO INSUMO', placeholder: 'Ex: Adubo Especial' },
+                                { key: 'tipo', label: 'TIPO', placeholder: 'Ex: INSUMO', defaultValue: 'INSUMO' },
+                                { key: 'unidade', label: 'UNIDADE', placeholder: 'Ex: KG', defaultValue: 'KG' }
+                            ]}
+                        />
 
-                        <View style={styles.field}>
-                            <Text style={[styles.label, { color: textMutedColor }]}>FORNECEDOR (DE QUEM?)</Text>
-                            <TouchableOpacity 
-                                style={[styles.selectBtn, { backgroundColor: cardBg, borderColor: borderCol }]} 
-                                onPress={() => { setModalType('FORNECEDOR'); setModalVisible(true); }}
-                            >
-                                <Text style={[styles.selectText, { color: fornecedor.nome ? textColor : textMutedColor }]}>
-                                    {fornecedor.nome || "SELECIONAR FORNECEDOR..."}
-                                </Text>
-                                <Ionicons name="business-outline" size={20} color={textMutedColor} />
-                            </TouchableOpacity>
-                        </View>
+                        <SmartAutocomplete
+                            label="FORNECEDOR (DE QUEM?)"
+                            value={fornecedor.nome ? fornecedor : null}
+                            onSelect={val => setFornecedor(val ? { uuid: val.uuid, nome: val.nome } : { uuid: '', nome: '' })}
+                            service={FornecedorLibraryService}
+                            title="SELECIONAR FORNECEDOR"
+                            placeholder="SELECIONAR FORNECEDOR..."
+                            icon="business-outline"
+                            quickAddFields={[
+                                { key: 'nome', label: 'NOME DO FORNECEDOR', placeholder: 'Ex: AgroComercial' },
+                                { key: 'contato', label: 'CONTATO', placeholder: 'Ex: Geraldo Silva' },
+                                { key: 'telefone', label: 'TELEFONE', placeholder: 'Ex: (11) 99999-9999' }
+                            ]}
+                        />
 
                         <View style={styles.row}>
                             <View style={{ flex: 1, marginRight: 10 }}>
@@ -299,76 +259,7 @@ export default function ComprasScreen({ navigation }) {
                 </View>
             </ScrollView>
 
-            {/* SELECTION MODAL */}
-            <Modal visible={modalVisible} animationType="slide" transparent>
-                <View style={styles.overlay}>
-                    <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
-                        <View style={styles.modalHeader}>
-                            <Text style={[styles.modalTitle, { color: textColor }]}>SELECIONAR {modalType}</Text>
-                            <View style={{ flexDirection: 'row', gap: 15 }}>
-                                {modalType === 'MATERIAL' && (
-                                    <TouchableOpacity onPress={() => { setModalVisible(false); setQuickAddModal(true); }}>
-                                        <Ionicons name="add-circle" size={28} color={activeColors.primary} />
-                                    </TouchableOpacity>
-                                )}
-                                <TouchableOpacity onPress={() => setModalVisible(false)} style={[styles.closeBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F3F4F6' }]}>
-                                    <Ionicons name="close" size={24} color={textMutedColor} />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-
-                        <TextInput
-                            style={[styles.searchBar, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F9FAFB', borderColor: borderCol, color: textColor }]}
-                            placeholder="Buscar material..."
-                            placeholderTextColor={textMutedColor}
-                            value={searchText}
-                            onChangeText={setSearchText}
-                            autoCapitalize="characters"
-                        />
-
-                        {loadingModal ? (
-                            <ActivityIndicator color={activeColors.primary} style={{ marginTop: 50 }} />
-                        ) : (
-                            <FlatList
-                                data={modalType === 'MATERIAL' ? getFilteredItems() : fornecedores.filter(f => f.nome.includes(searchText.toUpperCase()))}
-                                keyExtractor={i => i.uuid || i.id.toString()}
-                                contentContainerStyle={{ paddingBottom: 50 }}
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity 
-                                        style={[styles.itemRow, { borderBottomColor: borderCol }]} 
-                                        onPress={() => { 
-                                            if (modalType === 'MATERIAL') setItem(item.nome);
-                                            else setFornecedor({ uuid: item.uuid, nome: item.nome });
-                                            setModalVisible(false); 
-                                        }}
-                                    >
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={[styles.itemText, { color: textColor }]}>{item.nome}</Text>
-                                            <Text style={[styles.itemSub, { color: textMutedColor }]}>{modalType === 'MATERIAL' ? `${item.tipo} • ${item.unidade}` : item.contato}</Text>
-                                        </View>
-                                        <Ionicons name="chevron-forward" size={16} color={textMutedColor} />
-                                    </TouchableOpacity>
-                                )}
-                                ListEmptyComponent={<Text style={[styles.empty, { color: textMutedColor }]}>Nenhum item encontrado.</Text>}
-                            />
-                        )}
-                    </View>
-                </View>
-            </Modal>
-
-            {/* QUICK ADD MODAL */}
-            <Modal visible={quickAddModal} animationType="slide" transparent>
-                <View style={styles.overlayCenter}>
-                    <Card style={styles.quickModal}>
-                        <Text style={[styles.modalTitleCenter, { color: textColor }]}>NOVO INSUMO RÁPIDO</Text>
-                        <AgroInput label="NOME DO ITEM" value={newItemName} onChangeText={setNewItemName} placeholder="EX: ADUBO ORGANICO" />
-                        <View style={styles.actionRow}>
-                            <AgroButton title="SALVAR" onPress={quickSave} style={{ flex: 1 }} />
-                            <AgroButton title="CANCELAR" variant="secondary" onPress={() => setQuickAddModal(false)} style={{ flex: 1, marginLeft: 10 }} />
-                        </View>
-                    </Card>
-                </View>
-            </Modal>
+            
         </View>
     );
 }

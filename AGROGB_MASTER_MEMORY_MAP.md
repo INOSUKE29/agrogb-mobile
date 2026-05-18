@@ -156,19 +156,32 @@ AgroGB
 # 9. REGRAS DE NEGÓCIO CRÍTICAS
 
 ## Adubação (Fórmula NPK e Livro de Campo)
-1.  **Baixa de Estoque:** Abate cada insumo da receita proporcionalmente à dosagem e área do talhão.
-2.  **Verificação de Saldo:** Se o insumo requisitado for maior do que o saldo físico, bloqueia a operação e alerta o agrônomo.
-3.  **Auditoria Caderno:** Cria e grava automaticamente o log descritivo da aplicação em `caderno_notas`.
-4.  **Cálculo NPK:** Decompõe e exibe a carga de Nitrogênio (N), Fósforo (P) e Potássio (K) com base em 10% padrão de cada insumo.
+1.  **Baixa de Estoque:** Ao planejar uma adubação, os insumos são associados. Ao tocar em **"DEDUZIR ESTOQUE E APLICAR"** nos detalhes do plano (`AdubacaoDetailScreen.js`), o sistema percorre cada insumo cadastrado na receita técnica, calcula a dosagem proporcional e realiza o abatimento físico no estoque local chamando `atualizarEstoque(produto, -quantidade, data)`.
+2.  **Movimentação de Estoque:** Insere automaticamente um registro na tabela `movimentacao_estoque` com tipo `SAIDA` e motivo `CONSUMO ADUBAÇÃO: [Nome do Plano]`.
+3.  **Verificação de Saldo:** Se o insumo requisitado for maior do que o saldo físico, bloqueia a operação e alerta o agrônomo.
+4.  **Auditoria no Caderno de Notas:** Ao aplicar a adubação, grava automaticamente uma nota técnica descritiva detalhada na tabela `caderno_notas` de campo.
+5.  **Cálculo NPK:** Decompõe e exibe a carga de Nitrogênio (N), Fósforo (P) e Potássio (K) com base em 10% padrão de cada insumo.
 
 ## Compras & Insumos
-1.  **Estoque:** Adiciona fisicamente a quantidade de insumos na tabela `estoque`.
-2.  **Financeiro:** Cria lançamento automático do tipo **`PAGAR`** em `financeiro_transacoes`.
+1.  **Estoque:** Adiciona fisicamente a quantidade de insumos comprados na tabela `estoque`.
+2.  **Financeiro:** Cria lançamento automático do tipo **`PAGAR`** em `financeiro_transacoes` para integração com o DRE.
 3.  **Cadastro Rápido:** Permite registrar um novo item no catálogo diretamente na tela de compras.
 
-## Vendas com Explosão de Receitas
-1.  **Explosão de Receita:** Verifica se o produto vendido possui uma receita em `receitas`. Se sim, abate proporcionalmente cada ingrediente/embalagem do estoque; se não, abate o produto diretamente.
-2.  **Financeiro:** Cria lançamento automático do tipo **`RECEBER`** em `financeiro_transacoes`.
+## Vendas com Explosão de Receitas (BOM - Fórmulas de Embalagens)
+1.  **Explosão de Receita (BOM):** Ao salvar uma venda (`insertVenda`), o sistema verifica se o produto vendido possui uma receita técnica atrelada na tabela `receitas`. 
+    *   **Se sim (Tem Receita):** Abate do estoque físico a quantidade multiplicada proporcionalmente de cada insumo/embalagem filho configurado, mantendo o produto principal intocado se este não for estocável.
+    *   **Se não (Sem Receita):** Abate a quantidade diretamente do estoque do produto principal vendido (comportamento clássico).
+2.  **Regras Clássicas de Receita de Embalagens do AgroGB:**
+    *   *Morango Padrão:* Venda de 1 Caixa (CX) de Morango dá baixa automática em 1 caixa vazia + 4 cambucas standard.
+    *   *Morango Grande:* Venda de 1 Caixa (CX) de Morango Grande dá baixa automática em 1 caixa grande + 4 cambucas grandes.
+    *   *Morango Premium ou Fundi:* Venda de 1 Caixa (CX) Premium/Fundi dá baixa automática em 1 caixa premium + 4 cambucas de isopor + filme plástico (sufilme).
+    *   *Flores:* Venda de 1 pacote dá baixa automática em 1 pacote protetor por maço.
+    *   *Ervilha Embalada:* Venda de 1 volume dá baixa automática em 20 a 30 bandejas de isopor + filme plástico (sufilme) proporcional.
+3.  **Financeiro:** Cria lançamento automático do tipo **`RECEBER`** em `financeiro_transacoes` de categoria `VENDAS`.
+
+## Encomendas e Logística
+1.  **Faturamento e Baixa de Encomendas:** Encomendas nos status `PENDENTE` ou `PARCIAL` exibem a ação de atalho **"Dar Baixa"**. Ao clicar, o usuário é transferido para a tela de **Vendas** com os dados pré-preenchidos (*Cliente, Produto, Quantidade restante e ID da encomenda*).
+2.  **Fechamento do Fluxo:** Ao concluir a venda que deu baixa na encomenda, a venda dispara a explosão de receita do produto (BOM), deduzindo as caixas e cambucas do estoque e postando a receita a receber no caixa financeiro de forma unificada e livre de erros.
 
 ## Controle de Estoque Seguro
 1.  **Regra Antinegativa:** Se uma saída de estoque tentar deixar o saldo negativo, a quantidade é fixada em `0`.
@@ -292,6 +305,20 @@ Este documento deve seguir regras rígidas de governança para evitar perda de c
 ---
 
 # 20. CHANGELOG PERMANENTE
+
+## 2026-05-18
+### Alteração
+Recuperação e restauração total do modal de gestão de Receitas / Fórmulas de Baixa de Embalagem (BOM) no catálogo rural. Correção de importação crítica de FlatList para evitar falhas táticas na seleção de padrões de mercado.
+
+### Arquivos Alterados
+- `src/screens/CadastroScreen.js`
+- `AGROGB_MASTER_MEMORY_MAP.md`
+
+### Regras de Negócio Impactadas
+- **Cadastros (Catálogo):** Edição avançada de produtos finais vinculando embalagens e insumos com dosagens proporcionais.
+- **Visual:** Estabilização do modal do assistente de padrões de peso de mercado.
+
+---
 
 ## 2026-05-17
 ### Alteração

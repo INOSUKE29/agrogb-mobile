@@ -86,6 +86,7 @@ Esta tabela acompanha cronologicamente todas as regras e módulos que nós refin
 
 | Data | Responsável | Ação Realizada | Arquivos Afetados | Impacto Técnico |
 | :--- | :--- | :--- | :--- | :--- |
+| **18/05/2026** | **Antigravity** | Restauração do Modal de Receitas / Fórmulas de Embalagens (BOM) | `CadastroScreen.js` | **Recuperação da interface de edição de receitas de embalagens atreladas a produtos no Catálogo Rural.** |
 | **17/05/2026** | **Antigravity** | Criação do Living Brain Map e Consolidação dos Módulos | `AGROGB_LIVING_BRAIN_MAP.md` | **Marco Inicial de Proteção de Memória Eterna do AgroGB.** |
 | **17/05/2026** | **Antigravity** | Restauração da Lógica de Adubação, Carrinho, Caderno e Estoque | `AdubacaoFormScreen.js`, `AdubacaoDetailScreen.js`, `database.js` | Restabelecimento completo das lógicas de NPK e baixas automáticas de insumos. |
 | **17/05/2026** | **Antigravity** | Zeramento das Bases Supabase e SQLite Local | `clean_db.py` (Scratch) | Esvaziamento de 100% de tabelas lixo, mantendo apenas conta ADMIN/1234 ativa. |

@@ -1,8 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { useFocusEffect } from '@react-navigation/native';
-import { insertPlantio, getCadastro, executeQuery } from '../database/database';
+import { insertPlantio, executeQuery } from '../database/database';
+import SmartAutocomplete from '../components/common/SmartAutocomplete';
+import { TalhaoLibraryService, CropLibraryService } from '../services/LibraryServices';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
@@ -20,11 +22,6 @@ export default function PlantioScreen({ navigation }) {
     const [observacao, setObservacao] = useState('');
     const [history, setHistory] = useState([]);
 
-    // Selection Modal State
-    const [modalVisible, setModalVisible] = useState(false);
-    const [modalType, setModalType] = useState(null); // 'AREA' or 'CULTURA'
-    const [items, setItems] = useState([]);
-    const [loadingModal, setLoadingModal] = useState(false);
     const [selectedUnit, setSelectedUnit] = useState('PÉS');
 
     useFocusEffect(useCallback(() => { loadHistory(); }, []));
@@ -38,33 +35,7 @@ export default function PlantioScreen({ navigation }) {
         } catch (e) { console.error(e); }
     };
 
-    const openSelector = async (type) => {
-        setModalType(type);
-        setLoadingModal(true);
-        setModalVisible(true);
-        try {
-            if (type === 'AREA') {
-                const res = await executeQuery('SELECT * FROM talhoes WHERE is_deleted = 0 ORDER BY nome ASC');
-                const rows = [];
-                for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
-                setItems(rows);
-            } else {
-                const all = await getCadastro();
-                const filtered = all.filter(i => i.tipo === type);
-                setItems(filtered);
-            }
-        } catch (e) { } finally { setLoadingModal(false); }
-    };
 
-    const handleSelect = (item) => {
-        if (modalType === 'AREA') {
-            setTalhao(item.nome);
-        } else {
-            setVariedade(item.nome);
-            setSelectedUnit(item.unidade || 'PÉS');
-        }
-        setModalVisible(false);
-    };
 
     const salvar = async () => {
         if (!talhao || !quantidade || !variedade) {
@@ -121,31 +92,35 @@ export default function PlantioScreen({ navigation }) {
             <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
                 <View style={styles.content}>
                     <Card style={styles.formCard}>
-                        <View style={styles.field}>
-                            <Text style={styles.label}>ÁREA DE PLANTIO (ONDE?)</Text>
-                            <TouchableOpacity 
-                                style={[styles.selectBtn, { borderColor: talhao ? theme?.colors?.primary : '#E5E7EB' }]} 
-                                onPress={() => openSelector('AREA')}
-                            >
-                                <Text style={[styles.selectText, !talhao && { color: '#9CA3AF' }]}>
-                                    {talhao || "SELECIONAR ÁREA..."}
-                                </Text>
-                                <Ionicons name="map-outline" size={20} color={talhao ? theme?.colors?.primary : "#6B7280"} />
-                            </TouchableOpacity>
-                        </View>
+                                                <SmartAutocomplete
+                            label="ÁREA DE PLANTIO (ONDE?) *"
+                            value={talhao}
+                            onSelect={val => setTalhao(val ? val.nome : '')}
+                            service={TalhaoLibraryService}
+                            title="SELECIONAR ÁREA/TALHÃO"
+                            placeholder="SELECIONAR ÁREA..."
+                            icon="map-outline"
+                            quickAddFields={[
+                                { key: 'nome', label: 'NOME DO TALHÃO', placeholder: 'Ex: Talhão Leste 1' },
+                                { key: 'area_ha', label: 'ÁREA (HA)', placeholder: 'Ex: 10.5', keyboardType: 'decimal-pad' }
+                            ]}
+                        />
 
-                        <View style={styles.field}>
-                            <Text style={styles.label}>CULTURA (O QUE?)</Text>
-                            <TouchableOpacity 
-                                style={[styles.selectBtn, { borderColor: variedade ? theme?.colors?.primary : '#E5E7EB' }]} 
-                                onPress={() => openSelector('CULTURA')}
-                            >
-                                <Text style={[styles.selectText, !variedade && { color: '#9CA3AF' }]}>
-                                    {variedade || "SELECIONAR CULTURA..."}
-                                </Text>
-                                <Ionicons name="leaf-outline" size={20} color={variedade ? theme?.colors?.primary : "#6B7280"} />
-                            </TouchableOpacity>
-                        </View>
+                        <SmartAutocomplete
+                            label="CULTURA (O QUE?) *"
+                            value={variedade}
+                            onSelect={val => {
+                                setVariedade(val ? val.nome : '');
+                                if (val?.unidade) setSelectedUnit(val.unidade);
+                            }}
+                            service={CropLibraryService}
+                            title="SELECIONAR CULTURA"
+                            placeholder="SELECIONAR CULTURA..."
+                            icon="leaf-outline"
+                            quickAddFields={[
+                                { key: 'nome', label: 'NOME DA CULTURA', placeholder: 'Ex: Café Robusta' }
+                            ]}
+                        />
 
                         <View style={styles.row}>
                             <View style={{ flex: 1, marginRight: 10 }}>
@@ -201,47 +176,7 @@ export default function PlantioScreen({ navigation }) {
                 </View>
             </ScrollView>
 
-            <Modal visible={modalVisible} animationType="slide" transparent>
-                <View style={styles.overlay}>
-                    <View style={styles.modalBg}>
-                        <View style={styles.modalHeader}>
-                            <View>
-                                <Text style={styles.modalTitle}>SELECIONAR {modalType}</Text>
-                                <Text style={styles.modalSub}>Escolha um item cadastrado</Text>
-                            </View>
-                            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
-                                <Ionicons name="close" size={24} color="#374151" />
-                            </TouchableOpacity>
-                        </View>
-
-                        {loadingModal ? (
-                            <ActivityIndicator color={theme?.colors?.primary} style={{ marginTop: 50 }} />
-                        ) : (
-                            <FlatList
-                                data={items}
-                                keyExtractor={i => i.uuid || i.id.toString()}
-                                contentContainerStyle={{ paddingBottom: 50 }}
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity style={styles.itemRow} onPress={() => handleSelect(item)}>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={styles.itemText}>{item.nome}</Text>
-                                            <Text style={styles.itemSub}>{item.tipo || 'CADASTRO'}</Text>
-                                        </View>
-                                        <Text style={styles.unitBadge}>{item.unidade || 'UN'}</Text>
-                                    </TouchableOpacity>
-                                )}
-                                ListEmptyComponent={
-                                    <View style={styles.emptyState}>
-                                        <Ionicons name="search-outline" size={48} color="#D1D5DB" />
-                                        <Text style={styles.emptyText}>Nenhum {modalType} encontrado.</Text>
-                                        <Text style={styles.emptySubText}>Vá em Cadastros para adicionar novos itens.</Text>
-                                    </View>
-                                }
-                            />
-                        )}
-                    </View>
-                </View>
-            </Modal>
+            
         </View>
     );
 }

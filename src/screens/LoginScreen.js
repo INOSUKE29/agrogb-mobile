@@ -77,7 +77,7 @@ export default function LoginScreen({ navigation }) {
         setLoading(true);
         try {
             const phoneClean = userTrim.replace(/\D/g, '');
-            const sql = `SELECT * FROM usuarios WHERE is_deleted = 0 AND (usuario = ? OR telefone = ? OR usuario = ? OR email = ?)`;
+            const sql = `SELECT * FROM usuarios WHERE (is_deleted = 0 OR is_deleted IS NULL) AND (usuario = ? OR telefone = ? OR usuario = ? OR email = ?)`;
             const params = [userTrim, userTrim, phoneClean, userTrim];
 
             const res = await executeQuery(sql, params);

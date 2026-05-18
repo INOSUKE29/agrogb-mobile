@@ -11,6 +11,8 @@ import { v4 as uuidv4 } from 'uuid';
 import Card from '../components/common/Card';
 import AgroInput from '../components/common/AgroInput';
 import AgroButton from '../components/common/AgroButton';
+import SmartAutocomplete from '../components/common/SmartAutocomplete';
+import { CropLibraryService, TalhaoLibraryService } from '../services/LibraryServices';
 
 export default function AdubacaoFormScreen({ route, navigation }) {
     const { theme } = useTheme();
@@ -194,21 +196,34 @@ export default function AdubacaoFormScreen({ route, navigation }) {
                         placeholder="EX: ADUBAÇÃO TOMATE SEM. 4"
                     />
 
-                    <View style={styles.row}>
+                                        <View style={styles.row}>
                         <View style={{ flex: 1, marginRight: 10 }}>
-                            <AgroInput 
-                                label="CULTURA" 
-                                value={cultura} 
-                                onChangeText={(t) => setCultura(t.toUpperCase())} 
-                                placeholder="EX: TOMATE"
+                            <SmartAutocomplete
+                                label="CULTURA *"
+                                value={cultura}
+                                onSelect={val => setCultura(val ? val.nome : '')}
+                                service={CropLibraryService}
+                                title="SELECIONAR CULTURA"
+                                placeholder="CULTURA..."
+                                icon="leaf-outline"
+                                quickAddFields={[
+                                    { key: 'nome', label: 'NOME DA CULTURA', placeholder: 'Ex: Soja BRS' }
+                                ]}
                             />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <AgroInput 
-                                label="ÁREA / LOCAL" 
-                                value={area} 
-                                onChangeText={(t) => setArea(t.toUpperCase())} 
-                                placeholder="OPCIONAL" 
+                            <SmartAutocomplete
+                                label="ÁREA / LOCAL"
+                                value={area}
+                                onSelect={val => setArea(val ? val.nome : '')}
+                                service={TalhaoLibraryService}
+                                title="SELECIONAR TALHÃO"
+                                placeholder="LOCAL..."
+                                icon="map-outline"
+                                quickAddFields={[
+                                    { key: 'nome', label: 'NOME DO TALHÃO', placeholder: 'Ex: Talhão Norte 3' },
+                                    { key: 'area_ha', label: 'ÁREA (HA)', placeholder: 'Ex: 12.8', keyboardType: 'decimal-pad' }
+                                ]}
                             />
                         </View>
                     </View>

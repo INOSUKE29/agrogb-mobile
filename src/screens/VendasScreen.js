@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator, StatusBar, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, StatusBar, SafeAreaView } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
-import { insertVenda, getCadastro, getClientes, insertCliente, getVendasRecentes, deleteVenda, updateVenda, executeQuery } from '../database/database';
+import { insertVenda, getVendasRecentes, deleteVenda, updateVenda, executeQuery } from '../database/database';
+import SmartAutocomplete from '../components/common/SmartAutocomplete';
+import { ClientLibraryService, ProductLibraryService } from '../services/LibraryServices';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
@@ -29,17 +31,8 @@ export default function VendasScreen({ navigation }) {
     const [summary, setSummary] = useState({ total: 0, count: 0 });
     const [loading, setLoading] = useState(true);
 
-    // Modal States
-    const [modalVisible, setModalVisible] = useState(false);
-    const [clientModalVisible, setClientModalVisible] = useState(false);
 
-    // Lists
-    const [items, setItems] = useState([]);
-    const [clients, setClients] = useState([]);
 
-    // Search
-    const [searchText, setSearchText] = useState('');
-    const [clientSearchText, setClientSearchText] = useState('');
 
     useFocusEffect(useCallback(() => {
         loadData();
@@ -48,12 +41,6 @@ export default function VendasScreen({ navigation }) {
     const loadData = async () => {
         setLoading(true);
         try {
-            const allItems = await getCadastro();
-            setItems(allItems.filter(i => i.vendavel == 1));
-            
-            const allClients = await getClientes();
-            setClients(allClients);
-
             const data = await getVendasRecentes();
             setHistory(data);
 
@@ -179,24 +166,37 @@ export default function VendasScreen({ navigation }) {
                 <Card style={styles.formCard}>
                     <Text style={[styles.sectionTitle, { color: textMutedColor }]}>{editingUuid ? 'EDITAR REGISTRO' : 'NOVA VENDA'}</Text>
                     
-                    <AgroInput 
+                                        <SmartAutocomplete
                         label="Cliente / Parceiro"
                         value={cliente}
-                        placeholder="SELECIONAR OU BALCÃO"
-                        icon="people"
-                        style={{ marginBottom: 10 }}
-                        editable={false}
-                        onPressIn={() => setClientModalVisible(true)}
+                        onSelect={item => setCliente(item ? item.nome : 'BALCÃO')}
+                        service={ClientLibraryService}
+                        title="SELECIONAR CLIENTE"
+                        placeholder="SELECIONAR OU BALCÃO..."
+                        icon="people-outline"
+                        quickAddFields={[
+                            { key: 'nome', label: 'NOME DO CLIENTE', placeholder: 'Ex: Bruno Santos' },
+                            { key: 'telefone', label: 'TELEFONE', placeholder: 'Ex: (11) 99999-9999' }
+                        ]}
                     />
 
-                    <AgroInput 
+                    <SmartAutocomplete
                         label="Produto Sold *"
                         value={produto}
+                        onSelect={item => {
+                            setProduto(item ? item.nome : '');
+                            if (item?.preco_venda) setValor(String(item.preco_venda));
+                        }}
+                        service={ProductLibraryService}
+                        filterType="PRODUTO"
+                        title="SELECIONAR PRODUTO"
                         placeholder="SELECIONAR PRODUTO..."
-                        icon="cube"
-                        style={{ marginBottom: 10 }}
-                        editable={false}
-                        onPressIn={() => setModalVisible(true)}
+                        icon="cube-outline"
+                        quickAddFields={[
+                            { key: 'nome', label: 'NOME DO PRODUTO', placeholder: 'Ex: Café Moído' },
+                            { key: 'tipo', label: 'TIPO', placeholder: 'Ex: PRODUTO', defaultValue: 'PRODUTO' },
+                            { key: 'unidade', label: 'UNIDADE DO PRODUTO', placeholder: 'Ex: KG', defaultValue: 'KG' }
+                        ]}
                     />
 
                     <View style={styles.row}>
@@ -261,71 +261,7 @@ export default function VendasScreen({ navigation }) {
                 ))}
             </ScrollView>
 
-            <Modal visible={modalVisible} animationType="slide" transparent>
-                <View style={styles.overlay}>
-                    <View style={[styles.modalBg, { backgroundColor: cardBg }]}>
-                        <View style={styles.modalHeader}>
-                            <Text style={[styles.modalTitle, { color: textColor }]}>SELECIONAR PRODUTO</Text>
-                            <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <Ionicons name="close" size={24} color={textMutedColor} />
-                            </TouchableOpacity>
-                        </View>
-                        <TextInput 
-                            style={[styles.searchBar, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F3F4F6', color: textColor }]} 
-                            placeholder="Buscar..." 
-                            placeholderTextColor={textMutedColor} 
-                            value={searchText} 
-                            onChangeText={t => up(t, setSearchText)} 
-                        />
-                        <FlatList
-                            data={items.filter(i => i.nome.includes(searchText.toUpperCase()))}
-                            keyExtractor={i => i.uuid || i.id.toString()}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity style={[styles.itemRow, { borderBottomColor: borderCol }]} onPress={() => { setProduto(item.nome); setModalVisible(false); }}>
-                                    <Text style={[styles.itemText, { color: textColor }]}>{item.nome}</Text>
-                                    <Text style={[styles.itemSub, { color: textMutedColor }]}>{item.unidade}</Text>
-                                </TouchableOpacity>
-                            )}
-                        />
-                    </View>
-                </View>
-            </Modal>
-
-            <Modal visible={clientModalVisible} animationType="slide" transparent>
-                <View style={styles.overlay}>
-                    <View style={[styles.modalBg, { backgroundColor: cardBg }]}>
-                        <View style={styles.modalHeader}>
-                            <Text style={[styles.modalTitle, { color: textColor }]}>SELECIONAR CLIENTE</Text>
-                            <TouchableOpacity onPress={() => setClientModalVisible(false)}>
-                                <Ionicons name="close" size={24} color={textMutedColor} />
-                            </TouchableOpacity>
-                        </View>
-                        <TextInput 
-                            style={[styles.searchBar, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F3F4F6', color: textColor }]} 
-                            placeholder="Buscar cliente..." 
-                            placeholderTextColor={textMutedColor} 
-                            value={clientSearchText} 
-                            onChangeText={t => up(t, setClientSearchText)} 
-                        />
-                        <FlatList
-                            data={clients.filter(c => c.nome.includes(clientSearchText.toUpperCase()))}
-                            keyExtractor={i => i.uuid || i.id.toString()}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity style={[styles.itemRow, { borderBottomColor: borderCol }]} onPress={() => { setCliente(item.nome); setClientModalVisible(false); }}>
-                                    <Text style={[styles.itemText, { color: textColor }]}>{item.nome}</Text>
-                                    <Text style={[styles.itemSub, { color: textMutedColor }]}>{item.telefone || 'Sem telefone'}</Text>
-                                </TouchableOpacity>
-                            )}
-                            ListHeaderComponent={
-                                <TouchableOpacity style={[styles.itemRow, { borderBottomColor: borderCol }]} onPress={() => { setCliente('BALCÃO'); setClientModalVisible(false); }}>
-                                    <Text style={[styles.itemText, { color: textColor }]}>BALCÃO / AVULSO</Text>
-                                    <Text style={[styles.itemSub, { color: textMutedColor }]}>Sem cadastro prévio</Text>
-                                </TouchableOpacity>
-                            }
-                        />
-                    </View>
-                </View>
-            </Modal>
+            
         </View>
     );
 }

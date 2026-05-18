@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, SectionList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, ScrollView, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, SectionList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, ScrollView, Platform, Dimensions, FlatList } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertCadastro, getCadastro, deleteCadastro, updateCadastro, insertReceita, getReceita, deleteItemReceita } from '../database/database';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -359,8 +359,154 @@ export default function CadastroScreen({ navigation }) {
                     </Card>
                 </View>
             </Modal>
+
+            {/* MODAL RECEITA (FICHA TÉCNICA E COMPOSIÇÃO DE EMBALAGENS) */}
+            <Modal visible={recipeModalVisible} transparent animationType="slide">
+                <View style={styles.overlay}>
+                    <View style={[styles.modalContent, { height: '80%' }]}>
+                        <View style={styles.modalHeader}>
+                            <View>
+                                <Text style={styles.modalTitle}>FÓRMULA / RECEITA DE BAIXA</Text>
+                                <Text style={{ fontSize: 11, color: '#6B7280', fontWeight: 'bold', marginTop: 4 }}>
+                                    Para: {editingItem?.nome}
+                                </Text>
+                            </View>
+                            <TouchableOpacity onPress={() => setRecipeModalVisible(false)} style={styles.closeBtn}>
+                                <Ionicons name="close" size={24} color="#6B7280" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={{ fontSize: 13, color: '#4B5563', marginBottom: 20, lineHeight: 18 }}>
+                           Defina as embalagens ou insumos que devem dar baixa automaticamente do estoque na proporção correta sempre que 1 unidade deste produto for vendida.
+                        </Text>
+
+                        <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+                            {currentRecipe.length === 0 ? (
+                                <View style={{ padding: 30, alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: 15, borderStyle: 'dashed', borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 20 }}>
+                                    <Ionicons name="construct-outline" size={40} color="#9CA3AF" />
+                                    <Text style={{ textAlign: 'center', marginTop: 10, color: '#9CA3AF', fontWeight: 'bold', fontSize: 13 }}>
+                                        Nenhuma receita configurada.
+                                    </Text>
+                                    <Text style={{ textAlign: 'center', marginTop: 5, color: '#9CA3AF', fontSize: 11 }}>
+                                        Ao vender este produto, será dada baixa direta de 1 unidade dele mesmo no estoque.
+                                    </Text>
+                                </View>
+                            ) : (
+                                <View style={{ marginBottom: 20 }}>
+                                    <Text style={styles.inputLabel}>INSUMOS VINCULADOS A ESTA VENDA</Text>
+                                    {currentRecipe.map((rec) => (
+                                        <View key={rec.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F9FAFB', padding: 15, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: '#F3F4F6' }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#E0E7FF', justifyContent: 'center', alignItems: 'center', marginRight: 10 }}>
+                                                    <Ionicons name="cube-outline" size={18} color="#6366F1" />
+                                                </View>
+                                                <View>
+                                                    <Text style={{ fontWeight: 'bold', color: '#1F2937', fontSize: 14 }}>{rec.nome_filho}</Text>
+                                                    <Text style={{ fontSize: 11, color: '#6B7280' }}>Baixa proporcional</Text>
+                                                </View>
+                                            </View>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
+                                                <Text style={{ fontWeight: '800', color: '#10B981', fontSize: 15 }}>
+                                                    {rec.quantidade} {rec.unidade_filho}
+                                                </Text>
+                                                <TouchableOpacity onPress={() => handleDeleteRecipeItem(rec.id)} style={{ padding: 5 }}>
+                                                    <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    ))}
+                                </View>
+                            )}
+
+                            <AgroButton 
+                                title="ADICIONAR COMPONENTE / EMBALAGEM" 
+                                onPress={() => setAddIngModal(true)}
+                                icon="add"
+                                style={{ marginTop: 10 }}
+                            />
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* SUBMODAL SELETOR DE COMPONENTE DA RECEITA */}
+            <Modal visible={addIngModal} transparent animationType="fade">
+                <View style={styles.overlayCenter}>
+                    <Card style={{ padding: 25, width: '90%', maxHeight: '85%' }}>
+                        <Text style={styles.modalTitleCenter}>VINCULAR EMBALAGEM / INSUMO</Text>
+                        
+                        <Text style={styles.inputLabel}>SELECIONE O COMPONENTE (ESTOQUE)</Text>
+                        <ScrollView style={{ maxHeight: 200, marginBottom: 15, borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 5 }}>
+                            {items.filter(i => i.estocavel === 1 && i.uuid !== editingItem?.uuid).map(ing => (
+                                <TouchableOpacity 
+                                    key={ing.uuid} 
+                                    onPress={() => setSelectedIng(ing)}
+                                    style={{ padding: 12, backgroundColor: selectedIng?.uuid === ing.uuid ? '#D1FAE5' : 'transparent', borderRadius: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}
+                                >
+                                    <Text style={{ fontWeight: 'bold', color: selectedIng?.uuid === ing.uuid ? '#065F46' : '#374151', fontSize: 13 }}>{ing.nome}</Text>
+                                    <Text style={{ fontSize: 10, color: '#6B7280', fontWeight: 'bold' }}>{ing.unidade}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+
+                        {selectedIng && (
+                            <View style={{ backgroundColor: '#F9FAFB', padding: 12, borderRadius: 12, marginBottom: 15 }}>
+                                <Text style={{ fontSize: 11, color: '#6B7280', fontWeight: 'bold' }}>Selecionado:</Text>
+                                <Text style={{ fontSize: 14, fontWeight: '800', color: '#10B981', marginTop: 2 }}>{selectedIng.nome}</Text>
+                            </View>
+                        )}
+
+                        <AgroInput 
+                            label="QUANTIDADE DE BAIXA POR UNIDADE DO PRODUTO" 
+                            value={qtdIng} 
+                            onChangeText={setQtdIng} 
+                            keyboardType="numeric" 
+                            placeholder="Ex: 4 (para 4 cambucas por caixa)" 
+                        />
+
+                        <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+                            <AgroButton title="CONFIRMAR" onPress={handleSaveRecipeItem} style={{ flex: 1 }} />
+                            <AgroButton title="FECHAR" variant="secondary" onPress={() => { setAddIngModal(false); setSelectedIng(null); setQtdIng(''); }} style={{ flex: 1 }} />
+                        </View>
+                    </Card>
+                </View>
+            </Modal>
         </View>
     );
+
+    async function handleSaveRecipeItem() {
+        if (!selectedIng || !qtdIng) {
+            return Alert.alert('Ops!', 'Selecione um insumo e informe a quantidade.');
+        }
+        try {
+            await insertReceita(editingItem.uuid, selectedIng.uuid, parseFloat(qtdIng));
+            Alert.alert('Sucesso', 'Componente adicionado à receita!');
+            setSelectedIng(null);
+            setQtdIng('');
+            setAddIngModal(false);
+            loadRecipeData(editingItem.uuid);
+        } catch (e) {
+            Alert.alert('Erro', 'Não foi possível adicionar o item à receita.');
+        }
+    }
+
+    async function handleDeleteRecipeItem(id) {
+        Alert.alert('Remover', 'Excluir este insumo da receita?', [
+            { text: 'Não', style: 'cancel' },
+            {
+                text: 'Sim, Remover',
+                style: 'destructive',
+                onPress: async () => {
+                    try {
+                        await deleteItemReceita(id);
+                        loadRecipeData(editingItem.uuid);
+                    } catch (e) {
+                        Alert.alert('Erro', 'Falha ao remover o item.');
+                    }
+                }
+            }
+        ]);
+    }
 
     async function loadRecipeData(paiUuid) {
         try { const data = await getReceita(paiUuid); setCurrentRecipe(data); } catch (e) { }

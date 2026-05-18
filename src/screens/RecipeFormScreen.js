@@ -9,6 +9,8 @@ import { FertilizationService } from '../services/FertilizationService';
 import ScreenHeader from '../ui/ScreenHeader';
 import { Picker } from '@react-native-picker/picker';
 
+import { useTheme } from '../context/ThemeContext';
+
 /**
  * RecipeFormScreen - Cadastro/Edição de Receitas 🌿🧾
  */

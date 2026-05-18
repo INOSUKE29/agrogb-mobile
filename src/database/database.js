@@ -408,7 +408,28 @@ const createTables = async () => {
         }
 
         // Inserir Admin padrão se não existir (Paridade com Desktop)
-        await executeQuery(`INSERT OR IGNORE INTO usuarios (usuario, senha, nivel) VALUES ('ADMIN', '1234', 'ADM')`);
+        try {
+            const adminCount = await executeQuery("SELECT COUNT(*) as c FROM usuarios WHERE usuario = 'ADMIN'");
+            if (adminCount.rows.item(0).c === 0) {
+                await executeQuery(
+                    `INSERT INTO usuarios (uuid, usuario, senha, nivel, is_deleted) VALUES (?, ?, ?, ?, ?)`,
+                    ['admin-default-uuid', 'ADMIN', '1234', 'ADM', 0]
+                );
+                console.log('✅ ADMIN padrão inserido com sucesso.');
+            } else {
+                // Garantir integridade do Admin existente
+                await executeQuery(
+                    `UPDATE usuarios SET senha = '1234', nivel = 'ADM', is_deleted = 0 WHERE usuario = 'ADMIN'`
+                );
+                // Garantir UUID do Admin se estiver nulo
+                await executeQuery(
+                    `UPDATE usuarios SET uuid = 'admin-default-uuid' WHERE usuario = 'ADMIN' AND (uuid IS NULL OR uuid = '')`
+                );
+                console.log('✅ ADMIN padrão atualizado e verificado.');
+            }
+        } catch (adminError) {
+            console.error('⚠️ Erro ao verificar/inserir ADMIN:', adminError);
+        }
 
         // MIGRATION: Adicionar email se não existir (v3.5)
         try {
@@ -661,7 +682,12 @@ const createTables = async () => {
         // MIGRATION: Soft Delete Flag
         const tablesToCheck = ['usuarios', 'colheitas', 'monitoramento', 'vendas', 'estoque', 'compras', 'plantio', 'custos', 'descarte', 'cadastro', 'clientes', 'culturas', 'maquinas', 'manutencao_frota', 'receitas', 'planos_adubacao'];
         for (const table of tablesToCheck) {
-            try { await executeQuery(`ALTER TABLE ${table} ADD COLUMN is_deleted INTEGER DEFAULT 0`); } catch (e) { }
+            try { 
+                await executeQuery(`ALTER TABLE ${table} ADD COLUMN is_deleted INTEGER DEFAULT 0`); 
+            } catch (e) { }
+            try {
+                await executeQuery(`UPDATE ${table} SET is_deleted = 0 WHERE is_deleted IS NULL`);
+            } catch (e) { }
         }
 
         // MIGRATION: Coluna Anexo para Notas Fiscais e Recibos

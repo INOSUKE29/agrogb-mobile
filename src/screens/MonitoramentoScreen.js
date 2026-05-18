@@ -16,6 +16,8 @@ import { useTheme } from '../context/ThemeContext';
 import Card from '../components/common/Card';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
+import SmartAutocomplete from '../components/common/SmartAutocomplete';
+import { TalhaoLibraryService } from '../services/LibraryServices';
 
 const { width } = Dimensions.get('window');
 
@@ -238,7 +240,19 @@ export default function MonitoramentoScreen({ navigation }) {
     const renderNewForm = () => (
         <ScrollView style={{ flex: 1, padding: 20 }}>
             <Card style={{ marginBottom: 20 }}>
-                <AgroInput label="LOCALIZAÇÃO / TALHÃO" value={form.cultura} onChangeText={t => setForm({ ...form, cultura: t })} icon="map-outline" placeholder="Ex: Talhão Sul 02" />
+                <SmartAutocomplete
+                    label="LOCALIZAÇÃO / TALHÃO *"
+                    value={form.area?.nome ? form.area : form.cultura}
+                    onSelect={val => setForm({ ...form, area: val, cultura: val ? val.nome : '' })}
+                    service={TalhaoLibraryService}
+                    title="SELECIONAR TALHÃO"
+                    placeholder="SELECIONAR TALHÃO..."
+                    icon="map-outline"
+                    quickAddFields={[
+                        { key: 'nome', label: 'NOME DO TALHÃO', placeholder: 'Ex: Talhão Oeste 4' },
+                        { key: 'area_ha', label: 'ÁREA (HA)', placeholder: 'Ex: 8.5', keyboardType: 'decimal-pad' }
+                    ]}
+                />
                 <AgroInput label="OBSERVAÇÕES DE CAMPO" value={form.observacao} onChangeText={t => setForm({ ...form, observacao: t })} multiline placeholder="Descreva os sintomas ou sinais observados..." />
                 
                 <View style={styles.mediaContainer}>
