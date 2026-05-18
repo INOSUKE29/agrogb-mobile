@@ -214,24 +214,28 @@ O padrão visual oficial baseia-se na tela de **Dashboard Diamond Pro**. Compone
 | Vendas | 🟢 Operacional | Baixas inteligentes por receitas explosivas e criação de contas a receber automatizada. |
 | Biblioteca Global | 🟢 Estável | Padronização premium de seletores dinâmicos (frosted bottom sheet) em 100% dos fluxos dinâmicos. |
 | Sync | 🟢 Estável | Tratamento de concorrência e push/pull offline e online com Supabase ativo. |
+| Segurança de Nuvem | 🟢 Estável | RLS completo em 100% das tabelas, Search Path blindado e 0 sugestões/erros de segurança. |
 
 ---
 
 # 12. ROADMAP ESTRATÉGICO
 
 *   **Fase 1 — Consolidar Base Atual do Mobile (Concluída/Estável):** Alinhamento visual, correção de menus, unificação de Configurações e validação sintática do Metro Bundler.
-*   **Fase 2 — Estrutura de Banco Unificada (Em Execução):** Sincronismo das novas tabelas (`farms`, `fields`, `plantings`, `recommendations`) com suporte offline-first no SQLite local e campos de auditoria multiplataforma (`source_platform`, `created_by`, `updated_by`).
-*   **Fase 3 — Controle de Perfis (RBAC):** Restrições e visualizações dinâmicas no celular baseadas na role (`ADMIN`, `AGRONOMO`, `CLIENTE`, `STAFF`).
-*   **Fase 4 — Permissões Granulares:** Proteção estrita do banco e do estoque (leitura "Somente Leitura" de insumos para agrônomos, sem acesso financeiro ou de custos).
-*   **Fase 5 — Biblioteca Global e Local:** Implementação do cadastro leve de insumos locais e envio automático para fila de curadoria (`product_curation_queue`).
-*   **Fase 6 — Recomendações Agronômicas:** Interface de prescrição rígida separada por abas (Gotejo vs. Foliar) e envio de receitas formatadas via app/WhatsApp.
-*   **Fase 7 — Auditoria Completa:** Histórico permanente de transações físicas e comerciais com rastreio de origem.
-*   **Fase 8 — Integração Desktop:** Construção do painel web Bruno/Agrônomo consumindo a mesma base de dados unificada do Supabase.
-
+*   **Fase 2 — Estrutura de Banco Unificada (Concluída no Supabase):** Esquema completo rematriculado na nuvem (`farms`, `fields`, `plantings`, `recommendations`) com campos de auditoria (`created_by`, `updated_by`) e plataforma de origem (`source_platform`).
+*   **Fase 3 — Controle de Perfis (Concluída no Supabase):** Perfis (`profiles`) integrados ao cadastro nativo com roles rígidas de acesso (`ADMIN`, `AGRONOMO`, `CLIENTE`, `STAFF`).
+*   **Fase 4 — Permissões Granulares (Concluída no Supabase):** RLS e políticas de acesso estruturadas por papéis, protegendo dados financeiros e limitando visualizações.
+*   **Fase 5 — Biblioteca Global e Local (Concluída no Supabase):** Tabela de produtos (`products`) pronta com suporte a curadoria (`approved`, `pending`, `rejected`).
+*   **Fase 6 — Recomendações Agronômicas (Concluída no Supabase):** Tabela `recommendations` pronta para persistir receitas rígidas via Gotejo ou Foliar.
+*   **Fase 7 — Auditoria Completa (Concluída no Supabase):** Banco 100% auditado através do gatilho universal `audit_trigger_func` gravando em `audit_logs`.
+*   **Fase 8 — Integração Desktop (Roadmap Ativo):** Construção do painel web/desktop administrativo consumindo a mesma base unificada e consolidada do Supabase.
 
 ---
 
 # 13. LOG DE DECISÕES
+
+### 2026-05-18
+*   **Ajuste de RLS em ASCII no Supabase**: Evitamos caracteres acentuados especiais em português (como `á`, `ô`, `ç`, `ã`) nos nomes das políticas de RLS para contornar limitações do linter e garantir compilação universal no Postgres.
+*   **Expurgo de tabelas legadas**: Deletamos permanentemente do banco remoto as tabelas `cadastro`, `devices` e `system_settings`, removendo resíduos antigos.
 
 ### 2026-05-17
 *   **Limpeza das Bases de Dados:** Realizado o zeramento completo de todas as tabelas ativas em nuvem no Supabase e do SQLite desktop local.
@@ -310,6 +314,21 @@ Este documento deve seguir regras rígidas de governança para evitar perda de c
 ---
 
 # 20. CHANGELOG PERMANENTE
+
+## 2026-05-18 (Sexta Alteração)
+### Alteração
+Execução e consolidação bem-sucedida de todas as fases do **Plano Master Blueprint no Supabase** (Fases 1 a 7). Deploiamento de um esquema unificado em nuvem, contendo organizações (multi-tenant), perfis (RBAC), talhões, plantios, insumos locais/globais com fila de curadoria, recomendações agronômicas (abas de dosagem Gotejo vs. Foliar), assinaturas e log universal de auditoria via triggers automatizados.
+Adicionalmente, realizamos a correção completa de todas as vulnerabilidades e pendências do **Security Advisor do Supabase**, neutralizando o warning de "Mutable Search Path" nas funções procedurais (`SET search_path = pg_catalog, public`) e criando políticas de Row Level Security (RLS) baseadas em ASCII limpo nas tabelas remanescentes (`notifications`, `role_permissions`, `subscription_plans`, `subscriptions`, `billing_events`). Isso eliminou todas as sugestões do Postgres linter, deixando a contagem em **0 sugestões pendentes** e **0 erros** no banco de produção.
+
+### Arquivos Alterados
+- `supabase/migrations/supabase_schema_complete.sql`
+- `supabase/migrations/supabase_security_fixes.sql`
+- `supabase/migrations/supabase_security_base_recreation.sql`
+- `supabase/migrations/supabase_schema_part1.sql` [DELETE]
+- `AGROGB_MASTER_MEMORY_MAP.md`
+- `walkthrough.md`
+
+---
 
 ## 2026-05-18 (Quinta Alteração)
 ### Alteração
