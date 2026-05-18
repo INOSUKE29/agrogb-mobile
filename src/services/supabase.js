@@ -84,7 +84,7 @@ export const syncTable = async (tableName) => {
 export const testConnection = async () => {
     try {
         const supabase = getSupabase();
-        const { data, error } = await supabase.from('usuarios').select('count').limit(1);
+        const { data, error } = await supabase.from('profiles').select('id').limit(1);
         return !error;
     } catch (e) {
         return false;

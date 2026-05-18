@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { getSupabase } from '../services/supabase';
 import { validateRegister, getPasswordStrength } from '../utils/validation';
+import { translateAuthError } from '../utils/errorHelpers';
 import AgroInput from '../components/common/AgroInput';
 import AgroButton from '../components/common/AgroButton';
 import Card from '../components/common/Card';
@@ -31,33 +32,34 @@ export default function RegisterScreen({ navigation }) {
         try {
             const supabase = getSupabase();
             
-            // 1. Criar Usuário no Auth
+            // 1. Criar Usuário no Auth com metadados estendidos
             const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: form.email,
                 password: form.password,
                 options: {
-                    data: { full_name: form.fullName }
+                    data: { 
+                        full_name: form.fullName,
+                        username: form.username || form.email.split('@')[0],
+                        phone: form.phone,
+                        farm_name: form.farmName
+                    }
                 }
             });
 
             if (authError) throw authError;
 
-            // 2. Criar Perfil na Tabela usuarios do Supabase
-            const { error: profileError } = await supabase.from('usuarios').insert([{
-                uuid: authData.user.id,
-                usuario: form.username || form.email.split('@')[0],
-                senha: form.password, // Recomenda-se hash no backend, mas mantendo paridade com local
-                nivel: 'USUARIO',
+            // 2. Criar ou mesclar Perfil na Tabela profiles do Supabase (tabela real existente)
+            const { error: profileError } = await supabase.from('profiles').upsert([{
+                id: authData.user.id,
+                username: form.username || form.email.split('@')[0],
                 nome_completo: form.fullName.toUpperCase(),
                 email: form.email.toLowerCase(),
-                telefone: form.phone,
-                endereco: form.farmName ? form.farmName.toUpperCase() : null,
-                last_updated: new Date().toISOString()
+                updated_at: new Date().toISOString()
             }]);
 
             if (profileError) throw profileError;
 
-            // 3. Salvar localmente para permitir login imediato
+            // 3. Salvar localmente no SQLite para permitir login off-line imediato
             const { insertUsuario } = require('../database/database');
             await insertUsuario({
                 uuid: authData.user.id,
@@ -74,15 +76,8 @@ export default function RegisterScreen({ navigation }) {
                 { text: 'FAZER LOGIN', onPress: () => navigation.navigate('Login') }
             ]);
         } catch (error) {
-            let errorMsg = error.message || '';
-            if (errorMsg.includes('User already registered') || errorMsg.includes('already exists') || errorMsg.includes('already registered')) {
-                Alert.alert(
-                    'E-mail já cadastrado',
-                    'Este e-mail já possui uma conta. Faça login ou recupere sua senha.'
-                );
-                return;
-            }
-            Alert.alert('Erro no Cadastro', errorMsg);
+            const friendlyMsg = translateAuthError(error.message || error.toString());
+            Alert.alert('Erro no Cadastro', friendlyMsg);
         } finally {
             setLoading(false);
         }

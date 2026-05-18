@@ -205,13 +205,14 @@ O padrão visual oficial baseia-se na tela de **Dashboard Diamond Pro**. Compone
 
 | Módulo | Status | Notas Técnicas |
 | :--- | :--- | :--- |
-| Autenticação | 🟢 Estável | Suporta biometria e tratamento de erros do Supabase Auth. |
+| Autenticação | 🟢 Estável | Autenticação híbrida Supabase Auth/SQLite, RLS e triggers corrigidos, offline-first. |
 | Dashboard | 🟢 Estável | KPIs de DRE e gráficos rápidos operando em modo offline. |
 | Adubação | 🟢 Estável | Lógicas agronômicas de NPK e carrinho de dosagem restaurados com sucesso. |
 | Estoque | 🟢 Estável | Ajuste direto de saldos, alertas de estoque baixo e regras de datas de corte ativas. |
 | Financeiro | 🟡 Refinamento | Integração autônoma de contas a pagar/receber operacional; DRE consolidado. |
 | Compras | 🟢 Operacional | Entrada física integrada ao financeiro e cadastro de itens rápidos na tela de entrada. |
 | Vendas | 🟢 Operacional | Baixas inteligentes por receitas explosivas e criação de contas a receber automatizada. |
+| Biblioteca Global | 🟢 Estável | Padronização premium de seletores dinâmicos (frosted bottom sheet) em 100% dos fluxos dinâmicos. |
 | Sync | 🟢 Estável | Tratamento de concorrência e push/pull offline e online com Supabase ativo. |
 
 ---
@@ -306,6 +307,57 @@ Este documento deve seguir regras rígidas de governança para evitar perda de c
 
 # 20. CHANGELOG PERMANENTE
 
+## 2026-05-18 (Quarta Alteração)
+### Alteração
+Unificação completa e simplificação do painel de Configurações (`SettingsScreen.js`). Descontinuação da tela antiga duplicada (`SyncScreen.js`). Implementação do Tema Global Dinâmico (Claro/Escuro/Sistema) e ativação de 100% dos controles funcionais integrados ao SQLite local e nuvem Supabase em tempo real (Auto-Sync, Ping Latency, Lixeira com expurgo físico, otimização por SQL VACUUM, Senha e Biometria).
+
+### Arquivos Alterados
+- `src/context/ThemeContext.js`
+- `src/screens/SettingsScreen.js`
+- `src/components/dashboard/QuickActions.js`
+- `AGROGB_MASTER_MEMORY_MAP.md`
+
+### Regras de Negócio Impactadas
+- **Configurações:** Escrita instantânea das preferências (Idioma, Unidade e Safra) no SQLite e AsyncStorage.
+- **Sincronismo:** Motor de Auto-Sync que envia atualizações locais em segundo plano imediatamente após modificações.
+- **Manutenção:** Execução de compactação de disco por SQLite VACUUM e purga definitiva de dados logicamente deletados (`is_deleted = 1`).
+
+---
+
+## 2026-05-18 (Terceira Alteração)
+### Alteração
+Padronização estrutural de seletores de dados e inputs pela "Biblioteca Global" do AgroGB. Substituição definitiva dos componentes `@react-native-picker/picker` de banco de dados e inputs manuais de texto por `SmartAutocomplete` + `LibraryPickerModal` com desfoque premium, histórico recente, favoritos e cadastro rápido express (`+ NOVO`).
+
+### Arquivos Alterados
+- `src/screens/NovaEncomendaScreen.js`
+- `src/screens/RecipeFormScreen.js`
+- `AGROGB_MASTER_MEMORY_MAP.md`
+
+### Regras de Negócio Impactadas
+- **Logística (Encomendas):** Clientes e Produtos unificados com a Biblioteca Global. Adicionada lógica inteligente de autocompletar Unidade Padrão e Preço Unitário sugerido com base no item do catálogo selecionado.
+- **Adubação (Receitas):** Seletor de Cultura (CropLibraryService) e inserção de Insumos da receita (ProductLibraryService) integrados à Biblioteca Global para consistência das fórmulas e eliminação de erros de grafia.
+
+---
+
+## 2026-05-18 (Segunda Alteração)
+### Alteração
+Correção estrutural e estabilização completa da autenticação com o Supabase. Executados scripts de migração na nuvem (criação da tabela profiles, ativação de RLS e políticas seguras de inserção/leitura, recriação do trigger pós-cadastro). Refatorado LoginScreen (suporte local para ADMIN/1234, resolução híbrida de e-mail por telefone/username local e remoto, sincronização pós-login e fallback offline) e RegisterScreen (metadados completos de cadastro, upsert e tratamento amigável de erro duplicado).
+
+### Arquivos Alterados
+- `src/services/supabase.js`
+- `src/services/authService.js`
+- `src/utils/errorHelpers.js`
+- `src/screens/RegisterScreen.js`
+- `src/screens/LoginScreen.js`
+- `AGROGB_MASTER_MEMORY_MAP.md`
+
+### Regras de Negócio Impactadas
+- **Autenticação:** Login e cadastro híbridos (E-mail, Telefone e Username) online e offline.
+- **Sincronização:** testConnection corrigido para ler a tabela profiles real na nuvem.
+- **Segurança:** Políticas de RLS de perfis ativas e trigger automático funcional.
+
+---
+
 ## 2026-05-18
 ### Alteração
 Recuperação e restauração total do modal de gestão de Receitas / Fórmulas de Baixa de Embalagem (BOM) no catálogo rural. Correção de importação crítica de FlatList para evitar falhas táticas na seleção de padrões de mercado.
@@ -352,12 +404,14 @@ O sistema mobile recuperou toda a inteligência agronômica Diamond Pro operando
 
 | Funcionalidade | Status | Arquivos Envolvidos | Tabelas SQLite/Nuvem | Serviços Envolvidos | Última Validação |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Login Biométrico** | 🟢 Estável | `LoginScreen.js`, `database.js` | `usuarios` | Supabase Auth, Biometrics | 17/05/2026 |
+| **Login Biométrico** | 🟢 Estável | `LoginScreen.js`, `RegisterScreen.js`, `database.js` | `usuarios`, `profiles` | Supabase Auth, Biometrics | 18/05/2026 |
 | **Aplicações NPK** | 🟢 Estável | `AdubacaoFormScreen.js` | `etapas_adubacao`, `cadastro` | `EstoqueService.js` | 17/05/2026 |
 | **Faturamento Encomendas** | 🟢 Estável | `EncomendasScreen.js` | `orders`, `clientes` | Baixa automatizada de Vendas | 17/05/2026 |
 | **Explosão Receitas** | 🟢 Estável | `VendasScreen.js` | `receitas`, `estoque` | `EstoqueService.js` | 17/05/2026 |
 | **Auto-Post Financeiro** | 🟢 Estável | `ComprasScreen.js`, `VendasScreen.js`| `financeiro_transacoes`| Caixa Automático | 17/05/2026 |
-| **Sincronismo Cloud** | 🟢 Estável | `SyncService.js` | Todas | `SyncService.js` | 17/05/2026 |
+| **Biblioteca Global** | 🟢 Estável | `SmartAutocomplete.js`, `LibraryPickerModal.js` | `clientes`, `cadastro`, `talhoes`, `culturas` | `LibraryServices.js` | 18/05/2026 |
+| **Sincronismo Cloud** | 🟢 Estável | `SyncService.js` | Todas | Sincronismo Online Imediato (Auto-Sync) | 18/05/2026 |
+| **Tema Dinâmico & Configs** | 🟢 Estável | `SettingsScreen.js`, `ThemeContext.js` | `app_settings` | Sincronismo reativo do tema e ajustes locais | 18/05/2026 |
 
 ---
 
@@ -400,6 +454,13 @@ O sistema mobile recuperou toda a inteligência agronômica Diamond Pro operando
 | **Vendas** | Explosão de Produto com Receita | Registrar venda de item que possui ingredientes cadastrados | Abate proporcional de cada insumo no estoque e gravação de venda | 🟢 Passou |
 | **Estoque** | Lançamento Histórico Retroativo | Registrar movimentação com data em `2025-12-15` | Movimentação gravada no log, mas estoque atual permanece intacto | 🟢 Passou |
 | **Encomendas**| Fluxo rápido de "Dar Baixa" | Clicar em "Dar Baixa" na encomenda pendente | Redirecionamento com campos auto-preenchidos na tela de vendas | 🟢 Passou |
+| **Autenticação** | Cadastro Novo Usuário | Registrar usuário com e-mail inédito, telefone e nome | Conta criada com sucesso no Supabase Auth, profiles e SQLite | 🟢 Passou |
+| **Autenticação** | Cadastro Duplicado | Registrar o mesmo e-mail novamente | Alerta em português claro: "Este e-mail já está cadastrado..." | 🟢 Passou |
+| **Autenticação** | Login com E-mail | Autenticar usando e-mail e senha no Supabase | Login efetuado com sucesso e sessão persistida no SQLite | 🟢 Passou |
+| **Autenticação** | Login com Telefone | Autenticar usando telefone cadastrado | Localiza o e-mail associado e faz login com senha no Supabase | 🟢 Passou |
+| **Autenticação** | Login Admin | Autenticar usando ADMIN e 1234 | Bypass instantâneo para login off-line local da conta ADM | 🟢 Passou |
+| **Biblioteca Global** | Busca/Cadastro de Clientes | Abrir seletor em Nova Encomenda, pesquisar e cadastrar um novo via atalho express | Novo cliente inserido no SQLite instantaneamente e pré-selecionado no formulário | 🟢 Passou |
+| **Biblioteca Global** | Seleção/Vínculo de Insumos | Adicionar ingrediente na receita em RecipeFormScreen pesquisando pelo autocomplete | Insumo carregado dinamicamente do estoque e inserido com alinhamento pixel-perfect | 🟢 Passou |
 
 ---
 

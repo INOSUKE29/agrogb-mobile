@@ -30,7 +30,7 @@ const SYSTEM_ACTIONS = [
     { title: 'Scanner', icon: 'scan-outline', color: '#10B981', screen: 'Scanner', desc: 'Escanear Insumos' },
     { title: 'Culturas', icon: 'flower-outline', color: '#CA8A04', screen: 'Culturas', desc: 'Tipos de Culturas' },
     { title: 'Equipe', icon: 'people-circle-outline', color: '#F59E0B', screen: 'Equipes', desc: 'Gerenciar Usuários' },
-    { title: 'Sincronizar', icon: 'sync-outline', color: '#3B82F6', screen: 'Sync', desc: 'Sincronizar Supabase' },
+    { title: 'Sincronizar', icon: 'sync-outline', color: '#3B82F6', screen: 'Settings', desc: 'Sincronizar Supabase' },
     { title: 'Ajustes', icon: 'settings-outline', color: '#6B7280', screen: 'Settings', desc: 'Configurar Sistema' },
 ];
 

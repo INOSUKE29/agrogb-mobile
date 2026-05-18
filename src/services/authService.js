@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { executeQuery } from '../database/database';
-import { supabase } from './supabase';
+import { getSupabase } from './supabase';
 
 /**
  * AuthService - Central de Controle de Autenticação e Sessão 🔐🛡️
@@ -35,6 +35,7 @@ export const AuthService = {
     logout: async () => {
         try {
             await AsyncStorage.removeItem('user_session');
+            const supabase = getSupabase();
             if (supabase) {
                 await supabase.auth.signOut();
             }
@@ -52,6 +53,7 @@ export const AuthService = {
         try {
             const emailClean = email.trim().toLowerCase();
             
+            const supabase = getSupabase();
             if (supabase) {
                 const { error } = await supabase.auth.resetPasswordForEmail(emailClean);
                 if (!error) return { success: true, message: 'Instruções enviadas para seu e-mail!' };

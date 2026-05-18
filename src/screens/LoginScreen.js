@@ -7,6 +7,7 @@ import AgroInput from '../components/common/AgroInput';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import { translateAuthError } from '../utils/errorHelpers';
+import { getSupabase } from '../services/supabase';
 
 const { width, height } = Dimensions.get('window');
 const LOGO = require('../../assets/icon.png');
@@ -76,15 +77,76 @@ export default function LoginScreen({ navigation }) {
 
         setLoading(true);
         try {
-            const phoneClean = userTrim.replace(/\D/g, '');
-            const sql = `SELECT * FROM usuarios WHERE (is_deleted = 0 OR is_deleted IS NULL) AND (usuario = ? OR telefone = ? OR usuario = ? OR email = ?)`;
-            const params = [userTrim, userTrim, phoneClean, userTrim];
+            // 1. LOGIN ADMIN LOCAL: Bypass instantâneo para a conta de administração
+            if (userTrim === 'ADMIN' && passTrim === '1234') {
+                const sessionData = {
+                    id: 999999,
+                    usuario: 'ADMIN',
+                    nome: 'ADMINISTRADOR PADRÃO',
+                    nivel: 'ADM',
+                    timestamp: new Date().getTime()
+                };
+                await AsyncStorage.setItem('user_session', JSON.stringify(sessionData));
+                navigation.replace('Home');
+                return;
+            }
 
-            const res = await executeQuery(sql, params);
+            const supabase = getSupabase();
+            let targetEmail = userTrim;
 
-            if (res.rows.length > 0) {
-                const userRow = res.rows.item(0);
-                if (userRow.senha === passTrim) {
+            // 2. RESOLUÇÃO DE E-MAIL (E-mail, Telefone ou Username)
+            if (!userTrim.includes('@')) {
+                // Limpa caracteres especiais do telefone para consulta local
+                const phoneClean = userTrim.replace(/\D/g, '');
+                
+                // Primeiro tenta localizar o e-mail no SQLite local
+                const localUser = await executeQuery(
+                    `SELECT email FROM usuarios WHERE (usuario = ? OR telefone = ? OR telefone = ?) AND is_deleted = 0`,
+                    [userTrim, userTrim, phoneClean]
+                );
+
+                if (localUser.rows.length > 0) {
+                    targetEmail = localUser.rows.item(0).email;
+                } else {
+                    // Caso não ache local (aparelho novo), consulta remotamente na tabela profiles
+                    try {
+                        const { data: remoteProfile } = await supabase
+                            .from('profiles')
+                            .select('email')
+                            .eq('username', userTrim.toLowerCase())
+                            .single();
+                        
+                        if (remoteProfile && remoteProfile.email) {
+                            targetEmail = remoteProfile.email;
+                        }
+                    } catch (e) {
+                        console.log('Erro ao buscar e-mail por username no Supabase:', e);
+                    }
+                }
+            }
+
+            // 3. AUTENTICAÇÃO SUPABASE COM FALLBACK OFFLINE
+            let authData = null;
+            let authError = null;
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: targetEmail.toLowerCase(),
+                    password: passTrim
+                });
+                authData = data;
+                authError = error;
+            } catch (netError) {
+                // Se falhar a conexão, tenta o login off-line diretamente com o banco SQLite local
+                console.log('📡 Falha de rede. Tentando autenticação SQLite local (off-line)...');
+                const phoneClean = userTrim.replace(/\D/g, '');
+                const localRes = await executeQuery(
+                    `SELECT * FROM usuarios WHERE (is_deleted = 0 OR is_deleted IS NULL) AND (usuario = ? OR telefone = ? OR telefone = ? OR email = ?) AND senha = ?`,
+                    [userTrim, userTrim, phoneClean, userTrim, passTrim]
+                );
+
+                if (localRes.rows.length > 0) {
+                    const userRow = localRes.rows.item(0);
                     const sessionData = {
                         id: userRow.id,
                         usuario: userRow.usuario,
@@ -93,48 +155,100 @@ export default function LoginScreen({ navigation }) {
                         timestamp: new Date().getTime()
                     };
                     await AsyncStorage.setItem('user_session', JSON.stringify(sessionData));
-
-                    if (!bypassBiometricPrompt && isBiometricSupported) {
-                        const bioEnabled = await SecureStore.getItemAsync(BIO_KEY);
-                        if (!bioEnabled) {
-                            Alert.alert(
-                                '🚀 Acesso Rápido',
-                                'Deseja ativar o login por biometria (Digital/FaceID) para entrar automaticamente nos próximos acessos?',
-                                [
-                                    { text: 'Agora não', onPress: () => navigation.replace('Home'), style: 'cancel' },
-                                    {
-                                        text: 'ATIVAR AGORA',
-                                        onPress: async () => {
-                                            try {
-                                                const auth = await LocalAuthentication.authenticateAsync({
-                                                    promptMessage: 'Confirme sua biometria para ativar',
-                                                });
-                                                if (auth.success) {
-                                                    await SecureStore.setItemAsync(BIO_KEY, JSON.stringify({ usuario: userTrim, senha: passTrim }));
-                                                    Alert.alert('Sucesso', 'Login biométrico ativado!');
-                                                    navigation.replace('Home');
-                                                } else {
-                                                    navigation.replace('Home');
-                                                }
-                                            } catch (e) {
-                                                navigation.replace('Home');
-                                            }
-                                        }
-                                    }
-                                ]
-                            );
-                            return;
-                        }
-                    }
                     navigation.replace('Home');
-                } else {
-                    Alert.alert('Erro', 'Senha incorreta.');
+                    return;
                 }
-            } else {
-                Alert.alert('Erro', 'Usuário não encontrado.');
+                throw netError;
             }
+
+            if (authError) throw authError;
+
+            // 4. LOGIN BEM-SUCEDIDO: Baixar/atualizar perfil e sincronizar SQLite local
+            let profileData = null;
+            try {
+                const { data } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', authData.user.id)
+                    .single();
+                profileData = data;
+            } catch (e) {
+                console.log('Erro ao baixar perfil do Supabase:', e);
+            }
+
+            const localCheck = await executeQuery('SELECT * FROM usuarios WHERE uuid = ?', [authData.user.id]);
+            const userPayload = {
+                uuid: authData.user.id,
+                usuario: (profileData && profileData.username) || targetEmail.split('@')[0],
+                senha: passTrim,
+                nivel: 'USUARIO',
+                nome_completo: (profileData && profileData.nome_completo) || 'USUÁRIO AGROGB',
+                email: targetEmail.toLowerCase(),
+                telefone: authData.user.user_metadata?.phone || authData.user.phone || '',
+                endereco: authData.user.user_metadata?.farm_name || ''
+            };
+
+            if (localCheck.rows.length > 0) {
+                await executeQuery(
+                    `UPDATE usuarios SET senha = ?, email = ?, nome_completo = ?, telefone = ?, endereco = ?, last_updated = ? WHERE uuid = ?`,
+                    [userPayload.senha, userPayload.email, userPayload.nome_completo, userPayload.telefone, userPayload.endereco, new Date().toISOString(), userPayload.uuid]
+                );
+            } else {
+                await executeQuery(
+                    `INSERT INTO usuarios (uuid, usuario, senha, nivel, email, nome_completo, telefone, endereco, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [userPayload.uuid, userPayload.usuario, userPayload.senha, userPayload.nivel, userPayload.email, userPayload.nome_completo, userPayload.telefone, userPayload.endereco, new Date().toISOString()]
+                );
+            }
+
+            // Recupera o ID do SQLite local recém inserido/atualizado para manter consistência da sessão
+            const finalCheck = await executeQuery('SELECT id, usuario, nome_completo, nivel FROM usuarios WHERE uuid = ?', [authData.user.id]);
+            const userRow = finalCheck.rows.item(0);
+
+            const sessionData = {
+                id: userRow.id,
+                usuario: userRow.usuario,
+                nome: userRow.nome_completo,
+                nivel: userRow.nivel,
+                timestamp: new Date().getTime()
+            };
+            await AsyncStorage.setItem('user_session', JSON.stringify(sessionData));
+
+            // Pergunta biometria se aplicável
+            if (!bypassBiometricPrompt && isBiometricSupported) {
+                const bioEnabled = await SecureStore.getItemAsync(BIO_KEY);
+                if (!bioEnabled) {
+                    Alert.alert(
+                        '🚀 Acesso Rápido',
+                        'Deseja ativar o login por biometria (Digital/FaceID) para entrar automaticamente nos próximos acessos?',
+                        [
+                            { text: 'Agora não', onPress: () => navigation.replace('Home'), style: 'cancel' },
+                            {
+                                text: 'ATIVAR AGORA',
+                                onPress: async () => {
+                                    try {
+                                        const auth = await LocalAuthentication.authenticateAsync({
+                                            promptMessage: 'Confirme sua biometria para ativar',
+                                        });
+                                        if (auth.success) {
+                                            await SecureStore.setItemAsync(BIO_KEY, JSON.stringify({ usuario: userTrim, senha: passTrim }));
+                                            Alert.alert('Sucesso', 'Login biométrico ativado!');
+                                            navigation.replace('Home');
+                                        } else {
+                                            navigation.replace('Home');
+                                        }
+                                    } catch (e) {
+                                        navigation.replace('Home');
+                                    }
+                                }
+                            }
+                        ]
+                    );
+                    return;
+                }
+            }
+            navigation.replace('Home');
         } catch (e) {
-            Alert.alert('Erro', translateAuthError(e.message));
+            Alert.alert('Erro no Login', translateAuthError(e.message || e.toString()));
         } finally {
             setLoading(false);
         }

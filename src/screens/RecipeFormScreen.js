@@ -8,8 +8,9 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { FertilizationService } from '../services/FertilizationService';
 import ScreenHeader from '../ui/ScreenHeader';
 import { Picker } from '@react-native-picker/picker';
-
 import { useTheme } from '../context/ThemeContext';
+import SmartAutocomplete from '../components/common/SmartAutocomplete';
+import { CropLibraryService, ProductLibraryService } from '../services/LibraryServices';
 
 /**
  * RecipeFormScreen - Cadastro/Edição de Receitas 🌿🧾
@@ -24,12 +25,16 @@ export default function RecipeFormScreen() {
     const [loading, setLoading] = useState(false);
     const [name, setName] = useState('');
     const [type, setType] = useState('foliar');
-    const [culture, setCulture] = useState('Morango');
+    
+    const [cultureVal, setCultureVal] = useState(null);
+    const culture = cultureVal?.nome || 'Morango';
+    
     const [description, setDescription] = useState('');
     const [items, setItems] = useState([]);
 
     // Campos do Modal/Item
-    const [itemName, setItemName] = useState('');
+    const [itemVal, setItemVal] = useState(null);
+    const itemName = itemVal?.nome || '';
     const [itemQty, setItemQty] = useState('');
     const [itemUnit, setItemUnit] = useState('ml');
 
@@ -39,12 +44,19 @@ export default function RecipeFormScreen() {
         }
     }, [recipeId]);
 
+    // Autopreenchimento de unidade com base no insumo selecionado
+    useEffect(() => {
+        if (itemVal) {
+            setItemUnit(itemVal.unidade || 'ml');
+        }
+    }, [itemVal]);
+
     const loadRecipe = async () => {
         const data = await FertilizationService.getRecipeDetails(recipeId);
         if (data) {
             setName(data.name);
             setType(data.type);
-            setCulture(data.culture);
+            setCultureVal(data.culture ? { nome: data.culture } : null);
             setDescription(data.description);
             setItems(data.items.map(it => ({
                 id: it.id,
@@ -67,7 +79,7 @@ export default function RecipeFormScreen() {
             unit: itemUnit
         };
         setItems([...items, newItem]);
-        setItemName('');
+        setItemVal(null);
         setItemQty('');
     };
 
@@ -133,19 +145,19 @@ export default function RecipeFormScreen() {
                             </Picker>
                         </View>
 
-                        <Text style={[styles.label, { color: textMutedColor }]}>Cultura</Text>
-                        <View style={[styles.pickerContainer, { backgroundColor: inputBg, borderColor: inputBorder }]}>
-                            <Picker
-                                selectedValue={culture}
-                                onValueChange={(itemValue) => setCulture(itemValue)}
-                                style={[styles.picker, { color: textColor }]}
-                                dropdownIconColor={textColor}
-                            >
-                                <Picker.Item label="Morango" value="Morango" />
-                                <Picker.Item label="Flor" value="Flor" />
-                                <Picker.Item label="Outros" value="Outros" />
-                            </Picker>
-                        </View>
+                        <SmartAutocomplete
+                            label="Cultura *"
+                            value={cultureVal}
+                            onSelect={setCultureVal}
+                            service={CropLibraryService}
+                            title="SELECIONAR CULTURA"
+                            placeholder="Selecione a cultura..."
+                            icon="leaf-outline"
+                            quickAddFields={[
+                                { key: 'nome', label: 'Nome da Cultura', placeholder: 'Ex: Morango' },
+                                { key: 'observacao', label: 'Observação (opcional)', placeholder: 'Ex: Safra de Inverno' }
+                            ]}
+                        />
 
                         <Text style={[styles.label, { color: textMutedColor }]}>Descrição (opcional)</Text>
                         <TextInput 
@@ -180,22 +192,28 @@ export default function RecipeFormScreen() {
                         ))}
 
                         <View style={styles.addItemBox}>
-                            <TextInput 
-                                style={[styles.input, { flex: 2, marginBottom: 0, backgroundColor: inputBg, borderColor: inputBorder, color: textColor }]} 
-                                placeholder="Produto" 
-                                placeholderTextColor={isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)"}
-                                value={itemName}
-                                onChangeText={setItemName}
+                            <SmartAutocomplete
+                                value={itemVal}
+                                onSelect={setItemVal}
+                                service={ProductLibraryService}
+                                title="SELECIONAR INSUMO"
+                                placeholder="Insumo"
+                                icon="leaf-outline"
+                                style={{ flex: 2, marginBottom: 0 }}
+                                quickAddFields={[
+                                    { key: 'nome', label: 'Nome do Insumo', placeholder: 'Ex: Ureia NPK' },
+                                    { key: 'tipo', label: 'Tipo', placeholder: 'Ex: INSUMO', defaultValue: 'INSUMO' }
+                                ]}
                             />
                             <TextInput 
-                                style={[styles.input, { width: 70, marginBottom: 0, marginHorizontal: 8, backgroundColor: inputBg, borderColor: inputBorder, color: textColor }]} 
+                                style={[styles.input, { width: 70, marginBottom: 0, marginHorizontal: 8, height: 52, backgroundColor: inputBg, borderColor: inputBorder, color: textColor }]} 
                                 placeholder="Qtd" 
                                 keyboardType="numeric"
                                 placeholderTextColor={isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)"}
                                 value={itemQty}
                                 onChangeText={setItemQty}
                             />
-                            <TouchableOpacity style={[styles.addButton, { backgroundColor: activeColors.primary || '#10B981' }]} onPress={addItem}>
+                            <TouchableOpacity style={[styles.addButton, { backgroundColor: activeColors.primary || '#10B981', height: 52 }]} onPress={addItem}>
                                 <Ionicons name="add" size={24} color="#FFF" />
                             </TouchableOpacity>
                         </View>

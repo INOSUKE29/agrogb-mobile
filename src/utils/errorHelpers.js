@@ -8,8 +8,8 @@ export function translateAuthError(message) {
 
     const msg = message.toLowerCase();
 
-    if (msg.includes('user already registered') || msg.includes('already exists')) {
-        return 'Conta já registrada.';
+    if (msg.includes('user already registered') || msg.includes('already exists') || msg.includes('already registered')) {
+        return 'Este e-mail já está cadastrado. Faça login ou recupere sua senha.';
     }
     
     if (msg.includes('invalid login credentials') || msg.includes('invalid credentials')) {
