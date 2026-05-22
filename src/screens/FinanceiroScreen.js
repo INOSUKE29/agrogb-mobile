@@ -111,7 +111,7 @@ export default function FinanceiroScreen({ navigation }) {
                 <View style={styles.transSection}>
                     <View style={styles.secRow}>
                         <Text style={[styles.secTitle, { color: isDarkMode ? '#FFF' : '#333' }]}>Transações recentes</Text>
-                        <TouchableOpacity><Text style={styles.seeAll}>Ver todas ></Text></TouchableOpacity>
+                        <TouchableOpacity><Text style={styles.seeAll}>Ver todas &gt;</Text></TouchableOpacity>
                     </View>
                     
                     <TransactionItem title="Venda de Soja" date="Entrada" amount="2.450,00" type="in" />

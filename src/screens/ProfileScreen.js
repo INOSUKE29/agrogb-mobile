@@ -24,8 +24,8 @@ export default function ProfileScreen({ navigation }) {
     const loadProfile = async () => {
         try {
             const jsonUser = await AsyncStorage.getItem('user_session');
-            if (jsonUser) {
-                const session = JSON.parse(jsonUser);
+            const session = jsonUser ? JSON.parse(jsonUser) : null;
+            if (session) {
                 const res = await executeQuery('SELECT * FROM usuarios WHERE id = ?', [session.id]);
                 if (res.rows.length > 0) {
                     const u = res.rows.item(0);
