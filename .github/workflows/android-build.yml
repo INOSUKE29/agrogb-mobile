@@ -45,34 +45,17 @@ jobs:
       - name: ⚙️ Expo Prebuild
         run: npx expo prebuild --platform android --clean
 
-      - name: 🔑 Setup Release Keystore
-        run: |
-          # 1. Decode Keystore from Secret
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
-
-          # 2. Configure gradle.properties for Signing
-          echo "" >> android/gradle.properties
-          echo "MYAPP_UPLOAD_STORE_FILE=release.keystore" >> android/gradle.properties
-          echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/gradle.properties
-          echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/gradle.properties
-          echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/gradle.properties
-          
-          # 3. Increase memory significantly to avoid OOM
-          echo "org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError" >> android/gradle.properties
-          echo "org.gradle.daemon=false" >> android/gradle.properties
-          echo "org.gradle.parallel=true" >> android/gradle.properties
-
-      - name: 🐘 Build APK
+      - name: 🐘 Build APK (Modo Teste - Sem Chaves)
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --stacktrace
+          ./gradlew assembleDebug --stacktrace
 
       - name: 📤 Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: agrogb-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          name: agrogb-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
 
       - name: 🚀 Create Release
         uses: softprops/action-gh-release@v2
@@ -84,9 +67,9 @@ jobs:
             ### 📦 AgroGB APK - Build de Alta Performance
             Este APK contém as últimas atualizações de Banco de Dados (Master V10.4) e correções de segurança.
             
-            **Instruções:** Clique no arquivo `app-release.apk` abaixo para baixar e instalar no seu Android.
+            **Instruções:** Clique no arquivo `app-debug.apk` abaixo para baixar e instalar no seu Android.
           draft: false
           prerelease: false
-          files: android/app/build/outputs/apk/release/app-release.apk
+          files: android/app/build/outputs/apk/debug/app-debug.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
