@@ -19,6 +19,7 @@ export default function ProfileScreen({ navigation }) {
     const [user, setUser] = useState({ id: null, nome: '', usuario: '', email: '', telefone: '', endereco: '', nivel: '', provider: 'local', senha_atual: '', nova_senha: '', avatar: null });
     const [biometria, setBiometria] = useState(false);
     const [twoFA, setTwoFA] = useState(false);
+    const [inviteCode, setInviteCode] = useState('Buscando...'); // Novo: Código do Agrônomo V2
 
     const loadProfile = async () => {
         try {
@@ -30,6 +31,24 @@ export default function ProfileScreen({ navigation }) {
                     const u = res.rows.item(0);
                     setUser({ id: u.id, nome: u.nome_completo || u.usuario, usuario: u.usuario, email: u.email || '', telefone: u.telefone || '', endereco: u.endereco || '', nivel: u.nivel || 'USUARIO', provider: u.provider || 'local', senha_atual: '', nova_senha: '', avatar: u.avatar || null });
                 }
+                
+                // Buscar/Gerar código de convite no Supabase V2
+                try {
+                    const { data: sData } = await supabase.auth.getSession();
+                    if (sData?.session) {
+                        const uid = sData.session.user.id;
+                        const { data: codeData } = await supabase.from('agronomist_codes').select('invite_code').eq('agronomist_id', uid).single();
+                        if (codeData) {
+                            setInviteCode(codeData.invite_code);
+                        } else {
+                            // Gerar código único e seguro para o agrônomo
+                            const newCode = 'AGR-' + Math.floor(1000 + Math.random() * 9000);
+                            await supabase.from('agronomist_codes').insert([{ agronomist_id: uid, invite_code: newCode }]);
+                            setInviteCode(newCode);
+                        }
+                    }
+                } catch(e) { console.log('[ProfileScreen] Erro no código de convite:', e.message) }
+
             }
             const bioSettings = await AsyncStorage.getItem(`bio_${session?.id}`);
             if(bioSettings) setBiometria(bioSettings === 'true');
@@ -126,6 +145,21 @@ export default function ProfileScreen({ navigation }) {
                         <TouchableOpacity style={styles.saveBtn} onPress={handleSave}><Text style={{color:'#FFF', fontWeight:'bold'}}>SALVAR DADOS</Text></TouchableOpacity>
                     </View>
                 )}
+
+                {/* NOVO: Código do Agrônomo */}
+                <View style={styles.sectionWrap}>
+                    <Text style={styles.sectionTitle}>Convite para Produtores (V2)</Text>
+                    <View style={styles.listGroup}>
+                        <ListItem 
+                            icon="qrcode-scan" 
+                            color={THEME.accent} 
+                            title="Seu Código Exclusivo:" 
+                            subValue={inviteCode} 
+                            noBorder 
+                            onPress={() => Alert.alert('Código Copiado!', `Compartilhe ${inviteCode} com os seus clientes no WhatsApp.`)} 
+                        />
+                    </View>
+                </View>
 
                 <View style={styles.sectionWrap}>
                     <Text style={styles.sectionTitle}>Segurança</Text>

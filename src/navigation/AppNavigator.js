@@ -1,10 +1,19 @@
 import React from 'react';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 
-// Screens
-import LoginScreen from '../screens/LoginScreen';
+// Screens - Onboarding
+import LoginScreen from '../screens/onboarding/LoginScreen';
+import SelectProfileScreen from '../screens/onboarding/SelectProfileScreen';
+import PersonalDataScreen from '../screens/onboarding/PersonalDataScreen';
+import FarmDataScreen from '../screens/onboarding/FarmDataScreen';
+import LinkAgronomistScreen from '../screens/onboarding/LinkAgronomistScreen';
+
 import RecoverScreen from '../screens/RecoverScreen';
 import HomeScreen from '../screens/HomeScreen';
+import ClientNavigator from './ClientNavigator'; // <-- Novo módulo do Cliente
+import AgronomistClientsScreen from '../screens/agronomist/AgronomistClientsScreen'; // <-- Fase 3 CRM
+import CreateRecommendationScreen from '../screens/agronomist/CreateRecommendationScreen'; // <-- Fase 3 Receitas
+import AdminSelectorScreen from '../screens/admin/AdminSelectorScreen'; // <-- Fase 6 ADM
 import ColheitaScreen from '../screens/ColheitaScreen';
 import VendasScreen from '../screens/VendasScreen';
 import EstoqueScreen from '../screens/EstoqueScreen';
@@ -58,6 +67,19 @@ export default function AppNavigator() {
             }}
         >
             <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ClientTabs" component={ClientNavigator} options={{ headerShown: false }} />
+            <Stack.Screen name="SelectProfile" component={SelectProfileScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="PersonalData" component={PersonalDataScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="FarmData" component={FarmDataScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="LinkAgronomist" component={LinkAgronomistScreen} options={{ headerShown: false }} />
+            
+            {/* Telas Novas do Agrônomo (V2) */}
+            <Stack.Screen name="AgronomistClients" component={AgronomistClientsScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="CreateRecommendation" component={CreateRecommendationScreen} options={{ headerShown: false }} />
+            
+            {/* Tela Nova do ADM (V2) */}
+            <Stack.Screen name="AdminSelector" component={AdminSelectorScreen} options={{ headerShown: false }} />
+            
             <Stack.Screen name="ForgotPassword" component={RecoverScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />

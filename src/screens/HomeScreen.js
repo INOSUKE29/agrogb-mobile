@@ -195,6 +195,20 @@ export default function HomeScreen({ navigation }) {
                     </View>
                 </View>
 
+                {/* NOVO MÓDULO CRM (V2) */}
+                <TouchableOpacity style={styles.crmCard} onPress={() => navigation.navigate('AgronomistClients')} activeOpacity={0.9}>
+                    <LinearGradient colors={['#1565C0', '#0D47A1']} style={styles.crmGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                        <View style={styles.crmIconBox}>
+                            <Ionicons name="people" size={28} color="#1565C0" />
+                        </View>
+                        <View style={styles.crmTexts}>
+                            <Text style={styles.crmTitle}>Gestão de Clientes</Text>
+                            <Text style={styles.crmSubtitle}>3 solicitações pendentes</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={24} color="#FFF" />
+                    </LinearGradient>
+                </TouchableOpacity>
+
                 <View style={styles.sectionWrap}>
                     <View style={styles.secHeader}>
                         <Text style={[styles.secTitle, { color: colors.textMain }]}>Menu principal</Text>
@@ -289,6 +303,14 @@ const styles = StyleSheet.create({
     dashVal: { fontSize: 16, fontWeight: 'bold', marginTop: 4 },
     dashMeta: { fontSize: 9, fontWeight: 'bold', marginTop: 2 },
     greenCircle: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+
+    // 🔥 CRM CARD STYLES
+    crmCard: { borderRadius: 20, marginBottom: 20, elevation: 6, shadowColor: '#1565C0', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
+    crmGrad: { flexDirection: 'row', alignItems: 'center', padding: 20, borderRadius: 20 },
+    crmIconBox: { width: 50, height: 50, borderRadius: 15, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    crmTexts: { flex: 1 },
+    crmTitle: { color: '#FFF', fontSize: 18, fontWeight: 'bold', marginBottom: 2 },
+    crmSubtitle: { color: '#BBDEFB', fontSize: 12, fontWeight: '600' },
 
     sectionWrap: { marginTop: 10 },
     secHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, marginLeft: 5 },

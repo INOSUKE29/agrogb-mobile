@@ -122,25 +122,27 @@ export const login = async (email, password) => {
         if (__DEV__) console.log('[AuthService] Salvando sessão no SecureStore...');
         await safeSave('user_session_v1', session);
 
-        // 3. Busca Perfil do Usuário (v1.1.4: Background / Non-blocking)
-        if (__DEV__) console.log('[AuthService] Iniciando busca de perfil em background...');
-        
-        // Chamada sem 'await' intencional para não bloquear a entrada na Home
-        promiseWithTimeout(
-            supabase.from('user_profiles').select('*').eq('id', data.user.id).single(),
-            10000,
-            "Background: Busca de perfil excedeu tempo limite."
-        ).then(async ({ data: profile, error: profileError }) => {
-            if (!profileError && profile) {
-                if (__DEV__) console.log('[AuthService] Perfil sincronizado em background.');
+        // 3. Busca a Role do Usuário para roteamento
+        if (__DEV__) console.log('[AuthService] Buscando perfil/role...');
+        let role = 'CLIENTE'; // default
+        try {
+            const { data: profile } = await promiseWithTimeout(
+                supabase.from('profiles').select('role, full_name').eq('id', data.user.id).single(),
+                10000,
+                "Busca de perfil excedeu tempo limite."
+            );
+            if (profile && profile.role) {
+                role = profile.role;
+                if (__DEV__) console.log('[AuthService] Role recuperada:', role);
+                // Sincroniza local opcionalmente...
                 await executeQuery(
                     `INSERT OR REPLACE INTO user_profiles (id, email, name, last_updated, sync_status) VALUES (?, ?, ?, ?, ?)`,
-                    [profile.id, profile.email, profile.name, new Date().toISOString(), 'synced']
+                    [data.user.id, data.user.email, profile.full_name || '', new Date().toISOString(), 'synced']
                 ).catch(e => console.warn('[AuthService] Erro ao gravar perfil SQLite:', e.message));
             }
-        }).catch(err => {
-            if (__DEV__) console.warn('[AuthService] Profile Sync Background failed:', err.message);
-        });
+        } catch (err) {
+            if (__DEV__) console.warn('[AuthService] Profile Sync failed:', err.message);
+        }
 
         // 4. Garante registro no v2_produtores (Legado/Background)
         executeQuery(`SELECT id FROM v2_produtores WHERE id = ?`, [data.user.id])
@@ -157,7 +159,7 @@ export const login = async (email, password) => {
         await safeSave('user_credentials_v1', { email, password });
 
         if (__DEV__) console.log('[AuthService] Login concluído com sucesso.');
-        return { success: true, user: data.user };
+        return { success: true, user: { ...data.user, role } };
 
     } catch (e) {
         if (__DEV__) console.error("LOGIN_FATAL_ERROR:", e);
