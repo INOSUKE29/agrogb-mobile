@@ -5,7 +5,7 @@ import 'react-native-url-polyfill/auto'; // Required for Supabase in React Nativ
 // Configuração via variáveis de ambiente (arquivo .env) com fallbacks de segurança
 // Estes valores garantem que o APK funcione mesmo que o ambiente de build falhe em injetar as chaves
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://uklygrvibmiknwarzqap.supabase.co';
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_6e3KZkbHgcfd_-xaOeIBLA_2AJeN9Ew';
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVrbHlncnZpYm1pa253YXJ6cWFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MDcyODgsImV4cCI6MjA4NjM4MzI4OH0.aY-R2vzuTzUNbjy1iGmMleikxHOT8MAtL82Rpm5q6ac';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {

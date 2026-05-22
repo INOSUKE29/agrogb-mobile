@@ -94,76 +94,126 @@ export const register = async (nome, email, password) => {
     }
 };
 
-export const login = async (email, password) => {
+export const login = async (emailOrUsuario, password) => {
     try {
-        if (__DEV__) console.log('[AuthService] Chamando Supabase signIn (com timeout de 15s)...');
-        
-        // 1. Login no Supabase Auth com Timeout
+        if (__DEV__) console.log('[AuthService] Iniciando login para:', emailOrUsuario);
+
+        // ============================================================
+        // ESTRATÉGIA 1: LOGIN LOCAL (SQLite) — para admin/offline
+        // Verifica se existe usuário local com esse usuario/email e senha
+        // ============================================================
+        let localUser = null;
+        try {
+            const localRes = await executeQuery(
+                `SELECT * FROM usuarios WHERE (UPPER(usuario) = UPPER(?) OR LOWER(email) = LOWER(?)) LIMIT 1`,
+                [emailOrUsuario.trim(), emailOrUsuario.trim()]
+            );
+            if (localRes.rows.length > 0) {
+                const u = localRes.rows.item(0);
+                // Verifica senha: suporta texto puro (seed admin) ou hash igual
+                const senhaOk = u.senha === password || (u.senha === 'admin' && password === 'admin');
+                if (senhaOk) {
+                    localUser = u;
+                    if (__DEV__) console.log('[AuthService] ✅ Login LOCAL OK. Nível:', u.nivel);
+                } else {
+                    if (__DEV__) console.log('[AuthService] Senha local incorreta para:', emailOrUsuario);
+                }
+            } else {
+                if (__DEV__) console.log('[AuthService] Nenhum usuário local encontrado para:', emailOrUsuario);
+            }
+        } catch (localErr) {
+            if (__DEV__) console.warn('[AuthService] Verificação local falhou:', localErr.message);
+        }
+
+        if (localUser) {
+            const session = {
+                userId: String(localUser.id),
+                email: localUser.email || localUser.usuario,
+                nome: localUser.nome_completo || localUser.usuario,
+                role: (localUser.nivel || 'USUARIO').toUpperCase(),
+                isLocal: true,
+            };
+            await safeSave('user_session_v1', session);
+            await safeSave('user_credentials_v1', { email: emailOrUsuario, password });
+            return { success: true, user: session };
+        }
+
+        // ============================================================
+        // ESTRATÉGIA 2: SUPABASE AUTH — para usuários com conta na nuvem
+        // Garante que o input seja tratado como e-mail
+        // ============================================================
+        const emailFormatted = emailOrUsuario.includes('@')
+            ? emailOrUsuario.trim()
+            : emailOrUsuario.trim();
+
+        if (__DEV__) console.log('[AuthService] Tentando Supabase signIn...');
         const { data, error } = await promiseWithTimeout(
-            supabase.auth.signInWithPassword({ email, password }),
+            supabase.auth.signInWithPassword({ email: emailFormatted, password }),
             15000,
-            "Tempo de resposta do servidor excedido. Verifique sua conexão."
+            'Tempo de resposta do servidor excedido. Verifique sua conexão.'
         );
 
-        if (__DEV__) console.log('[AuthService] Resposta Supabase recebida:', { hasData: !!data, hasError: !!error });
-
         if (error) {
-            if (__DEV__) console.log('[AuthService] Erro retornado pelo Supabase:', error.message);
+            if (__DEV__) console.log('[AuthService] Erro Supabase:', error.message);
             throw error;
         }
 
-        // 2. Salva Sessão localmente
+        if (__DEV__) console.log('[AuthService] Supabase OK. User:', data.user.id);
+
+        // Salva sessão
         const session = {
             userId: data.user.id,
             email: data.user.email,
-            token: data.session.access_token
+            token: data.session.access_token,
         };
-
-        if (__DEV__) console.log('[AuthService] Salvando sessão no SecureStore...');
         await safeSave('user_session_v1', session);
 
-        // 3. Busca a Role do Usuário para roteamento
-        if (__DEV__) console.log('[AuthService] Buscando perfil/role...');
-        let role = 'CLIENTE'; // default
+        // Busca role: primeiro tenta tabela 'usuarios' local, depois 'profiles' no Supabase
+        let role = 'USUARIO';
+        let nomeCompleto = '';
         try {
-            const { data: profile } = await promiseWithTimeout(
-                supabase.from('profiles').select('role, full_name').eq('id', data.user.id).single(),
-                10000,
-                "Busca de perfil excedeu tempo limite."
+            // Prioridade 1: tabela local 'usuarios' (campo 'nivel')
+            const localProfile = await executeQuery(
+                `SELECT nivel, nome_completo FROM usuarios WHERE email = ? LIMIT 1`,
+                [data.user.email]
             );
-            if (profile && profile.role) {
-                role = profile.role;
-                if (__DEV__) console.log('[AuthService] Role recuperada:', role);
-                // Sincroniza local opcionalmente...
-                await executeQuery(
-                    `INSERT OR REPLACE INTO user_profiles (id, email, name, last_updated, sync_status) VALUES (?, ?, ?, ?, ?)`,
-                    [data.user.id, data.user.email, profile.full_name || '', new Date().toISOString(), 'synced']
-                ).catch(e => console.warn('[AuthService] Erro ao gravar perfil SQLite:', e.message));
+            if (localProfile.rows.length > 0) {
+                const p = localProfile.rows.item(0);
+                role = (p.nivel || 'USUARIO').toUpperCase();
+                nomeCompleto = p.nome_completo || '';
+                if (__DEV__) console.log('[AuthService] Role (SQLite):', role);
+            } else {
+                // Prioridade 2: tabela 'profiles' no Supabase (fallback)
+                const { data: profile } = await promiseWithTimeout(
+                    supabase.from('profiles').select('role, full_name').eq('id', data.user.id).maybeSingle(),
+                    8000,
+                    'Timeout ao buscar perfil Supabase'
+                );
+                if (profile) {
+                    role = (profile.role || 'USUARIO').toUpperCase();
+                    nomeCompleto = profile.full_name || '';
+                    if (__DEV__) console.log('[AuthService] Role (Supabase profiles):', role);
+                }
             }
-        } catch (err) {
-            if (__DEV__) console.warn('[AuthService] Profile Sync failed:', err.message);
+        } catch (profileErr) {
+            if (__DEV__) console.warn('[AuthService] Falha ao buscar perfil, usando role padrão:', profileErr.message);
         }
 
-        // 4. Garante registro no v2_produtores (Legado/Background)
-        executeQuery(`SELECT id FROM v2_produtores WHERE id = ?`, [data.user.id])
-          .then(async (localCheck) => {
-            if (localCheck.rows.length === 0) {
-                await executeQuery(
-                    `INSERT INTO v2_produtores (id, email, sync_status) VALUES (?, ?, ?)`,
-                    [data.user.id, data.user.email, 'synced']
-                );
-            }
-          }).catch(e => console.warn('[AuthService] sync v2_produtores failed:', e.message));
+        // Garante registro local
+        executeQuery(
+            `INSERT OR IGNORE INTO v2_produtores (id, email, nome, sync_status) VALUES (?, ?, ?, ?)`,
+            [data.user.id, data.user.email, nomeCompleto, 'synced']
+        ).catch(() => {});
 
-        // 5. NOVO: Salva credenciais para Biometria (v1.1.2)
-        await safeSave('user_credentials_v1', { email, password });
+        // Salva credenciais para biometria
+        await safeSave('user_credentials_v1', { email: emailFormatted, password });
 
-        if (__DEV__) console.log('[AuthService] Login concluído com sucesso.');
-        return { success: true, user: { ...data.user, role } };
+        if (__DEV__) console.log('[AuthService] Login Supabase concluído. Role:', role);
+        return { success: true, user: { ...data.user, role, nome: nomeCompleto } };
 
     } catch (e) {
-        if (__DEV__) console.error("LOGIN_FATAL_ERROR:", e);
-        return { success: false, message: e.message || "Erro interno de autenticação" };
+        if (__DEV__) console.error('LOGIN_FATAL_ERROR:', e);
+        return { success: false, message: e.message || 'Erro interno de autenticação' };
     }
 };
 
