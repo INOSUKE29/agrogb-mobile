@@ -105,6 +105,7 @@ export default function App() {
                 setUserSession(session);
                 setIsDbReady(true);
                 setIsLoading(false);
+                AutoSyncService.start();
             })
             .catch(error => {
                 const erroStr = error?.message || String(error);

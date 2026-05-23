@@ -14,6 +14,7 @@
  */
 
 import { pullServerChanges, pushLocalChanges } from './SyncService';
+import { SyncWorker } from './SyncWorker';
 
 const SYNC_INTERVAL_MS = 2 * 60 * 1000; // 2 minutos
 const DEBOUNCE_MS = 3000; // aguarda 3s após último trigger para evitar spam
@@ -94,9 +95,10 @@ class AutoSyncService {
         this._notify('syncing');
 
         try {
-            console.log('🔄 AutoSync: Iniciando Push/Pull...');
+            console.log('🔄 AutoSync: Iniciando Push/Pull e Fila V2...');
             await pushLocalChanges();
             await pullServerChanges();
+            await SyncWorker.run();
             this._lastSync = Date.now();
             this._notify('done');
             console.log('✅ AutoSync: Concluído com sucesso');

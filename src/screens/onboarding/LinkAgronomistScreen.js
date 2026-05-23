@@ -2,20 +2,61 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { supabase } from '../../services/supabaseClient';
 
 export default function LinkAgronomistScreen({ route, navigation }) {
     const { userData } = route.params;
     const [inviteCode, setInviteCode] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const handleFinish = () => {
+    const handleFinish = async () => {
         setLoading(true);
-        setTimeout(() => {
-            setLoading(false);
-            Alert.alert('Parabéns!', 'Sua conta foi criada com sucesso no AgroGB.', [
-                { text: 'Ir para o App', onPress: () => navigation.navigate('Home') }
+        try {
+            if (inviteCode.trim() !== '') {
+                const cleanCode = inviteCode.trim().toUpperCase();
+                
+                // 1. Buscar o agrônomo pelo código
+                const { data: codeData, error: codeErr } = await supabase
+                    .from('agronomist_codes')
+                    .select('agronomist_id')
+                    .eq('invite_code', cleanCode)
+                    .single();
+
+                if (codeErr || !codeData) {
+                    Alert.alert('Erro', 'Código de convite inválido ou não encontrado.');
+                    setLoading(false);
+                    return;
+                }
+
+                // 2. Pegar o ID do usuário logado (Cliente que acabou de se registrar)
+                const { data: sessionData } = await supabase.auth.getSession();
+                const userId = sessionData?.session?.user?.id || userData?.id;
+
+                if (!userId) {
+                    Alert.alert('Erro', 'Sessão não encontrada. Tente fazer login novamente.');
+                    setLoading(false);
+                    return;
+                }
+
+                // 3. Criar o vínculo pendente
+                const { error: linkErr } = await supabase.from('agronomist_client_links').insert([{
+                    agronomist_id: codeData.agronomist_id,
+                    client_id: userId,
+                    status: 'PENDING'
+                }]);
+
+                if (linkErr) throw linkErr;
+            }
+
+            Alert.alert('Parabéns!', 'Sua conta foi configurada com sucesso no AgroGB.', [
+                { text: 'Ir para o App', onPress: () => navigation.navigate('SessionRouter') }
             ]);
-        }, 1000);
+
+        } catch (error) {
+            Alert.alert('Erro', 'Falha ao processar a solicitação: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
