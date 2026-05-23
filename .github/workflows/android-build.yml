@@ -1,0 +1,67 @@
+name: 🚀 Fábrica do GitHub (Build Ilimitado)
+
+on:
+  push:
+    branches:
+      - main
+      - v2-release
+
+jobs:
+  build:
+    name: Gerar APK Standalone (Sem Gastar Cota da Expo)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🏗 Setup Repo
+        uses: actions/checkout@v4
+
+      - name: 🏗 Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 📦 Install Dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: 🛡️ Auditoria de Segurança
+        run: npm run verify
+
+      - name: ⚙️ Expo Prebuild
+        run: npx expo prebuild --platform android --clean
+
+      - name: 🔑 Gerar Keystore Temporária (Fake)
+        run: |
+          keytool -genkey -v -keystore android/app/temp.keystore -alias tempalias -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=AgroGB, OU=Test, O=Test, L=Test, S=Test, C=BR" -storepass agro123 -keypass agro123
+          echo "" >> android/gradle.properties
+          echo "MYAPP_UPLOAD_STORE_FILE=temp.keystore" >> android/gradle.properties
+          echo "MYAPP_UPLOAD_KEY_ALIAS=tempalias" >> android/gradle.properties
+          echo "MYAPP_UPLOAD_STORE_PASSWORD=agro123" >> android/gradle.properties
+          echo "MYAPP_UPLOAD_KEY_PASSWORD=agro123" >> android/gradle.properties
+          echo "org.gradle.jvmargs=-Xmx6g" >> android/gradle.properties
+
+      - name: 🐘 Build APK Release (Pronto para Rodar)
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --stacktrace
+
+      - name: 📤 Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agrogb-standalone-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+
+      - name: 🚀 Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v-apk-standalone
+          name: "📱 AgroGB Mobile - APK de Teste (Offline)"
+          body: |
+            ### 📦 AgroGB APK - Build Gerado pelo GitHub
+            Este APK foi gerado usando os servidores gratuitos do GitHub, sem consumir a cota da conta Expo.
+            
+            **Instruções:** Clique no arquivo `app-release.apk` abaixo para baixar e instalar no seu Android.
+          draft: false
+          prerelease: false
+          files: android/app/build/outputs/apk/release/app-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
