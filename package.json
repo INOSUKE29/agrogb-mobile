@@ -7,11 +7,12 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "start": "expo start",
+    "start": "expo start --dev-client",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "build:android": "eas build --platform android",
+    "preview": "eas build --platform android --profile preview",
+    "production": "eas build --platform android --profile production",
     "lint": "eslint .",
     "test": "jest",
     "test:watch": "jest --watch",
