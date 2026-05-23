@@ -895,6 +895,19 @@ const createTables = async () => {
             console.log('✅ Coluna role adicionada em usuarios');
         } catch (e) { }
 
+        // MIGRATION: Sync Support for equipes and agronomist_codes (v9.1)
+        try {
+            await executeQuery('ALTER TABLE equipes ADD COLUMN sync_status INTEGER DEFAULT 0');
+            console.log('✅ Coluna sync_status adicionada em equipes');
+        } catch (e) { }
+
+        try {
+            await executeQuery('ALTER TABLE agronomist_codes ADD COLUMN last_updated TEXT');
+            await executeQuery('ALTER TABLE agronomist_codes ADD COLUMN sync_status INTEGER DEFAULT 0');
+            console.log('✅ Colunas last_updated e sync_status adicionadas em agronomist_codes');
+        } catch (e) { }
+
+
     } catch (error) {
         console.error('❌ Erro ao criar tabelas:', error);
     }
@@ -1357,7 +1370,7 @@ export const atualizarEstoque = async (produto, quantidadeDelta, dataReferencia 
 export const getEstoque = async () => {
     // JOIN com cadastro para pegar unidade e tipo
     const res = await executeQuery(`
-        SELECT e.*, c.unidade, c.tipo, c.fator_conversao 
+        SELECT e.*, c.unidade, c.tipo, c.fator_conversao, c.preco_venda 
         FROM estoque e
         LEFT JOIN cadastro c ON UPPER(e.produto) = UPPER(c.nome)
         WHERE e.is_deleted = 0

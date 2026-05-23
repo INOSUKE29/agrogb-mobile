@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
+import { PermissionService } from '../../services/PermissionService';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 50) / 2;
@@ -21,7 +23,7 @@ const COMMERCIAL_ACTIONS = [
     { title: 'Compras', icon: 'cart-outline', color: '#3B82F6', screen: 'Compras', desc: 'Compras de Insumos' },
     { title: 'Custos', icon: 'stats-chart-outline', color: '#F59E0B', screen: 'Custos', desc: 'Centro de Custos' },
     { title: 'Clientes', icon: 'people-outline', color: '#8B5CF6', screen: 'Clientes', desc: 'Carteira de Clientes' },
-    { title: 'Encomendas', icon: 'mail-open-outline', color: '#EC4899', screen: 'Encomendas', desc: 'Pedidos Pendentes' },
+    { title: 'BI & Gráficos', icon: 'bar-chart-outline', color: '#10B981', screen: 'BIRelatoriosAvancados', desc: 'Análise Empresarial' },
     { title: 'Relatórios', icon: 'document-text-outline', color: '#6B7280', screen: 'Relatorios', desc: 'Exportar Relatórios' },
 ];
 
@@ -36,45 +38,51 @@ const SYSTEM_ACTIONS = [
 
 export default function QuickActions({ navigation }) {
     const { theme } = useTheme();
+    const { role } = useAuth();
     const activeColors = theme?.colors || {};
     const isDark = theme?.theme_mode === 'dark';
 
-    const renderSection = (title, actions) => (
-        <View style={styles.sectionContainer}>
-            <Text style={[styles.sectionTitle, { color: activeColors.textMuted || '#6B7280' }]}>
-                {title.toUpperCase()}
-            </Text>
-            <View style={styles.grid}>
-                {actions.map((action, idx) => (
-                    <TouchableOpacity 
-                        key={idx} 
-                        style={[
-                            styles.actionCard, 
-                            { 
-                                backgroundColor: activeColors.card || '#FFFFFF',
-                                borderColor: activeColors.border || '#E5E7EB',
-                                borderWidth: isDark ? 1 : 0.5
-                            }
-                        ]}
-                        onPress={() => navigation.navigate(action.screen)}
-                        activeOpacity={0.7}
-                    >
-                        <View style={[styles.iconCircle, { backgroundColor: action.color + '15' }]}>
-                            <Ionicons name={action.icon} size={22} color={action.color} />
-                        </View>
-                        <View style={styles.cardContent}>
-                            <Text style={[styles.actionTitle, { color: activeColors.text || '#1F2937' }]}>
-                                {action.title}
-                            </Text>
-                            <Text style={[styles.actionDesc, { color: activeColors.textMuted || '#9CA3AF' }]} numberOfLines={1}>
-                                {action.desc}
-                            </Text>
-                        </View>
-                    </TouchableOpacity>
-                ))}
+    const renderSection = (title, actions) => {
+        const filteredActions = actions.filter(action => PermissionService.canAccess(role, action.screen));
+        if (filteredActions.length === 0) return null;
+
+        return (
+            <View style={styles.sectionContainer}>
+                <Text style={[styles.sectionTitle, { color: activeColors.textMuted || '#6B7280' }]}>
+                    {title.toUpperCase()}
+                </Text>
+                <View style={styles.grid}>
+                    {filteredActions.map((action, idx) => (
+                        <TouchableOpacity 
+                            key={idx} 
+                            style={[
+                                styles.actionCard, 
+                                { 
+                                    backgroundColor: activeColors.card || '#FFFFFF',
+                                    borderColor: activeColors.border || '#E5E7EB',
+                                    borderWidth: isDark ? 1 : 0.5
+                                }
+                            ]}
+                            onPress={() => navigation.navigate(action.screen)}
+                            activeOpacity={0.7}
+                        >
+                            <View style={[styles.iconCircle, { backgroundColor: action.color + '15' }]}>
+                                <Ionicons name={action.icon} size={22} color={action.color} />
+                            </View>
+                            <View style={styles.cardContent}>
+                                <Text style={[styles.actionTitle, { color: activeColors.text || '#1F2937' }]}>
+                                    {action.title}
+                                </Text>
+                                <Text style={[styles.actionDesc, { color: activeColors.textMuted || '#9CA3AF' }]} numberOfLines={1}>
+                                    {action.desc}
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+                    ))}
+                </View>
             </View>
-        </View>
-    );
+        );
+    };
 
     return (
         <View style={styles.container}>

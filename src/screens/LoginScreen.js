@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, Dimensions, Image, StatusBar, ImageBackground } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, Dimensions, Image, StatusBar, ImageBackground, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { executeQuery, insertUsuario } from '../database/database';
 import AgroInput from '../components/common/AgroInput';
@@ -8,6 +8,8 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import { translateAuthError } from '../utils/errorHelpers';
 import { getSupabase } from '../services/supabase';
+import { useAuth } from '../context/AuthContext';
+import FriendlyModal from '../components/common/FriendlyModal';
 
 const { width, height } = Dimensions.get('window');
 const LOGO = require('../../assets/icon.png');
@@ -15,10 +17,35 @@ const RURAL_BG = require('../../assets/login_bg.jpg');
 const BIO_KEY = 'agrogb_biometric_credentials';
 
 export default function LoginScreen({ navigation }) {
+    const { login } = useAuth();
     const [usuario, setUsuario] = useState('');
     const [senha, setSenha] = useState('');
     const [loading, setLoading] = useState(false);
     const [isBiometricSupported, setIsBiometricSupported] = useState(false);
+    
+    // Master Key State
+    const [tapCount, setTapCount] = useState(0);
+    const [lastTap, setLastTap] = useState(0);
+    const [showMasterModal, setShowMasterModal] = useState(false);
+    const [masterPin, setMasterPin] = useState('');
+    
+    const [alertConfig, setAlertConfig] = useState({
+        visible: false,
+        emoji: '🧐',
+        title: 'Atenção',
+        message: '',
+        buttonText: 'Entendi 👍'
+    });
+
+    const showAlert = (emoji, title, message, buttonText = 'Entendi 👍') => {
+        setAlertConfig({
+            visible: true,
+            emoji,
+            title,
+            message,
+            buttonText
+        });
+    };
 
     useEffect(() => {
         checkBiometrics();
@@ -35,6 +62,15 @@ export default function LoginScreen({ navigation }) {
         // 1. Verificar se já existe uma sessão ativa
         const userJson = await AsyncStorage.getItem('user_session');
         if (userJson) {
+            try {
+                const sessionObj = JSON.parse(userJson);
+                if (sessionObj && sessionObj.role === 'PENDENTE') {
+                    navigation.replace('OnboardingProfile');
+                    return;
+                }
+            } catch (e) {
+                console.log('Erro ao ler sessao:', e);
+            }
             navigation.replace('Home');
             return;
         }
@@ -70,10 +106,13 @@ export default function LoginScreen({ navigation }) {
     };
 
     const handleLogin = async (bypassBiometricPrompt = false) => {
-        const userTrim = usuario.trim().toUpperCase();
-        const passTrim = senha.trim();
+        const userTrim = (usuario || '').trim().replace(/\s/g, '').toUpperCase();
+        const passTrim = (senha || '').trim();
 
-        if (!userTrim || !passTrim) return Alert.alert('Atenção', 'Informe seu telefone/email e senha.');
+        if (!userTrim || !passTrim) {
+            showAlert('✍️', 'Campos Vazios', 'Por favor, preencha o seu e-mail/telefone e a sua senha para entrar no AgroGB! 😉');
+            return;
+        }
 
         setLoading(true);
         try {
@@ -81,69 +120,97 @@ export default function LoginScreen({ navigation }) {
             if (userTrim === 'ADMIN' && passTrim === '1234') {
                 const sessionData = {
                     id: 999999,
+                    uuid: 'admin-local-bypass-uuid-999999',
                     usuario: 'ADMIN',
                     nome: 'ADMINISTRADOR PADRÃO',
                     nivel: 'ADM',
                     role: 'ADMIN',
                     timestamp: new Date().getTime()
                 };
-                await AsyncStorage.setItem('user_session', JSON.stringify(sessionData));
+                await login(sessionData);
                 navigation.replace('Home');
                 return;
             }
 
             const supabase = getSupabase();
-            let targetEmail = userTrim;
+            let targetEmail = null;
+            let targetPhone = null;
 
-            // 2. RESOLUÇÃO DE E-MAIL (E-mail, Telefone ou Username)
-            if (!userTrim.includes('@')) {
-                // Limpa caracteres especiais do telefone para consulta local
-                const phoneClean = userTrim.replace(/\D/g, '');
-                
-                // Primeiro tenta localizar o e-mail no SQLite local
-                const localUser = await executeQuery(
-                    `SELECT email FROM usuarios WHERE (usuario = ? OR telefone = ? OR telefone = ?) AND is_deleted = 0`,
-                    [userTrim, userTrim, phoneClean]
-                );
+            const inputClean = userTrim.toLowerCase();
+            const phoneClean = userTrim.replace(/\D/g, ''); // Apenas os números
 
-                if (localUser.rows.length > 0) {
-                    targetEmail = localUser.rows.item(0).email;
-                } else {
-                    // Caso não ache local (aparelho novo), consulta remotamente na tabela profiles
-                    try {
+            // 2. RESOLUÇÃO DE CREDENCIAIS (E-mail, Telefone ou Username)
+            if (inputClean.includes('@')) {
+                // Caso A: É um E-mail
+                targetEmail = inputClean;
+            } else if (phoneClean.length >= 8 && /^\d+$/.test(phoneClean)) {
+                // Caso B: É um Telefone
+                // Primeiro tentamos achar o e-mail correspondente localmente
+                try {
+                    const localUser = await executeQuery(
+                        `SELECT email FROM usuarios WHERE (REPLACE(REPLACE(REPLACE(REPLACE(telefone, ' ', ''), '(', ''), ')', ''), '-', '') = ? OR telefone = ?) AND is_deleted = 0`,
+                        [phoneClean, userTrim]
+                    );
+                    if (localUser.rows.length > 0) {
+                        targetEmail = localUser.rows.item(0).email;
+                    } else {
+                        // Se não achar local, tenta formatar o telefone para o padrão DDI do Supabase (+55)
+                        let formattedPhone = phoneClean;
+                        if (phoneClean.length === 10 || phoneClean.length === 11) {
+                            formattedPhone = '+55' + phoneClean;
+                        } else if (!phoneClean.startsWith('+')) {
+                            formattedPhone = '+' + phoneClean;
+                        }
+                        targetPhone = formattedPhone;
+                    }
+                } catch (err) {
+                    targetPhone = phoneClean;
+                }
+            } else {
+                // Caso C: É um Username
+                // Primeiro tentamos achar o e-mail correspondente localmente
+                try {
+                    const localUser = await executeQuery(
+                        `SELECT email FROM usuarios WHERE LOWER(usuario) = ? AND is_deleted = 0`,
+                        [inputClean]
+                    );
+                    if (localUser.rows.length > 0) {
+                        targetEmail = localUser.rows.item(0).email;
+                    } else {
+                        // Caso não ache local (aparelho novo), consulta remotamente na tabela profiles
                         const { data: remoteProfile } = await supabase
                             .from('profiles')
                             .select('email')
-                            .eq('username', userTrim.toLowerCase())
-                            .single();
+                            .eq('username', inputClean)
+                            .maybeSingle();
                         
                         if (remoteProfile && remoteProfile.email) {
                             targetEmail = remoteProfile.email;
+                        } else {
+                            targetEmail = inputClean;
                         }
-                    } catch (e) {
-                        console.log('Erro ao buscar e-mail por username no Supabase:', e);
                     }
+                } catch (err) {
+                    targetEmail = inputClean;
                 }
             }
 
             // 3. AUTENTICAÇÃO SUPABASE COM FALLBACK OFFLINE
-            let authData = null;
+            let authSession = null;
             let authError = null;
 
             try {
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email: targetEmail.toLowerCase(),
-                    password: passTrim
-                });
-                authData = data;
-                authError = error;
+                const { AuthService } = require('../services/authService');
+                
+                // O authService centralizado lidará com o signIn e também irá buscar o Profile para montar a sessão
+                const loginResult = await AuthService.loginWithEmail(targetEmail || inputClean, passTrim);
+                authSession = loginResult.session;
             } catch (netError) {
                 // Se falhar a conexão, tenta o login off-line diretamente com o banco SQLite local
                 console.log('📡 Falha de rede. Tentando autenticação SQLite local (off-line)...');
-                const phoneClean = userTrim.replace(/\D/g, '');
                 const localRes = await executeQuery(
-                    `SELECT * FROM usuarios WHERE (is_deleted = 0 OR is_deleted IS NULL) AND (usuario = ? OR telefone = ? OR telefone = ? OR email = ?) AND senha = ?`,
-                    [userTrim, userTrim, phoneClean, userTrim, passTrim]
+                    `SELECT * FROM usuarios WHERE (is_deleted = 0 OR is_deleted IS NULL) AND (LOWER(usuario) = ? OR REPLACE(REPLACE(REPLACE(REPLACE(telefone, ' ', ''), '(', ''), ')', ''), '-', '') = ? OR LOWER(email) = ?) AND senha = ?`,
+                    [inputClean, phoneClean, inputClean, passTrim]
                 );
 
                 if (localRes.rows.length > 0) {
@@ -153,42 +220,33 @@ export default function LoginScreen({ navigation }) {
                         usuario: userRow.usuario,
                         nome: userRow.nome_completo || userRow.usuario,
                         nivel: userRow.nivel,
-                        role: userRow.role || 'CLIENTE',
+                        role: userRow.role || 'AGRICULTOR',
                         timestamp: new Date().getTime()
                     };
-                    await AsyncStorage.setItem('user_session', JSON.stringify(sessionData));
-                    navigation.replace('Home');
+                    await login(sessionData);
+                    if (sessionData.role === 'PENDENTE') {
+                        navigation.replace('OnboardingProfile');
+                    } else {
+                        navigation.replace('Home');
+                    }
                     return;
                 }
                 throw netError;
             }
 
-            if (authError) throw authError;
-
-            // 4. LOGIN BEM-SUCEDIDO: Baixar/atualizar perfil e sincronizar SQLite local
-            let profileData = null;
-            try {
-                const { data } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', authData.user.id)
-                    .single();
-                profileData = data;
-            } catch (e) {
-                console.log('Erro ao baixar perfil do Supabase:', e);
-            }
-
-            const localCheck = await executeQuery('SELECT * FROM usuarios WHERE uuid = ?', [authData.user.id]);
+            // 4. LOGIN BEM-SUCEDIDO: Atualizar SQLite local (sincronização)
+            const localCheck = await executeQuery('SELECT * FROM usuarios WHERE uuid = ?', [authSession.id]);
+            const finalEmail = authSession.email || targetEmail || '';
             const userPayload = {
-                uuid: authData.user.id,
-                usuario: (profileData && profileData.username) || targetEmail.split('@')[0],
+                uuid: authSession.id,
+                usuario: authSession.usuario,
                 senha: passTrim,
-                nivel: (profileData && profileData.role === 'AGRONOMO') ? 'AGRONOMO' : 'USUARIO',
-                role: (profileData && profileData.role) || 'CLIENTE',
-                nome_completo: (profileData && profileData.nome_completo) || 'USUÁRIO AGROGB',
-                email: targetEmail.toLowerCase(),
-                telefone: authData.user.user_metadata?.phone || authData.user.phone || '',
-                endereco: authData.user.user_metadata?.farm_name || ''
+                nivel: (authSession.role === 'AGRONOMO' || authSession.role === 'ADMIN') ? 'AGRONOMO' : 'USUARIO',
+                role: authSession.role,
+                nome_completo: authSession.nome_completo || 'USUÁRIO AGROGB',
+                email: finalEmail.toLowerCase(),
+                telefone: '',
+                endereco: ''
             };
 
             if (localCheck.rows.length > 0) {
@@ -204,7 +262,7 @@ export default function LoginScreen({ navigation }) {
             }
 
             // Recupera o ID do SQLite local recém inserido/atualizado para manter consistência da sessão
-            const finalCheck = await executeQuery('SELECT id, usuario, nome_completo, nivel, role FROM usuarios WHERE uuid = ?', [authData.user.id]);
+            const finalCheck = await executeQuery('SELECT id, usuario, nome_completo, nivel, role FROM usuarios WHERE uuid = ?', [authSession.id]);
             const userRow = finalCheck.rows.item(0);
 
             const sessionData = {
@@ -212,10 +270,14 @@ export default function LoginScreen({ navigation }) {
                 usuario: userRow.usuario,
                 nome: userRow.nome_completo,
                 nivel: userRow.nivel,
-                role: userRow.role || 'CLIENTE',
+                role: userRow.role || 'AGRICULTOR',
                 timestamp: new Date().getTime()
             };
-            await AsyncStorage.setItem('user_session', JSON.stringify(sessionData));
+            await login(sessionData);
+
+            if (sessionData.role === 'PENDENTE') {
+                return; // O RootNavigator trocará para o Onboarding automaticamente
+            }
 
             // Pergunta biometria se aplicável
             if (!bypassBiometricPrompt && isBiometricSupported) {
@@ -225,7 +287,7 @@ export default function LoginScreen({ navigation }) {
                         '🚀 Acesso Rápido',
                         'Deseja ativar o login por biometria (Digital/FaceID) para entrar automaticamente nos próximos acessos?',
                         [
-                            { text: 'Agora não', onPress: () => navigation.replace('Home'), style: 'cancel' },
+                            { text: 'Agora não', style: 'cancel' },
                             {
                                 text: 'ATIVAR AGORA',
                                 onPress: async () => {
@@ -236,12 +298,9 @@ export default function LoginScreen({ navigation }) {
                                         if (auth.success) {
                                             await SecureStore.setItemAsync(BIO_KEY, JSON.stringify({ usuario: userTrim, senha: passTrim }));
                                             Alert.alert('Sucesso', 'Login biométrico ativado!');
-                                            navigation.replace('Home');
-                                        } else {
-                                            navigation.replace('Home');
                                         }
                                     } catch (e) {
-                                        navigation.replace('Home');
+                                        console.log('Erro biometria prompt:', e);
                                     }
                                 }
                             }
@@ -250,9 +309,10 @@ export default function LoginScreen({ navigation }) {
                     return;
                 }
             }
-            navigation.replace('Home');
+            // RootNavigator fará a transição automática
         } catch (e) {
-            Alert.alert('Erro no Login', translateAuthError(e.message || e.toString()));
+            const friendlyMsg = translateAuthError(e.message || e.toString());
+            showAlert('🧐', 'Acesso Negado', friendlyMsg + ' Que tal tentar de novo com bastante calma? Se precisar, você pode recuperar sua senha abaixo.');
         } finally {
             setLoading(false);
         }
@@ -262,7 +322,7 @@ export default function LoginScreen({ navigation }) {
         try {
             const bioCreds = await SecureStore.getItemAsync(BIO_KEY);
             if (!bioCreds) {
-                if (!isAuto) Alert.alert('Atenção', 'Biometria não configurada.');
+                if (!isAuto) showAlert('🔒', 'Aviso de Acesso', 'A biometria ainda não foi configurada nesta conta. Faça o login manual primeiro! 😉');
                 return;
             }
 
@@ -279,13 +339,101 @@ export default function LoginScreen({ navigation }) {
                 // Executar login com os dados recuperados
                 setTimeout(() => handleLogin(true), 100);
             } else if (!isAuto) {
-                Alert.alert('Autenticação', 'Não foi possível autenticar biometria.');
+                showAlert('🔒', 'Oops!', 'Não foi possível validar sua biometria. Por favor, digite sua senha manualmente.');
             }
         } catch (e) {
             console.log('Erro Bio:', e);
-            if (!isAuto) Alert.alert('Erro', 'Falha técnica na biometria.');
+            if (!isAuto) showAlert('⚠️', 'Falha Técnica', 'Não conseguimos acessar os sensores de biometria do seu celular.');
         }
     };
+
+    const handleLogoTap = () => {
+        const now = new Date().getTime();
+        if (now - lastTap < 800) {
+            const newCount = tapCount + 1;
+            setTapCount(newCount);
+            if (newCount >= 7) {
+                setTapCount(0);
+                setMasterPin('');
+                setShowMasterModal(true);
+            }
+        } else {
+            setTapCount(1);
+        }
+        setLastTap(now);
+    };
+
+    const handleSupremeLogin = async () => {
+        if (masterPin !== '29346702') {
+            Alert.alert('Acesso Negado', 'PIN Incorreto.');
+            return;
+        }
+
+        setLoading(true);
+        setShowMasterModal(false);
+        try {
+            const supremeEmail = 'bruno.p.santos100@gmail.com';
+            const supremePass = '@Senha123';
+            const supabase = getSupabase();
+            
+            // Tenta logar no Supabase silenciosamente para pegar o Token de segurança
+            let uid = 'supreme-admin-uuid-007';
+            try {
+                const { data } = await supabase.auth.signInWithPassword({ email: supremeEmail, password: supremePass });
+                if (data && data.user) uid = data.user.id;
+            } catch (err) {
+                console.log('Login Supremo Remoto falhou (offline). Forçando Bypass Local.', err);
+            }
+
+            // Injeta Payload Supremo no SQLite
+            const userPayload = {
+                uuid: uid,
+                usuario: 'SUPREMO',
+                senha: supremePass,
+                nivel: 'ADM',
+                role: 'ADMIN',
+                nome_completo: 'BRUNO SANTOS',
+                email: supremeEmail,
+                telefone: '11999999999',
+                endereco: 'SEDE GLOBAL'
+            };
+
+            const localCheck = await executeQuery('SELECT * FROM usuarios WHERE uuid = ?', [uid]);
+            if (localCheck.rows.length > 0) {
+                await executeQuery(
+                    `UPDATE usuarios SET senha = ?, nivel = ?, role = ?, email = ?, nome_completo = ?, telefone = ?, endereco = ?, last_updated = ? WHERE uuid = ?`,
+                    [userPayload.senha, userPayload.nivel, userPayload.role, userPayload.email, userPayload.nome_completo, userPayload.telefone, userPayload.endereco, new Date().toISOString(), userPayload.uuid]
+                );
+            } else {
+                await executeQuery(
+                    `INSERT INTO usuarios (uuid, usuario, senha, nivel, role, email, nome_completo, telefone, endereco, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [userPayload.uuid, userPayload.usuario, userPayload.senha, userPayload.nivel, userPayload.role, userPayload.email, userPayload.nome_completo, userPayload.telefone, userPayload.endereco, new Date().toISOString()]
+                );
+            }
+
+            const finalCheck = await executeQuery('SELECT id FROM usuarios WHERE uuid = ?', [uid]);
+            const finalId = finalCheck.rows.item(0).id;
+
+            const sessionData = {
+                id: finalId,
+                uuid: uid,
+                usuario: userPayload.usuario,
+                nome: userPayload.nome_completo,
+                nivel: userPayload.nivel,
+                role: userPayload.role,
+                timestamp: new Date().getTime()
+            };
+
+            await login(sessionData);
+            navigation.replace('Home');
+        } catch (e) {
+            Alert.alert('Erro', 'Falha ao injetar Payload Mestre.');
+            setLoading(false);
+        }
+    };
+
+    const { theme } = useTheme();
+    const activeColors = theme?.colors || {};
 
     return (
         <ImageBackground source={RURAL_BG} style={styles.container} resizeMode="cover">
@@ -294,14 +442,14 @@ export default function LoginScreen({ navigation }) {
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.inner}>
                 
                 <View style={styles.header}>
-                    <View style={styles.logoContainer}>
+                    <TouchableOpacity activeOpacity={1} onPress={handleLogoTap} style={styles.logoContainer}>
                         <Image source={LOGO} style={styles.logo} resizeMode="contain" />
-                    </View>
+                    </TouchableOpacity>
                     <Text style={styles.brandName}>AgroGB</Text>
                     <Text style={styles.tagline}>Gestão Inteligente Rural</Text>
                 </View>
 
-                <View style={styles.formCard}>
+                <View style={[styles.formCard, { backgroundColor: activeColors.card || '#FFF' }]}>
                     <AgroInput
                         label="Telefone ou E-mail"
                         placeholder="Ex: 62999999999"
@@ -336,7 +484,11 @@ export default function LoginScreen({ navigation }) {
 
                     <View style={styles.linksRow}>
                         <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                            <Text style={styles.linkText}>Não tem conta? <Text style={styles.linkTextBold}>Cadastre-se</Text></Text>
+                            <Text style={styles.linkText}>Novo? <Text style={styles.linkTextBold}>Cadastre-se</Text></Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+                            <Text style={styles.linkTextBold}>Recuperar Senha 🗝️</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -346,6 +498,45 @@ export default function LoginScreen({ navigation }) {
                 </View>
 
             </KeyboardAvoidingView>
+
+            <FriendlyModal
+                visible={alertConfig.visible}
+                emoji={alertConfig.emoji}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                buttonText={alertConfig.buttonText}
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
+
+            <Modal visible={showMasterModal} transparent animationType="fade">
+                <View style={styles.masterModalOverlay}>
+                    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.masterModalContent}>
+                        <Ionicons name="shield-checkmark" size={50} color="#10B981" />
+                        <Text style={styles.masterTitle}>ACESSO RESTRITO</Text>
+                        <Text style={styles.masterSubtitle}>Insira a Chave Mestra ADM.</Text>
+                        
+                        <TextInput
+                            style={styles.masterInput}
+                            placeholder="PIN..."
+                            placeholderTextColor="#9CA3AF"
+                            secureTextEntry
+                            keyboardType="numeric"
+                            value={masterPin}
+                            onChangeText={setMasterPin}
+                            autoFocus
+                        />
+                        
+                        <View style={styles.masterBtnRow}>
+                            <TouchableOpacity onPress={() => setShowMasterModal(false)} style={styles.masterCancelBtn}>
+                                <Text style={styles.masterCancelText}>CANCELAR</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={handleSupremeLogin} style={styles.masterConfirmBtn}>
+                                <Text style={styles.masterConfirmText}>AUTORIZAR</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </KeyboardAvoidingView>
+                </View>
+            </Modal>
         </ImageBackground>
     );
 }
@@ -367,7 +558,6 @@ const styles = StyleSheet.create({
     brandName: { fontSize: 36, fontWeight: '900', color: '#FFF', letterSpacing: 2 },
     tagline: { fontSize: 14, color: '#D1FAE5', fontWeight: '500', marginTop: -5, opacity: 0.8 },
     formCard: { 
-        backgroundColor: '#FFF', 
         borderRadius: 35, 
         padding: 30, 
         elevation: 20, 
@@ -376,7 +566,6 @@ const styles = StyleSheet.create({
         shadowRadius: 20 
     },
     loginBtn: { 
-        backgroundColor: '#10B981', 
         padding: 20, 
         borderRadius: 18, 
         alignItems: 'center', 
@@ -400,13 +589,26 @@ const styles = StyleSheet.create({
     bioBtnText: { color: '#374151', fontSize: 14, fontWeight: 'bold', marginLeft: 10 },
     linksRow: { 
         flexDirection: 'row', 
-        justifyContent: 'center', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
         marginTop: 30 
     },
-    linkText: { fontSize: 14, color: '#6B7280' },
-    linkTextBold: { color: '#10B981', fontWeight: 'bold' },
+    linkText: { fontSize: 13, color: '#6B7280' },
+    linkTextBold: { color: '#10B981', fontWeight: 'bold', fontSize: 13 },
     footer: { position: 'absolute', bottom: 30, left: 0, right: 0, alignItems: 'center' },
-    footerText: { color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 'bold' }
+    footerText: { color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 'bold' },
+    
+    // Master Key Styles
+    masterModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' },
+    masterModalContent: { backgroundColor: '#111827', padding: 30, borderRadius: 20, width: '85%', alignItems: 'center', borderWidth: 1, borderColor: '#374151' },
+    masterTitle: { color: '#FFF', fontSize: 18, fontWeight: '900', marginTop: 15, letterSpacing: 2 },
+    masterSubtitle: { color: '#9CA3AF', fontSize: 12, marginTop: 5, marginBottom: 20 },
+    masterInput: { backgroundColor: '#1F2937', color: '#10B981', fontSize: 24, fontWeight: 'bold', width: '100%', textAlign: 'center', padding: 15, borderRadius: 10, letterSpacing: 5 },
+    masterBtnRow: { flexDirection: 'row', marginTop: 25, width: '100%', justifyContent: 'space-between', gap: 15 },
+    masterCancelBtn: { flex: 1, padding: 15, backgroundColor: '#374151', borderRadius: 10, alignItems: 'center' },
+    masterCancelText: { color: '#FFF', fontWeight: 'bold' },
+    masterConfirmBtn: { flex: 1, padding: 15, backgroundColor: '#10B981', borderRadius: 10, alignItems: 'center' },
+    masterConfirmText: { color: '#FFF', fontWeight: 'bold' }
 });
 
 

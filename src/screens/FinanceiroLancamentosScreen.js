@@ -17,11 +17,25 @@ import { v4 as uuidv4 } from 'uuid';
 import Card from '../components/common/Card';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
+import FriendlyModal from '../components/common/FriendlyModal';
 
 export default function FinanceiroLancamentosScreen({ navigation }) {
     const { theme } = useTheme();
     const [tab, setTab] = useState('PAGAR'); // 'PAGAR' ou 'RECEBER'
     const [transacoes, setTransacoes] = useState([]);
+
+    // State for FriendlyModal
+    const [friendlyModal, setFriendlyModal] = useState({
+        visible: false,
+        title: '',
+        message: '',
+        emoji: '🧐',
+        buttonText: 'Entendido 👍'
+    });
+
+    const showFriendlyAlert = (title, message, emoji = '🧐', buttonText = 'Entendido 👍') => {
+        setFriendlyModal({ visible: true, title, message, emoji, buttonText });
+    };
     const [modalVisible, setModalVisible] = useState(false);
     const [form, setForm] = useState({ 
         descricao: '', 
@@ -48,7 +62,10 @@ export default function FinanceiroLancamentosScreen({ navigation }) {
     };
 
     const handleSave = async () => {
-        if (!form.descricao || !form.valor) return Alert.alert('Aviso', 'Descrição e Valor são obrigatórios');
+        if (!form.descricao || !form.valor) {
+            showFriendlyAlert('Aviso', 'A descrição e o valor são obrigatórios! Preencha para podermos salvar. 💰', '🧐');
+            return;
+        }
         try {
             const now = new Date().toISOString();
             await executeQuery(
@@ -58,7 +75,10 @@ export default function FinanceiroLancamentosScreen({ navigation }) {
             setModalVisible(false);
             setForm({ descricao: '', valor: '', vencimento: new Date().toISOString().split('T')[0], entidade_nome: '', categoria: 'GERAL' });
             loadData();
-        } catch (e) { Alert.alert('Erro', 'Falha ao salvar lançamento'); }
+            showFriendlyAlert('Sucesso!', 'Lançamento financeiro registrado com sucesso! 💰', '🎉', 'Perfeito! 👍');
+        } catch (e) {
+            showFriendlyAlert('Erro', 'Não conseguimos salvar este lançamento agora. Tente de novo! 🧐', '❌');
+        }
     };
 
     const handleDarBaixa = (item) => {
@@ -169,6 +189,15 @@ export default function FinanceiroLancamentosScreen({ navigation }) {
                     </View>
                 </View>
             </Modal>
+
+            <FriendlyModal
+                visible={friendlyModal.visible}
+                title={friendlyModal.title}
+                message={friendlyModal.message}
+                emoji={friendlyModal.emoji}
+                buttonText={friendlyModal.buttonText}
+                onClose={() => setFriendlyModal({ ...friendlyModal, visible: false })}
+            />
         </View>
     );
 }

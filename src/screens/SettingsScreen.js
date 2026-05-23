@@ -33,6 +33,7 @@ const BIO_KEY = 'agrogb_biometric_credentials';
 
 export default function SettingsScreen({ navigation }) {
     const { theme, saveTheme } = useTheme();
+    const activeColors = theme?.colors || {};
     const [loading, setLoading] = useState(false);
     const [user, setUser] = useState({ 
         nome: 'Carregando...', 
@@ -545,11 +546,11 @@ export default function SettingsScreen({ navigation }) {
             {/* MODAL 1: DADOS DA FAZENDA */}
             <Modal visible={activeModal === 'fazenda'} animationType="slide" transparent>
                 <View style={styles.overlay}>
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, { backgroundColor: activeColors.card || '#1E293B' }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>🌾 DADOS DA FAZENDA</Text>
+                            <Text style={[styles.modalTitle, { color: activeColors.text || '#FFF' }]}>🌾 DADOS DA FAZENDA</Text>
                             <TouchableOpacity onPress={() => setActiveModal(null)} style={styles.closeBtn}>
-                                <Ionicons name="close" size={24} color="#6B7280" />
+                                <Ionicons name="close" size={24} color={activeColors.textMuted || "#6B7280"} />
                             </TouchableOpacity>
                         </View>
                         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -575,8 +576,8 @@ export default function SettingsScreen({ navigation }) {
             {/* MODAL 2: SELEÇÃO DE IDIOMA */}
             <Modal visible={activeModal === 'idioma'} animationType="fade" transparent>
                 <View style={styles.overlayCenter}>
-                    <Card style={styles.optionSelectorCard}>
-                        <Text style={styles.selectorTitle}>Selecione o Idioma</Text>
+                    <Card style={[styles.optionSelectorCard, { backgroundColor: activeColors.card || '#1E293B' }]}>
+                        <Text style={[styles.selectorTitle, { color: activeColors.text || '#FFF' }]}>Selecione o Idioma</Text>
                         {['Português', 'English', 'Español'].map(lang => (
                             <TouchableOpacity 
                                 key={lang} 
@@ -597,8 +598,8 @@ export default function SettingsScreen({ navigation }) {
             {/* MODAL 3: SELEÇÃO DE UNIDADE */}
             <Modal visible={activeModal === 'unidade'} animationType="fade" transparent>
                 <View style={styles.overlayCenter}>
-                    <Card style={styles.optionSelectorCard}>
-                        <Text style={styles.selectorTitle}>Unidade Métrica Padrão</Text>
+                    <Card style={[styles.optionSelectorCard, { backgroundColor: activeColors.card || '#1E293B' }]}>
+                        <Text style={[styles.selectorTitle, { color: activeColors.text || '#FFF' }]}>Unidade Métrica Padrão</Text>
                         {['kg', 'g', 'l', 'ml', 'sc (Sacas)'].map(u => (
                             <TouchableOpacity 
                                 key={u} 
@@ -619,8 +620,8 @@ export default function SettingsScreen({ navigation }) {
             {/* MODAL 4: SELEÇÃO DE SAFRA */}
             <Modal visible={activeModal === 'safra'} animationType="fade" transparent>
                 <View style={styles.overlayCenter}>
-                    <Card style={styles.optionSelectorCard}>
-                        <Text style={styles.selectorTitle}>Safra Operacional Ativa</Text>
+                    <Card style={[styles.optionSelectorCard, { backgroundColor: activeColors.card || '#1E293B' }]}>
+                        <Text style={[styles.selectorTitle, { color: activeColors.text || '#FFF' }]}>Safra Operacional Ativa</Text>
                         {['2024/25', '2025/26', '2026/27'].map(s => (
                             <TouchableOpacity 
                                 key={s} 
@@ -641,11 +642,11 @@ export default function SettingsScreen({ navigation }) {
             {/* MODAL 5: ALTERAR SENHA */}
             <Modal visible={activeModal === 'senha'} animationType="slide" transparent>
                 <View style={styles.overlay}>
-                    <View style={[styles.modalContent, { height: '65%' }]}>
+                    <View style={[styles.modalContent, { height: '65%', backgroundColor: activeColors.card || '#1E293B' }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>🔒 ALTERAR SENHA DE ACESSO</Text>
+                            <Text style={[styles.modalTitle, { color: activeColors.text || '#FFF' }]}>🔒 ALTERAR SENHA DE ACESSO</Text>
                             <TouchableOpacity onPress={() => setActiveModal(null)} style={styles.closeBtn}>
-                                <Ionicons name="close" size={24} color="#6B7280" />
+                                <Ionicons name="close" size={24} color={activeColors.textMuted || "#6B7280"} />
                             </TouchableOpacity>
                         </View>
                         <ScrollView showsVerticalScrollIndicator={false}>
@@ -664,12 +665,12 @@ export default function SettingsScreen({ navigation }) {
             {/* MODAL 6: LIXEIRA INTELIGENTE */}
             <Modal visible={activeModal === 'lixeira'} animationType="fade" transparent>
                 <View style={styles.overlayCenter}>
-                    <Card style={styles.lixeiraCard}>
-                        <View style={styles.lixeiraIconBox}>
-                            <Ionicons name="trash-bin" size={40} color="#EF4444" />
+                    <Card style={[styles.lixeiraCard, { backgroundColor: activeColors.card || '#1E293B' }]}>
+                        <View style={[styles.lixeiraIconBox, { backgroundColor: activeColors.dangerBg || 'rgba(239, 68, 68, 0.1)' }]}>
+                            <Ionicons name="trash-bin" size={40} color={activeColors.error || "#EF4444"} />
                         </View>
-                        <Text style={styles.lixeiraTitle}>{lixeiraCount} registros guardados</Text>
-                        <Text style={styles.lixeiraDesc}>Estes registros foram deletados logicamente por agrônomos ou operadores. Esvaziar a lixeira liberará espaço de forma definitiva no SQLite local do seu aparelho.</Text>
+                        <Text style={[styles.lixeiraTitle, { color: activeColors.text || '#FFF' }]}>{lixeiraCount} registros guardados</Text>
+                        <Text style={[styles.lixeiraDesc, { color: activeColors.textMuted || '#94A3B8' }]}>Estes registros foram deletados logicamente por agrônomos ou operadores. Esvaziar a lixeira liberará espaço de forma definitiva no SQLite local do seu aparelho.</Text>
                         
                         <View style={styles.lixeiraActionRow}>
                             <AgroButton 

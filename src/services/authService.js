@@ -47,6 +47,96 @@ export const AuthService = {
     },
 
     /**
+     * Registra um novo usuário no Supabase Auth e no Banco Local
+     */
+    registerWithEmail: async (email, password) => {
+        try {
+            const cleanedEmail = email.trim().toLowerCase();
+            const supabase = getSupabase();
+
+            if (!supabase) throw new Error("Supabase não configurado.");
+
+            // 1. Cria apenas a conta no Auth. 
+            // A Trigger on_auth_user_created (no Supabase) fará o INSERT automático na tabela profiles.
+            const { data, error } = await supabase.auth.signUp({
+                email: cleanedEmail,
+                password: password,
+                options: {
+                    data: { role: 'PENDENTE' }
+                }
+            });
+
+            if (error) throw error;
+
+            // 2. Registra o usuário no SQLite local (Opcional, mas útil para acesso offline no futuro)
+            const { insertUsuario } = require('../database/database');
+            await insertUsuario({
+                uuid: data.user.id,
+                usuario: cleanedEmail.split('@')[0],
+                senha: password, // ideal seria hash
+                nivel: 'USUARIO',
+                role: 'PENDENTE',
+                nome_completo: 'NOVO USUÁRIO AGROGB',
+                email: cleanedEmail,
+                telefone: '',
+                endereco: ''
+            });
+
+            return { success: true, user: data.user };
+        } catch (error) {
+            console.error('[AuthService] Erro ao registrar:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Faz login via e-mail e salva a sessão localmente
+     */
+    loginWithEmail: async (email, password) => {
+        try {
+            const cleanedEmail = email.trim().toLowerCase();
+            const supabase = getSupabase();
+
+            if (!supabase) throw new Error("Supabase não configurado.");
+
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: cleanedEmail,
+                password: password
+            });
+
+            if (error) throw error;
+
+            // Busca o perfil atualizado do Supabase para saber a Role (Cliente, Agronomo, Admin)
+            const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', data.user.id)
+                .single();
+
+            if (profileError) {
+                console.warn('[AuthService] Erro ao buscar profile, usando dados padrão:', profileError);
+            }
+
+            const sessionObj = {
+                id: data.user.id,
+                email: data.user.email,
+                usuario: profileData?.username || cleanedEmail.split('@')[0],
+                role: profileData?.role || 'PENDENTE',
+                nome_completo: profileData?.nome_completo || '',
+                token: data.session.access_token
+            };
+
+            // Salva no AsyncStorage para não precisar logar de novo
+            await AsyncStorage.setItem('user_session', JSON.stringify(sessionObj));
+
+            return { success: true, session: sessionObj };
+        } catch (error) {
+            console.error('[AuthService] Erro ao logar:', error);
+            throw error;
+        }
+    },
+
+    /**
      * Solicita redefinição de senha por e-mail
      */
     requestPasswordReset: async (email) => {

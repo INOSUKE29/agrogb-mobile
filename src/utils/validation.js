@@ -40,6 +40,33 @@ export const validateRegister = (data) => {
     };
 };
 
+export const validateRegisterExpress = (data) => {
+    const errors = {};
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!data.email || !emailRegex.test(data.email)) {
+        errors.email = "E-mail inválido.";
+    }
+
+    const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+    if (!data.password || !passRegex.test(data.password)) {
+        errors.password = "A senha precisa ter no mínimo 8 caracteres, com pelo menos uma letra maiúscula, uma minúscula e um número.";
+    }
+
+    if (data.password !== data.confirmPassword) {
+        errors.confirmPassword = "As senhas não conferem.";
+    }
+
+    if (!data.acceptTerms) {
+        errors.terms = "Você precisa aceitar os termos de uso para continuar.";
+    }
+
+    return {
+        isValid: Object.keys(errors).length === 0,
+        errors
+    };
+};
+
 export const getPasswordStrength = (pass) => {
     if (!pass) return 0;
     let strength = 0;

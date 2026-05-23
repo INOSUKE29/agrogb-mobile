@@ -1,87 +1,65 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { getSupabase } from '../services/supabase';
-import { validateRegister, getPasswordStrength } from '../utils/validation';
+import { validateRegisterExpress, getPasswordStrength } from '../utils/validation';
 import { translateAuthError } from '../utils/errorHelpers';
 import AgroInput from '../components/common/AgroInput';
 import AgroButton from '../components/common/AgroButton';
 import Card from '../components/common/Card';
-import { useTheme } from '../context/ThemeContext';
+import FriendlyModal from '../components/common/FriendlyModal';
 
 const { width } = Dimensions.get('window');
 
 export default function RegisterScreen({ navigation }) {
-    const { theme } = useTheme();
     const [form, setForm] = useState({
-        fullName: '', birthYear: '', email: '', phone: '',
-        password: '', confirmPassword: '', farmName: '', username: '',
-        role: 'CLIENTE',
+        email: '',
+        password: '',
+        confirmPassword: '',
         acceptTerms: false
     });
     const [loading, setLoading] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({
+        visible: false,
+        emoji: '🧐',
+        title: 'Atenção',
+        message: '',
+        buttonText: 'Entendi 👍'
+    });
+
+    const showAlert = (emoji, title, message, buttonText = 'Entendi 👍') => {
+        setAlertConfig({
+            visible: true,
+            emoji,
+            title,
+            message,
+            buttonText
+        });
+    };
 
     const handleRegister = async () => {
-        const { isValid, errors } = validateRegister(form);
+        const cleanedEmail = (form.email || '').trim().replace(/\s/g, '').toLowerCase();
+        const cleanedForm = { ...form, email: cleanedEmail };
+
+        const { isValid, errors } = validateRegisterExpress(cleanedForm);
         if (!isValid) {
             const firstError = Object.values(errors)[0];
-            return Alert.alert('Validação', firstError);
+            showAlert('✍️', 'Ajuste de Campo', firstError + ' 😊');
+            return;
         }
 
         setLoading(true);
         try {
-            const supabase = getSupabase();
-            
-            // 1. Criar Usuário no Auth com metadados estendidos
-            const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: form.email,
-                password: form.password,
-                options: {
-                    data: { 
-                        full_name: form.fullName,
-                        username: form.username || form.email.split('@')[0],
-                        phone: form.phone,
-                        farm_name: form.farmName,
-                        role: form.role
-                    }
-                }
-            });
+            // Usa o AuthService para criar a conta. 
+            // O perfil será criado automaticamente no backend pela Trigger do Supabase.
+            const { AuthService } = require('../services/authService');
+            await AuthService.registerWithEmail(cleanedEmail, cleanedForm.password);
 
-            if (authError) throw authError;
-
-            // 2. Criar ou mesclar Perfil na Tabela profiles do Supabase (tabela real existente)
-            const { error: profileError } = await supabase.from('profiles').upsert([{
-                id: authData.user.id,
-                username: form.username || form.email.split('@')[0],
-                nome_completo: form.fullName.toUpperCase(),
-                email: form.email.toLowerCase(),
-                role: form.role,
-                updated_at: new Date().toISOString()
-            }]);
-
-            if (profileError) throw profileError;
-
-            // 3. Salvar localmente no SQLite para permitir login off-line imediato
-            const { insertUsuario } = require('../database/database');
-            await insertUsuario({
-                uuid: authData.user.id,
-                usuario: form.username || form.email.split('@')[0],
-                senha: form.password,
-                nivel: form.role === 'AGRONOMO' ? 'AGRONOMO' : 'USUARIO',
-                role: form.role,
-                nome_completo: form.fullName,
-                email: form.email,
-                telefone: form.phone,
-                endereco: form.farmName
-            });
-
-            Alert.alert('🚀 Sucesso!', 'Conta criada com sucesso. Bem-vindo ao AgroGB!', [
-                { text: 'FAZER LOGIN', onPress: () => navigation.navigate('Login') }
-            ]);
+            showAlert('🎉', 'Sucesso!', 'Sua conta foi criada com sucesso! Agora, insira seu e-mail e senha na tela de login para completar o cadastro da sua fazenda ou CREA. 😉', 'Fazer Login ➔');
         } catch (error) {
             const friendlyMsg = translateAuthError(error.message || error.toString());
-            Alert.alert('Erro no Cadastro', friendlyMsg);
+            showAlert('🧐', 'Erro no Cadastro', friendlyMsg + ' Que tal revisar as credenciais com bastante carinho?');
         } finally {
             setLoading(false);
         }
@@ -96,117 +74,14 @@ export default function RegisterScreen({ navigation }) {
                     <Ionicons name="arrow-back" size={24} color="#FFF" />
                 </TouchableOpacity>
                 <Text style={styles.title}>NOVA CONTA AGROGB</Text>
-                <Text style={styles.subtitle}>Junte-se à elite da gestão agrícola digital.</Text>
+                <Text style={styles.subtitle}>Crie seu acesso expresso em poucos segundos.</Text>
             </LinearGradient>
 
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-                <Card style={styles.card}>
+                <Card style={[styles.card, { backgroundColor: activeColors.card || '#FFF' }]}>
                     <View style={styles.sectionHeader}>
-                        <Ionicons name="person-circle-outline" size={20} color="#10B981" />
-                        <Text style={styles.sectionTitle}>INFORMAÇÕES PESSOAIS</Text>
-                    </View>
-                    
-                    <AgroInput 
-                        label="NOME COMPLETO" 
-                        placeholder="Como deseja ser chamado?"
-                        value={form.fullName} 
-                        onChangeText={t => setForm({...form, fullName: t})} 
-                        icon="person-outline" 
-                    />
-                    
-                    <View style={styles.row}>
-                        <View style={{ flex: 1, marginRight: 10 }}>
-                            <AgroInput 
-                                label="ANO NASC." 
-                                placeholder="1990"
-                                value={form.birthYear} 
-                                keyboardType="numeric" 
-                                maxLength={4} 
-                                onChangeText={t => setForm({...form, birthYear: t})} 
-                            />
-                        </View>
-                        <View style={{ flex: 2 }}>
-                            <AgroInput 
-                                label="WHATSAPP / CELULAR" 
-                                placeholder="(00) 00000-0000"
-                                value={form.phone} 
-                                keyboardType="phone-pad" 
-                                onChangeText={t => setForm({...form, phone: t})} 
-                                icon="logo-whatsapp" 
-                            />
-                        </View>
-                    </View>
-
-                    <View style={styles.sectionHeader}>
-                        <Ionicons name="shield-checkmark-outline" size={20} color="#10B981" />
-                        <Text style={styles.sectionTitle}>TIPO DE CONTA (PERFIL)</Text>
-                    </View>
-                    
-                    <View style={styles.roleContainer}>
-                        <TouchableOpacity 
-                            activeOpacity={0.8}
-                            style={[
-                                styles.roleOption, 
-                                form.role === 'CLIENTE' && styles.roleOptionActive
-                            ]} 
-                            onPress={() => setForm({...form, role: 'CLIENTE'})}
-                        >
-                            <Ionicons 
-                                name="leaf" 
-                                size={18} 
-                                color={form.role === 'CLIENTE' ? '#FFF' : '#10B981'} 
-                            />
-                            <Text style={[
-                                styles.roleText, 
-                                form.role === 'CLIENTE' && styles.roleTextActive
-                            ]}>PRODUTOR RURAL</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity 
-                            activeOpacity={0.8}
-                            style={[
-                                styles.roleOption, 
-                                form.role === 'AGRONOMO' && styles.roleOptionActive
-                            ]} 
-                            onPress={() => setForm({...form, role: 'AGRONOMO'})}
-                        >
-                            <Ionicons 
-                                name="ribbon" 
-                                size={18} 
-                                color={form.role === 'AGRONOMO' ? '#FFF' : '#10B981'} 
-                            />
-                            <Text style={[
-                                styles.roleText, 
-                                form.role === 'AGRONOMO' && styles.roleTextActive
-                            ]}>AGRÔNOMO / TÉCNICO</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.sectionHeader}>
-                        <Ionicons name="leaf-outline" size={20} color="#10B981" />
-                        <Text style={styles.sectionTitle}>IDENTIDADE RURAL (OPCIONAL)</Text>
-                    </View>
-                    
-                    <AgroInput 
-                        label="NOME DA FAZENDA" 
-                        placeholder="Ex: Fazenda Santa Maria"
-                        value={form.farmName} 
-                        onChangeText={t => setForm({...form, farmName: t})} 
-                        icon="business-outline" 
-                    />
-                    
-                    <AgroInput 
-                        label="NOME DE USUÁRIO (@)" 
-                        placeholder="Ex: bruno_agro"
-                        value={form.username} 
-                        autoCapitalize="none" 
-                        onChangeText={t => setForm({...form, username: t})} 
-                        icon="at-outline" 
-                    />
-
-                    <View style={styles.sectionHeader}>
-                        <Ionicons name="lock-closed-outline" size={20} color="#10B981" />
-                        <Text style={styles.sectionTitle}>SEGURANÇA DA CONTA</Text>
+                        <Ionicons name="mail-outline" size={20} color="#10B981" />
+                        <Text style={styles.sectionTitle}>CREDENCIAS DE ENTRADA</Text>
                     </View>
                     
                     <AgroInput 
@@ -221,9 +96,9 @@ export default function RegisterScreen({ navigation }) {
                     
                     <AgroInput 
                         label="SENHA" 
-                        placeholder="Mínimo 8 caracteres"
+                        placeholder="Mínimo 8 caracteres, maiúscula e número"
                         value={form.password} 
-                        secureTextEntry 
+                        secureTextEntry={true} 
                         onChangeText={t => setForm({...form, password: t})} 
                         icon="key-outline" 
                     />
@@ -235,9 +110,9 @@ export default function RegisterScreen({ navigation }) {
 
                     <AgroInput 
                         label="CONFIRMAR SENHA" 
-                        placeholder="Repita sua senha"
+                        placeholder="Repita sua senha com atenção"
                         value={form.confirmPassword} 
-                        secureTextEntry 
+                        secureTextEntry={true} 
                         onChangeText={t => setForm({...form, confirmPassword: t})} 
                         icon="checkmark-shield-outline" 
                     />
@@ -255,7 +130,7 @@ export default function RegisterScreen({ navigation }) {
                     </TouchableOpacity>
 
                     <AgroButton 
-                        title="CRIAR MINHA CONTA AGORA" 
+                        title="CRIAR CONTA EXPRESSA 🚀" 
                         onPress={handleRegister} 
                         loading={loading} 
                     />
@@ -265,6 +140,20 @@ export default function RegisterScreen({ navigation }) {
                     </TouchableOpacity>
                 </Card>
             </ScrollView>
+
+            <FriendlyModal
+                visible={alertConfig.visible}
+                emoji={alertConfig.emoji}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                buttonText={alertConfig.buttonText}
+                onClose={() => {
+                    setAlertConfig(prev => ({ ...prev, visible: false }));
+                    if (alertConfig.emoji === '🎉') {
+                        navigation.navigate('Login');
+                    }
+                }}
+            />
         </View>
     );
 }
@@ -277,14 +166,8 @@ const styles = StyleSheet.create({
     subtitle: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 5, fontWeight: '600' },
     scroll: { padding: 20, paddingBottom: 100 },
     card: { padding: 25, marginTop: -30, borderRadius: 30 },
-    sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 25, marginBottom: 15 },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 15, marginBottom: 15 },
     sectionTitle: { fontSize: 10, fontWeight: '900', color: '#6B7280', letterSpacing: 1.5 },
-    row: { flexDirection: 'row' },
-    roleContainer: { flexDirection: 'row', gap: 10, marginBottom: 15 },
-    roleOption: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 14, borderRadius: 15, borderWidth: 1.5, borderColor: '#10B981', backgroundColor: '#FFF' },
-    roleOptionActive: { backgroundColor: '#10B981', borderColor: '#10B981' },
-    roleText: { fontSize: 10, fontWeight: '900', color: '#10B981', letterSpacing: 0.5 },
-    roleTextActive: { color: '#FFF' },
     strengthContainer: { height: 4, backgroundColor: '#E5E7EB', borderRadius: 2, marginBottom: 15, marginTop: -10 },
     strengthBar: { height: '100%', borderRadius: 2 },
     termsRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 25 },

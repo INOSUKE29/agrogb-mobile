@@ -16,6 +16,16 @@ const { width } = Dimensions.get('window');
 
 // --- CONFIGURAÇÃO DE CATEGORIAS (UX) ---
 const CATEGORIES = {
+    // Novas categorias estruturadas e profissionais de mercado
+    FERTILIZANTES: { label: 'Fertilizantes', icon: 'leaf-outline', color: '#16A34A', bg: '#DCFCE7', fields: ['composicao'] },
+    DEFENSIVOS: { label: 'Defensivos Agrícolas', icon: 'flask-outline', color: '#DC2626', bg: '#FEE2E2', fields: ['principio', 'classe'] },
+    BIOLOGICOS: { label: 'Insumos Biológicos', icon: 'bug-outline', color: '#8B5CF6', bg: '#F5F3FF', fields: ['principio'] },
+    ADJUVANTES: { label: 'Adjuvantes', icon: 'color-filter-outline', color: '#EC4899', bg: '#FDF2F8' },
+    CORRETIVOS: { label: 'Corretivos de Solo', icon: 'grid-outline', color: '#F59E0B', bg: '#FEF3C7', fields: ['composicao'] },
+    NUTRI_FOLIAR: { label: 'Nutrição Foliar', icon: 'water-outline', color: '#06B6D4', bg: '#ECFEFF', fields: ['composicao'] },
+    SEMENTES: { label: 'Sementes / Mudas', icon: 'rose-outline', color: '#10B981', bg: '#ECFDF5' },
+
+    // Legado e estruturais
     DEFENSIVO: { label: 'Defensivo Agrícola', icon: 'flask-outline', color: '#DC2626', bg: '#FEE2E2', fields: ['principio', 'classe'] },
     FERTILIZANTE: { label: 'Fertilizante / Adubo', icon: 'leaf-outline', color: '#16A34A', bg: '#DCFCE7', fields: ['composicao'] },
     NUTRIENTE: { label: 'Nutriente / Corretivo', icon: 'water-outline', color: '#CA8A04', bg: '#FEF9C3', fields: ['composicao'] },
@@ -327,7 +337,7 @@ export default function CadastroScreen({ navigation }) {
                     <Card style={styles.gridModal}>
                         <Text style={styles.modalTitleCenter}>CATEGORIAS</Text>
                         <View style={styles.catGrid}>
-                            {Object.keys(CATEGORIES).map(key => {
+                            {Object.keys(CATEGORIES).filter(key => !['DEFENSIVO', 'FERTILIZANTE', 'NUTRIENTE'].includes(key)).map(key => {
                                 const cat = CATEGORIES[key];
                                 return (
                                     <TouchableOpacity key={key} style={styles.gridItem} onPress={() => selectCategory(key)}>

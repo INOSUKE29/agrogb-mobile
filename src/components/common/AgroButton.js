@@ -26,14 +26,14 @@ export default function AgroButton({
         txt = activeColors.primary || '#10B981';
         border = activeColors.primary || '#10B981';
     } else if (variant === 'danger') {
-        bg = theme?.theme_mode === 'dark' ? 'rgba(248, 113, 113, 0.15)' : '#FEE2E2';
+        bg = activeColors.dangerBg || '#FEE2E2';
         txt = activeColors.error || '#EF4444';
     }
 
     // Estado desativado dinâmico por tema
     if (disabled) {
-        bg = theme?.theme_mode === 'dark' ? '#1E293B' : '#E2E8F0';
-        txt = theme?.theme_mode === 'dark' ? '#475569' : '#94A3B8';
+        bg = activeColors.buttonDisabledBg || '#E2E8F0';
+        txt = activeColors.buttonDisabledText || '#94A3B8';
         border = 'transparent';
     }
 

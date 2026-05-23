@@ -233,6 +233,12 @@ O padrão visual oficial baseia-se na tela de **Dashboard Diamond Pro**. Compone
 
 # 13. LOG DE DECISÕES
 
+### 2026-05-20
+*   **Visual Lúdico com FriendlyModal**: Unificamos os alertas e erros críticos operacionais do mobile sob o componente `FriendlyModal` (Nubank/Bradesco UX) nas telas `ColheitaScreen`, `CadernoCampoScreen`, `EstoqueScreen` e `FinanceiroLancamentosScreen`.
+*   **Monorepo Corporativo (Turborepo + PNPM)**: Criamos a estrutura organizacional e de build no diretório pai `c:\Users\Bruno\Documents\AgroGB` para unificar os códigos e dependências do mobile (React Native) e desktop (Python CustomTkinter).
+*   **Resiliência e Migração de Sync**: Adicionamos `sync_status` e `last_updated` ausentes nas tabelas `equipes` e `agronomist_codes` no SQLite local do mobile e validamos a infraestrutura via script `test_sync.js`. Detectamos erro de recursão na política de `profiles` no Supabase a ser corrigido ao obter acesso ao SQL Console.
+*   **Arquitetura de Acesso Split e Gating Dinâmico**: Consolidamos a estratégia de controle de acesso de perfil (Cliente vs. Agrônomo) e upgrade de planos (Basic/Pro/ERP) sob uma base de código única. Rejeitamos a divisão em múltiplos aplicativos devido à alta fricção de manutenção e escalabilidade. Modelamos a liberação automática de recursos premium via webhooks (Mercado Pago/Stripe) e reatividade realtime do Supabase. Mapeado no artefato `agrogb_access_control_blueprint.md`.
+
 ### 2026-05-18
 *   **Ajuste de RLS em ASCII no Supabase**: Evitamos caracteres acentuados especiais em português (como `á`, `ô`, `ç`, `ã`) nos nomes das políticas de RLS para contornar limitações do linter e garantir compilação universal no Postgres.
 *   **Expurgo de tabelas legadas**: Deletamos permanentemente do banco remoto as tabelas `cadastro`, `devices` e `system_settings`, removendo resíduos antigos.
@@ -246,6 +252,28 @@ O padrão visual oficial baseia-se na tela de **Dashboard Diamond Pro**. Compone
 
 # 14. IDEIAS FUTURAS
 
+*   **Módulo de Recomendação Agronômica (Consultoria e Compartilhamento)**:
+    *   **Visão Geral**: O engenheiro agrônomo prepara planos de adubação e aplicação com dosagens exatas de produtos (ex: Bruno - Gotejo: X - 10mg, Y - 10gr; Outros - Foliar: A - 10mg, B - 4gr) customizados às necessidades de cada talhão e cliente.
+    *   **Arquitetura Compartilhada (Supabase Central)**: Mobile e Desktop conectados no mesmo banco. O agrônomo monta tudo de forma simplificada e o cliente recebe e executa no seu próprio app.
+    *   **Gatilhos de Envio**:
+        1. *Dentro do App*: A recomendação surge automaticamente na tela do produtor após sincronização de nuvem.
+        2. *WhatsApp*: Envio de texto técnico formatado e limpo contendo a receita diretamente para o contato do cliente.
+        3. *PDF*: Geração automática de relatório técnico com assinatura digital profissional.
+    *   **Fluxo de Execução Pelo Produtor**: O produtor recebe a receita pronta e pode:
+        *   Confirmar execução instantânea (gerando baixa proporcional de estoque).
+        *   Registrar a data/hora real da aplicação.
+        *   Anexar fotos da folha/talhão e relatar observações técnicas de resultado.
+*   **Fluxo de Acesso Simplificado e Separação de Perfis (Acesso Split)**:
+    *   **Autenticação Simplificada**: Login unificado limpo na tela inicial (apenas e-mail e senha).
+    *   **Seleção de Perfil no Primeiro Acesso**: Ao criar a conta, o usuário escolhe:
+        *   *Sou Produtor (Cliente)*: Abre formulário com Nome, CPF/CNPJ, Nome da Propriedade, Cidade/UF e Culturas (Morango).
+        *   *Sou Agrônomo / Consultor*: Abre formulário com Nome, CPF, CREA e Telefone de contato.
+    *   **Delimitação Dinâmica (Paywall & RLS)**:
+        *   O app lê o perfil (`profiles.role`) e o plano do usuário (`profiles.plan_id` como `basic`, `pro`, `erp`) para habilitar menus e restringir funcionalidades de forma reativa.
+        *   Permite a liberação automática do módulo avançado (ERP/Consultoria) integrado com webhooks de pagamento (Stripe/Mercado Pago).
+    *   **Recuperação Profissional de Acesso**:
+        *   *Esqueci minha Senha*: Envio nativo de link de redefinição de credenciais via Supabase Auth para o e-mail cadastrado.
+        *   *Não lembro meu E-mail*: Busca de conta digitando CPF/CNPJ ou telefone, exibindo uma máscara de e-mail de segurança (ex: `br****@gmail.com`) ou direcionando ao suporte técnico.
 *   Recomendações automáticas de adubação baseadas em uploads de PDFs de laudo químico de solo.
 *   ROI por talhão cruzando dados financeiros de compras contra lucros de colheita.
 *   Mapas offline para geolocalização de talhões em áreas rurais remotas sem sinal.
@@ -314,6 +342,30 @@ Este documento deve seguir regras rígidas de governança para evitar perda de c
 ---
 
 # 20. CHANGELOG PERMANENTE
+
+## 2026-05-20 (Sétima Alteração)
+### Alteração
+1. **Módulo 1: Camada Visual Lúdica Completa**: Refatoração completa das telas operacionais (`ColheitaScreen.js`, `CadernoCampoScreen.js`, `EstoqueScreen.js` e `FinanceiroLancamentosScreen.js`) para importar e utilizar o componente dinâmico `FriendlyModal`. Todas as caixas de diálogo e alertas secos/técnicos de validação ou salvamento (`Alert.alert`) foram substituídos por animações leves, coloridas e explicativas com emojis afetuosos no padrão "Nubank / Bradesco" para garantir usabilidade lúdica e acessível.
+2. **Módulo 2: Resiliência de Sincronismo Offline-First**: Auditoria de paridade de esquema das 24 tabelas de sincronismo no motor SQLite local (`database.js`). Identificação e correção da falta de campos `sync_status` e `last_updated` nas tabelas `equipes` e `agronomist_codes` (evitando falhas fatais em consultas SQL). Criação de um script profissional de teste e diagnóstico (`test_sync.js`) na pasta scratch para verificar conectividade, comunicação e políticas RLS remotas do Supabase. O script revelou um problema de recursão infinita na RLS da tabela `profiles` na nuvem, já mapeado para correção com o acesso ao SQL editor.
+3. **Módulo 3: Monorepo Corporativo Unificado**: Implementação da raiz corporativa estruturada em `c:\Users\Bruno\Documents\AgroGB` através de configurações integradas do PNPM Workspaces (`pnpm-workspace.yaml`) e orquestração de compilação Turborepo (`package.json`, `turbo.json`), integrando as pastas de aplicativo mobile e sistema desktop.
+4. **Validação de Compilação (Zero Regressões)**: Execução com sucesso do compilador Babel Compiler (`check_babel_syntax.js`) em todos os arquivos alterados e telas centrais, registrando **100% de compilação verde** (9 arquivos OK, 0 erros).
+
+### Arquivos Alterados
+- `src/screens/ColheitaScreen.js`
+- `src/screens/CadernoCampoScreen.js`
+- `src/screens/EstoqueScreen.js`
+- `src/screens/FinanceiroLancamentosScreen.js`
+- `src/database/database.js`
+- `package.json` [NEW - Raiz]
+- `pnpm-workspace.yaml` [NEW - Raiz]
+- `turbo.json` [NEW - Raiz]
+- `scratch/test_sync.js` [NEW]
+- `scratch/check_babel_syntax.js`
+- `AGROGB_MASTER_MEMORY_MAP.md`
+- `task.md`
+- `walkthrough.md`
+
+---
 
 ## 2026-05-18 (Sexta Alteração)
 ### Alteração

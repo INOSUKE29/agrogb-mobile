@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, Dimensions, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { executeQuery, getAppSettings, updateAppSetting } from '../database/database';
+import { pushLocalChanges, pullServerChanges } from '../services/SyncService';
 
 // Design System
 import Card from '../components/common/Card';
@@ -23,6 +24,7 @@ export default function SyncScreen({ navigation }) {
     const [settings, setSettings] = useState({});
     const [isBioEnabled, setIsBioEnabled] = useState(false);
     const [hasBioHardware, setHasBioHardware] = useState(false);
+    const [syncing, setSyncing] = useState(false);
 
     // Modais Visibilidade
     const [activeModal, setActiveModal] = useState(null); // 'prop', 'theme', 'fin', 'clima', 'rel', 'media', 'lixeira', 'bio'
@@ -40,6 +42,24 @@ export default function SyncScreen({ navigation }) {
         setHasBioHardware(compatible);
         const bio = await SecureStore.getItemAsync(BIO_KEY);
         setIsBioEnabled(!!bio);
+    };
+
+    const runManualSync = async () => {
+        if (syncing) return;
+        setSyncing(true);
+        try {
+            const push = await pushLocalChanges();
+            const pull = await pullServerChanges();
+            Alert.alert(
+                'Sincronização Concluída', 
+                `Backup em nuvem atualizado com sucesso!\n\nDados Enviados: ${push?.pushed || 0}\nDados Recebidos: ${pull?.pulled || 0}\n\nSeu banco de dados local está 100% em paridade com a nuvem Supabase.`
+            );
+            await countLixeira();
+        } catch (e) {
+            Alert.alert('Falha na Sincronização', 'Não foi possível sincronizar com o Supabase. Verifique sua conexão com a internet. Detalhes: ' + e.message);
+        } finally {
+            setSyncing(false);
+        }
     };
 
     const countLixeira = async () => {
@@ -123,7 +143,12 @@ export default function SyncScreen({ navigation }) {
                 <SettingItem icon="cloudy-night-outline" label="Clima & Geolocalização" description="APIs e serviços ambientais" onPress={() => setActiveModal('clima')} />
                 <SettingItem icon="document-text-outline" label="Relatórios PDF" description="Layouts e assinaturas" onPress={() => setActiveModal('rel')} />
                 <SettingItem icon="image-outline" label="Mídia & Fotos" description="Qualidade e armazenamento" onPress={() => setActiveModal('media')} />
-                <SettingItem icon="sync-outline" label="Cloud & Backup" description="Sincronização Agrogb Cloud" onPress={() => Alert.alert('Premium', 'Módulo de Nuvem Ativo.')} />
+                <SettingItem 
+                    icon="sync-outline" 
+                    label="Cloud & Backup" 
+                    description={syncing ? "Sincronizando dados com o Supabase..." : "Sincronização Agrogb Cloud"} 
+                    onPress={runManualSync} 
+                />
 
                 {isAdmin && (
                     <>

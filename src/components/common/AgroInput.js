@@ -22,13 +22,13 @@ export default function AgroInput({
 
     // Cores Dinâmicas baseadas no Tema Ativo
     const activeColors = theme?.colors || {};
-    const inputBg = theme?.theme_mode === 'dark' ? '#070D19' : '#FFFFFF';
+    const inputBg = activeColors.inputBg || '#FFFFFF';
     
     const borderColor = error
         ? (activeColors.error || '#EF4444')
         : isFocused
             ? (activeColors.primary || '#10B981')
-            : (activeColors.border || '#E2E8F0');
+            : (activeColors.inputBorder || '#E2E8F0');
 
     const actualSecureTextEntry = secureTextEntry && !isPasswordVisible;
 
@@ -57,7 +57,7 @@ export default function AgroInput({
                 )}
                 
                 <TextInput
-                    style={[styles.input, { color: activeColors.text || '#1F2937' }]}
+                    style={[styles.input, { color: activeColors.inputText || '#1F2937' }]}
                     value={value}
                     onChangeText={onChangeText}
                     placeholder={placeholder}

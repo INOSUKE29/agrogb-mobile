@@ -85,6 +85,21 @@ export default function RelatoriosScreen({ navigation }) {
                     <ActivityIndicator size="large" color={theme?.colors?.primary} style={{ marginTop: 50 }} />
                 ) : (
                     <View style={styles.content}>
+                        <Card style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)', borderColor: theme?.colors?.primary || '#10B981', borderWidth: 1, marginBottom: 20, padding: 16 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                                <Ionicons name="bar-chart-outline" size={22} color={theme?.colors?.primary || '#10B981'} />
+                                <Text style={{ fontSize: 13, fontWeight: '900', color: theme?.colors?.primary || '#10B981', letterSpacing: 0.5 }}>📈 GRÁFICOS & BI AVANÇADO</Text>
+                            </View>
+                            <Text style={{ fontSize: 12, color: theme?.colors?.text || '#374151', lineHeight: 18, marginBottom: 12, fontWeight: '500' }}>
+                                Veja o comparativo visual de produtividade por safra e o demonstrativo de resultados de faturamento e custos (DRE).
+                            </Text>
+                            <AgroButton 
+                                title="📊 ABRIR GRÁFICOS & BI EMPRESARIAL" 
+                                onPress={() => navigation.navigate('BIRelatoriosAvancados')}
+                                style={{ backgroundColor: theme?.colors?.primary || '#10B981', height: 48 }}
+                            />
+                        </Card>
+
                         <View style={styles.metricGrid}>
                             <MetricCard 
                                 title="PRODUÇÃO" 

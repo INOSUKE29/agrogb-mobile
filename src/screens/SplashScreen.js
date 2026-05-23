@@ -14,15 +14,15 @@ import { StatusBar } from 'expo-status-bar';
 
 const { width, height } = Dimensions.get('window');
 
-export default function SplashScreen({ navigation }) {
+export default function SplashScreen({ onFinish }) {
     useEffect(() => {
         // Simula carregamento de recursos/sessão
         const timer = setTimeout(() => {
-            navigation.replace('Login');
+            if (onFinish) onFinish();
         }, 3500); // 3.5 segundos para o efeito premium
 
         return () => clearTimeout(timer);
-    }, [navigation]);
+    }, [onFinish]);
 
     return (
         <View style={styles.container}>

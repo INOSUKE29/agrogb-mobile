@@ -12,6 +12,7 @@ import MetricCard from '../components/common/MetricCard';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
 import AgroOptionsModal from '../components/common/AgroOptionsModal';
+import FriendlyModal from '../components/common/FriendlyModal';
 
 export default function EstoqueScreen({ navigation }) {
     const { theme } = useTheme();
@@ -22,6 +23,19 @@ export default function EstoqueScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('TODOS');
     const [searchText, setSearchText] = useState('');
+
+    // State for FriendlyModal
+    const [friendlyModal, setFriendlyModal] = useState({
+        visible: false,
+        title: '',
+        message: '',
+        emoji: '🧐',
+        buttonText: 'Entendido 👍'
+    });
+
+    const showFriendlyAlert = (title, message, emoji = '🧐', buttonText = 'Entendido 👍') => {
+        setFriendlyModal({ visible: true, title, message, emoji, buttonText });
+    };
 
     // Modal State
     const [modalVisible, setModalVisible] = useState(false);
@@ -87,16 +101,24 @@ export default function EstoqueScreen({ navigation }) {
     };
 
     const confirmAction = async () => {
-        if (!qty || isNaN(qty) || parseFloat(qty) <= 0) { Alert.alert('Erro', 'Valor inválido.'); return; }
+        if (!qty || isNaN(qty) || parseFloat(qty) <= 0) {
+            showFriendlyAlert('Erro', 'Digite um valor ou número válido maior que zero! ⚖️', '🧐');
+            return;
+        }
         const delta = actionType === 'ENTRADA' ? parseFloat(qty) : -parseFloat(qty);
         try {
             await atualizarEstoque(selectedItem.produto, delta);
             setModalVisible(false);
             loadData();
-        } catch (e) { Alert.alert('Erro', 'Falha ao atualizar.'); }
+            showFriendlyAlert('Estoque Atualizado', `Lançamento de ${actionType.toLowerCase()} realizado com sucesso! 📦`, '✅', 'Que ótimo! 👍');
+        } catch (e) {
+            showFriendlyAlert('Erro', 'Não conseguimos atualizar o estoque agora. Tente novamente! 🧐', '❌');
+        }
     };
 
     const lowStockCount = originalItems.filter(i => i.quantidade <= 10).length;
+    const totalStockValue = originalItems.reduce((acc, item) => acc + ((item.quantidade || 0) * (item.preco_venda || 0)), 0);
+    const formattedStockValue = `R$ ${totalStockValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     return (
         <View style={[styles.container, { backgroundColor: activeColors.bg || '#F3F4F6' }]}>
@@ -113,16 +135,23 @@ export default function EstoqueScreen({ navigation }) {
 
                     <View style={styles.summaryRow}>
                         <MetricCard 
-                            title="Alertas (Baixo)" 
-                            value={lowStockCount.toString()} 
-                            icon="alert-circle" 
+                            title="Total Itens" 
+                            value={originalItems.length.toString()} 
+                            icon="cube" 
                             color="#FFF"
                             style={styles.summaryCard}
                         />
                         <MetricCard 
-                            title="Total Itens" 
-                            value={originalItems.length.toString()} 
-                            icon="cube" 
+                            title="Val. Estoque" 
+                            value={formattedStockValue} 
+                            icon="cash" 
+                            color="#FFF"
+                            style={styles.summaryCard}
+                        />
+                        <MetricCard 
+                            title="Alerta (Baixo)" 
+                            value={lowStockCount.toString()} 
+                            icon="alert-circle" 
                             color="#FFF"
                             style={styles.summaryCard}
                         />
@@ -255,6 +284,15 @@ export default function EstoqueScreen({ navigation }) {
                 onDelete={() => openModal(selectedItemActions, 'SAIDA')}
                 editLabel="Lançar Entrada"
                 deleteLabel="Lançar Saída"
+            />
+
+            <FriendlyModal
+                visible={friendlyModal.visible}
+                title={friendlyModal.title}
+                message={friendlyModal.message}
+                emoji={friendlyModal.emoji}
+                buttonText={friendlyModal.buttonText}
+                onClose={() => setFriendlyModal({ ...friendlyModal, visible: false })}
             />
         </View>
     );

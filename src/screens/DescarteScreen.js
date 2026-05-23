@@ -43,8 +43,10 @@ export default function DescarteScreen({ navigation }) {
         }
     };
 
+    const activeColors = theme?.colors || {};
+
     return (
-        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
+        <View style={[styles.container, { backgroundColor: activeColors.background || '#F3F4F6' }]}>
             <LinearGradient colors={['#7F1D1D', '#991B1B']} style={styles.header}>
                 <View style={styles.headerTop}>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -58,9 +60,9 @@ export default function DescarteScreen({ navigation }) {
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 <Card style={styles.formCard}>
-                    <View style={styles.infoBox}>
-                        <Ionicons name="alert-circle-outline" size={20} color="#EF4444" />
-                        <Text style={styles.infoText}>
+                    <View style={[styles.infoBox, { backgroundColor: activeColors.dangerBg || '#FEF2F2' }]}>
+                        <Ionicons name="alert-circle-outline" size={20} color={activeColors.error || "#EF4444"} />
+                        <Text style={[styles.infoText, { color: activeColors.error || '#7F1D1D' }]}>
                             Certifique-se de registrar o motivo real da perda para auditoria de estoque.
                         </Text>
                     </View>
@@ -105,7 +107,7 @@ export default function DescarteScreen({ navigation }) {
                     style={styles.cancelBtn} 
                     onPress={() => navigation.goBack()}
                 >
-                    <Text style={styles.cancelTxt}>CANCELAR OPERAÇÃO</Text>
+                    <Text style={[styles.cancelTxt, { color: activeColors.textMuted }]}>CANCELAR OPERAÇÃO</Text>
                 </TouchableOpacity>
             </ScrollView>
         </View>

@@ -39,19 +39,35 @@ export const theme = {
         error: '#EF4444',
         warning: '#F59E0B',
         success: '#10B981',
+        
+        // Novos Tokens Base
+        inputBg: '#FFFFFF',
+        inputText: '#1F2937',
+        inputBorder: '#CBD5E1',
+        buttonDisabledBg: '#E2E8F0',
+        buttonDisabledText: '#94A3B8',
+        dangerBg: '#FEE2E2',
     },
     dark: {
-        primary: '#10B981',      // Emerald 500
+        primary: '#10B981',      // Emerald 500 (Verde escuro discreto)
         primaryDeep: '#022C22',  // Cyber Deep Green
         accent: '#D4AF37',       // Dourado Agro
-        background: '#020617',   // Slate 950 (Midnight-Slate)
-        card: '#0F172A',         // Slate 900
-        text: '#F8FAFC',         // Slate 50
-        textMuted: '#94A3B8',    // Slate 400
-        border: '#1E293B',       // Slate 800
+        background: '#0B1521',   // Preto azulado muito escuro (Dark Premium)
+        card: '#152336',         // Card cinza azulado
+        text: '#F8FAFC',         // Textos principais brancos
+        textMuted: '#94A3B8',    // Textos secundários
+        border: '#1E293B',       // Bordas discretas
         error: '#F87171',
         warning: '#F59E0B',
         success: '#10B981',
+        
+        // Novos Tokens Base ("Campos cinza claro, contraste melhor")
+        inputBg: '#E2E8F0',      // Cinza claro para altíssimo contraste de digitação
+        inputText: '#0F172A',    // Texto escuro dentro do input cinza claro
+        inputBorder: '#94A3B8',  // Borda suave
+        buttonDisabledBg: '#1E293B',
+        buttonDisabledText: '#475569',
+        dangerBg: 'rgba(248, 113, 113, 0.15)',
     },
     // Métricas / Spacing
     metrics: {

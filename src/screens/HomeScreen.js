@@ -22,6 +22,7 @@ import RecentActivities from '../components/dashboard/RecentActivities';
 import SkeletonDashboard from '../components/dashboard/SkeletonDashboard';
 import SidebarDrawer from '../components/SidebarDrawer';
 import ProductionChart from '../components/dashboard/ProductionChart';
+import OnboardingTour from '../components/common/OnboardingTour';
 
 export default function HomeScreen({ navigation }) {
     const { theme } = useTheme();
@@ -31,6 +32,7 @@ export default function HomeScreen({ navigation }) {
      const [user, setUser] = useState(null);
      const [drawerVisible, setDrawerVisible] = useState(false);
      const [isSyncing, setIsSyncing] = useState(false);
+     const [showOnboarding, setShowOnboarding] = useState(false);
 
     useEffect(() => {
         loadUser();
@@ -43,10 +45,25 @@ export default function HomeScreen({ navigation }) {
             const userJson = await AsyncStorage.getItem('user_session');
             if (userJson) {
                 setUser(JSON.parse(userJson));
+                
+                // Checar se Onboarding já foi visualizado
+                const onboardingDone = await AsyncStorage.getItem('@onboarding_completed');
+                if (!onboardingDone) {
+                    setShowOnboarding(true);
+                }
             }
         } catch (e) {
             console.error('Error loading user session', e);
         }
+    };
+
+    const handleCloseOnboarding = async () => {
+        try {
+            await AsyncStorage.setItem('@onboarding_completed', 'true');
+        } catch (e) {
+            console.error('Error saving onboarding state', e);
+        }
+        setShowOnboarding(false);
     };
 
     if (loading && !refreshing) {
@@ -102,6 +119,7 @@ export default function HomeScreen({ navigation }) {
             </ScrollView>
 
             <SidebarDrawer visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
+            <OnboardingTour visible={showOnboarding} onClose={handleCloseOnboarding} />
         </View>
     );
 }

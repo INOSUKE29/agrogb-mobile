@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, FlatList, Modal, Alert, StyleSheet, Dimensions, StatusBar, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, FlatList, Modal, Alert, StyleSheet, Dimensions, StatusBar, SafeAreaView, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -59,7 +59,9 @@ export default function MonitoramentoScreen({ navigation }) {
         setLoading(true);
         try {
             const res = await executeQuery(`
-                SELECT m.*, i.classificacao_principal 
+                SELECT m.*, i.classificacao_principal, i.tipo_problema, i.sugestao_controle,
+                       (SELECT caminho_arquivo FROM monitoramento_media WHERE monitoramento_uuid = m.uuid AND tipo = 'PDF' LIMIT 1) as pdf_uri,
+                       (SELECT COUNT(*) FROM monitoramento_media WHERE monitoramento_uuid = m.uuid AND tipo = 'IMAGEM') as foto_count
                 FROM monitoramento_entidade m
                 LEFT JOIN analise_ia i ON m.uuid = i.monitoramento_uuid
                 ORDER BY m.data DESC LIMIT 50
@@ -122,6 +124,184 @@ export default function MonitoramentoScreen({ navigation }) {
         } catch (e) { Alert.alert('Erro', 'Falha ao salvar no banco de dados.'); }
     };
 
+    const handleGeneratePDF = async (item) => {
+        try {
+            setLoading(true);
+            const { v4: uuidv4 } = require('uuid');
+            const Print = require('expo-print');
+            const Sharing = require('expo-sharing');
+            const FileSystem = require('expo-file-system');
+            
+            const today = new Date().toLocaleDateString('pt-BR');
+            const dateStr = new Date(item.data).toLocaleDateString('pt-BR');
+            
+            // Fetch media path for photos
+            const mediaRes = await executeQuery(`SELECT * FROM monitoramento_media WHERE monitoramento_uuid = ? AND tipo = 'IMAGEM'`, [item.uuid]);
+            const photos = [];
+            for (let i = 0; i < mediaRes.rows.length; i++) {
+                photos.push(mediaRes.rows.item(i));
+            }
+            
+            // Build photo HTML elements if any exist
+            let photosHtml = '';
+            if (photos.length > 0) {
+                photosHtml = `
+                    <div style="margin-top: 25px;">
+                        <h3 style="color: #064E3B; border-bottom: 1px solid #E5E7EB; padding-bottom: 8px;">FOTOS DO MONITORAMENTO</h3>
+                        <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 15px;">
+                            ${photos.map(p => `<img src="${p.caminho_arquivo}" style="width: 180px; height: 180px; border-radius: 8px; object-fit: cover;" />`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <style>
+                    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1F2937; padding: 40px; }
+                    .header { border-bottom: 3px solid #10B981; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+                    .logo { font-size: 28px; font-weight: 800; color: #10B981; }
+                    .logo-sub { color: #1F2937; }
+                    .title { font-size: 20px; font-weight: 700; text-transform: uppercase; color: #111827; text-align: right; }
+                    .meta-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 35px; background: #F9FAFB; padding: 20px; border-radius: 12px; border-left: 5px solid #10B981; }
+                    .meta-item { font-size: 14px; }
+                    .meta-label { font-weight: 800; color: #6B7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+                    .meta-val { font-size: 15px; font-weight: 700; margin-top: 4px; }
+                    .section { margin-bottom: 30px; }
+                    .section-title { font-size: 15px; font-weight: 800; color: #064E3B; border-bottom: 2px solid #E5E7EB; padding-bottom: 8px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px; }
+                    .card-box { background: #F3F4F6; border-radius: 8px; padding: 15px; font-size: 14px; line-height: 1.6; }
+                    .footer { text-align: center; font-size: 11px; color: #9CA3AF; border-top: 1px solid #E5E7EB; margin-top: 50px; padding-top: 15px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="logo">AGRO<span class="logo-sub">GB</span></div>
+                    <div>
+                        <div class="title">RELATÓRIO DE MONITORAMENTO</div>
+                        <div style="font-size: 12px; color: #6B7280; text-align: right; margin-top: 5px;">Gerado em ${today}</div>
+                    </div>
+                </div>
+                
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <div class="meta-label">TALHÃO / CULTURA</div>
+                        <div class="meta-val">${item.cultura_id}</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">DATA DA OBSERVAÇÃO</div>
+                        <div class="meta-val">${dateStr}</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">DIAGNÓSTICO DA IA</div>
+                        <div class="meta-val" style="color: #4F46E5;">${item.classificacao_principal || 'INFORMATIVO GERAL'}</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">NÍVEL DE INTENSIDADE</div>
+                        <div class="meta-val">${item.nivel_confianca || 'BAIXA'}</div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">OBSERVAÇÕES DO CAMPO</div>
+                    <div class="card-box" style="background: #FFF; border: 1px solid #E5E7EB;">
+                        ${item.observacao_usuario || 'NENHUMA OBSERVAÇÃO REGISTRADA.'}
+                    </div>
+                </div>
+                
+                ${item.sugestao_controle ? `
+                <div class="section">
+                    <div class="section-title">RECOMENDAÇÃO TÉCNICA E MANEJO</div>
+                    <div class="card-box" style="background: #ECFDF5; border-left: 4px solid #10B981; color: #065F46;">
+                        ${item.sugestao_controle}
+                    </div>
+                </div>
+                ` : ''}
+                
+                ${photosHtml}
+                
+                <div class="footer">
+                    AgroGB Mobile v7.0 • Monitoramento Inteligente de Pragas e Doenças
+                </div>
+            </body>
+            </html>
+            `;
+            
+            const { uri } = await Print.printToFileAsync({ html });
+            
+            const safeTitle = `Monitoramento_${item.uuid.slice(0, 8)}.pdf`;
+            const newPath = `${FileSystem.documentDirectory}${safeTitle}`;
+            await FileSystem.moveAsync({ from: uri, to: newPath });
+            
+            const countRes = await executeQuery(`SELECT * FROM monitoramento_media WHERE monitoramento_uuid = ? AND tipo = 'PDF'`, [item.uuid]);
+            if (countRes.rows.length === 0) {
+                await executeQuery(
+                    `INSERT INTO monitoramento_media (uuid, monitoramento_uuid, tipo, caminho_arquivo, criado_em, last_updated) VALUES (?, ?, ?, ?, ?, ?)`,
+                    [uuidv4(), item.uuid, 'PDF', newPath, new Date().toISOString(), new Date().toISOString()]
+                );
+            } else {
+                await executeQuery(
+                    `UPDATE monitoramento_media SET caminho_arquivo = ?, last_updated = ? WHERE monitoramento_uuid = ? AND tipo = 'PDF'`,
+                    [newPath, new Date().toISOString(), item.uuid]
+                );
+            }
+            
+            await loadData();
+            
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(newPath);
+            } else {
+                Alert.alert('Sucesso', `PDF gerado com sucesso em: ${newPath}`);
+            }
+        } catch (err) {
+            console.error(err);
+            Alert.alert('Erro', 'Falha ao gerar relatório PDF.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleOpenPDF = async (pdfUri) => {
+        try {
+            const Sharing = require('expo-sharing');
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(pdfUri);
+            } else {
+                Alert.alert('Atenção', 'Compartilhamento não disponível neste dispositivo.');
+            }
+        } catch (e) {
+            Alert.alert('Erro', 'Falha ao abrir PDF.');
+        }
+    };
+
+    const handleDeleteItem = async (uuid) => {
+        Alert.alert(
+            'Excluir Monitoramento',
+            'Deseja excluir este registro de monitoramento permanentemente?',
+            [
+                { text: 'Não', style: 'cancel' },
+                {
+                    text: 'Sim, Excluir',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await executeQuery('DELETE FROM monitoramento_entidade WHERE uuid = ?', [uuid]);
+                            await executeQuery('DELETE FROM monitoramento_media WHERE monitoramento_uuid = ?', [uuid]);
+                            await executeQuery('DELETE FROM analise_ia WHERE monitoramento_uuid = ?', [uuid]);
+                            Alert.alert('Sucesso', 'Monitoramento excluído.');
+                            loadData();
+                            setScreen('LIST');
+                        } catch (e) {
+                            Alert.alert('Erro', 'Falha ao excluir.');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     const isDark = theme?.theme_mode === 'dark';
     const textColor = activeColors.text || '#1E293B';
     const textMutedColor = activeColors.textMuted || '#64748B';
@@ -137,7 +317,7 @@ export default function MonitoramentoScreen({ navigation }) {
                 <TouchableOpacity onPress={() => screen === 'LIST' ? navigation.goBack() : setScreen('LIST')} style={styles.iconBtn}>
                     <Ionicons name="arrow-back" size={22} color="#FFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{screen === 'LIST' ? 'MONITORAMENTO' : screen === 'NEW' ? 'NOVO REGISTRO' : 'DIAGNÓSTICO'}</Text>
+                <Text style={styles.headerTitle}>{screen === 'LIST' ? 'MONITORAMENTO' : screen === 'NEW' ? 'NOVO REGISTRO' : screen === 'DETAIL' ? 'DETALHE' : 'DIAGNÓSTICO'}</Text>
                 <TouchableOpacity onPress={() => Alert.alert('Info', 'Monitoramento Técnico com IA')} style={styles.iconBtn}>
                     <Ionicons name="sparkles-outline" size={20} color="#FFF" />
                 </TouchableOpacity>
@@ -168,22 +348,72 @@ export default function MonitoramentoScreen({ navigation }) {
                 contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
                 data={history}
                 keyExtractor={i => i.uuid}
-                renderItem={({ item }) => (
-                    <Card style={styles.historyCard} onPress={() => { setSelectedItem(item); setScreen('DETAIL'); }} noPadding>
-                        <View style={styles.cardInner}>
-                            <View style={[styles.dateBadge, { backgroundColor: (activeColors.primary || '#10B981') + '15' }]}>
-                                <Text style={[styles.dateText, { color: activeColors.primary || '#10B981' }]}>{new Date(item.data).toLocaleDateString().slice(0, 5)}</Text>
-                            </View>
-                            <View style={styles.cardInfo}>
-                                <Text style={[styles.cardTitle, { color: textColor }]}>{item.cultura_id}</Text>
-                                <Text style={[styles.cardBody, { color: textMutedColor }]} numberOfLines={2}>
-                                    {item.classificacao_principal ? `🤖 IA: ${item.classificacao_principal}` : item.observacao_usuario}
+                renderItem={({ item }) => {
+                    const hasPdf = !!item.pdf_uri;
+                    const dateVal = new Date(item.data);
+                    const formattedDate = !isNaN(dateVal.getTime()) ? dateVal.toLocaleDateString('pt-BR').slice(0, 5) : '--/--';
+                    
+                    let tagLabel = 'OBSERVAÇÃO';
+                    let tagColor = '#6B7280';
+                    if (item.classificacao_principal) {
+                        if (item.tipo_problema === 'DOENCA') {
+                            tagLabel = 'DOENÇA';
+                            tagColor = '#EF4444';
+                        } else if (item.tipo_problema === 'PRAGA') {
+                            tagLabel = 'PRAGA';
+                            tagColor = '#F59E0B';
+                        } else {
+                            tagLabel = 'DIAGNÓSTICO';
+                            tagColor = '#4F46E5';
+                        }
+                    }
+
+                    return (
+                        <Card style={styles.historyCard} onPress={() => { setSelectedItem(item); setScreen('DETAIL'); }} noPadding>
+                            <View style={styles.premiumCardInner}>
+                                <View style={styles.premiumCardHeader}>
+                                    <View style={[styles.premiumTag, { backgroundColor: tagColor + '15' }]}>
+                                        <Text style={[styles.premiumTagText, { color: tagColor }]}>{tagLabel}</Text>
+                                    </View>
+                                    <Text style={[styles.premiumDateText, { color: textMutedColor }]}>{formattedDate}</Text>
+                                </View>
+                                
+                                <Text style={[styles.premiumCulturaText, { color: textColor }]}>{item.cultura_id}</Text>
+                                <Text style={[styles.premiumDescText, { color: textMutedColor }]} numberOfLines={2}>
+                                    {item.observacao_usuario || 'Sem observações adicionais.'}
                                 </Text>
+
+                                {item.classificacao_principal && (
+                                    <View style={styles.premiumAiBox}>
+                                        <Ionicons name="sparkles" size={12} color="#4F46E5" />
+                                        <Text style={styles.premiumAiText} numberOfLines={1}>
+                                            {item.classificacao_principal}
+                                        </Text>
+                                    </View>
+                                )}
+
+                                <View style={styles.premiumCardFooter}>
+                                    <Text style={[styles.premiumMediaCount, { color: textMutedColor }]}>
+                                        📷 {item.foto_count || 0} fotos
+                                    </Text>
+                                    
+                                    {hasPdf && (
+                                        <TouchableOpacity 
+                                            style={styles.premiumPdfBadge}
+                                            onPress={(e) => {
+                                                e.stopPropagation();
+                                                handleOpenPDF(item.pdf_uri);
+                                            }}
+                                        >
+                                            <Ionicons name="document-text" size={14} color={activeColors.primary || '#10B981'} />
+                                            <Text style={[styles.premiumPdfBadgeText, { color: activeColors.primary || '#10B981' }]}>PDF</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
                             </View>
-                            <Ionicons name="chevron-forward" size={18} color={textMutedColor} />
-                        </View>
-                    </Card>
-                )}
+                        </Card>
+                    );
+                }}
                 ListEmptyComponent={<Text style={[styles.empty, { color: textMutedColor }]}>Nenhum registro encontrado.</Text>}
             />
             <TouchableOpacity style={[styles.fab, { backgroundColor: activeColors.primary || '#10B981' }]} onPress={startNew}>
@@ -286,7 +516,6 @@ export default function MonitoramentoScreen({ navigation }) {
         </ScrollView>
     );
 
-    // AI result card header gradient
     const aiHeaderColors = isDark 
         ? ['rgba(79, 70, 229, 0.12)', 'rgba(79, 70, 229, 0.25)'] 
         : ['#EEF2FF', '#E0E7FF'];
@@ -324,6 +553,87 @@ export default function MonitoramentoScreen({ navigation }) {
         </ScrollView>
     );
 
+    const renderDetailView = () => {
+        if (!selectedItem) return null;
+        const dateStr = new Date(selectedItem.data).toLocaleDateString('pt-BR');
+        
+        return (
+            <ScrollView style={{ flex: 1, padding: 20 }} contentContainerStyle={{ paddingBottom: 50 }} showsVerticalScrollIndicator={false}>
+                <Card style={{ marginBottom: 20 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+                        <Text style={{ fontSize: 10, fontWeight: '900', color: activeColors.primary || '#10B981', letterSpacing: 1 }}>DETALHES</Text>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: textMutedColor }}>{dateStr}</Text>
+                    </View>
+                    
+                    <Text style={[styles.diagnosisValue, { color: textColor, fontSize: 18, marginBottom: 15 }]}>
+                        {selectedItem.cultura_id}
+                    </Text>
+                    
+                    <Text style={{ fontSize: 10, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1, marginBottom: 5 }}>OBSERVAÇÃO DO PRODUTOR</Text>
+                    <Text style={{ fontSize: 14, color: textColor, lineHeight: 20, marginBottom: 20 }}>
+                        {selectedItem.observacao_usuario || 'NENHUMA OBSERVAÇÃO REGISTRADA.'}
+                    </Text>
+                    
+                    {selectedItem.classificacao_principal && (
+                        <View style={{ backgroundColor: '#F3F4F6', padding: 15, borderRadius: 12, marginTop: 10 }}>
+                            <Text style={{ fontSize: 10, fontWeight: '900', color: '#4F46E5', letterSpacing: 1, marginBottom: 5 }}>🤖 DIAGNÓSTICO IA</Text>
+                            <Text style={{ fontSize: 15, fontWeight: '800', color: textColor }}>{selectedItem.classificacao_principal}</Text>
+                            
+                            {selectedItem.sugestao_controle && (
+                                <View style={{ marginTop: 15 }}>
+                                    <Text style={{ fontSize: 10, fontWeight: '900', color: '#065F46', letterSpacing: 0.5, marginBottom: 4 }}>RECOMENDAÇÃO TÉCNICA</Text>
+                                    <Text style={{ fontSize: 13, color: '#374151', lineHeight: 18 }}>{selectedItem.sugestao_controle}</Text>
+                                </View>
+                            )}
+                        </View>
+                    )}
+                </Card>
+                
+                {selectedItem.pdf_uri && (
+                    <Card style={{ marginBottom: 20, backgroundColor: '#ECFDF5', borderColor: '#10B981', borderStyle: 'dashed' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                <Ionicons name="document-text" size={24} color="#10B981" />
+                                <View>
+                                    <Text style={{ fontSize: 13, fontWeight: '800', color: '#065F46' }}>Relatório PDF Gerado</Text>
+                                    <Text style={{ fontSize: 10, color: '#6B7280' }}>Disponível para compartilhar</Text>
+                                </View>
+                            </View>
+                            <TouchableOpacity 
+                                style={{ backgroundColor: '#10B981', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}
+                                onPress={() => handleOpenPDF(selectedItem.pdf_uri)}
+                            >
+                                <Text style={{ fontSize: 11, fontWeight: '900', color: '#FFF' }}>ABRIR</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </Card>
+                )}
+                
+                <AgroButton 
+                    title="GERAR RELATÓRIO PDF" 
+                    icon="document-text" 
+                    onPress={() => handleGeneratePDF(selectedItem)} 
+                    loading={loading}
+                />
+                
+                <AgroButton 
+                    title="EXCLUIR REGISTRO" 
+                    variant="secondary" 
+                    icon="trash" 
+                    onPress={() => handleDeleteItem(selectedItem.uuid)} 
+                    style={{ marginTop: 12 }}
+                />
+                
+                <AgroButton 
+                    title="VOLTAR PARA A LISTA" 
+                    variant="secondary" 
+                    onPress={() => setScreen('LIST')} 
+                    style={{ marginTop: 12 }}
+                />
+            </ScrollView>
+        );
+    };
+
     if (cameraVisible) return (
         <Modal visible={true}>
             <Camera style={{ flex: 1 }} ref={cameraRef}>
@@ -351,7 +661,7 @@ export default function MonitoramentoScreen({ navigation }) {
                 {screen === 'LIST' && activeTab === 'KB' && renderKB()}
                 {screen === 'NEW' && renderNewForm()}
                 {screen === 'ANALYSIS' && renderAnalysisView()}
-                {screen === 'DETAIL' && <View style={{ padding: 30, alignItems: 'center' }}><Text style={[styles.empty, { color: textMutedColor }]}>Carregando detalhes do monitoramento...</Text><AgroButton title="VOLTAR" variant="secondary" onPress={() => setScreen('LIST')} /></View>}
+                {screen === 'DETAIL' && renderDetailView()}
             </SafeAreaView>
         </View>
     );
@@ -414,5 +724,20 @@ const styles = StyleSheet.create({
     aiTextArea: { borderRadius: 12, padding: 15, minHeight: 100, textAlignVertical: 'top', marginTop: 5, fontSize: 14, borderWidth: 1 },
     cameraOverlay: { flex: 1, justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 50 },
     cameraClose: { position: 'absolute', top: 50, right: 30 },
-    shutterBtn: { width: 70, height: 70, borderRadius: 35, backgroundColor: '#FFF', borderWidth: 5, borderColor: 'rgba(255,255,255,0.3)' }
+    shutterBtn: { width: 70, height: 70, borderRadius: 35, backgroundColor: '#FFF', borderWidth: 5, borderColor: 'rgba(255,255,255,0.3)' },
+
+    // Premium Card Styles
+    premiumCardInner: { padding: 16 },
+    premiumCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+    premiumTag: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+    premiumTagText: { fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+    premiumDateText: { fontSize: 11, fontWeight: '800' },
+    premiumCulturaText: { fontSize: 16, fontWeight: '800', marginBottom: 4 },
+    premiumDescText: { fontSize: 13, lineHeight: 18, marginBottom: 12 },
+    premiumAiBox: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#EEF2FF', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, alignSelf: 'flex-start', marginBottom: 12 },
+    premiumAiText: { fontSize: 11, fontWeight: '800', color: '#4F46E5', maxWidth: width - 100 },
+    premiumCardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingTop: 10, marginTop: 4 },
+    premiumMediaCount: { fontSize: 11, fontWeight: '700' },
+    premiumPdfBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#E6FDF5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+    premiumPdfBadgeText: { fontSize: 11, fontWeight: '900' }
 });

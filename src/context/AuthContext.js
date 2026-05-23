@@ -34,7 +34,7 @@ export function AuthProvider({ children }) {
         await AsyncStorage.removeItem('user_session');
     };
 
-    const role = user?.role || (user?.nivel === 'ADM' ? 'ADMIN' : (user?.nivel === 'AGRONOMO' ? 'AGRONOMO' : (user?.nivel === 'STAFF' ? 'STAFF' : 'CLIENTE')));
+    const role = user?.role || (user?.nivel === 'ADM' ? 'ADMIN' : (user?.nivel === 'AGRONOMO' ? 'AGRONOMO' : (user?.nivel === 'STAFF' ? 'STAFF' : 'AGRICULTOR')));
 
     return (
         <AuthContext.Provider value={{ user, login, logout, loading, role }}>

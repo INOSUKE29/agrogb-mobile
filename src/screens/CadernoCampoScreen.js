@@ -10,10 +10,25 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Card from '../components/common/Card';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
+import FriendlyModal from '../components/common/FriendlyModal';
 
 export default function CadernoCampoScreen({ navigation }) {
     const { theme } = useTheme();
+    const activeColors = theme?.colors || {};
     const [timeline, setTimeline] = useState([]);
+
+    // State for FriendlyModal
+    const [friendlyModal, setFriendlyModal] = useState({
+        visible: false,
+        title: '',
+        message: '',
+        emoji: '🧐',
+        buttonText: 'Entendido 👍'
+    });
+
+    const showFriendlyAlert = (title, message, emoji = '🧐', buttonText = 'Entendido 👍') => {
+        setFriendlyModal({ visible: true, title, message, emoji, buttonText });
+    };
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [notaTexto, setNotaTexto] = useState('');
@@ -46,7 +61,11 @@ export default function CadernoCampoScreen({ navigation }) {
             const res = await executeQuery(query);
             const data = [];
             for (let i = 0; i < res.rows.length; i++) {
-                data.push(res.rows.item(i));
+                const row = { ...res.rows.item(i) };
+                if (row.tipo === 'ANOTAÇÃO' && row.observacao && row.observacao.toUpperCase().startsWith('[ADUBAÇÃO')) {
+                    row.tipo = 'ADUBAÇÃO';
+                }
+                data.push(row);
             }
             setTimeline(data);
         } catch (e) {
@@ -61,6 +80,7 @@ export default function CadernoCampoScreen({ navigation }) {
     const getIcon = (tipo) => {
         switch (tipo) {
             case 'COLHEITA': return { name: 'leaf', color: '#10B981', bg: '#F0FDF4' };
+            case 'ADUBAÇÃO': return { name: 'flask', color: '#10B981', bg: '#F0FDF4' };
             case 'VENDA': return { name: 'cash', color: '#3B82F6', bg: '#EFF6FF' };
             case 'CUSTO': return { name: 'trending-down', color: '#EF4444', bg: '#FEF2F2' };
             case 'COMPRA': return { name: 'cart', color: '#F59E0B', bg: '#FFFBEB' };
@@ -71,16 +91,17 @@ export default function CadernoCampoScreen({ navigation }) {
     };
 
     const handleSaveNota = async () => {
-        if (!notaTexto.trim()) return Alert.alert('Aviso', 'Escreva algo para salvar.');
+        if (!notaTexto.trim()) return showFriendlyAlert('Aviso', 'Escreva um textinho legal antes de salvar a anotação do seu dia na fazenda! ✍️', '🧐');
         try {
             await insertCadernoNota({ observacao: notaTexto.trim(), data: new Date().toISOString() });
             setNotaTexto(''); setModalVisible(false); loadTimeline();
-        } catch (e) { Alert.alert('Erro', 'Falha ao salvar nota.'); }
+            showFriendlyAlert('Nota Salva', 'Anotação adicionada ao seu caderno de campo com sucesso! 📓', '📝', 'Perfeito! 👍');
+        } catch (e) { showFriendlyAlert('Erro', 'Não conseguimos salvar a sua anotação agora. Que tal tentar de novo? 🧐', '❌'); }
     };
 
     return (
-        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
-            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
+        <View style={[styles.container, { backgroundColor: activeColors.background || '#F3F4F6' }]}>
+            <LinearGradient colors={[activeColors.primary || '#10B981', activeColors.primaryDeep || '#059669']} style={styles.header}>
                 <View style={styles.headerTop}>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Ionicons name="arrow-back" size={24} color="#FFF" />
@@ -114,23 +135,23 @@ export default function CadernoCampoScreen({ navigation }) {
                             return (
                                 <View key={index} style={styles.timelineRow}>
                                     <View style={styles.timelineLeft}>
-                                        <View style={[styles.iconCircle, { backgroundColor: iconConfig.bg }]}>
+                                        <View style={[styles.iconCircle, { backgroundColor: iconConfig.bg, borderColor: activeColors.border, borderWidth: theme.resolved_theme_mode === 'dark' ? 1 : 0 }]}>
                                             <Ionicons name={iconConfig.name} size={18} color={iconConfig.color} />
                                         </View>
-                                        {index < timeline.length - 1 && <View style={styles.verticalLine} />}
+                                        {index < timeline.length - 1 && <View style={[styles.verticalLine, { backgroundColor: activeColors.border || '#E5E7EB' }]} />}
                                     </View>
 
                                     <View style={styles.timelineContent}>
-                                        <Text style={styles.dateText}>{formattedDate}</Text>
-                                        <Card style={styles.itemCard} noPadding>
+                                        <Text style={[styles.dateText, { color: activeColors.textMuted }]}>{formattedDate}</Text>
+                                        <Card style={[styles.itemCard, { borderLeftColor: iconConfig.color }]} noPadding>
                                             <View style={styles.cardPadding}>
                                                 <View style={styles.cardHeader}>
                                                     <Text style={[styles.tipoBadge, { color: iconConfig.color }]}>{item.tipo}</Text>
                                                 </View>
-                                                <Text style={styles.descText}>{item.descricao}</Text>
+                                                <Text style={[styles.descText, { color: activeColors.text }]}>{item.descricao}</Text>
                                                 {item.observacao && (
-                                                    <View style={styles.obsBox}>
-                                                        <Text style={styles.obsText}>{item.observacao}</Text>
+                                                    <View style={[styles.obsBox, { backgroundColor: theme.resolved_theme_mode === 'dark' ? activeColors.background : '#F9FAFB', borderLeftColor: activeColors.border }]}>
+                                                        <Text style={[styles.obsText, { color: activeColors.textMuted }]}>{item.observacao}</Text>
                                                     </View>
                                                 )}
                                             </View>
@@ -151,9 +172,9 @@ export default function CadernoCampoScreen({ navigation }) {
                 <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.overlay}>
                     <Card style={styles.modalContent}>
                         <View style={styles.modalHeaderRow}>
-                            <Text style={styles.modalTitle}>NOVA ANOTAÇÃO</Text>
+                            <Text style={[styles.modalTitle, { color: activeColors.text }]}>NOVA ANOTAÇÃO</Text>
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <Ionicons name="close" size={24} color="#6B7280" />
+                                <Ionicons name="close" size={24} color={activeColors.textMuted || "#6B7280"} />
                             </TouchableOpacity>
                         </View>
                         
@@ -174,6 +195,15 @@ export default function CadernoCampoScreen({ navigation }) {
                     </Card>
                 </KeyboardAvoidingView>
             </Modal>
+
+            <FriendlyModal
+                visible={friendlyModal.visible}
+                title={friendlyModal.title}
+                message={friendlyModal.message}
+                emoji={friendlyModal.emoji}
+                buttonText={friendlyModal.buttonText}
+                onClose={() => setFriendlyModal({ ...friendlyModal, visible: false })}
+            />
         </View>
     );
 }
