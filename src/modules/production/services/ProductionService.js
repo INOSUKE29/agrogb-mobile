@@ -1,5 +1,6 @@
 import { executeQuery } from '../../../database/database';
 import { supabase } from '../../../services/supabaseClient';
+import { SyncWorker } from '../../../services/SyncWorker';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -7,24 +8,50 @@ import { v4 as uuidv4 } from 'uuid';
  * Centraliza Plantio, Colheita e Monitoramento. 🚀
  */
 export const ProductionService = {
+    // PLANTIO
+    recordPlantio: async (data) => {
+        const uuid = data.uuid || uuidv4();
+        const timestamp = new Date().toISOString();
+        
+        await executeQuery(
+            `INSERT INTO plantio (uuid, cultura, tipo_plantio, quantidade_pes, data, last_updated, sync_status) 
+             VALUES (?, ?, ?, ?, ?, ?, 0)`,
+            [uuid, data.cultura, data.tipo_plantio, data.quantidade_pes, data.data, timestamp]
+        );
+
+        const { data: { session } } = await supabase.auth.getSession();
+        await SyncWorker.enqueue('plantio', 'INSERT', uuid, {
+            id: uuid,
+            cultura: data.cultura,
+            tipo_plantio: data.tipo_plantio,
+            quantidade_pes: data.quantidade_pes,
+            data_plantio: data.data,
+            user_id: session?.user?.id
+        });
+
+        return { uuid, ...data };
+    },
+
     // COLHEITA
     recordHarvest: async (data) => {
         const uuid = data.uuid || uuidv4();
         const timestamp = new Date().toISOString();
 
         await executeQuery(
-            `INSERT INTO production_harvests (id, area_id, cultura_id, quantidade, data_colheita, last_updated) 
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [uuid, data.area_id, data.cultura_id, data.quantidade, data.data_colheita, timestamp]
+            `INSERT INTO colheitas (uuid, area_id, cultura, produto, quantidade, data_colheita, data, observacao, last_updated, sync_status) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+            [uuid, data.area_id, data.cultura_id || '', data.produto || 'FRUTA', data.quantidade, data.data_colheita, timestamp, data.observacao || '', timestamp]
         );
 
-        // Sync (Legacy path supported via table mapping in Supabase)
-        supabase.from('production_harvests').insert([{
+        const { data: { session } } = await supabase.auth.getSession();
+        await SyncWorker.enqueue('colheitas', 'INSERT', uuid, {
             id: uuid,
             area_id: data.area_id,
             quantidade: data.quantidade,
-            data_colheita: data.data_colheita
-        }]);
+            data_colheita: data.data_colheita,
+            observacao: data.observacao,
+            user_id: session?.user?.id
+        });
 
         return { id: uuid, ...data };
     },
