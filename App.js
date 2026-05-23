@@ -62,6 +62,11 @@ import PlanoAdubacaoScreen from './src/screens/PlanoAdubacaoScreen';
 import RecipeFormScreen from './src/screens/RecipeFormScreen';
 import { supabase } from './src/services/supabaseClient';
 
+// Navegadores e Telas V2
+import ClientNavigator from './src/navigation/ClientNavigator';
+import AdminSelectorScreen from './src/screens/admin/AdminSelectorScreen';
+import AgronomistClientsScreen from './src/screens/agronomist/AgronomistClientsScreen';
+import CreateRecommendationScreen from './src/screens/agronomist/CreateRecommendationScreen';
 import ErrorBoundary from './src/ui/ErrorBoundary';
 import { WeatherProvider } from './src/context/WeatherContext';
 import { ThemeProvider } from './src/theme/ThemeContext';
@@ -112,12 +117,12 @@ export default function App() {
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (__DEV__) console.log(`[App] Evento Auth: ${event}`);
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                const mappedSession = session ? {
+                setUserSession(prev => session ? {
+                    ...prev,
                     userId: session.user.id,
                     email: session.user.email,
                     token: session.access_token
-                } : null;
-                setUserSession(mappedSession);
+                } : null);
             } else if (event === 'SIGNED_OUT') {
                 setUserSession(null);
             }
@@ -185,6 +190,21 @@ export default function App() {
                                 ) : (
                                     // STACK DO APLICATIVO (Só renderiza se estiver logado)
                                     <>
+                                        <Stack.Screen name="SessionRouter" options={{ headerShown: false }}>
+                                            {(props) => {
+                                                React.useEffect(() => {
+                                                    const role = userSession?.role || 'AGRONOMO';
+                                                    if (role === 'CLIENTE') props.navigation.replace('ClientTabs');
+                                                    else if (role === 'ADMIN') props.navigation.replace('AdminSelector');
+                                                    else props.navigation.replace('Dashboard');
+                                                }, []);
+                                                return <View style={{ flex: 1, backgroundColor: '#0B121E' }} />;
+                                            }}
+                                        </Stack.Screen>
+                                        <Stack.Screen name="ClientTabs" component={ClientNavigator} options={{ headerShown: false }} />
+                                        <Stack.Screen name="AdminSelector" component={AdminSelectorScreen} options={{ headerShown: false }} />
+                                        <Stack.Screen name="AgronomistClients" component={AgronomistClientsScreen} options={{ headerShown: false }} />
+                                        <Stack.Screen name="CreateRecommendation" component={CreateRecommendationScreen} options={{ headerShown: false }} />
                                         <Stack.Screen name="Dashboard" component={HomeScreen} options={{ headerShown: false }} />
                                         <Stack.Screen name="Colheita" component={ColheitaScreen} options={{ title: 'Registrar Colheita' }} />
                                         <Stack.Screen name="Vendas" component={VendasScreen} options={{ title: 'Registrar Venda' }} />

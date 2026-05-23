@@ -286,10 +286,27 @@ const checkSession = async () => {
         // 3. Se temos sessão no Supabase mas não local (ou vice-versa), harmoniza
         if (!localSession || localSession.userId !== session.user.id) {
             if (__DEV__) console.log('🔍 [AUTH CHECK] Harmonizando sessão local com servidor...');
+            
+            // Busca a role
+            let role = 'USUARIO';
+            try {
+                const localProfile = await executeQuery(
+                    `SELECT nivel FROM usuarios WHERE email = ? LIMIT 1`,
+                    [session.user.email]
+                );
+                if (localProfile.rows.length > 0) {
+                    role = (localProfile.rows.item(0).nivel || 'USUARIO').toUpperCase();
+                } else {
+                    const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
+                    if (profile) role = (profile.role || 'USUARIO').toUpperCase();
+                }
+            } catch (e) {}
+
             const newSession = {
                 userId: session.user.id,
                 email: session.user.email,
-                token: session.access_token
+                token: session.access_token,
+                role: role
             };
             await safeSave('user_session_v1', newSession);
             return newSession;
