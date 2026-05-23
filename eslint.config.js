@@ -1,6 +1,7 @@
 // eslint.config.js
 const react = require("eslint-plugin-react");
 const reactNative = require("eslint-plugin-react-native");
+const unusedImports = require("eslint-plugin-unused-imports");
 
 module.exports = [
     {
@@ -25,6 +26,7 @@ module.exports = [
         plugins: {
             react,
             "react-native": reactNative,
+            "unused-imports": unusedImports,
         },
         languageOptions: {
             ecmaVersion: "latest",
@@ -73,7 +75,12 @@ module.exports = [
         },
         rules: {
             "no-undef": "error",
-            "no-unused-vars": "warn",
+            "no-unused-vars": "off",
+            "unused-imports/no-unused-imports": "error",
+            "unused-imports/no-unused-vars": [
+                "warn",
+                { "vars": "all", "varsIgnorePattern": "^_", "args": "after-used", "argsIgnorePattern": "^_" }
+            ],
             "no-redeclare": "error",
             "react/jsx-uses-react": "error",
             "react/jsx-uses-vars": "error",

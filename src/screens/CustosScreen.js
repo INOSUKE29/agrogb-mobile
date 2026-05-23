@@ -1,14 +1,12 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
     View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, 
     Modal, TextInput, Platform, SafeAreaView, StatusBar, 
     ActivityIndicator, FlatList 
 } from 'react-native';
-import { v4 as uuidv4 } from 'uuid';
 import { getCostCategories, insertCostCategory, getCadastro } from '../database/database';
 import { FinanceService } from '../modules/finance/services/FinanceService';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
 import AutoSyncService from '../services/AutoSyncService';
 import { showToast } from '../ui/Toast';
 import { LinearGradient } from 'expo-linear-gradient';

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
     View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, 
-    Alert, SafeAreaView, Platform, Dimensions 
+    Alert, SafeAreaView, Platform 
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { executeQuery } from '../database/database';

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, TextInput, SafeAreaView, StatusBar, Platform, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, TextInput, SafeAreaView, StatusBar, Platform } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertMaquina, updateMaquinaRevisao } from '../database/database';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';

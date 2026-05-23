@@ -1,13 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-    View, Text, StyleSheet, SectionList, TouchableOpacity,
-    Modal, TextInput, Alert, ActivityIndicator, ScrollView,
-    SafeAreaView, StatusBar, Platform, Dimensions, Image
+    View, Text, StyleSheet, SectionList, TouchableOpacity, TextInput, Alert, ActivityIndicator, ScrollView, StatusBar, Dimensions, Image
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getCadastro, insertCadastro, deleteCadastro, updateCadastro } from '../database/database';
-import { showToast } from '../ui/Toast';
+import { getCadastro } from '../database/database';
 
 const { width } = Dimensions.get('window');
 

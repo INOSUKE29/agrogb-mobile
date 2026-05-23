@@ -2,7 +2,6 @@ import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, Vibration, Platform } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { RADIUS } from '../theme/radius';
-import { TYPOGRAPHY } from '../theme/typography';
 import { SPACING } from '../theme/spacing';
 
 export default function AgroButton({

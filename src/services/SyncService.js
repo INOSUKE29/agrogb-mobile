@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import { executeQuery, getAppSettings, updateAppSetting } from '../database/database';
+import { executeQuery, getAppSettings } from '../database/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const syncTables = [

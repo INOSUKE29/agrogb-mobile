@@ -3,14 +3,11 @@ import {
     View,
     Text,
     StyleSheet,
-    FlatList,
     TouchableOpacity,
-    Alert,
     StatusBar,
     SafeAreaView,
     Platform,
     ScrollView,
-    TextInput,
     ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -18,7 +15,6 @@ import { executeQuery } from '../database/database';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import SafeBlurView from '../ui/SafeBlurView';
-import { showToast } from '../ui/Toast';
 
 export default function EncomendasScreen() {
     const navigation = useNavigation();

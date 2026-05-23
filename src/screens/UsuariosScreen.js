@@ -4,7 +4,7 @@
  * Arquitetura: user → role → permissions → módulos liberados
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, FlatList, TouchableOpacity,
     Modal, Alert, ActivityIndicator, ScrollView, TextInput,

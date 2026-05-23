@@ -10,7 +10,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getCadastro, getCulturas } from '../database/database';
+import { getCulturas } from '../database/database';
 import { useProduction } from '../modules/production/hooks/useProduction';
 import ProductModal from '../modules/inventory/components/ProductModal';
 import { showToast } from '../ui/Toast';

@@ -1,4 +1,4 @@
-import { executeQuery, logActivity } from '../database/database';
+import { executeQuery } from '../database/database';
 
 /**
  * SERVIÇO DE ESTOQUE ENTERPRISE - BUILD #107

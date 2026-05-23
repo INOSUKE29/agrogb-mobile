@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, TextInput, Platform, SafeAreaView, StatusBar, ActivityIndicator, Switch, Image } from 'react-native';
-import { v4 as uuidv4 } from 'uuid';
-import { getCadastro, getClientes } from '../database/database';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, TextInput, StatusBar, ActivityIndicator } from 'react-native';
 import VendaService from '../services/VendaService';
 import ProductModal from '../modules/inventory/components/ProductModal';
 import ClientModal from '../modules/finance/components/ClientModal';

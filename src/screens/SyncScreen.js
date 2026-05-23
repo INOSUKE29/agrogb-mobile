@@ -1,18 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, Switch, StatusBar } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, StatusBar } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import SafeBlurView from '../ui/SafeBlurView';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme/ThemeContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { executeQuery, getAppSettings, updateAppSetting } from '../database/database';
-import * as Updates from 'expo-updates';
+import { getAppSettings, updateAppSetting } from '../database/database';
 import ScreenHeader from '../ui/ScreenHeader';
 import FundoAnimado from '../components/FundoAnimado';
 import { showToast } from '../ui/Toast';
-import { testConnection } from '../services/supabaseClient';
-import { syncAllMaster } from '../services/SyncService';
-import { BackupService } from '../services/BackupService';
 
 export default function SyncScreen({ navigation }) {
     const { colors } = useTheme();
