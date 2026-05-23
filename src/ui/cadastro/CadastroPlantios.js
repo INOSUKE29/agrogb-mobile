@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView, Alert, Modal, FlatList, TouchableOp
 import { v4 as uuidv4 } from 'uuid';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { insertPlantio, getCadastro, executeQuery } from '../../database/database';
+import { getCadastro, executeQuery } from '../../database/database';
+import { ProductionService } from '../../modules/production/services/ProductionService';
 import AppContainer from '../AppContainer';
 import ScreenHeader from '../ScreenHeader';
 import GlowCard from '../GlowCard';
@@ -65,7 +66,7 @@ export default function CadastroPlantios({ navigation }) {
         
         setLoading(true);
         try {
-            await insertPlantio({
+            await ProductionService.recordPlantio({
                 uuid: uuidv4(),
                 cultura: variedade.toUpperCase(),
                 tipo_plantio: talhao.toUpperCase(),
