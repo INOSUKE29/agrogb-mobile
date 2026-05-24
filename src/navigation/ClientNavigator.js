@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import ClientDashboardScreen from '../screens/client/ClientDashboardScreen';
 import CulturasScreen from '../screens/CulturasScreen';
 import ClientMenuScreen from '../screens/client/ClientMenuScreen';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 
 const Tab = createBottomTabNavigator();
 

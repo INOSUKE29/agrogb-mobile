@@ -1,4 +1,4 @@
-﻿/**
+/**
  * EstoqueScreen.js â€” AgroGB Diamond Pro
  * Ultra Premium Glassmorphism & Neon Glow Design
  */
@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { useInventory } from '../modules/inventory/hooks/useInventory';
 import { showToast } from '../ui/Toast';
+import { useAuth } from '../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 
@@ -35,6 +36,8 @@ const getStatus = (qty, minQty = 10) => {
 
 export default function EstoqueScreen({ navigation }) {
     const { items: allItems, loading, fetchStock, adjustStock } = useInventory();
+    const { userSession } = useAuth();
+    const isAgronomo = userSession?.role === 'AGRONOMO';
 
     const [searchText, setSearchText] = useState('');
     const [activeCategoria, setActiveCategoria] = useState('TODOS');
@@ -135,20 +138,22 @@ export default function EstoqueScreen({ navigation }) {
                     </View>
                 </View>
 
-                <View style={styles.itemActions}>
-                    <TouchableOpacity
-                        style={[styles.actionBtn, { backgroundColor: 'rgba(16,185,129,0.1)' }]}
-                        onPress={() => openModal(item, 'ENTRADA')}
-                    >
-                        <Ionicons name="add" size={20} color="#10B981" />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.actionBtn, { backgroundColor: 'rgba(244,63,94,0.1)' }]}
-                        onPress={() => openModal(item, 'SAIDA')}
-                    >
-                        <Ionicons name="remove" size={20} color="#F43F5E" />
-                    </TouchableOpacity>
-                </View>
+                {isAgronomo ? null : (
+                    <View style={styles.itemActions}>
+                        <TouchableOpacity
+                            style={[styles.actionBtn, { backgroundColor: 'rgba(16,185,129,0.1)' }]}
+                            onPress={() => openModal(item, 'ENTRADA')}
+                        >
+                            <Ionicons name="add" size={20} color="#10B981" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.actionBtn, { backgroundColor: 'rgba(244,63,94,0.1)' }]}
+                            onPress={() => openModal(item, 'SAIDA')}
+                        >
+                            <Ionicons name="remove" size={20} color="#F43F5E" />
+                        </TouchableOpacity>
+                    </View>
+                )}
             </View>
         );
     }, [openModal]);
@@ -167,14 +172,16 @@ export default function EstoqueScreen({ navigation }) {
                         <Ionicons name="chevron-back" size={24} color="#FFF" />
                     </TouchableOpacity>
                     <View style={{ flex: 1, paddingLeft: 4 }}>
-                        <Text style={styles.headerTitle}>ArmazÃ©m <Text style={{ color: '#F59E0B' }}>&</Text> Estoque</Text>
-                        <Text style={styles.headerSub}>VisÃ£o Geral e MovimentaÃ§Ãµes</Text>
+                        <Text style={styles.headerTitle}>Armazém <Text style={{ color: '#F59E0B' }}>&</Text> Estoque</Text>
+                        <Text style={styles.headerSub}>Visão Geral e Movimentações</Text>
                     </View>
-                    <TouchableOpacity style={styles.addBtnHeader} onPress={() => navigation?.navigate?.('CadastroForm')}>
-                        <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.addGradientIcon}>
-                            <Ionicons name="add" size={24} color="#FFF" />
-                        </LinearGradient>
-                    </TouchableOpacity>
+                    {isAgronomo ? null : (
+                        <TouchableOpacity style={styles.addBtnHeader} onPress={() => navigation?.navigate?.('CadastroForm')}>
+                            <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.addGradientIcon}>
+                                <Ionicons name="add" size={24} color="#FFF" />
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 <FlatList
@@ -273,11 +280,11 @@ export default function EstoqueScreen({ navigation }) {
                                 <LinearGradient colors={['rgba(245,158,11,0.2)', 'rgba(245,158,11,0.01)']} style={styles.emptyRing}>
                                     <MaterialCommunityIcons name="warehouse" size={38} color="#F59E0B" />
                                 </LinearGradient>
-                                <Text style={styles.emptyTitle}>ArmazÃ©m vazio</Text>
+                                <Text style={styles.emptyTitle}>Armazém vazio</Text>
                                 <Text style={styles.emptyDesc}>
-                                    {searchText ? 'Nenhum item encontrado para esta busca.' : 'Cadastre insumos para o controle diÃ¡rio.'}
+                                    {searchText ? 'Nenhum item encontrado para esta busca.' : 'Cadastre insumos para o controle diário.'}
                                 </Text>
-                                {!searchText && (
+                                {(!searchText && !isAgronomo) && (
                                     <TouchableOpacity onPress={() => navigation?.navigate?.('CadastroForm')}>
                                         <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.emptyBtnGradient}>
                                             <Ionicons name="add" size={18} color="#FFF" />

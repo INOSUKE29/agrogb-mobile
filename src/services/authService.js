@@ -63,25 +63,29 @@ export const register = async (nome, email, password) => {
 
         const userId = authData.user.id;
 
-        // 2. Registro Local (Offline-First) no Schema V2
-        const producerData = {
-            id: userId,
-            nome,
-            email,
-            created_at: new Date().toISOString(),
-            sync_status: 'synced' // Já foi pro Supabase Auth
-        };
-
-        await executeQuery(
-            `INSERT INTO v2_produtores (id, nome, email, created_at, sync_status) VALUES (?, ?, ?, ?, ?)`,
-            [userId, nome, email, producerData.created_at, 'synced']
-        );
+        // O Supabase vai disparar a Trigger SQL para criar o perfil na nuvem automaticamente.
+        // Aqui salvamos apenas na base SQLite local para offline.
+        try {
+            await executeQuery(
+                `INSERT INTO v2_produtores (id, nome, email, created_at, sync_status) VALUES (?, ?, ?, ?, ?)`,
+                [userId, nome, email, new Date().toISOString(), 'synced']
+            );
+        } catch (localErr) {
+            console.warn("[AuthService] Erro ao salvar localmente, mas conta criada na nuvem.", localErr);
+        }
 
         return { success: true, user: authData.user };
 
     } catch (e) {
         if (__DEV__) console.error("REGISTER_ERROR:", e.message);
         
+        if (e.message?.includes('already registered')) {
+            return {
+                success: false,
+                message: "Este e-mail já está cadastrado. Tente fazer login."
+            };
+        }
+
         // Mensagem Amigável para Senhas Vazadas (Supabase Auth Security)
         if (e.message?.includes('leaked') || e.message?.includes('compromised')) {
             return { 
@@ -211,7 +215,7 @@ export const login = async (emailOrUsuario, password) => {
                     'Timeout ao buscar perfil Supabase'
                 );
                 if (profile) {
-                    role = (profile.role || 'USUARIO').toUpperCase();
+                    role = (profile.role || 'CLIENTE').toUpperCase(); // Ajustado para CLIENTE default se nulo
                     nomeCompleto = profile.full_name || '';
                     if (__DEV__) console.log('[AuthService] Role (Supabase profiles):', role);
                 }
