@@ -6,10 +6,19 @@ import { LinearGradient } from 'expo-linear-gradient';
 const ALL_OPERATIONAL_TOOLS = [
     { id: 'CadernoCampo', label: 'Caderno', icon: 'book-open-outline', color: '#0F766E' },
     { id: 'Colheita', label: 'Colheita', icon: 'leaf', color: '#059669' },
+    { id: 'Vendas', label: 'Vendas', icon: 'cash', color: '#10B981' },
+    { id: 'Estoque', label: 'Estoque', icon: 'cube-outline', color: '#3B82F6' },
     { id: 'Monitoramento', label: 'Monitorar', icon: 'camera-outline', color: '#EC4899' },
     { id: 'MenuAdubacao', label: 'Adubação', icon: 'flask-outline', color: '#A855F7' },
+    { id: 'Compras', label: 'Compras', icon: 'cart-outline', color: '#D97706' },
+    { id: 'Encomendas', label: 'Encomendas', icon: 'clipboard-outline', color: '#F59E0B' },
     { id: 'Plantio', label: 'Plantio', icon: 'apple', color: '#8B5CF6' },
-    { id: 'Scanner', label: 'Scanner QR', icon: 'barcode-scan', color: '#475569' },
+    { id: 'Custos', label: 'Custos', icon: 'calculator-variant-outline', color: '#EA580C' },
+    { id: 'Processamento', label: 'Descarte', icon: 'trash-can-outline', color: '#EF4444' },
+    { id: 'Frota', label: 'Frota', icon: 'car-outline', color: '#3B82F6' },
+    { id: 'Relatorios', label: 'Relatórios', icon: 'chart-pie', color: '#475569' },
+    { id: 'MenuCadastros', label: 'Cadastros', icon: 'square-edit-outline', color: '#475569' },
+    { id: 'Scanner', label: 'Scanner', icon: 'barcode-scan', color: '#475569' },
     { id: 'MenuSistema', label: 'Ajustes', icon: 'cog-outline', color: '#475569' },
 ];
 
