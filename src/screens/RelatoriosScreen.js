@@ -1,207 +1,250 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions, TextInput, Alert } from 'react-native';
+import { executeQuery } from '../database/database';
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { generatePDFAgro } from '../services/ReportService';
+import { ExportService } from '../services/ExportService';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
+
+// Design System
+import Card from '../components/common/Card';
+import MetricCard from '../components/common/MetricCard';
+import AgroButton from '../components/common/AgroButton';
+import AgroInput from '../components/common/AgroInput';
+
+const { width } = Dimensions.get('window');
 
 export default function RelatoriosScreen({ navigation }) {
-    const [periodo, setPeriodo] = useState('30 Dias');
+    const { theme } = useTheme();
+    const [loading, setLoading] = useState(true);
+    const [data, setData] = useState({ prod: 0, vendas: 0, custos: 0, perdas: 0 });
+    const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
 
-    const PERIODOS = ['Hoje', '7 Dias', '30 Dias', 'Safra Atual'];
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const rProd = await executeQuery('SELECT SUM(quantidade) as total FROM colheitas');
+            const rVendas = await executeQuery('SELECT SUM(valor * quantidade) as total FROM vendas');
+            const rCustos = await executeQuery('SELECT SUM(valor_total) as total FROM custos');
+            const rPerdas = await executeQuery('SELECT SUM(quantidade_kg) as total FROM descarte');
+
+            setData({
+                prod: rProd.rows.item(0).total || 0,
+                vendas: rVendas.rows.item(0).total || 0,
+                custos: rCustos.rows.item(0).total || 0,
+                perdas: rPerdas.rows.item(0).total || 0
+            });
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useFocusEffect(useCallback(() => { loadData(); }, []));
+
+    const handlePreset = (days) => {
+        const end = new Date();
+        const start = new Date();
+        start.setDate(end.getDate() - days);
+        setEndDate(end.toISOString().split('T')[0]);
+        setStartDate(start.toISOString().split('T')[0]);
+    };
+
+    const handleExportExcel = async () => {
+        try {
+            const res = await executeQuery('SELECT cultura, produto, quantidade, data, observacao FROM colheitas WHERE is_deleted = 0 ORDER BY data DESC');
+            const rows = [];
+            for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+            await ExportService.exportToExcel(rows, 'Relatorio_Colheitas_AgroGB');
+        } catch (e) { Alert.alert('Erro', 'Falha ao exportar dados.'); }
+    };
+
+    const profit = data.vendas - data.custos;
 
     return (
-        <SafeAreaView style={styles.container}>
-            {/* HEADER */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Ionicons name="arrow-back" size={24} color="#F8FAFC" />
-                </TouchableOpacity>
-                <View style={styles.headerTitleContainer}>
-                    <Ionicons name="bar-chart" size={26} color="#10B981" />
-                    <Text style={styles.headerTitle}>Visão Geral</Text>
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
+            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
+                <View style={styles.headerTop}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>BI RURAL PERFORMANCE</Text>
+                    <TouchableOpacity onPress={loadData}>
+                        <Ionicons name="refresh" size={24} color="#FFF" />
+                    </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.exportBtn}>
-                    <Ionicons name="download-outline" size={20} color="#10B981" />
-                </TouchableOpacity>
-            </View>
+                <Text style={styles.headerSub}>Análise executiva de resultados e lucratividade</Text>
+            </LinearGradient>
 
-            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                {/* FILTROS DE PERÍODO */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.periodoScroll} contentContainerStyle={{ paddingRight: 20 }}>
-                    {PERIODOS.map(p => {
-                        const isActive = periodo === p;
-                        return (
-                            <TouchableOpacity 
-                                key={p} 
-                                style={[styles.periodoBtn, isActive && styles.periodoBtnActive]}
-                                onPress={() => setPeriodo(p)}
+            <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 50 }}>
+                {loading ? (
+                    <ActivityIndicator size="large" color={theme?.colors?.primary} style={{ marginTop: 50 }} />
+                ) : (
+                    <View style={styles.content}>
+                        <Card style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)', borderColor: theme?.colors?.primary || '#10B981', borderWidth: 1, marginBottom: 20, padding: 16 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                                <Ionicons name="bar-chart-outline" size={22} color={theme?.colors?.primary || '#10B981'} />
+                                <Text style={{ fontSize: 13, fontWeight: '900', color: theme?.colors?.primary || '#10B981', letterSpacing: 0.5 }}>📈 GRÁFICOS & BI AVANÇADO</Text>
+                            </View>
+                            <Text style={{ fontSize: 12, color: theme?.colors?.text || '#374151', lineHeight: 18, marginBottom: 12, fontWeight: '500' }}>
+                                Veja o comparativo visual de produtividade por safra e o demonstrativo de resultados de faturamento e custos (DRE).
+                            </Text>
+                            <AgroButton 
+                                title="📊 ABRIR GRÁFICOS & BI EMPRESARIAL" 
+                                onPress={() => navigation.navigate('BIRelatoriosAvancados')}
+                                style={{ backgroundColor: theme?.colors?.primary || '#10B981', height: 48 }}
+                            />
+                        </Card>
+
+                        <View style={styles.metricGrid}>
+                            <MetricCard 
+                                title="PRODUÇÃO" 
+                                value={`${data.prod.toLocaleString('pt-BR')} KG`} 
+                                icon="leaf" 
+                                color={theme?.colors?.primary}
+                                style={styles.metricItem}
+                            />
+                            <MetricCard 
+                                title="VENDAS" 
+                                value={`R$ ${data.vendas.toLocaleString('pt-BR')}`} 
+                                icon="cash" 
+                                color="#3B82F6"
+                                style={styles.metricItem}
+                            />
+                            <MetricCard 
+                                title="CUSTOS" 
+                                value={`R$ ${data.custos.toLocaleString('pt-BR')}`} 
+                                icon="trending-down" 
+                                color="#EF4444"
+                                style={styles.metricItem}
+                            />
+                            <MetricCard 
+                                title="PERDAS" 
+                                value={`${data.perdas.toLocaleString('pt-BR')} KG`} 
+                                icon="alert-circle" 
+                                color="#7C3AED"
+                                style={styles.metricItem}
+                            />
+                        </View>
+
+                        <Card style={styles.insightCard} noPadding>
+                            <LinearGradient 
+                                colors={profit >= 0 ? ['#10B981', '#059669'] : ['#EF4444', '#DC2626']} 
+                                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                                style={styles.insightHeader}
                             >
-                                <Text style={[styles.periodoText, isActive && styles.periodoTextActive]}>{p}</Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </ScrollView>
-
-                {/* LUCRO LÍQUIDO GIGANTE */}
-                <View style={styles.highlightCard}>
-                    <Text style={styles.highlightLabel}>LUCRO LÍQUIDO</Text>
-                    <Text style={styles.highlightValue}>R$ 42.850,00</Text>
-                    <View style={styles.badgeRow}>
-                        <View style={styles.badgePositive}>
-                            <Ionicons name="trending-up" size={14} color="#10B981" />
-                            <Text style={styles.badgeTextPositive}>+12% vs mês passado</Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* KPIs */}
-                <View style={styles.kpiGrid}>
-                    <View style={styles.kpiCard}>
-                        <View style={styles.kpiHeader}>
-                            <View style={[styles.kpiIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
-                                <Ionicons name="arrow-down" size={16} color="#10B981" />
+                                <Ionicons name="bulb-outline" size={20} color="#FFF" />
+                                <Text style={styles.insightTitle}>INSIGHT EXECUTIVO</Text>
+                            </LinearGradient>
+                            <View style={styles.insightBody}>
+                                <Text style={styles.insightValue}>
+                                    {profit >= 0 ? 'RESULTADO LÍQUIDO POSITIVO' : 'RESULTADO LÍQUIDO NEGATIVO'}
+                                </Text>
+                                <Text style={[styles.profitValue, { color: profit >= 0 ? '#10B981' : '#EF4444' }]}>
+                                    R$ {Math.abs(profit).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </Text>
+                                <Text style={styles.insightDesc}>
+                                    {profit >= 0 
+                                        ? 'Sua operação está gerando lucro líquido. Mantenha o controle de custos.' 
+                                        : 'Atenção: Os custos operacionais excederam o faturamento no período.'}
+                                </Text>
                             </View>
-                            <Text style={[styles.kpiTrend, { color: '#10B981' }]}>+8%</Text>
-                        </View>
-                        <Text style={styles.kpiValue}>R$ 65.400</Text>
-                        <Text style={styles.kpiLabel}>Receitas</Text>
-                    </View>
+                        </Card>
 
-                    <View style={styles.kpiCard}>
-                        <View style={styles.kpiHeader}>
-                            <View style={[styles.kpiIconBox, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}>
-                                <Ionicons name="arrow-up" size={16} color="#EF4444" />
-                            </View>
-                            <Text style={[styles.kpiTrend, { color: '#EF4444' }]}>+2%</Text>
-                        </View>
-                        <Text style={styles.kpiValue}>R$ 22.550</Text>
-                        <Text style={styles.kpiLabel}>Custos</Text>
-                    </View>
-                    
-                    <View style={styles.kpiCard}>
-                        <View style={styles.kpiHeader}>
-                            <View style={[styles.kpiIconBox, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
-                                <Ionicons name="basket" size={16} color="#3B82F6" />
-                            </View>
-                        </View>
-                        <Text style={styles.kpiValue}>8.250 kg</Text>
-                        <Text style={styles.kpiLabel}>Produção Total</Text>
-                    </View>
-                    
-                    <View style={styles.kpiCard}>
-                        <View style={styles.kpiHeader}>
-                            <View style={[styles.kpiIconBox, { backgroundColor: 'rgba(245, 158, 11, 0.1)' }]}>
-                                <Ionicons name="pricetag" size={16} color="#F59E0B" />
-                            </View>
-                        </View>
-                        <Text style={styles.kpiValue}>R$ 7,92</Text>
-                        <Text style={styles.kpiLabel}>Ticket Médio/kg</Text>
-                    </View>
-                </View>
+                        <View style={styles.section}>
+                            <Text style={styles.sectionLabel}>GERAR RELATÓRIOS OFICIAIS (PDF)</Text>
+                            <Card style={styles.pdfCard}>
+                                <View style={styles.presetRow}>
+                                    {[{label: 'Hoje', d: 0}, {label: '7 Dias', d: 7}, {label: '30 Dias', d: 30}].map(p => (
+                                        <TouchableOpacity key={p.label} style={styles.presetBtn} onPress={() => handlePreset(p.d)}>
+                                            <Text style={styles.presetText}>{p.label}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
 
-                {/* GRÁFICO (Mock Visual de Barras) */}
-                <View style={styles.chartSection}>
-                    <Text style={styles.sectionTitle}>Fluxo de Caixa (Receitas vs Custos)</Text>
-                    <View style={styles.chartMock}>
-                        {/* Linhas de grade */}
-                        <View style={styles.gridLine} />
-                        <View style={[styles.gridLine, { top: '50%' }]} />
-                        <View style={[styles.gridLine, { top: '100%' }]} />
-                        
-                        {/* Barras do Gráfico */}
-                        <View style={styles.barsContainer}>
-                            {['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'].map((s, idx) => (
-                                <View key={idx} style={styles.barGroup}>
-                                    <View style={styles.barWrapper}>
-                                        <LinearGradient colors={['#10B981', '#047857']} style={[styles.bar, { height: `${60 + Math.random() * 40}%` }]} />
-                                        <LinearGradient colors={['#EF4444', '#B91C1C']} style={[styles.bar, styles.barNegative, { height: `${20 + Math.random() * 30}%` }]} />
+                                <View style={styles.dateGrid}>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.inputLabel}>INÍCIO</Text>
+                                        <TextInput style={styles.dateInput} value={startDate} onChangeText={setStartDate} placeholder="AAAA-MM-DD" />
                                     </View>
-                                    <Text style={styles.barLabel}>{s}</Text>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.inputLabel}>FIM</Text>
+                                        <TextInput style={styles.dateInput} value={endDate} onChangeText={setEndDate} placeholder="AAAA-MM-DD" />
+                                    </View>
                                 </View>
-                            ))}
+
+                                <AgroButton 
+                                    title="RELATÓRIO DE VENDAS" 
+                                    onPress={() => generatePDFAgro('VENDAS', startDate, endDate)}
+                                    icon="document-text-outline"
+                                    style={{ marginBottom: 10 }}
+                                />
+                                <AgroButton 
+                                    title="POSIÇÃO DE ESTOQUE" 
+                                    variant="secondary"
+                                    onPress={() => generatePDFAgro('ESTOQUE', startDate, endDate)}
+                                    icon="cube-outline"
+                                    style={{ marginBottom: 10 }}
+                                />
+                                <AgroButton 
+                                    title="RELATÓRIO DRE (PDF)" 
+                                    onPress={async () => {
+                                        const exportData = [
+                                            { "Indicador": "Receitas Brutas", "Valor": `R$ ${data.vendas.toLocaleString('pt-BR')}` },
+                                            { "Indicador": "Custos Totais", "Valor": `R$ ${data.custos.toLocaleString('pt-BR')}` },
+                                            { "Indicador": "Resultado Líquido", "Valor": `R$ ${profit.toLocaleString('pt-BR')}` },
+                                            { "Indicador": "Produção Total", "Valor": `${data.prod.toLocaleString('pt-BR')} KG` },
+                                            { "Indicador": "Perdas Registradas", "Valor": `${data.perdas.toLocaleString('pt-BR')} KG` }
+                                        ];
+                                        await ExportService.exportToPDF('DEMONSTRATIVO DE RESULTADOS (RESUMO)', exportData, 'DRE_RESUMO_AGROGB');
+                                    }}
+                                    icon="bar-chart-outline"
+                                    style={{ marginBottom: 10, backgroundColor: '#064E3B' }}
+                                />
+                                <AgroButton 
+                                    title="EXPORTAR EXCEL (FULL)" 
+                                    variant="secondary"
+                                    onPress={handleExportExcel}
+                                    icon="grid-outline"
+                                    style={{ borderColor: '#10B981' }}
+                                />
+                            </Card>
                         </View>
                     </View>
-                </View>
-
-                {/* RANKING (Despesas por Categoria) */}
-                <Text style={styles.sectionTitle}>Maiores Despesas</Text>
-                <View style={styles.rankingCard}>
-                    {[
-                        { cat: 'Insumos / Fertilizantes', val: 'R$ 12.400', pct: 55, color: '#F59E0B' },
-                        { cat: 'Mão de Obra', val: 'R$ 6.000', pct: 26, color: '#3B82F6' },
-                        { cat: 'Combustível', val: 'R$ 2.800', pct: 12, color: '#EF4444' },
-                        { cat: 'Manutenção', val: 'R$ 1.350', pct: 7, color: '#8B5CF6' }
-                    ].map((item, idx) => (
-                        <View key={idx} style={styles.rankingRow}>
-                            <View style={styles.rankingInfo}>
-                                <View style={[styles.colorDot, { backgroundColor: item.color }]} />
-                                <Text style={styles.rankingName}>{item.cat}</Text>
-                            </View>
-                            <View style={styles.rankingProgressRow}>
-                                <View style={styles.progressBarBg}>
-                                    <View style={[styles.progressBarFill, { width: `${item.pct}%`, backgroundColor: item.color }]} />
-                                </View>
-                                <Text style={styles.rankingVal}>{item.val}</Text>
-                            </View>
-                        </View>
-                    ))}
-                </View>
-
+                )}
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#0B121E' },
-    
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, paddingTop: Platform.OS === 'android' ? 40 : 20, backgroundColor: '#111827' },
-    backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'flex-start' },
-    headerTitleContainer: { flexDirection: 'row', alignItems: 'center' },
-    headerTitle: { fontSize: 20, fontWeight: '900', color: '#F8FAFC', marginLeft: 8 },
-    exportBtn: { width: 40, height: 40, backgroundColor: 'rgba(16, 185, 129, 0.15)', borderRadius: 12, borderWidth: 1, borderColor: '#10B981', justifyContent: 'center', alignItems: 'center' },
-    
-    content: { paddingBottom: 40 },
-    
-    periodoScroll: { paddingHorizontal: 20, marginTop: 20, marginBottom: 20, flexGrow: 0 },
-    periodoBtn: { backgroundColor: '#111827', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: '#1F2937', marginRight: 10 },
-    periodoBtnActive: { backgroundColor: '#10B981', borderColor: '#10B981' },
-    periodoText: { color: '#94A3B8', fontSize: 13, fontWeight: '700' },
-    periodoTextActive: { color: '#FFF', fontWeight: '900' },
-
-    highlightCard: { backgroundColor: '#111827', marginHorizontal: 20, padding: 25, borderRadius: 24, borderWidth: 1, borderColor: '#1F2937', alignItems: 'center', marginBottom: 20 },
-    highlightLabel: { color: '#94A3B8', fontSize: 11, fontWeight: '900', letterSpacing: 1.5, marginBottom: 8 },
-    highlightValue: { color: '#F8FAFC', fontSize: 36, fontWeight: '900', letterSpacing: -1, marginBottom: 12 },
-    badgeRow: { flexDirection: 'row' },
-    badgePositive: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(16, 185, 129, 0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.3)' },
-    badgeTextPositive: { color: '#10B981', fontSize: 12, fontWeight: '800', marginLeft: 4 },
-
-    kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 15, justifyContent: 'space-between', marginBottom: 25 },
-    kpiCard: { width: '48%', backgroundColor: '#111827', borderRadius: 20, padding: 16, marginBottom: 15, borderWidth: 1, borderColor: '#1F2937' },
-    kpiHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
-    kpiIconBox: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-    kpiTrend: { fontSize: 13, fontWeight: '800' },
-    kpiValue: { color: '#F8FAFC', fontSize: 20, fontWeight: '900', marginBottom: 4 },
-    kpiLabel: { color: '#64748B', fontSize: 12, fontWeight: '600' },
-
-    sectionTitle: { color: '#F8FAFC', fontSize: 16, fontWeight: '900', marginHorizontal: 20, marginBottom: 15 },
-    
-    chartSection: { backgroundColor: '#111827', marginHorizontal: 20, padding: 20, borderRadius: 24, borderWidth: 1, borderColor: '#1F2937', marginBottom: 25 },
-    chartMock: { height: 180, marginTop: 20, position: 'relative' },
-    gridLine: { position: 'absolute', left: 0, right: 0, height: 1, backgroundColor: '#1F2937' },
-    barsContainer: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingHorizontal: 10 },
-    barGroup: { alignItems: 'center', height: '100%', justifyContent: 'flex-end' },
-    barWrapper: { flexDirection: 'row', height: '80%', alignItems: 'flex-end', gap: 4 },
-    bar: { width: 14, borderRadius: 7 },
-    barNegative: { width: 14, borderRadius: 7 },
-    barLabel: { color: '#64748B', fontSize: 10, fontWeight: '700', marginTop: 12 },
-
-    rankingCard: { backgroundColor: '#111827', marginHorizontal: 20, padding: 20, borderRadius: 24, borderWidth: 1, borderColor: '#1F2937' },
-    rankingRow: { marginBottom: 15 },
-    rankingInfo: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-    colorDot: { width: 10, height: 10, borderRadius: 5, marginRight: 8 },
-    rankingName: { color: '#E2E8F0', fontSize: 13, fontWeight: '700' },
-    rankingProgressRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    progressBarBg: { flex: 1, height: 6, backgroundColor: '#1F2937', borderRadius: 3, marginRight: 15, overflow: 'hidden' },
-    progressBarFill: { height: '100%', borderRadius: 3 },
-    rankingVal: { color: '#94A3B8', fontSize: 12, fontWeight: '800', width: 70, textAlign: 'right' }
+    container: { flex: 1 },
+    header: { paddingTop: 50, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+    headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
+    headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 'bold' },
+    scroll: { flex: 1 },
+    content: { padding: 20 },
+    metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
+    metricItem: { width: (width - 50) / 2, height: 110, marginHorizontal: 0 },
+    insightCard: { marginBottom: 25 },
+    insightHeader: { padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+    insightTitle: { fontSize: 10, fontWeight: '900', color: '#FFF', letterSpacing: 1.5 },
+    insightBody: { padding: 20, alignItems: 'center' },
+    insightValue: { fontSize: 12, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1 },
+    profitValue: { fontSize: 28, fontWeight: '900', marginVertical: 8 },
+    insightDesc: { fontSize: 12, color: '#6B7280', textAlign: 'center', fontWeight: '500' },
+    section: { marginTop: 10 },
+    sectionLabel: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', marginBottom: 15, letterSpacing: 1 },
+    pdfCard: { padding: 20 },
+    presetRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+    presetBtn: { flex: 1, paddingVertical: 10, backgroundColor: '#F3F4F6', borderRadius: 10, alignItems: 'center' },
+    presetText: { fontSize: 11, fontWeight: '900', color: '#4B5563' },
+    dateGrid: { flexDirection: 'row', gap: 15, marginBottom: 25 },
+    inputLabel: { fontSize: 9, fontWeight: '900', color: '#9CA3AF', marginBottom: 8, letterSpacing: 1 },
+    dateInput: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 12, fontSize: 13, fontWeight: 'bold', color: '#1F2937', textAlign: 'center' }
 });

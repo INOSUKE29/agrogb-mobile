@@ -1,397 +1,468 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform, TextInput, Modal, Alert } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Dimensions, ScrollView } from 'react-native';
+import { v4 as uuidv4 } from 'uuid';
+import { 
+    getAllPlantings, insertPlanting, updatePlanting, deletePlanting, 
+    getFields, insertField, getDashboardCropStats 
+} from '../database/database';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
-const INITIAL_MOCK_CULTURAS = [
-    {
-        id: '1',
-        nome: 'Morango',
-        area: 1.2,
-        plantio: '10/01/2026',
-        variedade: 'Albion',
-        status: 'Produção',
-        ultimaColheita: 500,
-        producaoTotal: 3200,
-        icone: 'leaf'
-    },
-    {
-        id: '2',
-        nome: 'Milho',
-        area: 8.5,
-        plantio: '05/03/2026',
-        variedade: 'Híbrido',
-        status: 'Desenvolvimento',
-        ultimaColheita: 0,
-        producaoTotal: 5000,
-        icone: 'corn'
-    },
-    {
-        id: '3',
-        nome: 'Café',
-        area: 5.0,
-        plantio: '12/08/2025',
-        variedade: 'Arábica',
-        status: 'Plantado',
-        ultimaColheita: 0,
-        producaoTotal: 1800,
-        icone: 'coffee-outline'
-    },
-    {
-        id: '4',
-        nome: 'Alface',
-        area: 1.5,
-        plantio: '20/09/2024',
-        variedade: 'Crespa',
-        status: 'Finalizadas',
-        ultimaColheita: 100,
-        producaoTotal: 900,
-        icone: 'sprout'
-    }
-];
+import Card from '../components/common/Card';
+import AgroButton from '../components/common/AgroButton';
+import AgroInput from '../components/common/AgroInput';
+import AgroOptionsModal from '../components/common/AgroOptionsModal';
 
-const FILTERS = ['Todas', 'Produção', 'Desenvolvimento', 'Plantado', 'Finalizadas'];
+const { width } = Dimensions.get('window');
+
+const STATUS_OPCOES = ['SEMENTE', 'DESENVOLVIMENTO', 'PRODUÇÃO', 'FINALIZADO'];
+const FILTROS = ['TODAS', ...STATUS_OPCOES];
 
 export default function CulturasScreen({ navigation }) {
-    const [culturas, setCulturas] = useState(INITIAL_MOCK_CULTURAS);
-    const [search, setSearch] = useState('');
-    const [activeFilter, setActiveFilter] = useState('Todas');
+    const { theme } = useTheme();
+    const [plantings, setPlantings] = useState([]);
+    const [fields, setFields] = useState([]);
+    const [stats, setStats] = useState({ totalCulturas: 0, areaTotal: 0, emProducao: 0 });
     
-    // Modal state
+    const [loading, setLoading] = useState(true);
+    const [filterStatus, setFilterStatus] = useState('TODAS');
+    const [searchText, setSearchText] = useState('');
+    
     const [modalVisible, setModalVisible] = useState(false);
-    const [formData, setFormData] = useState({ nome: '', variedade: '', area: '', status: 'Plantado' });
+    const [talhaoModalVisible, setTalhaoModalVisible] = useState(false);
+    
+    const [editingItem, setEditingItem] = useState(null);
+    const [selectedItemActions, setSelectedItemActions] = useState(null);
 
-    const filteredCulturas = culturas.filter(c => {
-        const matchSearch = c.nome.toLowerCase().includes(search.toLowerCase());
-        const matchFilter = activeFilter === 'Todas' || c.status === activeFilter;
-        return matchSearch && matchFilter;
+    // Formulário de Plantio (Cultura)
+    const [fieldUuid, setFieldUuid] = useState('');
+    const [cropName, setCropName] = useState('');
+    const [varietyName, setVarietyName] = useState('');
+    const [plantingDate, setPlantingDate] = useState('');
+    const [expectedYield, setExpectedYield] = useState('');
+    const [status, setStatus] = useState('SEMENTE');
+
+    // Formulário de Talhão
+    const [talhaoNome, setTalhaoNome] = useState('');
+    const [talhaoArea, setTalhaoArea] = useState('');
+
+    useEffect(() => { loadData(); }, []);
+
+    const loadData = async () => {
+        setLoading(true);
+        try { 
+            const dataPlantings = await getAllPlantings(); 
+            const dataFields = await getFields();
+            const dataStats = await getDashboardCropStats();
+            
+            setPlantings(dataPlantings);
+            setFields(dataFields);
+            setStats(dataStats);
+        } catch (e) { 
+            console.error(e);
+        } finally { 
+            setLoading(false); 
+        }
+    };
+
+    const resetForm = () => {
+        setEditingItem(null);
+        setFieldUuid(fields.length > 0 ? fields[0].uuid : '');
+        setCropName('');
+        setVarietyName('');
+        // Format YYYY-MM-DD
+        setPlantingDate(new Date().toISOString().split('T')[0]);
+        setExpectedYield('');
+        setStatus('SEMENTE');
+    };
+
+    const handleEdit = (item) => {
+        setEditingItem(item);
+        setFieldUuid(item.field_uuid);
+        setCropName(item.crop_name);
+        setVarietyName(item.variety_name || '');
+        setPlantingDate(item.planting_date);
+        setExpectedYield(item.expected_yield ? item.expected_yield.toString() : '');
+        setStatus(item.status || 'SEMENTE');
+        setSelectedItemActions(null);
+        setModalVisible(true);
+    };
+
+    const handleSavePlanting = async () => {
+        if (!fieldUuid || !cropName.trim() || !plantingDate.trim()) {
+            return Alert.alert('Atenção', 'Talhão, Cultura e Data são obrigatórios.');
+        }
+
+        try {
+            const payload = {
+                uuid: editingItem ? editingItem.uuid : uuidv4(),
+                field_uuid: fieldUuid,
+                crop_name: cropName.toUpperCase(),
+                variety_name: varietyName.toUpperCase(),
+                planting_date: plantingDate,
+                expected_yield: parseFloat(expectedYield) || 0,
+                status: status
+            };
+
+            if (editingItem) {
+                await updatePlanting(payload);
+                Alert.alert('Sucesso', 'Cultura atualizada com sucesso!');
+            } else {
+                await insertPlanting(payload);
+                Alert.alert('Sucesso', 'Cultura cadastrada com sucesso!');
+            }
+
+            setModalVisible(false); 
+            loadData();
+        } catch (e) { 
+            Alert.alert('Erro', 'Não foi possível salvar a cultura.'); 
+        }
+    };
+
+    const handleSaveTalhao = async () => {
+        if (!talhaoNome.trim()) return Alert.alert('Atenção', 'O nome do talhão é obrigatório.');
+        try {
+            await insertField({
+                uuid: uuidv4(),
+                nome: talhaoNome.toUpperCase(),
+                area: parseFloat(talhaoArea) || 0
+            });
+            Alert.alert('Sucesso', 'Talhão criado!');
+            setTalhaoModalVisible(false);
+            setTalhaoNome('');
+            setTalhaoArea('');
+            loadData();
+        } catch (e) {
+            Alert.alert('Erro', 'Não foi possível criar o talhão.');
+        }
+    };
+
+    const handleDelete = (item) => {
+        Alert.alert('Excluir Cultura', `Deseja realmente remover ${item.crop_name} do sistema?`, [
+            { text: 'Cancelar', style: 'cancel' }, 
+            { 
+                text: 'Sim, Excluir', 
+                style: 'destructive', 
+                onPress: async () => { 
+                    await deletePlanting(item.uuid); 
+                    setSelectedItemActions(null);
+                    loadData(); 
+                } 
+            }
+        ]);
+    };
+
+    const getStatusColor = (st) => {
+        switch(st) {
+            case 'SEMENTE': return '#F59E0B'; // Amarelo
+            case 'DESENVOLVIMENTO': return '#3B82F6'; // Azul
+            case 'PRODUÇÃO': return '#10B981'; // Verde
+            case 'FINALIZADO': return '#6B7280'; // Cinza
+            default: return '#14B8A6';
+        }
+    };
+
+    const filteredPlantings = plantings.filter(p => {
+        const matchStatus = filterStatus === 'TODAS' || p.status === filterStatus;
+        const matchText = p.crop_name.includes(searchText.toUpperCase()) || (p.variety_name && p.variety_name.includes(searchText.toUpperCase()));
+        return matchStatus && matchText;
     });
 
-    const getStatusStyle = (status) => {
-        switch(status) {
-            case 'Produção': return { color: '#10B981', dot: '#10B981', bg: 'rgba(16, 185, 129, 0.1)' };
-            case 'Desenvolvimento': return { color: '#F59E0B', dot: '#F59E0B', bg: 'rgba(245, 158, 11, 0.1)' };
-            case 'Plantado': return { color: '#3B82F6', dot: '#3B82F6', bg: 'rgba(59, 130, 246, 0.1)' };
-            case 'Finalizadas': return { color: '#EF4444', dot: '#EF4444', bg: 'rgba(239, 68, 68, 0.1)' };
-            default: return { color: '#94A3B8', dot: '#94A3B8', bg: 'rgba(148, 163, 184, 0.1)' };
-        }
-    };
-
-    const handleSave = () => {
-        if (!formData.nome || !formData.area) {
-            Alert.alert('Erro', 'Preencha o nome e a área.');
-            return;
-        }
-        const newItem = {
-            id: Math.random().toString(),
-            nome: formData.nome,
-            area: parseFloat(formData.area) || 0,
-            plantio: new Date().toLocaleDateString('pt-BR'),
-            variedade: formData.variedade || 'Padrão',
-            status: formData.status,
-            ultimaColheita: 0,
-            producaoTotal: 0,
-            icone: 'sprout'
-        };
-        setCulturas([newItem, ...culturas]);
-        setModalVisible(false);
-        setFormData({ nome: '', variedade: '', area: '', status: 'Plantado' });
-        Alert.alert('Sucesso', 'Nova cultura registrada!');
-    };
-
     return (
-        <SafeAreaView style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Ionicons name="arrow-back" size={24} color="#F8FAFC" />
-                </TouchableOpacity>
-                <View style={styles.headerTitleContainer}>
-                    <MaterialCommunityIcons name="leaf" size={28} color="#10B981" />
-                    <Text style={styles.headerTitle}>Culturas</Text>
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#0B121E' }]}>
+            
+            {/* CABEÇALHO COM INDICADORES (GLASSMORPHISM) */}
+            <LinearGradient colors={['#1F2937', '#111827']} style={styles.header}>
+                <View style={styles.headerTop}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>GESTÃO DE CULTURAS</Text>
+                    <View style={{ width: 40 }} />
                 </View>
-                <TouchableOpacity style={styles.addBtn} onPress={() => setModalVisible(true)}>
-                    <Text style={styles.addBtnText}>+ Nova Cultura</Text>
-                </TouchableOpacity>
-            </View>
 
-            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                <Text style={styles.subHeader}>Gerencie suas culturas</Text>
-
-                {/* Resumo */}
-                <View style={styles.summaryGrid}>
-                    <View style={styles.summaryCard}>
-                        <Text style={styles.summaryLabel}>Total Culturas</Text>
-                        <View style={styles.summaryValueRow}>
-                            <MaterialCommunityIcons name="seed-outline" size={20} color="#F59E0B" />
-                            <Text style={styles.summaryValue}>{culturas.length}</Text>
-                        </View>
+                {/* KPIs */}
+                <View style={styles.kpiContainer}>
+                    <View style={styles.kpiCard}>
+                        <Text style={styles.kpiValue}>{stats.totalCulturas}</Text>
+                        <Text style={styles.kpiLabel}>CULTURAS</Text>
                     </View>
-                    <View style={styles.summaryCard}>
-                        <Text style={styles.summaryLabel}>Área Total</Text>
-                        <View style={styles.summaryValueRow}>
-                            <Text style={styles.summaryValue}>
-                                {culturas.reduce((acc, curr) => acc + curr.area, 0).toFixed(1)}
-                                <Text style={styles.unitText}> ha</Text>
-                            </Text>
-                        </View>
+                    <View style={styles.kpiCard}>
+                        <Text style={styles.kpiValue}>{stats.areaTotal.toFixed(1)}</Text>
+                        <Text style={styles.kpiLabel}>ÁREA (HA)</Text>
                     </View>
-                    <View style={styles.summaryCard}>
-                        <Text style={styles.summaryLabel}>Em Produção</Text>
-                        <View style={styles.summaryValueRow}>
-                            <Ionicons name="checkmark-circle" size={18} color="#10B981" />
-                            <Text style={styles.summaryValue}>
-                                {culturas.filter(c => c.status === 'Produção').length}
-                            </Text>
-                        </View>
+                    <View style={styles.kpiCard}>
+                        <Text style={[styles.kpiValue, { color: '#10B981' }]}>{stats.emProducao}</Text>
+                        <Text style={styles.kpiLabel}>PRODUÇÃO</Text>
                     </View>
                 </View>
 
-                {/* Busca */}
+                {/* BUSCA */}
                 <View style={styles.searchBox}>
-                    <Ionicons name="search" size={20} color="#64748B" />
-                    <TextInput
+                    <Ionicons name="search" size={20} color="#6B7280" style={{marginRight: 10}} />
+                    <TextInput 
                         style={styles.searchInput}
-                        placeholder="Buscar cultura"
-                        placeholderTextColor="#64748B"
-                        value={search}
-                        onChangeText={setSearch}
+                        placeholder="Buscar por Cultura ou Variedade..."
+                        placeholderTextColor="#6B7280"
+                        value={searchText}
+                        onChangeText={setSearchText}
                     />
                 </View>
+            </LinearGradient>
 
-                {/* Filtros Horizontais */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersWrapper} contentContainerStyle={styles.filtersContent}>
-                    {FILTERS.map(f => (
+            {/* FILTROS PILLS */}
+            <View style={styles.filtersContainer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+                    {FILTROS.map(f => (
                         <TouchableOpacity 
                             key={f} 
-                            style={[styles.filterBtn, activeFilter === f && styles.filterBtnActive]}
-                            onPress={() => setActiveFilter(f)}
+                            style={[styles.pill, filterStatus === f && { backgroundColor: getStatusColor(f), borderColor: getStatusColor(f) }]}
+                            onPress={() => setFilterStatus(f)}
                         >
-                            <Text style={[styles.filterText, activeFilter === f && styles.filterTextActive]}>{f}</Text>
+                            <Text style={[styles.pillText, filterStatus === f && { color: '#FFF' }]}>{f}</Text>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
+            </View>
 
-                {/* Lista de Culturas */}
-                {filteredCulturas.map(c => {
-                    const statusStyle = getStatusStyle(c.status);
-                    return (
-                        <View key={c.id} style={styles.culturaCard}>
-                            <View style={styles.cardHeader}>
-                                <MaterialCommunityIcons name={c.icone} size={28} color="#10B981" />
-                                <Text style={styles.culturaNome}>{c.nome}</Text>
-                            </View>
-                            
-                            <View style={styles.divider} />
-                            
-                            <View style={styles.infoRow}>
-                                <View style={styles.infoCol}>
-                                    <View style={styles.dotLabel}><View style={styles.dotGrey}/> <Text style={styles.infoLabel}>Área: <Text style={styles.infoBold}>{c.area} ha</Text></Text></View>
-                                    <View style={styles.dotLabel}><View style={styles.dotGrey}/> <Text style={styles.infoLabel}>Variedade: <Text style={styles.infoBold}>{c.variedade}</Text></Text></View>
-                                    <View style={styles.dotLabel}>
-                                        <View style={[styles.dotBig, { backgroundColor: statusStyle.dot }]}/> 
-                                        <Text style={[styles.infoLabel, { color: '#F8FAFC', fontWeight: '800' }]}>{c.status}</Text>
+            {loading ? (
+                <View style={styles.center}><ActivityIndicator size="large" color="#10B981" /></View>
+            ) : (
+                <FlatList
+                    data={filteredPlantings}
+                    keyExtractor={item => item.uuid}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.list}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity 
+                            activeOpacity={0.8}
+                            onPress={() => handleEdit(item)}
+                            onLongPress={() => setSelectedItemActions(item)}
+                            style={styles.cardContainer}
+                        >
+                            <LinearGradient colors={['#1F2937', '#111827']} style={styles.cardGradient}>
+                                <View style={styles.cardHeader}>
+                                    <View style={styles.cardTitleRow}>
+                                        <MaterialCommunityIcons name="leaf" size={20} color={getStatusColor(item.status)} />
+                                        <Text style={styles.cardTitle}>{item.crop_name}</Text>
+                                    </View>
+                                    <View style={[styles.statusTag, { backgroundColor: getStatusColor(item.status) + '20', borderColor: getStatusColor(item.status) }]}>
+                                        <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>{item.status}</Text>
                                     </View>
                                 </View>
-                                <View style={styles.infoCol}>
-                                    <View style={styles.dotLabel}><View style={styles.dotGrey}/> <Text style={styles.infoLabel}>Plantio: <Text style={styles.infoBold}>{c.plantio}</Text></Text></View>
-                                    {c.status !== 'Produção' && c.status !== 'Finalizadas' && (
-                                        <View style={styles.dotLabel}><View style={[styles.dotBig, { backgroundColor: statusStyle.dot }]}/> <Text style={[styles.infoLabel, { color: '#F8FAFC', fontWeight: '800' }]}>{c.status}</Text></View>
-                                    )}
+                                
+                                <View style={styles.cardBody}>
+                                    <View style={styles.infoCol}>
+                                        <Text style={styles.infoLabel}>TALHÃO / ÁREA</Text>
+                                        <Text style={styles.infoValue}>{item.field_nome} ({item.field_area || 0} ha)</Text>
+                                    </View>
+                                    <View style={styles.infoCol}>
+                                        <Text style={styles.infoLabel}>VARIEDADE</Text>
+                                        <Text style={styles.infoValue}>{item.variety_name || '--'}</Text>
+                                    </View>
                                 </View>
-                            </View>
-
-                            {(c.ultimaColheita > 0 || c.producaoTotal > 0) && (
-                                <View style={styles.productionBlock}>
-                                    {c.ultimaColheita > 0 && <View style={styles.dotLabel}><View style={styles.dotGrey}/> <Text style={styles.infoLabel}>Última Colheita: <Text style={styles.infoBold}>{c.ultimaColheita} kg</Text></Text></View>}
-                                    {c.producaoTotal > 0 && <View style={styles.dotLabel}><View style={styles.dotGrey}/> <Text style={styles.infoLabel}>Produção Total: <Text style={styles.infoBold}>{c.producaoTotal} kg</Text></Text></View>}
+                                
+                                <View style={styles.cardFooter}>
+                                    <Ionicons name="calendar-outline" size={14} color="#9CA3AF" />
+                                    <Text style={styles.footerText}>Plantio: {item.planting_date}</Text>
+                                    <View style={{flex: 1}} />
+                                    <Text style={styles.footerYield}>Yield Est: {item.expected_yield} kg</Text>
                                 </View>
-                            )}
-                            
-                            <View style={styles.divider} />
-                            
-                            <View style={styles.actionRow}>
-                                <TouchableOpacity style={styles.actionBtn}>
-                                    <Ionicons name="eye-outline" size={16} color="#64748B" />
-                                    <Text style={styles.actionText}>Ver</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.actionBtn}>
-                                    <MaterialCommunityIcons name="pencil-outline" size={16} color="#64748B" />
-                                    <Text style={styles.actionText}>Editar</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.actionBtn} onPress={() => setCulturas(culturas.filter(item => item.id !== c.id))}>
-                                    <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                                    <Text style={[styles.actionText, {color: '#EF4444'}]}>Excluir</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    );
-                })}
-
-                {filteredCulturas.length === 0 && (
-                    <Text style={{textAlign: 'center', color: '#64748B', marginTop: 30}}>Nenhuma cultura encontrada.</Text>
-                )}
-            </ScrollView>
-
-            {/* MODAL NOVA CULTURA */}
-            <Modal visible={modalVisible} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeaderOrb}>
-                            <LinearGradient colors={['#10B981', '#059669']} style={styles.modalHeaderOrbGradient}>
-                                <Ionicons name="leaf" size={28} color="#FFF" />
                             </LinearGradient>
+                        </TouchableOpacity>
+                    )}
+                    ListEmptyComponent={
+                        <View style={styles.emptyBox}>
+                            <MaterialCommunityIcons name="sprout-outline" size={60} color="#374151" />
+                            <Text style={styles.emptyTxt}>Nenhuma cultura encontrada.</Text>
                         </View>
+                    }
+                />
+            )}
+
+            <TouchableOpacity style={styles.fab} onPress={() => { resetForm(); setModalVisible(true); }}>
+                <LinearGradient colors={['#10B981', '#059669']} style={styles.fabGradient}>
+                    <Ionicons name="add" size={32} color="#FFF" />
+                </LinearGradient>
+            </TouchableOpacity>
+
+            {/* MODAL DE CADASTRO DE CULTURA */}
+            <Modal visible={modalVisible} transparent animationType="slide">
+                <View style={styles.overlay}>
+                    <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
-                            <View>
-                                <Text style={styles.modalTitle}>Nova Cultura</Text>
-                                <Text style={styles.modalSubTitle}>Registre uma nova safra</Text>
-                            </View>
-                            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
-                                <Ionicons name="close" size={20} color="#94A3B8" />
+                            <Text style={styles.modalTitle}>{editingItem ? 'EDITAR CULTURA' : 'NOVO PLANTIO'}</Text>
+                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                                <Ionicons name="close-circle" size={30} color="#4B5563" />
                             </TouchableOpacity>
                         </View>
 
-                        <ScrollView style={styles.formScroll} showsVerticalScrollIndicator={false}>
-                            <Text style={styles.inputLabel}>NOME DA CULTURA</Text>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons name="pricetag-outline" size={18} color="#10B981" style={styles.inputIcon} />
-                                <TextInput 
-                                    style={styles.modalInput} 
-                                    placeholder="Ex: Soja, Milho, Manga..." 
-                                    placeholderTextColor="#64748B"
-                                    value={formData.nome}
-                                    onChangeText={t => setFormData({...formData, nome: t})}
-                                />
-                            </View>
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            {fields.length === 0 ? (
+                                <View style={styles.warningBox}>
+                                    <Text style={styles.warningText}>Você precisa de um Talhão antes de plantar.</Text>
+                                    <AgroButton title="CRIAR TALHÃO" onPress={() => setTalhaoModalVisible(true)} />
+                                </View>
+                            ) : (
+                                <>
+                                    <Text style={styles.inputLabel}>TALHÃO (ÁREA DE PLANTIO)</Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{marginBottom: 15}}>
+                                        {fields.map(f => (
+                                            <TouchableOpacity 
+                                                key={f.uuid} 
+                                                style={[styles.fieldSelectBtn, fieldUuid === f.uuid && styles.fieldSelectBtnActive]}
+                                                onPress={() => setFieldUuid(f.uuid)}
+                                            >
+                                                <Text style={[styles.fieldSelectTxt, fieldUuid === f.uuid && {color:'#FFF'}]}>{f.nome} ({f.area}ha)</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
 
-                            <Text style={styles.inputLabel}>VARIEDADE DE SEMENTE</Text>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons name="flask-outline" size={18} color="#3B82F6" style={styles.inputIcon} />
-                                <TextInput 
-                                    style={styles.modalInput} 
-                                    placeholder="Ex: Híbrido XP, Palmer..." 
-                                    placeholderTextColor="#64748B"
-                                    value={formData.variedade}
-                                    onChangeText={t => setFormData({...formData, variedade: t})}
-                                />
-                            </View>
+                                    <AgroInput 
+                                        label="CULTURA *" 
+                                        value={cropName} 
+                                        onChangeText={t => setCropName(t.toUpperCase())} 
+                                        placeholder="EX: MORANGO, MILHO"
+                                        icon="leaf-outline"
+                                    />
+                                    <AgroInput 
+                                        label="VARIEDADE / TIPO" 
+                                        value={varietyName} 
+                                        onChangeText={t => setVarietyName(t.toUpperCase())} 
+                                        placeholder="EX: ALBION, PIONEER 30F53"
+                                        icon="pricetag-outline"
+                                    />
+                                    <View style={styles.row}>
+                                        <View style={{flex: 1, marginRight: 10}}>
+                                            <AgroInput 
+                                                label="DATA PLANTIO *" 
+                                                value={plantingDate} 
+                                                onChangeText={setPlantingDate} 
+                                                placeholder="AAAA-MM-DD"
+                                                icon="calendar-outline"
+                                            />
+                                        </View>
+                                        <View style={{flex: 1}}>
+                                            <AgroInput 
+                                                label="ESTIMATIVA (KG)" 
+                                                value={expectedYield} 
+                                                onChangeText={setExpectedYield} 
+                                                keyboardType="numeric"
+                                                placeholder="EX: 5000"
+                                                icon="stats-chart-outline"
+                                            />
+                                        </View>
+                                    </View>
 
-                            <Text style={styles.inputLabel}>EXTENSÃO (ha)</Text>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons name="map-outline" size={18} color="#FBBF24" style={styles.inputIcon} />
-                                <TextInput 
-                                    style={styles.modalInput} 
-                                    placeholder="Ex: 10" 
-                                    placeholderTextColor="#64748B"
-                                    keyboardType="numeric"
-                                    value={formData.area}
-                                    onChangeText={t => setFormData({...formData, area: t})}
-                                />
-                            </View>
+                                    <Text style={styles.inputLabel}>STATUS DA CULTURA</Text>
+                                    <View style={styles.statusSelectRow}>
+                                        {STATUS_OPCOES.map(st => (
+                                            <TouchableOpacity 
+                                                key={st}
+                                                style={[styles.statusOptBtn, status === st && {backgroundColor: getStatusColor(st), borderColor: getStatusColor(st)}]}
+                                                onPress={() => setStatus(st)}
+                                            >
+                                                <Text style={[styles.statusOptTxt, status === st && {color:'#FFF'}]}>{st}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
 
-                            <Text style={styles.inputLabel}>STATUS INICIAL</Text>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 5, paddingTop: 5 }}>
-                                {['Plantado', 'Desenvolvimento', 'Produção'].map(s => {
-                                    const isActive = formData.status === s;
-                                    const sStyle = getStatusStyle(s);
-                                    return (
-                                        <TouchableOpacity 
-                                            key={s} 
-                                            activeOpacity={0.8}
-                                            onPress={() => setFormData({...formData, status: s})}
-                                            style={[styles.statusChip, isActive && { backgroundColor: sStyle.bg, borderColor: sStyle.color }]}
-                                        >
-                                            <View style={[styles.statusDot, { backgroundColor: sStyle.color }]} />
-                                            <Text style={[styles.statusChipText, isActive && { color: sStyle.color }]}>{s}</Text>
-                                        </TouchableOpacity>
-                                    );
-                                })}
-                            </ScrollView>
-
-                            <TouchableOpacity style={styles.saveBtn} onPress={handleSave} activeOpacity={0.8}>
-                                <LinearGradient colors={['#10B981', '#047857']} style={styles.saveBtnGradient}>
-                                    <Ionicons name="flash" size={20} color="#D1FAE5" />
-                                    <Text style={styles.saveBtnText}>REGISTRAR CULTURA</Text>
-                                </LinearGradient>
-                            </TouchableOpacity>
+                                    <View style={{marginTop: 20}}>
+                                        <AgroButton title={editingItem ? "SALVAR ALTERAÇÕES" : "INICIAR PLANTIO"} onPress={handleSavePlanting} />
+                                    </View>
+                                </>
+                            )}
                         </ScrollView>
                     </View>
                 </View>
             </Modal>
-        </SafeAreaView>
+
+            {/* MODAL CRIAR TALHÃO */}
+            <Modal visible={talhaoModalVisible} transparent animationType="fade">
+                <View style={styles.overlayCenter}>
+                    <View style={styles.smallModal}>
+                        <Text style={styles.modalTitle}>NOVO TALHÃO / ÁREA</Text>
+                        <AgroInput label="NOME DO TALHÃO" value={talhaoNome} onChangeText={t => setTalhaoNome(t.toUpperCase())} placeholder="Ex: ESTUFA 01" />
+                        <AgroInput label="TAMANHO (HECTARES)" value={talhaoArea} onChangeText={setTalhaoArea} keyboardType="numeric" placeholder="Ex: 2.5" />
+                        <View style={styles.row}>
+                            <TouchableOpacity style={[styles.flexBtn, {backgroundColor: '#374151'}]} onPress={() => setTalhaoModalVisible(false)}>
+                                <Text style={styles.btnTxt}>CANCELAR</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.flexBtn, {backgroundColor: '#10B981'}]} onPress={handleSaveTalhao}>
+                                <Text style={styles.btnTxt}>CRIAR</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* OPTIONS MODAL DE TOQUE LONGO */}
+            <AgroOptionsModal
+                visible={!!selectedItemActions}
+                onClose={() => setSelectedItemActions(null)}
+                title={selectedItemActions?.crop_name || ''}
+                subtitle={`Plantado em: ${selectedItemActions?.planting_date}`}
+                onEdit={() => handleEdit(selectedItemActions)}
+                onDelete={() => handleDelete(selectedItemActions)}
+                editLabel="Editar Cultura"
+                deleteLabel="Excluir Registro"
+            />
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#0B121E' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, paddingTop: Platform.OS === 'android' ? 40 : 20, backgroundColor: '#111827' },
-    backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'flex-start' },
-    headerTitleContainer: { flexDirection: 'row', alignItems: 'center' },
-    headerTitle: { fontSize: 20, fontWeight: '900', color: '#F8FAFC', marginLeft: 8 },
-    addBtn: { backgroundColor: 'rgba(16, 185, 129, 0.15)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: '#10B981' },
-    addBtnText: { color: '#10B981', fontWeight: '800', fontSize: 13 },
-    
-    content: { padding: 20, paddingBottom: 40 },
-    subHeader: { color: '#94A3B8', fontSize: 14, marginBottom: 20, marginTop: -10 },
-    
-    summaryGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-    summaryCard: { backgroundColor: '#111827', width: '31%', paddingVertical: 12, paddingHorizontal: 10, borderRadius: 12, borderWidth: 1, borderColor: '#1F2937', alignItems: 'center' },
-    summaryLabel: { color: '#64748B', fontSize: 11, fontWeight: '700', marginBottom: 6, textAlign: 'center' },
-    summaryValueRow: { flexDirection: 'row', alignItems: 'center' },
-    summaryValue: { color: '#F8FAFC', fontSize: 18, fontWeight: '900', marginLeft: 6 },
-    unitText: { fontSize: 11, color: '#94A3B8', fontWeight: '600' },
-
-    searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#111827', paddingHorizontal: 15, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#1F2937', marginBottom: 15 },
-    searchInput: { flex: 1, color: '#F8FAFC', marginLeft: 10, fontSize: 15 },
-
-    filtersWrapper: { marginBottom: 20 },
-    filtersContent: { paddingRight: 20 },
-    filterBtn: { backgroundColor: '#111827', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#1F2937', marginRight: 10 },
-    filterBtnActive: { backgroundColor: '#10B981', borderColor: '#10B981' },
-    filterText: { color: '#94A3B8', fontSize: 13, fontWeight: '600' },
-    filterTextActive: { color: '#FFF', fontWeight: '800' },
-
-    culturaCard: { backgroundColor: '#111827', borderRadius: 16, padding: 20, marginBottom: 15, borderWidth: 1, borderColor: '#1F2937' },
-    cardHeader: { flexDirection: 'row', alignItems: 'center' },
-    culturaNome: { color: '#F8FAFC', fontSize: 18, fontWeight: '900', marginLeft: 10 },
-    
-    divider: { height: 1, backgroundColor: '#1F2937', marginVertical: 12 },
-    
-    infoRow: { flexDirection: 'row', justifyContent: 'space-between' },
+    container: { flex: 1 },
+    header: { paddingTop: 60, paddingBottom: 20, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
+    headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1.5 },
+    kpiContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
+    kpiCard: { flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 15, padding: 15, alignItems: 'center', marginHorizontal: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    kpiValue: { fontSize: 22, fontWeight: 'bold', color: '#FFF' },
+    kpiLabel: { fontSize: 10, color: '#9CA3AF', fontWeight: 'bold', marginTop: 4, letterSpacing: 1 },
+    searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#374151', borderRadius: 12, paddingHorizontal: 15, height: 45 },
+    searchInput: { flex: 1, color: '#FFF', fontSize: 14 },
+    filtersContainer: { height: 60, justifyContent: 'center' },
+    pill: { paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, backgroundColor: '#1F2937', marginRight: 10, borderWidth: 1, borderColor: '#374151' },
+    pillText: { color: '#9CA3AF', fontSize: 12, fontWeight: 'bold' },
+    list: { padding: 20, paddingBottom: 100 },
+    cardContainer: { marginBottom: 15, borderRadius: 20, elevation: 5, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
+    cardGradient: { borderRadius: 20, padding: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+    cardTitleRow: { flexDirection: 'row', alignItems: 'center' },
+    cardTitle: { fontSize: 18, fontWeight: '900', color: '#FFF', marginLeft: 10 },
+    statusTag: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1 },
+    statusText: { fontSize: 10, fontWeight: 'bold', letterSpacing: 0.5 },
+    cardBody: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 12, padding: 15, marginBottom: 15 },
     infoCol: { flex: 1 },
-    dotLabel: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-    dotGrey: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#475569', marginRight: 8 },
-    dotBig: { width: 14, height: 14, borderRadius: 7, marginRight: 8 },
-    infoLabel: { color: '#94A3B8', fontSize: 13 },
-    infoBold: { color: '#F8FAFC', fontWeight: '700' },
-    
-    productionBlock: { marginTop: 4 },
-
-    actionRow: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 5 },
-    actionBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1F2937', paddingHorizontal: 20, paddingVertical: 8, borderRadius: 8 },
-    actionText: { color: '#94A3B8', fontSize: 13, fontWeight: '700', marginLeft: 6 },
-
-    modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.8)' },
-    modalContent: { width: '90%', maxWidth: 450, backgroundColor: '#111827', borderRadius: 32, padding: 30, borderWidth: 1, borderColor: '#1F2937' },
-    modalHeaderOrb: { alignSelf: 'center', marginTop: -50, marginBottom: 15, borderRadius: 30, padding: 4, backgroundColor: '#111827' },
-    modalHeaderOrbGradient: { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center' },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 30 },
-    modalTitle: { fontSize: 24, fontWeight: '900', color: '#FFF' },
-    modalSubTitle: { fontSize: 13, color: '#94A3B8', marginTop: 4 },
-    closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#1F2937', justifyContent: 'center', alignItems: 'center' },
-    
-    formScroll: { flexGrow: 0 },
-    inputLabel: { fontSize: 10, fontWeight: '900', color: '#64748B', letterSpacing: 1.5, marginBottom: 8, marginTop: 15 },
-    inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0B121E', borderRadius: 16, borderWidth: 1, borderColor: '#1F2937', height: 55 },
-    inputIcon: { marginLeft: 15, marginRight: 10 },
-    modalInput: { flex: 1, color: '#F8FAFC', fontSize: 15, height: '100%' },
-    
-    statusChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0B121E', borderWidth: 1, borderColor: '#1F2937', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 20 },
-    statusDot: { width: 6, height: 6, borderRadius: 3, marginRight: 8 },
-    statusChipText: { color: '#94A3B8', fontSize: 13, fontWeight: '800' },
-    
-    saveBtn: { marginTop: 40, borderRadius: 18, overflow: 'hidden' },
-    saveBtnGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 20, gap: 10 },
-    saveBtnText: { color: '#FFF', fontSize: 15, fontWeight: '900', letterSpacing: 1.5 }
+    infoLabel: { fontSize: 10, color: '#6B7280', fontWeight: 'bold', letterSpacing: 0.5, marginBottom: 4 },
+    infoValue: { fontSize: 14, color: '#E5E7EB', fontWeight: '600' },
+    cardFooter: { flexDirection: 'row', alignItems: 'center' },
+    footerText: { fontSize: 12, color: '#9CA3AF', marginLeft: 6 },
+    footerYield: { fontSize: 12, color: '#10B981', fontWeight: 'bold' },
+    fab: { position: 'absolute', bottom: 30, right: 25, elevation: 8 },
+    fabGradient: { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center' },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+    modalContent: { backgroundColor: '#1F2937', borderTopLeftRadius: 35, borderTopRightRadius: 35, padding: 25, height: '80%' },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
+    modalTitle: { fontSize: 14, fontWeight: '900', color: '#FFF', letterSpacing: 1.5 },
+    inputLabel: { fontSize: 12, color: '#9CA3AF', fontWeight: 'bold', marginBottom: 10, marginTop: 10 },
+    fieldSelectBtn: { paddingHorizontal: 15, paddingVertical: 10, borderRadius: 12, backgroundColor: '#374151', marginRight: 10, borderWidth: 1, borderColor: '#4B5563' },
+    fieldSelectBtnActive: { backgroundColor: '#10B981', borderColor: '#10B981' },
+    fieldSelectTxt: { color: '#9CA3AF', fontSize: 12, fontWeight: 'bold' },
+    statusSelectRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
+    statusOptBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: '#374151', borderWidth: 1, borderColor: '#4B5563' },
+    statusOptTxt: { color: '#9CA3AF', fontSize: 11, fontWeight: 'bold' },
+    row: { flexDirection: 'row' },
+    warningBox: { backgroundColor: 'rgba(245,158,11,0.1)', padding: 20, borderRadius: 15, alignItems: 'center', borderColor: '#F59E0B', borderWidth: 1 },
+    warningText: { color: '#FCD34D', fontSize: 14, textAlign: 'center', marginBottom: 15 },
+    overlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+    smallModal: { width: '100%', backgroundColor: '#1F2937', borderRadius: 20, padding: 25 },
+    flexBtn: { flex: 1, padding: 15, borderRadius: 12, alignItems: 'center', marginHorizontal: 5, marginTop: 10 },
+    btnTxt: { color: '#FFF', fontWeight: 'bold', fontSize: 14 },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    emptyBox: { alignItems: 'center', marginTop: 80, opacity: 0.5 },
+    emptyTxt: { color: '#9CA3AF', marginTop: 15, fontWeight: '700', fontSize: 14 }
 });

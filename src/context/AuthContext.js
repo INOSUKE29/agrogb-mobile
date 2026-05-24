@@ -1,50 +1,46 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../services/supabaseClient';
-import { AuthService } from '../services/authService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const AuthContext = createContext();
+const AuthContext = createContext({});
 
-export const AuthProvider = ({ children }) => {
-    const [userSession, setUserSession] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
+export function AuthProvider({ children }) {
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const checkSession = async () => {
-            try {
-                const session = await AuthService.checkSession();
-                setUserSession(session);
-            } catch (e) {
-                console.error("AuthContext erro:", e);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        checkSession();
-
-        const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                setUserSession(prev => session ? {
-                    ...prev,
-                    userId: session.user.id,
-                    email: session.user.email,
-                    token: session.access_token
-                } : null);
-            } else if (event === 'SIGNED_OUT') {
-                setUserSession(null);
-            }
-        });
-
-        return () => {
-            authListener?.subscription.unsubscribe();
-        };
+        loadSession();
     }, []);
 
+    const loadSession = async () => {
+        try {
+            const session = await AsyncStorage.getItem('user_session');
+            if (session) {
+                setUser(JSON.parse(session));
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const login = async (userData) => {
+        setUser(userData);
+        await AsyncStorage.setItem('user_session', JSON.stringify(userData));
+    };
+
+    const logout = async () => {
+        setUser(null);
+        await AsyncStorage.removeItem('user_session');
+    };
+
+    const role = user?.role || (user?.nivel === 'ADM' ? 'ADMIN' : (user?.nivel === 'AGRONOMO' ? 'AGRONOMO' : (user?.nivel === 'STAFF' ? 'STAFF' : 'AGRICULTOR')));
+
     return (
-        <AuthContext.Provider value={{ userSession, setUserSession, isLoading }}>
+        <AuthContext.Provider value={{ user, login, logout, loading, role }}>
             {children}
         </AuthContext.Provider>
     );
-};
+}
 
 export const useAuth = () => useContext(AuthContext);

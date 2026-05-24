@@ -1,102 +1,53 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
-export default function InputField({
-    label,
-    value,
-    onChangeText,
-    placeholder,
-    icon,
-    secureTextEntry = false,
-    error,
-    keyboardType = 'default',
-    autoCapitalize = 'none',
-    editable = true
+/**
+ * InputField - Campo de Entrada de Dados Customizado 📝🌾
+ * Componente unificado para formulários com visualização de ícones,
+ * rótulos legíveis, e suporte de contraste calibrado para ambos os temas.
+ */
+export default function InputField({ 
+    label, icon, value, onChangeText, placeholder, 
+    secureTextEntry, keyboardType, maxLength, style, ...props 
 }) {
-    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const { theme } = useTheme();
+    const colors = theme?.colors || {};
 
     return (
         <View style={styles.container}>
-            {label && <Text style={styles.label}>{label}</Text>}
-            <View style={[styles.inputContainer, error && styles.inputError]}>
-                {icon && (
-                    <Ionicons
-                        name={icon}
-                        size={20}
-                        color={error ? '#EF4444' : '#6B7280'}
-                        style={styles.icon}
-                    />
-                )}
+            {label && <Text style={[styles.label, { color: 'rgba(255,255,255,0.6)' }]}>{label}</Text>}
+            <View style={[styles.inputContainer, { backgroundColor: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }]}>
+                {icon && <Ionicons name={icon} size={18} color="rgba(255,255,255,0.4)" style={styles.icon} />}
                 <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: '#FFF' }, style]}
                     value={value}
                     onChangeText={onChangeText}
                     placeholder={placeholder}
-                    placeholderTextColor="#9CA3AF"
-                    secureTextEntry={secureTextEntry && !isPasswordVisible}
+                    placeholderTextColor="rgba(255,255,255,0.25)"
+                    secureTextEntry={secureTextEntry}
                     keyboardType={keyboardType}
-                    autoCapitalize={autoCapitalize}
-                    editable={editable}
+                    maxLength={maxLength}
+                    autoCapitalize="none"
+                    {...props}
                 />
-                {secureTextEntry && (
-                    <TouchableOpacity
-                        onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-                        style={styles.eyeIcon}
-                    >
-                        <Ionicons
-                            name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
-                            size={20}
-                            color="#6B7280"
-                        />
-                    </TouchableOpacity>
-                )}
             </View>
-            {error && <Text style={styles.errorText}>{error}</Text>}
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        marginBottom: 16
-    },
-    label: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#374151',
-        marginBottom: 8
-    },
+    container: { marginBottom: 16 },
+    label: { fontSize: 13, fontWeight: '700', marginBottom: 8, letterSpacing: 0.5 },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F9FAFB',
-        borderWidth: 1.5,
-        borderColor: '#E5E7EB',
+        height: 52,
         borderRadius: 12,
-        paddingHorizontal: 12,
-        height: 52
+        borderWidth: 1,
+        paddingHorizontal: 16,
     },
-    inputError: {
-        borderColor: '#EF4444',
-        backgroundColor: '#FEF2F2'
-    },
-    icon: {
-        marginRight: 10
-    },
-    input: {
-        flex: 1,
-        fontSize: 15,
-        color: '#1F2937',
-        paddingVertical: 0
-    },
-    eyeIcon: {
-        padding: 4
-    },
-    errorText: {
-        fontSize: 12,
-        color: '#EF4444',
-        marginTop: 6,
-        marginLeft: 4
-    }
+    icon: { marginRight: 12 },
+    input: { flex: 1, fontSize: 15, fontWeight: '600' }
 });

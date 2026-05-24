@@ -1,55 +1,55 @@
-import { useState, useCallback, useEffect } from 'react';
-import { AnalyticsService } from '../services/AnalyticsService';
-import { LoggingService } from '../../system/services/LoggingService';
+import React, { useState, useEffect, useCallback } from 'react';
+import { AnalyticsService } from '../../../services/AnalyticsService';
 
 /**
- * useAnalytics Hook (Diamond Pro)
- * Gerencia o estado dos dados analíticos para a Dashboard e Relatórios.
+ * useAnalytics - Hook de Inteligência Analítica e BI 📊🌱
+ * Gerencia o estado de carregamento, recarregamento e busca 
+ * dados financeiros e produtividade direto do AnalyticsService.
  */
 export function useAnalytics() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [stats, setStats] = useState({
-        roi: 0,
-        receita: 0,
-        despesa: 0,
-        harvest: { percentual: 0, colhido: 0, estimado: 0 },
-        anomalies: []
-    });
+    const [health, setHealth] = useState({ receita: 0, despesa: 0, lucro: 0, margem: 0 });
+    const [productivity, setProductivity] = useState([]);
+    const [anomalies, setAnomalies] = useState([]);
 
-    const loadData = useCallback(async () => {
+    const fetchData = useCallback(async () => {
         try {
-            setLoading(true);
-            const data = await AnalyticsService.getDashboardStats();
-            
-            if (data) {
-                const anomalies = await AnalyticsService.getAnomalies();
-                setStats({
-                    ...data,
-                    anomalies
-                });
-            }
+            const [healthData, prodData, trendsData] = await Promise.all([
+                AnalyticsService.getFinancialHealth(),
+                AnalyticsService.getTalhaoProductivity(),
+                AnalyticsService.detectProductionTrends()
+            ]);
+            setHealth(healthData || { receita: 0, despesa: 0, lucro: 0, margem: 0 });
+            setProductivity(prodData || []);
+            setAnomalies(trendsData || []);
         } catch (error) {
-            await LoggingService.logError('useAnalytics', 'loadData', error);
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
+            console.error("[useAnalytics] Erro ao carregar BI:", error);
         }
     }, []);
 
-    useEffect(() => {
-        loadData();
-    }, [loadData]);
+    const init = useCallback(async () => {
+        setLoading(true);
+        await fetchData();
+        setLoading(false);
+    }, [fetchData]);
 
-    const refresh = () => {
+    const refresh = useCallback(async () => {
         setRefreshing(true);
-        loadData();
-    };
+        await fetchData();
+        setRefreshing(false);
+    }, [fetchData]);
+
+    useEffect(() => {
+        init();
+    }, [init]);
 
     return {
-        ...stats,
         loading,
         refreshing,
-        refresh
+        refresh,
+        health,
+        productivity,
+        anomalies
     };
 }

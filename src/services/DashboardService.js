@@ -1,135 +1,179 @@
-import { executeQuery } from '../database/database';
-import { supabase } from './supabaseClient';
-
 /**
- * DashboardService - Camada de Lógica para a Home 🏛️📊
- * Isola as queries SQL da Interface e centraliza indicadores.
+ * DashboardService
+ * Centraliza a lógica de busca de dados para o Dashboard Executivo do banco de dados local.
  */
+import { executeQuery } from '../database/database';
+
 export const DashboardService = {
     /**
-     * Obtém todas as estatísticas para a HomeScreen
+     * Busca dados consolidados do dashboard do banco de dados local
      */
-    getStats: async () => {
+    getDashboardData: async (propertyId = 'all', period = 'month') => {
         try {
-            const today = new Date().toISOString().split('T')[0];
-            const firstDayOfMonth = today.substring(0, 8) + '01';
+            const date = new Date();
+            let startDate;
 
-            // 1. TENTA BUSCAR BI DO SUPABASE (NÍVEL ERP) 🚀
-            let biData = { total_vendas: 0, total_custos: 0, lucro_liquido: 0 };
-            try {
-                const { data } = await supabase.from('view_financeiro_resumo').select('*').limit(1);
-                if (data && data[0]) biData = data[0];
-            } catch (e) { console.log('[DashboardService] Fallback para SQLite para BI'); }
-
-            const [
-                resColheita,
-                resVendas,
-                resPlantio,
-                resMaquinas,
-                resCustosMes,
-                resComprasMes,
-                resVendasMes,
-                resDescarte
-            ] = await Promise.all([
-                // 1. Colheita Hoje (KG)
-                executeQuery(`SELECT SUM(quantidade) as total FROM colheitas WHERE data = ? AND is_deleted = 0`, [today]),
-                // 2. Vendas Hoje (R$)
-                executeQuery(`SELECT SUM(valor) as total FROM vendas WHERE data = ? AND is_deleted = 0`, [today]),
-                // 3. Plantio Ativo-
-                executeQuery(`SELECT COUNT(*) as total FROM plantio WHERE is_deleted = 0`),
-                // 4. Máquinas em Alerta de Revisão
-                executeQuery(`SELECT COUNT(*) as total FROM maquinas WHERE horimetro_atual >= intervalo_revisao AND is_deleted = 0`),
-                // 5. Custos (Tabela custos)
-                executeQuery('SELECT SUM(valor_total) as total FROM custos WHERE data >= ? AND is_deleted = 0', [firstDayOfMonth]),
-                // 6. Compras (Tabela compras)
-                executeQuery('SELECT SUM(valor) as total FROM compras WHERE data >= ? AND is_deleted = 0', [firstDayOfMonth]),
-                // 7. Vendas do Mês
-                executeQuery('SELECT SUM(valor) as total FROM vendas WHERE data >= ? AND is_deleted = 0', [firstDayOfMonth]),
-                // 8. Perdas/Descartes
-                executeQuery('SELECT SUM(quantidade) as total FROM descarte WHERE data >= ? AND is_deleted = 0', [firstDayOfMonth])
-            ]);
-
-            const colheitaHoje = resColheita.rows.item(0).total || 0;
-            const vendasHoje = resVendas.rows.item(0).total || 0;
-            const plantioAtivo = resPlantio.rows.item(0).total || 0;
-            const maquinasAlert = resMaquinas.rows.item(0).total || 0;
+            if (period === 'month') {
+                date.setDate(date.getDate() - 30);
+                startDate = date.toISOString().split('T')[0];
+            } else if (period === 'year') {
+                date.setFullYear(date.getFullYear() - 1);
+                startDate = date.toISOString().split('T')[0];
+            } else if (period === 'safra') {
+                // Safra padrão: últimos 6 meses (exemplo)
+                date.setMonth(date.getMonth() - 6);
+                startDate = date.toISOString().split('T')[0];
+            } else {
+                // All time (fallback)
+                startDate = '1970-01-01';
+            }
             
-            // Lógica de saldo: BI se disponível, senão SQLite
-            const vendasMes = biData.total_vendas || resVendasMes.rows.item(0).total || 0;
-            const custosMes = biData.total_custos || (resCustosMes.rows.item(0).total || 0) + (resComprasMes.rows.item(0).total || 0);
-            const perdasMes = resDescarte.rows.item(0).total || 0;
-
-            const syncPendentes = await DashboardService.getSyncCount();
-
-            return {
-                colheitaHoje,
-                vendasHoje,
-                plantioAtivo,
-                maquinasAlert,
-                custosMes,
-                vendasMes,
-                saldo: biData.lucro_liquido || (vendasMes - custosMes),
-                perdasMes,
-                syncPendentes
-            };
-        } catch (error) {
-            console.error('[DashboardService] Erro ao carregar estatísticas:', error);
-            return {
-                colheitaHoje: 0,
-                vendasHoje: 0,
-                plantioAtivo: 0,
-                maquinasAlert: 0,
-                custosMes: 0,
-                vendasMes: 0,
-                saldo: 0,
-                perdasMes: 0,
-                syncPendentes: 0
-            };
-        }
-    },
-
-    /**
-     * Conta quantos registros estão pendentes de sincronização
-     */
-    getSyncCount: async () => {
-        let total = 0;
-        const syncTables = [
-            'usuarios', 'colheitas', 'vendas', 'compras', 'plantio', 'custos',
-            'clientes', 'culturas', 'maquinas', 'caderno_notas', 'areas', 'monitoramento_entidade'
-        ];
-
-        try {
-            const counts = await Promise.all(
-                syncTables.map(table => 
-                    executeQuery(`SELECT COUNT(*) as c FROM ${table} WHERE sync_status = 0 OR sync_status = 'pending'`).catch(() => ({ rows: { item: () => ({ c: 0 }) } }))
-                )
+            // 1. FINANCEIRO (Receitas de Vendas)
+            const resVendas = await executeQuery(
+                `SELECT SUM(valor * quantidade) as total FROM vendas WHERE data >= ? AND is_deleted = 0`, 
+                [startDate]
             );
-            total = counts.reduce((acc, curr) => acc + (curr.rows.item(0).c || 0), 0);
-        } catch (error) {
-            console.warn('[DashboardService] Erro ao contar pendências sync:', error.message);
-        }
+            const revenue = resVendas.rows.item(0).total || 0;
 
-        return total;
+            // 2. FINANCEIRO (Despesas de Compras e Custos)
+            const resCompras = await executeQuery(
+                `SELECT SUM(valor) as total FROM compras WHERE data >= ? AND is_deleted = 0`, 
+                [startDate]
+            );
+            const resCustos = await executeQuery(
+                `SELECT SUM(valor_total) as total FROM custos WHERE data >= ? AND is_deleted = 0`, 
+                [startDate]
+            );
+            const expenses = (resCompras.rows.item(0).total || 0) + (resCustos.rows.item(0).total || 0);
+            
+            const netResult = revenue - expenses;
+
+            // 3. COLHEITA (Produção)
+            const resColheita = await executeQuery(
+                `SELECT SUM(quantidade) as total FROM colheitas WHERE data >= ? AND is_deleted = 0`, 
+                [startDate]
+            );
+            const producaoTotal = resColheita.rows.item(0).total || 0;
+
+            // 4. ATIVIDADES RECENTES (Unificado)
+            const activities = [];
+            
+            // Vendas Recentes
+            const resRecVendas = await executeQuery(
+                `SELECT * FROM vendas WHERE is_deleted = 0 ORDER BY data DESC, id DESC LIMIT 2`
+            );
+            for(let i=0; i<resRecVendas.rows.length; i++) {
+                const item = resRecVendas.rows.item(i);
+                activities.push({
+                    id: `v-${item.uuid}`,
+                    type: 'finance',
+                    title: 'Venda: ' + item.produto,
+                    description: item.cliente,
+                    value: `+ R$ ${(item.valor * item.quantidade).toFixed(2)}`,
+                    time: item.data,
+                    icon: 'cash-outline'
+                });
+            }
+
+            // Colheitas Recentes
+            const resRecColheitas = await executeQuery(
+                `SELECT * FROM colheitas WHERE is_deleted = 0 ORDER BY data DESC, id DESC LIMIT 1`
+            );
+            for(let i=0; i<resRecColheitas.rows.length; i++) {
+                const item = resRecColheitas.rows.item(i);
+                activities.push({
+                    id: `c-${item.uuid}`,
+                    type: 'field',
+                    title: 'Colheita: ' + item.cultura,
+                    description: item.produto,
+                    value: `${item.quantidade} kg`,
+                    time: item.data,
+                    icon: 'leaf-outline'
+                });
+            }
+
+            // 5. ALERTAS INTELIGENTES
+            const alerts = [];
+            
+            // Alerta: Estoque Baixo
+            const resEstoque = await executeQuery('SELECT * FROM estoque WHERE quantidade < 10');
+            if (resEstoque.rows.length > 0) {
+                alerts.push({
+                    id: 'a-stock',
+                    type: 'warning',
+                    title: 'Estoque Baixo',
+                    message: `Existem ${resEstoque.rows.length} itens com nível crítico.`,
+                    screen: 'Estoque'
+                });
+            }
+
+            // Alerta: Irrigação Pendente (Exemplo: se não houve irrigação hoje)
+            const today = new Date().toISOString().split('T')[0];
+            // Nota: Se a tabela irrigacao não existir, isso vai dar erro, mas o try/catch segura.
+            try {
+                const resIrrig = await executeQuery('SELECT COUNT(*) as c FROM irrigacao WHERE data = ?', [today]);
+                if (resIrrig.rows.item(0).c === 0) {
+                    alerts.push({
+                        id: 'a-irrig',
+                        type: 'info',
+                        title: 'Irrigação Diária',
+                        message: 'Nenhum turno de irrigação registrado hoje.',
+                        screen: 'Irrigacao'
+                    });
+                }
+            } catch (e) {
+                // Tabela irrigação pode não existir ainda no esquema
+            }
+
+            if (alerts.length === 0) {
+                alerts.push({ id: 'a1', type: 'success', title: 'Operação Normal', message: 'Tudo em ordem com a sua fazenda.', screen: 'Home' });
+            }
+
+            return {
+                financial: {
+                    revenue,
+                    expenses,
+                    netResult,
+                    trend: 0,
+                    trendType: netResult >= 0 ? 'up' : 'down'
+                },
+                kpis: [
+                    { id: '1', title: 'Produção Total', value: `${producaoTotal.toLocaleString()} kg`, icon: 'leaf', trend: '---', trendType: 'up', color: '#10B981' },
+                    { id: '2', title: 'Receita Operacional', value: `R$ ${revenue.toLocaleString()}`, icon: 'cash', trend: '---', trendType: 'up', color: '#3B82F6' },
+                    { id: '3', title: 'Despesas Gerais', value: `R$ ${expenses.toLocaleString()}`, icon: 'cart', trend: '---', trendType: 'down', color: '#EF4444' },
+                    { id: '4', title: 'Margem Líquida', value: revenue > 0 ? `${((netResult / revenue) * 100).toFixed(1)}%` : '0%', icon: 'pie-chart', trend: '---', trendType: 'up', color: '#8B5CF6' }
+                ],
+                alerts: alerts,
+                activities: activities.sort((a,b) => b.time.localeCompare(a.time)),
+                chartData: await DashboardService.getProductionChartData()
+            };
+        } catch (error) {
+            console.error('Erro ao buscar dados reais do dashboard:', error);
+            throw error;
+        }
     },
 
-    getUserProfile: async () => {
+    getProductionChartData: async () => {
         try {
-            // 1. Tenta buscar da tabela principal de usuários (v1.0.1 fix)
-            const resUser = await executeQuery('SELECT nome_completo as name FROM usuarios WHERE nome_completo IS NOT NULL LIMIT 1');
-            if (resUser.rows.length > 0) {
-                return resUser.rows.item(0);
+            const labels = [];
+            const data = [];
+            
+            for(let i=6; i>=0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dayStr = d.toISOString().split('T')[0];
+                labels.push(dayStr.split('-')[2] + '/' + dayStr.split('-')[1]);
+                
+                const res = await executeQuery(`SELECT SUM(quantidade) as total FROM colheitas WHERE data = ? AND is_deleted = 0`, [dayStr]);
+                data.push(res.rows.item(0).total || 0);
             }
 
-            // 2. Fallback para user_profiles
-            const res = await executeQuery('SELECT name FROM user_profiles LIMIT 1');
-            if (res.rows.length > 0) {
-                return res.rows.item(0);
-            }
-
-            return { name: 'Produtor AgroGB' };
-        } catch (error) {
-            if (__DEV__) console.warn('[DashboardService] Erro ao buscar perfil:', error.message);
-            return { name: 'Produtor AgroGB' };
+            return {
+                labels,
+                datasets: [{ data }]
+            };
+        } catch (e) {
+            return { labels: ['Erro'], datasets: [{ data: [0] }] };
         }
     }
 };

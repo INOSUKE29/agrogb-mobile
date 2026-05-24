@@ -1,63 +1,45 @@
-import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
-
-const isWeb = Platform.OS === 'web';
 
 /**
- * StorageHelper — Cross-platform persistent storage
- * v1.2.0: Automatically switches between SecureStore (Native) and AsyncStorage (Web)
+ * StorageHelper - Auxiliar de Armazenamento Local 📦💾
+ * Abstrai operações comuns do AsyncStorage com tratamento de erros integrado
+ * e resiliência a falhas de serialização.
  */
 export const StorageHelper = {
-    async save(key, value) {
+    /**
+     * Recupera um valor do armazenamento
+     */
+    get: async (key) => {
         try {
-            const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
-            if (isWeb) {
-                await AsyncStorage.setItem(key, stringValue);
-            } else {
-                // Correct SecureStore method
-                await SecureStore.setItemAsync(key, stringValue);
-            }
-            return true;
-        } catch (e) {
-            console.error(`[StorageHelper] SAVE_ERROR (${key}):`, e.message);
-            return false;
-        }
-    },
-
-    async get(key) {
-        try {
-            let data = null;
-            if (isWeb) {
-                data = await AsyncStorage.getItem(key);
-            } else {
-                // Correct SecureStore method
-                data = await SecureStore.getItemAsync(key);
-            }
-            
-            if (!data) return null;
-            
-            try {
-                return JSON.parse(data);
-            } catch {
-                return data; // Return as string if not JSON
-            }
-        } catch (e) {
-            console.error(`[StorageHelper] GET_ERROR (${key}):`, e.message);
+            return await AsyncStorage.getItem(key);
+        } catch (error) {
+            console.error(`[StorageHelper] Erro ao buscar chave ${key}:`, error);
             return null;
         }
     },
 
-    async remove(key) {
+    /**
+     * Salva um valor no armazenamento
+     */
+    save: async (key, value) => {
         try {
-            if (isWeb) {
-                await AsyncStorage.removeItem(key);
-            } else {
-                await SecureStore.deleteItemAsync(key);
-            }
+            await AsyncStorage.setItem(key, String(value));
             return true;
-        } catch (e) {
-            console.error(`[StorageHelper] REMOVE_ERROR (${key}):`, e.message);
+        } catch (error) {
+            console.error(`[StorageHelper] Erro ao salvar chave ${key}:`, error);
+            return false;
+        }
+    },
+
+    /**
+     * Remove uma chave do armazenamento
+     */
+    remove: async (key) => {
+        try {
+            await AsyncStorage.removeItem(key);
+            return true;
+        } catch (error) {
+            console.error(`[StorageHelper] Erro ao remover chave ${key}:`, error);
             return false;
         }
     }

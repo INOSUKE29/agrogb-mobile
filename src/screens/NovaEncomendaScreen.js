@@ -1,7 +1,7 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, 
-    Alert, SafeAreaView, Platform 
+    Alert, SafeAreaView, Platform, Dimensions 
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { executeQuery } from '../database/database';
@@ -9,7 +9,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { LinearGradient } from 'expo-linear-gradient';
-
+import { BlurView } from 'expo-blur';
+import SmartAutocomplete from '../components/common/SmartAutocomplete';
+import { ClientLibraryService, ProductLibraryService } from '../services/LibraryServices';
 
 export default function NovaEncomendaScreen({ route }) {
     const navigation = useNavigation();
@@ -17,15 +19,19 @@ export default function NovaEncomendaScreen({ route }) {
     const [clientes, setClientes] = useState([]);
     const [produtos, setProdutos] = useState([]);
 
-    const [clienteId, setClienteId] = useState('');
-    const [produtoId, setProdutoId] = useState('');
+    const [clienteVal, setClienteVal] = useState(null);
+    const [produtoVal, setProdutoVal] = useState(null);
+    
+    const clienteId = clienteVal?.uuid || '';
+    const produtoId = produtoVal?.uuid || '';
+    
     const [unidade, setUnidade] = useState('CAIXA');
     const [quantidade, setQuantidade] = useState('');
     const [valorUnitario, setValorUnitario] = useState('');
     const [dataPrevista, setDataPrevista] = useState('');
     const [observacao, setObservacao] = useState('');
 
-    // EdiÃ§Ã£o
+    // Edição
     const [editingId, setEditingId] = useState(null);
     const [oldQuantidadeTotal, setOldQuantidadeTotal] = useState(0);
     const [oldQuantidadeRestante, setOldQuantidadeRestante] = useState(0);
@@ -33,12 +39,16 @@ export default function NovaEncomendaScreen({ route }) {
     const [activeField, setActiveField] = useState(null);
 
     useEffect(() => {
-        loadData().then(() => {
+        loadData().then(({ clientes: listCli, produtos: listProd }) => {
             if (route.params?.encomenda) {
                 const enc = route.params.encomenda;
                 setEditingId(enc.id);
-                setClienteId(enc.cliente_id);
-                setProdutoId(enc.produto_id);
+                
+                const matchedCli = listCli.find(c => c.uuid === enc.cliente_id);
+                const matchedProd = listProd.find(p => p.uuid === enc.produto_id);
+                
+                setClienteVal(matchedCli || (enc.cliente_id ? { uuid: enc.cliente_id, nome: 'CLIENTE SELECIONADO' } : null));
+                setProdutoVal(matchedProd || (enc.produto_id ? { uuid: enc.produto_id, nome: 'PRODUTO SELECIONADO' } : null));
                 setUnidade(enc.unidade);
                 setQuantidade(enc.quantidade_total.toString());
                 setValorUnitario(enc.valor_unitario ? enc.valor_unitario.toString() : '');
@@ -50,31 +60,42 @@ export default function NovaEncomendaScreen({ route }) {
         });
     }, [route.params]);
 
+    // Autopreenchimento ao escolher produto
+    useEffect(() => {
+        if (produtoVal && !editingId) {
+            setUnidade(produtoVal.unidade || 'CAIXA');
+            setValorUnitario(produtoVal.preco_venda ? produtoVal.preco_venda.toString() : '');
+        }
+    }, [produtoVal, editingId]);
+
     const loadData = async () => {
         try {
-            const resCli = await executeQuery('SELECT uuid, nome FROM clientes WHERE is_deleted = 0 ORDER BY nome');
+            const resCli = await executeQuery('SELECT * FROM clientes WHERE is_deleted = 0 ORDER BY nome');
             const dataCli = [];
             for (let i = 0; i < resCli.rows.length; i++) dataCli.push(resCli.rows.item(i));
             setClientes(dataCli);
 
-            const resProd = await executeQuery('SELECT uuid, nome FROM cadastro WHERE is_deleted = 0 AND vendavel = 1 ORDER BY nome');
+            const resProd = await executeQuery('SELECT * FROM cadastro WHERE is_deleted = 0 AND vendavel = 1 ORDER BY nome');
             const dataProd = [];
             for (let i = 0; i < resProd.rows.length; i++) dataProd.push(resProd.rows.item(i));
             setProdutos(dataProd);
-        } catch {
-            Alert.alert('Erro', 'NÃ£o foi possÃ­vel carregar as listas.');
+
+            return { clientes: dataCli, produtos: dataProd };
+        } catch (e) {
+            Alert.alert('Erro', 'Não foi possível carregar as listas.');
+            return { clientes: [], produtos: [] };
         }
     };
 
     const handleSalvar = async () => {
         if (!clienteId || !produtoId || !quantidade) {
-            Alert.alert('AtenÃ§Ã£o', 'Preencha Cliente, Produto e Quantidade.');
+            Alert.alert('Atenção', 'Preencha Cliente, Produto e Quantidade.');
             return;
         }
 
         const qtdTotal = parseFloat(quantidade.replace(',', '.'));
         if (isNaN(qtdTotal) || qtdTotal <= 0) {
-            Alert.alert('AtenÃ§Ã£o', 'Quantidade invÃ¡lida.');
+            Alert.alert('Atenção', 'Quantidade inválida.');
             return;
         }
 
@@ -106,13 +127,13 @@ export default function NovaEncomendaScreen({ route }) {
             }
             navigation.goBack();
         } catch (error) {
-            Alert.alert('Erro', 'NÃ£o foi possÃ­vel salvar a encomenda.');
+            Alert.alert('Erro', 'Não foi possível salvar a encomenda.');
         }
     };
 
     const handleExcluir = () => {
         Alert.alert('Excluir', 'Deseja realmente apagar esta encomenda?', [
-            { text: 'NÃ£o', style: 'cancel' },
+            { text: 'Não', style: 'cancel' },
             {
                 text: 'Sim',
                 style: 'destructive',
@@ -126,7 +147,7 @@ export default function NovaEncomendaScreen({ route }) {
 
     return (
         <SafeAreaView style={styles.container}>
-            
+            <LinearGradient colors={['#040914', '#0A1220']} style={StyleSheet.absoluteFill} />
             
             {/* Minimalist Neo-Brutal Header */}
             <View style={styles.header}>
@@ -135,58 +156,48 @@ export default function NovaEncomendaScreen({ route }) {
                 </TouchableOpacity>
                 <View style={styles.headerTextContainer}>
                     <Text style={styles.headerTitle}>{editingId ? 'Editar Encomenda' : 'Nova Encomenda'}</Text>
-                    <Text style={styles.headerSubtitle}>Setup de OperaÃ§Ã£o LogÃ­stica</Text>
+                    <Text style={styles.headerSubtitle}>Setup de Operação Logística</Text>
                 </View>
                 <View style={{ width: 44 }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                 
-                <View intensity={40} tint="dark" style={styles.glassCard}>
+                <BlurView intensity={40} tint="dark" style={styles.glassCard}>
                     {/* Linha de brilho no topo do card */}
                     <LinearGradient colors={['rgba(52, 211, 153, 0.4)', 'transparent']} style={styles.cardTopGlow} />
 
                     <View style={styles.cardInner}>
                         
                         {/* CLIENTE */}
-                        <View style={styles.fieldGroup}>
-                            <View style={styles.labelRow}>
-                                <Ionicons name="person-circle-outline" size={16} color="#34D399" />
-                                <Text style={styles.label}>Cliente Destino <Text style={{color: '#F87171'}}>*</Text></Text>
-                            </View>
-                            <View style={[styles.inputContainer, activeField === 'cliente' && styles.inputContainerActive]}>
-                                <Picker
-                                    selectedValue={clienteId}
-                                    onValueChange={(val) => setClienteId(val)}
-                                    style={styles.picker}
-                                    onFocus={() => setActiveField('cliente')}
-                                    onBlur={() => setActiveField(null)}
-                                >
-                                    <Picker.Item label="Selecione o cliente da rota..." value="" color="#94A3B8" />
-                                    {clientes.map(c => <Picker.Item key={c.uuid} label={c.nome} value={c.uuid} color="#FFF" />)}
-                                </Picker>
-                            </View>
-                        </View>
+                        <SmartAutocomplete
+                            label="Cliente Destino *"
+                            value={clienteVal}
+                            onSelect={setClienteVal}
+                            service={ClientLibraryService}
+                            title="SELECIONAR CLIENTE"
+                            placeholder="Selecione o cliente da rota..."
+                            icon="person-circle-outline"
+                            quickAddFields={[
+                                { key: 'nome', label: 'Nome Completo', placeholder: 'Ex: Bruno Santos' },
+                                { key: 'telefone', label: 'Telefone', placeholder: 'Ex: (11) 99999-9999', keyboardType: 'phone-pad' }
+                            ]}
+                        />
 
                         {/* PRODUTO */}
-                        <View style={styles.fieldGroup}>
-                            <View style={styles.labelRow}>
-                                <Ionicons name="cube-outline" size={16} color="#3B82F6" />
-                                <Text style={styles.label}>Produto/Carga <Text style={{color: '#F87171'}}>*</Text></Text>
-                            </View>
-                            <View style={[styles.inputContainer, activeField === 'produto' && styles.inputContainerActive]}>
-                                <Picker
-                                    selectedValue={produtoId}
-                                    onValueChange={(val) => setProdutoId(val)}
-                                    style={styles.picker}
-                                    onFocus={() => setActiveField('produto')}
-                                    onBlur={() => setActiveField(null)}
-                                >
-                                    <Picker.Item label="O que vamos entregar?..." value="" color="#94A3B8" />
-                                    {produtos.map(p => <Picker.Item key={p.uuid} label={p.nome} value={p.uuid} color="#FFF" />)}
-                                </Picker>
-                            </View>
-                        </View>
+                        <SmartAutocomplete
+                            label="Produto/Carga *"
+                            value={produtoVal}
+                            onSelect={setProdutoVal}
+                            service={ProductLibraryService}
+                            title="SELECIONAR PRODUTO"
+                            placeholder="O que vamos entregar?..."
+                            icon="cube-outline"
+                            quickAddFields={[
+                                { key: 'nome', label: 'Nome do Produto', placeholder: 'Ex: Morango Padrão' },
+                                { key: 'tipo', label: 'Tipo', placeholder: 'Ex: PRODUTO', defaultValue: 'PRODUTO' }
+                            ]}
+                        />
 
                         {/* UNIDADE E QUANTIDADE */}
                         <View style={styles.row}>
@@ -279,12 +290,12 @@ export default function NovaEncomendaScreen({ route }) {
                         <View style={styles.fieldGroup}>
                             <View style={styles.labelRow}>
                                 <Ionicons name="document-text-outline" size={16} color="#94A3B8" />
-                                <Text style={styles.label}>InstruÃ§Ãµes Relevantes</Text>
+                                <Text style={styles.label}>Instruções Relevantes</Text>
                             </View>
                             <View style={[styles.inputContainer, styles.textAreaContainer, activeField === 'obs' && styles.inputContainerActive]}>
                                 <TextInput
                                     style={styles.textArea}
-                                    placeholder="InformaÃ§Ãµes para a transportadora ou motorista..."
+                                    placeholder="Informações para a transportadora ou motorista..."
                                     placeholderTextColor="#475569"
                                     multiline
                                     numberOfLines={4}
@@ -300,7 +311,7 @@ export default function NovaEncomendaScreen({ route }) {
                         <TouchableOpacity style={styles.saveBtnOuter} activeOpacity={0.8} onPress={handleSalvar}>
                             <LinearGradient colors={['#10B981', '#059669']} style={styles.saveBtnGradient} start={{x:0, y:0}} end={{x:1, y:1}}>
                                 <Ionicons name="rocket-outline" size={20} color="#FFF" />
-                                <Text style={styles.saveBtnText}>{editingId ? 'ATUALIZAR DADOS' : 'LANÃ‡AR ENCOMENDA'}</Text>
+                                <Text style={styles.saveBtnText}>{editingId ? 'ATUALIZAR DADOS' : 'LANÇAR ENCOMENDA'}</Text>
                             </LinearGradient>
                         </TouchableOpacity>
 
@@ -311,7 +322,7 @@ export default function NovaEncomendaScreen({ route }) {
                             </TouchableOpacity>
                         )}
                     </View>
-                </View>
+                </BlurView>
             </ScrollView>
         </SafeAreaView>
     );
@@ -339,7 +350,7 @@ const styles = StyleSheet.create({
         overflow: 'hidden', 
         borderWidth: 1, 
         borderColor: 'rgba(255, 255, 255, 0.08)',
-        backgroundColor: 'rgba(15, 23, 42, 0.4)', // Base escura translÃºcida
+        backgroundColor: 'rgba(15, 23, 42, 0.4)', // Base escura translúcida
     },
     cardTopGlow: { height: 1.5, width: '100%', position: 'absolute', top: 0 },
     cardInner: { padding: 24 },
@@ -437,4 +448,3 @@ const styles = StyleSheet.create({
     },
     deleteBtnText: { color: '#F87171', fontSize: 14, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }
 });
-

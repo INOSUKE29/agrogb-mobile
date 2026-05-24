@@ -1,174 +1,305 @@
-﻿import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, TextInput, StatusBar, ActivityIndicator } from 'react-native';
-import VendaService from '../services/VendaService';
-import ProductModal from '../modules/inventory/components/ProductModal';
-import ClientModal from '../modules/finance/components/ClientModal';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, StatusBar, SafeAreaView } from 'react-native';
+import { v4 as uuidv4 } from 'uuid';
+import { insertVenda, getVendasRecentes, deleteVenda, updateVenda, executeQuery } from '../database/database';
+import SmartAutocomplete from '../components/common/SmartAutocomplete';
+import { ClientLibraryService, ProductLibraryService } from '../services/LibraryServices';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext';
+
+// Design System
+import Card from '../components/common/Card';
+import MetricCard from '../components/common/MetricCard';
+import AgroButton from '../components/common/AgroButton';
+import AgroInput from '../components/common/AgroInput';
 
 export default function VendasScreen({ navigation }) {
+    const { theme } = useTheme();
+    const activeColors = theme?.colors || {};
+    
     const [cliente, setCliente] = useState('');
-    const [clienteId, setClienteId] = useState(null);
     const [produto, setProduto] = useState('');
     const [quantidade, setQuantidade] = useState('');
-    const [precoKg, setPrecoKg] = useState('');
-    const [view, setView] = useState('LIST');
+    const [valor, setValor] = useState('');
+    const [observacao, setObservacao] = useState('');
+    const [editingUuid, setEditingUuid] = useState(null);
+
+    // Data State
     const [history, setHistory] = useState([]);
-    const [loadingHistory, setLoadingHistory] = useState(false);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [clientModalVisible, setClientModalVisible] = useState(false);
-    const [saving, setSaving] = useState(false);
+    const [summary, setSummary] = useState({ total: 0, count: 0 });
+    const [loading, setLoading] = useState(true);
 
-    const loadHistory = useCallback(async () => {
-        setLoadingHistory(true);
+
+
+
+    useFocusEffect(useCallback(() => {
+        loadData();
+    }, []));
+
+    const loadData = async () => {
+        setLoading(true);
         try {
-            const data = await VendaService.getRecentSales();
-            setHistory(data || []);
-        } catch { setHistory([]); }
-        finally { setLoadingHistory(false); }
-    }, []);
+            const data = await getVendasRecentes();
+            setHistory(data);
 
-    useFocusEffect(useCallback(() => { loadHistory(); }, [loadHistory]));
+            const today = new Date().toISOString().split('T')[0];
+            const todaySales = data.filter(v => v.data === today);
+            const total = todaySales.reduce((acc, curr) => acc + (curr.valor * curr.quantidade), 0);
+            setSummary({ total, count: todaySales.length });
 
-    const valorTotalCalc = useMemo(() => {
-        const q = parseFloat(quantidade) || 0;
-        const p = parseFloat(precoKg) || 0;
-        return q * p;
-    }, [quantidade, precoKg]);
-
-    const handleSalvar = async () => {
-        if (!produto || !quantidade || !precoKg) return Alert.alert('AtenÃ§Ã£o', 'Preencha todos os campos.');
-        setSaving(true);
-        try {
-            await VendaService.registrarVenda({
-                cliente_nome: cliente || 'BALCÃƒO',
-                produto,
-                quantidade: parseFloat(quantidade),
-                valor_total: valorTotalCalc,
-                data: new Date().toISOString().split('T')[0]
-            });
-            Alert.alert('Sucesso', 'Venda realizada!');
-            setView('LIST');
-            loadHistory();
-        } catch (e) { Alert.alert('Erro', 'Falha ao salvar.'); }
-        finally { setSaving(false); }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const renderList = () => (
-        <ScrollView contentContainerStyle={styles.scroll}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}><Ionicons name="arrow-back" size={24} color="#FFF" /></TouchableOpacity>
-                <Text style={styles.headerTitle}>HISTÃ“RICO DE VENDAS</Text>
-                <View style={{width: 24}} />
+    const up = (t, setter) => setter(t.toUpperCase());
+
+    const salvar = async () => {
+        if (!produto || !quantidade || !valor) {
+            Alert.alert('Atenção', 'Produto, Qtd e Valor são obrigatórios.');
+            return;
+        }
+
+        const dados = {
+            uuid: editingUuid || uuidv4(),
+            cliente: (cliente || 'BALCÃO').toUpperCase(),
+            produto: produto.toUpperCase(),
+            quantidade: parseFloat(quantidade),
+            valor: parseFloat(valor),
+            observacao: observacao.toUpperCase(),
+            data: new Date().toISOString().split('T')[0]
+        };
+
+        try {
+            if (editingUuid) {
+                await updateVenda(editingUuid, dados);
+                Alert.alert('Sucesso', 'Venda atualizada!');
+                setEditingUuid(null);
+            } else {
+                await insertVenda(dados);
+                
+                await executeQuery(
+                    'INSERT INTO financeiro_transacoes (uuid, tipo, descricao, valor, vencimento, entidade_nome, categoria, origem_uuid, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    [uuidv4(), 'RECEBER', `VENDA: ${dados.produto}`, dados.valor * dados.quantidade, dados.data, dados.cliente, 'VENDAS', dados.uuid, new Date().toISOString()]
+                );
+
+                Alert.alert('Sucesso', 'Venda registrada e gerada no Contas a Receber!');
+            }
+
+            setProduto('');
+            setQuantidade('');
+            setValor('');
+            setObservacao('');
+            setCliente('');
+            loadData();
+        } catch (error) {
+            console.error(error);
+            Alert.alert('Erro', 'Falha ao processar venda.');
+        }
+    };
+
+    const handleDelete = (item) => {
+        Alert.alert('Excluir', 'Deseja excluir esta venda?', [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+                text: 'Excluir',
+                style: 'destructive',
+                onPress: async () => {
+                    await deleteVenda(item.uuid);
+                    loadData();
+                }
+            }
+        ]);
+    };
+
+    const isDark = theme?.theme_mode === 'dark';
+    const textColor = activeColors.text || '#1E293B';
+    const textMutedColor = activeColors.textMuted || '#64748B';
+    const cardBg = activeColors.card || '#FFFFFF';
+    const borderCol = activeColors.border || 'rgba(0,0,0,0.1)';
+
+    if (loading) {
+        return (
+            <View style={[styles.loading, { backgroundColor: activeColors.bg || '#F3F4F6' }]}>
+                <ActivityIndicator size="large" color={activeColors.primary || '#10B981'} />
             </View>
-
-            {loadingHistory ? <ActivityIndicator color="#10B981" /> : (
-                history.map(item => (
-                    <View key={item.uuid} style={styles.historyCard}>
-                        <View style={styles.iconCircle}><Ionicons name="cart" size={20} color="#10B981" /></View>
-                        <View style={{flex: 1, marginLeft: 12}}>
-                            <Text style={styles.hTitle}>{item.cliente_nome || 'BalcÃ£o'}</Text>
-                            <Text style={styles.hSub}>{item.produto} â€¢ {item.quantidade}kg</Text>
-                        </View>
-                        <Text style={styles.hVal}>R$ {item.valor_total?.toFixed(2)}</Text>
-                    </View>
-                ))
-            )}
-            
-            <TouchableOpacity style={styles.fab} onPress={() => setView('FORM')}>
-                <LinearGradient colors={['#10B981', '#059669']} style={styles.fabGrad}>
-                    <Ionicons name="add" size={32} color="#FFF" />
-                </LinearGradient>
-            </TouchableOpacity>
-        </ScrollView>
-    );
-
-    const renderForm = () => (
-        <ScrollView contentContainerStyle={styles.scroll}>
-             <View style={styles.header}>
-                <TouchableOpacity onPress={() => setView('LIST')}><Ionicons name="arrow-back" size={24} color="#FFF" /></TouchableOpacity>
-                <Text style={styles.headerTitle}>NOVA VENDA</Text>
-                <View style={{width: 24}} />
-            </View>
-
-            <View style={styles.formCard}>
-                <Text style={styles.label}>CLIENTE</Text>
-                <TouchableOpacity style={styles.picker} onPress={() => setClientModalVisible(true)}>
-                    <Text style={styles.pickerTxt}>{cliente || 'Selecionar Cliente'}</Text>
-                    <Ionicons name="chevron-down" size={20} color="#6B7280" />
-                </TouchableOpacity>
-
-                <Text style={styles.label}>PRODUTO</Text>
-                <TouchableOpacity style={styles.picker} onPress={() => setModalVisible(true)}>
-                    <Text style={styles.pickerTxt}>{produto || 'Selecionar Produto'}</Text>
-                    <Ionicons name="chevron-down" size={20} color="#6B7280" />
-                </TouchableOpacity>
-
-                <View style={{flexDirection: 'row', gap: 15, marginTop: 20}}>
-                    <View style={{flex: 1}}>
-                        <Text style={styles.label}>QUANTIDADE (KG)</Text>
-                        <TextInput style={styles.input} value={quantidade} onChangeText={setQuantidade} keyboardType="numeric" placeholder="0" />
-                    </View>
-                    <View style={{flex: 1}}>
-                        <Text style={styles.label}>PREÃ‡O/KG (R$)</Text>
-                        <TextInput style={styles.input} value={precoKg} onChangeText={setPrecoKg} keyboardType="numeric" placeholder="0.00" />
-                    </View>
-                </View>
-
-                <View style={styles.totalBox}>
-                    <Text style={styles.totalLabel}>TOTAL A RECEBER</Text>
-                    <Text style={styles.totalVal}>R$ {valorTotalCalc.toFixed(2)}</Text>
-                </View>
-
-                <TouchableOpacity style={styles.saveBtn} onPress={handleSalvar} disabled={saving}>
-                    <LinearGradient colors={['#10B981', '#059669']} style={styles.saveGrad}>
-                        {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveTxt}>FINALIZAR VENDA</Text>}
-                    </LinearGradient>
-                </TouchableOpacity>
-            </View>
-
-            <ProductModal visible={modalVisible} onClose={() => setModalVisible(false)} onCreated={(p) => { setProduto(p.nome); setModalVisible(false); }} />
-            <ClientModal visible={clientModalVisible} onClose={() => setClientModalVisible(false)} onCreated={(c) => { setCliente(c.nome); setClientModalVisible(false); }} />
-        </ScrollView>
-    );
+        );
+    }
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: activeColors.bg || '#F3F4F6' }]}>
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+            <LinearGradient colors={[activeColors.primary || '#10B981', activeColors.primaryDeep || '#059669']} style={styles.header}>
+                <SafeAreaView>
+                    <View style={styles.headerTop}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
+                            <Ionicons name="arrow-back" size={22} color="#FFF" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>FLUXO DE VENDAS</Text>
+                        <View style={{ width: 38 }} />
+                    </View>
+                    
+                    <View style={styles.summaryRow}>
+                        <MetricCard 
+                            title="Vendas Hoje" 
+                            value={summary.count.toString()} 
+                            icon="cart" 
+                            color="#FFF"
+                            style={styles.summaryCard}
+                        />
+                        <MetricCard 
+                            title="Total R$" 
+                            value={summary.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} 
+                            icon="cash" 
+                            color="#FFF"
+                            style={styles.summaryCard}
+                        />
+                    </View>
+                </SafeAreaView>
+            </LinearGradient>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+                <Card style={styles.formCard}>
+                    <Text style={[styles.sectionTitle, { color: textMutedColor }]}>{editingUuid ? 'EDITAR REGISTRO' : 'NOVA VENDA'}</Text>
+                    
+                                        <SmartAutocomplete
+                        label="Cliente / Parceiro"
+                        value={cliente}
+                        onSelect={item => setCliente(item ? item.nome : 'BALCÃO')}
+                        service={ClientLibraryService}
+                        title="SELECIONAR CLIENTE"
+                        placeholder="SELECIONAR OU BALCÃO..."
+                        icon="people-outline"
+                        quickAddFields={[
+                            { key: 'nome', label: 'NOME DO CLIENTE', placeholder: 'Ex: Bruno Santos' },
+                            { key: 'telefone', label: 'TELEFONE', placeholder: 'Ex: (11) 99999-9999' }
+                        ]}
+                    />
+
+                    <SmartAutocomplete
+                        label="Produto Sold *"
+                        value={produto}
+                        onSelect={item => {
+                            setProduto(item ? item.nome : '');
+                            if (item?.preco_venda) setValor(String(item.preco_venda));
+                        }}
+                        service={ProductLibraryService}
+                        filterType="PRODUTO"
+                        title="SELECIONAR PRODUTO"
+                        placeholder="SELECIONAR PRODUTO..."
+                        icon="cube-outline"
+                        quickAddFields={[
+                            { key: 'nome', label: 'NOME DO PRODUTO', placeholder: 'Ex: Café Moído' },
+                            { key: 'tipo', label: 'TIPO', placeholder: 'Ex: PRODUTO', defaultValue: 'PRODUTO' },
+                            { key: 'unidade', label: 'UNIDADE DO PRODUTO', placeholder: 'Ex: KG', defaultValue: 'KG' }
+                        ]}
+                    />
+
+                    <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 10 }}>
+                            <AgroInput 
+                                label="Qtd *"
+                                value={quantidade}
+                                onChangeText={setQuantidade}
+                                placeholder="0.00"
+                                keyboardType="decimal-pad"
+                            />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <AgroInput 
+                                label="Valor Unit. R$ *"
+                                value={valor}
+                                onChangeText={setValor}
+                                placeholder="0.00"
+                                keyboardType="decimal-pad"
+                            />
+                        </View>
+                    </View>
+
+                    <AgroInput 
+                        label="Observação"
+                        value={observacao}
+                        onChangeText={(t) => up(t, setObservacao)}
+                        placeholder="DETALHES ADICIONAIS..."
+                        icon="document-text"
+                        style={{ marginBottom: 20 }}
+                    />
+
+                    <AgroButton 
+                        title={editingUuid ? "SALVAR ALTERAÇÕES" : "REGISTRAR VENDA"}
+                        onPress={salvar}
+                        variant={editingUuid ? 'secondary' : 'primary'}
+                    />
+                </Card>
+
+                <Text style={[styles.historyTitle, { color: textColor }]}>HISTÓRICO RECENTE</Text>
+                {history.map(item => (
+                    <Card key={item.uuid} style={styles.historyCard} noPadding>
+                        <View style={styles.historyContent}>
+                            <View style={[styles.historyIcon, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#F9FAFB' }]}>
+                                <Ionicons name="receipt" size={20} color={activeColors.primary || '#10B981'} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={[styles.hProd, { color: textColor }]}>{item.produto}</Text>
+                                <Text style={[styles.hSub, { color: textMutedColor }]}>{item.cliente} • {new Date(item.data).toLocaleDateString('pt-BR')}</Text>
+                                <Text style={[styles.hVal, { color: activeColors.primary || '#10B981' }]}>{item.quantidade} x R$ {item.valor.toFixed(2)}</Text>
+                            </View>
+                            <View style={styles.historyActions}>
+                                <TouchableOpacity 
+                                    onPress={() => handleDelete(item)} 
+                                    style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2' }]}
+                                >
+                                    <Ionicons name="trash-outline" size={18} color={activeColors.error || '#EF4444'} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </Card>
+                ))}
+            </ScrollView>
+
             
-            <StatusBar barStyle="light-content" translucent />
-            {view === 'LIST' ? renderList() : renderForm()}
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#FFF' },
-    scroll: { padding: 20, paddingTop: 55, paddingBottom: 100 },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 30 },
-    headerTitle: { color: '#FFF', fontSize: 16, fontWeight: '900', letterSpacing: 1 },
-    
-    historyCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: 22, padding: 18, marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, elevation: 5 },
-    iconCircle: { width: 44, height: 44, borderRadius: 15, backgroundColor: '#F0FDF4', justifyContent: 'center', alignItems: 'center' },
-    hTitle: { fontSize: 16, fontWeight: '800', color: '#1F2937' },
-    hSub: { fontSize: 12, color: '#6B7280', marginTop: 2 },
-    hVal: { fontSize: 16, fontWeight: '900', color: '#10B981' },
-
-    fab: { position: 'absolute', right: 20, bottom: 40, shadowColor: '#10B981', shadowOpacity: 0.3, shadowRadius: 15, elevation: 12 },
-    fabGrad: { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center' },
-
-    formCard: { backgroundColor: '#FFF', borderRadius: 28, padding: 25, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 20, elevation: 10 },
-    label: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1.5, marginBottom: 10 },
-    picker: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: 16, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: '#F3F4F6' },
-    pickerTxt: { fontSize: 15, color: '#374151', fontWeight: '600' },
-    input: { backgroundColor: '#F9FAFB', borderRadius: 16, padding: 16, fontSize: 18, fontWeight: '700', color: '#111827', borderWidth: 1, borderColor: '#F3F4F6' },
-    
-    totalBox: { backgroundColor: '#F0FDF4', borderRadius: 20, padding: 20, marginVertical: 25, alignItems: 'center', borderWidth: 1, borderColor: '#DCFCE7' },
-    totalLabel: { fontSize: 11, fontWeight: '900', color: '#059669', marginBottom: 5 },
-    totalVal: { fontSize: 28, fontWeight: '900', color: '#064E3B' },
-
-    saveBtn: { borderRadius: 20, overflow: 'hidden', marginTop: 10 },
-    saveGrad: { height: 64, justifyContent: 'center', alignItems: 'center' },
-    saveTxt: { color: '#FFF', fontSize: 16, fontWeight: '900', letterSpacing: 1 }
+    container: { flex: 1 },
+    loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    header: { paddingTop: 40, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
+    iconBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    summaryRow: { flexDirection: 'row', gap: 10 },
+    summaryCard: { flex: 1, height: 90, marginHorizontal: 0 },
+    sectionTitle: { fontSize: 10, fontWeight: '900', letterSpacing: 1, marginBottom: 15 },
+    formCard: { padding: 20 },
+    row: { flexDirection: 'row' },
+    historyTitle: { fontSize: 12, fontWeight: '900', letterSpacing: 1, marginTop: 25, marginBottom: 15, marginLeft: 5 },
+    historyCard: { marginBottom: 12 },
+    historyContent: { flexDirection: 'row', alignItems: 'center', padding: 15 },
+    historyIcon: { width: 40, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    hProd: { fontSize: 14, fontWeight: 'bold' },
+    hSub: { fontSize: 11, marginTop: 2 },
+    hVal: { fontSize: 12, fontWeight: '900', marginTop: 4 },
+    historyActions: { marginLeft: 10 },
+    actionBtn: { padding: 8, borderRadius: 8 },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+    modalBg: { borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '80%', padding: 20 },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    modalTitle: { fontSize: 16, fontWeight: '900' },
+    searchBar: { padding: 12, borderRadius: 12, marginBottom: 10, fontSize: 14 },
+    itemRow: { paddingVertical: 15, borderBottomWidth: 1 },
+    itemText: { fontSize: 14, fontWeight: 'bold' },
+    itemSub: { fontSize: 10 }
 });
-

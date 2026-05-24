@@ -1,299 +1,345 @@
-﻿import React, { useState, useEffect } from 'react';
-import { 
-    View, Text, StyleSheet, FlatList, TouchableOpacity, 
-    ActivityIndicator, TextInput, SafeAreaView, StatusBar, Platform, KeyboardAvoidingView
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Dimensions, ScrollView, StatusBar, SafeAreaView, Linking } from 'react-native';
+import { v4 as uuidv4 } from 'uuid';
+import * as Location from 'expo-location';
+import { insertCliente, getClientes, deleteCliente, updateCliente } from '../database/database';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useIsFocused } from '@react-navigation/native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
-import { getClientes, deleteCliente } from '../database/database';
-import ConfirmModal from '../ui/ConfirmModal';
+// Design System
+import Card from '../components/common/Card';
+import AgroButton from '../components/common/AgroButton';
+import AgroInput from '../components/common/AgroInput';
+import AgroOptionsModal from '../components/common/AgroOptionsModal';
 
+const { width } = Dimensions.get('window');
 
 export default function ClientesScreen({ navigation }) {
-    const [items, setItems] = useState([]);
-    const [filteredItems, setFilteredItems] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
+    const { theme } = useTheme();
+    const activeColors = theme?.colors || {};
     
-    const [confirmVisible, setConfirmVisible] = useState(false);
-    const [itemToDelete, setItemToDelete] = useState(null);
+    const [items, setItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [gpsLoading, setGpsLoading] = useState(false);
+    
+    // Form State
+    const [nome, setNome] = useState('');
+    const [telefone, setTelefone] = useState('');
+    const [endereco, setEndereco] = useState('');
+    const [cpf, setCpf] = useState('');
+    const [observacao, setObservacao] = useState('');
 
-    const isFocused = useIsFocused();
+    const [selectedItemActions, setSelectedItemActions] = useState(null);
+    const [editingItem, setEditingItem] = useState(null);
 
     useEffect(() => { 
-        if (isFocused) loadData(); 
-    }, [isFocused]);
+        loadData(); 
+    }, []);
 
     const loadData = async () => {
         setLoading(true);
         try {
             const data = await getClientes();
-            // Deduplicate logic existing from original code
-            const uniqueData = [...new Map(data.map(item => [item.cpf_cnpj ? item.cpf_cnpj.trim() : item.nome.trim().toUpperCase(), item])).values()];
-            setItems(uniqueData);
-            setFilteredItems(uniqueData);
-        } catch {
-            // Error log
-        } finally { 
-            setLoading(false); 
+            setItems(data);
+        } catch (e) {
+            console.error('Erro ao carregar clientes:', e);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleSearch = (text) => {
-        setSearchQuery(text);
-        if (!text.trim()) {
-            setFilteredItems(items);
-            return;
-        }
-        const str = text.toLowerCase();
-        const filtered = items.filter(i => 
-            i.nome?.toLowerCase().includes(str) || 
-            i.cpf_cnpj?.includes(str) || 
-            i.cidade?.toLowerCase().includes(str)
-        );
-        setFilteredItems(filtered);
+    const resetForm = () => {
+        setEditingItem(null);
+        setNome('');
+        setTelefone('');
+        setEndereco('');
+        setCpf('');
+        setObservacao('');
     };
 
-    const handleDelete = (id) => {
-        setItemToDelete(id);
-        setConfirmVisible(true);
+    const handleEdit = (item) => {
+        setEditingItem(item);
+        setNome(item.nome);
+        setTelefone(item.telefone || '');
+        setEndereco(item.endereco || '');
+        setCpf(item.cpf_cnpj || '');
+        setObservacao(item.observacao || '');
+        setModalVisible(true);
     };
 
-    const confirmDelete = async () => {
-        if (itemToDelete) {
-            await deleteCliente(itemToDelete);
-            setConfirmVisible(false);
-            setItemToDelete(null);
+    const handleSave = async () => {
+        if (!nome.trim()) return Alert.alert('Atenção', 'O nome do cliente ou empresa é obrigatório.');
+        try {
+            const payload = {
+                uuid: editingItem ? editingItem.uuid : uuidv4(),
+                nome: nome.toUpperCase(),
+                telefone,
+                endereco: endereco.toUpperCase(),
+                cpf_cnpj: cpf,
+                observacao: observacao.toUpperCase()
+            };
+
+            if (editingItem) {
+                await updateCliente(payload);
+                Alert.alert('Sucesso', 'Parceiro comercial atualizado!');
+            } else {
+                await insertCliente(payload);
+                Alert.alert('Sucesso', 'Parceiro comercial cadastrado!');
+            }
+
+            setModalVisible(false);
+            resetForm();
             loadData();
+        } catch (e) {
+            Alert.alert('Erro', 'Falha ao salvar dados do cliente.');
         }
     };
 
-    // Card Renderer
-    const renderItem = ({ item }) => {
-        const isFornecedor = item.observacao?.includes('FORNECEDOR');
-        const badgeColor = isFornecedor ? '#F59E0B' : '#3B82F6';
-        const typeLabel = isFornecedor ? 'FORNECEDOR' : 'CLIENTE';
-
-        return (
-            <TouchableOpacity 
-                activeOpacity={0.8}
-                onPress={() => navigation.navigate('ClienteForm', { cliente: item })}
-                style={styles.cardContainer}
-            >
-                <View style={styles.cardContent}>
-                    {/* Linha 1 */}
-                    <View style={styles.cardHeader}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                            <View style={[styles.avatar, { borderColor: badgeColor }]}>
-                                <Text style={[styles.avatarTxt, { color: badgeColor }]}>{item.nome.charAt(0)}</Text>
-                            </View>
-                            <View style={{ marginLeft: 12, flex: 1 }}>
-                                <Text style={styles.cardTitle} numberOfLines={1}>{item.nome}</Text>
-                                <Text style={styles.cardCpf}>{item.cpf_cnpj || 'Sem CPF/CNPJ Cadastrado'}</Text>
-                            </View>
-                        </View>
-                        <TouchableOpacity onPress={(e) => { e.stopPropagation(); handleDelete(item.id); }} style={styles.deleteBtn}>
-                            <Ionicons name="trash-outline" size={18} color="#F87171" />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Linha 2 */}
-                    <View style={styles.cardFooter}>
-                        <View style={styles.infoTag}>
-                            <Ionicons name="call" size={12} color="#94A3B8" />
-                            <Text style={styles.infoTagText}>{item.telefone || 'Sem contato'}</Text>
-                        </View>
-
-                        {item.cidade ? (
-                            <View style={styles.infoTag}>
-                                <Ionicons name="location" size={12} color="#94A3B8" />
-                                <Text style={styles.infoTagText}>{item.cidade}</Text>
-                            </View>
-                        ) : null}
-
-                        <View style={{ flex: 1 }} />
-
-                        <View style={[styles.typeBadge, { backgroundColor: badgeColor + '15', borderColor: badgeColor + '30' }]}>
-                            <Text style={[styles.typeBadgeText, { color: badgeColor }]}>{typeLabel}</Text>
-                        </View>
-                    </View>
-                </View>
-            </TouchableOpacity>
-        );
+    const handleDelete = (item) => {
+        Alert.alert('Remover Parceiro', `Deseja realmente excluir ${item.nome} da sua lista de contatos?`, [
+            { text: 'Cancelar', style: 'cancel' },
+            { 
+                text: 'Remover Agora', 
+                style: 'destructive', 
+                onPress: async () => { 
+                    try {
+                        await deleteCliente(item.id); 
+                        loadData(); 
+                    } catch (e) {
+                        Alert.alert('Erro', 'Falha ao excluir.');
+                    }
+                } 
+            }
+        ]);
     };
+
+    const handleWhatsApp = (phone) => {
+        if (!phone) return;
+        const clean = phone.replace(/\D/g, '');
+        // Prepend Brazil country code 55 if not already present
+        const fullPhone = clean.length <= 11 ? `55${clean}` : clean;
+        const url = `https://wa.me/${fullPhone}`;
+        Linking.openURL(url).catch(() => Alert.alert('Erro', 'Não foi possível abrir o WhatsApp.'));
+    };
+
+    const handleCall = (phone) => {
+        if (!phone) return;
+        Linking.openURL(`tel:${phone}`).catch(() => Alert.alert('Erro', 'Não foi possível efetuar a ligação.'));
+    };
+
+    const captureGPS = async () => {
+        setGpsLoading(true);
+        try {
+            let { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permissão Negada', 'Acesso à localização é necessário para capturar coordenadas.');
+                setGpsLoading(false);
+                return;
+            }
+
+            let loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            const coordsStr = `LAT: ${loc.coords.latitude.toFixed(6)}, LNG: ${loc.coords.longitude.toFixed(6)}`;
+            setEndereco(coordsStr);
+            Alert.alert('Coordenadas Capturadas', 'Localização GPS vinculada com sucesso ao endereço!');
+        } catch (err) {
+            Alert.alert('Erro', 'Não foi possível capturar a localização atual.');
+        } finally {
+            setGpsLoading(false);
+        }
+    };
+
+    const isDark = theme?.theme_mode === 'dark';
+    const textColor = activeColors.text || '#1E293B';
+    const textMutedColor = activeColors.textMuted || '#64748B';
+    const cardBg = activeColors.card || '#FFFFFF';
+    const borderCol = activeColors.border || 'rgba(0,0,0,0.1)';
 
     return (
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-            
+        <View style={[styles.container, { backgroundColor: activeColors.bg || '#F3F4F6' }]}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-
-            <SafeAreaView style={{ flex: 1 }}>
-                {/* CRM HUB DASHBOARD */}
-                <View style={styles.hubWrapper}>
-                    <View style={styles.hubTopRow}>
-                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                            <Ionicons name="chevron-back" size={24} color="#FFF" />
+            <LinearGradient colors={[activeColors.primary || '#10B981', activeColors.primaryDeep || '#064E3B']} style={styles.header}>
+                <SafeAreaView>
+                    <View style={styles.headerTop}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
+                            <Ionicons name="arrow-back" size={22} color="#FFF" />
                         </TouchableOpacity>
-                        <Text style={styles.hubMainTitle}>GESTÃƒO DE CONTATOS</Text>
+                        <Text style={styles.headerTitle}>CLIENTES E PARCEIROS</Text>
+                        <View style={{ width: 38 }} />
                     </View>
+                    <Text style={styles.headerSub}>Gestão de Contatos & CRM Agrícola</Text>
+                </SafeAreaView>
+            </LinearGradient>
 
-                    <View intensity={20} style={styles.hubStatsCard}>
-                        <View style={styles.hubStatsHeader}>
-                            <View>
-                                <Text style={styles.hubTitleText}>HUB <Text style={{ color: '#3B82F6' }}>CRM</Text></Text>
-                                <Text style={styles.hubSubtitleText}>{items.length} REGISTROS TOTAIS</Text>
-                            </View>
-                            <View style={styles.activeIndicator}>
-                                <View style={styles.pulseDot} />
-                                <Text style={styles.activeLabel}>ONLINE</Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.statsGrid}>
-                            <View style={styles.statBox}>
-                                <Text style={styles.statValue}>{items.filter(i => !i.observacao?.includes('FORNECEDOR')).length}</Text>
-                                <Text style={styles.statLabel}>CLIENTES</Text>
-                            </View>
-                            <View style={styles.statDivider} />
-                            <View style={styles.statBox}>
-                                <Text style={[styles.statValue, { color: '#F59E0B' }]}>{items.filter(i => i.observacao?.includes('FORNECEDOR')).length}</Text>
-                                <Text style={styles.statLabel}>FORNECEDORES</Text>
-                            </View>
-                        </View>
-                    </View>
-
-                    <View style={styles.hubActionsContainer}>
-                        <TouchableOpacity 
-                            style={styles.addMainBtn}
-                            onPress={() => navigation.navigate('ClienteForm')}
+            {loading ? (
+                <View style={styles.center}><ActivityIndicator size="large" color={activeColors.primary} /></View>
+            ) : (
+                <FlatList
+                    data={items}
+                    keyExtractor={item => item.id.toString()}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.list}
+                    renderItem={({ item }) => (
+                        <Card 
+                            style={styles.itemCard} 
+                            noPadding 
+                            onPress={() => handleEdit(item)}
+                            onLongPress={() => setSelectedItemActions(item)}
                         >
-                            <LinearGradient colors={['#3B82F6', '#1D4ED8']} style={styles.addGradient}>
-                                <Ionicons name="person-add" size={18} color="#FFF" />
-                                <Text style={styles.addBtnText}>NOVO REGISTRO</Text>
-                            </LinearGradient>
-                        </TouchableOpacity>
+                            <View style={styles.premiumCardInner}>
+                                <View style={styles.premiumCardBody}>
+                                    <View style={[styles.avatarBox, { backgroundColor: (activeColors.primary || '#10B981') + '15' }]}>
+                                        <Text style={[styles.avatarTxt, { color: activeColors.primary || '#10B981' }]}>{item.nome.charAt(0)}</Text>
+                                    </View>
+                                    <View style={styles.cardInfo}>
+                                        <Text style={[styles.cardTitle, { color: textColor }]} numberOfLines={1}>{item.nome}</Text>
+                                        
+                                        {item.telefone ? (
+                                            <View style={styles.cardInfoRow}>
+                                                <Ionicons name="call-outline" size={12} color={textMutedColor} />
+                                                <Text style={[styles.cardSub, { color: textMutedColor }]}>{item.telefone}</Text>
+                                            </View>
+                                        ) : null}
 
-                        <TouchableOpacity style={styles.searchToggleBtn}>
-                            <Ionicons name="filter" size={18} color="#3B82F6" />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                {/* Barra de Busca Glassmorphism */}
-                <View style={styles.searchWrapper}>
-                    <View style={styles.searchBox}>
-                        <Ionicons name="search" size={20} color="#64748B" />
-                        <TextInput
-                            style={styles.searchInput}
-                            placeholder="Buscar nome, CPF, cidade..."
-                            placeholderTextColor="#64748B"
-                            value={searchQuery}
-                            onChangeText={handleSearch}
-                        />
-                        {searchQuery.length > 0 && (
-                            <TouchableOpacity onPress={() => handleSearch('')}>
-                                <Ionicons name="close-circle" size={20} color="#64748B" />
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                </View>
-
-                {/* Lista */}
-                {loading ? (
-                    <ActivityIndicator size="large" color="#3B82F6" style={{ marginTop: 100 }} />
-                ) : (
-                    <FlatList
-                        data={filteredItems}
-                        keyExtractor={item => item.uuid || Math.random().toString()}
-                        contentContainerStyle={styles.listContent}
-                        showsVerticalScrollIndicator={false}
-                        renderItem={renderItem}
-                        ListEmptyComponent={
-                            <View style={styles.empty}>
-                                <View style={styles.emptyIconBox}>
-                                    <Ionicons name="people" size={40} color="#3B82F6" />
+                                        {item.endereco ? (
+                                            <View style={styles.cardInfoRow}>
+                                                <Ionicons name="location-outline" size={12} color={textMutedColor} />
+                                                <Text style={[styles.cardSub, { color: textMutedColor }]} numberOfLines={1}>{item.endereco}</Text>
+                                            </View>
+                                        ) : null}
+                                    </View>
                                 </View>
-                                <Text style={styles.emptyText}>Nenhum registro encontrado</Text>
-                                <Text style={styles.emptySub}>Cadastre novos clientes, parceiros ou fornecedores para gerenciar.</Text>
-                                
-                                <TouchableOpacity style={styles.emptyBtn} onPress={() => navigation.navigate('ClienteForm')}>
-                                    <Text style={styles.emptyBtnText}>CRIAR NOVO CADASTRO</Text>
-                                </TouchableOpacity>
-                            </View>
-                        }
-                    />
-                )}
-            </SafeAreaView>
 
-            <ConfirmModal
-                visible={confirmVisible}
-                title="Excluir Registro"
-                message="Tem certeza que deseja apagar este contato? HistÃ³ricos atrelados a ele podem perder a referÃªncia direta."
-                confirmText="APAGAR"
-                isDestructive={true}
-                onCancel={() => { setConfirmVisible(false); setItemToDelete(null); }}
-                onConfirm={confirmDelete}
+                                {item.telefone ? (
+                                    <View style={styles.premiumCardActions}>
+                                        <TouchableOpacity 
+                                            style={[styles.actionRoundBtn, { backgroundColor: '#10B98115' }]} 
+                                            onPress={() => handleWhatsApp(item.telefone)}
+                                        >
+                                            <Ionicons name="logo-whatsapp" size={18} color="#10B981" />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity 
+                                            style={[styles.actionRoundBtn, { backgroundColor: '#3B82F615' }]} 
+                                            onPress={() => handleCall(item.telefone)}
+                                        >
+                                            <Ionicons name="call" size={18} color="#3B82F6" />
+                                        </TouchableOpacity>
+                                    </View>
+                                ) : null}
+                            </View>
+                        </Card>
+                    )}
+                    ListEmptyComponent={
+                        <View style={styles.emptyBox}>
+                            <MaterialCommunityIcons name="account-group-outline" size={60} color={textMutedColor} style={{ opacity: 0.5 }} />
+                            <Text style={[styles.emptyTxt, { color: textMutedColor }]}>Nenhum parceiro comercial cadastrado.</Text>
+                        </View>
+                    }
+                />
+            )}
+
+            <TouchableOpacity style={[styles.fab, { backgroundColor: activeColors.primary || '#10B981' }]} onPress={() => { resetForm(); setModalVisible(true); }}>
+                <Ionicons name="add" size={32} color="#FFF" />
+            </TouchableOpacity>
+
+            <Modal visible={modalVisible} transparent animationType="slide">
+                <View style={styles.overlay}>
+                    <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+                        <View style={styles.modalHeader}>
+                            <Text style={[styles.modalTitle, { color: textColor }]}>{editingItem ? 'EDITAR PARCEIRO' : 'NOVO PARCEIRO'}</Text>
+                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                                <Ionicons name="close-circle" size={30} color={textMutedColor} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+                            <Card style={{ marginBottom: 20 }}>
+                                <AgroInput label="NOME COMPLETO / EMPRESA *" value={nome} onChangeText={t => setNome(t.toUpperCase())} autoCapitalize="characters" icon="person-outline" />
+                                <AgroInput label="TELEFONE / WHATSAPP" value={telefone} onChangeText={setTelefone} keyboardType="phone-pad" icon="call-outline" />
+                                <AgroInput label="CPF / CNPJ" value={cpf} onChangeText={setCpf} icon="card-outline" />
+                                
+                                <View style={{ position: 'relative' }}>
+                                    <AgroInput label="ENDEREÇO / LOCALIZAÇÃO" value={endereco} onChangeText={t => setEndereco(t.toUpperCase())} autoCapitalize="characters" icon="location-outline" />
+                                    <TouchableOpacity 
+                                        style={styles.gpsCaptureBtn} 
+                                        onPress={captureGPS}
+                                        disabled={gpsLoading}
+                                    >
+                                        {gpsLoading ? (
+                                            <ActivityIndicator size="small" color="#10B981" />
+                                        ) : (
+                                            <View style={styles.gpsBadge}>
+                                                <Ionicons name="pin" size={12} color="#10B981" />
+                                                <Text style={styles.gpsText}>GPS</Text>
+                                            </View>
+                                        )}
+                                    </TouchableOpacity>
+                                </View>
+
+                                <AgroInput label="OBSERVAÇÕES ADICIONAIS" value={observacao} onChangeText={setObservacao} multiline placeholder="Preferências do cliente, restrições, etc." icon="create-outline" />
+                            </Card>
+
+                            <AgroButton title={editingItem ? "SALVAR ALTERAÇÕES" : "CADASTRAR PARCEIRO"} onPress={handleSave} />
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* OPTIONS MODAL DE TOQUE LONGO */}
+            <AgroOptionsModal
+                visible={!!selectedItemActions}
+                onClose={() => setSelectedItemActions(null)}
+                title={selectedItemActions?.nome || ''}
+                subtitle={selectedItemActions?.telefone || 'Sem Telefone'}
+                onEdit={() => handleEdit(selectedItemActions)}
+                onDelete={() => handleDelete(selectedItemActions)}
+                editLabel="Editar Contato"
+                deleteLabel="Excluir Contato"
             />
-        </KeyboardAvoidingView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    // CRM HUB STYLES
-    hubWrapper: { paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 15 : 20 },
-    hubTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 12 },
-    backButton: { width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-    hubMainTitle: { color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '900', letterSpacing: 2 },
+    header: { paddingTop: 50, paddingBottom: 25, paddingHorizontal: 25, borderBottomLeftRadius: 35, borderBottomRightRadius: 35 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+    headerTitle: { fontSize: 13, fontWeight: '900', color: '#FFF', letterSpacing: 1.5 },
+    headerSub: { fontSize: 16, color: 'rgba(255,255,255,0.85)', fontWeight: '600' },
+    iconBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    list: { padding: 20, paddingBottom: 100 },
+    itemCard: { marginBottom: 12 },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    emptyBox: { alignItems: 'center', marginTop: 80, opacity: 0.4 },
+    emptyTxt: { marginTop: 15, fontWeight: '700', fontSize: 14 },
+    fab: { position: 'absolute', bottom: 30, right: 25, width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', elevation: 8 },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+    modalContent: { borderTopLeftRadius: 35, borderTopRightRadius: 35, padding: 25, height: '85%' },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    modalTitle: { fontSize: 12, fontWeight: '900', letterSpacing: 1.5 },
 
-    hubStatsCard: { borderRadius: 24, padding: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', overflow: 'hidden' },
-    hubStatsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
-    hubTitleText: { color: '#FFF', fontSize: 18, fontWeight: '900', letterSpacing: 0.5 },
-    hubSubtitleText: { color: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: '800', marginTop: 2 },
-    activeIndicator: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(16,185,129,0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, gap: 6 },
-    pulseDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981' },
-    activeLabel: { color: '#10B981', fontSize: 8, fontWeight: '900' },
-
-    statsGrid: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.02)', padding: 15, borderRadius: 16 },
-    statBox: { flex: 1, alignItems: 'center' },
-    statValue: { color: '#3B82F6', fontSize: 22, fontWeight: '900' },
-    statLabel: { color: 'rgba(255,255,255,0.3)', fontSize: 9, fontWeight: '900', marginTop: 4 },
-    statDivider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.08)' },
-
-    hubActionsContainer: { flexDirection: 'row', gap: 10, marginTop: 15 },
-    addMainBtn: { flex: 4, height: 50, borderRadius: 15, overflow: 'hidden', shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
-    addGradient: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-    addBtnText: { color: '#FFF', fontSize: 13, fontWeight: '900' },
-    searchToggleBtn: { flex: 1, height: 50, borderRadius: 15, backgroundColor: 'rgba(59,130,246,0.1)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(59,130,246,0.2)' },
-
-    searchWrapper: { paddingHorizontal: 20, marginTop: 20, marginBottom: 15, zIndex: 10 },
-    searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(15, 23, 42, 0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: 16, height: 50, paddingHorizontal: 15 },
-    searchInput: { flex: 1, color: '#FFF', fontSize: 14, marginLeft: 10, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) },
-
-    listContent: { paddingHorizontal: 20, paddingBottom: 120 },
+    // Premium UI Styles
+    premiumCardInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 15 },
+    premiumCardBody: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+    avatarBox: { width: 50, height: 50, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    avatarTxt: { fontSize: 22, fontWeight: '900' },
+    cardInfo: { flex: 1 },
+    cardTitle: { fontSize: 16, fontWeight: '800', marginBottom: 4 },
+    cardInfoRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
+    cardSub: { fontSize: 12, fontWeight: '600' },
+    premiumCardActions: { flexDirection: 'row', gap: 8, marginLeft: 10 },
+    actionRoundBtn: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
     
-    cardContainer: { marginBottom: 15 },
-    cardContent: { backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', padding: 16 },
-    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
-    avatar: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(15, 23, 42, 0.5)' },
-    avatarTxt: { fontSize: 18, fontWeight: '900' },
-    cardTitle: { color: '#F8FAFC', fontSize: 16, fontWeight: '800' },
-    cardCpf: { color: '#64748B', fontSize: 12, marginTop: 4, fontWeight: '600' },
-    deleteBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(248, 113, 113, 0.1)', justifyContent: 'center', alignItems: 'center' },
-
-    cardFooter: { flexDirection: 'row', alignItems: 'center', paddingTop: 14, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.05)', gap: 10 },
-    infoTag: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    infoTagText: { color: '#94A3B8', fontSize: 11, fontWeight: '600' },
-    typeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1 },
-    typeBadgeText: { fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
-
-    empty: { alignItems: 'center', marginTop: 80, paddingHorizontal: 30 },
-    emptyIconBox: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(59, 130, 246, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
-    emptyText: { color: '#FFF', fontSize: 18, fontWeight: '800', marginBottom: 8 },
-    emptySub: { color: '#64748B', fontSize: 13, textAlign: 'center', lineHeight: 20, marginBottom: 30 },
-    emptyBtn: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#3B82F6', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14 },
-    emptyBtnText: { color: '#3B82F6', fontSize: 12, fontWeight: '900', letterSpacing: 1 }
+    // GPS Style
+    gpsCaptureBtn: { position: 'absolute', right: 12, top: 40, padding: 6, borderRadius: 8 },
+    gpsBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#10B98115', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+    gpsText: { fontSize: 9, fontWeight: '900', color: '#10B981' }
 });
-

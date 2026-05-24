@@ -1,212 +1,176 @@
-﻿import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Alert, SafeAreaView, StatusBar, Platform } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 import { getPlanosAdubacao, deletePlanoAdubacao } from '../database/database';
-import { useIsFocused } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+
+// Design System
+import Card from '../components/common/Card';
+import MetricCard from '../components/common/MetricCard';
 
 export default function AdubacaoListScreen({ navigation }) {
+    const { theme } = useTheme();
     const [planos, setPlanos] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState('Todos');
-    const isFocused = useIsFocused();
 
     const loadPlanos = async () => {
         setLoading(true);
-        try { 
-            const data = await getPlanosAdubacao(); 
-            // Mocking some data if empty to show the gorgeous UI
-            if (!data || data.length === 0) {
-                setPlanos([
-                    { uuid: '1', nome_plano: 'AdubaÃ§Ã£o Cobertura NPK', cultura: 'Milho', status: 'AGENDADO', tipo_aplicacao: 'Tratorizada', area_local: 'TalhÃ£o 04', lowStock: true, data: '14 Abr' },
-                    { uuid: '2', nome_plano: 'Fosfatagem PreparatÃ³ria', cultura: 'Soja', status: 'CONCLUÃDO', tipo_aplicacao: 'LanÃ§Ã§o', area_local: 'TalhÃ£o 01', lowStock: false, data: '10 Abr' }
-                ]);
-            } else {
-                setPlanos(data); 
-            }
+        try {
+            const data = await getPlanosAdubacao();
+            setPlanos(data);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
         }
-        catch (e) { console.error(e); } finally { setLoading(false); }
     };
 
-    useEffect(() => { if (isFocused) loadPlanos(); }, [isFocused]);
+    useFocusEffect(useCallback(() => {
+        loadPlanos();
+    }, []));
 
     const handleDelete = (plano) => {
-        Alert.alert('Excluir Plano', `Deseja excluir "${plano.nome_plano}"?`, [
-            { text: 'Cancelar', style: 'cancel' },
-            { text: 'Excluir', style: 'destructive', onPress: async () => { await deletePlanoAdubacao(plano.uuid); loadPlanos(); } }
-        ]);
+        Alert.alert(
+            'Excluir Plano',
+            `Deseja excluir "${plano.nome_plano}"?`,
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Excluir',
+                    style: 'destructive',
+                    onPress: async () => {
+                        await deletePlanoAdubacao(plano.uuid);
+                        loadPlanos();
+                    }
+                }
+            ]
+        );
     };
 
-    const filteredPlanos = planos.filter(p => {
-        if (activeTab === 'Todos') return true;
-        if (activeTab === 'Agendados') return p.status !== 'APLICADO' && p.status !== 'CONCLUÃDO';
-        if (activeTab === 'ConcluÃ­dos') return p.status === 'APLICADO' || p.status === 'CONCLUÃDO';
-        return true;
-    });
+    const appliedCount = planos.filter(p => p.status === 'APLICADO').length;
 
     const renderItem = ({ item }) => {
-        const isDone = item.status === 'APLICADO' || item.status === 'CONCLUÃDO';
-        const isWarning = item.lowStock;
+        const isApplied = item.status === 'APLICADO';
 
         return (
-            <TouchableOpacity onPress={() => navigation.navigate('AdubacaoForm', { plano: item })} onLongPress={() => handleDelete(item)} activeOpacity={0.8}>
-                <View style={styles.card}>
+            <Card 
+                style={[styles.card, isApplied && styles.cardApplied]} 
+                noPadding
+                onPress={() => navigation.navigate('AdubacaoDetail', { plano: item })}
+                onLongPress={() => handleDelete(item)}
+            >
+                <View style={styles.cardContent}>
                     <View style={styles.cardHeader}>
-                        <View style={styles.titleRow}>
-                            <FontAwesome5 name={item.tipo_aplicacao?.includes('Gotejo') ? 'faucet' : 'tractor'} size={14} color="#A7F3D0" style={{marginRight: 8}} />
+                        <View style={[styles.iconContainer, { backgroundColor: isApplied ? '#F0FDF4' : '#FFFBEB' }]}>
+                            <FontAwesome5
+                                name={item.tipo_aplicacao === 'GOTEJO' ? 'faucet' : 'spray-can'}
+                                size={18}
+                                color={isApplied ? '#10B981' : '#F59E0B'}
+                            />
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 12 }}>
                             <Text style={styles.cardTitle}>{item.nome_plano}</Text>
+                            <Text style={styles.cardSubtitle}>
+                                {item.cultura} • {item.tipo_aplicacao}
+                            </Text>
                         </View>
-                        <View style={[styles.statusBadge, { backgroundColor: isDone ? 'rgba(52, 211, 153, 0.2)' : 'rgba(251, 191, 36, 0.2)' }]}>
-                            <Text style={[styles.statusText, { color: isDone ? '#34D399' : '#FBBF24' }]}>{isDone ? 'CONCLUÃDO' : 'AGENDADO'}</Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.cardBody}>
-                        <View style={styles.infoCol}>
-                            <Text style={styles.infoLabel}>CULTURA / LOCAL</Text>
-                            <Text style={styles.infoValue}>{item.cultura} â€¢ {item.area_local || 'S/N'}</Text>
-                        </View>
-                        <View style={styles.infoColRight}>
-                            <Text style={styles.infoLabel}>DATA PREVISTA</Text>
-                            <Text style={styles.infoValueDate}>{item.data || 'A Definir'}</Text>
+                        <View style={[styles.statusBadge, { backgroundColor: isApplied ? '#F0FDF4' : '#FFFBEB' }]}>
+                            <Text style={[styles.statusText, { color: isApplied ? '#10B981' : '#F59E0B' }]}>
+                                {item.status}
+                            </Text>
                         </View>
                     </View>
 
-                    {isWarning && !isDone && (
-                        <View style={styles.alertBox}>
-                            <Ionicons name="warning" size={14} color="#F87171" style={{marginRight: 5}}/>
-                            <Text style={styles.alertText}>AtenÃ§Ã£o: Insumo com baixo estoque para esta Ã¡rea.</Text>
+                    {item.area_local && (
+                        <View style={styles.localRow}>
+                            <Ionicons name="location-outline" size={14} color="#9CA3AF" />
+                            <Text style={styles.localText}>{item.area_local}</Text>
                         </View>
                     )}
                 </View>
-            </TouchableOpacity>
+            </Card>
         );
     };
 
     return (
-        <View style={styles.webContainer}>
-            
-            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
+            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
+                <View style={styles.headerTop}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>ADUBAÇÃO</Text>
+                    <TouchableOpacity onPress={() => navigation.navigate('AdubacaoForm')}>
+                        <Ionicons name="add-circle" size={28} color="#FFF" />
+                    </TouchableOpacity>
+                </View>
 
-            <View style={styles.mobileFrame}>
-                <SafeAreaView style={{ flex: 1 }}>
-                    <View style={styles.header}>
-                        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                            <Ionicons name="arrow-back" size={24} color="#D1FAE5" />
-                        </TouchableOpacity>
-                        <View>
-                            <Text style={styles.headerTitle}>AdubaÃ§Ã£o</Text>
-                            <Text style={styles.headerSub}>Planos e Receitas</Text>
-                        </View>
-                        <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('AdubacaoForm')}>
-                            <Ionicons name="add" size={24} color="#064E3B" />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* ðŸ§ª HUB DE ADUBAÃ‡ÃƒO (4 BOTÃ•ES) */}
-                    <View style={styles.hubContainer}>
-                        <TouchableOpacity style={styles.hubItem} onPress={() => navigation.navigate('AdubacaoForm')}>
-                            <View style={[styles.hubIconBg, { backgroundColor: 'rgba(52, 211, 153, 0.15)' }]}>
-                                <Ionicons name="add" size={20} color="#34D399" />
-                            </View>
-                            <Text style={styles.hubLabel}>NOVA</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.hubItem} onPress={() => navigation.navigate('RecipeForm')}>
-                            <View style={[styles.hubIconBg, { backgroundColor: 'rgba(167, 243, 208, 0.15)' }]}>
-                                <Ionicons name="document-text" size={20} color="#6EE7B7" />
-                            </View>
-                            <Text style={styles.hubLabel}>RECEITA</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.hubItem} onPress={() => navigation.navigate('Fertilization')}>
-                            <View style={[styles.hubIconBg, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
-                                <Ionicons name="water" size={20} color="#10B981" />
-                            </View>
-                            <Text style={styles.hubLabel}>FERTI</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.hubItem} onPress={() => navigation.navigate('ApplicationForm')}>
-                            <View style={[styles.hubIconBg, { backgroundColor: 'rgba(5, 150, 105, 0.15)' }]}>
-                                <Ionicons name="calendar" size={20} color="#059669" />
-                            </View>
-                            <Text style={styles.hubLabel}>APLICAR</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* TABS */}
-                    <View style={styles.tabContainer}>
-                        {['Todos', 'Agendados', 'ConcluÃ­dos'].map(tab => (
-                            <TouchableOpacity 
-                                key={tab} 
-                                style={[styles.tab, activeTab === tab && styles.tabActive]}
-                                onPress={() => setActiveTab(tab)}
-                            >
-                                <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-
-                    <FlatList
-                        data={filteredPlanos}
-                        keyExtractor={item => item.uuid}
-                        renderItem={renderItem}
-                        contentContainerStyle={styles.listContent}
-                        showsVerticalScrollIndicator={false}
-                        refreshControl={<RefreshControl refreshing={loading} onRefresh={loadPlanos} tintColor="#34D399" />}
-                        ListEmptyComponent={
-                            <View style={styles.emptyBox}>
-                                <Ionicons name="flask-outline" size={50} color="rgba(255,255,255,0.2)" />
-                                <Text style={styles.emptyText}>Nenhum plano na aba {activeTab}</Text>
-                            </View>
-                        }
+                <View style={styles.summaryRow}>
+                    <MetricCard 
+                        title="Total Planos" 
+                        value={planos.length.toString()} 
+                        icon="list" 
+                        color="#FFF"
+                        style={styles.summaryCard}
                     />
-                </SafeAreaView>
-            </View>
+                    <MetricCard 
+                        title="Realizados" 
+                        value={appliedCount.toString()} 
+                        icon="checkmark-done" 
+                        color="#FFF"
+                        style={styles.summaryCard}
+                    />
+                </View>
+            </LinearGradient>
+
+            <FlatList
+                data={planos}
+                keyExtractor={(item) => item.uuid}
+                renderItem={renderItem}
+                contentContainerStyle={styles.listContent}
+                refreshControl={<RefreshControl refreshing={loading} onRefresh={loadPlanos} colors={[theme?.colors?.primary]} />}
+                ListEmptyComponent={
+                    <View style={styles.emptyContainer}>
+                        <Ionicons name="flask-outline" size={64} color="#D1D5DB" />
+                        <Text style={styles.emptyText}>Nenhum plano criado.</Text>
+                        <Text style={styles.emptySub}>Comece criando uma nova receita.</Text>
+                    </View>
+                }
+            />
+
+            <TouchableOpacity
+                style={[styles.fab, { backgroundColor: theme?.colors?.primary || '#10B981' }]}
+                onPress={() => navigation.navigate('AdubacaoForm')}
+            >
+                <Ionicons name="add" size={32} color="#FFF" />
+            </TouchableOpacity>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    webContainer: { flex: 1, alignItems: 'center', backgroundColor: '#000' },
-    mobileFrame: { flex: 1, width: '100%', maxWidth: 480, position: 'relative' },
-    
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 15 : 20, paddingBottom: 20 },
-    backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-    headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFF', textAlign: 'center' },
-    headerSub: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', marginTop: 2 },
-    addBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#34D399', justifyContent: 'center', alignItems: 'center' },
-    
-    hubContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 25 },
-    hubItem: { alignItems: 'center', flex: 1 },
-    hubIconBg: { width: 48, height: 48, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginBottom: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-    hubLabel: { color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
-
-    tabContainer: { flexDirection: 'row', marginHorizontal: 20, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 12, padding: 4, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-    tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 },
-    tabActive: { backgroundColor: 'rgba(52, 211, 153, 0.15)' },
-    tabText: { color: '#9CA3AF', fontSize: 13, fontWeight: '600' },
-    tabTextActive: { color: '#34D399', fontWeight: 'bold' },
-
-    listContent: { paddingHorizontal: 20, paddingBottom: 100 },
-    
-    card: { backgroundColor: 'rgba(255, 255, 255, 0.03)', borderRadius: 16, padding: 16, marginBottom: 15, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', paddingBottom: 12 },
-    titleRow: { flexDirection: 'row', alignItems: 'center' },
-    cardTitle: { color: '#FFF', fontSize: 15, fontWeight: 'bold' },
-    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-    statusText: { fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
-    
-    cardBody: { flexDirection: 'row', justifyContent: 'space-between' },
-    infoCol: { flex: 1 },
-    infoColRight: { alignItems: 'flex-end' },
-    infoLabel: { fontSize: 10, color: '#6B7280', fontWeight: 'bold', letterSpacing: 1, marginBottom: 4 },
-    infoValue: { fontSize: 13, color: '#E5E7EB', fontWeight: '500' },
-    infoValueDate: { fontSize: 13, color: '#D1FAE5', fontWeight: 'bold' },
-
-    alertBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(248, 113, 113, 0.1)', marginTop: 15, padding: 10, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(248, 113, 113, 0.2)' },
-    alertText: { color: '#FCA5A5', fontSize: 11, fontWeight: '600' },
-
-    emptyBox: { alignItems: 'center', justifyContent: 'center', marginTop: 100 },
-    emptyText: { color: '#6B7280', marginTop: 15, fontSize: 14 }
+    container: { flex: 1 },
+    header: { paddingTop: 50, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
+    summaryRow: { flexDirection: 'row', gap: 10 },
+    summaryCard: { flex: 1, height: 90, marginHorizontal: 0 },
+    listContent: { padding: 20, paddingBottom: 100 },
+    card: { marginBottom: 15, borderLeftWidth: 4, borderLeftColor: '#F59E0B' },
+    cardApplied: { borderLeftColor: '#10B981' },
+    cardContent: { padding: 15 },
+    cardHeader: { flexDirection: 'row', alignItems: 'center' },
+    iconContainer: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+    cardTitle: { fontSize: 15, fontWeight: '800', color: '#1F2937' },
+    cardSubtitle: { fontSize: 11, color: '#9CA3AF', fontWeight: 'bold', marginTop: 2 },
+    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+    statusText: { fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
+    localRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, backgroundColor: '#F9FAFB', padding: 8, borderRadius: 8 },
+    localText: { fontSize: 11, color: '#6B7280', fontWeight: '600', marginLeft: 5 },
+    fab: { position: 'absolute', bottom: 30, right: 30, width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', elevation: 10, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10 },
+    emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 100 },
+    emptyText: { marginTop: 20, fontSize: 16, fontWeight: 'bold', color: '#4B5563' },
+    emptySub: { marginTop: 5, fontSize: 14, color: '#9CA3AF', textAlign: 'center' }
 });
-

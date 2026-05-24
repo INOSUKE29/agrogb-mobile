@@ -1,53 +1,57 @@
-
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../context/ThemeContext';
+import Card from '../../components/common/Card';
 
+/**
+ * RecommendationCard - Cartão de Recomendações Agronômicas da IA 💡🌾
+ * Exibe insights técnicos e botão de ação para aplicar melhorias de campo.
+ */
 export default function RecommendationCard({ recommendation, onAction }) {
-    const isCrisis = recommendation.tipo === 'Calagem' || recommendation.titulo.includes('Crítico');
+    const { theme } = useTheme();
+    const colors = theme?.colors || {};
+
+    const { titulo, descricao, grau_urgencia, categoria } = recommendation || {};
+
+    const urgencyColor = grau_urgencia === 'Alto' ? '#EF4444' : (grau_urgencia === 'Médio' ? '#F59E0B' : '#10B981');
+    const urgencyBg = grau_urgencia === 'Alto' ? 'rgba(239, 68, 68, 0.1)' : (grau_urgencia === 'Médio' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)');
 
     return (
-        <View style={[styles.card, isCrisis && styles.crisisCard]}>
+        <Card style={[styles.card, { backgroundColor: colors.card || 'rgba(30, 41, 59, 0.25)' }]}>
             <View style={styles.header}>
-                <Ionicons 
-                    name={isCrisis ? "alert-circle" : "bulb-outline"} 
-                    size={24} 
-                    color={isCrisis ? "#B91C1C" : "#15803D"} 
-                />
-                <Text style={[styles.title, isCrisis && styles.crisisTitle]}>{recommendation.titulo}</Text>
-            </View>
-
-            <Text style={styles.description}>{recommendation.descricao}</Text>
-
-            <View style={styles.pillRow}>
-                <View style={styles.pill}>
-                    <Text style={styles.pillText}>{recommendation.produto_sugerido}</Text>
+                <View style={styles.categoryRow}>
+                    <Ionicons name="bulb-outline" size={14} color={colors.primary || '#A3E635'} />
+                    <Text style={[styles.category, { color: colors.primary || '#A3E635' }]}>{(categoria || 'Geral').toUpperCase()}</Text>
                 </View>
-                <View style={[styles.pill, { backgroundColor: '#E0F2FE' }]}>
-                    <Text style={[styles.pillText, { color: '#0369A1' }]}>{recommendation.dose_sugerida}</Text>
+                <View style={[styles.urgencyBadge, { backgroundColor: urgencyBg }]}>
+                    <Text style={[styles.urgencyText, { color: urgencyColor }]}>{(grau_urgencia || 'Normal').toUpperCase()}</Text>
                 </View>
             </View>
 
-            <Text style={styles.footer}>Baseado em: {recommendation.baseado_em}</Text>
+            <Text style={[styles.title, { color: colors.text || '#FFF' }]}>{titulo}</Text>
+            <Text style={styles.desc}>{descricao}</Text>
 
-            <TouchableOpacity style={styles.actionBtn} onPress={onAction}>
-                <Text style={styles.actionText}>MARCAR COMO APLICADO</Text>
+            <TouchableOpacity 
+                style={[styles.btn, { borderColor: colors.primary || '#A3E635' }]} 
+                onPress={onAction}
+                activeOpacity={0.7}
+            >
+                <Text style={[styles.btnText, { color: colors.primary || '#A3E635' }]}>MARCAR COMO APLICADO</Text>
             </TouchableOpacity>
-        </View>
+        </Card>
     );
 }
 
 const styles = StyleSheet.create({
-    card: { backgroundColor: '#FFFFFF', padding: 16, borderRadius: 16, marginVertical: 8, elevation: 3, borderLeftWidth: 4, borderLeftColor: '#15803D' },
-    crisisCard: { borderLeftColor: '#B91C1C', backgroundColor: '#FEF2F2' },
-    header: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-    title: { fontSize: 16, fontWeight: 'bold', color: '#15803D', marginLeft: 8 },
-    crisisTitle: { color: '#B91C1C' },
-    description: { fontSize: 14, color: '#4B5563', lineHeight: 20 },
-    pillRow: { flexDirection: 'row', marginVertical: 12 },
-    pill: { backgroundColor: '#DCFCE7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, marginRight: 8 },
-    pillText: { fontSize: 11, fontWeight: '700', color: '#166534' },
-    footer: { fontSize: 10, color: '#9CA3AF', fontStyle: 'italic' },
-    actionBtn: { marginTop: 12, paddingVertical: 10, backgroundColor: '#F3F4F6', borderRadius: 8, alignItems: 'center' },
-    actionText: { fontSize: 12, fontWeight: 'bold', color: '#374151' }
+    card: { marginHorizontal: 20, padding: 20, borderRadius: 24, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)' },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    categoryRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    category: { fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+    urgencyBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+    urgencyText: { fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
+    title: { fontSize: 15, fontWeight: '800', marginBottom: 8, letterSpacing: -0.2 },
+    desc: { fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 20, marginBottom: 16, fontWeight: '500' },
+    btn: { height: 42, borderRadius: 12, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.01)' },
+    btnText: { fontSize: 10, fontWeight: '900', letterSpacing: 1 }
 });

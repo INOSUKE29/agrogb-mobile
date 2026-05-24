@@ -1,5 +1,6 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import InputField from '../ui/InputField';
 import { AuthService } from '../services/authService';
 
@@ -11,11 +12,11 @@ export default function ResetPasswordScreen({ route, navigation }) {
 
     const handleReset = async () => {
         if (password.length < 6) {
-            Alert.alert('Erro', 'A senha deve ter no mÃ­nimo 6 caracteres.');
+            Alert.alert('Erro', 'A senha deve ter no mínimo 6 caracteres.');
             return;
         }
         if (password !== confirm) {
-            Alert.alert('Erro', 'As senhas nÃ£o coincidem.');
+            Alert.alert('Erro', 'As senhas não coincidem.');
             return;
         }
 
@@ -36,7 +37,7 @@ export default function ResetPasswordScreen({ route, navigation }) {
 
     return (
         <View style={styles.container}>
-            
+            <LinearGradient colors={['#064e3b', '#022c22']} style={StyleSheet.absoluteFill} />
 
             <View style={styles.content}>
                 <Text style={styles.title}>Nova Senha</Text>
@@ -50,7 +51,7 @@ export default function ResetPasswordScreen({ route, navigation }) {
                         icon="lock-closed-outline"
                         value={password}
                         onChangeText={setPassword}
-                        placeholder="MÃ­nimo 6 caracteres"
+                        placeholder="Mínimo 6 caracteres"
                         secureTextEntry
                     />
 
@@ -103,4 +104,3 @@ const styles = StyleSheet.create({
     },
     btnText: { color: '#064e3b', fontWeight: 'bold', fontSize: 16, letterSpacing: 1 }
 });
-

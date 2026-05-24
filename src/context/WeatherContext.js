@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { WeatherService } from '../services/weatherService';
+import { WeatherService } from '../services/WeatherService';
 
 const WeatherContext = createContext();
 
@@ -13,23 +13,32 @@ export const WeatherProvider = ({ children }) => {
         setLoading(true);
         setError(false);
         try {
-            const locInfo = await WeatherService.getLocationOrManual(forceRequest);
-            if (locInfo) {
+            const coords = await WeatherService.getLocation(forceRequest);
+            if (coords) {
                 setPermissionDenied(false);
-                const data = await WeatherService.getWeather(locInfo);
-                if (data) setWeather(data);
-                else setError(true);
+                const data = await WeatherService.getWeather(coords.lat, coords.lon);
+                if (data) {
+                    setWeather(data);
+                    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                    await AsyncStorage.setItem('@weather_cache', JSON.stringify(data));
+                } else setError(true);
             } else {
                 setPermissionDenied(true);
             }
-        } catch {
+        } catch (e) {
             setError(true);
+            // Tentar carregar do cache se houver erro (provavelmente offline)
+            const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+            const cached = await AsyncStorage.getItem('@weather_cache');
+            if (cached) setWeather(JSON.parse(cached));
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => { refreshWeather(false); }, []);
+    useEffect(() => { 
+        refreshWeather(false); 
+    }, []);
 
     return (
         <WeatherContext.Provider value={{ weather, loading, error, permissionDenied, refreshWeather }}>

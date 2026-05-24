@@ -1,199 +1,915 @@
+// database.js - Gestão Rápida com Enforcamento de MAIÚSCULAS e Suporte a Usuários
 import * as SQLite from 'expo-sqlite';
-import { v4 } from 'uuid';
-import { Platform } from 'react-native';
+import { v4 as uuidv4 } from 'uuid';
 
-import { SCHEMA_V10 } from './schema_v10';
-
-import { V1_DIAMOND_PRO } from './migrations/v1_diamond_pro';
-
-const __DEV__ = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
 let db;
+let currentUserUuid = 'SISTEMA';
+
+export const setCurrentUserUuid = (uuid) => {
+    currentUserUuid = uuid;
+};
 
 // Função auxiliar para promissificar o executeSql
-export const executeQuery = (sql, params = [], retries = 3) => {
+export const executeQuery = (sql, params = []) => {
     return new Promise((resolve, reject) => {
         if (!db) {
+            console.error('❌ Banco de dados não inicializado');
             reject(new Error('Banco não inicializado'));
             return;
         }
-        
-        const queryTimeout = setTimeout(() => {
-            console.warn('🕒 [SQL TIMEOUT CRÍTICO]:', sql.substring(0, 100));
-            reject(new Error('Timeout de execução SQL'));
-        }, 30000);
-
-        const attemptQuery = (remainingRetries) => {
-            try {
-                db.transaction(tx => {
-                    const start = Date.now();
-                    tx.executeSql(
-                        sql,
-                        params,
-                        (_, result) => {
-                            clearTimeout(queryTimeout);
-                            const duration = Date.now() - start;
-                            if (__DEV__ && duration > 1000) {
-                                console.log(`⚠️ Query Lenta (${duration}ms):`, sql.substring(0, 100));
-                            }
-                            resolve(result);
-                        },
-                        (_, error) => {
-                            // Se o erro for de banco ocupado/travado, tentamos novamente
-                            if (remainingRetries > 0 && (error.message?.includes('locked') || error.message?.includes('busy'))) {
-                                clearTimeout(queryTimeout);
-                                const delay = (4 - remainingRetries) * 200; // Backoff simples
-                                console.log(`🔄 [DB BUSY] Tentando novamente em ${delay}ms... (Restantes: ${remainingRetries})`);
-                                setTimeout(() => attemptQuery(remainingRetries - 1), delay);
-                                return;
-                            }
-
-                            clearTimeout(queryTimeout);
-                            if (__DEV__) console.log('⚠️ Erro SQL:', sql, error.message);
-                            reject(error);
-                        }
-                    );
-                }, (txError) => {
-                    if (remainingRetries > 0 && (txError.message?.includes('locked') || txError.message?.includes('busy'))) {
-                        clearTimeout(queryTimeout);
-                        setTimeout(() => attemptQuery(remainingRetries - 1), 200);
-                        return;
-                    }
-                    clearTimeout(queryTimeout);
-                    reject(txError);
-                });
-            } catch (e) {
-                clearTimeout(queryTimeout);
-                reject(e);
-            }
-        };
-
-        attemptQuery(retries);
-    });
-};
-
-/**
- * Executa múltiplas queries em uma ÚNICA transação atômica
- * Essencial para evitar bloqueios de banco na inicialização
- */
-export const executeTransaction = (queries) => {
-    return new Promise((resolve, reject) => {
-        if (!db) return reject(new Error('Banco não inicializado'));
-        
         db.transaction(tx => {
-            queries.forEach(sql => {
-                // Remove espaços vazios ou linhas nulas antes de executar
-                if (!sql || sql.trim() === '') return;
-
-                tx.executeSql(
-                    sql, 
-                    [], 
-                    null, 
-                    (_, err) => {
-                        // Logamos o erro mas retornamos 'false' para NÃO abortar a transação
-                        // Isso é vital para migrações que podem falhar (ex: colunas duplicadas)
-                        console.warn('⚠️ [SQL MIGRATION WARNING]:', sql.substring(0, 50), '->', err.message);
-                        return false; 
+            tx.executeSql(
+                sql,
+                params,
+                (_, result) => {
+                    // Log de Auditoria Automático
+                    const upperSql = sql.toUpperCase().trim();
+                    if (upperSql.startsWith('INSERT') || upperSql.startsWith('UPDATE') || upperSql.startsWith('DELETE')) {
+                        const tableMatch = upperSql.match(/(?:INSERT INTO|UPDATE|FROM)\s+([a-zA-Z0-9_]+)/);
+                        const table = tableMatch ? tableMatch[1] : 'UNKNOWN';
+                        const action = upperSql.startsWith('INSERT') ? 'INSERT' : upperSql.startsWith('UPDATE') ? 'UPDATE' : 'DELETE';
+                        
+                        tx.executeSql(
+                            'INSERT INTO audit_logs (usuario_uuid, acao, tabela, detalhes, data) VALUES (?, ?, ?, ?, ?)',
+                            [currentUserUuid, action, table, `SQL: ${sql.substring(0, 100)}...`, new Date().toISOString()]
+                        );
                     }
-                );
-            });
-        }, 
-        (err) => {
-            // Se a transação INTEIRA falhar por erro fatal (ex: banco corrompido ou erro de sintaxe grave)
-            console.error('❌ [TRANSACTION FATAL ERROR]:', err.message);
-            // IMPORTANTE: Resolvemos mesmo assim para permitir que o app abra 
-            // e possamos ver o erro na tela ou em logs, em vez de travar no loading.
-            resolve(); 
-        }, 
-        () => {
-            resolve();
+                    resolve(result);
+                },
+                (_, error) => {
+                    if (__DEV__) {
+                        console.log('⚠️ Aviso SQL Interno:', sql, error.message);
+                    }
+                    reject(error);
+                }
+            );
         });
     });
 };
 
 export const initDB = async () => {
     try {
-        if (Platform.OS === 'web') {
-            console.log('🌐 Web mode detected. Using Mock DB to prevent crashes.');
-            db = {
-                transaction: (txFn, errFn, successFn) => {
-                    try {
-                        txFn({
-                            executeSql: (sql, params, succ) => {
-                                if (succ) succ(null, { rows: { length: 0, item: () => null, _array: [] } });
-                            }
-                        });
-                        if (successFn) successFn();
-                    } catch (e) {
-                        if (errFn) errFn(e);
-                    }
-                }
-            };
-            return db;
-        }
-
         db = SQLite.openDatabase('agrogb_mobile.db');
-        
-        if (__DEV__) console.log('✅ Banco de dados aberto modo padrão (SDK 50)');
+        console.log('✅ Banco de dados aberto (SDK 50)');
         await createTables();
         return db;
     } catch (error) {
-        console.error('[DATABASE ERROR] Erro ao abrir banco:', error);
+        console.error('❌ Erro ao abrir banco:', error);
         throw error;
     }
 };
 
 const createTables = async () => {
     try {
-        if (__DEV__) console.log(`💎 v1.1 DIAMOND: Iniciando transação ATÔMICA TOTAL para ${V1_DIAMOND_PRO.length} comandos...`);
-        const start = Date.now();
-        
-        // Inclui SCHEMA_V10 se disponível
-        const allQueries = [...V1_DIAMOND_PRO, ...SCHEMA_V10];
-        await executeTransaction(allQueries);
-        if (__DEV__) console.log(`✨ DIAMOND SETUP em ${Date.now() - start}ms`);
+        const queries = [
+            `CREATE TABLE IF NOT EXISTS usuarios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE,
+                usuario TEXT UNIQUE NOT NULL,
+                senha TEXT NOT NULL,
+                nivel TEXT DEFAULT 'USUARIO',
+                last_updated TEXT
+            );`,
+            `CREATE TABLE IF NOT EXISTS colheitas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                cultura TEXT NOT NULL,
+                produto TEXT NOT NULL,
+                quantidade REAL NOT NULL,
+                data TEXT NOT NULL,
+                observacao TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS monitoramento (
+                uuid TEXT PRIMARY KEY,
+                cultura TEXT,
+                data TEXT,
+                imagem_base64 TEXT,
+                observacao TEXT,
+                sync_status INTEGER DEFAULT 0,
+                last_updated TEXT NOT NULL
+            );`,
+            `CREATE TABLE IF NOT EXISTS vendas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                cliente TEXT NOT NULL,
+                produto TEXT NOT NULL,
+                quantidade REAL NOT NULL,
+                valor REAL NOT NULL,
+                data TEXT NOT NULL,
+                observacao TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS config (
+                chave TEXT PRIMARY KEY,
+                valor TEXT
+            );`,
+            `CREATE TABLE IF NOT EXISTS estoque (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                produto TEXT UNIQUE NOT NULL,
+                quantidade REAL NOT NULL,
+                last_updated TEXT NOT NULL
+            );`,
+            `CREATE TABLE IF NOT EXISTS compras (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                item TEXT NOT NULL,
+                quantidade REAL NOT NULL,
+                valor REAL NOT NULL,
+                cultura TEXT,
+                data TEXT NOT NULL,
+                observacao TEXT,
+                fornecedor_uuid TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS plantio (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                cultura TEXT NOT NULL,
+                quantidade_pes INTEGER NOT NULL,
+                tipo_plantio TEXT,
+                data TEXT NOT NULL,
+                observacao TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS custos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                produto TEXT NOT NULL,
+                tipo TEXT,
+                quantidade REAL NOT NULL,
+                valor_total REAL NOT NULL,
+                data TEXT NOT NULL,
+                observacao TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS descarte (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                produto TEXT NOT NULL,
+                quantidade_kg REAL NOT NULL,
+                motivo TEXT,
+                data TEXT NOT NULL,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS cadastro (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                nome TEXT NOT NULL,
+                unidade TEXT,
+                tipo TEXT,
+                observacao TEXT,
+                fator_conversao REAL DEFAULT 1,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS clientes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                nome TEXT NOT NULL,
+                telefone TEXT,
+                endereco TEXT,
+                cpf_cnpj TEXT,
+                observacao TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS culturas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                nome TEXT NOT NULL,
+                observacao TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS maquinas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                nome TEXT NOT NULL,
+                tipo TEXT NOT NULL,
+                placa TEXT,
+                horimetro_atual REAL DEFAULT 0,
+                intervalo_revisao REAL DEFAULT 10000,
+                status TEXT DEFAULT 'OK',
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS manutencao_frota (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                maquina_uuid TEXT NOT NULL,
+                data TEXT NOT NULL,
+                descricao TEXT NOT NULL,
+                valor REAL NOT NULL,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS receitas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                produto_pai_uuid TEXT NOT NULL,
+                item_filho_uuid TEXT NOT NULL,
+                quantidade REAL NOT NULL,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                FOREIGN KEY(produto_pai_uuid) REFERENCES cadastro(uuid) ON DELETE CASCADE,
+                FOREIGN KEY(item_filho_uuid) REFERENCES cadastro(uuid) ON DELETE CASCADE
+            );`,
+            `CREATE TABLE IF NOT EXISTS talhoes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                nome TEXT NOT NULL,
+                area_ha REAL,
+                cultura_id TEXT,
+                status TEXT DEFAULT 'ATIVO',
+                observacao TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS fornecedores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                nome TEXT NOT NULL,
+                contato TEXT,
+                telefone TEXT,
+                email TEXT,
+                observacao TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS irrigacao (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                talhao_uuid TEXT,
+                turno TEXT,
+                duracao_min INTEGER,
+                volumetria_m3 REAL,
+                status TEXT DEFAULT 'CONCLUIDO',
+                data TEXT NOT NULL,
+                observacao TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS financeiro_transacoes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                tipo TEXT NOT NULL, -- 'PAGAR' ou 'RECEBER'
+                descricao TEXT NOT NULL,
+                valor REAL NOT NULL,
+                vencimento TEXT NOT NULL,
+                data_pagamento TEXT,
+                status TEXT DEFAULT 'PENDENTE', -- 'PENDENTE', 'PAGO', 'ATRASADO', 'CANCELADO'
+                categoria TEXT,
+                origem_uuid TEXT, -- Link para uuid de Compra ou Venda
+                entidade_nome TEXT, -- Nome do Fornecedor ou Cliente
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS fertirrigacao (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                talhao_uuid TEXT NOT NULL,
+                formula TEXT, -- Mistura/Receita
+                volume_agua_l REAL,
+                dosagem_insumo_kg REAL,
+                data TEXT NOT NULL,
+                status TEXT DEFAULT 'CONCLUIDO',
+                observacao TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS aplicacoes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                talhao_uuid TEXT NOT NULL,
+                produto_nome TEXT NOT NULL,
+                praga_alvo TEXT,
+                dose_ha REAL,
+                volume_calda_l REAL,
+                data TEXT NOT NULL,
+                carencia_dias INTEGER, -- Dias de carência
+                data_liberacao TEXT, -- Data calculada para colheita segura
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS equipes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                nome TEXT NOT NULL,
+                cargo TEXT NOT NULL, -- 'GERENTE', 'CAPATAZ', 'OPERADOR'
+                documento TEXT,
+                status TEXT DEFAULT 'ATIVO',
+                last_updated TEXT NOT NULL,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS audit_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                usuario_uuid TEXT,
+                acao TEXT NOT NULL, -- 'INSERT', 'UPDATE', 'DELETE'
+                tabela TEXT NOT NULL,
+                detalhes TEXT,
+                data TEXT NOT NULL
+            );`,
+            `CREATE TABLE IF NOT EXISTS etapas_adubacao (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                plano_uuid TEXT NOT NULL,
+                ordem INTEGER NOT NULL,
+                descricao TEXT,
+                status TEXT DEFAULT 'PENDENTE',
+                data_prevista TEXT,
+                data_realizada TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                FOREIGN KEY(plano_uuid) REFERENCES planos_adubacao(uuid) ON DELETE CASCADE
+            );`,
+            `CREATE TABLE IF NOT EXISTS profiles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                bio_enabled INTEGER DEFAULT 0,
+                last_login TEXT,
+                last_updated TEXT NOT NULL
+            );`,
+            `CREATE TABLE IF NOT EXISTS areas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                nome TEXT NOT NULL,
+                hectares REAL,
+                cultura_principal TEXT,
+                last_updated TEXT NOT NULL,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS categorias_despesa (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                nome TEXT NOT NULL,
+                tipo TEXT, -- 'VARIAVEL' ou 'FIXA'
+                last_updated TEXT NOT NULL,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS activity_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                usuario_uuid TEXT,
+                acao TEXT,
+                data TEXT NOT NULL
+            );`,
+            `CREATE TABLE IF NOT EXISTS error_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                usuario_id TEXT,
+                tela TEXT,
+                erro TEXT,
+                stack TEXT,
+                created_at TEXT NOT NULL,
+                data TEXT NOT NULL
+            );`,
+            `CREATE TABLE IF NOT EXISTS unidades_medida (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                nome TEXT NOT NULL,
+                sigla TEXT NOT NULL,
+                last_updated TEXT NOT NULL
+            );`,
+            `CREATE TABLE IF NOT EXISTS movimentacao_estoque (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                produto_uuid TEXT NOT NULL,
+                tipo TEXT NOT NULL, -- 'ENTRADA' ou 'SAIDA'
+                quantidade REAL NOT NULL,
+                motivo TEXT,
+                data TEXT NOT NULL,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS production_fertilization_items (
+                id TEXT PRIMARY KEY,
+                plano_uuid TEXT NOT NULL,
+                produto_id TEXT NOT NULL,
+                quantidade REAL NOT NULL,
+                unidade TEXT,
+                criado_em TEXT DEFAULT (datetime('now')),
+                sync_status INTEGER DEFAULT 0,
+                FOREIGN KEY(plano_uuid) REFERENCES planos_adubacao(uuid)
+            );`,
+            `CREATE TABLE IF NOT EXISTS farms (
+                uuid TEXT PRIMARY KEY,
+                owner_id TEXT NOT NULL,
+                nome TEXT NOT NULL,
+                cidade TEXT,
+                estado TEXT,
+                area_total REAL DEFAULT 0,
+                source_platform TEXT DEFAULT 'mobile',
+                created_by TEXT,
+                updated_by TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS fields (
+                uuid TEXT PRIMARY KEY,
+                farm_uuid TEXT NOT NULL,
+                nome TEXT NOT NULL,
+                area REAL DEFAULT 0,
+                plant_count INTEGER DEFAULT 0,
+                source_platform TEXT DEFAULT 'mobile',
+                created_by TEXT,
+                updated_by TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0,
+                FOREIGN KEY(farm_uuid) REFERENCES farms(uuid) ON DELETE CASCADE
+            );`,
+            `CREATE TABLE IF NOT EXISTS plantings (
+                uuid TEXT PRIMARY KEY,
+                field_uuid TEXT NOT NULL,
+                crop_name TEXT NOT NULL,
+                variety_name TEXT NOT NULL,
+                planting_date TEXT NOT NULL,
+                expected_yield REAL DEFAULT 0,
+                status TEXT DEFAULT 'ATIVO',
+                source_platform TEXT DEFAULT 'mobile',
+                created_by TEXT,
+                updated_by TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0,
+                FOREIGN KEY(field_uuid) REFERENCES fields(uuid) ON DELETE CASCADE
+            );`,
+            `CREATE TABLE IF NOT EXISTS agronomist_codes (
+                uuid TEXT PRIMARY KEY,
+                agronomist_id TEXT UNIQUE NOT NULL,
+                invite_code TEXT UNIQUE NOT NULL,
+                created_at TEXT NOT NULL
+            );`,
+            `CREATE TABLE IF NOT EXISTS agronomist_client_links (
+                uuid TEXT PRIMARY KEY,
+                agronomist_id TEXT NOT NULL,
+                client_id TEXT NOT NULL,
+                status TEXT DEFAULT 'PENDING',
+                permissions TEXT DEFAULT '{}',
+                created_at TEXT NOT NULL,
+                approved_at TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS products (
+                uuid TEXT PRIMARY KEY,
+                nome TEXT NOT NULL,
+                fabricante TEXT NOT NULL,
+                categoria TEXT NOT NULL,
+                tags TEXT,
+                owner_id TEXT,
+                curation_status TEXT DEFAULT 'approved',
+                source_platform TEXT DEFAULT 'mobile',
+                created_by TEXT,
+                updated_by TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
+            );`,
+            `CREATE TABLE IF NOT EXISTS recommendations (
+                uuid TEXT PRIMARY KEY,
+                agronomist_id TEXT,
+                client_id TEXT NOT NULL,
+                farm_uuid TEXT NOT NULL,
+                field_uuid TEXT NOT NULL,
+                planting_uuid TEXT,
+                title TEXT NOT NULL,
+                description TEXT,
+                application_type TEXT NOT NULL,
+                recipe_data TEXT NOT NULL,
+                scheduled_date TEXT NOT NULL,
+                status TEXT DEFAULT 'PENDING',
+                source_platform TEXT DEFAULT 'mobile',
+                created_by TEXT,
+                updated_by TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0,
+                FOREIGN KEY(farm_uuid) REFERENCES farms(uuid) ON DELETE CASCADE,
+                FOREIGN KEY(field_uuid) REFERENCES fields(uuid) ON DELETE CASCADE,
+                FOREIGN KEY(planting_uuid) REFERENCES plantings(uuid) ON DELETE SET NULL
+            );`
+        ];
 
-        // --- TAREFAS PESADAS (RODAM APENAS UMA VEZ) ---
-        const lastCleanup = await getConfig('LAST_HEAVY_CLEANUP');
-        const today = new Date().toISOString().split('T')[0];
-
-        if (lastCleanup !== today) {
-            if (__DEV__) console.log('🚀 Executando manutenções pesadas diárias...');
-            await deduplicateClientes();
-            
-            const countKnowledge = await executeQuery('SELECT COUNT(*) as c FROM base_conhecimento_pro');
-            if (countKnowledge.rows.item(0).c === 0) {
-                await seedKnowledgeBasePro();
-            }
-            await setConfig('LAST_HEAVY_CLEANUP', today);
+        for (const query of queries) {
+            await executeQuery(query);
         }
 
-        if (__DEV__) console.log("✅ Ciclo de inicialização DIAMOND finalizado.");
+        // Inserir Admin padrão se não existir (Paridade com Desktop)
+        try {
+            const adminCount = await executeQuery("SELECT COUNT(*) as c FROM usuarios WHERE usuario = 'ADMIN'");
+            if (adminCount.rows.item(0).c === 0) {
+                await executeQuery(
+                    `INSERT INTO usuarios (uuid, usuario, senha, nivel, is_deleted) VALUES (?, ?, ?, ?, ?)`,
+                    ['admin-default-uuid', 'ADMIN', '1234', 'ADM', 0]
+                );
+                console.log('✅ ADMIN padrão inserido com sucesso.');
+            } else {
+                // Garantir integridade do Admin existente
+                await executeQuery(
+                    `UPDATE usuarios SET senha = '1234', nivel = 'ADM', is_deleted = 0 WHERE usuario = 'ADMIN'`
+                );
+                // Garantir UUID do Admin se estiver nulo
+                await executeQuery(
+                    `UPDATE usuarios SET uuid = 'admin-default-uuid' WHERE usuario = 'ADMIN' AND (uuid IS NULL OR uuid = '')`
+                );
+                console.log('✅ ADMIN padrão atualizado e verificado.');
+            }
+        } catch (adminError) {
+            console.error('⚠️ Erro ao verificar/inserir ADMIN:', adminError);
+        }
+
+        // MIGRATION: Adicionar email se não existir (v3.5)
+        try {
+            await executeQuery('ALTER TABLE usuarios ADD COLUMN email TEXT');
+            console.log('✅ Coluna email adicionada com sucesso');
+        } catch (e) { }
+
+
+        // MIGRATION: Cadastro (v4.0)
+        try {
+            await executeQuery('ALTER TABLE cadastro ADD COLUMN estocavel INTEGER DEFAULT 1');
+            await executeQuery('ALTER TABLE cadastro ADD COLUMN vendavel INTEGER DEFAULT 1');
+            console.log('✅ Colunas estocavel/vendavel adicionadas');
+        } catch (e) { }
+
+        // MIGRATION: Compras Fornecedor (v7.1)
+        try {
+            await executeQuery('ALTER TABLE compras ADD COLUMN fornecedor_uuid TEXT');
+            console.log('✅ Coluna fornecedor_uuid adicionada em compras');
+        } catch (e) { }
+
+        // MIGRATION: Perfil de Usuário (v4.1)
+        try {
+            await executeQuery('ALTER TABLE usuarios ADD COLUMN uuid TEXT');
+            await executeQuery('CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_uuid ON usuarios(uuid)');
+            await executeQuery('ALTER TABLE usuarios ADD COLUMN nome_completo TEXT');
+            await executeQuery('ALTER TABLE usuarios ADD COLUMN telefone TEXT');
+            await executeQuery('ALTER TABLE usuarios ADD COLUMN endereco TEXT');
+            console.log('✅ Colunas de perfil e UUID adicionadas');
+        } catch (e) { }
+
+        // MIGRATION: Colheita Congelado (v4.1)
+        try {
+            await executeQuery('ALTER TABLE colheitas ADD COLUMN congelado REAL DEFAULT 0');
+            console.log('✅ Coluna congelado adicionada');
+        } catch (e) { }
+
+        // MIGRATION: Avatar Profile (v6.1)
+        try {
+            await executeQuery('ALTER TABLE usuarios ADD COLUMN avatar TEXT');
+            console.log('✅ Coluna avatar adicionada');
+        } catch (e) { }
+
+        // MIGRATION: Cadastro Fator Conversão (v4.2)
+        try {
+            await executeQuery('ALTER TABLE cadastro ADD COLUMN fator_conversao REAL DEFAULT 1');
+            console.log('✅ Coluna fator_conversao adicionada');
+        } catch (e) { }
+
+        // MIGRATION: Compras Detalhes (v4.0)
+        try {
+            await executeQuery('ALTER TABLE compras ADD COLUMN detalhes TEXT');
+            console.log('✅ Coluna detalhes adicionada em compras');
+        } catch (e) { }
+
+        // MIGRATION: Auth Providers (v5.2)
+        try {
+            await executeQuery('ALTER TABLE usuarios ADD COLUMN provider TEXT DEFAULT "local"');
+            await executeQuery('ALTER TABLE usuarios ADD COLUMN avatar_url TEXT');
+            console.log('✅ Colunas de Auth Provider adicionadas');
+        } catch (e) { }
+
+        // MIGRATION: App Settings (FASE 10)
+        try {
+            await executeQuery(`
+                CREATE TABLE IF NOT EXISTS app_settings (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    primary_color TEXT DEFAULT '#059669',
+                    theme_mode TEXT DEFAULT 'system',
+                    fazenda_nome TEXT,
+                    fazenda_produtor TEXT,
+                    fazenda_documento TEXT,
+                    fazenda_telefone TEXT,
+                    fazenda_email TEXT,
+                    fazenda_logo TEXT,
+                    fin_moeda TEXT DEFAULT 'R$',
+                    fin_mes_fiscal INTEGER DEFAULT 1,
+                    fin_calc_margem INTEGER DEFAULT 0,
+                    fin_vinc_custo INTEGER DEFAULT 0,
+                    fin_meta_lucro REAL,
+                    clima_api_key TEXT,
+                    clima_cidade TEXT,
+                    clima_gps INTEGER DEFAULT 1,
+                    clima_ativo INTEGER DEFAULT 1,
+                    rel_incluir_logo INTEGER DEFAULT 1,
+                    rel_modelo TEXT DEFAULT 'resumido',
+                    img_qualidade REAL DEFAULT 0.8,
+                    img_limite INTEGER DEFAULT 3,
+                    updated_at TEXT
+                )
+            `);
+            await executeQuery(`INSERT OR IGNORE INTO app_settings (id, updated_at) VALUES (1, ?)`, [new Date().toISOString()]);
+            console.log('✅ Tabela app_settings verificada/criada com sucesso');
+        } catch (e) { console.error('❌ Erro app_settings', e); }
+
+        // MIGRATION: Adubação (v5.4)
+        try {
+            await executeQuery(`CREATE TABLE IF NOT EXISTS planos_adubacao (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                nome_plano TEXT NOT NULL,
+                cultura TEXT,
+                tipo_aplicacao TEXT,
+                area_local TEXT,
+                descricao_tecnica TEXT,
+                status TEXT DEFAULT 'PLANEJADO',
+                data_criacao TEXT NOT NULL,
+                data_aplicacao TEXT,
+                anexos_uri TEXT,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0
+            )`);
+            console.log('✅ Tabela planos_adubacao criada/verificada');
+        } catch (e) { console.error('Erro table planos_adubacao:', e); }
+
+
+        // --- ARQUITETURA PROFISSIONAL MONITORAMENTO v6.0 ---
+
+        // 1. MONITORAMENTO (Núcleo)
+        try {
+            // Se já existir a tabela antiga, podemos renomear ou apenas criar a nova se não existir.
+            // Para garantir a estrutura nova, vamos criar 'monitoramento_v6' ou alterar a estrutura.
+            // Dada a mudança radical, vou criar tabelas novas limpas para esta arquitetura e
+            // o app usará elas.
+
+            await executeQuery(`CREATE TABLE IF NOT EXISTS monitoramento_entidade (
+                uuid TEXT PRIMARY KEY,
+                usuario_id TEXT,
+                area_id TEXT,
+                cultura_id TEXT,
+                data TEXT NOT NULL,
+                observacao_usuario TEXT,
+                status TEXT DEFAULT 'RASCUNHO', -- RASCUNHO / CONFIRMADO
+                nivel_confianca TEXT DEFAULT 'TÉCNICO', -- INFORMATIVO / TÉCNICO / VALIDADO
+                geoloc TEXT, -- Latitude,Longitude
+                criado_em TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                last_updated TEXT NOT NULL
+            )`);
+        } catch (e) { console.error('Erro table monitoramento_entidade', e); }
+
+        // 2. MONITORAMENTO MÍDIA
+        try {
+            await executeQuery(`CREATE TABLE IF NOT EXISTS monitoramento_media (
+                uuid TEXT PRIMARY KEY,
+                monitoramento_uuid TEXT NOT NULL,
+                tipo TEXT NOT NULL, -- IMAGEM / PDF / TEXTO
+                caminho_arquivo TEXT NOT NULL,
+                criado_em TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                last_updated TEXT NOT NULL,
+                FOREIGN KEY(monitoramento_uuid) REFERENCES monitoramento_entidade(uuid)
+            )`);
+        } catch (e) { console.error('Erro table monitoramento_media', e); }
+
+        // 3. ANÁLISE IA (Resultados)
+        try {
+            await executeQuery(`CREATE TABLE IF NOT EXISTS analise_ia (
+                uuid TEXT PRIMARY KEY,
+                monitoramento_uuid TEXT NOT NULL,
+                classificacao_principal TEXT,
+                classificacoes_secundarias TEXT,
+                sintomas TEXT,
+                causa_provavel TEXT,
+                tipo_problema TEXT, -- DOENCA / PRAGA / DEFICIENCIA / MANEJO
+                nutriente TEXT,
+                sugestao_controle TEXT,
+                produtos_citados TEXT,
+                dosagem TEXT,
+                forma_aplicacao TEXT,
+                observacoes_tecnicas TEXT,
+                fonte_informacao TEXT,
+                criado_em TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                last_updated TEXT NOT NULL,
+                FOREIGN KEY(monitoramento_uuid) REFERENCES monitoramento_entidade(uuid)
+            )`);
+        } catch (e) { console.error('Erro table analise_ia', e); }
+
+        // 4. BASE DE CONHECIMENTO (Refinada)
+        try {
+            await executeQuery(`CREATE TABLE IF NOT EXISTS base_conhecimento_pro (
+                uuid TEXT PRIMARY KEY,
+                tipo TEXT NOT NULL,
+                cultura_id TEXT,
+                titulo TEXT NOT NULL,
+                descricao TEXT,
+                sintomas TEXT,
+                causas TEXT,
+                controle TEXT,
+                fonte TEXT,
+                nivel_confianca TEXT,
+                ativo INTEGER DEFAULT 1,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0
+            )`);
+
+            // Seed Inicial Pro
+            const count = await executeQuery('SELECT COUNT(*) as c FROM base_conhecimento_pro');
+            if (count.rows.item(0).c === 0) {
+                await seedKnowledgeBasePro();
+            }
+
+        } catch (e) { console.error('Erro table base_conhecimento_pro', e); }
+
+        // MIGRATION: Cadastro V7.0 (Campos Agrícolas Avançados)
+        try {
+            const newCols = [
+                'principio_ativo TEXT',
+                'classe_toxicologica TEXT',
+                'composicao TEXT',
+                'preco_venda REAL DEFAULT 0',
+                'descricao_ia TEXT',         // V7.0: IA Cache
+                'validado_por TEXT',         // V7.0: Validação
+                'data_validacao TEXT'        // V7.0: Data Val
+            ];
+            for (const col of newCols) {
+                try { await executeQuery(`ALTER TABLE cadastro ADD COLUMN ${col}`); } catch (e) { }
+            }
+            console.log('✅ Colunas V7.0 (Cadastro Agrícola & IA) verificadas.');
+        } catch (e) { }
+
+        // MIGRATION: V7.0 - Tabelas de Mídia e Auditoria
+        try {
+            await executeQuery(`CREATE TABLE IF NOT EXISTS cadastro_midia (
+                uuid TEXT PRIMARY KEY,
+                produto_uuid TEXT NOT NULL,
+                tipo TEXT NOT NULL,        -- 'FOTO_PRODUTO' ou 'ROTULO_BULA'
+                caminho_local TEXT,        -- Path no dispositivo
+                url_remota TEXT,           -- URL no Cloud/Storage
+                ocr_texto_bruto TEXT,      -- Texto extraído via OCR desta imagem
+                criado_em TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                FOREIGN KEY(produto_uuid) REFERENCES cadastro(uuid)
+            )`);
+
+            await executeQuery(`CREATE TABLE IF NOT EXISTS auditoria_cadastro (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                produto_uuid TEXT NOT NULL,
+                campo_alterado TEXT NOT NULL,
+                valor_antigo TEXT,
+                valor_novo TEXT,
+                alterado_por TEXT NOT NULL,
+                data_alteracao TEXT NOT NULL
+            )`);
+            console.log('✅ Tabelas V7.0 (Mídia e Auditoria) criadas/verificadas');
+        } catch (e) { console.error('Erro migração V7.0', e); }
+
+
+        // MIGRATION: Soft Delete Flag
+        const tablesToCheck = ['usuarios', 'colheitas', 'monitoramento', 'vendas', 'estoque', 'compras', 'plantio', 'custos', 'descarte', 'cadastro', 'clientes', 'culturas', 'maquinas', 'manutencao_frota', 'receitas', 'planos_adubacao'];
+        for (const table of tablesToCheck) {
+            try { 
+                await executeQuery(`ALTER TABLE ${table} ADD COLUMN is_deleted INTEGER DEFAULT 0`); 
+            } catch (e) { }
+            try {
+                await executeQuery(`UPDATE ${table} SET is_deleted = 0 WHERE is_deleted IS NULL`);
+            } catch (e) { }
+        }
+
+        // MIGRATION: Coluna Anexo para Notas Fiscais e Recibos
+        const tablesWithAttachments = ['compras', 'vendas', 'colheitas', 'custos'];
+        for (const table of tablesWithAttachments) {
+            try { await executeQuery(`ALTER TABLE ${table} ADD COLUMN anexo TEXT`); } catch (e) { }
+        }
+        console.log('✅ Colunas de Anexo migradas');
+
+        console.log('✅ Soft delete migrado');
+
+        console.log('✅ Arquitetura Monitoramento v6.0 Implementada');
+
+        // MIGRATION: V8.0 - Módulo de Centro de Custos Profissional
+        try {
+            await executeQuery(`CREATE TABLE IF NOT EXISTS cost_categories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                type TEXT,
+                is_default INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0,
+                created_at TEXT
+            )`);
+
+            await executeQuery(`CREATE TABLE IF NOT EXISTS costs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                category_id INTEGER NOT NULL,
+                culture_id INTEGER,
+                fleet_id INTEGER,
+                quantity REAL,
+                unit_value REAL,
+                total_value REAL,
+                notes TEXT,
+                created_at TEXT,
+                is_deleted INTEGER DEFAULT 0,
+                FOREIGN KEY(category_id) REFERENCES cost_categories(id)
+            )`);
+            console.log('✅ Tabelas de Custos V8.0 verificadas');
+        } catch (e) { }
+
+        // MIGRATION: Monitoramento Geoloc (v7.2)
+        try {
+            await executeQuery('ALTER TABLE monitoramento_entidade ADD COLUMN geoloc TEXT');
+            console.log('✅ Coluna geoloc adicionada em monitoramento_entidade');
+        } catch (e) { }
+
+        try {
+            // Seed das categorias padrão
+            const countCat = await executeQuery('SELECT COUNT(*) as c FROM cost_categories');
+            if (countCat.rows.item(0).c === 0) {
+                const defaultCategories = [
+                    { name: 'Mão de Obra', type: 'variavel' },
+                    { name: 'Combustível', type: 'variavel' },
+                    { name: 'Manutenção', type: 'variavel' },
+                    { name: 'Insumos', type: 'variavel' },
+                    { name: 'Energia', type: 'fixa' },
+                    { name: 'Frete', type: 'variavel' },
+                    { name: 'Outros', type: 'variavel' }
+                ];
+                for (const cat of defaultCategories) {
+                    await executeQuery(
+                        `INSERT INTO cost_categories (name, type, is_default, created_at) VALUES (?, ?, ?, ?)`,
+                        [cat.name, cat.type, 1, new Date().toISOString()]
+                    );
+                }
+                console.log('✅ Categorias de Custos base criadas via Seed');
+            }
+            console.log('✅ Módulo de Custos Profissional (V8.0) criado/verificado');
+        } catch (e) {
+            console.log('❌ Erro migração V8.0 (Custos):', e.message || e);
+        }
+
+        // MIGRATION: V8.1 - Notas Manuais Caderno Agrícola
+        try {
+            await executeQuery(`CREATE TABLE IF NOT EXISTS caderno_notas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                observacao TEXT NOT NULL,
+                data TEXT NOT NULL,
+                last_updated TEXT NOT NULL,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
+            )`);
+            console.log('✅ Tabela caderno_notas verificada/criada');
+        } catch (e) { }
+
+        // MIGRATION: Sync Support for Legacy Tables (v8.2)
+        try {
+            await executeQuery('ALTER TABLE usuarios ADD COLUMN uuid TEXT');
+            await executeQuery('ALTER TABLE usuarios ADD COLUMN sync_status INTEGER DEFAULT 0');
+        } catch (e) { }
+
+        try {
+            await executeQuery('ALTER TABLE estoque ADD COLUMN uuid TEXT');
+            await executeQuery('ALTER TABLE estoque ADD COLUMN sync_status INTEGER DEFAULT 0');
+        } catch (e) { }
+
+        try {
+            await executeQuery('ALTER TABLE app_settings ADD COLUMN usd_rate REAL DEFAULT 5.0');
+            console.log('✅ Coluna usd_rate adicionada');
+        } catch (e) { }
+
+        // MIGRATION: User Roles Support (v9.0)
+        try {
+            await executeQuery("ALTER TABLE usuarios ADD COLUMN role TEXT DEFAULT 'CLIENTE'");
+            console.log('✅ Coluna role adicionada em usuarios');
+        } catch (e) { }
+
+        // MIGRATION: Sync Support for equipes and agronomist_codes (v9.1)
+        try {
+            await executeQuery('ALTER TABLE equipes ADD COLUMN sync_status INTEGER DEFAULT 0');
+            console.log('✅ Coluna sync_status adicionada em equipes');
+        } catch (e) { }
+
+        try {
+            await executeQuery('ALTER TABLE agronomist_codes ADD COLUMN last_updated TEXT');
+            await executeQuery('ALTER TABLE agronomist_codes ADD COLUMN sync_status INTEGER DEFAULT 0');
+            console.log('✅ Colunas last_updated e sync_status adicionadas em agronomist_codes');
+        } catch (e) { }
+
 
     } catch (error) {
-        console.error('❌ ERRO CRÍTICO DIAMOND SETUP:', error);
-    }
-};
-
-export const deduplicateClientes = async () => {
-    try {
-        if (__DEV__) console.log('🧹 Iniciando deduplicação OTIMIZADA de clientes (SQL Express)...');
-        
-        // Estratégia SQL: Marca como deletado todos os registros que tenham Nome/CPF duplicado, 
-        // mantendo apenas o ID mais antigo. Muito mais rápido que loop JS.
-        await executeQuery(`
-            UPDATE clientes 
-            SET is_deleted = 1, sync_status = 0 
-            WHERE id NOT IN (
-                SELECT MIN(id) 
-                FROM clientes 
-                WHERE is_deleted = 0 
-                GROUP BY UPPER(TRIM(nome)), COALESCE(TRIM(cpf_cnpj), '')
-            ) AND is_deleted = 0
-        `);
-
-        if (__DEV__) console.log('✅ Deduplicação concluída via SQL Unitário.');
-    } catch (e) {
-        console.error('❌ Erro na deduplicação de clientes:', e);
+        console.error('❌ Erro ao criar tabelas:', error);
     }
 };
 
@@ -237,54 +953,623 @@ const seedKnowledgeBasePro = async () => {
                 await executeQuery(
                     `INSERT INTO base_conhecimento_pro (uuid, tipo, titulo, sintomas, causas, controle, fonte, nivel_confianca, last_updated) 
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [v4(), s.tipo, s.titulo, s.sintomas, s.causas, s.controle, s.fonte, s.conf, new Date().toISOString()]
+                    [uuidv4(), s.tipo, s.titulo, s.sintomas, s.causas, s.controle, s.fonte, s.conf, new Date().toISOString()]
                 );
             }
             console.log('✅ Base de Conhecimento Seedada com sucesso!');
         }
-    } catch (e) { console.error('[SYNC ERROR]', e); }
+    } catch (e) { console.error('Seed Error:', e); }
 };
 
 // ... (helpers)
 
-// --- OPERAÇÕES NATIVAS (FIM DA BAGUNÇA BUILD #107) ---
-// Todo o CRUD de negócio foi migrado para src/services/
+// --- PLANOS DE ADUBAÇÃO (v5.4) ---
 
-// --- LOGGING / AUDITORIA ---
-export const logActivity = async (acao, entidade, descricao, usuario = 'SISTEMA') => {
-    try {
-        await executeQuery(`INSERT INTO activity_log (data, usuario, acao, entidade, descricao, sync_status) VALUES (?, ?, ?, ?, ?, 0)`,
-            [new Date().toISOString(), up(usuario), up(acao), up(entidade), up(descricao)]);
-    } catch (e) { console.log('Erro ao registrar log:', e); }
+export const insertPlanoAdubacao = async (d) => {
+    await executeQuery(
+        `INSERT INTO planos_adubacao (uuid, nome_plano, cultura, tipo_aplicacao, area_local, descricao_tecnica, status, data_criacao, data_aplicacao, anexos_uri, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [d.uuid, up(d.nome_plano), up(d.cultura), up(d.tipo_aplicacao), up(d.area_local), d.descricao_tecnica, up(d.status), d.data_criacao, d.data_aplicacao, d.anexos_uri, new Date().toISOString(), 0]
+    );
 };
 
-export const logError = async (tela, erroMsg, stack = '') => {
-    try {
-        await executeQuery(`INSERT INTO error_logs (data, tela, erro, stack, sync_status) VALUES (?, ?, ?, ?, 0)`,
-            [new Date().toISOString(), up(tela), erroMsg, stack]);
-    } catch (e) { console.log('Erro ao registrar erro interno:', e); }
+export const updatePlanoAdubacao = async (uuid, d) => {
+    await executeQuery(
+        `UPDATE planos_adubacao SET nome_plano = ?, cultura = ?, tipo_aplicacao = ?, area_local = ?, descricao_tecnica = ?, status = ?, data_aplicacao = ?, anexos_uri = ?, last_updated = ?, sync_status = 0 WHERE uuid = ?`,
+        [up(d.nome_plano), up(d.cultura), up(d.tipo_aplicacao), up(d.area_local), d.descricao_tecnica, up(d.status), d.data_aplicacao, d.anexos_uri, new Date().toISOString(), uuid]
+    );
 };
 
-// --- CONFIGURAÇÕES DE SISTEMA ---
+export const getPlanosAdubacao = async () => {
+    const res = await executeQuery('SELECT * FROM planos_adubacao ORDER BY data_criacao DESC');
+    const rows = [];
+    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    return rows;
+};
+
+export const deletePlanoAdubacao = async (uuid) => {
+    await executeQuery('DELETE FROM planos_adubacao WHERE uuid = ?', [uuid]);
+};
+
+// --- CADERNO DE NOTAS (v8.1) ---
+
+export const insertCadernoNota = async (d) => {
+    await executeQuery(
+        `INSERT INTO caderno_notas (uuid, observacao, data, last_updated, sync_status) VALUES (?, ?, ?, ?, ?)`,
+        [d.uuid || uuidv4(), up(d.observacao), d.data, new Date().toISOString(), 0]
+    );
+};
+
+export const getCadernoNotas = async () => {
+    const res = await executeQuery('SELECT * FROM caderno_notas WHERE is_deleted = 0 ORDER BY data DESC');
+    const rows = [];
+    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    return rows;
+};
+
+export const deleteCadernoNota = async (uuid) => {
+    await executeQuery('UPDATE caderno_notas SET is_deleted = 1, sync_status = 0 WHERE uuid = ?', [uuid]);
+};
+
+// --- HELPER PARA MAIÚSCULAS ---
+const up = (text) => text ? text.toString().toUpperCase().trim() : '';
+
+// --- CONFIG ---
 export const setConfig = async (chave, valor) => {
-    try { await executeQuery('INSERT OR REPLACE INTO config (chave, valor) VALUES (?, ?)', [chave, valor]); } catch { }
+    try { await executeQuery('INSERT OR REPLACE INTO config (chave, valor) VALUES (?, ?)', [chave, valor]); } catch (e) { }
 };
 
 export const getConfig = async (chave) => {
     try {
         const result = await executeQuery('SELECT valor FROM config WHERE chave = ?', [chave]);
         return result.rows.length > 0 ? result.rows.item(0).valor : null;
-    } catch { return null; }
+    } catch (e) { return null; }
 };
 
-// --- HELPER PARA MAIÚSCULAS ---
-const up = (text) => text ? text.toString().toUpperCase().trim() : '';
+// --- USUÁRIOS ---
+export const insertUsuario = async (u) => {
+    const uuid = u.uuid || uuidv4();
+    await executeQuery(`INSERT INTO usuarios (uuid, usuario, senha, nivel, role, email, nome_completo, telefone, endereco, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [uuid, up(u.usuario), u.senha, up(u.nivel), u.role || 'CLIENTE', u.email ? u.email.trim() : null, up(u.nome_completo), u.telefone, up(u.endereco), new Date().toISOString()]);
+};
 
-// --- CONFIGURAÇÕES DO APP (FASE 10) ---
+export const updateUsuario = async (u) => {
+    await executeQuery(`UPDATE usuarios SET senha = ?, nivel = ?, role = ?, email = ?, nome_completo = ?, telefone = ?, endereco = ?, last_updated = ? WHERE uuid = ?`,
+        [u.senha, up(u.nivel), u.role || 'CLIENTE', u.email ? u.email.trim() : null, up(u.nome_completo), u.telefone, up(u.endereco), new Date().toISOString(), u.uuid]);
+};
+
+export const getUsuarios = async () => {
+    const res = await executeQuery('SELECT * FROM usuarios WHERE is_deleted = 0 ORDER BY usuario ASC');
+    const rows = [];
+    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    return rows;
+};
+
+export const deleteUsuario = async (identifier) => {
+    if (typeof identifier === 'string' && identifier.length > 10) {
+        await executeQuery('UPDATE usuarios SET is_deleted = 1 WHERE uuid = ?', [identifier]);
+    } else {
+        await executeQuery('UPDATE usuarios SET is_deleted = 1 WHERE id = ?', [identifier]);
+    }
+};
+
+// --- OPERAÇÕES (TODAS COM up()) ---
+
+export const insertColheita = async (c) => {
+    await executeQuery(
+        `INSERT INTO colheitas (uuid, cultura, produto, quantidade, congelado, data, observacao, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [c.uuid, up(c.cultura), up(c.produto), c.quantidade, c.congelado || 0, c.data, up(c.observacao), new Date().toISOString(), 0]
+    );
+    await atualizarEstoque(c.produto, c.quantidade, c.data);
+};
+
+export const updateColheita = async (uuid, dados) => {
+    // Primeiro desfazer o estoque da quantidade antiga é complexo sem ler antes, 
+    // mas para simplificar vamos assumir que a UI lida ou o usuário ajusta estoque se errar muito.
+    // O ideal seria ler, subtrair, adicionar novo.
+    const ant = await executeQuery('SELECT * FROM colheitas WHERE uuid = ?', [uuid]);
+    if (ant.rows.length > 0) {
+        const old = ant.rows.item(0);
+        await atualizarEstoque(old.produto, -old.quantidade, old.data); // Reverte com data original
+    }
+
+    await executeQuery(
+        `UPDATE colheitas SET cultura = ?, produto = ?, quantidade = ?, congelado = ?, data = ?, observacao = ?, last_updated = ?, sync_status = 0 WHERE uuid = ?`,
+        [up(dados.cultura), up(dados.produto), dados.quantidade, dados.congelado || 0, dados.data, up(dados.observacao), new Date().toISOString(), uuid]
+    );
+    await atualizarEstoque(dados.produto, dados.quantidade, dados.data); // Aplica novo com data nova
+};
+
+export const deleteColheita = async (uuid) => {
+    const ant = await executeQuery('SELECT * FROM colheitas WHERE uuid = ?', [uuid]);
+    if (ant.rows.length > 0) {
+        const old = ant.rows.item(0);
+        await atualizarEstoque(old.produto, -old.quantidade); // Reverte estoque
+    }
+    await executeQuery('UPDATE colheitas SET is_deleted = 1, sync_status = 0 WHERE uuid = ?', [uuid]);
+};
+
+export const getColheitasRecentes = async () => {
+    const res = await executeQuery('SELECT * FROM colheitas WHERE is_deleted = 0 ORDER BY data DESC, id DESC LIMIT 50');
+    const rows = [];
+    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    return rows;
+};
+
+export const insertVenda = async (v) => {
+    await executeQuery(
+        `INSERT INTO vendas (uuid, cliente, produto, quantidade, valor, data, observacao, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [v.uuid, up(v.cliente), up(v.produto), v.quantidade, v.valor, v.data, up(v.observacao), new Date().toISOString(), 0]
+    );
+
+    // LÓGICA V4.1: BAIXA DE ESTOQUE POR RECEITA
+    try {
+        // 1. Descobrir UUID do produto vendido pelo Nome
+        const prodRes = await executeQuery('SELECT uuid FROM cadastro WHERE nome = ?', [up(v.produto)]);
+        if (prodRes.rows.length > 0) {
+            const paiUuid = prodRes.rows.item(0).uuid;
+
+            // 2. Verificar se tem Receita
+            const receitaRes = await executeQuery('SELECT * FROM receitas WHERE produto_pai_uuid = ?', [paiUuid]);
+
+            if (receitaRes.rows.length > 0) {
+                // TEM RECEITA: Baixar componentes
+                console.log(`📦 Produto ${v.produto} tem receita. Baixando ingredientes...`);
+                for (let i = 0; i < receitaRes.rows.length; i++) {
+                    const ingrediente = receitaRes.rows.item(i);
+                    const qtdIngrediente = ingrediente.quantidade * v.quantidade; // Qtd Receita * Qtd Venda
+
+                    // Descobrir nome do filho para baixar estoque
+                    const filhoRes = await executeQuery('SELECT nome FROM cadastro WHERE uuid = ?', [ingrediente.item_filho_uuid]);
+                    if (filhoRes.rows.length > 0) {
+                        const nomeFilho = filhoRes.rows.item(0).nome;
+                        await atualizarEstoque(nomeFilho, -qtdIngrediente, v.data);
+                        console.log(`   - Baixado: ${qtdIngrediente} de ${nomeFilho}`);
+                    }
+                }
+            } else {
+                // SEM RECEITA: Baixa o produto direto (Comportamento Clássico)
+                await atualizarEstoque(v.produto, -v.quantidade, v.data);
+            }
+        } else {
+            // Produto não cadastrado (Avulso): Baixa direto pelo nome
+            await atualizarEstoque(v.produto, -v.quantidade, v.data);
+        }
+    } catch (e) {
+        console.error("Erro na baixa de estoque receita:", e);
+        // Fallback: tenta baixar o principal se der erro
+        await atualizarEstoque(v.produto, -v.quantidade, v.data);
+    }
+};
+
+export const updateVenda = async (uuid, v) => {
+    const ant = await executeQuery('SELECT * FROM vendas WHERE uuid = ?', [uuid]);
+    if (ant.rows.length > 0) {
+        const old = ant.rows.item(0);
+        await atualizarEstoque(old.produto, old.quantidade); // Devolve ao estoque (reverte saída)
+    }
+
+    await executeQuery(
+        `UPDATE vendas SET cliente = ?, produto = ?, quantidade = ?, valor = ?, data = ?, observacao = ?, last_updated = ?, sync_status = 0 WHERE uuid = ?`,
+        [up(v.cliente), up(v.produto), v.quantidade, v.valor, v.data, up(v.observacao), new Date().toISOString(), uuid]
+    );
+    await atualizarEstoque(v.produto, -v.quantidade); // Tira do estoque novamente com nova qtd
+};
+
+export const deleteVenda = async (uuid) => {
+    const ant = await executeQuery('SELECT * FROM vendas WHERE uuid = ?', [uuid]);
+    if (ant.rows.length > 0) {
+        const old = ant.rows.item(0);
+        await atualizarEstoque(old.produto, old.quantidade); // Devolve ao estoque
+    }
+    await executeQuery('UPDATE vendas SET is_deleted = 1, sync_status = 0 WHERE uuid = ?', [uuid]);
+};
+
+export const getVendasRecentes = async () => {
+    const res = await executeQuery('SELECT * FROM vendas WHERE is_deleted = 0 ORDER BY data DESC, id DESC LIMIT 50');
+    const rows = [];
+    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    return rows;
+};
+
+export const insertCompra = async (d) => {
+    await executeQuery(`INSERT INTO compras (uuid, item, quantidade, valor, cultura, data, observacao, detalhes, last_updated, sync_status, anexo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [d.uuid, up(d.item), d.quantidade, d.valor, up(d.cultura), d.data, up(d.observacao), up(d.detalhes), new Date().toISOString(), 0, d.anexo || null]);
+    await atualizarEstoque(d.item, d.quantidade);
+};
+
+export const updateCompra = async (uuid, d) => {
+    const ant = await executeQuery('SELECT * FROM compras WHERE uuid = ?', [uuid]);
+    if (ant.rows.length > 0) {
+        const old = ant.rows.item(0);
+        await atualizarEstoque(old.item, -old.quantidade); // Reverte entrada (tira do estoque)
+    }
+
+    await executeQuery(`UPDATE compras SET item = ?, quantidade = ?, valor = ?, cultura = ?, data = ?, observacao = ?, detalhes = ?, last_updated = ?, sync_status = 0, anexo = ? WHERE uuid = ?`,
+        [up(d.item), d.quantidade, d.valor, up(d.cultura), d.data, up(d.observacao), up(d.detalhes), new Date().toISOString(), d.anexo || null, uuid]);
+    await atualizarEstoque(d.item, d.quantidade); // Adiciona nova qtd
+};
+
+export const deleteCompra = async (uuid) => {
+    const ant = await executeQuery('SELECT * FROM compras WHERE uuid = ?', [uuid]);
+    if (ant.rows.length > 0) {
+        const old = ant.rows.item(0);
+        await atualizarEstoque(old.item, -old.quantidade); // Reverte entrada
+    }
+    await executeQuery('UPDATE compras SET is_deleted = 1, sync_status = 0 WHERE uuid = ?', [uuid]);
+};
+
+export const getComprasRecentes = async () => {
+    const res = await executeQuery('SELECT * FROM compras WHERE is_deleted = 0 ORDER BY data DESC, id DESC LIMIT 50');
+    const rows = [];
+    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    return rows;
+};
+
+export const insertPlantio = async (d) => {
+    await executeQuery(`INSERT INTO plantio (uuid, cultura, quantidade_pes, tipo_plantio, data, observacao, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [d.uuid, up(d.cultura), d.quantidade_pes, up(d.tipo_plantio), d.data, up(d.observacao), new Date().toISOString(), 0]);
+};
+
+export const insertCusto = async (d) => {
+    await executeQuery(`INSERT INTO custos (uuid, produto, tipo, quantidade, valor_total, data, observacao, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [d.uuid, up(d.produto), up(d.tipo), d.quantidade, d.valor_total, d.data, up(d.observacao), new Date().toISOString(), 0]);
+};
+
+export const insertDescarte = async (d) => {
+    await executeQuery(`INSERT INTO descarte (uuid, produto, quantidade_kg, motivo, data, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [d.uuid, up(d.produto), d.quantidade_kg, up(d.motivo), d.data, new Date().toISOString(), 0]);
+    await atualizarEstoque(d.produto, -d.quantidade_kg);
+};
+
+// --- CADASTROS ---
+
+export const insertCultura = async (d) => {
+    await executeQuery(`INSERT INTO culturas (uuid, nome, observacao, last_updated, sync_status) VALUES (?, ?, ?, ?, ?)`,
+        [d.uuid, up(d.nome), up(d.observacao), new Date().toISOString(), 0]);
+};
+
+export const updateCultura = async (d) => {
+    await executeQuery(`UPDATE culturas SET nome = ?, observacao = ?, last_updated = ?, sync_status = 0 WHERE uuid = ?`,
+        [up(d.nome), up(d.observacao), new Date().toISOString(), d.uuid]);
+};
+
+export const getCulturas = async () => {
+    const res = await executeQuery('SELECT * FROM culturas WHERE is_deleted = 0 ORDER BY nome ASC');
+    const rows = [];
+    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    return rows;
+};
+
+export const deleteCultura = async (id) => { await executeQuery('UPDATE culturas SET is_deleted = 1, sync_status = 0 WHERE id = ?', [id]); };
+
+export const insertCliente = async (d) => {
+    await executeQuery(`INSERT INTO clientes (uuid, nome, telefone, endereco, cpf_cnpj, observacao, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [d.uuid, up(d.nome), d.telefone, up(d.endereco), d.cpf_cnpj, up(d.observacao), new Date().toISOString(), 0]);
+};
+
+export const updateCliente = async (d) => {
+    await executeQuery(`UPDATE clientes SET nome = ?, telefone = ?, endereco = ?, cpf_cnpj = ?, observacao = ?, last_updated = ?, sync_status = 0 WHERE uuid = ?`,
+        [up(d.nome), d.telefone, up(d.endereco), d.cpf_cnpj, up(d.observacao), new Date().toISOString(), d.uuid]);
+};
+
+export const getClientes = async () => {
+    const res = await executeQuery('SELECT * FROM clientes WHERE is_deleted = 0 ORDER BY nome ASC');
+    const rows = [];
+    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    return rows;
+};
+
+export const deleteCliente = async (id) => { await executeQuery('UPDATE clientes SET is_deleted = 1, sync_status = 0 WHERE id = ?', [id]); };
+
+export const insertCadastro = async (d) => {
+    await executeQuery(`INSERT INTO cadastro (
+        uuid, nome, unidade, tipo, observacao, estocavel, vendavel, fator_conversao, 
+        principio_ativo, classe_toxicologica, composicao, preco_venda,
+        last_updated, sync_status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+            d.uuid, up(d.nome), up(d.unidade), up(d.tipo), up(d.observacao),
+            d.estocavel !== undefined ? d.estocavel : 1,
+            d.vendavel !== undefined ? d.vendavel : 1,
+            d.fator_conversao || 1,
+            up(d.principio_ativo), up(d.classe_toxicologica), up(d.composicao), d.preco_venda || 0,
+            new Date().toISOString(), 0
+        ]);
+};
+
+export const updateCadastro = async (d) => {
+    await executeQuery(`UPDATE cadastro SET 
+        nome = ?, unidade = ?, tipo = ?, observacao = ?, estocavel = ?, vendavel = ?, fator_conversao = ?, 
+        principio_ativo = ?, classe_toxicologica = ?, composicao = ?, preco_venda = ?,
+        last_updated = ?, sync_status = 0 
+        WHERE uuid = ?`,
+        [
+            up(d.nome), up(d.unidade), up(d.tipo), up(d.observacao), d.estocavel, d.vendavel, d.fator_conversao,
+            up(d.principio_ativo), up(d.classe_toxicologica), up(d.composicao), d.preco_venda,
+            new Date().toISOString(), d.uuid
+        ]);
+};
+
+export const getCadastro = async () => {
+    const res = await executeQuery('SELECT * FROM cadastro WHERE is_deleted = 0 ORDER BY nome ASC');
+    const rows = [];
+    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    return rows;
+};
+
+export const deleteCadastro = async (id) => { await executeQuery('UPDATE cadastro SET is_deleted = 1, sync_status = 0 WHERE id = ?', [id]); };
+
+// --- RECEITAS (v4.1) ---
+
+export const insertReceita = async (paiUuid, filhoUuid, qtd) => {
+    await executeQuery(
+        `INSERT INTO receitas (produto_pai_uuid, item_filho_uuid, quantidade, last_updated, sync_status) VALUES (?, ?, ?, ?, ?)`,
+        [paiUuid, filhoUuid, qtd, new Date().toISOString(), 0]
+    );
+};
+
+export const getReceita = async (paiUuid) => {
+    const res = await executeQuery(
+        `SELECT r.*, c.nome as nome_filho, c.unidade as unidade_filho 
+         FROM receitas r 
+         JOIN cadastro c ON r.item_filho_uuid = c.uuid 
+         WHERE r.produto_pai_uuid = ?`,
+        [paiUuid]
+    );
+    const rows = [];
+    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    return rows;
+};
+
+export const deleteItemReceita = async (id) => {
+    await executeQuery('DELETE FROM receitas WHERE id = ?', [id]);
+};
+
+// --- ESTOQUE & SYNC ---
+
+// --- ESTOQUE & SYNC ---
+
+// V5.0: Logica de Estoque Seguro e Histórico
+// Regra 1: Estoque (snapshot atual) nunca negativo.
+// Regra 2: Movimentações históricas (antes de 2026) não afetam estoque atual.
+const APP_START_DATE = '2026-01-01'; // Data de Corte
+
+export const atualizarEstoque = async (produto, quantidadeDelta, dataReferencia = null) => {
+    try {
+        // REGRA DE HISTÓRICO: Se a data for antiga, não mexe no estoque atual
+        if (dataReferencia) {
+            if (new Date(dataReferencia) < new Date(APP_START_DATE)) {
+                console.log(`📜 Registro histórico (${dataReferencia}): Estoque inalterado.`);
+                return;
+            }
+        }
+
+        const prodUp = up(produto);
+        const result = await executeQuery('SELECT * FROM estoque WHERE produto = ?', [prodUp]);
+        const timestamp = new Date().toISOString();
+
+        if (result.rows.length > 0) {
+            const current = result.rows.item(0);
+            let novaQuantidade = current.quantidade + quantidadeDelta;
+
+            // REGRA DE NEGATIVO: Se for ficar negativo, zera.
+            if (novaQuantidade < 0) {
+                console.warn(`⚠️ Estoque insuficiente de ${produto}. Ajustando de ${current.quantidade} para 0.`);
+                novaQuantidade = 0;
+            }
+
+            await executeQuery('UPDATE estoque SET quantidade = ?, last_updated = ? WHERE produto = ?', [novaQuantidade, timestamp, prodUp]);
+        } else {
+            // Se não existe e delta é negativo, começa com 0 (não cria negativo)
+            const inicial = quantidadeDelta < 0 ? 0 : quantidadeDelta;
+            await executeQuery('INSERT INTO estoque (produto, quantidade, last_updated) VALUES (?, ?, ?)', [prodUp, inicial, timestamp]);
+        }
+    } catch (e) { console.error('Erro Estoque:', e); }
+};
+
+export const getEstoque = async () => {
+    // JOIN com cadastro para pegar unidade e tipo
+    const res = await executeQuery(`
+        SELECT e.*, c.unidade, c.tipo, c.fator_conversao, c.preco_venda 
+        FROM estoque e
+        LEFT JOIN cadastro c ON UPPER(e.produto) = UPPER(c.nome)
+        WHERE e.is_deleted = 0
+        ORDER BY e.quantidade ASC
+    `);
+    const rows = [];
+    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    return rows;
+};
+
+// --- CUSTOS PROFISSIONAIS (MÓDULO V8.0) ---
+
+export const getCostCategories = async () => {
+    const res = await executeQuery('SELECT * FROM cost_categories WHERE is_deleted = 0 ORDER BY name ASC');
+    const rows = [];
+    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    return rows;
+};
+
+export const insertCostCategory = async (name, type) => {
+    await executeQuery(
+        `INSERT INTO cost_categories (name, type, created_at) VALUES (?, ?, ?)`,
+        [up(name), type, new Date().toISOString()]
+    );
+};
+
+export const getCosts = async () => {
+    const res = await executeQuery(`
+        SELECT c.*, cat.name as category_name 
+        FROM costs c
+        LEFT JOIN cost_categories cat ON c.category_id = cat.id
+        WHERE c.is_deleted = 0
+        ORDER BY c.created_at DESC
+    `);
+    const rows = [];
+    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    return rows;
+};
+
+export const insertCost = async (c) => {
+    const total = (parseFloat(c.quantity) || 0) * (parseFloat(c.unit_value) || 0);
+    await executeQuery(
+        `INSERT INTO costs (category_id, culture_id, fleet_id, quantity, unit_value, total_value, notes, created_at) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [c.category_id, c.culture_id || null, c.fleet_id || null, parseFloat(c.quantity) || 0, parseFloat(c.unit_value) || 0, total, up(c.notes), c.created_at || new Date().toISOString()]
+    );
+};
+
+export const deleteCost = async (id) => {
+    await executeQuery('UPDATE costs SET is_deleted = 1 WHERE id = ?', [id]);
+};
+
+export const getDadosPendentes = async () => {
+    try {
+        const t = [
+            'colheitas', 'vendas', 'compras', 'plantio', 'custos', 'descarte', 
+            'clientes', 'culturas', 'cadastro', 'caderno_notas',
+            'farms', 'fields', 'plantings', 'agronomist_client_links', 'products', 'recommendations'
+        ];
+        let total = 0;
+        const res = {};
+        for (const tab of t) {
+            const data = await executeQuery(`SELECT * FROM ${tab} WHERE sync_status = 0 AND is_deleted = 0`);
+            const rows = [];
+            for (let i = 0; i < data.rows.length; i++) rows.push(data.rows.item(i));
+            res[tab] = rows;
+            total += rows.length;
+        }
+        res.total = total;
+        return res;
+    } catch (e) { return { total: 0 }; }
+};
+
+// --- FROTA (NOVO MÓDULO) ---
+
+export const insertMaquina = async (m) => {
+    await executeQuery(
+        `INSERT INTO maquinas (uuid, nome, tipo, placa, horimetro_atual, intervalo_revisao, status, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [m.uuid, up(m.nome), up(m.tipo), up(m.placa), m.horimetro_atual, m.intervalo_revisao, 'OK', new Date().toISOString(), 0]
+    );
+};
+
+export const getMaquinas = async () => {
+    const res = await executeQuery('SELECT * FROM maquinas WHERE is_deleted = 0 ORDER BY nome ASC');
+    const rows = [];
+    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    return rows;
+};
+
+export const updateMaquina = async (uuid, horimetro, placa) => {
+    // Recalcula status
+    // Simples: se horimetro > revisao -> Alerta (logica simplificada aqui, melhor na UI ou recalculo total)
+    // Por enquanto apenas atualiza dados
+    await executeQuery('UPDATE maquinas SET horimetro_atual = ?, placa = ?, last_updated = ? WHERE uuid = ?',
+        [horimetro, up(placa), new Date().toISOString(), uuid]);
+};
+
+export const updateMaquinaRevisao = async (uuid, horimetro, intervalo) => {
+    await executeQuery('UPDATE maquinas SET horimetro_atual = ?, intervalo_revisao = ?, last_updated = ? WHERE uuid = ?',
+        [horimetro, intervalo, new Date().toISOString(), uuid]);
+};
+
+export const deleteMaquina = async (uuid) => {
+    await executeQuery('UPDATE maquinas SET is_deleted = 1, sync_status = 0 WHERE uuid = ?', [uuid]);
+};
+
+export const insertManutencaoFrota = async (d) => {
+    await executeQuery(
+        `INSERT INTO manutencao_frota (uuid, maquina_uuid, data, descricao, valor, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [d.uuid, d.maquina_uuid, d.data, up(d.descricao), d.valor, new Date().toISOString(), 0]
+    );
+};
+
+export const getHistoricoManutencoes = async (maquinaUuid) => {
+    const res = await executeQuery('SELECT * FROM manutencao_frota WHERE maquina_uuid = ? ORDER BY data DESC', [maquinaUuid]);
+    const rows = [];
+    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    return rows;
+};
+
+// --- BASE DE CONHECIMENTO (v5.5) ---
+export const getConhecimento = async (termo = '') => {
+    let sql = 'SELECT * FROM base_conhecimento';
+    const params = [];
+    if (termo) {
+        sql += ' WHERE nome LIKE ? OR sintomas LIKE ?';
+        params.push(`%${termo.toUpperCase()}%`, `%${termo.toUpperCase()}%`);
+    }
+    sql += ' ORDER BY nome ASC';
+    const res = await executeQuery(sql, params);
+    const rows = [];
+    for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    return rows;
+};
+
+// --- MONITORAMENTO AVANÇADO (v5.5) ---
+export const insertMonitoramentoCompleto = async (d) => {
+    await executeQuery(
+        `INSERT INTO monitoramento (
+            uuid, cultura, area_uuid, plantio_uuid, data, imagem_base64, 
+            observacao, diagnostico_tipo, diagnostico_nome, 
+            severidade, acao_recomendada, sync_status, last_updated
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+            d.uuid, up(d.cultura), d.area_uuid, d.plantio_uuid, d.data, d.imagem_base64,
+            up(d.observacao), up(d.diagnostico_tipo), up(d.diagnostico_nome),
+            up(d.severidade), up(d.acao_recomendada), 0, new Date().toISOString()
+        ]
+    );
+};
+
+// --- DASHBOARD HELPERS (v3.9.2) ---
+export const getDashboardStats = async () => {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+
+        // 1. Colheita Hoje (KG)
+        const resColheita = await executeQuery(`SELECT SUM(quantidade) as total FROM colheitas WHERE data = ? AND is_deleted = 0`, [today]);
+        const colheitaHoje = resColheita.rows.item(0).total || 0;
+
+        // 2. Vendas Hoje (R$)
+        const resVendas = await executeQuery(`SELECT SUM(valor) as total FROM vendas WHERE data = ? AND is_deleted = 0`, [today]);
+        const vendasHoje = resVendas.rows.item(0).total || 0;
+
+        // 3. Plantio Ativo (Total de registros não colhidos? Simplificado: Total Plantio Recente)
+        const resPlantio = await executeQuery(`SELECT COUNT(*) as total FROM plantio WHERE is_deleted = 0`);
+        const plantioAtivo = resPlantio.rows.item(0).total || 0;
+
+        // 4. Máquinas Revisão (Alerta)
+        const resMaquinas = await executeQuery(`SELECT COUNT(*) as total FROM maquinas WHERE horimetro_atual >= intervalo_revisao AND is_deleted = 0`);
+        const maquinasAlert = resMaquinas.rows.item(0).total || 0;
+
+        // 5. Saldo Geral (AGORA: Resultado do Ano/Período Atual)
+        // Ignora histórico incompleto antes de APP_START_DATE
+        const resRec = await executeQuery('SELECT SUM(valor * quantidade) as total FROM vendas WHERE data >= ? AND is_deleted = 0', [APP_START_DATE]);
+        const resDesp = await executeQuery('SELECT SUM(valor) as total FROM compras WHERE data >= ? AND is_deleted = 0', [APP_START_DATE]);
+        const resCust = await executeQuery('SELECT SUM(valor_total) as total FROM custos WHERE data >= ? AND is_deleted = 0', [APP_START_DATE]);
+        const saldo = (resRec.rows.item(0).total || 0) - ((resDesp.rows.item(0).total || 0) + (resCust.rows.item(0).total || 0));
+
+        // 6. Pendentes Sync
+        const pendentes = (await getDadosPendentes()).total;
+
+        return { colheitaHoje, vendasHoje, plantioAtivo, maquinasAlert, saldo, pendentes };
+    } catch (e) {
+        console.error('Dashboard Stats Error:', e);
+        return { colheitaHoje: 0, vendasHoje: 0, plantioAtivo: 0, maquinasAlert: 0, saldo: 0, pendentes: 0 };
+    }
+};
+
+// ==========================================
+// FUNÇÕES AUXILIARES - APP SETTINGS (FASE 10)
+// ==========================================
 export const getAppSettings = async () => {
     try {
         const res = await executeQuery('SELECT * FROM app_settings WHERE id = 1');
-        return res.rows.length > 0 ? res.rows.item(0) : null;
+        if (res.rows.length > 0) {
+            return res.rows.item(0);
+        }
+        return null;
     } catch (error) {
         console.error('Erro ao buscar app_settings:', error);
         throw error;
@@ -297,10 +1582,11 @@ export const updateAppSetting = async (column, value) => {
             'primary_color', 'theme_mode', 'fazenda_nome', 'fazenda_produtor', 'fazenda_documento',
             'fazenda_telefone', 'fazenda_email', 'fazenda_logo', 'fin_moeda', 'fin_mes_fiscal',
             'fin_calc_margem', 'fin_vinc_custo', 'fin_meta_lucro', 'clima_api_key', 'clima_cidade',
-            'clima_gps', 'clima_ativo', 'rel_incluir_logo', 'rel_modelo', 'img_qualidade', 'img_limite',
-            'fazenda_area', 'fazenda_safra', 'unidade_padrao', 'rel_graficos', 'rel_auto_pdf', 'rel_rodape'
+            'clima_gps', 'clima_ativo', 'rel_incluir_logo', 'rel_modelo', 'img_qualidade', 'img_limite'
         ];
+
         if (!validColumns.includes(column)) throw new Error('Coluna de configuração inválida');
+
         await executeQuery(`UPDATE app_settings SET ${column} = ?, updated_at = ? WHERE id = 1`, [value, new Date().toISOString()]);
         return true;
     } catch (error) {
@@ -309,78 +1595,134 @@ export const updateAppSetting = async (column, value) => {
     }
 };
 
-// --- FUNÇÕES DE BUSCA (RESTAURAÇÃO) ---
+// ==========================================
+// MÓDULO 1: GESTÃO DE CULTURAS E TALHÕES
+// ==========================================
 
-export const getCadastro = async () => {
-    try {
-        const res = await executeQuery('SELECT * FROM cadastro WHERE is_deleted = 0 ORDER BY nome ASC');
-        const rows = [];
-        for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
-        return rows;
-    } catch (e) {
-        console.error('Erro ao buscar cadastro:', e);
-        return [];
-    }
+export const getFields = async () => {
+    const res = await executeQuery('SELECT * FROM fields WHERE is_deleted = 0 ORDER BY nome ASC');
+    return res.rows._array;
 };
 
-export const getClientes = async () => {
-    try {
-        const res = await executeQuery('SELECT * FROM clientes WHERE is_deleted = 0 ORDER BY nome ASC');
-        const rows = [];
-        for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
-        return rows;
-    } catch (e) {
-        console.error('Erro ao buscar clientes:', e);
-        return [];
-    }
+export const insertField = async (data) => {
+    const sql = `INSERT INTO fields (uuid, farm_uuid, nome, area, plant_count, source_platform, created_by, updated_by, last_updated, sync_status, is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)`;
+    await executeQuery(sql, [
+        data.uuid, data.farm_uuid || 'DEFAULT_FARM', data.nome, data.area || 0, data.plant_count || 0,
+        'mobile', data.created_by || '', data.updated_by || '', new Date().toISOString()
+    ]);
 };
 
-export const getAreas = async () => {
-    try {
-        const res = await executeQuery('SELECT * FROM areas WHERE is_deleted = 0 ORDER BY nome ASC');
-        const rows = [];
-        for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
-        return rows;
-    } catch (e) {
-        console.error('Erro ao buscar áreas:', e);
-        return [];
-    }
+export const updateField = async (data) => {
+    const sql = `UPDATE fields SET nome = ?, area = ?, plant_count = ?, updated_by = ?, last_updated = ?, sync_status = 0 WHERE uuid = ?`;
+    await executeQuery(sql, [
+        data.nome, data.area, data.plant_count, data.updated_by || '', new Date().toISOString(), data.uuid
+    ]);
 };
 
-export const getCulturas = async () => {
-    try {
-        const res = await executeQuery('SELECT * FROM culturas WHERE is_deleted = 0 ORDER BY nome ASC');
-        const rows = [];
-        for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
-        return rows;
-    } catch (e) {
-        console.error('Erro ao buscar culturas:', e);
-        return [];
-    }
+export const deleteField = async (uuid) => {
+    await executeQuery(`UPDATE fields SET is_deleted = 1, sync_status = 0, last_updated = ? WHERE uuid = ?`, [new Date().toISOString(), uuid]);
 };
 
-export const getCategoriasDespesa = async () => {
-    try {
-        const res = await executeQuery('SELECT * FROM categorias_despesa ORDER BY nome ASC');
-        const rows = [];
-        for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
-        return rows;
-    } catch (e) {
-        return [];
-    }
+export const getAllPlantings = async () => {
+    const res = await executeQuery('SELECT p.*, f.nome as field_nome, f.area as field_area FROM plantings p JOIN fields f ON p.field_uuid = f.uuid WHERE p.is_deleted = 0 AND f.is_deleted = 0 ORDER BY p.planting_date DESC');
+    return res.rows._array;
 };
 
-// --- FUNÇÃO LEGADA (MANTIDA PARA COMPATIBILIDADE TEMPORÁRIA) ---
-// Será removida quando todos os módulos usarem EstoqueService
-export const atualizarEstoque = async (produto, quantidadeDelta) => {
-    const timestamp = new Date().toISOString();
-    const prodUp = up(produto);
-    const result = await executeQuery('SELECT * FROM estoque WHERE produto = ?', [prodUp]);
-    if (result.rows.length > 0) {
-        const current = result.rows.item(0);
-        const novaQuantidade = Math.max(0, current.quantidade + quantidadeDelta);
-        await executeQuery('UPDATE estoque SET quantidade = ?, last_updated = ? WHERE produto = ?', [novaQuantidade, timestamp, prodUp]);
-    } else {
-        await executeQuery('INSERT INTO estoque (produto, quantidade, last_updated) VALUES (?, ?, ?)', [prodUp, Math.max(0, quantidadeDelta), timestamp]);
+export const getPlantingsByField = async (fieldUuid) => {
+    const res = await executeQuery('SELECT * FROM plantings WHERE field_uuid = ? AND is_deleted = 0 ORDER BY planting_date DESC', [fieldUuid]);
+    return res.rows._array;
+};
+
+export const insertPlanting = async (data) => {
+    const sql = `INSERT INTO plantings (uuid, field_uuid, crop_name, variety_name, planting_date, expected_yield, status, source_platform, created_by, updated_by, last_updated, sync_status, is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)`;
+    await executeQuery(sql, [
+        data.uuid, data.field_uuid, data.crop_name, data.variety_name, data.planting_date, data.expected_yield || 0, data.status || 'ATIVO',
+        'mobile', data.created_by || '', data.updated_by || '', new Date().toISOString()
+    ]);
+};
+
+export const updatePlanting = async (data) => {
+    const sql = `UPDATE plantings SET crop_name = ?, variety_name = ?, planting_date = ?, expected_yield = ?, status = ?, updated_by = ?, last_updated = ?, sync_status = 0 WHERE uuid = ?`;
+    await executeQuery(sql, [
+        data.crop_name, data.variety_name, data.planting_date, data.expected_yield, data.status, data.updated_by || '', new Date().toISOString(), data.uuid
+    ]);
+};
+
+export const deletePlanting = async (uuid) => {
+    await executeQuery(`UPDATE plantings SET is_deleted = 1, sync_status = 0, last_updated = ? WHERE uuid = ?`, [new Date().toISOString(), uuid]);
+};
+
+export const getDashboardCropStats = async () => {
+    const resPlantings = await executeQuery("SELECT COUNT(*) as total FROM plantings WHERE is_deleted = 0 AND status != 'FINALIZADO'");
+    const totalCulturas = resPlantings.rows.item(0).total || 0;
+
+    const resArea = await executeQuery("SELECT SUM(area) as total_area FROM fields WHERE is_deleted = 0");
+    const areaTotal = resArea.rows.item(0).total_area || 0;
+
+    const resEmProducao = await executeQuery("SELECT COUNT(*) as total FROM plantings WHERE is_deleted = 0 AND status = 'PRODUÇÃO'");
+    const emProducao = resEmProducao.rows.item(0).total || 0;
+
+    return { totalCulturas, areaTotal, emProducao };
+};
+
+// ==========================================
+// MÓDULO 2: GESTÃO FINANCEIRA (CONTAS)
+// ==========================================
+
+export const getFinanceiroTransacoes = async () => {
+    const res = await executeQuery('SELECT * FROM financeiro_transacoes WHERE is_deleted = 0 ORDER BY vencimento ASC');
+    return res.rows._array;
+};
+
+export const insertFinanceiroTransacao = async (data) => {
+    const sql = `INSERT INTO financeiro_transacoes (uuid, tipo, descricao, valor, vencimento, status, categoria, entidade_nome, last_updated, sync_status, is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)`;
+    await executeQuery(sql, [
+        data.uuid, data.tipo, data.descricao, data.valor, data.vencimento, data.status || 'PENDENTE',
+        data.categoria || '', data.entidade_nome || '', new Date().toISOString()
+    ]);
+};
+
+export const updateFinanceiroTransacaoStatus = async (uuid, status, dataPagamento = null) => {
+    const sql = `UPDATE financeiro_transacoes SET status = ?, data_pagamento = ?, last_updated = ?, sync_status = 0 WHERE uuid = ?`;
+    await executeQuery(sql, [status, dataPagamento, new Date().toISOString(), uuid]);
+};
+
+export const deleteFinanceiroTransacao = async (uuid) => {
+    await executeQuery(`UPDATE financeiro_transacoes SET is_deleted = 1, sync_status = 0, last_updated = ? WHERE uuid = ?`, [new Date().toISOString(), uuid]);
+};
+
+export const getFinanceiroDashboardStats = async () => {
+    const resReceber = await executeQuery("SELECT SUM(valor) as total FROM financeiro_transacoes WHERE is_deleted = 0 AND tipo = 'RECEBER' AND status IN ('PENDENTE', 'ATRASADO')");
+    const aReceber = resReceber.rows.item(0).total || 0;
+
+    const resPagar = await executeQuery("SELECT SUM(valor) as total FROM financeiro_transacoes WHERE is_deleted = 0 AND tipo = 'PAGAR' AND status IN ('PENDENTE', 'ATRASADO')");
+    const aPagar = resPagar.rows.item(0).total || 0;
+
+    const resReceitasPagas = await executeQuery("SELECT SUM(valor) as total FROM financeiro_transacoes WHERE is_deleted = 0 AND tipo = 'RECEBER' AND status = 'PAGO'");
+    const receitasPagas = resReceitasPagas.rows.item(0).total || 0;
+
+    const resDespesasPagas = await executeQuery("SELECT SUM(valor) as total FROM financeiro_transacoes WHERE is_deleted = 0 AND tipo = 'PAGAR' AND status = 'PAGO'");
+    const despesasPagas = resDespesasPagas.rows.item(0).total || 0;
+
+    const saldoReal = receitasPagas - despesasPagas;
+
+    return { saldoReal, aPagar, aReceber };
+};
+
+// --- GENERIC UPSERT FOR SYNC ---
+export const genericUpsert = async (tableName, item) => {
+    try {
+        const columns = Object.keys(item);
+        const placeholders = columns.map(() => '?').join(', ');
+        const setClause = columns.map(col => `${col} = ?`).join(', ');
+        const values = Object.values(item);
+
+        // SQLite doesn't have UPSERT for multiple keys easily, so we use INSERT OR REPLACE 
+        // OR a manual check if uuid exists.
+        // Given we use UUID as unique key:
+        const sql = `INSERT OR REPLACE INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders})`;
+        await executeQuery(sql, values);
+    } catch (e) {
+        console.error(`Upsert Error [${tableName}]:`, e.message);
     }
 };

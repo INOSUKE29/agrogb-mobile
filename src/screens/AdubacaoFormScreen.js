@@ -1,17 +1,21 @@
-﻿import React, { useState, useEffect } from 'react';
-import { 
-    View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, 
-    Modal, TextInput, SafeAreaView, StatusBar, Platform, KeyboardAvoidingView 
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform, Modal, TextInput } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
+import { LinearGradient } from 'expo-linear-gradient';
+import { insertPlanoAdubacao, updatePlanoAdubacao, getEstoque, executeQuery } from '../database/database';
+import * as ImagePicker from 'expo-image-picker';
 import { v4 as uuidv4 } from 'uuid';
 
-import { LinearGradient } from 'expo-linear-gradient';
-import { useFertilization } from '../modules/production/hooks/useFertilization';
-import { useInventory } from '../modules/inventory/hooks/useInventory';
-import { showToast } from '../ui/Toast';
+// Design System
+import Card from '../components/common/Card';
+import AgroInput from '../components/common/AgroInput';
+import AgroButton from '../components/common/AgroButton';
+import SmartAutocomplete from '../components/common/SmartAutocomplete';
+import { CropLibraryService, TalhaoLibraryService } from '../services/LibraryServices';
 
 export default function AdubacaoFormScreen({ route, navigation }) {
+    const { theme } = useTheme();
     const editMode = !!route.params?.plano;
     const plano = route.params?.plano || {};
 
@@ -20,206 +24,325 @@ export default function AdubacaoFormScreen({ route, navigation }) {
     const [tipo, setTipo] = useState(plano.tipo_aplicacao || 'GOTEJO');
     const [area, setArea] = useState(plano.area_local || '');
     const [descricao, setDescricao] = useState(plano.descricao_tecnica || '');
-    
-    // Focus states for Neon Glow on inputs
-    const [focusedField, setFocusedField] = useState(null);
+    const [imageUri, setImageUri] = useState(plano.anexos_uri || null);
+    const [loading, setLoading] = useState(false);
 
-    // Hooks Diamond Pro
-    const { itens, addInsumo, removeInsumo, savePlan, loading: saving } = useFertilization();
-    const { items: stockItems, fetchStock } = useInventory();
-
-    // UI States
+    // Dynamic Recipe State
+    const [itensAdicao, setItensAdicao] = useState([]);
+    const [stockItems, setStockItems] = useState([]);
     const [itemSelectorVisible, setItemSelectorVisible] = useState(false);
     const [selectedStockItem, setSelectedStockItem] = useState(null);
     const [itemQty, setItemQty] = useState('');
 
+    const fetchStock = async () => {
+        try {
+            const data = await getEstoque();
+            setStockItems(data);
+        } catch (e) {
+            console.error('Erro ao buscar estoque:', e);
+        }
+    };
+
     useEffect(() => {
         fetchStock();
-    }, [fetchStock]);
+    }, []);
 
-    const handleAddItem = () => {
-        if (!selectedStockItem || !itemQty) {
-            Alert.alert('AtenÃ§Ã£o', 'Selecione um insumo e digite a quantidade.');
+    useEffect(() => {
+        if (editMode && plano.uuid) {
+            const fetchExistingItens = async () => {
+                try {
+                    const res = await executeQuery(`SELECT * FROM production_fertilization_items WHERE plano_uuid = ?`, [plano.uuid]);
+                    const list = [];
+                    for (let i = 0; i < res.rows.length; i++) {
+                        const item = res.rows.item(i);
+                        list.push({
+                            tempId: item.id || uuidv4(),
+                            produto_id: item.produto_id,
+                            quantidade: item.quantidade,
+                            unidade: item.unidade || 'KG'
+                        });
+                    }
+                    setItensAdicao(list);
+                } catch (e) {
+                    console.error('Erro ao carregar insumos existentes:', e);
+                }
+            };
+            fetchExistingItens();
+        }
+    }, [editMode, plano.uuid]);
+
+    const pickImage = async () => {
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: false,
+            quality: 0.8,
+        });
+
+        if (!result.canceled) {
+            setImageUri(result.assets[0].uri);
+        }
+    };
+
+    const takePhoto = async () => {
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+        if (permission.granted === false) {
+            Alert.alert("Erro", "É necessário acesso à câmera!");
             return;
         }
-        addInsumo({
-            produto_id: selectedStockItem.produto, 
-            nome: selectedStockItem.produto,
-            quantidade: parseFloat(itemQty),
-            unidade: selectedStockItem.unidade || 'KG'
+
+        let result = await ImagePicker.launchCameraAsync({
+            allowsEditing: false,
+            quality: 0.8,
         });
+
+        if (!result.canceled) {
+            setImageUri(result.assets[0].uri);
+        }
+    };
+
+    const handleAddInsumo = () => {
+        if (!selectedStockItem || !itemQty || isNaN(itemQty) || parseFloat(itemQty) <= 0) {
+            Alert.alert('Atenção', 'Selecione um insumo e digite uma quantidade válida.');
+            return;
+        }
+        setItensAdicao([
+            ...itensAdicao,
+            {
+                tempId: uuidv4(),
+                produto_id: selectedStockItem.produto,
+                quantidade: parseFloat(itemQty),
+                unidade: selectedStockItem.unidade || 'KG'
+            }
+        ]);
         setItemSelectorVisible(false);
         setSelectedStockItem(null);
         setItemQty('');
     };
 
+    const handleRemoveInsumo = (tempId) => {
+        setItensAdicao(itensAdicao.filter(it => it.tempId !== tempId));
+    };
+
     const handleSave = async () => {
         if (!nome || !cultura) {
-            Alert.alert('ObrigatÃ³rio', 'Preencha o Nome do Plano e a Cultura.');
+            Alert.alert('Campos Obrigatórios', 'Preencha o Nome do Plano e a Cultura.');
             return;
         }
 
+        setLoading(true);
         try {
+            const planoUuid = editMode ? plano.uuid : uuidv4();
             const data = {
-                uuid: editMode ? plano.uuid : uuidv4(),
-                id: editMode ? plano.id : null,
+                uuid: planoUuid,
                 nome_plano: nome,
                 cultura,
                 tipo_aplicacao: tipo,
                 area_local: area,
-                descricao_tecnica: descricao,
-                anexos_uri: null
+                descricao_tecnica: descricao || 'APLICAÇÃO DIRETA',
+                status: editMode ? plano.status : 'PLANEJADO',
+                data_criacao: editMode ? plano.data_criacao : new Date().toISOString(),
+                data_aplicacao: editMode ? plano.data_aplicacao : null,
+                anexos_uri: imageUri
             };
 
-            await savePlan(data);
-            showToast('âœ… Plano de adubaÃ§Ã£o salvo com sucesso!');
+            if (editMode) {
+                await updatePlanoAdubacao(plano.uuid, data);
+                // Limpar itens anteriores do plano
+                await executeQuery(`DELETE FROM production_fertilization_items WHERE plano_uuid = ?`, [plano.uuid]);
+            } else {
+                await insertPlanoAdubacao(data);
+            }
+
+            // Inserir os novos itens da receita no banco
+            for (const it of itensAdicao) {
+                await executeQuery(
+                    `INSERT INTO production_fertilization_items (id, plano_uuid, produto_id, quantidade, unidade) VALUES (?, ?, ?, ?, ?)`,
+                    [uuidv4(), planoUuid, it.produto_id, it.quantidade, it.unidade]
+                );
+            }
+
+            Alert.alert('Sucesso', 'Plano nutricional salvo com sucesso!');
             navigation.goBack();
-        } catch {
-            Alert.alert('Erro', 'Falha ao salvar plano.');
+        } catch (error) {
+            Alert.alert('Erro', 'Falha ao salvar plano e receita.');
+            console.error(error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    // Helper para Input Premium
-    const renderInput = (label, value, onChange, placeholder, fieldKey, multi = false, half = false) => {
-        const isFocused = focusedField === fieldKey;
-        return (
-            <View style={[styles.field, half && { flex: 1 }]}>
-                <Text style={styles.label}>{label}</Text>
-                <View style={[
-                    styles.inputContainer,
-                    multi && { height: 100, alignItems: 'flex-start' },
-                    isFocused && styles.inputContainerFocused
-                ]}>
-                    <TextInput
-                        style={[styles.input, multi && { height: 90, textAlignVertical: 'top', paddingTop: 15 }]}
-                        value={value}
-                        onChangeText={onChange}
-                        placeholder={placeholder}
-                        placeholderTextColor="#475569"
-                        onFocus={() => setFocusedField(fieldKey)}
-                        onBlur={() => setFocusedField(null)}
-                        multiline={multi}
-                        autoCapitalize="characters"
-                    />
-                </View>
-            </View>
-        );
-    };
-
     return (
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-            
-            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-
-            <SafeAreaView style={{ flex: 1 }}>
-                {/* Header Premium */}
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={28} color="#FFF" />
+        <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+            style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}
+        >
+            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
+                <View style={styles.headerTop}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
                     </TouchableOpacity>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.headerTitle}>{editMode ? 'ED. RECEITA' : 'NOVO PLANO'}</Text>
-                        <Text style={styles.headerSub}>Manejo Nutricional</Text>
-                    </View>
+                    <Text style={styles.headerTitle}>{editMode ? 'EDITAR PLANO' : 'NOVO PLANO'}</Text>
+                    <View style={{ width: 24 }} />
                 </View>
+                <Text style={styles.headerSub}>Defina a receita e os insumos do estoque</Text>
+            </LinearGradient>
 
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                    
-                    {/* FormulÃ¡rio */}
-                    {renderInput('NOME DO PLANO', nome, setNome, 'EX: ADUBAÃ‡ÃƒO DE COBERTURA', 'nome')}
-                    
-                    <View style={{ flexDirection: 'row', gap: 15 }}>
-                        {renderInput('CULTURA', cultura, setCultura, 'EX: MILHO', 'cultura', false, true)}
-                        {renderInput('ÃREA / LOCAL', area, setArea, 'G01', 'area', false, true)}
-                    </View>
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <Card style={styles.formCard}>
+                    <AgroInput 
+                        label="NOME DO PLANO" 
+                        value={nome} 
+                        onChangeText={(t) => setNome(t.toUpperCase())} 
+                        placeholder="EX: ADUBAÇÃO TOMATE SEM. 4"
+                    />
 
-                    {/* Selector de Tipo (Pills Neon) */}
-                    <Text style={[styles.label, { marginTop: 10 }]}>MÃ‰TODO DE APLICAÃ‡ÃƒO</Text>
-                    <View style={styles.pillContainer}>
-                        {[
-                            { id: 'GOTEJO', label: 'GOTEJO', icon: 'water', color: '#3B82F6' },
-                            { id: 'PULVERIZACAO', label: 'PULVERIZAÃ‡ÃƒO', icon: 'cloud-outline', color: '#10B981' },
-                            { id: 'LANCO', label: 'A LANÃ‡O', icon: 'tractor', color: '#F59E0B' }
-                        ].map(m => {
-                            const active = tipo === m.id;
-                            return (
-                                <TouchableOpacity
-                                    key={m.id}
-                                    style={[styles.pill, active && { borderColor: m.color, backgroundColor: m.color + '15' }]}
-                                    onPress={() => setTipo(m.id)}
-                                >
-                                    <Ionicons name={m.icon} size={16} color={active ? m.color : '#64748B'} />
-                                    <Text style={[styles.pillText, active && { color: m.color }]}>{m.label}</Text>
-                                    {active && <View style={[styles.glowDot, { backgroundColor: m.color }]} />}
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
-
-                    {/* Caixa de Insumos (Glassmorphism) */}
-                    <View style={styles.insumosBox}>
-                        <View style={styles.insumosHeader}>
-                            <Text style={styles.insumosTitle}>CARRINHO DE INSUMOS</Text>
-                            <TouchableOpacity onPress={() => setItemSelectorVisible(true)} style={styles.btnAddInsumo}>
-                                <Ionicons name="add" size={20} color="#040914" />
-                            </TouchableOpacity>
+                                        <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 10 }}>
+                            <SmartAutocomplete
+                                label="CULTURA *"
+                                value={cultura}
+                                onSelect={val => setCultura(val ? val.nome : '')}
+                                service={CropLibraryService}
+                                title="SELECIONAR CULTURA"
+                                placeholder="CULTURA..."
+                                icon="leaf-outline"
+                                quickAddFields={[
+                                    { key: 'nome', label: 'NOME DA CULTURA', placeholder: 'Ex: Soja BRS' }
+                                ]}
+                            />
                         </View>
+                        <View style={{ flex: 1 }}>
+                            <SmartAutocomplete
+                                label="ÁREA / LOCAL"
+                                value={area}
+                                onSelect={val => setArea(val ? val.nome : '')}
+                                service={TalhaoLibraryService}
+                                title="SELECIONAR TALHÃO"
+                                placeholder="LOCAL..."
+                                icon="map-outline"
+                                quickAddFields={[
+                                    { key: 'nome', label: 'NOME DO TALHÃO', placeholder: 'Ex: Talhão Norte 3' },
+                                    { key: 'area_ha', label: 'ÁREA (HA)', placeholder: 'Ex: 12.8', keyboardType: 'decimal-pad' }
+                                ]}
+                            />
+                        </View>
+                    </View>
 
-                        {itens.length === 0 ? (
-                            <View style={styles.emptyInsumos}>
-                                <Ionicons name="flask-outline" size={32} color="rgba(255,255,255,0.1)" />
-                                <Text style={styles.emptyInsumosText}>A receita estÃ¡ vazia.</Text>
+                    <Text style={styles.label}>TIPO DE APLICAÇÃO</Text>
+                    <View style={styles.pillContainer}>
+                        <TouchableOpacity
+                            style={[styles.pill, tipo === 'GOTEJO' && { backgroundColor: theme?.colors?.primary + '20', borderColor: theme?.colors?.primary }]}
+                            onPress={() => setTipo('GOTEJO')}
+                        >
+                            <Text style={[styles.pillText, tipo === 'GOTEJO' && { color: theme?.colors?.primary }]}>💧 GOTEJO</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.pill, tipo === 'PULVERIZACAO' && { backgroundColor: theme?.colors?.primary + '20', borderColor: theme?.colors?.primary }]}
+                            onPress={() => setTipo('PULVERIZACAO')}
+                        >
+                            <Text style={[styles.pillText, tipo === 'PULVERIZACAO' && { color: theme?.colors?.primary }]}>🌫️ PULVERIZAÇÃO</Text>
+                        </TouchableOpacity>
+                    </View>
+                </Card>
+
+                {/* CARRINHO DE INSUMOS DO ESTOQUE (INTEGRAÇÃO COMPLETA) */}
+                <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionLabel}>RECEITA / INSUMOS DEDUTÍVEIS</Text>
+                        <TouchableOpacity 
+                            style={styles.btnAddInsumo} 
+                            onPress={() => setItemSelectorVisible(true)}
+                        >
+                            <Ionicons name="add-circle" size={24} color={theme?.colors?.primary || '#10B981'} />
+                            <Text style={[styles.btnAddText, { color: theme?.colors?.primary || '#10B981' }]}>ADD INSUMO</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <Card noPadding>
+                        {itensAdicao.length === 0 ? (
+                            <View style={{ padding: 25, alignItems: 'center' }}>
+                                <MaterialCommunityIcons name="flask-empty-outline" size={32} color="#9CA3AF" />
+                                <Text style={{ color: '#9CA3AF', fontSize: 13, marginTop: 8, fontStyle: 'italic', textAlign: 'center' }}>
+                                    Nenhum insumo do estoque vinculado a esta aplicação.
+                                </Text>
                             </View>
                         ) : (
-                            <View style={{ gap: 10 }}>
-                                {itens.map(item => (
-                                    <View key={item.tempId} style={styles.insumoCard}>
-                                        <View style={styles.insumoIconBox}>
-                                            <Ionicons name="leaf" size={16} color="#10B981" />
-                                        </View>
-                                        <View style={{ flex: 1, marginLeft: 12 }}>
-                                            <Text style={styles.insumoName}>{item.nome}</Text>
-                                            <Text style={styles.insumoQty}>{item.quantidade} {item.unidade}</Text>
-                                        </View>
-                                        <TouchableOpacity onPress={() => removeInsumo(item.tempId)} style={styles.delBtn}>
-                                            <Ionicons name="close" size={20} color="#F87171" />
-                                        </TouchableOpacity>
+                            itensAdicao.map((item, idx) => (
+                                <View key={item.tempId} style={[styles.insumoRow, idx !== itensAdicao.length - 1 && styles.borderBottom]}>
+                                    <View style={styles.insumoIconBox}>
+                                        <MaterialCommunityIcons name="flask-outline" size={18} color="#10B981" />
                                     </View>
-                                ))}
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.insumoName}>{item.produto_id}</Text>
+                                        <Text style={styles.insumoQty}>{item.quantidade} {item.unidade}</Text>
+                                    </View>
+                                    <TouchableOpacity 
+                                        style={styles.btnRemove}
+                                        onPress={() => handleRemoveInsumo(item.tempId)}
+                                    >
+                                        <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                    </TouchableOpacity>
+                                </View>
+                            ))
+                        )}
+                    </Card>
+                </View>
+
+                <View style={styles.section}>
+                    <Text style={styles.sectionLabel}>RECEITA TÉCNICA / INSTRUÇÕES ADICIONAIS</Text>
+                    <Card noPadding>
+                        <AgroInput
+                            value={descricao}
+                            onChangeText={setDescricao}
+                            style={styles.textArea}
+                            placeholder="Descreva aqui orientações, velocidade do trator, clima ou observações gerais..."
+                            multiline={true}
+                        />
+                    </Card>
+                </View>
+
+                <View style={styles.section}>
+                    <Text style={styles.sectionLabel}>ANEXO / COMPROVANTE (OPCIONAL)</Text>
+                    <View style={styles.attachWrapper}>
+                        {imageUri ? (
+                            <View style={styles.imagePreview}>
+                                <Image source={{ uri: imageUri }} style={styles.previewImage} resizeMode="cover" />
+                                <TouchableOpacity style={styles.removeBtn} onPress={() => setImageUri(null)}>
+                                    <Ionicons name="trash" size={20} color="#FFF" />
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <View style={styles.attachButtons}>
+                                <TouchableOpacity style={styles.attachBtn} onPress={takePhoto}>
+                                    <Ionicons name="camera" size={24} color={theme?.colors?.primary} />
+                                    <Text style={[styles.attachText, { color: theme?.colors?.primary }]}>CÂMERA</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.attachBtn} onPress={pickImage}>
+                                    <Ionicons name="images" size={24} color={theme?.colors?.primary} />
+                                    <Text style={[styles.attachText, { color: theme?.colors?.primary }]}>GALERIA</Text>
+                                </TouchableOpacity>
                             </View>
                         )}
                     </View>
+                </View>
 
-                    {renderInput('NOTAS TÃ‰CNICAS (OPCIONAL)', descricao, setDescricao, 'Digite observaÃ§Ãµes importantes...', 'desc', true)}
+                <AgroButton title={loading ? "SALVANDO..." : "SALVAR PLANO E RECEITA"} onPress={handleSave} loading={loading} />
+                <AgroButton title="CANCELAR" variant="secondary" onPress={() => navigation.goBack()} style={{ marginTop: 12 }} />
 
-                    {/* AÃ§Ãµes */}
-                    <View style={styles.actionRow}>
-                        <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()}>
-                            <Text style={styles.cancelBtnText}>CANCELAR</Text>
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity style={styles.saveBtnBox} onPress={handleSave} disabled={saving}>
-                            <LinearGradient colors={['#10B981', '#059669']} style={styles.saveBtnGradient}>
-                                <Text style={styles.saveBtnText}>{saving ? 'SALVANDO...' : 'SALVAR PLANO'}</Text>
-                            </LinearGradient>
-                        </TouchableOpacity>
-                    </View>
-                    <View style={{ height: 40 }}/>
-                </ScrollView>
-            </SafeAreaView>
+                <View style={{ height: 100 }} />
+            </ScrollView>
 
-            {/* Modal Glassmorphism de Insumos */}
+            {/* MODAL SELETOR DE ESTOQUE */}
             <Modal visible={itemSelectorVisible} transparent animationType="slide">
                 <View style={styles.modalOverlay}>
                     <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setItemSelectorVisible(false)} />
                     
-                    <View intensity={60} tint="dark" style={styles.modalSheet}>
-                        <View style={styles.modalHandle} />
-                        <Text style={styles.modalTitle}>CATÃLOGO DE ESTOQUE</Text>
+                    <View style={styles.modalSheet}>
+                        <Text style={styles.modalTitle}>CATÁLOGO DO ESTOQUE</Text>
 
-                        <ScrollView style={{ maxHeight: 250 }} showsVerticalScrollIndicator={false}>
+                        <ScrollView style={{ maxHeight: 220 }} showsVerticalScrollIndicator={false}>
                             {stockItems.length === 0 ? (
-                                <Text style={styles.modalEmpty}>Seu estoque estÃ¡ vazio.</Text>
+                                <Text style={styles.modalEmpty}>Seu estoque está vazio ou sem cadastros ativos.</Text>
                             ) : stockItems.map(item => {
                                 const active = selectedStockItem?.produto === item.produto;
                                 return (
@@ -229,10 +352,10 @@ export default function AdubacaoFormScreen({ route, navigation }) {
                                         onPress={() => setSelectedStockItem(item)}
                                     >
                                         <View style={{ flex: 1 }}>
-                                            <Text style={[styles.stockCardName, active && { color: '#FFF' }]}>{item.produto}</Text>
-                                            <Text style={styles.stockCardQty}>Disp: {item.quantidade} {item.unidade}</Text>
+                                            <Text style={[styles.stockCardName, active && { color: theme?.colors?.primary || '#10B981' }]}>{item.produto}</Text>
+                                            <Text style={styles.stockCardQty}>Disponível: {item.quantidade} {item.unidade || 'KG'}</Text>
                                         </View>
-                                        {active && <Ionicons name="checkmark-circle" size={24} color="#10B981" />}
+                                        {active && <Ionicons name="checkmark-circle" size={22} color={theme?.colors?.primary || '#10B981'} />}
                                     </TouchableOpacity>
                                 );
                             })}
@@ -240,7 +363,7 @@ export default function AdubacaoFormScreen({ route, navigation }) {
 
                         {selectedStockItem && (
                             <View style={styles.qtyBox}>
-                                <Text style={styles.qtyLabel}>DOSE ({selectedStockItem.unidade})</Text>
+                                <Text style={styles.qtyLabel}>DOSE / QUANTIDADE ({selectedStockItem.unidade || 'KG'})</Text>
                                 <View style={styles.qtyInputContainer}>
                                     <TextInput 
                                         style={styles.qtyInput}
@@ -248,85 +371,71 @@ export default function AdubacaoFormScreen({ route, navigation }) {
                                         onChangeText={setItemQty}
                                         keyboardType="numeric"
                                         placeholder="0.00"
-                                        placeholderTextColor="#475569"
+                                        placeholderTextColor="#9CA3AF"
                                         autoFocus
-                                        {...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {})}
                                     />
                                 </View>
-                                <TouchableOpacity style={{marginTop: 15}} onPress={handleAddItem}>
-                                    <LinearGradient colors={['#10B981', '#059669']} style={styles.confirmBtnGradient}>
-                                        <Text style={styles.confirmBtnText}>JOGAR NA RECEITA</Text>
-                                    </LinearGradient>
+                                <TouchableOpacity style={styles.btnConfirmAdd} onPress={handleAddInsumo}>
+                                    <Text style={styles.btnConfirmAddText}>VINCULAR A RECEITA</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
                     </View>
                 </View>
             </Modal>
-
         </KeyboardAvoidingView>
     );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 20 : 30, paddingBottom: 20 },
-    backButton: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', marginRight: 15 },
-    headerTitle: { color: '#FFF', fontSize: 24, fontWeight: '900', letterSpacing: 0.5 },
-    headerSub: { color: '#10B981', fontSize: 13, fontWeight: '700', letterSpacing: 1 },
-    badgeDiamond: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(16, 185, 129, 0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.3)', gap: 4 },
-    badgeDiamondText: { color: '#10B981', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
-
-    scrollContent: { paddingHorizontal: 20, paddingTop: 10 },
+    header: { paddingTop: 50, paddingBottom: 30, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+    headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
+    headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 'bold' },
+    scrollContent: { padding: 20 },
+    formCard: { padding: 20, marginBottom: 20 },
+    row: { flexDirection: 'row' },
+    label: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', marginBottom: 10, marginTop: 10, letterSpacing: 1 },
+    pillContainer: { flexDirection: 'row', gap: 10, marginTop: 5 },
+    pill: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', alignItems: 'center' },
+    pillText: { fontWeight: '900', color: '#6B7280', fontSize: 11 },
+    section: { marginBottom: 25 },
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+    sectionLabel: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1 },
+    btnAddInsumo: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    btnAddText: { fontSize: 11, fontWeight: '900' },
     
-    field: { marginBottom: 20 },
-    label: { color: '#94A3B8', fontSize: 11, fontWeight: '800', letterSpacing: 1.5, marginBottom: 8 },
-    inputContainer: { backgroundColor: 'rgba(15, 23, 42, 0.6)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 16, height: 56, justifyContent: 'center' },
-    inputContainerFocused: { borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.05)' },
-    input: { flex: 1, color: '#F8FAFC', fontSize: 15, fontWeight: '600', paddingHorizontal: 16, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) },
+    // Insumo item list in form
+    insumoRow: { flexDirection: 'row', alignItems: 'center', padding: 16 },
+    borderBottom: { borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
+    insumoIconBox: { width: 34, height: 34, borderRadius: 10, backgroundColor: '#F0FDF4', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    insumoName: { color: '#1F2937', fontSize: 14, fontWeight: '700' },
+    insumoQty: { color: '#6B7280', fontSize: 12, fontWeight: '600', marginTop: 2 },
+    btnRemove: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
 
-    pillContainer: { flexDirection: 'row', gap: 10, marginBottom: 25 },
-    pill: { flex: 1, height: 60, borderRadius: 16, backgroundColor: 'rgba(15, 23, 42, 0.6)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' },
-    pillText: { color: '#64748B', fontSize: 10, fontWeight: '800', marginTop: 4, letterSpacing: 1 },
-    glowDot: { position: 'absolute', bottom: -1, width: 20, height: 3, borderRadius: 2, shadowOpacity: 1, shadowRadius: 5 },
+    textArea: { height: 120, textAlignVertical: 'top', borderBottomWidth: 0 },
+    attachWrapper: { marginBottom: 10 },
+    attachButtons: { flexDirection: 'row', gap: 15 },
+    attachBtn: { flex: 1, backgroundColor: '#FFF', padding: 20, borderRadius: 15, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#E5E7EB', borderStyle: 'dashed' },
+    attachText: { fontSize: 10, fontWeight: '900', marginTop: 8 },
+    imagePreview: { position: 'relative', height: 200, borderRadius: 15, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E7EB' },
+    previewImage: { width: '100%', height: '100%' },
+    removeBtn: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(239, 68, 68, 0.8)', padding: 8, borderRadius: 10 },
 
-    insumosBox: { backgroundColor: 'rgba(15, 23, 42, 0.5)', borderRadius: 24, padding: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginBottom: 25 },
-    insumosHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-    insumosTitle: { color: '#F8FAFC', fontSize: 13, fontWeight: '900', letterSpacing: 1.5 },
-    btnAddInsumo: { width: 36, height: 36, borderRadius: 12, backgroundColor: '#10B981', justifyContent: 'center', alignItems: 'center', shadowColor: '#10B981', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 5 },
-    
-    emptyInsumos: { alignItems: 'center', paddingVertical: 20 },
-    emptyInsumosText: { color: '#64748B', fontSize: 13, marginTop: 10, fontWeight: '600' },
-
-    insumoCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-    insumoIconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(16, 185, 129, 0.15)', justifyContent: 'center', alignItems: 'center' },
-    insumoName: { color: '#F8FAFC', fontSize: 14, fontWeight: '800' },
-    insumoQty: { color: '#10B981', fontSize: 12, fontWeight: '700', marginTop: 2 },
-    delBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(248, 113, 113, 0.1)', justifyContent: 'center', alignItems: 'center' },
-
-    actionRow: { flexDirection: 'row', gap: 15, marginTop: 10 },
-    cancelBtn: { flex: 0.8, height: 60, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.02)' },
-    cancelBtnText: { color: '#94A3B8', fontSize: 13, fontWeight: '800', letterSpacing: 1 },
-    saveBtnBox: { flex: 1.2, shadowColor: '#10B981', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 15, elevation: 8 },
-    saveBtnGradient: { height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-    saveBtnText: { color: '#FFF', fontSize: 14, fontWeight: '900', letterSpacing: 1 },
-
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center' },
-    modalSheet: { width: '90%', maxWidth: 500, alignSelf: 'center', borderRadius: 36, padding: 30, backgroundColor: 'rgba(11, 17, 32, 0.95)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-    modalHandle: { display: 'none' },
-    modalTitle: { color: '#FFF', fontSize: 16, fontWeight: '900', letterSpacing: 1, textAlign: 'center', marginBottom: 25 },
-    modalEmpty: { color: '#64748B', textAlign: 'center', paddingVertical: 20 },
-    
-    stockCard: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', marginBottom: 10 },
-    stockCardActive: { borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.05)' },
-    stockCardName: { color: '#94A3B8', fontSize: 15, fontWeight: '800' },
-    stockCardQty: { color: '#64748B', fontSize: 12, marginTop: 4, fontWeight: '600' },
-
-    qtyBox: { marginTop: 25, paddingTop: 25, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-    qtyLabel: { color: '#94A3B8', fontSize: 11, fontWeight: '800', letterSpacing: 1, marginBottom: 10 },
-    qtyInputContainer: { backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 16, height: 60, justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.3)' },
-    qtyInput: { flex: 1, color: '#FFF', fontSize: 20, fontWeight: '800', textAlign: 'center', ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) },
-    confirmBtnGradient: { height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center', shadowColor: '#10B981', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
-    confirmBtnText: { color: '#FFF', fontSize: 13, fontWeight: '900', letterSpacing: 1 }
+    // Modal Styles
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 20 },
+    modalSheet: { backgroundColor: '#FFF', borderRadius: 24, padding: 25, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 15, elevation: 10 },
+    modalTitle: { fontSize: 15, fontWeight: '900', color: '#1F2937', textAlign: 'center', marginBottom: 20, letterSpacing: 0.5 },
+    modalEmpty: { color: '#6B7280', textAlign: 'center', paddingVertical: 20, fontStyle: 'italic', fontSize: 13 },
+    stockCard: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 12, backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 10 },
+    stockCardActive: { borderColor: '#10B981', backgroundColor: '#F0FDF4' },
+    stockCardName: { fontSize: 14, fontWeight: '700', color: '#374151' },
+    stockCardQty: { fontSize: 11, color: '#6B7280', marginTop: 2, fontWeight: '600' },
+    qtyBox: { marginTop: 15, paddingTop: 15, borderTopWidth: 1, borderTopColor: '#E5E7EB' },
+    qtyLabel: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', marginBottom: 8, letterSpacing: 1 },
+    qtyInputContainer: { backgroundColor: '#F9FAFB', borderRadius: 12, height: 50, justifyContent: 'center', borderWidth: 1, borderColor: '#E5E7EB', paddingHorizontal: 15 },
+    qtyInput: { fontSize: 16, fontWeight: '700', color: '#1F2937' },
+    btnConfirmAdd: { backgroundColor: '#10B981', height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginTop: 15 },
+    btnConfirmAddText: { color: '#FFF', fontSize: 12, fontWeight: '900', letterSpacing: 1 }
 });
-

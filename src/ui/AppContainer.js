@@ -1,24 +1,30 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, SafeAreaView, Platform } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 
-import { useTheme } from '../theme/ThemeContext';
-
-export default function AppContainer({ children, style }) {
-    const { colors } = useTheme();
+/**
+ * AppContainer - Contêiner de Layout Reativo Padrão 📱🌿
+ * Fornece a fundação de SafeAreaView e fundo (background) dinâmico
+ * para consistência visual absoluta em todas as telas em ambos os temas.
+ */
+export default function AppContainer({ children, style, ...props }) {
+    const { theme } = useTheme();
+    const colors = theme?.colors || {};
 
     return (
-        <View
-            style={[
-                styles.fill,
-                { backgroundColor: colors.background },
-                style
-            ]}
-        >
-            {children}
-        </View>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background || '#020617' }]}>
+            <View style={[styles.container, { backgroundColor: colors.background || '#020617' }, style]} {...props}>
+                {children}
+            </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    fill: { flex: 1 },
+    safeArea: {
+        flex: 1,
+    },
+    container: {
+        flex: 1,
+    }
 });

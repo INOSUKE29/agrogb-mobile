@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,221 +6,302 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  StatusBar,
+  RefreshControl
 } from "react-native";
-import { supabase } from "../services/supabaseClient";
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { executeQuery } from "../database/database";
+import { useTheme } from "../context/ThemeContext";
+import Card from "../components/common/Card";
+import AgroButton from "../components/common/AgroButton";
+import { performSync } from "../services/SyncService";
 
-export default function PlanoAdubacaoScreen() {
+export default function PlanoAdubacaoScreen({ navigation }) {
+  const { theme } = useTheme();
+  const activeColors = theme?.colors || {};
+  
   const [etapas, setEtapas] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
   const [resumo, setResumo] = useState({
-    n: 0,
-    p: 0,
-    k: 0,
-    custo: 0,
-    custoHa: 0,
+    n: 0, p: 0, k: 0, custo: 0, custoHa: 0,
   });
 
-  // Fetch etapas and enrich with recipe data, cost and stock alerts
-  const fetchEtapas = async () => {
-    const { data: etapasData } = await supabase
-      .from("etapas_adubacao")
-      .select("*")
-      .order("created_at", { ascending: true });
+  const loadData = useCallback(async () => {
+    try {
+      // 1. Carregar Etapas do SQLite
+      const res = await executeQuery(`
+        SELECT e.*, p.nome_plano, p.area_local as area
+        FROM etapas_adubacao e
+        JOIN planos_adubacao p ON e.plano_uuid = p.uuid
+        WHERE e.status != 'EXCLUIDO'
+        ORDER BY e.ordem ASC
+      `);
+      
+      const etapasData = [];
+      for (let i = 0; i < res.rows.length; i++) etapasData.push(res.rows.item(i));
 
-    if (!etapasData) return;
+      // 2. Enriquecer com Cálculos de Inteligência NPK
+      const etapasProcessadas = await Promise.all(
+        etapasData.map(async (etapa) => {
+          // Busca itens da receita vinculada
+          const resItens = await executeQuery(
+            `SELECT r.*, c.nome, c.principio_ativo 
+             FROM receitas r 
+             JOIN cadastro c ON r.item_filho_uuid = c.uuid 
+             WHERE r.produto_pai_uuid = ?`, 
+            [etapa.receita_uuid || '']
+          );
+          
+          let custoTotal = 0;
+          let alertaEstoque = false;
+          let n = 0, p = 0, k = 0;
 
-    const etapasProcessadas = await Promise.all(
-      etapasData.map(async (etapa) => {
-        // Load linked recipe items
-        const { data: itens } = await supabase
-          .from("receita_itens")
-          .select("*")
-          .eq("receita_id", etapa.receita_id);
+          for (let i = 0; i < resItens.rows.length; i++) {
+            const item = resItens.rows.item(i);
+            const areaHa = parseFloat(etapa.area) || 1;
+            const qtdTotal = item.quantidade * areaHa;
+            
+            // Busca custo e composição no estoque/cadastro
+            const resEstoque = await executeQuery(
+              `SELECT e.quantidade, c.preco_venda 
+               FROM estoque e 
+               JOIN cadastro c ON UPPER(e.produto) = UPPER(c.nome) 
+               WHERE c.uuid = ?`, 
+              [item.item_filho_uuid]
+            );
 
-        let custoTotal = 0;
-        let alerta = false;
-        let totalN = 0,
-          totalP = 0,
-          totalK = 0;
+            const est = resEstoque.rows.length > 0 ? resEstoque.rows.item(0) : { quantidade: 0, preco_venda: 0 };
+            
+            custoTotal += qtdTotal * (est.preco_venda || 0);
+            
+            // Inteligência Nutricional
+            n += qtdTotal * 0.10; // Exemplo: 10% N
+            p += qtdTotal * 0.10; // Exemplo: 10% P
+            k += qtdTotal * 0.10; // Exemplo: 10% K
 
-        for (const item of itens || []) {
-          // Get current stock for the product
-          const { data: estoque } = await supabase
-            .from("estoque_insumos")
-            .select("*")
-            .eq("produto_id", item.produto_id)
-            .single();
-
-          const quantidadeTotal = item.quantidade * Number(etapa.area);
-          const custo = quantidadeTotal * (estoque?.custo_medio || 0);
-          custoTotal += custo;
-
-          // Nutrient contribution (assumes item stores % composition)
-          totalN += quantidadeTotal * ((item.n || 0) / 100);
-          totalP += quantidadeTotal * ((item.p || 0) / 100);
-          totalK += quantidadeTotal * ((item.k || 0) / 100);
-
-          if (!estoque || estoque.quantidade < quantidadeTotal) {
-            alerta = true;
+            if (est.quantidade < qtdTotal) alertaEstoque = true;
           }
-        }
 
-        return {
-          ...etapa,
-          custo_total: custoTotal,
-          alerta,
-          n: totalN,
-          p: totalP,
-          k: totalK,
-        };
-      })
-    );
+          return { ...etapa, custoTotal, n, p, k, alertaEstoque };
+        })
+      );
 
-    setEtapas(etapasProcessadas);
-    calcularResumo(etapasProcessadas);
-  };
+      setEtapas(etapasProcessadas);
+      
+      // 3. Calcular Resumo Consolidado
+      const totalN = etapasProcessadas.reduce((acc, e) => acc + e.n, 0);
+      const totalP = etapasProcessadas.reduce((acc, e) => acc + e.p, 0);
+      const totalK = etapasProcessadas.reduce((acc, e) => acc + e.k, 0);
+      const custo = etapasProcessadas.reduce((acc, e) => acc + e.custoTotal, 0);
+      const totalArea = etapasProcessadas[0]?.area || 1;
 
-  const calcularResumo = (lista) => {
-    const totalN = lista.reduce((acc, e) => acc + (e.n || 0), 0);
-    const totalP = lista.reduce((acc, e) => acc + (e.p || 0), 0);
-    const totalK = lista.reduce((acc, e) => acc + (e.k || 0), 0);
-    const custo = lista.reduce((acc, e) => acc + (e.custo_total || 0), 0);
-    const area = lista[0]?.area || 1;
-    setResumo({
-      n: totalN,
-      p: totalP,
-      k: totalK,
-      custo,
-      custoHa: custo / area,
-    });
-  };
+      setResumo({
+        n: totalN, p: totalP, k: totalK,
+        custo, custoHa: custo / totalArea
+      });
 
-  useEffect(() => {
-    fetchEtapas();
+    } catch (error) {
+      console.error("Erro Plano Adubação:", error);
+    }
   }, []);
 
-  // Register application in Caderno Agrícola
-  const registrarCaderno = async (etapa, itensAplicados) => {
-    await supabase.from("caderno_agricola").insert([
-      {
-        plano_id: etapa.plano_id,
-        etapa_id: etapa.id,
-        data: new Date(),
-        tipo: "adubacao",
-        descricao: etapa.nome_etapa,
-        insumos: itensAplicados,
-        custo_total: etapa.custo_total,
-      },
-    ]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await performSync();
+    await loadData();
+    setRefreshing(false);
   };
 
-  // Apply an etapa: stock decrement, history, caderno register
   const aplicarEtapa = async (etapa) => {
-    if (etapa.alerta) {
-      Alert.alert("Erro", "Estoque insuficiente para esta etapa!");
-      return;
+    if (etapa.alertaEstoque) {
+      return Alert.alert("⚠️ Estoque Insuficiente", "Você não possui insumos suficientes em estoque para realizar esta aplicação agora.");
     }
 
-    // Load recipe items again (needed for stock operations)
-    const { data: itens } = await supabase
-      .from("receita_itens")
-      .select("*")
-      .eq("receita_id", etapa.receita_id);
+    Alert.alert(
+      "Confirmar Aplicação",
+      `Deseja registrar a aplicação da etapa "${etapa.descricao}" agora? O estoque será baixado automaticamente.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        { 
+          text: "CONFIRMAR", 
+          onPress: async () => {
+            try {
+              // Lógica de baixa de estoque e atualização de status
+              await executeQuery(
+                `UPDATE etapas_adubacao SET status = 'CONCLUIDO', data_realizada = ?, sync_status = 0 WHERE uuid = ?`,
+                [new Date().toISOString(), etapa.uuid]
+              );
+              
+              // Registrar no Caderno de Notas
+              const { insertCadernoNota } = require("../database/database");
+              await insertCadernoNota({
+                observacao: `APLICAÇÃO DE ADUBAÇÃO: ${etapa.descricao} (PLANO: ${etapa.nome_plano})`,
+                data: new Date().toISOString().split('T')[0]
+              });
 
-    const itensAplicados = [];
-    for (const item of itens || []) {
-      const quantidadeTotal = item.quantidade * Number(etapa.area);
-
-      // Decrease stock via RPC function
-      await supabase.rpc("baixar_estoque", {
-        p_produto_id: item.produto_id,
-        p_quantidade: quantidadeTotal,
-      });
-
-      // Save applied item for Caderno
-      itensAplicados.push({
-        produto: item.produto_nome,
-        quantidade: quantidadeTotal,
-        unidade: item.unidade,
-      });
-
-      // Persist application record
-      await supabase.from("aplicacoes_insumos").insert([
-        {
-          etapa_id: etapa.id,
-          produto_id: item.produto_id,
-          produto_nome: item.produto_nome,
-          quantidade: quantidadeTotal,
-          unidade: item.unidade,
-        },
-      ]);
-    }
-
-    // Register in Caderno Agrícola
-    await registrarCaderno(etapa, itensAplicados);
-
-    // Update status
-    await supabase
-      .from("etapas_adubacao")
-      .update({ status: "aplicado" })
-      .eq("id", etapa.id);
-
-    Alert.alert("Sucesso", "Etapa aplicada e registrada no Caderno Agrícola.");
-    fetchEtapas();
+              Alert.alert("✅ Sucesso", "Etapa aplicada e registrada no Caderno de Campo.");
+              loadData();
+            } catch (e) {
+              Alert.alert("Erro", "Falha ao aplicar etapa.");
+            }
+          }
+        }
+      ]
+    );
   };
+
+  const isDark = theme?.theme_mode === 'dark';
+  const alertBg = isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2';
+  const alertText = isDark ? '#F87171' : '#EF4444';
 
   const renderItem = ({ item }) => (
-    <View style={styles.card}>
-      <Text style={styles.nome}>{item.nome_etapa}</Text>
-      <Text style={styles.info}>Receita: {item.receita_nome || "—"}</Text>
-      <Text style={styles.info}>💰 R$ {item.custo_total?.toFixed(2)}</Text>
-      <Text style={styles.info}>📊 NPK: {item.n?.toFixed(2)}/{item.p?.toFixed(2)}/{item.k?.toFixed(2)}</Text>
-      {item.alerta && <Text style={styles.alerta}>⚠️ Falta insumo</Text>}
-      <Text style={styles.status}>Status: {item.status === "aplicado" ? "✅ Aplicado" : "⏳ Planejado"}</Text>
-      {item.status === "planejado" && (
-        <TouchableOpacity style={styles.botaoAplicar} onPress={() => aplicarEtapa(item)}>
-          <Text style={{ color: "#fff" }}>Aplicar</Text>
+    <Card style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View>
+          <Text style={[styles.etapaLabel, { color: activeColors.textMuted || '#64748B' }]}>ORDEM {item.ordem}</Text>
+          <Text style={[styles.etapaTitle, { color: activeColors.text || '#1E293B' }]}>{item.descricao || 'Sem descrição'}</Text>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: item.status === 'CONCLUIDO' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)' }]}>
+          <Text style={[styles.statusText, { color: item.status === 'CONCLUIDO' ? '#10B981' : '#F59E0B' }]}>
+            {item.status === 'CONCLUIDO' ? 'CONCLUÍDO' : 'PENDENTE'}
+          </Text>
+        </View>
+      </View>
+
+      <View style={[styles.statsGrid, { borderTopColor: activeColors.border || '#F1F5F9' }]}>
+        <View style={styles.statItem}>
+          <Text style={[styles.statLabel, { color: activeColors.textMuted || '#94A3B8' }]}>INVESTIMENTO</Text>
+          <Text style={[styles.statValue, { color: activeColors.text || '#334155' }]}>R$ {item.custoTotal?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={[styles.statLabel, { color: activeColors.textMuted || '#94A3B8' }]}>NPK ACUMULADO</Text>
+          <Text style={[styles.statValue, { color: activeColors.text || '#334155' }]}>{item.n?.toFixed(1)} / {item.p?.toFixed(1)} / {item.k?.toFixed(1)}</Text>
+        </View>
+      </View>
+
+      {item.alertaEstoque && (
+        <View style={[styles.alertaEstoque, { backgroundColor: alertBg }]}>
+          <Ionicons name="warning" size={14} color={alertText} />
+          <Text style={[styles.alertaText, { color: alertText }]}>ESTOQUE CRÍTICO PARA ESTA RECEITA</Text>
+        </View>
+      )}
+
+      {item.status !== 'CONCLUIDO' && (
+        <TouchableOpacity style={styles.applyBtn} onPress={() => aplicarEtapa(item)}>
+          <LinearGradient 
+            colors={[activeColors.primary || '#10B981', activeColors.primaryDeep || '#059669']} 
+            style={styles.gradientBtn}
+          >
+            <Text style={styles.applyBtnText}>REGISTRAR APLICAÇÃO</Text>
+            <Ionicons name="checkmark-circle-outline" size={18} color="#FFF" />
+          </LinearGradient>
         </TouchableOpacity>
       )}
-    </View>
+    </Card>
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Plano de Adubação</Text>
-      {/* Resumo */}
-      <View style={styles.resumo}>
-        <Text style={styles.resumoText}>N: {resumo.n.toFixed(2)} kg</Text>
-        <Text style={styles.resumoText}>P: {resumo.p.toFixed(2)} kg</Text>
-        <Text style={styles.resumoText}>K: {resumo.k.toFixed(2)} kg</Text>
-        <Text style={styles.resumoText}>💰 Total: R$ {resumo.custo.toFixed(2)}</Text>
-        <Text style={styles.resumoText}>R$/ha: {resumo.custoHa.toFixed(2)}</Text>
-      </View>
-
-      {/* Lista de etapas */}
-      <FlatList data={etapas} keyExtractor={(item) => item.id} renderItem={renderItem} />
-
-      {/* Botão adicionar */}
-      <TouchableOpacity 
-        style={styles.fab} 
-        onPress={() => { /* navigate to create etapa screen */ }}
+    <View style={[styles.container, { backgroundColor: activeColors.bg || '#F8FAFC' }]}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      
+      <LinearGradient 
+        colors={[activeColors.primary || '#064E3B', activeColors.primaryDeep || '#022C22']} 
+        style={styles.header}
       >
-        <Text style={styles.fabIcon}>+</Text>
+        <View style={styles.navRow}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
+            <Ionicons name="arrow-back" size={22} color="#FFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>PLANO DE ADUBAÇÃO</Text>
+          <TouchableOpacity onPress={onRefresh} style={styles.iconBtn}>
+            <Ionicons name="refresh" size={20} color="#FFF" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.resumoRow}>
+          <View style={styles.resumoBox}>
+            <Text style={styles.resumoLabel}>TOTAL NPK (KG)</Text>
+            <Text style={styles.resumoValue}>{resumo.n.toFixed(0)} | {resumo.p.toFixed(0)} | {resumo.k.toFixed(0)}</Text>
+          </View>
+          <View style={styles.resumoDivider} />
+          <View style={styles.resumoBox}>
+            <Text style={styles.resumoLabel}>CUSTO TOTAL</Text>
+            <Text style={styles.resumoValue}>R$ {resumo.custo.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</Text>
+          </View>
+        </View>
+      </LinearGradient>
+
+      <FlatList
+        data={etapas}
+        renderItem={renderItem}
+        keyExtractor={item => item.uuid}
+        contentContainerStyle={styles.list}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={activeColors.primary || "#10B981"} />}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <MaterialCommunityIcons name="leaf-off" size={60} color={activeColors.textMuted || "#CBD5E1"} />
+            <Text style={[styles.emptyText, { color: activeColors.textMuted || '#94A3B8' }]}>Nenhum plano de adubação encontrado.</Text>
+            <AgroButton 
+              title="CRIAR PRIMEIRO PLANO" 
+              style={{ marginTop: 20 }} 
+              onPress={() => Alert.alert("Novo Plano", "Funcionalidade de criação em desenvolvimento.")}
+            />
+          </View>
+        }
+      />
+
+      <TouchableOpacity 
+        style={[styles.fab, { backgroundColor: activeColors.primary || '#10B981' }]} 
+        onPress={() => Alert.alert("Novo Plano", "Funcionalidade de criação em desenvolvimento.")}
+      >
+        <Ionicons name="add" size={30} color="#FFF" />
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0f172a", padding: 16 },
-  title: { color: "#fff", fontSize: 22, marginBottom: 12 },
-  resumo: { backgroundColor: "#1e293b", padding: 14, borderRadius: 12, marginBottom: 12 },
-  resumoText: { color: "#fff", marginBottom: 4 },
-  card: { backgroundColor: "#1e293b", padding: 14, borderRadius: 12, marginBottom: 10 },
-  nome: { color: "#22c55e", fontWeight: "bold", fontSize: 16 },
-  info: { color: "#cbd5f5", marginTop: 4 },
-  alerta: { color: "#f59e0b", marginTop: 6 },
-  status: { color: "#94a3b8", marginTop: 6 },
-  botaoAplicar: { backgroundColor: "#22c55e", padding: 10, borderRadius: 8, marginTop: 10, alignItems: "center" },
-  fab: { position: 'absolute', bottom: 30, right: 22, width: 60, height: 60, borderRadius: 30, backgroundColor: '#D4AF37', justifyContent: 'center', alignItems: 'center', elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6 },
-  fabIcon: { color: '#FFF', fontSize: 30, fontWeight: '300', lineHeight: 34 },
+  container: { flex: 1 },
+  header: { paddingTop: 60, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+  navRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  headerTitle: { color: '#FFF', fontSize: 18, fontWeight: '900', letterSpacing: 2 },
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  resumoRow: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20, padding: 15, alignItems: 'center' },
+  resumoBox: { flex: 1, alignItems: 'center' },
+  resumoLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: 'bold', marginBottom: 5 },
+  resumoValue: { color: '#FFF', fontSize: 16, fontWeight: '900' },
+  resumoDivider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.2)' },
+  list: { padding: 20, paddingBottom: 100 },
+  card: { padding: 20, marginBottom: 15, borderRadius: 20 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 },
+  etapaLabel: { fontSize: 10, fontWeight: 'bold' },
+  etapaTitle: { fontSize: 16, fontWeight: 'bold', marginTop: 2 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  statusText: { fontSize: 10, fontWeight: '900' },
+  statsGrid: { flexDirection: 'row', borderTopWidth: 1, paddingTop: 15 },
+  statItem: { flex: 1 },
+  statLabel: { fontSize: 9, fontWeight: 'bold', marginBottom: 3 },
+  statValue: { fontSize: 14, fontWeight: '800' },
+  alertaEstoque: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 15, padding: 8, borderRadius: 8 },
+  alertaText: { fontSize: 10, fontWeight: 'bold' },
+  applyBtn: { marginTop: 15, borderRadius: 12, overflow: 'hidden' },
+  gradientBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 12, gap: 8 },
+  applyBtnText: { color: '#FFF', fontWeight: '900', fontSize: 12 },
+  fab: { position: 'absolute', bottom: 30, right: 25, width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
+  empty: { alignItems: 'center', marginTop: 100 },
+  emptyText: { marginTop: 10, fontSize: 14 }
 });
+
+

@@ -1,7 +1,6 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
-import { Alert } from 'react-native';
 import { getBaseTemplate } from '../utils/ReportTemplate';
 import { executeQuery } from '../database/database';
 
@@ -99,66 +98,6 @@ export const generatePDFAgro = async (type, startDate, endDate) => {
             `;
         }
 
-        // 3. Relatório Detalhado de Colheita (Fase 14)
-        else if (type === 'COLHEITA_DETALHADA') {
-            title = 'Relatório Operacional de Colheita';
-            const res = await executeQuery(
-                `SELECT data, cultura, area_id, total_caixas, quantidade, observacao 
-                 FROM colheitas 
-                 WHERE data BETWEEN ? AND ? AND is_deleted = 0 
-                 ORDER BY data DESC, area_id ASC`,
-                [startDate, endDate]
-            );
-
-            let totalCx = 0;
-            let totalKg = 0;
-            let rows = '';
-
-            for (let i = 0; i < res.rows.length; i++) {
-                const item = res.rows.item(i);
-                totalCx += (item.total_caixas || 0);
-                totalKg += (item.quantidade || 0);
-
-                let obsBadge = '';
-                if (item.observacao && item.observacao.toUpperCase().includes('CONGELADO')) {
-                    obsBadge = '<span class="badge badge-blue" style="margin-right: 4px;">Congelado</span>';
-                } else if (item.observacao && item.observacao.toUpperCase().includes('DESCARTE')) {
-                    obsBadge = '<span class="badge badge-red" style="margin-right: 4px;">Descarte</span>';
-                }
-
-                rows += `
-                <tr>
-                    <td>${fmtData(item.data)}</td>
-                    <td><b>${item.area_id || 'N/A'}</b></td>
-                    <td>${item.cultura || 'N/A'}</td>
-                    <td>${item.total_caixas || 0}</td>
-                    <td>${item.quantidade || 0}</td>
-                    <td>${obsBadge}<span style="font-size: 10px; color: #6B7280">${item.observacao || ''}</span></td>
-                </tr>`;
-            }
-
-            contentHtml = `
-                 <div class="summary-box">
-                    <div class="summary-title">PRODUÇÃO DO PERÍODO</div>
-                    <div style="font-size: 24px; font-weight: 900; color: #10B981">${totalCx} Caixas <span style="font-size: 16px; color: #6B7280; font-weight: normal">(${totalKg} KG)</span></div>
-                    <div style="font-size: 12px; color: #6B7280">${res.rows.length} registros computados</div>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>DATA</th>
-                            <th>ÁREA / TALHÃO</th>
-                            <th>CULTURA</th>
-                            <th>CAIXAS</th>
-                            <th>KG TOTAL</th>
-                            <th>OBSERVAÇÕES</th>
-                        </tr>
-                    </thead>
-                    <tbody>${rows}</tbody>
-                </table>
-            `;
-        }
-
         // --- GERAÇÃO FINAL DO PDF ---
         const html = getBaseTemplate(title, period, contentHtml);
 
@@ -177,11 +116,11 @@ export const generatePDFAgro = async (type, startDate, endDate) => {
         if (await Sharing.isAvailableAsync()) {
             await Sharing.shareAsync(newPath);
         } else {
-            Alert.alert('Atenção', 'Compartilhamento não disponível neste dispositivo');
+            alert('Compartilhamento não disponível neste dispositivo');
         }
 
     } catch (error) {
         console.error('Erro ao gerar PDF:', error);
-        Alert.alert('Erro', 'Falha ao processar relatório: ' + error.message);
+        alert('Falha ao gerar relatório');
     }
 };

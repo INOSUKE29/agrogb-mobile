@@ -7,7 +7,10 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { FertilizationService } from '../services/FertilizationService';
 import ScreenHeader from '../ui/ScreenHeader';
-import { Picker } from '@react-native-picker/picker'; // Assumindo disponibilidade ou usando select alternativo
+import { Picker } from '@react-native-picker/picker';
+import { useTheme } from '../context/ThemeContext';
+import SmartAutocomplete from '../components/common/SmartAutocomplete';
+import { CropLibraryService, ProductLibraryService } from '../services/LibraryServices';
 
 /**
  * RecipeFormScreen - Cadastro/Edição de Receitas 🌿🧾
@@ -16,16 +19,22 @@ export default function RecipeFormScreen() {
     const navigation = useNavigation();
     const route = useRoute();
     const { recipeId } = route.params || {};
+    const { theme } = useTheme();
+    const activeColors = theme?.colors || {};
 
     const [loading, setLoading] = useState(false);
     const [name, setName] = useState('');
     const [type, setType] = useState('foliar');
-    const [culture, setCulture] = useState('Morango');
+    
+    const [cultureVal, setCultureVal] = useState(null);
+    const culture = cultureVal?.nome || 'Morango';
+    
     const [description, setDescription] = useState('');
     const [items, setItems] = useState([]);
 
     // Campos do Modal/Item
-    const [itemName, setItemName] = useState('');
+    const [itemVal, setItemVal] = useState(null);
+    const itemName = itemVal?.nome || '';
     const [itemQty, setItemQty] = useState('');
     const [itemUnit, setItemUnit] = useState('ml');
 
@@ -35,12 +44,19 @@ export default function RecipeFormScreen() {
         }
     }, [recipeId]);
 
+    // Autopreenchimento de unidade com base no insumo selecionado
+    useEffect(() => {
+        if (itemVal) {
+            setItemUnit(itemVal.unidade || 'ml');
+        }
+    }, [itemVal]);
+
     const loadRecipe = async () => {
         const data = await FertilizationService.getRecipeDetails(recipeId);
         if (data) {
             setName(data.name);
             setType(data.type);
-            setCulture(data.culture);
+            setCultureVal(data.culture ? { nome: data.culture } : null);
             setDescription(data.description);
             setItems(data.items.map(it => ({
                 id: it.id,
@@ -63,7 +79,7 @@ export default function RecipeFormScreen() {
             unit: itemUnit
         };
         setItems([...items, newItem]);
-        setItemName('');
+        setItemVal(null);
         setItemQty('');
     };
 
@@ -91,9 +107,15 @@ export default function RecipeFormScreen() {
         }
     };
 
+    const isDark = theme?.theme_mode === 'dark';
+    const inputBg = activeColors.card || '#FFFFFF';
+    const inputBorder = activeColors.border || 'rgba(0,0,0,0.1)';
+    const textColor = activeColors.text || '#1E293B';
+    const textMutedColor = activeColors.textMuted || '#64748B';
+
     return (
-        <View style={[styles.container, { backgroundColor: '#0D1B2A' }]}>
-            <StatusBar barStyle="light-content" />
+        <View style={[styles.container, { backgroundColor: activeColors.bg || '#F8FAFC' }]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
             <SafeAreaView style={styles.safeArea}>
                 <ScreenHeader title={recipeId ? "Editar Receita" : "Nova Receita"} onBack={() => navigation.goBack()} />
 
@@ -101,47 +123,47 @@ export default function RecipeFormScreen() {
                     
                     {/* BLOCO 1: INFO */}
                     <View style={styles.section}>
-                        <Text style={styles.label}>Nome da Receita</Text>
+                        <Text style={[styles.label, { color: textMutedColor }]}>Nome da Receita</Text>
                         <TextInput 
-                            style={styles.input} 
+                            style={[styles.input, { backgroundColor: inputBg, borderColor: inputBorder, color: textColor }]} 
                             placeholder="Ex: Foliar 1" 
-                            placeholderTextColor="rgba(255,255,255,0.3)"
+                            placeholderTextColor={isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)"}
                             value={name}
                             onChangeText={setName}
                         />
 
-                        <Text style={styles.label}>Tipo</Text>
-                        <View style={styles.pickerContainer}>
+                        <Text style={[styles.label, { color: textMutedColor }]}>Tipo</Text>
+                        <View style={[styles.pickerContainer, { backgroundColor: inputBg, borderColor: inputBorder }]}>
                             <Picker
                                 selectedValue={type}
                                 onValueChange={(itemValue) => setType(itemValue)}
-                                style={styles.picker}
-                                dropdownIconColor="#FFF"
+                                style={[styles.picker, { color: textColor }]}
+                                dropdownIconColor={textColor}
                             >
                                 <Picker.Item label="Foliar" value="foliar" />
                                 <Picker.Item label="Gotejo" value="gotejo" />
                             </Picker>
                         </View>
 
-                        <Text style={styles.label}>Cultura</Text>
-                        <View style={styles.pickerContainer}>
-                            <Picker
-                                selectedValue={culture}
-                                onValueChange={(itemValue) => setCulture(itemValue)}
-                                style={styles.picker}
-                                dropdownIconColor="#FFF"
-                            >
-                                <Picker.Item label="Morango" value="Morango" />
-                                <Picker.Item label="Flor" value="Flor" />
-                                <Picker.Item label="Outros" value="Outros" />
-                            </Picker>
-                        </View>
+                        <SmartAutocomplete
+                            label="Cultura *"
+                            value={cultureVal}
+                            onSelect={setCultureVal}
+                            service={CropLibraryService}
+                            title="SELECIONAR CULTURA"
+                            placeholder="Selecione a cultura..."
+                            icon="leaf-outline"
+                            quickAddFields={[
+                                { key: 'nome', label: 'Nome da Cultura', placeholder: 'Ex: Morango' },
+                                { key: 'observacao', label: 'Observação (opcional)', placeholder: 'Ex: Safra de Inverno' }
+                            ]}
+                        />
 
-                        <Text style={styles.label}>Descrição (opcional)</Text>
+                        <Text style={[styles.label, { color: textMutedColor }]}>Descrição (opcional)</Text>
                         <TextInput 
-                            style={[styles.input, { height: 80, textAlignVertical: 'top' }]} 
+                            style={[styles.input, { backgroundColor: inputBg, borderColor: inputBorder, color: textColor, height: 80, textAlignVertical: 'top' }]} 
                             placeholder="Notas extras..." 
-                            placeholderTextColor="rgba(255,255,255,0.3)"
+                            placeholderTextColor={isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)"}
                             multiline
                             value={description}
                             onChangeText={setDescription}
@@ -150,49 +172,55 @@ export default function RecipeFormScreen() {
 
                     {/* BLOCO 2: INSUMOS */}
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Insumos da Adubação</Text>
+                        <Text style={[styles.sectionTitle, { color: textColor }]}>Insumos da Adubação</Text>
                         
                         {items.map((item) => (
                             <View key={item.id} style={styles.itemRow}>
                                 <View style={styles.itemMain}>
-                                    <View style={styles.itemIconBox}>
-                                        <MaterialCommunityIcons name="spray-bottle" size={18} color="#2ECC71" />
+                                    <View style={[styles.itemIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                                        <MaterialCommunityIcons name="spray-bottle" size={18} color={activeColors.primary || '#10B981'} />
                                     </View>
-                                    <Text style={styles.itemName}>{item.product_name}</Text>
+                                    <Text style={[styles.itemName, { color: textColor }]}>{item.product_name}</Text>
                                 </View>
                                 <View style={styles.itemRight}>
-                                    <Text style={styles.itemQty}>{item.quantity} {item.unit}</Text>
+                                    <Text style={[styles.itemQty, { color: textMutedColor }]}>{item.quantity} {item.unit}</Text>
                                     <TouchableOpacity onPress={() => removeItem(item.id)}>
-                                        <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                        <Ionicons name="trash-outline" size={20} color={activeColors.error || '#EF4444'} />
                                     </TouchableOpacity>
                                 </View>
                             </View>
                         ))}
 
                         <View style={styles.addItemBox}>
-                            <TextInput 
-                                style={[styles.input, { flex: 2, marginBottom: 0 }]} 
-                                placeholder="Produto" 
-                                placeholderTextColor="rgba(255,255,255,0.3)"
-                                value={itemName}
-                                onChangeText={setItemName}
+                            <SmartAutocomplete
+                                value={itemVal}
+                                onSelect={setItemVal}
+                                service={ProductLibraryService}
+                                title="SELECIONAR INSUMO"
+                                placeholder="Insumo"
+                                icon="leaf-outline"
+                                style={{ flex: 2, marginBottom: 0 }}
+                                quickAddFields={[
+                                    { key: 'nome', label: 'Nome do Insumo', placeholder: 'Ex: Ureia NPK' },
+                                    { key: 'tipo', label: 'Tipo', placeholder: 'Ex: INSUMO', defaultValue: 'INSUMO' }
+                                ]}
                             />
                             <TextInput 
-                                style={[styles.input, { width: 70, marginBottom: 0, marginHorizontal: 8 }]} 
+                                style={[styles.input, { width: 70, marginBottom: 0, marginHorizontal: 8, height: 52, backgroundColor: inputBg, borderColor: inputBorder, color: textColor }]} 
                                 placeholder="Qtd" 
                                 keyboardType="numeric"
-                                placeholderTextColor="rgba(255,255,255,0.3)"
+                                placeholderTextColor={isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)"}
                                 value={itemQty}
                                 onChangeText={setItemQty}
                             />
-                            <TouchableOpacity style={styles.addButton} onPress={addItem}>
+                            <TouchableOpacity style={[styles.addButton, { backgroundColor: activeColors.primary || '#10B981', height: 52 }]} onPress={addItem}>
                                 <Ionicons name="add" size={24} color="#FFF" />
                             </TouchableOpacity>
                         </View>
                     </View>
 
                     <TouchableOpacity 
-                        style={[styles.saveButton, loading && { opacity: 0.7 }]} 
+                        style={[styles.saveButton, { backgroundColor: activeColors.primary || '#10B981' }, loading && { opacity: 0.7 }]} 
                         onPress={handleSave}
                         disabled={loading}
                     >
@@ -210,26 +238,23 @@ const styles = StyleSheet.create({
     safeArea: { flex: 1 },
     scrollContent: { padding: 20 },
     section: { marginBottom: 30 },
-    sectionTitle: { color: '#FFF', fontSize: 16, fontWeight: 'bold', marginBottom: 15 },
-    label: { color: 'rgba(255,255,255,0.5)', fontSize: 13, marginBottom: 8, fontWeight: '600' },
+    sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 15 },
+    label: { fontSize: 13, marginBottom: 8, fontWeight: '600' },
     input: {
-        backgroundColor: '#1B263B',
         borderRadius: 12,
         padding: 15,
-        color: '#FFF',
         fontSize: 16,
         marginBottom: 20,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)'
     },
     pickerContainer: {
-        backgroundColor: '#1B263B',
         borderRadius: 12,
         marginBottom: 20,
         overflow: 'hidden',
+        borderWidth: 1,
     },
     picker: {
-        color: '#FFF',
+        height: 55,
     },
     itemRow: {
         flexDirection: 'row',
@@ -238,30 +263,28 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     itemMain: { flexDirection: 'row', alignItems: 'center' },
-    itemIconBox: { width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(46, 204, 113, 0.1)', justifyContent: 'center', alignItems: 'center' },
-    itemName: { color: '#FFF', fontWeight: '600', fontSize: 15, marginLeft: 10 },
+    itemIconBox: { width: 32, height: 32, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+    itemName: { fontWeight: '600', fontSize: 15, marginLeft: 10 },
     itemRight: { flexDirection: 'row', alignItems: 'center' },
-    itemQty: { color: 'rgba(255,255,255,0.6)', fontWeight: '700', marginRight: 12 },
+    itemQty: { fontWeight: '700', marginRight: 12 },
     addItemBox: { flexDirection: 'row', alignItems: 'center' },
     addButton: {
         width: 48,
         height: 48,
-        backgroundColor: '#2ECC71',
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center'
     },
     saveButton: {
-        backgroundColor: '#2ECC71',
         paddingVertical: 18,
         borderRadius: 16,
         alignItems: 'center',
         marginTop: 10,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.1,
         shadowRadius: 5,
-        elevation: 5,
+        elevation: 2,
     },
     saveButtonText: { color: '#FFF', fontWeight: '900', fontSize: 16, letterSpacing: 1 }
 });

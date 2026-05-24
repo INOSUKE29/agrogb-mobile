@@ -28,7 +28,7 @@ class EstoqueService {
                 const item = res.rows.item(0);
                 let novaQtd = (item.quantidade || 0) + delta;
 
-                // Regra de Ouro: Nunca negativo (a menos que explicitamente permitido no futuro)
+                // Regra de Ouro: Nunca negativo
                 if (novaQtd < 0) {
                     console.warn(`[Estoque] Saldo insuficiente para ${id_produto}. Ajustado para 0.`);
                     novaQtd = 0;
@@ -40,17 +40,19 @@ class EstoqueService {
                 );
             }
 
-            // 2. Registra na tabela de movimentação histórica (Auditoria) padronizada v2
+            // 2. Registra na tabela de movimentação histórica
+            const { v4: uuidv4 } = require('uuid');
             await executeQuery(
-                `INSERT INTO v2_estoque_movimentacoes (
-                    uuid, produto_id, tipo, quantidade, origem, data, sync_status
-                ) VALUES (?, ?, ?, ?, ?, ?, 0)`,
+                `INSERT INTO movimentacao_estoque (
+                    uuid, produto_uuid, tipo, quantidade, motivo, data, last_updated, sync_status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 0)`,
                 [
-                    require('uuid').v4(),
+                    uuidv4(),
                     id_produto,
                     delta > 0 ? 'ENTRADA' : 'SAIDA',
                     Math.abs(delta),
                     motivo,
+                    timestamp,
                     timestamp
                 ]
             );

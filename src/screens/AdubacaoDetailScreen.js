@@ -1,56 +1,99 @@
-﻿import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert, Image, Share, TouchableOpacity, SafeAreaView, StatusBar, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, StyleSheet, Image, Alert, Share, TouchableOpacity } from 'react-native';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ProductionService } from '../modules/production/services/ProductionService';
-import { executeQuery } from '../database/database';
+import { updatePlanoAdubacao, executeQuery, atualizarEstoque } from '../database/database';
+
+// Design System
+import Card from '../components/common/Card';
+import AgroButton from '../components/common/AgroButton';
 
 export default function AdubacaoDetailScreen({ route, navigation }) {
+    const { theme } = useTheme();
     const { plano } = route.params;
     const [currentPlano, setCurrentPlano] = useState(plano);
     const [itens, setItens] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    const isApplied = currentPlano.status === 'APLICADO' || currentPlano.status === 'CONCLUIDO';
-    // Let's deduce an icon based on type:
-    const mainIcon = currentPlano.tipo_aplicacao?.includes('GOTEJO') ? 'faucet' : 'tractor';
+    const isApplied = currentPlano.status === 'APLICADO';
 
-    const loadItens = React.useCallback(async () => {
+    const loadItens = async () => {
         try {
             const res = await executeQuery(`SELECT * FROM production_fertilization_items WHERE plano_uuid = ?`, [currentPlano.uuid]);
-            // Fake items for visual demonstration if DB empty
-            if(!res.rows._array || res.rows._array.length === 0) {
-                setItens([
-                    { id: 1, produto_id: 'YaraMila 10-10-10', quantidade: 50, unidade: 'KG' },
-                    { id: 2, produto_id: 'Cloreto de PotÃ¡ssio', quantidade: 20, unidade: 'KG' }
-                ]);
-            } else {
-                setItens(res.rows._array);
+            const list = [];
+            for (let i = 0; i < res.rows.length; i++) {
+                list.push(res.rows.item(i));
             }
-        } catch { 
-            setItens([{ id: 1, produto_id: 'Fertilizante Premium', quantidade: 100, unidade: 'KG' }]);
+            setItens(list);
+        } catch (e) {
+            console.error('Erro ao buscar insumos da adubação:', e);
         }
-    }, [currentPlano.uuid]);
+    };
 
-    React.useEffect(() => { loadItens(); }, [loadItens]);
+    useEffect(() => {
+        loadItens();
+    }, []);
 
     const handleApply = async () => {
         Alert.alert(
-            'AplicaÃ§Ã£o Inteligente',
-            'Deseja realizar a baixa no estoque e concluir esta AdubaÃ§Ã£o agora?',
+            'Confirmar Aplicação',
+            'Deseja realizar a baixa no estoque de insumos e marcar este plano como REALIZADO agora?',
             [
-                { text: 'Voltar', style: 'cancel' },
+                { text: 'Cancelar', style: 'cancel' },
                 {
-                    text: 'Confirmar Baixa',
+                    text: 'Confirmar e Deduzir',
                     onPress: async () => {
                         setLoading(true);
                         try {
-                            await ProductionService.applyFertilization(currentPlano.uuid);
-                            setCurrentPlano({ ...currentPlano, status: 'CONCLUIDO', data_aplicacao: new Date().toISOString() });
-                            Alert.alert('Sucesso', 'Estoque atualizado e AdubaÃ§Ã£o registrada com sucesso!');
-                        } catch {
-                            Alert.alert('Erro', 'Houve uma falha na transaÃ§Ã£o.');
-                        } finally { setLoading(false); }
+                            const { v4: uuidv4 } = require('uuid');
+
+                            // 1. Abate do estoque local de insumos e insere em movimentacao_estoque
+                            for (const item of itens) {
+                                await atualizarEstoque(item.produto_id, -item.quantidade);
+                                
+                                await executeQuery(
+                                    `INSERT INTO movimentacao_estoque (uuid, produto_uuid, tipo, quantidade, motivo, data, last_updated, sync_status) VALUES (?,?,?,?,?,?,?,0)`,
+                                    [
+                                        uuidv4(), 
+                                        item.produto_id, 
+                                        'SAIDA', 
+                                        item.quantidade, 
+                                        `CONSUMO ADUBAÇÃO: ${currentPlano.nome_plano}`, 
+                                        new Date().toISOString(), 
+                                        new Date().toISOString()
+                                    ]
+                                );
+                            }
+
+                            // 2. Atualiza o status do plano
+                            const updated = {
+                                ...currentPlano,
+                                status: 'APLICADO',
+                                data_aplicacao: new Date().toISOString()
+                            };
+                            await updatePlanoAdubacao(currentPlano.uuid, updated);
+                            setCurrentPlano(updated);
+
+                            // 3. Integração caderno de notas
+                            const noteMsg = `[ADUBAÇÃO APLICADA] PLANO: ${currentPlano.nome_plano}. CULTURA: ${currentPlano.cultura}. INSUMOS APLICADOS: ${itens.map(it => `${it.produto_id} (${it.quantidade}${it.unidade || 'KG'})`).join(', ')}`;
+                            await executeQuery(
+                                `INSERT INTO caderno_notas (uuid, observacao, data, last_updated, sync_status, is_deleted) VALUES (?, ?, ?, ?, 0, 0)`,
+                                [
+                                    uuidv4(), 
+                                    noteMsg.toUpperCase(), 
+                                    new Date().toISOString().substring(0, 10), 
+                                    new Date().toISOString()
+                                ]
+                            );
+
+                            Alert.alert('Sucesso', 'Estoque atualizado e adubação concluída com sucesso!');
+                        } catch (e) {
+                            console.error(e);
+                            Alert.alert('Erro', 'Falha ao realizar baixa no estoque e aplicar plano.');
+                        } finally {
+                            setLoading(false);
+                        }
                     }
                 }
             ]
@@ -58,182 +101,173 @@ export default function AdubacaoDetailScreen({ route, navigation }) {
     };
 
     const handleShare = async () => {
-        const message = `*AGROGB - PLANO DE ADUBAÃ‡ÃƒO*\n\n` +
-            `ðŸ“… ${new Date(currentPlano.data_criacao || Date.now()).toLocaleDateString()}\n` +
-            `ðŸ“ ${currentPlano.nome_plano}\n` +
-            `ðŸŒ± Cultura: ${currentPlano.cultura}\n` +
-            `ðŸ“ Local: ${currentPlano.area_local || 'Geral'}\n\n` +
-            `Status: ${currentPlano.status}`;
-        await Share.share({ message });
+        try {
+            const insumosStr = itens.length > 0 
+                ? itens.map(it => `- ${it.produto_id}: ${it.quantidade} ${it.unidade || 'KG'}`).join('\n')
+                : 'Nenhum insumo cadastrado.';
+
+            const message = `*AGROGB - PLANO DE ADUBAÇÃO*\n\n` +
+                `📅 ${new Date(currentPlano.data_criacao).toLocaleDateString()}\n` +
+                `📝 ${currentPlano.nome_plano}\n` +
+                `🌱 Cultura: ${currentPlano.cultura}\n` +
+                `💧 Aplicação: ${currentPlano.tipo_aplicacao}\n` +
+                `📍 Local: ${currentPlano.area_local || 'Geral'}\n\n` +
+                `*INSUMOS DO ESTOQUE:*\n${insumosStr}\n\n` +
+                `*ORIENTAÇÃO TÉCNICA:*\n${currentPlano.descricao_tecnica}\n\n` +
+                `Status: ${currentPlano.status}`;
+
+            await Share.share({ message });
+        } catch (error) {
+            Alert.alert('Erro', error.message);
+        }
     };
 
     return (
-        <View style={styles.webContainer}>
-            
-            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
+            <LinearGradient 
+                colors={isApplied ? ['#10B981', '#059669'] : ['#F59E0B', '#D97706']} 
+                style={styles.header}
+            >
+                <View style={styles.headerTop}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>DETALHES DO PLANO</Text>
+                    <TouchableOpacity onPress={handleShare}>
+                        <Ionicons name="share-social-outline" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                </View>
 
-            <View style={styles.mobileFrame}>
-                <SafeAreaView style={{ flex: 1 }}>
-                    {/* CUSTOM HEADER SLATE */}
-                    <View style={styles.header}>
-                        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                            <Ionicons name="arrow-back" size={22} color="#D1FAE5" />
-                        </TouchableOpacity>
-                        <Text style={styles.headerTitle}>Detalhes do Plano</Text>
-                        <TouchableOpacity style={styles.backBtn} onPress={() => !isApplied && navigation.navigate('AdubacaoForm', { plano: currentPlano })}>
-                            <Ionicons name="create-outline" size={22} color={isApplied ? "rgba(255,255,255,0.1)" : "#D1FAE5"} />
-                        </TouchableOpacity>
+                <View style={styles.statusBadge}>
+                    <Ionicons name={isApplied ? "checkmark-circle" : "time"} size={20} color="#FFF" />
+                    <Text style={styles.statusText}>
+                        {isApplied
+                            ? `APLICADO EM ${new Date(currentPlano.data_aplicacao).toLocaleDateString()}`
+                            : 'PLANEJADO - AGUARDANDO'}
+                    </Text>
+                </View>
+            </LinearGradient>
+
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <Card style={styles.mainInfoCard}>
+                    <View style={styles.infoRow}>
+                        <View style={[styles.iconBox, { backgroundColor: isApplied ? '#F0FDF4' : '#FFFBEB' }]}>
+                            <FontAwesome5
+                                name={currentPlano.tipo_aplicacao === 'GOTEJO' ? 'faucet' : 'spray-can'}
+                                size={22}
+                                color={isApplied ? '#10B981' : '#F59E0B'}
+                            />
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 15 }}>
+                            <Text style={styles.title}>{currentPlano.nome_plano}</Text>
+                            <Text style={styles.subtitle}>{currentPlano.cultura} • {currentPlano.area_local || 'Área Geral'}</Text>
+                        </View>
                     </View>
+                </Card>
 
-                    <ScrollView contentContainerStyle={styles.scroll}>
-                        
-                        {/* HERO HEADER */}
-                        <View style={styles.heroBox}>
-                            <View style={styles.heroGlow}>
-                                <FontAwesome5 name={mainIcon} size={40} color="#34D399" />
-                            </View>
-                            <Text style={styles.heroTitle}>{currentPlano.nome_plano}</Text>
-                            <View style={styles.badgeRow}>
-                                <View style={styles.badgeSolid}>
-                                    <Text style={styles.badgeSolidText}>{currentPlano.tipo_aplicacao}</Text>
+                {/* INSUMOS DO ESTOQUE */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionLabel}>INSUMOS VINCULADOS AO ESTOQUE</Text>
+                    {itens.length > 0 ? (
+                        <Card noPadding>
+                            {itens.map((item, idx) => (
+                                <View key={item.id || idx} style={[styles.itemRow, idx !== itens.length - 1 && styles.borderBottom]}>
+                                    <View style={styles.itemIconBox}>
+                                        <MaterialCommunityIcons name="flask-outline" size={18} color="#10B981" />
+                                    </View>
+                                    <Text style={styles.itemName}>{item.produto_id}</Text>
+                                    <Text style={styles.itemValue}>{item.quantidade} <Text style={{fontSize: 11, color: '#9CA3AF'}}>{item.unidade || 'KG'}</Text></Text>
                                 </View>
-                                <View style={[styles.badgeOutline, isApplied && { borderColor: '#34D399' }]}>
-                                    <Text style={[styles.badgeOutlineText, isApplied && { color: '#34D399' }]}>
-                                        {isApplied ? 'CONCLUÃDO' : 'AGENDADO'}
-                                    </Text>
-                                </View>
-                            </View>
-                        </View>
+                            ))}
+                        </Card>
+                    ) : (
+                        <Card style={{ padding: 20 }}>
+                            <Text style={{ color: '#9CA3AF', fontSize: 13, fontStyle: 'italic', textAlign: 'center' }}>
+                                Nenhum insumo do estoque cadastrado nesta receita.
+                            </Text>
+                        </Card>
+                    )}
+                </View>
 
-                        {/* INFO CARDS (Glassmorphism) */}
-                        <View style={styles.row}>
-                            <View style={styles.smallCard}>
-                                <MaterialCommunityIcons name="sprout" size={20} color="#A7F3D0" />
-                                <Text style={styles.smallCardLabel}>CULTURA</Text>
-                                <Text style={styles.smallCardValue}>{currentPlano.cultura}</Text>
-                            </View>
-                            <View style={styles.smallCard}>
-                                <Ionicons name="location" size={20} color="#A7F3D0" />
-                                <Text style={styles.smallCardLabel}>LOCAL / TALHÃƒO</Text>
-                                <Text style={styles.smallCardValue}>{currentPlano.area_local || 'S/N'}</Text>
-                            </View>
-                        </View>
+                <View style={styles.section}>
+                    <Text style={styles.sectionLabel}>ORIENTAÇÃO TÉCNICA / RECEITA</Text>
+                    <Card style={styles.descriptionCard}>
+                        <Text style={styles.descriptionText}>{currentPlano.descricao_tecnica}</Text>
+                    </Card>
+                </View>
 
-                        {/* INSUMOS SECTION */}
-                        {itens.length > 0 && (
-                            <View style={styles.section}>
-                                <View style={styles.sectionHeader}>
-                                    <MaterialCommunityIcons name="cube-outline" size={18} color="#D1FAE5" style={{marginRight: 8}} />
-                                    <Text style={styles.sectionTitle}>INSUMOS DO ESTOQUE</Text>
-                                </View>
-                                <View style={styles.glassCard}>
-                                    {itens.map((item, idx) => (
-                                        <View key={item.id} style={[styles.itemRow, idx !== itens.length - 1 && styles.borderBottom]}>
-                                            <View style={styles.itemIconBox}>
-                                                <Ionicons name="color-fill" size={16} color="#34D399" />
-                                            </View>
-                                            <Text style={styles.itemName}>{item.produto_id}</Text>
-                                            <Text style={styles.itemValue}>{item.quantidade} <Text style={{fontSize: 10, color: '#9CA3AF'}}>{item.unidade}</Text></Text>
-                                        </View>
-                                    ))}
-                                </View>
-                            </View>
-                        )}
+                {currentPlano.anexos_uri && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionLabel}>ANEXO / COMPROVANTE</Text>
+                        <Card noPadding style={styles.imageCard}>
+                            <Image
+                                source={{ uri: currentPlano.anexos_uri }}
+                                style={styles.image}
+                                resizeMode="cover"
+                            />
+                        </Card>
+                    </View>
+                )}
+            </ScrollView>
 
-                        {/* DESCRICAO / RECEITA COMPLETA */}
-                        <View style={styles.section}>
-                            <View style={styles.sectionHeader}>
-                                <Ionicons name="document-text-outline" size={18} color="#D1FAE5" style={{marginRight: 8}} />
-                                <Text style={styles.sectionTitle}>ORIENTAÃ‡ÃƒO TÃ‰CNICA</Text>
-                            </View>
-                            <View style={styles.glassCard}>
-                                <Text style={styles.description}>
-                                    {currentPlano.descricao_tecnica || 'O engenheiro nÃ£o deixou observaÃ§Ãµes adicionais para este plano de aplicaÃ§Ã£o.'}
-                                </Text>
-                            </View>
-                        </View>
-
-                        {/* ANEXOS */}
-                        {currentPlano.anexos_uri && (
-                            <View style={styles.section}>
-                                <Text style={styles.sectionTitle}>FOTO / RECEITUÃRIO</Text>
-                                <View style={{borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)'}}>
-                                    <Image source={{ uri: currentPlano.anexos_uri }} style={styles.image} resizeMode="cover" />
-                                </View>
-                            </View>
-                        )}
-
-                        {/* AÃ‡ÃƒO PRINCIPAL BOTTOM */}
-                        {!isApplied ? (
-                            <TouchableOpacity style={styles.btnApplyBg} onPress={handleApply} disabled={loading}>
-                                <LinearGradient colors={['#059669', '#047857']} style={styles.btnGradient}>
-                                    <MaterialCommunityIcons name="check-decagram" size={24} color="#FFF" />
-                                    <Text style={styles.btnApplyText}>{loading ? 'PROCESSANDO...' : 'CONFIRMAR APLICAÃ‡ÃƒO'}</Text>
-                                </LinearGradient>
-                            </TouchableOpacity>
-                        ) : (
-                            <View style={styles.appliedBox}>
-                                <Ionicons name="checkmark-circle" size={30} color="#34D399" />
-                                <View style={{marginLeft: 15, flex: 1}}>
-                                    <Text style={{color: '#FFF', fontWeight: 'bold', fontSize: 13}}>AplicaÃ§Ã£o ConcluÃ­da</Text>
-                                    <Text style={{color: '#9CA3AF', fontSize: 11, marginTop: 2}}>Estoque jÃ¡ foi atualizado.</Text>
-                                </View>
-                                <TouchableOpacity style={styles.btnShare} onPress={handleShare}>
-                                    <Ionicons name="share-social" size={20} color="#FFF" />
-                                </TouchableOpacity>
-                            </View>
-                        )}
-
-                    </ScrollView>
-                </SafeAreaView>
+            <View style={styles.footer}>
+                {!isApplied && (
+                    <AgroButton
+                        title="DEDUZIR ESTOQUE E APLICAR"
+                        onPress={handleApply}
+                        loading={loading}
+                        style={{ marginBottom: 12 }}
+                    />
+                )}
+                
+                <View style={styles.footerRow}>
+                    <AgroButton
+                        title="EDITAR"
+                        variant="secondary"
+                        disabled={isApplied}
+                        onPress={() => navigation.navigate('AdubacaoForm', { plano: currentPlano })}
+                        style={{ flex: 1 }}
+                    />
+                    {isApplied && (
+                        <AgroButton
+                            title="COMPARTILHAR"
+                            variant="primary"
+                            onPress={handleShare}
+                            style={{ flex: 1, marginLeft: 10 }}
+                        />
+                    )}
+                </View>
             </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    webContainer: { flex: 1, alignItems: 'center', backgroundColor: '#000' },
-    mobileFrame: { flex: 1, width: '100%', maxWidth: 480, position: 'relative' },
-    
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 15 : 20, paddingBottom: 10 },
-    backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-    headerTitle: { fontSize: 16, fontWeight: '900', color: '#D1FAE5', letterSpacing: 0.5 },
-
-    scroll: { padding: 20, paddingBottom: 50 },
-
-    heroBox: { alignItems: 'center', marginVertical: 20 },
-    heroGlow: { width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(52, 211, 153, 0.05)', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'rgba(52, 211, 153, 0.2)', marginBottom: 20 },
-    heroTitle: { fontSize: 24, fontWeight: '900', color: '#FFF', textAlign: 'center', marginBottom: 15 },
-    badgeRow: { flexDirection: 'row', gap: 10 },
-    badgeSolid: { backgroundColor: 'rgba(52, 211, 153, 0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
-    badgeSolidText: { color: '#34D399', fontSize: 11, fontWeight: 'bold' },
-    badgeOutline: { backgroundColor: 'rgba(255, 255, 255, 0.05)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-    badgeOutlineText: { color: '#9CA3AF', fontSize: 11, fontWeight: 'bold' },
-
-    row: { flexDirection: 'row', gap: 15, marginBottom: 25 },
-    smallCard: { flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.03)', borderRadius: 16, padding: 15, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.05)' },
-    smallCardLabel: { color: '#6B7280', fontSize: 10, fontWeight: 'bold', marginTop: 10, marginBottom: 4 },
-    smallCardValue: { color: '#E5E7EB', fontSize: 14, fontWeight: '600' },
-
+    container: { flex: 1 },
+    header: { paddingTop: 50, paddingBottom: 30, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1 },
+    statusBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, alignSelf: 'center' },
+    statusText: { color: '#FFF', fontWeight: '900', fontSize: 11, marginLeft: 8 },
+    scrollContent: { padding: 20, paddingBottom: 150 },
+    mainInfoCard: { marginBottom: 20 },
+    infoRow: { flexDirection: 'row', alignItems: 'center' },
+    iconBox: { width: 50, height: 50, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+    title: { fontSize: 18, fontWeight: '900', color: '#1F2937' },
+    subtitle: { fontSize: 13, color: '#6B7280', marginTop: 2, fontWeight: '600' },
     section: { marginBottom: 25 },
-    sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-    sectionTitle: { color: '#D1FAE5', fontSize: 11, fontWeight: 'bold', letterSpacing: 1 },
+    sectionLabel: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', marginBottom: 10, letterSpacing: 1 },
+    descriptionCard: { padding: 20 },
+    descriptionText: { fontSize: 15, color: '#374151', lineHeight: 24, fontWeight: '500' },
+    imageCard: { overflow: 'hidden', height: 300 },
+    image: { width: '100%', height: '100%' },
+    footer: { padding: 20, backgroundColor: '#FFF', borderTopLeftRadius: 25, borderTopRightRadius: 25, elevation: 20, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, position: 'absolute', bottom: 0, width: '100%' },
+    footerRow: { flexDirection: 'row' },
     
-    glassCard: { backgroundColor: 'rgba(255, 255, 255, 0.03)', borderRadius: 16, padding: 15, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-    itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
-    borderBottom: { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
-    itemIconBox: { width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(52, 211, 153, 0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-    itemName: { color: '#FFF', fontSize: 14, fontWeight: '600', flex: 1 },
-    itemValue: { color: '#34D399', fontSize: 18, fontWeight: '900' },
-
-    description: { color: '#9CA3AF', fontSize: 14, lineHeight: 22 },
-    image: { width: '100%', height: 250 },
-
-    btnApplyBg: { marginTop: 20, shadowColor: '#10B981', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 5 },
-    btnGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 18, borderRadius: 16, gap: 10 },
-    btnApplyText: { color: '#FFF', fontSize: 14, fontWeight: '900', letterSpacing: 1 },
-
-    appliedBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(52, 211, 153, 0.1)', padding: 20, borderRadius: 16, marginTop: 20, borderWidth: 1, borderColor: 'rgba(52, 211, 153, 0.2)' },
-    btnShare: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' }
+    // Insumos Row Styles
+    itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 },
+    borderBottom: { borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
+    itemIconBox: { width: 34, height: 34, borderRadius: 10, backgroundColor: '#F0FDF4', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    itemName: { color: '#1F2937', fontSize: 14, fontWeight: '700', flex: 1 },
+    itemValue: { color: '#10B981', fontSize: 16, fontWeight: '900' }
 });
-

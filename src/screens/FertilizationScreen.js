@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { useTheme } from '../theme/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 import { FertilizationService } from '../services/FertilizationService';
 import ScreenHeader from '../ui/ScreenHeader';
 

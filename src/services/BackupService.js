@@ -3,7 +3,7 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import { executeQuery } from '../database/database';
-import { getSupabase } from './supabaseClient';
+import { getSupabase } from './supabase';
 
 
 

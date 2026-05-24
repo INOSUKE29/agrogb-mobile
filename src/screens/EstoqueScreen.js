@@ -1,455 +1,369 @@
-/**
- * EstoqueScreen.js â€” AgroGB Diamond Pro
- * Ultra Premium Glassmorphism & Neon Glow Design
- */
-
-import React, { useState, useCallback, useMemo } from 'react';
-import {
-    View, Text, TouchableOpacity, StyleSheet, FlatList,
-    Modal, Alert, TextInput, SafeAreaView, StatusBar,
-    Platform, ActivityIndicator, RefreshControl, Dimensions, ScrollView
-} from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, Alert, ScrollView, StatusBar, SafeAreaView } from 'react-native';
+import { getEstoque, atualizarEstoque, insertFinanceiroTransacao } from '../database/database';
+import { v4 as uuidv4 } from 'uuid';
 import { useFocusEffect } from '@react-navigation/native';
-import { useInventory } from '../modules/inventory/hooks/useInventory';
-import { showToast } from '../ui/Toast';
-import { useAuth } from '../context/AuthContext';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
-const { width } = Dimensions.get('window');
+// Design System
+import AgroButton from '../components/common/AgroButton';
+import AgroInput from '../components/common/AgroInput';
+import AgroOptionsModal from '../components/common/AgroOptionsModal';
 
-// â”€â”€ CONSTANTES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const CATEGORIAS = [
-    { key: 'TODOS',     label: 'Todos',     icon: 'apps',       color: '#9CA3AF' },
-    { key: 'INSUMO',    label: 'Insumos',   icon: 'flask',      color: '#A855F7' },
-    { key: 'SEMENTE',   label: 'Sementes',  icon: 'leaf',       color: '#10B981' },
-    { key: 'PRODUTO',   label: 'Produtos',  icon: 'basket',     color: '#F59E0B' },
-    { key: 'FERRAMENTA',label: 'Ferram.',   icon: 'construct',  color: '#F43F5E' },
-    { key: 'EMBALAGEM', label: 'Embalagem', icon: 'cube',       color: '#3B82F6' },
-];
-
-const getStatus = (qty, minQty = 10) => {
-    if (qty <= 0)       return { key: 'ESGOTADO', label: 'ESGOTADO', color: '#F43F5E', bg: 'rgba(244,63,94,0.15)', icon: 'close-circle' };
-    if (qty <= minQty)  return { key: 'BAIXO',    label: 'BAIXO',    color: '#F59E0B', bg: 'rgba(245,158,11,0.15)', icon: 'warning' };
-    return               { key: 'NORMAL',   label: 'NORMAL',   color: '#10B981', bg: 'rgba(16,185,129,0.15)', icon: 'checkmark-circle' };
-};
+const FILTROS = ['TODOS', 'BAIXO', 'ACABOU'];
 
 export default function EstoqueScreen({ navigation }) {
-    const { items: allItems, loading, fetchStock, adjustStock } = useInventory();
-    const { userSession } = useAuth();
-    const isAgronomo = userSession?.role === 'AGRONOMO';
-
+    const { theme } = useTheme();
+    const activeColors = theme?.colors || {};
+    
+    const [originalItems, setOriginalItems] = useState([]);
+    const [filteredItems, setFilteredItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+    
+    const [filterStatus, setFilterStatus] = useState('TODOS');
     const [searchText, setSearchText] = useState('');
-    const [activeCategoria, setActiveCategoria] = useState('TODOS');
-    const [activeFilter, setActiveFilter] = useState('TODOS'); 
 
-    const [modalItem, setModalItem] = useState(null);
-    const [modalType, setModalType] = useState('ENTRADA'); 
+    // Modal State
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [actionType, setActionType] = useState('ENTRADA'); // 'ENTRADA' | 'SAIDA'
     const [qty, setQty] = useState('');
-    const [saving, setSaving] = useState(false);
+    const [valorTotal, setValorTotal] = useState(''); // Opcional para integração financeira
+    const [selectedItemActions, setSelectedItemActions] = useState(null);
 
-    useFocusEffect(useCallback(() => { fetchStock(); }, [fetchStock]));
-
-    const onRefresh = useCallback(() => fetchStock(), [fetchStock]);
-
-    const filteredItems = useMemo(() => {
-        let res = allItems || [];
-        if (searchText.trim()) {
-            res = res.filter(i => i.produto?.toUpperCase().includes(searchText.toUpperCase()));
-        }
-        if (activeCategoria !== 'TODOS') {
-            res = res.filter(i => i.categoria?.toUpperCase() === activeCategoria);
-        }
-        if (activeFilter === 'BAIXO') {
-            res = res.filter(i => i.quantidade > 0 && i.quantidade <= (i.estoque_minimo || 10));
-        } else if (activeFilter === 'ESGOTADO') {
-            res = res.filter(i => i.quantidade <= 0);
-        }
-        return res;
-    }, [allItems, searchText, activeCategoria, activeFilter]);
-
-    const stats = useMemo(() => {
-        const items = allItems || [];
-        return {
-            total: items.length,
-            normal: items.filter(i => i.quantidade > (i.estoque_minimo || 10)).length,
-            baixo: items.filter(i => i.quantidade > 0 && i.quantidade <= (i.estoque_minimo || 10)).length,
-            esgotado: items.filter(i => i.quantidade <= 0).length,
-        };
-    }, [allItems]);
-
-    const openModal = useCallback((item, type) => {
-        setModalItem(item); setModalType(type); setQty('');
-    }, []);
-
-    const handleAdjust = async () => {
-        const val = parseFloat(qty);
-        if (!val || val <= 0) return Alert.alert('Ops', 'Informe uma quantidade vÃ¡lida!');
-        setSaving(true);
+    const loadData = async () => {
+        setLoading(true);
         try {
-            const delta = modalType === 'ENTRADA' ? val : -val;
-            await adjustStock(modalItem.produto, delta);
-            setModalItem(null);
-            showToast(modalType === 'ENTRADA'
-                ? `âœ¨ +${val} ${modalItem.unidade || 'un'} no estoque`
-                : `ðŸ“¤ -${val} ${modalItem.unidade || 'un'} baixado`
-            );
-        } catch {
-            Alert.alert('Erro', 'Falha ao processar o estoque.');
-        } finally { setSaving(false); }
+            const data = await getEstoque();
+            const sorted = data.sort((a, b) => a.produto.localeCompare(b.produto));
+            setOriginalItems(sorted);
+            applyFilter(sorted, filterStatus, searchText);
+        } catch (e) { 
+            console.error(e); 
+        } finally { 
+            setLoading(false); 
+        }
     };
 
-    const renderItem = useCallback(({ item }) => {
-        const st = getStatus(item.quantidade, item.estoque_minimo || 10);
-        const cat = CATEGORIAS.find(c => c.key === item.categoria?.toUpperCase()) || CATEGORIAS[1];
-        const pctFull = Math.min(100, Math.max(0, (item.quantidade / Math.max(item.estoque_maximo || 100, 1)) * 100));
+    useFocusEffect(useCallback(() => { loadData(); }, []));
+    useEffect(() => { applyFilter(originalItems, filterStatus, searchText); }, [filterStatus, searchText, originalItems]);
 
-        return (
-            <View style={styles.glassCard}>
-                <View style={styles.cardGlowTopLeft} />
-                
-                <View style={[styles.itemIconBox, { backgroundColor: cat.color + '15', borderColor: cat.color + '40' }]}>
-                    <Ionicons name={cat.icon} size={24} color={cat.color} />
-                </View>
+    const applyFilter = (data, mode, text) => {
+        let res = data;
+        if (mode === 'BAIXO') res = res.filter(i => i.quantidade > 0 && i.quantidade <= 10);
+        if (mode === 'ACABOU') res = res.filter(i => i.quantidade <= 0);
+        if (text) res = res.filter(i => i.produto.toUpperCase().includes(text.toUpperCase()));
+        setFilteredItems(res);
+    };
 
-                <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                        <Text style={styles.itemName} numberOfLines={1}>{item.produto}</Text>
-                        <View style={[styles.statusChip, { backgroundColor: st.bg, borderColor: st.color + '40' }]}>
-                            <View style={[styles.statusDot, { backgroundColor: st.color }]} />
-                            <Text style={[styles.statusChipText, { color: st.color }]}>{st.label}</Text>
-                        </View>
-                    </View>
+    const getDynamicStatus = (qtd) => {
+        if (qtd <= 0) return { label: 'ESGOTADO', color: '#EF4444', icon: 'close-circle' };
+        if (qtd <= 10) return { label: 'BAIXO', color: '#F59E0B', icon: 'warning' };
+        return { label: 'NORMAL', color: '#10B981', icon: 'checkmark-circle' };
+    };
 
-                    <View style={styles.progressTrack}>
-                        <LinearGradient 
-                            colors={[st.color + '90', st.color]} 
-                            start={{x: 0, y: 0}} end={{x: 1, y: 0}}
-                            style={[styles.progressFill, { width: `${pctFull}%` }]} 
-                        />
-                    </View>
+    const openModal = (item, type) => {
+        setSelectedItem(item);
+        setActionType(type);
+        setQty('');
+        setValorTotal('');
+        setModalVisible(true);
+    };
 
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                            <Text style={[styles.itemQty, { color: st.color }]}>{item.quantidade}</Text>
-                            <Text style={styles.itemUnit}> {item.unidade || 'un'}</Text>
-                        </View>
-                        {item.estoque_minimo && <Text style={styles.itemMin}>ESTOQUE MÃN: {item.estoque_minimo}</Text>}
-                    </View>
-                </View>
+    const confirmAction = async () => {
+        if (!qty || isNaN(qty) || parseFloat(qty) <= 0) {
+            Alert.alert('Erro', 'Digite um valor válido maior que zero.');
+            return;
+        }
+        const delta = actionType === 'ENTRADA' ? parseFloat(qty) : -parseFloat(qty);
+        try {
+            await atualizarEstoque(selectedItem.produto, delta);
+            
+            // Integração Opcional e Desacoplada com o Financeiro
+            if (actionType === 'ENTRADA' && valorTotal && parseFloat(valorTotal.replace(',', '.')) > 0) {
+                try {
+                    await insertFinanceiroTransacao({
+                        uuid: uuidv4(),
+                        tipo: 'PAGAR',
+                        descricao: `COMPRA DE ESTOQUE: ${selectedItem.produto.toUpperCase()}`,
+                        valor: parseFloat(valorTotal.replace(',', '.')),
+                        vencimento: new Date().toISOString().split('T')[0],
+                        entidade_nome: 'FORNECEDOR',
+                        categoria: 'INSUMOS',
+                        status: 'PENDENTE'
+                    });
+                } catch (finError) {
+                    console.log("Falha ao integrar com financeiro de forma silenciosa", finError);
+                }
+            }
 
-                {isAgronomo ? null : (
-                    <View style={styles.itemActions}>
-                        <TouchableOpacity
-                            style={[styles.actionBtn, { backgroundColor: 'rgba(16,185,129,0.1)' }]}
-                            onPress={() => openModal(item, 'ENTRADA')}
-                        >
-                            <Ionicons name="add" size={20} color="#10B981" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.actionBtn, { backgroundColor: 'rgba(244,63,94,0.1)' }]}
-                            onPress={() => openModal(item, 'SAIDA')}
-                        >
-                            <Ionicons name="remove" size={20} color="#F43F5E" />
-                        </TouchableOpacity>
-                    </View>
-                )}
-            </View>
-        );
-    }, [openModal]);
+            setModalVisible(false);
+            Alert.alert('Sucesso', `Lançamento de ${actionType.toLowerCase()} realizado!`);
+            loadData();
+        } catch (e) {
+            Alert.alert('Erro', 'Não foi possível atualizar o estoque agora.');
+        }
+    };
+
+    const lowStockCount = originalItems.filter(i => i.quantidade <= 10 && i.quantidade > 0).length;
+    const zeroStockCount = originalItems.filter(i => i.quantidade <= 0).length;
+    const totalStockValue = originalItems.reduce((acc, item) => acc + ((item.quantidade || 0) * (item.preco_venda || 0)), 0);
+    const formattedStockValue = Number(totalStockValue).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     return (
-        <View style={styles.container}>
-            
-            
-            
+        <View style={[styles.container, { backgroundColor: activeColors.bg || '#0B121E' }]}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-
-            <SafeAreaView style={{ flex: 1, width: '100%', maxWidth: 500, alignSelf: 'center' }}>
-                {/* â”€â”€ HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-                <View style={styles.header}>
-                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation?.goBack?.()}>
-                        <Ionicons name="chevron-back" size={24} color="#FFF" />
-                    </TouchableOpacity>
-                    <View style={{ flex: 1, paddingLeft: 4 }}>
-                        <Text style={styles.headerTitle}>Armazém <Text style={{ color: '#F59E0B' }}>&</Text> Estoque</Text>
-                        <Text style={styles.headerSub}>Visão Geral e Movimentações</Text>
-                    </View>
-                    {isAgronomo ? null : (
-                        <TouchableOpacity style={styles.addBtnHeader} onPress={() => navigation?.navigate?.('CadastroForm')}>
-                            <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.addGradientIcon}>
-                                <Ionicons name="add" size={24} color="#FFF" />
-                            </LinearGradient>
+            
+            {/* CABEÇALHO GLASSMORPHISM */}
+            <LinearGradient colors={['#111827', '#0F172A']} style={styles.header}>
+                <SafeAreaView>
+                    <View style={styles.headerTop}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                            <Ionicons name="arrow-back" size={24} color="#FFF" />
                         </TouchableOpacity>
-                    )}
-                </View>
+                        <Text style={styles.headerTitle}>MEU ESTOQUE</Text>
+                        <View style={{ width: 40 }} />
+                    </View>
 
+                    {/* KPIs Principais */}
+                    <View style={styles.kpiMain}>
+                        <Text style={styles.kpiMainLabel}>VALOR EM ESTOQUE</Text>
+                        <Text style={[styles.kpiMainValue, { color: '#3B82F6' }]}>{formattedStockValue}</Text>
+                    </View>
+
+                    <View style={styles.kpiContainer}>
+                        <View style={styles.kpiCard}>
+                            <Ionicons name="cube" size={16} color="#10B981" style={{marginBottom: 4}} />
+                            <Text style={styles.kpiLabel}>ITENS TOTAIS</Text>
+                            <Text style={[styles.kpiValue, { color: '#FFF' }]}>{originalItems.length}</Text>
+                        </View>
+                        <View style={styles.kpiCard}>
+                            <Ionicons name="warning" size={16} color="#F59E0B" style={{marginBottom: 4}} />
+                            <Text style={styles.kpiLabel}>ACABANDO</Text>
+                            <Text style={[styles.kpiValue, { color: '#F59E0B' }]}>{lowStockCount}</Text>
+                        </View>
+                        <View style={styles.kpiCard}>
+                            <Ionicons name="close-circle" size={16} color="#EF4444" style={{marginBottom: 4}} />
+                            <Text style={styles.kpiLabel}>ESGOTADOS</Text>
+                            <Text style={[styles.kpiValue, { color: '#EF4444' }]}>{zeroStockCount}</Text>
+                        </View>
+                    </View>
+                </SafeAreaView>
+            </LinearGradient>
+
+            {/* BUSCA E FILTROS */}
+            <View style={styles.filtersContainer}>
+                <View style={styles.searchWrap}>
+                    <AgroInput 
+                        placeholder="Buscar produto..."
+                        value={searchText}
+                        onChangeText={setSearchText}
+                        icon="search"
+                        style={{ backgroundColor: '#1F2937', borderWidth: 0 }}
+                    />
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+                    {FILTROS.map(f => (
+                        <TouchableOpacity 
+                            key={f} 
+                            style={[styles.pill, filterStatus === f && styles.pillActive]}
+                            onPress={() => setFilterStatus(f)}
+                        >
+                            <Text style={[styles.pillText, filterStatus === f && { color: '#FFF' }]}>{f}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
+
+            {loading ? (
+                <View style={styles.center}><ActivityIndicator size="large" color="#10B981" /></View>
+            ) : (
                 <FlatList
                     data={filteredItems}
-                    keyExtractor={(item, index) => `${item.produto}-${index}`}
-                    renderItem={renderItem}
+                    keyExtractor={item => item.produto}
                     showsVerticalScrollIndicator={false}
-                    refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor="#F59E0B" />}
-                    contentContainerStyle={styles.listContent}
-                    ListHeaderComponent={() => (
-                        <View style={{ paddingBottom: 10 }}>
-                            {/* â”€â”€ STATS DASHBOARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-                            <View style={styles.statsRow}>
-                                {[
-                                    { label: 'Total',    value: stats.total,    color: '#38BDF8', icon: 'cube-outline' },
-                                    { label: 'Normal',   value: stats.normal,   color: '#10B981', icon: 'shield-checkmark-outline' },
-                                    { label: 'Baixo',    value: stats.baixo,    color: '#F59E0B', icon: 'warning-outline' },
-                                    { label: 'Esgotado', value: stats.esgotado, color: '#F43F5E', icon: 'close-circle-outline' },
-                                ].map((s, i) => (
-                                    <TouchableOpacity
-                                        key={i}
-                                        style={[
-                                            styles.statCard, 
-                                            activeFilter === (s.label === 'Total' ? 'TODOS' : s.label.toUpperCase()) 
-                                                ? { backgroundColor: s.color + '15', borderColor: s.color + '50' }
-                                                : { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }
-                                        ]}
-                                        onPress={() => setActiveFilter(s.label === 'Total' ? 'TODOS' : s.label.toUpperCase())}
-                                    >
-                                        <Ionicons name={s.icon} size={20} color={s.color} style={{ marginBottom: 6 }} />
-                                        <Text style={[styles.statValue, { color: '#FFF' }]}>{s.value}</Text>
-                                        <Text style={styles.statLabel}>{s.label}</Text>
+                    contentContainerStyle={styles.list}
+                    renderItem={({ item }) => {
+                        const dyn = getDynamicStatus(item.quantidade);
+                        return (
+                            <TouchableOpacity 
+                                activeOpacity={0.8}
+                                onLongPress={() => setSelectedItemActions(item)}
+                                style={styles.cardContainer}
+                            >
+                                <LinearGradient colors={['#1F2937', '#111827']} style={styles.cardGradient}>
+                                    <View style={styles.cardHeaderRow}>
+                                        <Text style={styles.cardTitle} numberOfLines={1}>{item.produto}</Text>
+                                        <View style={[styles.statusTag, { backgroundColor: dyn.color + '20', borderColor: dyn.color }]}>
+                                            <Ionicons name={dyn.icon} size={10} color={dyn.color} style={{marginRight: 4}} />
+                                            <Text style={[styles.statusText, { color: dyn.color }]}>{dyn.label}</Text>
+                                        </View>
+                                    </View>
+                                    
+                                    <View style={styles.cardBody}>
+                                        <View style={styles.infoCol}>
+                                            <Text style={styles.infoLabel}>QUANTIDADE</Text>
+                                            <View style={{flexDirection: 'row', alignItems: 'baseline'}}>
+                                                <Text style={[styles.infoValueLg, { color: dyn.color }]}>{item.quantidade}</Text>
+                                                <Text style={styles.infoUnit}>{item.unidade || 'un'}</Text>
+                                            </View>
+                                        </View>
                                         
-                                        {activeFilter === (s.label === 'Total' ? 'TODOS' : s.label.toUpperCase()) && (
-                                            <View style={[styles.statGlowBottom, { backgroundColor: s.color }]} />
-                                        )}
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            {/* â”€â”€ SEARCH â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-                            <View style={styles.searchContainer}>
-                                <LinearGradient colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.03)']} style={styles.searchBox}>
-                                    <Ionicons name="search" size={18} color="#9CA3AF" />
-                                    <TextInput
-                                        style={styles.searchInput}
-                                        placeholder="Pesquisar produto..."
-                                        placeholderTextColor="#6B7280"
-                                        value={searchText}
-                                        onChangeText={setSearchText}
-                                    />
-                                    {searchText.length > 0 && (
-                                        <TouchableOpacity onPress={() => setSearchText('')}>
-                                            <Ionicons name="close-circle" size={18} color="#F43F5E" />
-                                        </TouchableOpacity>
-                                    )}
+                                        <View style={styles.actionsRow}>
+                                            <TouchableOpacity 
+                                                style={[styles.quickBtn, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}
+                                                onPress={() => openModal(item, 'SAIDA')}
+                                            >
+                                                <Ionicons name="remove" size={20} color="#EF4444" />
+                                            </TouchableOpacity>
+                                            <TouchableOpacity 
+                                                style={[styles.quickBtn, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}
+                                                onPress={() => openModal(item, 'ENTRADA')}
+                                            >
+                                                <Ionicons name="add" size={20} color="#10B981" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
                                 </LinearGradient>
-                            </View>
-
-                            {/* â”€â”€ CATEGORY FILTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-                            <View style={styles.chipScrollContainer}>
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-                                    {CATEGORIAS.map(cat => (
-                                        <TouchableOpacity
-                                            key={cat.key}
-                                            style={[
-                                                styles.catChip,
-                                                activeCategoria === cat.key ? { backgroundColor: cat.color, borderColor: cat.color } : { backgroundColor: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }
-                                            ]}
-                                            onPress={() => setActiveCategoria(cat.key)}
-                                        >
-                                            <Ionicons name={cat.icon} size={14} color={activeCategoria === cat.key ? '#FFF' : cat.color} />
-                                            <Text style={[styles.catChipText, { color: activeCategoria === cat.key ? '#FFF' : '#E2E8F0' }]}>
-                                                {cat.label}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </ScrollView>
-                            </View>
-
-                            {/* â”€â”€ LIST HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-                            <View style={styles.listHeaderRow}>
-                                <Text style={styles.listHeaderText}>INVENTÃRIO</Text>
-                                {activeFilter !== 'TODOS' && (
-                                    <TouchableOpacity onPress={() => setActiveFilter('TODOS')} style={styles.clearFilter}>
-                                        <Text style={styles.clearFilterText}>Limpar filtro</Text>
-                                        <Ionicons name="close" size={12} color="#F43F5E" />
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                        </View>
-                    )}
+                            </TouchableOpacity>
+                        );
+                    }}
                     ListEmptyComponent={
-                        !loading && (
-                            <View style={styles.emptyBox}>
-                                <LinearGradient colors={['rgba(245,158,11,0.2)', 'rgba(245,158,11,0.01)']} style={styles.emptyRing}>
-                                    <MaterialCommunityIcons name="warehouse" size={38} color="#F59E0B" />
-                                </LinearGradient>
-                                <Text style={styles.emptyTitle}>Armazém vazio</Text>
-                                <Text style={styles.emptyDesc}>
-                                    {searchText ? 'Nenhum item encontrado para esta busca.' : 'Cadastre insumos para o controle diário.'}
-                                </Text>
-                                {(!searchText && !isAgronomo) && (
-                                    <TouchableOpacity onPress={() => navigation?.navigate?.('CadastroForm')}>
-                                        <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.emptyBtnGradient}>
-                                            <Ionicons name="add" size={18} color="#FFF" />
-                                            <Text style={styles.emptyBtnText}>Cadastrar Item</Text>
-                                        </LinearGradient>
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                        )
+                        <View style={styles.emptyBox}>
+                            <MaterialCommunityIcons name="package-variant-closed" size={60} color="#374151" />
+                            <Text style={styles.emptyTxt}>Estoque vazio ou não encontrado.</Text>
+                        </View>
                     }
                 />
-            </SafeAreaView>
+            )}
 
-            {/* â”€â”€ MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-            <Modal visible={!!modalItem} transparent animationType="slide">
-                <View style={styles.modalBg}>
-                    <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setModalItem(null)} />
-                    <View style={styles.modalSheet}>
-                        <View style={styles.modalHandle} />
-                        
+            <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('Cadastro')}>
+                <LinearGradient colors={['#10B981', '#059669']} style={styles.fabGradient}>
+                    <Ionicons name="add" size={32} color="#FFF" />
+                </LinearGradient>
+            </TouchableOpacity>
+
+            {/* MODAL DE AJUSTE RÁPIDO */}
+            <Modal visible={modalVisible} transparent animationType="slide">
+                <View style={styles.overlay}>
+                    <View style={styles.modalContent}>
                         <View style={styles.modalHeaderRow}>
-                            <View style={[styles.modalTypeIcon, { backgroundColor: (modalType === 'ENTRADA' ? '#10B981' : '#F43F5E') + '15' }]}>
-                                <Ionicons name={modalType === 'ENTRADA' ? 'arrow-down' : 'arrow-up'} size={26} color={modalType === 'ENTRADA' ? '#10B981' : '#F43F5E'} />
-                            </View>
-                            <View style={{ flex: 1, marginLeft: 16 }}>
-                                <Text style={styles.modalTitle}>{modalType === 'ENTRADA' ? 'ENTRADA DE ESTOQUE' : 'SAÃDA DE ESTOQUE'}</Text>
-                                <Text style={styles.modalProductName} numberOfLines={1}>{modalItem?.produto}</Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.typeToggle}>
-                            <TouchableOpacity
-                                style={[styles.typeToggleBtn, modalType === 'ENTRADA' ? { backgroundColor: '#10B98120', borderColor: '#10B981' } : {}]}
-                                onPress={() => setModalType('ENTRADA')}
-                            >
-                                <Text style={[styles.typeToggleBtnText, { color: modalType === 'ENTRADA' ? '#10B981' : '#6B7280' }]}>ENTRADA</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.typeToggleBtn, modalType === 'SAIDA' ? { backgroundColor: '#F43F5E20', borderColor: '#F43F5E' } : {}]}
-                                onPress={() => setModalType('SAIDA')}
-                            >
-                                <Text style={[styles.typeToggleBtnText, { color: modalType === 'SAIDA' ? '#F43F5E' : '#6B7280' }]}>SAÃDA</Text>
+                            <Text style={styles.modalTitle}>{actionType === 'ENTRADA' ? 'ENTRADA DE ESTOQUE' : 'BAIXA DE ESTOQUE'}</Text>
+                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                                <Ionicons name="close-circle" size={30} color="#4B5563" />
                             </TouchableOpacity>
                         </View>
+                        
+                        <View style={styles.selectedItemBox}>
+                            <Text style={styles.selectedItemText}>{selectedItem?.produto}</Text>
+                            <Text style={styles.selectedItemSub}>Qtd Atual: {selectedItem?.quantidade} {selectedItem?.unidade || 'un'}</Text>
+                        </View>
 
-                        <Text style={styles.qtyLabel}>QUANTIDADE ({modalItem?.unidade || 'un'})</Text>
-                        <View style={styles.qtyBox}>
-                            <TextInput
-                                style={[styles.qtyInput, { color: modalType === 'ENTRADA' ? '#10B981' : '#F43F5E' }]}
-                                value={qty}
-                                onChangeText={setQty}
-                                keyboardType="decimal-pad"
-                                placeholder="0.00"
-                                placeholderTextColor="#334155"
-                                autoFocus
+                        <View style={{ marginBottom: actionType === 'ENTRADA' ? 10 : 20 }}>
+                            <AgroInput 
+                                label={actionType === 'ENTRADA' ? 'QUANTIDADE RECEBIDA *' : 'QUANTIDADE RETIRADA *'} 
+                                value={qty} 
+                                onChangeText={setQty} 
+                                keyboardType="numeric"
+                                placeholder="Ex: 10"
+                                icon="cube-outline"
                             />
                         </View>
 
-                        <View style={styles.quickAmounts}>
-                            {['1', '5', '10', '25'].map(v => (
-                                <TouchableOpacity key={v} style={styles.quickAmountBtn} onPress={() => setQty(String(parseFloat(qty || 0) + parseFloat(v)))}>
-                                    <Text style={styles.quickAmountText}>+{v}</Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
+                        {actionType === 'ENTRADA' && (
+                            <View style={{ marginBottom: 20 }}>
+                                <AgroInput 
+                                    label="VALOR DA COMPRA (R$) - Opcional" 
+                                    value={valorTotal} 
+                                    onChangeText={setValorTotal} 
+                                    keyboardType="numeric"
+                                    placeholder="Ex: 250.00"
+                                    icon="cash-outline"
+                                />
+                                <Text style={{fontSize: 9, color: '#9CA3AF', marginTop: 5, marginLeft: 5}}>
+                                    * Se preenchido, gera uma conta a pagar no módulo Financeiro automaticamente.
+                                </Text>
+                            </View>
+                        )}
 
-                        <TouchableOpacity style={styles.confirmBtn} onPress={handleAdjust}>
-                            <LinearGradient colors={modalType === 'ENTRADA' ? ['#059669', '#047857'] : ['#E11D48', '#BE123C']} style={styles.confirmGradient}>
-                                {saving ? <ActivityIndicator color="#FFF" /> : (
-                                    <>
-                                        <Ionicons name="checkmark-circle" size={22} color="#FFF" />
-                                        <Text style={styles.confirmText}>CONFIRMAR {modalType}</Text>
-                                    </>
-                                )}
-                            </LinearGradient>
-                        </TouchableOpacity>
+                        <AgroButton 
+                            title={actionType === 'ENTRADA' ? 'CONFIRMAR ENTRADA' : 'CONFIRMAR BAIXA'} 
+                            onPress={confirmAction} 
+                            color={actionType === 'ENTRADA' ? '#10B981' : '#EF4444'}
+                        />
                     </View>
                 </View>
             </Modal>
+
+            {/* OPTIONS MODAL DE TOQUE LONGO */}
+            <AgroOptionsModal
+                visible={!!selectedItemActions}
+                onClose={() => setSelectedItemActions(null)}
+                title={selectedItemActions?.produto || ''}
+                subtitle={`${selectedItemActions?.quantidade || 0} ${selectedItemActions?.unidade || 'un'} em estoque`}
+                onEdit={() => { setSelectedItemActions(null); openModal(selectedItemActions, 'ENTRADA'); }}
+                onDelete={() => { setSelectedItemActions(null); openModal(selectedItemActions, 'SAIDA'); }}
+                editLabel="Lançar Entrada"
+                deleteLabel="Lançar Saída"
+            />
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#020617' }, 
-    ambientOrb1: { position: 'absolute', top: -100, right: -50, width: 300, height: 300, borderRadius: 150, backgroundColor: '#F59E0B', opacity: 0.08 },
-    ambientOrb2: { position: 'absolute', bottom: 100, left: -100, width: 250, height: 250, borderRadius: 125, backgroundColor: '#3B82F6', opacity: 0.05 },
-
-    header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 15 : 25, paddingBottom: 20 },
-    backBtn: { width: 48, height: 48, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-    headerTitle: { fontSize: 24, fontWeight: '900', color: '#FFF', letterSpacing: -0.5 },
-    headerSub: { fontSize: 13, color: '#94A3B8', fontWeight: '500', marginTop: 2 },
-    addBtnHeader: { shadowColor: '#F59E0B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 5 },
-    addGradientIcon: { width: 50, height: 50, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-
-    listContent: { paddingHorizontal: 22, paddingBottom: 100 },
-
-    statsRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-    statCard: { flex: 1, borderRadius: 18, paddingVertical: 14, alignItems: 'center', borderWidth: 1, overflow: 'hidden' },
-    statValue: { fontSize: 20, fontWeight: '900', letterSpacing: -0.5 },
-    statLabel: { color: '#94A3B8', fontSize: 10, fontWeight: '800', letterSpacing: 0.5, marginTop: 2 },
-    statGlowBottom: { position: 'absolute', bottom: 0, left: '20%', right: '20%', height: 3, borderTopLeftRadius: 3, borderTopRightRadius: 3, shadowOpacity: 1, shadowRadius: 10 },
-
-    searchContainer: { marginBottom: 18 },
-    searchBox: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, paddingHorizontal: 16, height: 56, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', gap: 12 },
-    searchInput: { flex: 1, color: '#FFF', fontSize: 15, fontWeight: '600' },
-
-    chipScrollContainer: { marginBottom: 24, marginHorizontal: -22 },
-    chipRow: { paddingHorizontal: 22, gap: 10, alignItems: 'center' },
-    catChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1 },
-    catChipText: { fontSize: 13, fontWeight: '700' },
-
-    listHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-    listHeaderText: { color: '#64748B', fontSize: 12, fontWeight: '900', letterSpacing: 1.5 },
-    clearFilter: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    clearFilterText: { color: '#F43F5E', fontSize: 11, fontWeight: '800' },
-
-    glassCard: { backgroundColor: 'rgba(255, 255, 255, 0.02)', borderRadius: 20, padding: 18, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', overflow: 'hidden', flexDirection: 'row', alignItems: 'center', gap: 16 },
-    cardGlowTopLeft: { position: 'absolute', top: -30, left: -30, width: 80, height: 80, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 40 },
-    itemIconBox: { width: 54, height: 54, borderRadius: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
-    itemName: { color: '#F8FAFC', fontSize: 16, fontWeight: '900', flex: 1, letterSpacing: -0.3 },
-    statusChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, borderWidth: 1 },
-    statusDot: { width: 6, height: 6, borderRadius: 3 },
-    statusChipText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
+    container: { flex: 1 },
+    header: { paddingTop: 40, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+    backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
+    headerTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', letterSpacing: 1.5 },
     
-    progressTrack: { height: 6, backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 3, marginVertical: 10, overflow: 'hidden' },
-    progressFill: { height: '100%', borderRadius: 3 },
+    kpiMain: { alignItems: 'center', marginBottom: 20 },
+    kpiMainLabel: { fontSize: 10, color: '#9CA3AF', fontWeight: 'bold', letterSpacing: 1.5, marginBottom: 5 },
+    kpiMainValue: { fontSize: 32, fontWeight: '900' },
     
-    itemQty: { fontSize: 22, fontWeight: '900', letterSpacing: -0.5 },
-    itemUnit: { color: '#94A3B8', fontSize: 13, fontWeight: '700' },
-    itemMin: { color: '#64748B', fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
+    kpiContainer: { flexDirection: 'row', justifyContent: 'space-between' },
+    kpiCard: { flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 15, padding: 15, alignItems: 'center', marginHorizontal: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    kpiValue: { fontSize: 16, fontWeight: 'bold', marginTop: 5 },
+    kpiLabel: { fontSize: 9, color: '#9CA3AF', fontWeight: 'bold', letterSpacing: 1 },
     
-    itemActions: { gap: 10 },
-    actionBtn: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-
-    emptyBox: { alignItems: 'center', paddingVertical: 60 },
-    emptyRing: { width: 100, height: 100, borderRadius: 50, borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)', justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderStyle: 'dashed' },
-    emptyTitle: { color: '#FFF', fontSize: 20, fontWeight: '900', marginBottom: 8 },
-    emptyDesc: { color: '#94A3B8', fontSize: 14, textAlign: 'center', lineHeight: 22 },
-    emptyBtnGradient: { marginTop: 24, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 16 },
-    emptyBtnText: { color: '#FFF', fontWeight: '800', fontSize: 15 },
-
-    modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center' },
-    modalSheet: { width: '90%', maxWidth: 500, alignSelf: 'center', backgroundColor: '#0B1120', borderRadius: 30, padding: 24, paddingBottom: 40, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-    modalHandle: { display: 'none' },
+    filtersContainer: { marginTop: -20 },
+    searchWrap: { paddingHorizontal: 20, marginBottom: 15 },
+    pill: { paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, backgroundColor: '#1F2937', marginRight: 10, borderWidth: 1, borderColor: '#374151' },
+    pillActive: { backgroundColor: '#3B82F6', borderColor: '#3B82F6' },
+    pillText: { color: '#9CA3AF', fontSize: 12, fontWeight: 'bold' },
     
-    modalHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
-    modalTypeIcon: { width: 56, height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-    modalTitle: { color: '#94A3B8', fontSize: 12, fontWeight: '900', letterSpacing: 1.5 },
-    modalProductName: { color: '#F8FAFC', fontSize: 20, fontWeight: '900', marginTop: 2 },
+    list: { padding: 20, paddingBottom: 100 },
+    cardContainer: { marginBottom: 15, borderRadius: 20, elevation: 5, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
+    cardGradient: { borderRadius: 20, padding: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+    cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+    cardTitle: { fontSize: 16, fontWeight: '900', color: '#FFF', flex: 1, marginRight: 10 },
+    statusTag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, borderWidth: 1, flexDirection: 'row', alignItems: 'center' },
+    statusText: { fontSize: 9, fontWeight: 'bold', letterSpacing: 0.5 },
     
-    typeToggle: { flexDirection: 'row', gap: 12, marginBottom: 24 },
-    typeToggleBtn: { flex: 1, height: 50, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.03)' },
-    typeToggleBtnText: { fontSize: 14, fontWeight: '900', letterSpacing: 0.5 },
-
-    qtyLabel: { color: '#94A3B8', fontSize: 11, fontWeight: '800', letterSpacing: 1.5, marginBottom: 10 },
-    qtyBox: { backgroundColor: 'rgba(0,0,0,0.4)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: 20, marginBottom: 20 },
-    qtyInput: { height: 80, textAlign: 'center', fontSize: 36, fontWeight: '900' },
-
-    quickAmounts: { flexDirection: 'row', gap: 10, marginBottom: 28 },
-    quickAmountBtn: { flex: 1, height: 46, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-    quickAmountText: { color: '#CBD5E1', fontSize: 14, fontWeight: '800' },
-
-    confirmBtn: { shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 15 },
-    confirmGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 20, borderRadius: 18, gap: 12 },
-    confirmText: { color: '#FAFAFA', fontSize: 15, fontWeight: '900', letterSpacing: 1 },
+    cardBody: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    infoCol: { flex: 1 },
+    infoLabel: { fontSize: 10, color: '#6B7280', fontWeight: 'bold', letterSpacing: 1, marginBottom: 4 },
+    infoValueLg: { fontSize: 24, fontWeight: '900' },
+    infoUnit: { fontSize: 12, color: '#9CA3AF', marginLeft: 4, fontWeight: 'bold' },
+    
+    actionsRow: { flexDirection: 'row', gap: 10 },
+    quickBtn: { width: 45, height: 45, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+    
+    fab: { position: 'absolute', bottom: 30, right: 25, elevation: 8 },
+    fabGradient: { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center' },
+    
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+    modalContent: { backgroundColor: '#1F2937', borderTopLeftRadius: 35, borderTopRightRadius: 35, padding: 25 },
+    modalHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    modalTitle: { fontSize: 14, fontWeight: '900', color: '#FFF', letterSpacing: 1.5 },
+    
+    selectedItemBox: { backgroundColor: 'rgba(0,0,0,0.2)', padding: 15, borderRadius: 12, marginBottom: 20, alignItems: 'center' },
+    selectedItemText: { fontSize: 16, fontWeight: 'bold', color: '#FFF' },
+    selectedItemSub: { fontSize: 12, color: '#9CA3AF', marginTop: 4 },
+    
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    emptyBox: { alignItems: 'center', marginTop: 60, opacity: 0.5 },
+    emptyTxt: { color: '#9CA3AF', marginTop: 15, fontWeight: '700', fontSize: 14 }
 });
-

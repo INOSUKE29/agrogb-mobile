@@ -1,74 +1,88 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../theme/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 
-/**
- * ScreenHeader — Moderno e Dinâmico v8
- */
-export default function ScreenHeader({ title, onBack, rightElement, transparent }) {
-    const { colors, effectiveTheme } = useTheme();
-
-    const isLight = effectiveTheme === 'light';
+export default function ScreenHeader({ title, onBack, transparent, rightElement }) {
+    const { theme } = useTheme();
+    const activeColors = theme?.colors || {};
+    
+    const isDark = theme?.theme_mode === 'dark';
+    
+    // Configurações de cores de fundo reativas
+    const bgColor = transparent 
+        ? 'transparent' 
+        : (isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)');
 
     return (
         <View style={[
-            styles.header, 
-            { backgroundColor: transparent ? 'transparent' : (colors.glass || (isLight ? 'rgba(255,255,255,0.7)' : 'rgba(15,23,42,0.6)')) }
+            styles.headerContainer, 
+            { 
+                backgroundColor: bgColor,
+                borderBottomColor: transparent ? 'transparent' : (activeColors.border || 'rgba(0,0,0,0.05)'),
+                borderBottomWidth: transparent ? 0 : 1
+            }
         ]}>
-            <View style={styles.row}>
+            <View style={styles.contentRow}>
                 {onBack ? (
-                    <TouchableOpacity onPress={onBack} style={[styles.back, { backgroundColor: (colors.border || '#1E8E5A') + '20' }]}>
-                        <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
+                    <TouchableOpacity onPress={onBack} style={[styles.iconBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+                        <Ionicons name="arrow-back" size={22} color={activeColors.text || '#1E293B'} />
                     </TouchableOpacity>
                 ) : (
-                    <View style={styles.backDim} />
+                    <View style={styles.placeholder} />
                 )}
 
-                <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>{title}</Text>
+                <Text style={[styles.title, { color: activeColors.text || '#1E293B' }]} numberOfLines={1}>
+                    {title}
+                </Text>
 
-                <View style={styles.right}>
-                    {rightElement}
-                    {!rightElement && <View style={styles.backDim} />}
-                </View>
+                {rightElement ? (
+                    <View style={styles.rightContainer}>
+                        {rightElement}
+                    </View>
+                ) : (
+                    <View style={styles.placeholder} />
+                )}
             </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    header: {
-        paddingTop: 54,
-        paddingBottom: 12,
-        paddingHorizontal: 16,
-        borderBottomWidth: 0,
+    headerContainer: {
+        paddingTop: Platform.OS === 'ios' ? 15 : 45,
+        paddingBottom: 15,
+        paddingHorizontal: 20,
+        justifyContent: 'center',
     },
-    row: {
+    contentRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: 10
+        height: 44,
     },
-    back: {
+    iconBtn: {
         width: 38,
         height: 38,
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    backDim: {
-        width: 38,
-    },
     title: {
-        flex: 1,
-        textAlign: 'center',
-        fontSize: 15,
+        fontSize: 16,
         fontWeight: '900',
-        letterSpacing: 0.8,
+        letterSpacing: 1.5,
+        textAlign: 'center',
+        flex: 1,
+        marginHorizontal: 15,
+        textTransform: 'uppercase',
     },
-    right: {
-        minWidth: 38,
-        alignItems: 'flex-end',
+    placeholder: {
+        width: 38,
+        height: 38,
+    },
+    rightContainer: {
         justifyContent: 'center',
+        alignItems: 'center',
     }
 });

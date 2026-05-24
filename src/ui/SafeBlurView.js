@@ -1,31 +1,28 @@
 import React from 'react';
-import { View, Platform } from 'react-native';
+import { View, Platform, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 
 /**
- * SafeBlurView - Componente de proteção contra crashes no ambiente Web.
- * Se o BlurView da Expo falhar ao carregar ou estiver no Web, 
- * ele fornece um fallback elegante para uma View comum com fundo semi-transparente.
+ * SafeBlurView - Componente de Blur Multiplataforma Resiliente 🌌✨
+ * Garante efeito translúcido (Glassmorphism) impecável no iOS/Android 
+ * e fallback suave no Web para não quebrar o layout.
  */
-const SafeBlurView = ({ children, style, intensity = 20, tint = 'dark', ...props }) => {
-    
-    // No Web, o BlurView costuma causar ReferenceErrors se não houver polyfill adequado.
-    // Usamos uma View com background color para simular o efeito visual sem quebrar o app.
+export default function SafeBlurView({ intensity = 20, tint = 'default', style, webFallbackColor, children, ...props }) {
+    // Web fallback premium
     if (Platform.OS === 'web') {
-        const backgroundColor = tint === 'dark' ? 'rgba(15, 23, 42, 0.7)' : 'rgba(255, 255, 255, 0.7)';
+        const fallbackBg = webFallbackColor || (tint === 'dark' ? 'rgba(15, 23, 42, 0.7)' : 'rgba(255, 255, 255, 0.45)');
         return (
-            <View style={[{ backgroundColor, overflow: 'hidden' }, style]} {...props}>
+            <View style={[style, { backgroundColor: fallbackBg }]} {...props}>
                 {children}
             </View>
         );
     }
 
-    // No Nativo, usamos o BlurView original da Expo
+    // Android/iOS Native Blur
+    // O Expo BlurView resolve o efeito nativamente. No Android, aplica fallback de transparência interna automática caso o hardware não suporte.
     return (
         <BlurView intensity={intensity} tint={tint} style={style} {...props}>
             {children}
         </BlurView>
     );
-};
-
-export default SafeBlurView;
+}

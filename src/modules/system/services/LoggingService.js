@@ -1,89 +1,77 @@
-import { executeQuery } from '../../../database/database';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import { executeQuery } from '../../../database/database';
 import { Platform } from 'react-native';
 
 /**
- * LoggingService - Auditoria de Erros (Diamond Pro)
- * Camada de Serviço para captura e exportação de logs técnicos.
+ * LoggingService - Auditoria e Exportação de Logs do Sistema 🛡️📑
+ * Consolida relatórios de auditoria e erros locais em arquivos textuais
+ * exportáveis para suporte técnico e conformidade regulatória.
  */
 export const LoggingService = {
-
     /**
-     * Grava um erro no banco local.
-     */
-    logError: async (tela, funcao, erro, stack = '') => {
-        try {
-            const id = `err_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-            const query = `
-                INSERT INTO v2_error_logs (id, tela, funcao, erro, stack, created_at)
-                VALUES (?, ?, ?, ?, ?, datetime('now'))
-            `;
-            await executeQuery(query, [id, tela, funcao, String(erro), String(stack)]);
-            if (__DEV__) console.warn(`[ErrorLog] Gravado: ${tela} > ${funcao}`);
-        } catch (e) {
-            console.error("Falha fatal ao gravar log de erro:", e);
-        }
-    },
-
-    /**
-     * Busca todos os logs recentes.
-     */
-    getLogs: async (limit = 100) => {
-        try {
-            const res = await executeQuery(`SELECT * FROM v2_error_logs ORDER BY created_at DESC LIMIT ?`, [limit]);
-            return res.rows._array || [];
-        } catch {
-            return [];
-        }
-    },
-
-    /**
-     * Exporta os logs para um arquivo TXT e abre o menu de compartilhamento.
+     * Exporta os últimos logs de auditoria e erros em arquivo de texto legível
      */
     exportLogs: async () => {
         try {
-            const logs = await LoggingService.getLogs(500);
-            if (logs.length === 0) {
-                return { success: false, message: "Nenhum log para exportar." };
+            console.log('[LoggingService] Iniciando exportação de logs...');
+
+            // 1. Busca logs de auditoria
+            let auditLines = '=== AUDIT LOGS (Últimos 100) ===\n';
+            try {
+                const auditRes = await executeQuery('SELECT * FROM audit_logs ORDER BY id DESC LIMIT 100');
+                const auditRows = auditRes.rows._array || [];
+                if (auditRows.length > 0) {
+                    auditRows.forEach(log => {
+                        auditLines += `[${log.data || 'N/A'}] Ação: ${log.acao || 'N/A'} | Tabela: ${log.tabela || 'N/A'} | Usuário: ${log.usuario_uuid || 'N/A'}\nDetalhes: ${log.detalhes || 'N/A'}\n----------------------------------------\n`;
+                    });
+                } else {
+                    auditLines += 'Nenhum log de auditoria encontrado.\n';
+                }
+            } catch (e) {
+                auditLines += `Falha ao ler audit_logs: ${e.message}\n`;
             }
 
-            let content = "=== AGROGB ERROR REPORT ===\n";
-            content += `Gerado em: ${new Date().toLocaleString()}\n`;
-            content += `Plataforma: ${Platform.OS}\n\n`;
+            // 2. Busca logs de erro
+            let errorLines = '\n=== ERROR LOGS (Últimos 100) ===\n';
+            try {
+                const errorRes = await executeQuery('SELECT * FROM error_logs ORDER BY id DESC LIMIT 100');
+                const errorRows = errorRes.rows._array || [];
+                if (errorRows.length > 0) {
+                    errorRows.forEach(log => {
+                        errorLines += `[${log.created_at || log.data || 'N/A'}] Tela: ${log.tela || 'N/A'} | Erro: ${log.erro || 'N/A'}\nStack: ${log.stack || 'N/A'}\n----------------------------------------\n`;
+                    });
+                } else {
+                    errorLines += 'Nenhum log de erro registrado.\n';
+                }
+            } catch (e) {
+                errorLines += `Falha ao ler error_logs: ${e.message}\n`;
+            }
 
-            logs.forEach(log => {
-                content += `[${log.created_at}] [${log.severity}] TELA: ${log.tela} | FUNÇÃO: ${log.funcao}\n`;
-                content += `ERRO: ${log.erro}\n`;
-                if (log.stack) content += `STACK: ${log.stack.substring(0, 200)}...\n`;
-                content += "-----------------------------------\n";
-            });
+            // 3. Monta o relatório final
+            const reportContent = `AGROGB SYSTEM LOGS REPORT\nGerado em: ${new Date().toISOString()}\nPlataforma: ${Platform.OS} (v${Platform.Version})\n\n${auditLines}${errorLines}`;
 
-            const fileName = `agrogb_logs_${Date.now()}.txt`;
-            const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+            // 4. Cria arquivo local temporário
+            const filename = `AgroGB_Logs_${Date.now()}.txt`;
+            const fileUri = `${FileSystem.cacheDirectory}${filename}`;
 
-            await FileSystem.writeAsStringAsync(fileUri, content, { encoding: FileSystem.EncodingType.UTF8 });
+            await FileSystem.writeAsStringAsync(fileUri, reportContent, { encoding: FileSystem.EncodingType.UTF8 });
 
-            if (await Sharing.isAvailableAsync()) {
-                await Sharing.shareAsync(fileUri);
-                return { success: true };
+            // 5. Compartilha nativamente
+            const isSharingAvailable = await Sharing.isAvailableAsync();
+            if (isSharingAvailable) {
+                await Sharing.shareAsync(fileUri, {
+                    dialogTitle: 'Exportar Relatório de Logs AgroGB',
+                    mimeType: 'text/plain',
+                    UTI: 'public.plain-text'
+                });
+                return { success: true, message: 'Relatório compartilhado com sucesso!' };
             } else {
-                return { success: false, message: "O compartilhamento não está disponível neste dispositivo." };
+                return { success: false, message: 'Compartilhamento nativo indisponível neste dispositivo.' };
             }
         } catch (error) {
-            console.error("Erro ao exportar logs:", error);
-            return { success: false, message: error.message };
-        }
-    },
-
-    /**
-     * Limpa logs antigos para não ocupar espaço.
-     */
-    clearLogs: async () => {
-        try {
-            await executeQuery(`DELETE FROM v2_error_logs WHERE created_at < date('now', '-30 days')`);
-        } catch (e) {
-            console.error("Erro ao limpar logs:", e);
+            console.error('[LoggingService] Erro ao exportar logs:', error);
+            return { success: false, message: `Falha crítica na exportação: ${error.message}` };
         }
     }
 };

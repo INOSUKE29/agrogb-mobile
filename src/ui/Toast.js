@@ -1,24 +1,28 @@
-import React, { useRef, useEffect } from 'react';
-import { Text, StyleSheet, Animated } from 'react-native';
+import { Platform, Alert } from 'react-native';
 
-let toastRef = null;
-
-export const showToast = (message) => { toastRef?.show(message); };
-
-export default function Toast() {
-    const opacity = useRef(new Animated.Value(0)).current;
-    const [msg, setMsg] = React.useState('');
-
-    useEffect(() => { toastRef = { show: (m) => { setMsg(m); Animated.sequence([Animated.timing(opacity, { toValue: 1, duration: 300, useNativeDriver: true }), Animated.delay(2000), Animated.timing(opacity, { toValue: 0, duration: 300, useNativeDriver: true })]).start(); } }; }, []);
-
-    return (
-        <Animated.View style={[styles.container, { opacity }]}>
-            <Text style={styles.text}>{msg}</Text>
-        </Animated.View>
-    );
+/**
+ * showToast - Feedback Visual Rápido e Não Bloqueante 📡🔔
+ * Utiliza o ToastAndroid nativo no Android para avisos de sistema,
+ * e Alert amigável no iOS/Web de forma a manter o fluxo resiliente.
+ */
+export function showToast(message) {
+    if (!message) return;
+    
+    if (Platform.OS === 'android') {
+        try {
+            const { ToastAndroid } = require('react-native');
+            ToastAndroid.show(message, ToastAndroid.SHORT);
+        } catch (e) {
+            console.log(`[AgroGB Toast Android Error] ${message}`);
+        }
+    } else {
+        console.log(`[AgroGB Toast] ${message}`);
+        // Alerta não bloqueante rápido para iOS e Web
+        Alert.alert(
+            'AgroGB',
+            message,
+            [{ text: 'OK', style: 'cancel' }],
+            { cancelable: true }
+        );
+    }
 }
-
-const styles = StyleSheet.create({
-    container: { position: 'absolute', bottom: 100, alignSelf: 'center', backgroundColor: 'rgba(0,0,0,0.8)', padding: 15, borderRadius: 25, zIndex: 9999 },
-    text: { color: '#FFF', fontWeight: 'bold' }
-});

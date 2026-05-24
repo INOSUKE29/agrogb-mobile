@@ -1,4 +1,4 @@
-
+import { Alert } from 'react-native';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 3️⃣ PROMPT INTERNO DA IA
@@ -43,11 +43,11 @@ FORMATO PADRÃO DE RESPOSTA:
  * Simula (ou realiza) a análise de Inteligência Artificial.
  * No futuro, substituir o 'mock' pela chamada real à API OpenAI/Gemini.
  */
-export const analyzeContent = async (sourceUri, sourceType) => {
+export const analyzeContent = async (sourceUri, sourceType, mediaContent = null) => {
     // ---------------------------------------------------------
     // ROTEAMENTO DE EXECUÇÃO REAL VS SIMULAÇÃO
     // ---------------------------------------------------------
-    if (__DEV__) console.log(`[AI SERVICE] processando: ${sourceType} -> ${sourceUri}`);
+    console.log(`[AI SERVICE] processando: ${sourceType} -> ${sourceUri}`);
 
     // SIMULAÇÃO INTELIGENTE (Para demonstração do fluxo sem API Key)
     // Retorna uma análise estruturada baseada no "tipo" ou conteúdo mockado.
@@ -74,6 +74,44 @@ export const analyzeContent = async (sourceUri, sourceType) => {
                 formattedResponse: formatUserResponse(mockAnalysis)
             });
         }, 2000); // 2s delay para "pensar"
+    });
+};
+
+/**
+ * Predição de Safra v5.5
+ * Estima a data e o volume de colheita baseado em dados de plantio e monitoramento.
+ */
+export const predictHarvest = async (plantioData) => {
+    console.log(`[AI PREDICT] Analisando ciclo para: ${plantioData.cultura}`);
+    
+    // Simulação de ciclo biológico (Pode ser expandido com API Climática)
+    const ciclos = {
+        'TOMATE': 90,
+        'ALFACE': 45,
+        'MORANGO': 120,
+        'MILHO': 110,
+        'SOJA': 120,
+        'GERAL': 60
+    };
+
+    const diasCiclo = ciclos[plantioData.cultura.toUpperCase()] || ciclos['GERAL'];
+    const dataPlantio = new Date(plantioData.data);
+    const dataEstimada = new Date(dataPlantio);
+    dataEstimada.setDate(dataPlantio.getDate() + diasCiclo);
+
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve({
+                success: true,
+                data: {
+                    data_estimada: dataEstimada.toISOString().split('T')[0],
+                    volume_estimado_kg: (plantioData.quantidade_pes * 0.8).toFixed(2), // Mock: 800g por pé
+                    confianca: "85%",
+                    status: "DENTRO DO PRAZO",
+                    recomendacao: "Manter irrigação constante nos últimos 15 dias para maximizar volume."
+                }
+            });
+        }, 1500);
     });
 };
 
