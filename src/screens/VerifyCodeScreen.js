@@ -1,6 +1,5 @@
 ﻿import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import InputField from '../ui/InputField';
 import { AuthService } from '../services/authService';

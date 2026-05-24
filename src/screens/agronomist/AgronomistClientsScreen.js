@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert, Platform } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../services/supabaseClient';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -97,6 +97,11 @@ export default function AgronomistClientsScreen({ navigation }) {
         return name.substring(0, 2).toUpperCase();
     };
 
+    const filteredClients = clients.filter(c => 
+        (c.name && c.name.toLowerCase().includes(searchQuery.toLowerCase())) || 
+        (c.farm && c.farm.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+
     const renderClient = ({ item }) => (
         <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={() => navigation.navigate('AgronomistClientProfile', { client: item })}>
             <View style={styles.cardHeader}>
@@ -114,38 +119,7 @@ export default function AgronomistClientsScreen({ navigation }) {
             </View>
         </TouchableOpacity>
     );
-        <View style={styles.card}>
-            <View style={styles.cardHeader}>
-                <View style={styles.cardIcon}>
-                    <Ionicons name="person" size={24} color="#1565C0" />
-                </View>
-                <View style={styles.cardInfo}>
-                    <Text style={styles.clientName}>{item.name}</Text>
-                    <Text style={styles.farmName}>
-                        <Ionicons name="location-outline" size={12} color="#64748B" /> {item.farm}
-                    </Text>
-                </View>
-            </View>
-            <View style={styles.cardActions}>
-                <TouchableOpacity style={[styles.actionBtn, {backgroundColor: '#FFF8E1'}]} onPress={() => navigation.navigate('ScheduleVisitForm', { clientId: item.id, clientName: item.name })}>
-                    <Ionicons name="calendar-outline" size={18} color="#FF8F00" />
-                    <Text style={[styles.actionText, {color: '#FF8F00'}]}>Visita</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionBtn, {backgroundColor: '#F3E5F5'}]} onPress={() => navigation.navigate('CreateRecommendation', { clientId: item.id, clientName: item.name })}>
-                    <MaterialCommunityIcons name="flask-outline" size={18} color="#8E24AA" />
-                    <Text style={[styles.actionText, {color: '#8E24AA'}]}>Receita</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionBtn, {backgroundColor: '#E3F2FD'}]} onPress={() => navigation.navigate('AgronomistEstoque', { clientId: item.id, clientName: item.name })}>
-                    <MaterialCommunityIcons name="cube-outline" size={18} color="#1565C0" />
-                    <Text style={[styles.actionText, {color: '#1565C0'}]}>Estoque</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionBtn, {backgroundColor: '#E8F5E9'}]} onPress={() => navigation.navigate('AgronomistCaderno', { clientId: item.id, clientName: item.name })}>
-                    <Ionicons name="book-outline" size={18} color="#2E7D32" />
-                    <Text style={[styles.actionText, {color: '#2E7D32'}]}>Caderno</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
+
 
     const renderPending = ({ item }) => (
         <View style={styles.card}>

@@ -16,7 +16,6 @@ const LocalAuthentication = RNPlatform.OS !== 'web' ? require('expo-local-authen
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../services/supabaseClient";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 
 export default function ConfigScreen({ navigation, user }) {
   // State hooks for all toggles

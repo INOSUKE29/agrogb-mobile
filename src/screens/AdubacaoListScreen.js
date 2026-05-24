@@ -3,7 +3,6 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Ale
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { getPlanosAdubacao, deletePlanoAdubacao } from '../database/database';
 import { useIsFocused } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 
 export default function AdubacaoListScreen({ navigation }) {
     const [planos, setPlanos] = useState([]);
