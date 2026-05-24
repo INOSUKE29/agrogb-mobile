@@ -9,26 +9,13 @@ import { getDashboardStats } from '../database/database';
 const { width } = Dimensions.get('window');
 
 const ALL_MENU_ITEMS = [
-    { id: 'CadernoCampo', label: 'Caderno', icon: 'book-open-outline', darkColor: '#2DD4BF', lightColor: '#0F766E' },
-    { id: 'Colheita', label: 'Colheita', icon: 'leaf', darkColor: '#34D399', lightColor: '#059669' },
-    { id: 'Vendas', label: 'Vendas', icon: 'cash', darkColor: '#6EE7B7', lightColor: '#10B981' },
-    { id: 'Estoque', label: 'Estoque', icon: 'cube-outline', darkColor: '#93C5FD', lightColor: '#3B82F6' },
-    { id: 'Monitoramento', label: 'Monitorar', icon: 'camera-outline', darkColor: '#F9A8D4', lightColor: '#EC4899' },
-    { id: 'MenuAdubacao', label: 'Adubação', icon: 'flask-outline', darkColor: '#D8B4FE', lightColor: '#A855F7' },
-    { id: 'Compras', label: 'Compras', icon: 'cart-outline', darkColor: '#FDE047', lightColor: '#D97706' },
-    { id: 'Encomendas', label: 'Encomendas', icon: 'clipboard-outline', darkColor: '#FCD34D', lightColor: '#F59E0B' },
-    { id: 'Plantio', label: 'Plantio', icon: 'apple', darkColor: '#C4B5FD', lightColor: '#8B5CF6' },
-    { id: 'Custos', label: 'Custos', icon: 'calculator-variant-outline', darkColor: '#FDBA74', lightColor: '#EA580C' },
-    { id: 'Processamento', label: 'Descarte', icon: 'trash-can-outline', darkColor: '#FCA5A5', lightColor: '#EF4444' },
-    { id: 'Frota', label: 'Frota', icon: 'car-outline', darkColor: '#93C5FD', lightColor: '#3B82F6' },
+    { id: 'AgronomistClients', label: 'Meus Clientes', icon: 'account-group-outline', darkColor: '#3B82F6', lightColor: '#2563EB' },
+    { id: 'CreateRecommendation', label: 'Nova Receita', icon: 'flask-outline', darkColor: '#D8B4FE', lightColor: '#9333EA' },
+    { id: 'Visitas', label: 'Agenda/Visitas', icon: 'calendar-clock-outline', darkColor: '#FBBF24', lightColor: '#D97706' },
+    { id: 'Estoque', label: 'Ver Estoque', icon: 'cube-outline', darkColor: '#93C5FD', lightColor: '#3B82F6' },
+    { id: 'Monitoramento', label: 'Monitoramento', icon: 'camera-outline', darkColor: '#F9A8D4', lightColor: '#EC4899' },
+    { id: 'Culturas', label: 'Lavouras', icon: 'map-outline', darkColor: '#34D399', lightColor: '#059669' },
     { id: 'Relatorios', label: 'Relatórios', icon: 'chart-pie', darkColor: '#94A3B8', lightColor: '#475569' },
-    { id: 'MenuCadastros', label: 'Cadastros', icon: 'square-edit-outline', darkColor: '#94A3B8', lightColor: '#475569' },
-    { id: 'Clientes', label: 'Clientes', icon: 'account-group-outline', darkColor: '#94A3B8', lightColor: '#475569' },
-    { id: 'Culturas', label: 'Áreas', icon: 'map-outline', darkColor: '#94A3B8', lightColor: '#475569' },
-    { id: 'Sync', label: 'Sync', icon: 'cloud-upload-outline', darkColor: '#A5B4FC', lightColor: '#6366F1' },
-    { id: 'Usuarios', label: 'Equipe', icon: 'account-multiple-outline', darkColor: '#94A3B8', lightColor: '#475569' },
-    { id: 'Scanner', label: 'Scanner', icon: 'barcode-scan', darkColor: '#94A3B8', lightColor: '#475569' },
-    { id: 'MenuSistema', label: 'Sistema', icon: 'cog-outline', darkColor: '#94A3B8', lightColor: '#475569' },
 ];
 
 export default function HomeScreen({ navigation }) {
@@ -211,7 +198,8 @@ export default function HomeScreen({ navigation }) {
 
                 <View style={styles.sectionWrap}>
                     <View style={styles.secHeader}>
-                        <Text style={[styles.secTitle, { color: colors.textMain }]}>Menu principal</Text>
+                        <Text style={[styles.secTitle, { color: colors.textMain }]}>Ferramentas do Consultor</Text>
+                        <Text style={{fontSize: 12, color: colors.textSub}}>Acesso Compartilhado</Text>
                     </View>
                     
                     {/* 🔥 GRID 4 COLUNAS SEM CATEGORIAS */}

@@ -6,6 +6,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import ClientDashboardScreen from '../screens/client/ClientDashboardScreen';
 import RecommendationsScreen from '../screens/client/RecommendationsScreen';
 import MyFarmScreen from '../screens/client/MyFarmScreen';
+import ClientMenuScreen from '../screens/client/ClientMenuScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -24,6 +25,9 @@ export default function ClientNavigator() {
                         return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
                     } else if (route.name === 'MyFarm') {
                         iconName = focused ? 'leaf' : 'leaf-outline';
+                        return <Ionicons name={iconName} size={size} color={color} />;
+                    } else if (route.name === 'ClientMenu') {
+                        iconName = focused ? 'apps' : 'apps-outline';
                         return <Ionicons name={iconName} size={size} color={color} />;
                     }
                 },
@@ -62,6 +66,11 @@ export default function ClientNavigator() {
                 name="MyFarm" 
                 component={MyFarmScreen} 
                 options={{ tabBarLabel: 'Fazenda' }} 
+            />
+            <Tab.Screen 
+                name="ClientMenu" 
+                component={ClientMenuScreen} 
+                options={{ tabBarLabel: 'Menu' }} 
             />
         </Tab.Navigator>
     );
