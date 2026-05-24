@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, TextInput, SafeAreaView, StatusBar, Platform } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertMaquina, updateMaquinaRevisao } from '../database/database';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
+
 import { showToast } from '../ui/Toast';
 
 const TIPOS = [
     { id: 'TRATOR', label: 'Trator', icon: 'tractor' },
-    { id: 'CAMINHAO', label: 'Caminhão', icon: 'truck-outline' },
+    { id: 'CAMINHAO', label: 'CaminhÃ£o', icon: 'truck-outline' },
     { id: 'IMPLEMENTO', label: 'Implemento', icon: 'tools' },
     { id: 'OUTRO', label: 'Outro', icon: 'car-outline' },
 ];
@@ -35,7 +35,7 @@ export default function MaquinaFormScreen({ navigation, route }) {
 
     const handleSave = async () => {
         if (!nome.trim()) {
-            return Alert.alert('Atenção', 'O nome da máquina é obrigatório.');
+            return Alert.alert('AtenÃ§Ã£o', 'O nome da mÃ¡quina Ã© obrigatÃ³rio.');
         }
 
         const hNum = parseFloat(horimetro) || 0;
@@ -44,7 +44,7 @@ export default function MaquinaFormScreen({ navigation, route }) {
         try {
             if (editItem) {
                 await updateMaquinaRevisao(editItem.uuid, hNum, rNum);
-                showToast('Máquina atualizada!');
+                showToast('MÃ¡quina atualizada!');
             } else {
                 await insertMaquina({
                     uuid: uuidv4(),
@@ -56,18 +56,18 @@ export default function MaquinaFormScreen({ navigation, route }) {
                     local_atual: 'Base Principal',
                     consumo: '0 L/h'
                 });
-                showToast('Máquina cadastrada com sucesso!');
+                showToast('MÃ¡quina cadastrada com sucesso!');
             }
             navigation.goBack();
         } catch {
-            Alert.alert('Erro', 'Não foi possível salvar a máquina.');
+            Alert.alert('Erro', 'NÃ£o foi possÃ­vel salvar a mÃ¡quina.');
         }
     };
 
     return (
         <View style={styles.webContainer}>
             {/* O Famoso Fundo Dark Farm Esverdeado */}
-            <LinearGradient colors={['#1c2921', '#111b15', '#09100c']} style={StyleSheet.absoluteFill} />
+            
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
             <View style={styles.mobileFrame}>
@@ -78,7 +78,7 @@ export default function MaquinaFormScreen({ navigation, route }) {
                             <Ionicons name="arrow-back" size={24} color="#D1FAE5" />
                         </TouchableOpacity>
                         <View style={{alignItems: 'center'}}>
-                            <Text style={styles.headerTitle}>{editItem ? 'Editar Máquina' : 'Nova Máquina'}</Text>
+                            <Text style={styles.headerTitle}>{editItem ? 'Editar MÃ¡quina' : 'Nova MÃ¡quina'}</Text>
                             <Text style={styles.headerSub}>Cadastro de Frota</Text>
                         </View>
                         <View style={{width: 40}} /> {/* Spacer pra centralizar */}
@@ -91,10 +91,10 @@ export default function MaquinaFormScreen({ navigation, route }) {
                         <View style={[styles.orb, { bottom: 100, left: -60, backgroundColor: '#3B82F6', opacity: 0.1 }]} />
 
                         {/* PAINEL DE VIDRO (GLASSMORPHISM CARD) */}
-                        <BlurView intensity={30} tint="dark" style={styles.glassCard}>
+                        <View intensity={30} tint="dark" style={styles.glassCard}>
                             
-                            {/* NOME / IDENTIFICAÇÃO */}
-                            <Text style={styles.label}>NOME / IDENTIFICAÇÃO *</Text>
+                            {/* NOME / IDENTIFICAÃ‡ÃƒO */}
+                            <Text style={styles.label}>NOME / IDENTIFICAÃ‡ÃƒO *</Text>
                             <View style={styles.inputWrapper}>
                                 <Ionicons name="pencil-outline" size={18} color="#34D399" style={styles.inputIcon} />
                                 <TextInput
@@ -107,7 +107,7 @@ export default function MaquinaFormScreen({ navigation, route }) {
                             </View>
 
                             {/* GRID DE TIPOS (ESTILO NEO-BRUTALISM DARK) */}
-                            <Text style={styles.label}>TIPO DE VEÍCULO</Text>
+                            <Text style={styles.label}>TIPO DE VEÃCULO</Text>
                             <View style={styles.tipoGrid}>
                                 {TIPOS.map((t) => {
                                     const isActive = tipo === t.id;
@@ -158,7 +158,7 @@ export default function MaquinaFormScreen({ navigation, route }) {
                             {/* METRICS ROW */}
                             <View style={styles.row}>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.label}>HORÍMETRO / KM</Text>
+                                    <Text style={styles.label}>HORÃMETRO / KM</Text>
                                     <View style={styles.inputWrapper}>
                                         <Ionicons name="speedometer-outline" size={18} color="#34D399" style={styles.inputIcon} />
                                         <TextInput
@@ -172,7 +172,7 @@ export default function MaquinaFormScreen({ navigation, route }) {
                                     </View>
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.label}>REVISÃO (H/KM)</Text>
+                                    <Text style={styles.label}>REVISÃƒO (H/KM)</Text>
                                     <View style={styles.inputWrapper}>
                                         <Ionicons name="build-outline" size={18} color="#34D399" style={styles.inputIcon} />
                                         <TextInput
@@ -187,14 +187,14 @@ export default function MaquinaFormScreen({ navigation, route }) {
                                 </View>
                             </View>
 
-                            {/* BOTÃO ESTILO CÁPSULA (GLOW GREEN) */}
+                            {/* BOTÃƒO ESTILO CÃPSULA (GLOW GREEN) */}
                             <TouchableOpacity style={styles.glowSubmitBtn} onPress={handleSave} activeOpacity={0.8}>
                                 <LinearGradient colors={['#10B981', '#059669', '#064E3B']} start={{x:0, y:0}} end={{x:1, y:1}} style={styles.btnGradient}>
-                                    <Text style={styles.submitBtnText}>{editItem ? 'SALVAR ALTERAÇÕES' : 'CADASTRAR MÁQUINA'}</Text>
+                                    <Text style={styles.submitBtnText}>{editItem ? 'SALVAR ALTERAÃ‡Ã•ES' : 'CADASTRAR MÃQUINA'}</Text>
                                 </LinearGradient>
                             </TouchableOpacity>
 
-                        </BlurView>
+                        </View>
                     </ScrollView>
                 </SafeAreaView>
             </View>
@@ -330,3 +330,4 @@ const styles = StyleSheet.create({
         textShadowRadius: 4
     }
 });
+

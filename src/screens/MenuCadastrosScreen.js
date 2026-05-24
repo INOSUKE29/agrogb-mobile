@@ -1,10 +1,10 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar as RNStatusBar, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import SafeBlurView from '../ui/SafeBlurView';
+
 
 export default function MenuCadastrosScreen({ navigation }) {
-    // AÇÕES RÁPIDAS (Vão direto para o formulário de NOVO)
+    // AÃ‡Ã•ES RÃPIDAS (VÃ£o direto para o formulÃ¡rio de NOVO)
     const QUICK_ACTIONS = [
         {
             title: "Novo Cliente",
@@ -15,22 +15,22 @@ export default function MenuCadastrosScreen({ navigation }) {
         {
             title: "Novo Insumo",
             icon: "cube",
-            route: "CadastroForm", // Tela de form do catálogo
+            route: "CadastroForm", // Tela de form do catÃ¡logo
             color: "#10B981" 
         },
         {
-            title: "Nova Máquina",
+            title: "Nova MÃ¡quina",
             icon: "tractor",
-            route: "MaquinaForm", // Presumindo existência para frotas
+            route: "MaquinaForm", // Presumindo existÃªncia para frotas
             color: "#F59E0B"
         }
     ];
 
-    // GERENCIAMENTO (Vão para as listas)
+    // GERENCIAMENTO (VÃ£o para as listas)
     const MENU_ITEMS = [
         {
             title: "PRODUTOS / INSUMOS",
-            subtitle: "Catálogo Geral",
+            subtitle: "CatÃ¡logo Geral",
             icon: "cube-outline",
             description: "Gerenciar defensivos, sementes e produtos.",
             route: "Cadastro",
@@ -45,42 +45,42 @@ export default function MenuCadastrosScreen({ navigation }) {
             color: "#3B82F6" 
         },
         {
-            title: "ÁREAS & TALHÕES",
-            subtitle: "Gestão de Propriedades",
+            title: "ÃREAS & TALHÃ•ES",
+            subtitle: "GestÃ£o de Propriedades",
             icon: "map-outline",
             description: "Gerenciar locais de plantio e variedades.",
             route: "Culturas",
             color: "#FCD34D" 
         },
         {
-            title: "GESTÃO DE EQUIPE",
-            subtitle: "Usuários & Permissões",
+            title: "GESTÃƒO DE EQUIPE",
+            subtitle: "UsuÃ¡rios & PermissÃµes",
             icon: "lock-closed-outline",
             description: "Controle quem acessa o sistema.",
             route: "Usuarios",
             color: "#64748B" 
         },
         {
-            title: "INTELIGÊNCIA AGRO (IA)",
-            subtitle: "Análise Preditiva",
+            title: "INTELIGÃŠNCIA AGRO (IA)",
+            subtitle: "AnÃ¡lise Preditiva",
             icon: "bulb-outline",
             description: "Consultoria inteligente baseada em dados.",
             route: "Intelligence",
             color: "#A3E635" 
         },
         {
-            title: "RELATÓRIOS & BI",
+            title: "RELATÃ“RIOS & BI",
             subtitle: "Performance Geral",
             icon: "bar-chart-outline",
-            description: "Gráficos de produtividade e DRE.",
+            description: "GrÃ¡ficos de produtividade e DRE.",
             route: "Relatorios",
             color: "#EC4899" 
         },
         {
             title: "SISTEMA & AJUSTES",
-            subtitle: "Configurações Globais",
+            subtitle: "ConfiguraÃ§Ãµes Globais",
             icon: "settings-outline",
-            description: "Sincronia, Backup e Preferências.",
+            description: "Sincronia, Backup e PreferÃªncias.",
             route: "Settings", 
             color: "#94A3B8" 
         }
@@ -105,8 +105,8 @@ export default function MenuCadastrosScreen({ navigation }) {
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 
-                {/* AÇÕES RÁPIDAS DE CRIAÇÃO (DIRETO PRO FORM) */}
-                <Text style={styles.sectionHeader}>AÇÕES DE CADASTRO RÁPIDO</Text>
+                {/* AÃ‡Ã•ES RÃPIDAS DE CRIAÃ‡ÃƒO (DIRETO PRO FORM) */}
+                <Text style={styles.sectionHeader}>AÃ‡Ã•ES DE CADASTRO RÃPIDO</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickActionsContainer}>
                     {QUICK_ACTIONS.map((action, idx) => (
                         <TouchableOpacity
@@ -115,12 +115,12 @@ export default function MenuCadastrosScreen({ navigation }) {
                             activeOpacity={0.8}
                             onPress={() => navigation.navigate(action.route)}
                         >
-                            <SafeBlurView intensity={20} style={styles.quickCard}>
+                            <View intensity={20} style={styles.quickCard}>
                                 <View style={[styles.quickIconBox, { backgroundColor: action.color + '15' }]}>
                                     <Ionicons name={action.icon} size={28} color={action.color} />
                                 </View>
                                 <Text style={styles.quickTitle}>{action.title}</Text>
-                            </SafeBlurView>
+                            </View>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
@@ -134,7 +134,7 @@ export default function MenuCadastrosScreen({ navigation }) {
                         onPress={() => navigation.navigate(item.route)}
                         activeOpacity={0.8}
                     >
-                        <SafeBlurView intensity={15} style={styles.card}>
+                        <View intensity={15} style={styles.card}>
                             <View style={[styles.iconBox, { backgroundColor: `${item.color}10` }]}>
                                 <Ionicons name={item.icon} size={26} color={item.color} />
                             </View>
@@ -146,7 +146,7 @@ export default function MenuCadastrosScreen({ navigation }) {
                             </View>
                             
                             <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.2)" />
-                        </SafeBlurView>
+                        </View>
                     </TouchableOpacity>
                 ))}
             </ScrollView>
@@ -196,4 +196,5 @@ const styles = StyleSheet.create({
     cardSub: { fontSize: 14, fontWeight: '800', color: '#F8FAFC', marginBottom: 2 },
     cardDesc: { fontSize: 11, color: '#64748B', fontWeight: '600' },
 });
+
 

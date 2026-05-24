@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+﻿import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, TextInput, StatusBar, ActivityIndicator } from 'react-native';
 import VendaService from '../services/VendaService';
 import ProductModal from '../modules/inventory/components/ProductModal';
@@ -38,11 +38,11 @@ export default function VendasScreen({ navigation }) {
     }, [quantidade, precoKg]);
 
     const handleSalvar = async () => {
-        if (!produto || !quantidade || !precoKg) return Alert.alert('Atenção', 'Preencha todos os campos.');
+        if (!produto || !quantidade || !precoKg) return Alert.alert('AtenÃ§Ã£o', 'Preencha todos os campos.');
         setSaving(true);
         try {
             await VendaService.registrarVenda({
-                cliente_nome: cliente || 'BALCÃO',
+                cliente_nome: cliente || 'BALCÃƒO',
                 produto,
                 quantidade: parseFloat(quantidade),
                 valor_total: valorTotalCalc,
@@ -59,7 +59,7 @@ export default function VendasScreen({ navigation }) {
         <ScrollView contentContainerStyle={styles.scroll}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}><Ionicons name="arrow-back" size={24} color="#FFF" /></TouchableOpacity>
-                <Text style={styles.headerTitle}>HISTÓRICO DE VENDAS</Text>
+                <Text style={styles.headerTitle}>HISTÃ“RICO DE VENDAS</Text>
                 <View style={{width: 24}} />
             </View>
 
@@ -68,8 +68,8 @@ export default function VendasScreen({ navigation }) {
                     <View key={item.uuid} style={styles.historyCard}>
                         <View style={styles.iconCircle}><Ionicons name="cart" size={20} color="#10B981" /></View>
                         <View style={{flex: 1, marginLeft: 12}}>
-                            <Text style={styles.hTitle}>{item.cliente_nome || 'Balcão'}</Text>
-                            <Text style={styles.hSub}>{item.produto} • {item.quantidade}kg</Text>
+                            <Text style={styles.hTitle}>{item.cliente_nome || 'BalcÃ£o'}</Text>
+                            <Text style={styles.hSub}>{item.produto} â€¢ {item.quantidade}kg</Text>
                         </View>
                         <Text style={styles.hVal}>R$ {item.valor_total?.toFixed(2)}</Text>
                     </View>
@@ -111,7 +111,7 @@ export default function VendasScreen({ navigation }) {
                         <TextInput style={styles.input} value={quantidade} onChangeText={setQuantidade} keyboardType="numeric" placeholder="0" />
                     </View>
                     <View style={{flex: 1}}>
-                        <Text style={styles.label}>PREÇO/KG (R$)</Text>
+                        <Text style={styles.label}>PREÃ‡O/KG (R$)</Text>
                         <TextInput style={styles.input} value={precoKg} onChangeText={setPrecoKg} keyboardType="numeric" placeholder="0.00" />
                     </View>
                 </View>
@@ -135,7 +135,7 @@ export default function VendasScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
-            <LinearGradient colors={['#065F46', '#047857', '#F3F4F6', '#FFFFFF']} style={StyleSheet.absoluteFill} />
+            
             <StatusBar barStyle="light-content" translucent />
             {view === 'LIST' ? renderList() : renderForm()}
         </View>
@@ -171,3 +171,4 @@ const styles = StyleSheet.create({
     saveGrad: { height: 64, justifyContent: 'center', alignItems: 'center' },
     saveTxt: { color: '#FFF', fontSize: 16, fontWeight: '900', letterSpacing: 1 }
 });
+

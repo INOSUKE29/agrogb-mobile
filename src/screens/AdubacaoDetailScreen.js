@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Alert, Image, Share, TouchableOpacity, SafeAreaView, StatusBar, Platform } from 'react-native';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,7 +22,7 @@ export default function AdubacaoDetailScreen({ route, navigation }) {
             if(!res.rows._array || res.rows._array.length === 0) {
                 setItens([
                     { id: 1, produto_id: 'YaraMila 10-10-10', quantidade: 50, unidade: 'KG' },
-                    { id: 2, produto_id: 'Cloreto de Potássio', quantidade: 20, unidade: 'KG' }
+                    { id: 2, produto_id: 'Cloreto de PotÃ¡ssio', quantidade: 20, unidade: 'KG' }
                 ]);
             } else {
                 setItens(res.rows._array);
@@ -36,8 +36,8 @@ export default function AdubacaoDetailScreen({ route, navigation }) {
 
     const handleApply = async () => {
         Alert.alert(
-            'Aplicação Inteligente',
-            'Deseja realizar a baixa no estoque e concluir esta Adubação agora?',
+            'AplicaÃ§Ã£o Inteligente',
+            'Deseja realizar a baixa no estoque e concluir esta AdubaÃ§Ã£o agora?',
             [
                 { text: 'Voltar', style: 'cancel' },
                 {
@@ -47,9 +47,9 @@ export default function AdubacaoDetailScreen({ route, navigation }) {
                         try {
                             await ProductionService.applyFertilization(currentPlano.uuid);
                             setCurrentPlano({ ...currentPlano, status: 'CONCLUIDO', data_aplicacao: new Date().toISOString() });
-                            Alert.alert('Sucesso', 'Estoque atualizado e Adubação registrada com sucesso!');
+                            Alert.alert('Sucesso', 'Estoque atualizado e AdubaÃ§Ã£o registrada com sucesso!');
                         } catch {
-                            Alert.alert('Erro', 'Houve uma falha na transação.');
+                            Alert.alert('Erro', 'Houve uma falha na transaÃ§Ã£o.');
                         } finally { setLoading(false); }
                     }
                 }
@@ -58,18 +58,18 @@ export default function AdubacaoDetailScreen({ route, navigation }) {
     };
 
     const handleShare = async () => {
-        const message = `*AGROGB - PLANO DE ADUBAÇÃO*\n\n` +
-            `📅 ${new Date(currentPlano.data_criacao || Date.now()).toLocaleDateString()}\n` +
-            `📝 ${currentPlano.nome_plano}\n` +
-            `🌱 Cultura: ${currentPlano.cultura}\n` +
-            `📍 Local: ${currentPlano.area_local || 'Geral'}\n\n` +
+        const message = `*AGROGB - PLANO DE ADUBAÃ‡ÃƒO*\n\n` +
+            `ðŸ“… ${new Date(currentPlano.data_criacao || Date.now()).toLocaleDateString()}\n` +
+            `ðŸ“ ${currentPlano.nome_plano}\n` +
+            `ðŸŒ± Cultura: ${currentPlano.cultura}\n` +
+            `ðŸ“ Local: ${currentPlano.area_local || 'Geral'}\n\n` +
             `Status: ${currentPlano.status}`;
         await Share.share({ message });
     };
 
     return (
         <View style={styles.webContainer}>
-            <LinearGradient colors={['#1c2921', '#111b15', '#0a100d']} style={StyleSheet.absoluteFill} />
+            
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             <View style={styles.mobileFrame}>
@@ -99,7 +99,7 @@ export default function AdubacaoDetailScreen({ route, navigation }) {
                                 </View>
                                 <View style={[styles.badgeOutline, isApplied && { borderColor: '#34D399' }]}>
                                     <Text style={[styles.badgeOutlineText, isApplied && { color: '#34D399' }]}>
-                                        {isApplied ? 'CONCLUÍDO' : 'AGENDADO'}
+                                        {isApplied ? 'CONCLUÃDO' : 'AGENDADO'}
                                     </Text>
                                 </View>
                             </View>
@@ -114,7 +114,7 @@ export default function AdubacaoDetailScreen({ route, navigation }) {
                             </View>
                             <View style={styles.smallCard}>
                                 <Ionicons name="location" size={20} color="#A7F3D0" />
-                                <Text style={styles.smallCardLabel}>LOCAL / TALHÃO</Text>
+                                <Text style={styles.smallCardLabel}>LOCAL / TALHÃƒO</Text>
                                 <Text style={styles.smallCardValue}>{currentPlano.area_local || 'S/N'}</Text>
                             </View>
                         </View>
@@ -144,11 +144,11 @@ export default function AdubacaoDetailScreen({ route, navigation }) {
                         <View style={styles.section}>
                             <View style={styles.sectionHeader}>
                                 <Ionicons name="document-text-outline" size={18} color="#D1FAE5" style={{marginRight: 8}} />
-                                <Text style={styles.sectionTitle}>ORIENTAÇÃO TÉCNICA</Text>
+                                <Text style={styles.sectionTitle}>ORIENTAÃ‡ÃƒO TÃ‰CNICA</Text>
                             </View>
                             <View style={styles.glassCard}>
                                 <Text style={styles.description}>
-                                    {currentPlano.descricao_tecnica || 'O engenheiro não deixou observações adicionais para este plano de aplicação.'}
+                                    {currentPlano.descricao_tecnica || 'O engenheiro nÃ£o deixou observaÃ§Ãµes adicionais para este plano de aplicaÃ§Ã£o.'}
                                 </Text>
                             </View>
                         </View>
@@ -156,27 +156,27 @@ export default function AdubacaoDetailScreen({ route, navigation }) {
                         {/* ANEXOS */}
                         {currentPlano.anexos_uri && (
                             <View style={styles.section}>
-                                <Text style={styles.sectionTitle}>FOTO / RECEITUÁRIO</Text>
+                                <Text style={styles.sectionTitle}>FOTO / RECEITUÃRIO</Text>
                                 <View style={{borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)'}}>
                                     <Image source={{ uri: currentPlano.anexos_uri }} style={styles.image} resizeMode="cover" />
                                 </View>
                             </View>
                         )}
 
-                        {/* AÇÃO PRINCIPAL BOTTOM */}
+                        {/* AÃ‡ÃƒO PRINCIPAL BOTTOM */}
                         {!isApplied ? (
                             <TouchableOpacity style={styles.btnApplyBg} onPress={handleApply} disabled={loading}>
                                 <LinearGradient colors={['#059669', '#047857']} style={styles.btnGradient}>
                                     <MaterialCommunityIcons name="check-decagram" size={24} color="#FFF" />
-                                    <Text style={styles.btnApplyText}>{loading ? 'PROCESSANDO...' : 'CONFIRMAR APLICAÇÃO'}</Text>
+                                    <Text style={styles.btnApplyText}>{loading ? 'PROCESSANDO...' : 'CONFIRMAR APLICAÃ‡ÃƒO'}</Text>
                                 </LinearGradient>
                             </TouchableOpacity>
                         ) : (
                             <View style={styles.appliedBox}>
                                 <Ionicons name="checkmark-circle" size={30} color="#34D399" />
                                 <View style={{marginLeft: 15, flex: 1}}>
-                                    <Text style={{color: '#FFF', fontWeight: 'bold', fontSize: 13}}>Aplicação Concluída</Text>
-                                    <Text style={{color: '#9CA3AF', fontSize: 11, marginTop: 2}}>Estoque já foi atualizado.</Text>
+                                    <Text style={{color: '#FFF', fontWeight: 'bold', fontSize: 13}}>AplicaÃ§Ã£o ConcluÃ­da</Text>
+                                    <Text style={{color: '#9CA3AF', fontSize: 11, marginTop: 2}}>Estoque jÃ¡ foi atualizado.</Text>
                                 </View>
                                 <TouchableOpacity style={styles.btnShare} onPress={handleShare}>
                                     <Ionicons name="share-social" size={20} color="#FFF" />
@@ -236,3 +236,4 @@ const styles = StyleSheet.create({
     appliedBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(52, 211, 153, 0.1)', padding: 20, borderRadius: 16, marginTop: 20, borderWidth: 1, borderColor: 'rgba(52, 211, 153, 0.2)' },
     btnShare: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' }
 });
+

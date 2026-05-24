@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, StyleSheet, Alert,
     KeyboardAvoidingView, Platform, SafeAreaView, ScrollView,
@@ -24,9 +24,9 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
     // --- ATALHO SECRETO: 7x na logo ---
     const logoTapCount = useRef(0);
     const logoTapTimer = useRef(null);
-    const [secretTapHint, setSecretTapHint] = useState(0); // mostra contador visual após 3 cliques
+    const [secretTapHint, setSecretTapHint] = useState(0); // mostra contador visual apÃ³s 3 cliques
 
-    // --- ANIMAÇÕES SPLASH ---
+    // --- ANIMAÃ‡Ã•ES SPLASH ---
     const splashLogoScale = useRef(new Animated.Value(0.5)).current;
     const splashLogoOpacity = useRef(new Animated.Value(0)).current;
     const splashTextOpacity = useRef(new Animated.Value(0)).current;
@@ -35,7 +35,7 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
     const loadingBarWidth = useRef(new Animated.Value(0)).current;
     const splashFadeOut = useRef(new Animated.Value(1)).current;
 
-    // --- ANIMAÇÕES LOGIN FORM ---
+    // --- ANIMAÃ‡Ã•ES LOGIN FORM ---
     const formSlideUp = useRef(new Animated.Value(80)).current;
     const formOpacity = useRef(new Animated.Value(0)).current;
     const logoSlideDown = useRef(new Animated.Value(-40)).current;
@@ -59,10 +59,10 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
         logoTapCount.current += 1;
         const count = logoTapCount.current;
 
-        // Mostra dica visual a partir do 3º toque
+        // Mostra dica visual a partir do 3Âº toque
         if (count >= 3) setSecretTapHint(count);
 
-        // Feedback de vibração leve em cada toque após o 3º
+        // Feedback de vibraÃ§Ã£o leve em cada toque apÃ³s o 3Âº
         if (count >= 3 && count < 7) Vibration.vibrate(40);
 
         // Reset do timer a cada toque
@@ -77,7 +77,7 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
             logoTapCount.current = 0;
             setSecretTapHint(0);
             clearTimeout(logoTapTimer.current);
-            Vibration.vibrate([0, 80, 60, 80]); // vibração dupla de confirmação
+            Vibration.vibrate([0, 80, 60, 80]); // vibraÃ§Ã£o dupla de confirmaÃ§Ã£o
             handleAdminShortcut();
         }
     };
@@ -89,7 +89,7 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
             if (res.success) {
                 if (onLoginSuccess) onLoginSuccess(res.user);
             } else {
-                Alert.alert('⚠️ Atalho Admin', 'Conta admin não encontrada no banco local.');
+                Alert.alert('âš ï¸ Atalho Admin', 'Conta admin nÃ£o encontrada no banco local.');
             }
         } catch (e) {
             Alert.alert('Erro', e.message);
@@ -113,7 +113,7 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
                 useNativeDriver: true,
             }),
         ]).start(() => {
-            // Fase 2: Textos surgem em sequência
+            // Fase 2: Textos surgem em sequÃªncia
             Animated.stagger(200, [
                 Animated.timing(splashTextOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
                 Animated.timing(splashBadgeOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
@@ -177,10 +177,10 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
             if (res.success) {
                 if (onLoginSuccess) onLoginSuccess(res.user);
             } else {
-                Alert.alert('Acesso Negado', res.message || 'Credenciais inválidas. Verifique seu e-mail e senha.');
+                Alert.alert('Acesso Negado', res.message || 'Credenciais invÃ¡lidas. Verifique seu e-mail e senha.');
             }
         } catch (e) {
-            Alert.alert('Erro de Conexão', 'Não foi possível conectar ao servidor. Verifique sua internet.');
+            Alert.alert('Erro de ConexÃ£o', 'NÃ£o foi possÃ­vel conectar ao servidor. Verifique sua internet.');
         } finally {
             setLoading(false);
         }
@@ -191,7 +191,7 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
         if (res.success) {
             if (onLoginSuccess) onLoginSuccess(res.user);
         } else {
-            Alert.alert('Biometria', res.message || 'Falha na autenticação biométrica.');
+            Alert.alert('Biometria', res.message || 'Falha na autenticaÃ§Ã£o biomÃ©trica.');
         }
     };
 
@@ -205,11 +205,8 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
                     style={styles.splashBg}
                     resizeMode="cover"
                 />
-                {/* Overlay escuro cinematográfico */}
-                <LinearGradient
-                    colors={['rgba(0,0,0,0.35)', 'rgba(0,15,5,0.65)', 'rgba(0,0,0,0.75)']}
-                    style={StyleSheet.absoluteFill}
-                />
+                {/* Overlay escuro cinematogrÃ¡fico */}
+                
 
                 {/* Logo Circle Glassmorphism */}
                 <Animated.View style={[
@@ -238,9 +235,9 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
                     <Text style={styles.splashBadgeText}>v7.0 STABLE</Text>
                 </Animated.View>
 
-                {/* Tagline + Loading Bar no rodapé */}
+                {/* Tagline + Loading Bar no rodapÃ© */}
                 <Animated.View style={[styles.splashFooter, { opacity: splashTaglineOpacity }]}>
-                    <Text style={styles.splashTagline}>SISTEMA DE GESTÃO RURAL INTELIGENTE</Text>
+                    <Text style={styles.splashTagline}>SISTEMA DE GESTÃƒO RURAL INTELIGENTE</Text>
                     <View style={styles.loadingBarTrack}>
                         <Animated.View style={[styles.loadingBarFill, { width: loadingBarWidth }]} />
                     </View>
@@ -261,10 +258,7 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
                 resizeMode="cover"
             />
             {/* Overlay dark elegante */}
-            <LinearGradient
-                colors={['rgba(0,0,0,0.3)', 'rgba(0,20,8,0.7)', 'rgba(0,0,0,0.9)']}
-                style={StyleSheet.absoluteFill}
-            />
+            
 
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -293,11 +287,11 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
                                 />
                             </TouchableOpacity>
 
-                            {/* Contador secreto — só aparece após 3 toques */}
+                            {/* Contador secreto â€” sÃ³ aparece apÃ³s 3 toques */}
                             {secretTapHint >= 3 && (
                                 <View style={styles.secretCounter}>
                                     <Text style={styles.secretCounterText}>
-                                        {'●'.repeat(secretTapHint)}{'◦'.repeat(7 - secretTapHint)}
+                                        {'â—'.repeat(secretTapHint)}{'â—¦'.repeat(7 - secretTapHint)}
                                     </Text>
                                 </View>
                             )}
@@ -305,7 +299,7 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
                             <Text style={styles.loginTitle}>
                                 Agro<Text style={{ color: '#4ADE80' }}>GB</Text>
                             </Text>
-                            <Text style={styles.loginSlogan}>INTELIGÊNCIA NO CAMPO</Text>
+                            <Text style={styles.loginSlogan}>INTELIGÃŠNCIA NO CAMPO</Text>
                         </Animated.View>
 
                         {/* Card de Login */}
@@ -313,9 +307,9 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
                             styles.loginCard,
                             { opacity: formOpacity, transform: [{ translateY: formSlideUp }] }
                         ]}>
-                            {/* Campo E-mail / Usuário */}
+                            {/* Campo E-mail / UsuÃ¡rio */}
                             <View style={styles.inputBox}>
-                                <Text style={styles.inputLabel}>E-MAIL OU USUÁRIO</Text>
+                                <Text style={styles.inputLabel}>E-MAIL OU USUÃRIO</Text>
                                 <View style={[
                                     styles.inputRow,
                                     focusedField === 'user' && styles.inputRowFocused
@@ -355,7 +349,7 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
                                     />
                                     <TextInput
                                         style={styles.textInput}
-                                        placeholder="••••••••"
+                                        placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                                         placeholderTextColor="#6B7280"
                                         value={senha}
                                         onChangeText={setSenha}
@@ -376,7 +370,7 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
                                 </View>
                             </View>
 
-                            {/* Botão Entrar */}
+                            {/* BotÃ£o Entrar */}
                             <TouchableOpacity
                                 style={styles.btnEntrar}
                                 onPress={handleLogin}
@@ -419,27 +413,27 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
                                 </View>
                             )}
 
-                            {/* Links do rodapé */}
+                            {/* Links do rodapÃ© */}
                             <View style={styles.footerLinks}>
                                 <TouchableOpacity
                                     onPress={() => navigation.navigate('ForgotPassword')}
                                     activeOpacity={0.7}
                                 >
-                                    <Text style={styles.footerLink}>🔑 Recuperar Senha</Text>
+                                    <Text style={styles.footerLink}>ðŸ”‘ Recuperar Senha</Text>
                                 </TouchableOpacity>
                                 <View style={styles.footerDivider} />
                                 <TouchableOpacity
                                     onPress={() => navigation.navigate('Register')}
                                     activeOpacity={0.7}
                                 >
-                                    <Text style={styles.footerLink}>✨ Primeiro Acesso</Text>
+                                    <Text style={styles.footerLink}>âœ¨ Primeiro Acesso</Text>
                                 </TouchableOpacity>
                             </View>
                         </Animated.View>
 
-                        {/* Versão */}
+                        {/* VersÃ£o */}
                         <Text style={styles.versionText}>
-                            AgroGB v7.0 • Enterprise Diamond Pro
+                            AgroGB v7.0 â€¢ Enterprise Diamond Pro
                         </Text>
                     </ScrollView>
                 </SafeAreaView>
@@ -623,7 +617,7 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
 
-    // Card de formulário
+    // Card de formulÃ¡rio
     loginCard: {
         backgroundColor: 'rgba(10,20,12,0.82)',
         borderRadius: 24,
@@ -672,7 +666,7 @@ const styles = StyleSheet.create({
         height: '100%',
     },
 
-    // Botão Entrar
+    // BotÃ£o Entrar
     btnEntrar: {
         marginTop: 8,
         borderRadius: 14,
@@ -734,7 +728,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
 
-    // Links rodapé
+    // Links rodapÃ©
     footerLinks: {
         flexDirection: 'row',
         justifyContent: 'center',
@@ -753,7 +747,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.2)',
     },
 
-    // Versão
+    // VersÃ£o
     versionText: {
         textAlign: 'center',
         color: 'rgba(255,255,255,0.3)',
@@ -763,3 +757,4 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
     },
 });
+

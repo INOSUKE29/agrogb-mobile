@@ -1,7 +1,7 @@
-/**
- * ProcessamentoScreen.js — AgroGB Diamond Pro
+﻿/**
+ * ProcessamentoScreen.js â€” AgroGB Diamond Pro
  * Registro de Perdas & Congelamento
- * Padrão: Dark Glassmorphism, sem useTheme, sem componentes legados
+ * PadrÃ£o: Dark Glassmorphism, sem useTheme, sem componentes legados
  */
 
 import React, { useState } from 'react';
@@ -23,20 +23,20 @@ const MODES = [
         label: 'PERDAS',
         color: '#F43F5E',
         gradient: ['#4C0519', '#881337'],
-        subtitle: 'Avarias, deterioração e descartes',
-        placeholder: 'EX: MATURAÇÃO EXCESSIVA, PRAGAS...',
+        subtitle: 'Avarias, deterioraÃ§Ã£o e descartes',
+        placeholder: 'EX: MATURAÃ‡ÃƒO EXCESSIVA, PRAGAS...',
         fieldLabel: 'MOTIVO DO DESCARTE',
         btnLabel: 'CONFIRMAR PERDA',
     },
     {
         id: 'CONGELAMENTO',
         icon: 'snow-outline',
-        label: 'CÂMARA FRIA',
+        label: 'CÃ‚MARA FRIA',
         color: '#3B82F6',
         gradient: ['#1E1B4B', '#1D4ED8'],
-        subtitle: 'Polpas, congelados e separação de lote',
+        subtitle: 'Polpas, congelados e separaÃ§Ã£o de lote',
         placeholder: 'EX: LOTE 15B, MORANGOS MENORES...',
-        fieldLabel: 'OBSERVAÇÕES DO LOTE',
+        fieldLabel: 'OBSERVAÃ‡Ã•ES DO LOTE',
         btnLabel: 'CONFIRMAR CONGELAMENTO',
     },
 ];
@@ -52,13 +52,13 @@ export default function ProcessamentoScreen({ navigation }) {
 
     const handleSave = async () => {
         if (!produto.trim() || !quantidade.trim()) {
-            Alert.alert('Atenção', 'Produto e Quantidade são obrigatórios.');
+            Alert.alert('AtenÃ§Ã£o', 'Produto e Quantidade sÃ£o obrigatÃ³rios.');
             return;
         }
 
         const qty = parseFloat(quantidade);
         if (isNaN(qty) || qty <= 0) {
-            Alert.alert('Atenção', 'Informe uma quantidade válida.');
+            Alert.alert('AtenÃ§Ã£o', 'Informe uma quantidade vÃ¡lida.');
             return;
         }
 
@@ -68,18 +68,18 @@ export default function ProcessamentoScreen({ navigation }) {
                 uuid: uuidv4(),
                 produto: produto.trim().toUpperCase(),
                 quantidade_kg: qty,
-                motivo: (motivo.trim() || 'NÃO INFORMADO').toUpperCase(),
+                motivo: (motivo.trim() || 'NÃƒO INFORMADO').toUpperCase(),
                 data: new Date().toISOString().split('T')[0],
                 tipo: mode.id,
             });
 
-            showToast(`✅ ${mode.id === 'DESCARTE' ? 'Perda' : 'Congelamento'} registrado!`);
+            showToast(`âœ… ${mode.id === 'DESCARTE' ? 'Perda' : 'Congelamento'} registrado!`);
             setProduto('');
             setQuantidade('');
             setMotivo('');
             navigation.goBack();
         } catch (e) {
-            Alert.alert('Erro', `Não foi possível registrar o ${mode.label.toLowerCase()}.`);
+            Alert.alert('Erro', `NÃ£o foi possÃ­vel registrar o ${mode.label.toLowerCase()}.`);
         } finally {
             setLoading(false);
         }
@@ -88,7 +88,7 @@ export default function ProcessamentoScreen({ navigation }) {
     return (
         <View style={styles.webContainer}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            <LinearGradient colors={['#020617', '#0A0F1C', '#030712']} style={StyleSheet.absoluteFill} />
+            
 
             {/* AMBIENT ORB */}
             <View style={[styles.ambientOrb, { backgroundColor: mode.color, top: -60, right: -40 }]} />
@@ -98,14 +98,14 @@ export default function ProcessamentoScreen({ navigation }) {
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 >
-                    {/* ── HEADER ──────────────────────────────────────────── */}
+                    {/* â”€â”€ HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                     <View style={styles.header}>
                         <TouchableOpacity style={styles.backBtn} onPress={() => navigation?.goBack?.()}>
                             <Ionicons name="chevron-back" size={24} color="#F8FAFC" />
                         </TouchableOpacity>
                         <View style={{ flex: 1, marginLeft: 12 }}>
                             <Text style={styles.headerTitle}>PROCESSAMENTO</Text>
-                            <Text style={styles.headerSub}>PERDAS & CÂMARA FRIA</Text>
+                            <Text style={styles.headerSub}>PERDAS & CÃ‚MARA FRIA</Text>
                         </View>
                     </View>
 
@@ -114,7 +114,7 @@ export default function ProcessamentoScreen({ navigation }) {
                         contentContainerStyle={styles.scrollContent}
                         keyboardShouldPersistTaps="handled"
                     >
-                        {/* ── SEGMENTED CONTROL ────────────────────────────── */}
+                        {/* â”€â”€ SEGMENTED CONTROL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                         <View style={styles.segmentedControl}>
                             {MODES.map((m, idx) => {
                                 const active = idx === tipoIdx;
@@ -147,7 +147,7 @@ export default function ProcessamentoScreen({ navigation }) {
                             })}
                         </View>
 
-                        {/* ── BANNER DO MODO ───────────────────────────────── */}
+                        {/* â”€â”€ BANNER DO MODO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                         <LinearGradient
                             colors={[mode.gradient[0] + 'CC', mode.gradient[1] + '33']}
                             style={[styles.modeBanner, { borderColor: mode.color + '30' }]}
@@ -162,7 +162,7 @@ export default function ProcessamentoScreen({ navigation }) {
                             </View>
                         </LinearGradient>
 
-                        {/* ── CARD: DADOS ──────────────────────────────────── */}
+                        {/* â”€â”€ CARD: DADOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                         <View style={styles.glassCard}>
                             <View style={[styles.cardHeaderStrip, { backgroundColor: mode.color + '10', borderColor: mode.color + '30' }]}>
                                 <MaterialCommunityIcons name="flask-outline" size={16} color={mode.color} />
@@ -213,7 +213,7 @@ export default function ProcessamentoScreen({ navigation }) {
                                 ))}
                             </View>
 
-                            {/* Motivo / Observação */}
+                            {/* Motivo / ObservaÃ§Ã£o */}
                             <View style={[styles.labelRow, { marginTop: 8 }]}>
                                 <Ionicons name="chatbox-ellipses-outline" size={14} color="#94A3B8" />
                                 <Text style={styles.inputLabel}> {mode.fieldLabel}</Text>
@@ -229,7 +229,7 @@ export default function ProcessamentoScreen({ navigation }) {
                             />
                         </View>
 
-                        {/* ── BOTÃO CONFIRMAR ───────────────────────────────── */}
+                        {/* â”€â”€ BOTÃƒO CONFIRMAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                         <TouchableOpacity
                             style={[styles.submitBtn, { shadowColor: mode.color }]}
                             onPress={handleSave}
@@ -363,3 +363,4 @@ const styles = StyleSheet.create({
     },
     submitText: { color: '#FFF', fontSize: 14, fontWeight: '900', letterSpacing: 1.5 },
 });
+

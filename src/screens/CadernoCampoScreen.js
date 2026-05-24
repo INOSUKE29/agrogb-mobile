@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar, ActivityIndicator, Modal, TextInput, Alert, KeyboardAvoidingView, Platform, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -13,7 +13,7 @@ export default function CadernoCampoScreen({ navigation }) {
     const [editUuid, setEditUuid] = useState(null);
     const [filter, setFilter] = useState('TODOS');
 
-    const FILTERS = ['TODOS', 'COLHEITA', 'VENDA', 'CUSTO', 'COMPRA', 'PLANTIO', 'ANOTAÇÃO'];
+    const FILTERS = ['TODOS', 'COLHEITA', 'VENDA', 'CUSTO', 'COMPRA', 'PLANTIO', 'ANOTAÃ‡ÃƒO'];
 
     const loadTimeline = async () => {
         setLoading(true);
@@ -34,7 +34,7 @@ export default function CadernoCampoScreen({ navigation }) {
                 SELECT 'PLANTIO' as tipo, uuid, data, cultura || ' (' || quantidade_pes || ' area/pes)' as descricao, observacao
                 FROM plantio WHERE is_deleted = 0
                 UNION ALL
-                SELECT 'ANOTAÇÃO' as tipo, uuid, data, 'Nota Manual' as descricao, observacao
+                SELECT 'ANOTAÃ‡ÃƒO' as tipo, uuid, data, 'Nota Manual' as descricao, observacao
                 FROM caderno_notas WHERE is_deleted = 0
                 ORDER BY data DESC
                 LIMIT 50
@@ -49,9 +49,9 @@ export default function CadernoCampoScreen({ navigation }) {
             // In case DB is empty, let's inject a beautiful mockup record to show off the UI
             if (data.length === 0) {
                 data.push(
-                    { tipo: 'PLANTIO', uuid: '1', data: new Date().toISOString(), descricao: 'Café Mundo Novo (5ha)', observacao: 'Área do talhão principal, sem intercorrências iniciais.' },
+                    { tipo: 'PLANTIO', uuid: '1', data: new Date().toISOString(), descricao: 'CafÃ© Mundo Novo (5ha)', observacao: 'Ãrea do talhÃ£o principal, sem intercorrÃªncias iniciais.' },
                     { tipo: 'CUSTO', uuid: '2', data: new Date(Date.now() - 86400000).toISOString(), descricao: 'Insumos - Fertilizante Y (R$ 1.500)', observacao: 'Comprado na Casa da Lavoura.' },
-                    { tipo: 'ANOTAÇÃO', uuid: '3', data: new Date(Date.now() - 172800000).toISOString(), descricao: 'Nota Manual', observacao: 'Chuva forte hoje, medir índice pluviométrico amanhã cedo.' }
+                    { tipo: 'ANOTAÃ‡ÃƒO', uuid: '3', data: new Date(Date.now() - 172800000).toISOString(), descricao: 'Nota Manual', observacao: 'Chuva forte hoje, medir Ã­ndice pluviomÃ©trico amanhÃ£ cedo.' }
                 );
             }
             
@@ -72,7 +72,7 @@ export default function CadernoCampoScreen({ navigation }) {
             case 'CUSTO': return { name: 'trending-down', color: '#EF4444', bg: 'rgba(239, 68, 68, 0.2)' };
             case 'COMPRA': return { name: 'cart', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.2)' };
             case 'PLANTIO': return { name: 'analytics', color: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.2)' };
-            case 'ANOTAÇÃO': return { name: 'document-text', color: '#FCD34D', bg: 'rgba(252, 211, 77, 0.2)' };
+            case 'ANOTAÃ‡ÃƒO': return { name: 'document-text', color: '#FCD34D', bg: 'rgba(252, 211, 77, 0.2)' };
             default: return { name: 'ellipse', color: '#9CA3AF', bg: 'rgba(156, 163, 175, 0.2)' };
         }
     };
@@ -95,7 +95,7 @@ export default function CadernoCampoScreen({ navigation }) {
             setModalVisible(false);
             loadTimeline();
         } catch (e) {
-            Alert.alert('Erro', 'Não foi possível salvar a anotação.');
+            Alert.alert('Erro', 'NÃ£o foi possÃ­vel salvar a anotaÃ§Ã£o.');
         }
     };
 
@@ -112,9 +112,9 @@ export default function CadernoCampoScreen({ navigation }) {
                         try {
                             const tableMap = {
                                 'COLHEITA': 'colheitas', 'VENDA': 'vendas', 'CUSTO': 'custos',
-                                'COMPRA': 'compras', 'PLANTIO': 'plantio', 'ANOTAÇÃO': 'caderno_notas'
+                                'COMPRA': 'compras', 'PLANTIO': 'plantio', 'ANOTAÃ‡ÃƒO': 'caderno_notas'
                             };
-                            if (item.tipo === 'ANOTAÇÃO') {
+                            if (item.tipo === 'ANOTAÃ‡ÃƒO') {
                                 await deleteCadernoNota(item.uuid);
                             } else if (tableMap[item.tipo]) {
                                 await executeQuery(`UPDATE ${tableMap[item.tipo]} SET is_deleted = 1, sync_status = 0 WHERE uuid = ?`, [item.uuid]);
@@ -130,18 +130,18 @@ export default function CadernoCampoScreen({ navigation }) {
     };
 
     const handleEdit = (item) => {
-        if (item.tipo === 'ANOTAÇÃO') {
+        if (item.tipo === 'ANOTAÃ‡ÃƒO') {
             setEditUuid(item.uuid);
             setNotaTexto(item.observacao);
             setModalVisible(true);
         } else {
-            Alert.alert('Aviso', 'A edição direta via diário será liberada no próximo pacote de atualizações. Por enquanto exclua para corrigir.');
+            Alert.alert('Aviso', 'A ediÃ§Ã£o direta via diÃ¡rio serÃ¡ liberada no prÃ³ximo pacote de atualizaÃ§Ãµes. Por enquanto exclua para corrigir.');
         }
     };
 
     return (
         <View style={styles.webContainer}>
-            <LinearGradient colors={['#1c2921', '#111b15', '#0a100d']} style={StyleSheet.absoluteFill} />
+            
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             <View style={styles.mobileFrame}>
@@ -151,8 +151,8 @@ export default function CadernoCampoScreen({ navigation }) {
                             <Ionicons name="arrow-back" size={24} color="#D1FAE5" />
                         </TouchableOpacity>
                         <View style={{alignItems: 'center'}}>
-                            <Text style={styles.headerTitle}>Caderno Agrícola</Text>
-                            <Text style={styles.headerSub}>Diário e Timeline de Campo</Text>
+                            <Text style={styles.headerTitle}>Caderno AgrÃ­cola</Text>
+                            <Text style={styles.headerSub}>DiÃ¡rio e Timeline de Campo</Text>
                         </View>
                         <View style={{width: 40}} />
                     </View>
@@ -197,7 +197,7 @@ export default function CadernoCampoScreen({ navigation }) {
                             ) : (
                                 filteredTimeline.map((item, index) => {
                                     const iconCfg = getIconConfig(item.tipo);
-                                    let dateLabel = "DATA INVÁLIDA";
+                                    let dateLabel = "DATA INVÃLIDA";
                                     try {
                                         const d = new Date(item.data);
                                         const dia = String(d.getDate()).padStart(2, '0');
@@ -250,19 +250,19 @@ export default function CadernoCampoScreen({ navigation }) {
                         </ScrollView>
                     )}
 
-                    {/* FAB Nova Anotação */}
+                    {/* FAB Nova AnotaÃ§Ã£o */}
                     <TouchableOpacity style={styles.fab} onPress={() => { setEditUuid(null); setNotaTexto(''); setModalVisible(true); }}>
                         <LinearGradient colors={['#34D399', '#059669']} style={styles.fabGradient}>
                             <Ionicons name="pencil" size={26} color="#FFF" />
                         </LinearGradient>
                     </TouchableOpacity>
 
-                    {/* Modal Criar Anotação Glassmorphism */}
+                    {/* Modal Criar AnotaÃ§Ã£o Glassmorphism */}
                     <Modal animationType="slide" transparent={true} visible={modalVisible}>
                         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalBg}>
                             <View style={styles.modalGlass}>
                                 <View style={styles.modalHeader}>
-                                    <Text style={styles.modalTitle}>{editUuid ? 'EDITAR ANOTAÇÃO' : 'ALIMENTAR CADERNO'}</Text>
+                                    <Text style={styles.modalTitle}>{editUuid ? 'EDITAR ANOTAÃ‡ÃƒO' : 'ALIMENTAR CADERNO'}</Text>
                                     <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
                                         <Ionicons name="close" size={20} color="#9CA3AF" />
                                     </TouchableOpacity>
@@ -281,7 +281,7 @@ export default function CadernoCampoScreen({ navigation }) {
 
                                 <TouchableOpacity style={styles.modalSubmit} onPress={handleSaveNota}>
                                     <LinearGradient colors={['#10B981', '#047857']} style={styles.modalSubmitGradient}>
-                                        <Text style={styles.modalSubmitText}>GRAVAR NO DIÁRIO</Text>
+                                        <Text style={styles.modalSubmitText}>GRAVAR NO DIÃRIO</Text>
                                     </LinearGradient>
                                 </TouchableOpacity>
                             </View>
@@ -345,3 +345,4 @@ const styles = StyleSheet.create({
     modalSubmitGradient: { padding: 18, borderRadius: 16, alignItems: 'center' },
     modalSubmitText: { color: '#FFF', fontSize: 14, fontWeight: '900', letterSpacing: 1 }
 });
+

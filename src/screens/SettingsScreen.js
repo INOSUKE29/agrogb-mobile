@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, Alert, 
     TouchableOpacity, RefreshControl, Image, Switch,
@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { LinearGradient } from 'expo-linear-gradient';
 import Constants from 'expo-constants';
-import SafeBlurView from '../ui/SafeBlurView';
+
 
 import { useTheme } from '../theme/ThemeContext';
 import AppContainer from '../ui/AppContainer';
@@ -37,9 +37,9 @@ export default function SettingsScreen({ navigation }) {
         try {
             const session = await AuthService.checkSession();
             if (session) {
-                // 1. Busca dados do Usuário
+                // 1. Busca dados do UsuÃ¡rio
                 const res = await executeQuery('SELECT * FROM usuarios WHERE id = ? OR uuid = ?', [session.userId, session.userId]);
-                let userData = { nome: 'Produtor AgroGB', email: session.email, empresa: 'Fazenda não encontrada' };
+                let userData = { nome: 'Produtor AgroGB', email: session.email, empresa: 'Fazenda nÃ£o encontrada' };
                 
                 if (res.rows.length > 0) {
                     const dbUser = res.rows.item(0);
@@ -77,7 +77,7 @@ export default function SettingsScreen({ navigation }) {
 
     const handleToggleBiometry = async () => {
         if (!biometryInfo.available) {
-            Alert.alert('Indisponível', 'Este dispositivo não suporta biometria ou ela não está configurada nas configurações do sistema.');
+            Alert.alert('IndisponÃ­vel', 'Este dispositivo nÃ£o suporta biometria ou ela nÃ£o estÃ¡ configurada nas configuraÃ§Ãµes do sistema.');
             return;
         }
 
@@ -108,7 +108,7 @@ export default function SettingsScreen({ navigation }) {
             showToast('Sincronizando...');
             const push = await pushLocalChanges();
             const pull = await pullServerChanges();
-            showToast(`Sincronizado! ↑${push.pushed || 0} ↓${pull.pulled || 0}`);
+            showToast(`Sincronizado! â†‘${push.pushed || 0} â†“${pull.pulled || 0}`);
         } catch (e) {
             Alert.alert('Erro', e.message);
         } finally {
@@ -117,13 +117,13 @@ export default function SettingsScreen({ navigation }) {
     };
 
     const handleLogout = async () => {
-        Alert.alert('Sair', 'Deseja encerrar a sessão?', [
+        Alert.alert('Sair', 'Deseja encerrar a sessÃ£o?', [
             { text: 'MANTER CONECTADO', style: 'cancel' },
             { text: 'SAIR AGORA', style: 'destructive', onPress: async () => { await AuthService.logout(); } }
         ]);
     };
 
-    // --- COMPONENTES INTERNOS FIÉIS AO MOCKUP ---
+    // --- COMPONENTES INTERNOS FIÃ‰IS AO MOCKUP ---
 
     const SettingsItem = ({ icon, label, value, onPress, type = 'chevron', danger, isLast, iconColor = '#10B981' }) => (
         <View>
@@ -165,30 +165,30 @@ export default function SettingsScreen({ navigation }) {
                 <Ionicons name={icon} size={16} color="rgba(16, 185, 129, 0.6)" />
                 <Text style={styles.groupTitle}>{title}</Text>
             </View>
-            <SafeBlurView intensity={20} tint="dark" style={styles.groupCard}>
+            <View intensity={20} tint="dark" style={styles.groupCard}>
                 {children}
-            </SafeBlurView>
+            </View>
         </View>
     );
 
     return (
         <AppContainer>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            <LinearGradient colors={['#030712', '#060B18', '#020617']} style={StyleSheet.absoluteFill} />
             
-            {/* 🌀 AMBIENT ORBS (Estilo Diamond) */}
+            
+            {/* ðŸŒ€ AMBIENT ORBS (Estilo Diamond) */}
             <View style={[styles.ambientOrb, { top: -80, right: -40, backgroundColor: '#10B981', opacity: 0.06 }]} />
             <View style={[styles.ambientOrb, { bottom: 100, left: -60, backgroundColor: '#3B82F6', opacity: 0.04 }]} />
 
-            <ScreenHeader title="Perfil & Configurações" onBack={() => navigation.goBack()} transparent />
+            <ScreenHeader title="Perfil & ConfiguraÃ§Ãµes" onBack={() => navigation.goBack()} transparent />
 
             <ScrollView 
                 showsVerticalScrollIndicator={false} 
                 contentContainerStyle={styles.scrollContent}
                 refreshControl={<RefreshControl refreshing={loading} onRefresh={loadData} tintColor="#10B981" />}
             >
-                {/* 👤 PERFIL HEADER (Fiel ao Mockup Foto 3) */}
-                <SafeBlurView intensity={35} tint="dark" style={styles.profileCard}>
+                {/* ðŸ‘¤ PERFIL HEADER (Fiel ao Mockup Foto 3) */}
+                <View intensity={35} tint="dark" style={styles.profileCard}>
                     <View style={styles.profileContent}>
                         <View style={styles.avatarWrapper}>
                             <View style={styles.avatarInner}>
@@ -216,55 +216,55 @@ export default function SettingsScreen({ navigation }) {
                             onPress={() => navigation.navigate('ProfileEdit')}
                             activeOpacity={0.7}
                         >
-                            <SafeBlurView intensity={40} tint="light" style={styles.editBtnContent}>
+                            <View intensity={40} tint="light" style={styles.editBtnContent}>
                                 <Text style={styles.editBtnText}>Editar Perfil</Text>
-                            </SafeBlurView>
+                            </View>
                         </TouchableOpacity>
                     </View>
-                </SafeBlurView>
+                </View>
 
-                {/* 👤 PERFIL/APP */}
+                {/* ðŸ‘¤ PERFIL/APP */}
                 <SettingsGroup icon="person-outline" title="Perfil">
-                    <SettingsItem icon="sunny-outline" label="Tema" value={theme === 'dark' ? 'Escuro' : (theme === 'light' ? 'Claro' : 'Automático')} onPress={() => setTheme(theme === 'dark' ? 'light' : (theme === 'light' ? 'system' : 'dark'))} iconColor="#EAB308" />
-                    <SettingsItem icon="globe-outline" label="Idioma" value="Português" onPress={() => {}} />
+                    <SettingsItem icon="sunny-outline" label="Tema" value={theme === 'dark' ? 'Escuro' : (theme === 'light' ? 'Claro' : 'AutomÃ¡tico')} onPress={() => setTheme(theme === 'dark' ? 'light' : (theme === 'light' ? 'system' : 'dark'))} iconColor="#EAB308" />
+                    <SettingsItem icon="globe-outline" label="Idioma" value="PortuguÃªs" onPress={() => {}} />
                     <SettingsItem icon="layers-outline" label="Unidade" value="kg" onPress={() => {}} iconColor="#10B981" />
                     <SettingsItem icon="calendar-outline" label="Safra" value="2024/25" isLast onPress={() => {}} />
                 </SettingsGroup>
 
-                {/* 🔔 NOTIFICAÇÕES */}
-                <SettingsGroup icon="notifications-outline" title="Notificações">
-                    <SettingsItem icon="notifications-outline" label="Alertas Agrícolas" type="switch" value={true} onPress={() => {}} />
+                {/* ðŸ”” NOTIFICAÃ‡Ã•ES */}
+                <SettingsGroup icon="notifications-outline" title="NotificaÃ§Ãµes">
+                    <SettingsItem icon="notifications-outline" label="Alertas AgrÃ­colas" type="switch" value={true} onPress={() => {}} />
                     <SettingsItem icon="wallet-outline" label="Financeiro" type="switch" value={true} onPress={() => {}} iconColor="#3B82F6" />
-                    <SettingsItem icon="time-outline" label="Horário" value="20:00" onPress={() => {}} />
-                    <SettingsItem icon="repeat-outline" label="Frequência" value="Diariamente" isLast onPress={() => {}} />
+                    <SettingsItem icon="time-outline" label="HorÃ¡rio" value="20:00" onPress={() => {}} />
+                    <SettingsItem icon="repeat-outline" label="FrequÃªncia" value="Diariamente" isLast onPress={() => {}} />
                 </SettingsGroup>
 
-                {/* 🛡️ SEGURANÇA */}
-                <SettingsGroup icon="shield-checkmark-outline" title="Segurança">
+                {/* ðŸ›¡ï¸ SEGURANÃ‡A */}
+                <SettingsGroup icon="shield-checkmark-outline" title="SeguranÃ§a">
                     <SettingsItem icon="lock-closed-outline" label="Senha" onPress={() => showToast('Funcionalidade em breve')} iconColor="rgba(255,255,255,0.4)" />
                     <SettingsItem icon="finger-print-outline" label="Biometria" type="switch" value={biometryInfo.enrolled} onPress={handleToggleBiometry} />
-                    <SettingsItem icon="key-outline" label="Autenticação em Duas Etapas" onPress={() => {}} />
-                    <SettingsItem icon="phone-portrait-outline" label="Sessões Ativas" isLast onPress={() => {}} />
+                    <SettingsItem icon="key-outline" label="AutenticaÃ§Ã£o em Duas Etapas" onPress={() => {}} />
+                    <SettingsItem icon="phone-portrait-outline" label="SessÃµes Ativas" isLast onPress={() => {}} />
                 </SettingsGroup>
 
-                {/* 🔄 DADOS & SYNC */}
+                {/* ðŸ”„ DADOS & SYNC */}
                 <SettingsGroup icon="cloud-upload-outline" title="Dados">
                     <SettingsItem icon="sync-outline" label="Sincronizar Dados" onPress={runManualSync} />
-                    <SettingsItem icon="cloud-done-outline" label="Backup & Sincronização" onPress={() => navigation.navigate('Sync')} />
+                    <SettingsItem icon="cloud-done-outline" label="Backup & SincronizaÃ§Ã£o" onPress={() => navigation.navigate('Sync')} />
                     <View style={styles.syncStatusFooter}>
                         <View style={styles.statusDotRow}>
                             <View style={styles.activeDot} />
                             <Text style={styles.statusText}>Status: <Text style={{ color: '#10B981' }}>Online</Text></Text>
                         </View>
-                        <Text style={styles.syncDate}>Último Backup: 23/04/2024</Text>
+                        <Text style={styles.syncDate}>Ãšltimo Backup: 23/04/2024</Text>
                     </View>
                 </SettingsGroup>
 
-                {/* 🛠️ SUPORTE TÉCNICO (Novo) */}
-                <SettingsGroup icon="construct-outline" title="Suporte Técnico">
+                {/* ðŸ› ï¸ SUPORTE TÃ‰CNICO (Novo) */}
+                <SettingsGroup icon="construct-outline" title="Suporte TÃ©cnico">
                     <SettingsItem 
                         icon="bug-outline" 
-                        label="Exportar Relatório de Erros" 
+                        label="Exportar RelatÃ³rio de Erros" 
                         iconColor="#F59E0B"
                         isLast
                         onPress={async () => {
@@ -278,7 +278,7 @@ export default function SettingsScreen({ navigation }) {
                     />
                 </SettingsGroup>
 
-                {/* 🚪 LOGOUT (Fiel ao Mockup) */}
+                {/* ðŸšª LOGOUT (Fiel ao Mockup) */}
                 <TouchableOpacity 
                     style={styles.logoutBtn} 
                     onPress={handleLogout}
@@ -290,8 +290,8 @@ export default function SettingsScreen({ navigation }) {
                 </TouchableOpacity>
 
                 <View style={styles.versionInfo}>
-                    <Text style={styles.versionText}>AgroGB Diamond Pro • v{Constants.expoConfig.version}</Text>
-                    <Text style={styles.versionSub}>SISTEMA DE GESTÃO RURAL</Text>
+                    <Text style={styles.versionText}>AgroGB Diamond Pro â€¢ v{Constants.expoConfig.version}</Text>
+                    <Text style={styles.versionSub}>SISTEMA DE GESTÃƒO RURAL</Text>
                 </View>
             </ScrollView>
         </AppContainer>
@@ -372,4 +372,5 @@ const styles = StyleSheet.create({
     versionText: { color: 'rgba(255,255,255,0.2)', fontSize: 10, fontWeight: '800', letterSpacing: 1.5 },
     versionSub: { color: 'rgba(16, 185, 129, 0.3)', fontSize: 8, fontWeight: '900', marginTop: 4, letterSpacing: 2 }
 });
+
 

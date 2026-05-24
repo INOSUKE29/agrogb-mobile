@@ -1,10 +1,10 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar as RNStatusBar, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import SafeBlurView from '../ui/SafeBlurView';
+
 
 export default function MenuSistemaScreen({ navigation }) {
-    // AÇÕES RÁPIDAS (Atalhos diretos)
+    // AÃ‡Ã•ES RÃPIDAS (Atalhos diretos)
     const QUICK_ACTIONS = [
         {
             title: "Sincronizar",
@@ -19,7 +19,7 @@ export default function MenuSistemaScreen({ navigation }) {
             color: "#8B5CF6"
         },
         {
-            title: "Preferências",
+            title: "PreferÃªncias",
             icon: "options",
             route: "Settings",
             color: "#64748B"
@@ -29,7 +29,7 @@ export default function MenuSistemaScreen({ navigation }) {
     // GERENCIAMENTO (Monitoramento e Listas)
     const MENU_ITEMS = [
         {
-            title: "SINCRONIZAÇÃO EM NUVEM",
+            title: "SINCRONIZAÃ‡ÃƒO EM NUVEM",
             subtitle: "Backup e Dados",
             icon: "cloud-upload-outline",
             description: "Envie e receba os dados mais recentes do servidor.",
@@ -37,24 +37,24 @@ export default function MenuSistemaScreen({ navigation }) {
             color: "#3B82F6" 
         },
         {
-            title: "CONFIGURAÇÕES DO APP",
-            subtitle: "Preferências Locais",
+            title: "CONFIGURAÃ‡Ã•ES DO APP",
+            subtitle: "PreferÃªncias Locais",
             icon: "settings-outline",
-            description: "Ajuste de tema, notificações e comportamento do app.",
+            description: "Ajuste de tema, notificaÃ§Ãµes e comportamento do app.",
             route: "Settings",
             color: "#64748B" 
         },
         {
             title: "MEU PERFIL",
-            subtitle: "Conta do Usuário",
+            subtitle: "Conta do UsuÃ¡rio",
             icon: "person-circle-outline",
-            description: "Visualize e edite suas informações de cadastro.",
+            description: "Visualize e edite suas informaÃ§Ãµes de cadastro.",
             route: "Profile",
             color: "#8B5CF6" 
         },
         {
             title: "CONFIGURAR ALERTAS",
-            subtitle: "Notificações",
+            subtitle: "NotificaÃ§Ãµes",
             icon: "notifications-outline",
             description: "Configure os alertas push e lembretes da lavoura.",
             route: "Config",
@@ -75,14 +75,14 @@ export default function MenuSistemaScreen({ navigation }) {
                 </TouchableOpacity>
                 <View style={{ flex: 1 }}>
                     <Text style={styles.headerTitle}>Sistema e Ajustes</Text>
-                    <Text style={styles.headerSub}>CONFIGURAÇÕES GERAIS</Text>
+                    <Text style={styles.headerSub}>CONFIGURAÃ‡Ã•ES GERAIS</Text>
                 </View>
             </View>
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 
-                {/* AÇÕES RÁPIDAS DE CRIAÇÃO */}
-                <Text style={styles.sectionHeader}>AÇÕES RÁPIDAS (SISTEMA)</Text>
+                {/* AÃ‡Ã•ES RÃPIDAS DE CRIAÃ‡ÃƒO */}
+                <Text style={styles.sectionHeader}>AÃ‡Ã•ES RÃPIDAS (SISTEMA)</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickActionsContainer}>
                     {QUICK_ACTIONS.map((action, idx) => (
                         <TouchableOpacity
@@ -91,12 +91,12 @@ export default function MenuSistemaScreen({ navigation }) {
                             activeOpacity={0.8}
                             onPress={() => navigation.navigate(action.route)}
                         >
-                            <SafeBlurView intensity={20} style={styles.quickCard}>
+                            <View intensity={20} style={styles.quickCard}>
                                 <View style={[styles.quickIconBox, { backgroundColor: action.color + '15' }]}>
                                     <Ionicons name={action.icon} size={28} color={action.color} />
                                 </View>
                                 <Text style={styles.quickTitle}>{action.title}</Text>
-                            </SafeBlurView>
+                            </View>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
@@ -110,7 +110,7 @@ export default function MenuSistemaScreen({ navigation }) {
                         onPress={() => navigation.navigate(item.route)}
                         activeOpacity={0.8}
                     >
-                        <SafeBlurView intensity={15} style={styles.card}>
+                        <View intensity={15} style={styles.card}>
                             <View style={[styles.iconBox, { backgroundColor: `${item.color}10` }]}>
                                 <Ionicons name={item.icon} size={26} color={item.color} />
                             </View>
@@ -122,7 +122,7 @@ export default function MenuSistemaScreen({ navigation }) {
                             </View>
                             
                             <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.2)" />
-                        </SafeBlurView>
+                        </View>
                     </TouchableOpacity>
                 ))}
             </ScrollView>
@@ -171,3 +171,4 @@ const styles = StyleSheet.create({
     cardSub: { fontSize: 14, fontWeight: '800', color: '#F8FAFC', marginBottom: 2 },
     cardDesc: { fontSize: 11, color: '#64748B', fontWeight: '600' },
 });
+

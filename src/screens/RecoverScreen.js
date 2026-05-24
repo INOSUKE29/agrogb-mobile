@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, StatusBar } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,13 +7,13 @@ export default function RecoverScreen({ navigation }) {
     const [code, setCode] = useState("");
 
     const handleRecover = () => {
-        Alert.alert("Funcionalidade em desenvolvimento", "Em breve você poderá recuperar sua senha usando o código gerado no cadastro.");
+        Alert.alert("Funcionalidade em desenvolvimento", "Em breve vocÃª poderÃ¡ recuperar sua senha usando o cÃ³digo gerado no cadastro.");
     };
 
     return (
         <View style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor="#0B3D2E" />
-            <LinearGradient colors={['#0B3D2E', '#114B36']} style={StyleSheet.absoluteFill} />
+            
 
             <View style={styles.content}>
                 <View style={styles.header}>
@@ -21,12 +21,12 @@ export default function RecoverScreen({ navigation }) {
                         <Ionicons name="arrow-back" size={24} color="#FFF" />
                     </TouchableOpacity>
                     <Text style={styles.title}>Recuperar Acesso</Text>
-                    <Text style={styles.subtitle}>Digite o código de recuperação</Text>
+                    <Text style={styles.subtitle}>Digite o cÃ³digo de recuperaÃ§Ã£o</Text>
                 </View>
 
                 <View style={styles.card}>
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>CÓDIGO DE RECUPERAÇÃO</Text>
+                        <Text style={styles.label}>CÃ“DIGO DE RECUPERAÃ‡ÃƒO</Text>
                         <View style={styles.inputContainer}>
                             <Ionicons name="key-outline" size={20} color="#7A8793" style={styles.inputIcon} />
                             <View style={styles.verticalDivider} />
@@ -42,7 +42,7 @@ export default function RecoverScreen({ navigation }) {
                     </View>
 
                     <TouchableOpacity style={styles.button} onPress={handleRecover}>
-                        <Text style={styles.buttonText}>VALIDAR CÓDIGO</Text>
+                        <Text style={styles.buttonText}>VALIDAR CÃ“DIGO</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -90,3 +90,4 @@ const styles = StyleSheet.create({
     },
     buttonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold', letterSpacing: 1 }
 });
+

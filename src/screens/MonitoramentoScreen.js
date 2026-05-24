@@ -1,11 +1,11 @@
-/**
- * MonitoramentoScreen.js — AgroGB OS: Centro de Controle de Campo
+﻿/**
+ * MonitoramentoScreen.js â€” AgroGB OS: Centro de Controle de Campo
  * 
- * Módulo de Inteligência Operacional:
- * - Painel climático em tempo real (OpenWeather + GPS)
- * - Alertas meteorológicos com nível de risco
- * - Diário de campo: pragas, doenças, nutrição, clima
- * - Pesquisa agronômica integrada
+ * MÃ³dulo de InteligÃªncia Operacional:
+ * - Painel climÃ¡tico em tempo real (OpenWeather + GPS)
+ * - Alertas meteorolÃ³gicos com nÃ­vel de risco
+ * - DiÃ¡rio de campo: pragas, doenÃ§as, nutriÃ§Ã£o, clima
+ * - Pesquisa agronÃ´mica integrada
  * - Timeline de registros com severidade visual
  */
 
@@ -23,29 +23,29 @@ import { showToast } from '../ui/Toast';
 import { useWeather } from '../context/WeatherContext';
 import MonitoramentoService from '../services/MonitoramentoService';
 
-// ── CONSTANTES ────────────────────────────────────────────────────────────────
+// â”€â”€ CONSTANTES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const TABS = ['CAMPO', 'PESQUISA'];
 
 const CATEGORIAS = [
     { key: 'PRAGA',    label: 'Praga',     icon: 'bug',              color: '#EF4444' },
-    { key: 'DOENCA',   label: 'Doença',    icon: 'medical',          color: '#F97316' },
-    { key: 'NUTRICAO', label: 'Nutrição',  icon: 'leaf',             color: '#10B981' },
+    { key: 'DOENCA',   label: 'DoenÃ§a',    icon: 'medical',          color: '#F97316' },
+    { key: 'NUTRICAO', label: 'NutriÃ§Ã£o',  icon: 'leaf',             color: '#10B981' },
     { key: 'CLIMA',    label: 'Clima',     icon: 'thunderstorm',     color: '#3B82F6' },
     { key: 'OUTROS',   label: 'Outros',    icon: 'ellipsis-horizontal', color: '#9CA3AF' },
 ];
 
 const SEVERIDADES = [
     { key: 'BAIXA', label: 'Baixa',  color: '#10B981', bg: 'rgba(16,185,129,0.15)', icon: 'checkmark-circle' },
-    { key: 'MEDIA', label: 'Média',  color: '#F59E0B', bg: 'rgba(245,158,11,0.15)', icon: 'warning' },
+    { key: 'MEDIA', label: 'MÃ©dia',  color: '#F59E0B', bg: 'rgba(245,158,11,0.15)', icon: 'warning' },
     { key: 'ALTA',  label: 'Alta',   color: '#EF4444', bg: 'rgba(239,68,68,0.15)',  icon: 'alert-circle' },
 ];
 
 const SEARCHES = [
     { label: 'Mancha foliar morango', query: 'mancha foliar morango tratamento' },
-    { label: 'Pulgão em hortaliças', query: 'pulgão hortaliça controle orgânico' },
+    { label: 'PulgÃ£o em hortaliÃ§as', query: 'pulgÃ£o hortaliÃ§a controle orgÃ¢nico' },
     { label: 'Botrytis / mofo cinzento', query: 'botrytis cinerea morango fungicida' },
-    { label: 'Deficiência de boro', query: 'deficiência de boro plantas sintomas' },
-    { label: 'Cigarrinha verde', query: 'cigarrinha verde cultura controle biológico' },
+    { label: 'DeficiÃªncia de boro', query: 'deficiÃªncia de boro plantas sintomas' },
+    { label: 'Cigarrinha verde', query: 'cigarrinha verde cultura controle biolÃ³gico' },
 ];
 
 const getWeatherIcon = (icon) => {
@@ -60,7 +60,7 @@ const getWeatherIcon = (icon) => {
     return 'partly-sunny';
 };
 
-// ── MAIN COMPONENT ─────────────────────────────────────────────────────────
+// â”€â”€ MAIN COMPONENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function MonitoramentoScreen({ navigation }) {
     const { weather, loading: weatherLoading, refreshWeather } = useWeather();
     const [activeTab, setActiveTab] = useState('CAMPO');
@@ -97,7 +97,7 @@ export default function MonitoramentoScreen({ navigation }) {
     };
 
     const handleSaveNote = async () => {
-        if (!fieldNote.trim()) { Alert.alert('Atenção', 'Escreva uma observação.'); return; }
+        if (!fieldNote.trim()) { Alert.alert('AtenÃ§Ã£o', 'Escreva uma observaÃ§Ã£o.'); return; }
         setSavingNote(true);
         try {
             await MonitoramentoService.registrarObservacao({
@@ -111,9 +111,9 @@ export default function MonitoramentoScreen({ navigation }) {
             setFieldCategoria('OUTROS'); setFieldSeveridade('BAIXA');
             setAddModal(false);
             loadHistory();
-            showToast('✅ Observação registrada no Diário de Campo!');
+            showToast('âœ… ObservaÃ§Ã£o registrada no DiÃ¡rio de Campo!');
         } catch {
-            Alert.alert('Erro', 'Falha ao salvar no diário.');
+            Alert.alert('Erro', 'Falha ao salvar no diÃ¡rio.');
         } finally { setSavingNote(false); }
     };
 
@@ -125,7 +125,7 @@ export default function MonitoramentoScreen({ navigation }) {
     };
 
     const handleDelete = (item) => {
-        Alert.alert('Excluir Registro', 'Remover este apontamento do histórico?', [
+        Alert.alert('Excluir Registro', 'Remover este apontamento do histÃ³rico?', [
             { text: 'Cancelar', style: 'cancel' },
             {
                 text: 'Excluir', style: 'destructive', onPress: async () => {
@@ -146,7 +146,7 @@ export default function MonitoramentoScreen({ navigation }) {
         } catch { return iso; }
     };
 
-    // ── WEATHER BLOCK ────────────────────────────────────────────────────────
+    // â”€â”€ WEATHER BLOCK â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const WeatherPanel = () => {
         if (weatherLoading) {
             return (
@@ -159,9 +159,9 @@ export default function MonitoramentoScreen({ navigation }) {
         if (!weather) return null;
 
         const riskLevel = weather.alerts?.length > 0
-            ? (weather.alerts.some(a => a.color === '#EF4444') ? 'ALTO' : 'MÉDIO')
+            ? (weather.alerts.some(a => a.color === '#EF4444') ? 'ALTO' : 'MÃ‰DIO')
             : 'NORMAL';
-        const riskColor = riskLevel === 'ALTO' ? '#EF4444' : riskLevel === 'MÉDIO' ? '#F59E0B' : '#10B981';
+        const riskColor = riskLevel === 'ALTO' ? '#EF4444' : riskLevel === 'MÃ‰DIO' ? '#F59E0B' : '#10B981';
 
         return (
             <View style={styles.weatherPanel}>
@@ -178,7 +178,7 @@ export default function MonitoramentoScreen({ navigation }) {
                                 <Ionicons name="refresh" size={14} color="#6B7280" />
                             </TouchableOpacity>
                         </View>
-                        <Text style={styles.weatherTemp}>{weather.temp}°<Text style={{ fontSize: 18, color: '#9CA3AF' }}>C</Text></Text>
+                        <Text style={styles.weatherTemp}>{weather.temp}Â°<Text style={{ fontSize: 18, color: '#9CA3AF' }}>C</Text></Text>
                         <Text style={styles.weatherDesc}>{weather.description}</Text>
                     </View>
                     <View style={{ alignItems: 'flex-end', gap: 8 }}>
@@ -218,35 +218,35 @@ export default function MonitoramentoScreen({ navigation }) {
 
                 {/* Agro tips */}
                 <View style={styles.agroTips}>
-                    <Text style={styles.agroTipsLabel}>📋 RECOMENDAÇÕES AGRONÔMICAS</Text>
+                    <Text style={styles.agroTipsLabel}>ðŸ“‹ RECOMENDAÃ‡Ã•ES AGRONÃ”MICAS</Text>
                     {weather.humidity > 80 && (
                         <View style={styles.agroTip}>
                             <Ionicons name="alert-circle" size={14} color="#F59E0B" />
-                            <Text style={styles.agroTipText}>Alta umidade — risco elevado de fungos. Monitore folhagem.</Text>
+                            <Text style={styles.agroTipText}>Alta umidade â€” risco elevado de fungos. Monitore folhagem.</Text>
                         </View>
                     )}
                     {weather.wind > 40 && (
                         <View style={styles.agroTip}>
                             <Ionicons name="alert-circle" size={14} color="#EF4444" />
-                            <Text style={styles.agroTipText}>Vento forte — evite aplicação de defensivos hoje.</Text>
+                            <Text style={styles.agroTipText}>Vento forte â€” evite aplicaÃ§Ã£o de defensivos hoje.</Text>
                         </View>
                     )}
                     {weather.pop > 60 && (
                         <View style={styles.agroTip}>
                             <Ionicons name="rainy" size={14} color="#3B82F6" />
-                            <Text style={styles.agroTipText}>Alta chance de chuva — priorize colheitas urgentes.</Text>
+                            <Text style={styles.agroTipText}>Alta chance de chuva â€” priorize colheitas urgentes.</Text>
                         </View>
                     )}
                     {weather.temp > 35 && (
                         <View style={styles.agroTip}>
                             <Ionicons name="thermometer" size={14} color="#EF4444" />
-                            <Text style={styles.agroTipText}>Calor extremo — irrigue nas primeiras horas da manhã.</Text>
+                            <Text style={styles.agroTipText}>Calor extremo â€” irrigue nas primeiras horas da manhÃ£.</Text>
                         </View>
                     )}
                     {weather.humidity <= 80 && weather.wind <= 40 && weather.pop <= 60 && weather.temp <= 35 && (
                         <View style={styles.agroTip}>
                             <Ionicons name="checkmark-circle" size={14} color="#10B981" />
-                            <Text style={styles.agroTipText}>Condições ideais para operações de campo.</Text>
+                            <Text style={styles.agroTipText}>CondiÃ§Ãµes ideais para operaÃ§Ãµes de campo.</Text>
                         </View>
                     )}
                 </View>
@@ -254,7 +254,7 @@ export default function MonitoramentoScreen({ navigation }) {
         );
     };
 
-    // ── FIELD LOG ITEM ────────────────────────────────────────────────────────
+    // â”€â”€ FIELD LOG ITEM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const renderHistoryItem = ({ item }) => {
         const sev = getSeveridade(item.severidade);
         const cat = getCategoria(item.categoria);
@@ -289,10 +289,10 @@ export default function MonitoramentoScreen({ navigation }) {
         );
     };
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     return (
         <View style={styles.container}>
-            <LinearGradient colors={['#050B08', '#0A120E', '#030504']} style={StyleSheet.absoluteFill} />
+            
             {/* ambient orb */}
             <View style={[styles.orb, { backgroundColor: '#10B981', top: -100, left: -100 }]} />
             <View style={[styles.orb, { backgroundColor: '#3B82F6', bottom: 100, right: -120, opacity: 0.06 }]} />
@@ -307,7 +307,7 @@ export default function MonitoramentoScreen({ navigation }) {
                     </TouchableOpacity>
                     <View>
                         <Text style={styles.headerTitle}>Monitoramento</Text>
-                        <Text style={styles.headerSub}>Centro de Controle Agronômico</Text>
+                        <Text style={styles.headerSub}>Centro de Controle AgronÃ´mico</Text>
                     </View>
                     <TouchableOpacity style={styles.addBtnHeader} onPress={() => setAddModal(true)}>
                         <Ionicons name="add" size={22} color="#FFF" />
@@ -329,7 +329,7 @@ export default function MonitoramentoScreen({ navigation }) {
                                 style={{ marginRight: 6 }}
                             />
                             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                                {tab === 'CAMPO' ? 'Diário de Campo' : 'Pesquisa Agronômica'}
+                                {tab === 'CAMPO' ? 'DiÃ¡rio de Campo' : 'Pesquisa AgronÃ´mica'}
                             </Text>
                         </TouchableOpacity>
                     ))}
@@ -346,7 +346,7 @@ export default function MonitoramentoScreen({ navigation }) {
 
                         {/* HISTORY */}
                         <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>DIÁRIO DE CAMPO</Text>
+                            <Text style={styles.sectionTitle}>DIÃRIO DE CAMPO</Text>
                             <View style={styles.countBadge}>
                                 <Text style={styles.countBadgeText}>{history.length}</Text>
                             </View>
@@ -360,9 +360,9 @@ export default function MonitoramentoScreen({ navigation }) {
                                     <MaterialCommunityIcons name="monitor-dashboard" size={36} color="rgba(52,211,153,0.4)" />
                                 </View>
                                 <Text style={styles.emptyTitle}>Nenhum registro</Text>
-                                <Text style={styles.emptyDesc}>Inicie o monitoramento registrando observações de campo: pragas, doenças, deficiências.</Text>
+                                <Text style={styles.emptyDesc}>Inicie o monitoramento registrando observaÃ§Ãµes de campo: pragas, doenÃ§as, deficiÃªncias.</Text>
                                 <TouchableOpacity style={styles.emptyBtn} onPress={() => setAddModal(true)}>
-                                    <Text style={styles.emptyBtnText}>+ Primeira Observação</Text>
+                                    <Text style={styles.emptyBtnText}>+ Primeira ObservaÃ§Ã£o</Text>
                                 </TouchableOpacity>
                             </View>
                         ) : (
@@ -372,14 +372,14 @@ export default function MonitoramentoScreen({ navigation }) {
                 ) : (
                     /* PESQUISA TAB */
                     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                        <Text style={styles.searchIntroTitle}>🔬 Diagnóstico Agronômico</Text>
-                        <Text style={styles.searchIntroSub}>Pesquise doenças, pragas e deficiências na base de conhecimento agrícola.</Text>
+                        <Text style={styles.searchIntroTitle}>ðŸ”¬ DiagnÃ³stico AgronÃ´mico</Text>
+                        <Text style={styles.searchIntroSub}>Pesquise doenÃ§as, pragas e deficiÃªncias na base de conhecimento agrÃ­cola.</Text>
 
                         <View style={styles.searchBoxWrap}>
                             <Ionicons name="search" size={18} color="#34D399" />
                             <TextInput
                                 style={styles.searchInput}
-                                placeholder="Ex: mancha foliar, pulgão, míldio..."
+                                placeholder="Ex: mancha foliar, pulgÃ£o, mÃ­ldio..."
                                 placeholderTextColor="#4B5563"
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
@@ -391,7 +391,7 @@ export default function MonitoramentoScreen({ navigation }) {
                             </TouchableOpacity>
                         </View>
 
-                        <Text style={styles.quickSearchLabel}>BUSCAS RÁPIDAS</Text>
+                        <Text style={styles.quickSearchLabel}>BUSCAS RÃPIDAS</Text>
                         {SEARCHES.map((s, i) => (
                             <TouchableOpacity key={i} style={styles.quickSearchItem} onPress={() => handleSearch(s.query)}>
                                 <Ionicons name="flask" size={16} color="#34D399" />
@@ -418,13 +418,13 @@ export default function MonitoramentoScreen({ navigation }) {
                     </ScrollView>
                 )}
 
-                {/* ── MODAL: NOVO REGISTRO ──────────────────────────────────── */}
+                {/* â”€â”€ MODAL: NOVO REGISTRO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                 <Modal visible={addModal} animationType="slide" transparent>
                     <View style={styles.modalBg}>
                         <View style={styles.modalSheet}>
                             <View style={styles.modalHandle} />
                             <View style={styles.modalHeaderRow}>
-                                <Text style={styles.modalTitle}>📋 Registro de Campo</Text>
+                                <Text style={styles.modalTitle}>ðŸ“‹ Registro de Campo</Text>
                                 <TouchableOpacity onPress={() => setAddModal(false)} style={styles.closeBtn}>
                                     <Ionicons name="close" size={22} color="#9CA3AF" />
                                 </TouchableOpacity>
@@ -432,12 +432,12 @@ export default function MonitoramentoScreen({ navigation }) {
 
                             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                                 {/* LOCAL */}
-                                <Text style={styles.mLabel}>LOCAL / ÁREA</Text>
+                                <Text style={styles.mLabel}>LOCAL / ÃREA</Text>
                                 <View style={styles.mInputBox}>
                                     <Ionicons name="location-outline" size={16} color="#6B7280" />
                                     <TextInput
                                         style={styles.mInput}
-                                        placeholder="Ex: Talhão A, Estufa 2..."
+                                        placeholder="Ex: TalhÃ£o A, Estufa 2..."
                                         placeholderTextColor="#4B5563"
                                         value={fieldLocal}
                                         onChangeText={setFieldLocal}
@@ -485,11 +485,11 @@ export default function MonitoramentoScreen({ navigation }) {
                                     ))}
                                 </View>
 
-                                {/* OBSERVAÇÃO */}
-                                <Text style={styles.mLabel}>OBSERVAÇÃO</Text>
+                                {/* OBSERVAÃ‡ÃƒO */}
+                                <Text style={styles.mLabel}>OBSERVAÃ‡ÃƒO</Text>
                                 <TextInput
                                     style={styles.mTextArea}
-                                    placeholder="Descreva o que observou: sintomas, localização, quantidade afetada..."
+                                    placeholder="Descreva o que observou: sintomas, localizaÃ§Ã£o, quantidade afetada..."
                                     placeholderTextColor="#4B5563"
                                     value={fieldNote}
                                     onChangeText={setFieldNote}
@@ -503,7 +503,7 @@ export default function MonitoramentoScreen({ navigation }) {
                                         {savingNote ? <ActivityIndicator color="#FFF" size="small" /> : (
                                             <>
                                                 <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-                                                <Text style={styles.saveBtnText}>SALVAR NO DIÁRIO</Text>
+                                                <Text style={styles.saveBtnText}>SALVAR NO DIÃRIO</Text>
                                             </>
                                         )}
                                     </LinearGradient>
@@ -517,7 +517,7 @@ export default function MonitoramentoScreen({ navigation }) {
     );
 }
 
-// ── STYLES ────────────────────────────────────────────────────────────────────
+// â”€â”€ STYLES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#000' },
     orb: { position: 'absolute', width: 350, height: 350, borderRadius: 175, opacity: 0.08 },
@@ -626,3 +626,4 @@ const styles = StyleSheet.create({
     saveGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 18, borderRadius: 16, gap: 10 },
     saveBtnText: { color: '#FFF', fontSize: 14, fontWeight: '900', letterSpacing: 1.5 },
 });
+

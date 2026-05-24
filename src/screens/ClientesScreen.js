@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
     View, Text, StyleSheet, FlatList, TouchableOpacity, 
     ActivityIndicator, TextInput, SafeAreaView, StatusBar, Platform, KeyboardAvoidingView
@@ -9,7 +9,7 @@ import { useIsFocused } from '@react-navigation/native';
 
 import { getClientes, deleteCliente } from '../database/database';
 import ConfirmModal from '../ui/ConfirmModal';
-import SafeBlurView from '../ui/SafeBlurView';
+
 
 export default function ClientesScreen({ navigation }) {
     const [items, setItems] = useState([]);
@@ -126,7 +126,7 @@ export default function ClientesScreen({ navigation }) {
 
     return (
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-            <LinearGradient colors={['#040914', '#081222']} style={StyleSheet.absoluteFill} />
+            
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             <SafeAreaView style={{ flex: 1 }}>
@@ -136,10 +136,10 @@ export default function ClientesScreen({ navigation }) {
                         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                             <Ionicons name="chevron-back" size={24} color="#FFF" />
                         </TouchableOpacity>
-                        <Text style={styles.hubMainTitle}>GESTÃO DE CONTATOS</Text>
+                        <Text style={styles.hubMainTitle}>GESTÃƒO DE CONTATOS</Text>
                     </View>
 
-                    <SafeBlurView intensity={20} style={styles.hubStatsCard}>
+                    <View intensity={20} style={styles.hubStatsCard}>
                         <View style={styles.hubStatsHeader}>
                             <View>
                                 <Text style={styles.hubTitleText}>HUB <Text style={{ color: '#3B82F6' }}>CRM</Text></Text>
@@ -162,7 +162,7 @@ export default function ClientesScreen({ navigation }) {
                                 <Text style={styles.statLabel}>FORNECEDORES</Text>
                             </View>
                         </View>
-                    </SafeBlurView>
+                    </View>
 
                     <View style={styles.hubActionsContainer}>
                         <TouchableOpacity 
@@ -230,7 +230,7 @@ export default function ClientesScreen({ navigation }) {
             <ConfirmModal
                 visible={confirmVisible}
                 title="Excluir Registro"
-                message="Tem certeza que deseja apagar este contato? Históricos atrelados a ele podem perder a referência direta."
+                message="Tem certeza que deseja apagar este contato? HistÃ³ricos atrelados a ele podem perder a referÃªncia direta."
                 confirmText="APAGAR"
                 isDestructive={true}
                 onCancel={() => { setConfirmVisible(false); setItemToDelete(null); }}
@@ -296,3 +296,4 @@ const styles = StyleSheet.create({
     emptyBtn: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#3B82F6', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14 },
     emptyBtnText: { color: '#3B82F6', fontSize: 12, fontWeight: '900', letterSpacing: 1 }
 });
+

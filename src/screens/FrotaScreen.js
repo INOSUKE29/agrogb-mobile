@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useMemo } from 'react';
+﻿import React, { useCallback, useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator, SafeAreaView, StatusBar, Platform } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useFleet } from '../modules/farm/hooks/useFleet';
@@ -6,7 +6,7 @@ import { deleteMaquina } from '../database/database';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import ConfirmModal from '../ui/ConfirmModal';
-import SafeBlurView from '../ui/SafeBlurView';
+
 import { showToast } from '../ui/Toast';
 
 export default function FrotaScreen() {
@@ -23,7 +23,7 @@ export default function FrotaScreen() {
     const displayMachines = useMemo(() => {
         if (!machines || machines.length === 0) {
             return [
-                { uuid: 'f1', nome: 'John Deere 8R 370', tipo: 'TRATOR', placa: 'QWE-1234', horimetro_atual: 450, intervalo_revisao: 500, local_atual: 'Galpão Principal', consumo: '18 L/h', isTest: true },
+                { uuid: 'f1', nome: 'John Deere 8R 370', tipo: 'TRATOR', placa: 'QWE-1234', horimetro_atual: 450, intervalo_revisao: 500, local_atual: 'GalpÃ£o Principal', consumo: '18 L/h', isTest: true },
                 { uuid: 'f2', nome: 'Scania R540 Graneleiro', tipo: 'CAMINHAO', placa: 'AGRO-001', horimetro_atual: 12000, intervalo_revisao: 10000, local_atual: 'Rota Fazenda-Porto', consumo: '2.5 km/L', isTest: true },
                 { uuid: 'f3', nome: 'Hilux CD 4x4 SRV', tipo: 'CARRO', placa: 'GBR-9988', horimetro_atual: 2450, intervalo_revisao: 5000, local_atual: 'Sede Administrativa', consumo: '10 km/L', isTest: true }
             ];
@@ -32,7 +32,7 @@ export default function FrotaScreen() {
     }, [machines]);
 
     const handleDelete = useCallback((item) => {
-        if(item.isTest) return showToast('Apenas demonstração.');
+        if(item.isTest) return showToast('Apenas demonstraÃ§Ã£o.');
         setItemToDelete(item);
         setConfirmVisible(true);
     }, []);
@@ -43,10 +43,10 @@ export default function FrotaScreen() {
                 await deleteMaquina(itemToDelete.uuid);
                 setConfirmVisible(false);
                 setItemToDelete(null);
-                showToast('Veículo removido com sucesso!');
+                showToast('VeÃ­culo removido com sucesso!');
                 fetchMachines();
             } catch (error) {
-                showToast('Erro ao remover veículo.');
+                showToast('Erro ao remover veÃ­culo.');
             }
         }
     }, [itemToDelete, fetchMachines]);
@@ -56,10 +56,10 @@ export default function FrotaScreen() {
         const progresso = item.intervalo_revisao > 0 ? Math.min(100, (item.horimetro_atual / item.intervalo_revisao) * 100) : 0;
         
         return (
-            <TouchableOpacity onPress={() => item.isTest ? showToast('Apenas demonstração') : navigation.navigate('MaquinaForm', { editItem: item })} activeOpacity={0.85}>
+            <TouchableOpacity onPress={() => item.isTest ? showToast('Apenas demonstraÃ§Ã£o') : navigation.navigate('MaquinaForm', { editItem: item })} activeOpacity={0.85}>
                 <View style={[styles.card, needsRevision && styles.cardWarning]}>
                     <View style={styles.cardHeader}>
-                        {/* Avatar do Veículo (Placeholder) */}
+                        {/* Avatar do VeÃ­culo (Placeholder) */}
                         <View style={styles.avatarBox}>
                             <MaterialCommunityIcons 
                                 name={item.tipo === 'TRATOR' ? 'tractor' : item.tipo === 'CAMINHAO' ? 'truck' : 'car-pickup'} 
@@ -69,13 +69,13 @@ export default function FrotaScreen() {
                         
                         <View style={styles.headerInfo}>
                             <Text style={styles.nomeVeiculo}>{item.nome}</Text>
-                            <Text style={styles.placaVeiculo}>{item.placa || 'S/ PLACA'} • {item.tipo}</Text>
+                            <Text style={styles.placaVeiculo}>{item.placa || 'S/ PLACA'} â€¢ {item.tipo}</Text>
                         </View>
 
                         {needsRevision && (
                             <View style={styles.badgeWarning}>
                                 <Ionicons name="warning" size={12} color="#FCA5A5" />
-                                <Text style={styles.badgeTextWarning}>REVISÃO</Text>
+                                <Text style={styles.badgeTextWarning}>REVISÃƒO</Text>
                             </View>
                         )}
                         {!needsRevision && (
@@ -97,15 +97,15 @@ export default function FrotaScreen() {
                             <Ionicons name="location" size={14} color="#9CA3AF" style={{marginRight: 6}} />
                             <View>
                                 <Text style={styles.infoLabel}>LOCAL ATUAL</Text>
-                                <Text style={styles.infoValue}>{item.local_atual || 'Não rastreado'}</Text>
+                                <Text style={styles.infoValue}>{item.local_atual || 'NÃ£o rastreado'}</Text>
                             </View>
                         </View>
                     </View>
 
-                    {/* Barra de Progresso Manutenção */}
+                    {/* Barra de Progresso ManutenÃ§Ã£o */}
                     <View style={styles.revisionBox}>
                         <View style={styles.revisionRow}>
-                            <Text style={styles.revisionLabel}>DESGASTE / REVISÃO PREVISTA</Text>
+                            <Text style={styles.revisionLabel}>DESGASTE / REVISÃƒO PREVISTA</Text>
                             <Text style={styles.revisionValues}>{item.horimetro_atual}h / {item.intervalo_revisao}h</Text>
                         </View>
                         <View style={styles.progressBg}>
@@ -113,7 +113,7 @@ export default function FrotaScreen() {
                         </View>
                     </View>
 
-                    {/* Lixeira pra exclusão */}
+                    {/* Lixeira pra exclusÃ£o */}
                     <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item)}>
                         <Ionicons name="trash-outline" size={18} color="rgba(239, 68, 68, 0.7)" />
                     </TouchableOpacity>
@@ -124,7 +124,7 @@ export default function FrotaScreen() {
 
     return (
         <View style={styles.webContainer}>
-            <LinearGradient colors={['#1c2921', '#111b15', '#09100c']} style={StyleSheet.absoluteFill} />
+            
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
             <View style={styles.mobileFrame}>
@@ -135,20 +135,20 @@ export default function FrotaScreen() {
                         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                             <Ionicons name="arrow-back" size={24} color="#D1FAE5" />
                         </TouchableOpacity>
-                        <Text style={styles.hubHeaderText}>GESTÃO DE FROTA</Text>
+                        <Text style={styles.hubHeaderText}>GESTÃƒO DE FROTA</Text>
                     </View>
 
                     {/* HUB DASHBOARD */}
-                    <SafeBlurView intensity={20} style={styles.hubDashboardCard}>
+                    <View intensity={20} style={styles.hubDashboardCard}>
                         <View style={styles.hubStatsRow}>
                             <View style={styles.hubStat}>
                                 <Text style={styles.hubStatLabel}>TOTAL</Text>
                                 <Text style={styles.hubStatValue}>{displayMachines.length}</Text>
-                                <Text style={styles.hubStatSub}>VEÍCULOS</Text>
+                                <Text style={styles.hubStatSub}>VEÃCULOS</Text>
                             </View>
                             <View style={styles.hubDivider} />
                             <View style={styles.hubStat}>
-                                <Text style={styles.hubStatLabel}>REVISÃO</Text>
+                                <Text style={styles.hubStatLabel}>REVISÃƒO</Text>
                                 <Text style={[styles.hubStatValue, { color: '#EF4444' }]}>
                                     {displayMachines.filter(m => m.horimetro_atual >= (m.intervalo_revisao || 0)).length}
                                 </Text>
@@ -160,23 +160,23 @@ export default function FrotaScreen() {
                                 <Text style={[styles.hubStatValue, { color: '#10B981' }]}>
                                     {displayMachines.filter(m => m.horimetro_atual < (m.intervalo_revisao || 99999)).length}
                                 </Text>
-                                <Text style={styles.hubStatSub}>DISPONÍVEIS</Text>
+                                <Text style={styles.hubStatSub}>DISPONÃVEIS</Text>
                             </View>
                         </View>
-                    </SafeBlurView>
+                    </View>
 
                     {/* QUICK ACTIONS */}
                     <View style={styles.quickActionsRow}>
                         <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('MaquinaForm')}>
                             <LinearGradient colors={['#34D399', '#059669']} style={styles.qaGradient}>
                                 <Ionicons name="add-circle" size={20} color="#064E3B" />
-                                <Text style={styles.qaText}>NOVO VEÍCULO</Text>
+                                <Text style={styles.qaText}>NOVO VEÃCULO</Text>
                             </LinearGradient>
                         </TouchableOpacity>
                         
                         <TouchableOpacity style={styles.quickActionBtnSecondary}>
                             <Ionicons name="construct-outline" size={18} color="#A7F3D0" />
-                            <Text style={styles.qaTextSecondary}>MANUTENÇÃO</Text>
+                            <Text style={styles.qaTextSecondary}>MANUTENÃ‡ÃƒO</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -198,7 +198,7 @@ export default function FrotaScreen() {
                             ListEmptyComponent={
                                 <View style={styles.emptyState}>
                                     <Ionicons name="bus-outline" size={64} color="rgba(255,255,255,0.1)" />
-                                    <Text style={styles.emptyText}>Nenhum veículo registrado.</Text>
+                                    <Text style={styles.emptyText}>Nenhum veÃ­culo registrado.</Text>
                                 </View>
                             }
                         />
@@ -206,7 +206,7 @@ export default function FrotaScreen() {
 
                     <ConfirmModal
                         visible={confirmVisible}
-                        title="EXCLUIR VEÍCULO"
+                        title="EXCLUIR VEÃCULO"
                         message={`Deseja realmente remover ${itemToDelete?.nome} da frota?`}
                         onConfirm={confirmDelete}
                         onCancel={() => setConfirmVisible(false)}
@@ -277,3 +277,4 @@ const styles = StyleSheet.create({
     emptyState: { alignItems: 'center', justifyContent: 'center', marginTop: 100 },
     emptyText: { color: '#9CA3AF', marginTop: 15, fontSize: 15 }
 });
+

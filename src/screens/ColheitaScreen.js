@@ -1,5 +1,5 @@
-/**
- * ColheitaScreen.js — AgroGB Diamond Pro
+﻿/**
+ * ColheitaScreen.js â€” AgroGB Diamond Pro
  * Ultra Premium Glassmorphism & Neon Glow Design
  */
 
@@ -54,7 +54,7 @@ export default function ColheitaScreen({ navigation }) {
         const checkDraft = async () => {
             const saved = await AsyncStorage.getItem(DRAFT_KEY);
             if (saved) {
-                Alert.alert('Rascunho Encontrado', 'Você tem um apontamento não finalizado.', [
+                Alert.alert('Rascunho Encontrado', 'VocÃª tem um apontamento nÃ£o finalizado.', [
                     { text: 'Descartar', onPress: () => AsyncStorage.removeItem(DRAFT_KEY), style: 'destructive' },
                     { text: 'Continuar', onPress: () => {
                             const d = JSON.parse(saved);
@@ -115,7 +115,7 @@ export default function ColheitaScreen({ navigation }) {
     const { saveHarvest, saveFreezing, saveWaste } = useProduction();
 
     const handleSave = useCallback(async () => {
-        if (tipoRegistro === 'COLHEITA' && !talhao) return Alert.alert('Ops', 'Selecione a área (talhão) de origem.');
+        if (tipoRegistro === 'COLHEITA' && !talhao) return Alert.alert('Ops', 'Selecione a Ã¡rea (talhÃ£o) de origem.');
         if (itensList.length === 0) return Alert.alert('Ops', 'Adicione pelo menos um item ao registro.');
 
         setLoading(true);
@@ -123,7 +123,7 @@ export default function ColheitaScreen({ navigation }) {
             const date = parseDate(dataOperacao);
             const validatedItens = itensList.map(p => {
                 const qty = parseFloat(p.quantidade);
-                if (isNaN(qty) || qty <= 0) throw new Error(`Quantidade inválida para o produto ${p.produto}`);
+                if (isNaN(qty) || qty <= 0) throw new Error(`Quantidade invÃ¡lida para o produto ${p.produto}`);
                 return { ...p, numericQty: qty };
             });
 
@@ -141,7 +141,7 @@ export default function ColheitaScreen({ navigation }) {
                 }
             }
 
-            showToast('✅ Registro sincronizado com a base!');
+            showToast('âœ… Registro sincronizado com a base!');
             try { require('../services/AutoSyncService').default.trigger(); } catch {}
             await AsyncStorage.removeItem(DRAFT_KEY);
             navigation.goBack();
@@ -167,30 +167,30 @@ export default function ColheitaScreen({ navigation }) {
 
     return (
         <View style={styles.webContainer}>
-            <LinearGradient colors={['#030712', '#0A0F1C', '#020617']} style={StyleSheet.absoluteFill} />
+            
             <View style={[styles.ambientOrb1, { backgroundColor: mainColor }]} />
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             <View style={styles.mobileFrame}>
                 <SafeAreaView style={{ flex: 1 }}>
-                    {/* ── HEADER ────────────────────────────────────────────────── */}
+                    {/* â”€â”€ HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                     <View style={styles.header}>
                         <TouchableOpacity style={styles.backBtn} onPress={() => navigation?.goBack?.()}>
                             <Ionicons name="chevron-back" size={24} color="#FFF" />
                         </TouchableOpacity>
                         <View style={{alignItems: 'center', flex: 1, paddingRight: 48}}>
-                            <Text style={styles.headerTitle}>Colheita <Text style={{color: mainColor}}>&</Text> Saídas</Text>
-                            <Text style={styles.headerSub}>Apontamentos e Movimentações</Text>
+                            <Text style={styles.headerTitle}>Colheita <Text style={{color: mainColor}}>&</Text> SaÃ­das</Text>
+                            <Text style={styles.headerSub}>Apontamentos e MovimentaÃ§Ãµes</Text>
                         </View>
                     </View>
 
                     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                         
-                        {/* ── SEGMENTED CONTROL ──────────────────────────────────── */}
+                        {/* â”€â”€ SEGMENTED CONTROL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                         <View style={styles.segmentedControl}>
                             {[
                                 { id: 'COLHEITA', icon: 'basket', label: 'Colheita' },
-                                { id: 'CONGELAMENTO', icon: 'snow', label: 'Câmara Fria' },
+                                { id: 'CONGELAMENTO', icon: 'snow', label: 'CÃ¢mara Fria' },
                                 { id: 'DESCARTE', icon: 'trash', label: 'Perdas' }
                             ].map((mode) => (
                                 <TouchableOpacity 
@@ -211,13 +211,13 @@ export default function ColheitaScreen({ navigation }) {
                             ))}
                         </View>
 
-                        {/* ── SECTION 1: DADOS ───────────────────────────────────── */}
+                        {/* â”€â”€ SECTION 1: DADOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                         <View style={styles.glassCard}>
                             <View style={[styles.cardGlowTopLeft, { backgroundColor: mainColor + '20' }]} />
 
                             <View style={[styles.cardHeaderStrip, { backgroundColor: mainColor + '10', borderColor: mainColor + '30' }]}>
                                 <Ionicons name="document-text" size={16} color={mainColor} />
-                                <Text style={[styles.cardHeaderTitle, { color: mainColor }]}>1. DADOS DA OPERAÇÃO</Text>
+                                <Text style={[styles.cardHeaderTitle, { color: mainColor }]}>1. DADOS DA OPERAÃ‡ÃƒO</Text>
                             </View>
 
                             <View style={styles.rowGrid}>
@@ -240,7 +240,7 @@ export default function ColheitaScreen({ navigation }) {
                                     <View style={{ flex: 1.2 }}>
                                         <View style={styles.labelRow}>
                                             <Ionicons name="map-outline" size={14} color="#94A3B8" />
-                                            <Text style={styles.inputLabel}> ÁREA (TALHÃO)</Text>
+                                            <Text style={styles.inputLabel}> ÃREA (TALHÃƒO)</Text>
                                         </View>
                                         <TouchableOpacity style={styles.selectorInput} onPress={() => setAreaModalVisible(true)}>
                                             <Text style={[styles.selectorText, talhao ? {color: '#FFF'} : {color: '#64748B'} ]} numberOfLines={1}>
@@ -260,13 +260,13 @@ export default function ColheitaScreen({ navigation }) {
                                 style={[styles.textInput, { height: 100, textAlignVertical: 'top', paddingTop: 18 }]}
                                 value={observacao}
                                 onChangeText={setObservacao}
-                                placeholder="Clima, equipe responsável, eventos do dia..."
+                                placeholder="Clima, equipe responsÃ¡vel, eventos do dia..."
                                 placeholderTextColor="#475569"
                                 multiline
                             />
                         </View>
 
-                        {/* ── SECTION 2: VOLUMES ─────────────────────────────────── */}
+                        {/* â”€â”€ SECTION 2: VOLUMES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                         <View style={[styles.glassCard, { marginTop: 18 }]}>
                             <View style={[styles.cardGlowTopLeft, { backgroundColor: mainColor + '20', bottom: -30, right: -30, left: 'auto', top: 'auto' }]} />
 
@@ -281,7 +281,7 @@ export default function ColheitaScreen({ navigation }) {
                                         <MaterialCommunityIcons name="basket-unfill" size={38} color={mainColor} />
                                     </View>
                                     <Text style={styles.emptyItemsText}>Nenhum produto anexado ainda.</Text>
-                                    <Text style={styles.emptyItemsSub}>Clique no botão tracejado abaixo para adicionar.</Text>
+                                    <Text style={styles.emptyItemsSub}>Clique no botÃ£o tracejado abaixo para adicionar.</Text>
                                 </View>
                             ) : (
                                 itensList.map(item => (
@@ -291,7 +291,7 @@ export default function ColheitaScreen({ navigation }) {
                                         </View>
                                         <View style={{ flex: 1, paddingRight: 10 }}>
                                             <Text style={styles.productTitle} numberOfLines={1}>{item.produto}</Text>
-                                            <Text style={styles.productSub}>{item.quantidade} <Text style={{color: '#94A3B8'}}>{item.unidade || 'KG'}</Text> {item.motivo ? `• ${item.motivo}` : ''}</Text>
+                                            <Text style={styles.productSub}>{item.quantidade} <Text style={{color: '#94A3B8'}}>{item.unidade || 'KG'}</Text> {item.motivo ? `â€¢ ${item.motivo}` : ''}</Text>
                                         </View>
                                         <TouchableOpacity style={styles.removeBtn} onPress={() => setItensList(itensList.filter(i => i.id !== item.id))}>
                                             <Ionicons name="trash-outline" size={20} color="#F43F5E" />
@@ -329,7 +329,7 @@ export default function ColheitaScreen({ navigation }) {
 
                     </ScrollView>
 
-                    {/* ── MODALS ─────────────────────────────────────────────── */}
+                    {/* â”€â”€ MODALS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                     <ProductModal 
                         visible={producaoModalVisible} 
                         onClose={() => setProducaoModalVisible(false)} 
@@ -342,7 +342,7 @@ export default function ColheitaScreen({ navigation }) {
                         <View style={styles.modalBg}>
                             <View style={styles.modalSheet}>
                                 <View style={styles.modalHeader}>
-                                    <Text style={[styles.modalTitle, {color: mainColor}]}>{qtdModalVisible ? 'INFORMAR PRODUÇÃO' : destinoModalVisible ? 'CÂMARA DE CONGELAMENTO' : 'REGISTRO DE PERDAS'}</Text>
+                                    <Text style={[styles.modalTitle, {color: mainColor}]}>{qtdModalVisible ? 'INFORMAR PRODUÃ‡ÃƒO' : destinoModalVisible ? 'CÃ‚MARA DE CONGELAMENTO' : 'REGISTRO DE PERDAS'}</Text>
                                     <TouchableOpacity onPress={() => { setQtdModalVisible(false); setDestinoModalVisible(false); setPerdaModalVisible(false); }} style={styles.closeBtn}>
                                         <Ionicons name="close" size={20} color="#94A3B8" />
                                     </TouchableOpacity>
@@ -357,7 +357,7 @@ export default function ColheitaScreen({ navigation }) {
                                             style={[styles.textInput, { marginBottom: 20 }]}
                                             value={modalMotivo}
                                             onChangeText={setModalMotivo}
-                                            placeholder="Ex: Pássaros, Chuva, Podridão..."
+                                            placeholder="Ex: PÃ¡ssaros, Chuva, PodridÃ£o..."
                                             placeholderTextColor="#475569"
                                         />
                                     </>
@@ -390,7 +390,7 @@ export default function ColheitaScreen({ navigation }) {
                         <View style={styles.modalBg}>
                             <View style={[styles.modalSheet, { maxHeight: '80%', paddingBottom: 20 }]}>
                                 <View style={styles.modalHeader}>
-                                    <Text style={[styles.modalTitle, {color: '#FFF', fontSize: 16}]}>SELECIONAR ÁREA</Text>
+                                    <Text style={[styles.modalTitle, {color: '#FFF', fontSize: 16}]}>SELECIONAR ÃREA</Text>
                                     <TouchableOpacity onPress={() => setAreaModalVisible(false)} style={styles.closeBtn}>
                                         <Ionicons name="close" size={20} color="#94A3B8" />
                                     </TouchableOpacity>
@@ -484,3 +484,4 @@ const styles = StyleSheet.create({
     confirmBtnGradientFull: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 20, borderRadius: 18, gap: 10 },
     confirmTextFull: { color: '#FFF', fontSize: 15, fontWeight: '900', letterSpacing: 1.5 },
 });
+

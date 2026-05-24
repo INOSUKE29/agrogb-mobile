@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import SafeBlurView from '../ui/SafeBlurView';
+
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme/ThemeContext';
 import { getAppSettings, updateAppSetting } from '../database/database';
@@ -47,12 +47,12 @@ export default function SyncScreen({ navigation }) {
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
                 
-                {/* 🛰 STATUS HEADER PREMIUM */}
+                {/* ðŸ›° STATUS HEADER PREMIUM */}
                 <LinearGradient colors={['rgba(16, 185, 129, 0.1)', 'transparent']} style={styles.statusHeader}>
                     <View style={styles.statusRow}>
                         <View>
                             <Text style={styles.statusTitle}>SISTEMA AGROGB</Text>
-                            <Text style={styles.statusSub}>Versão 2026.04 • Diamante</Text>
+                            <Text style={styles.statusSub}>VersÃ£o 2026.04 â€¢ Diamante</Text>
                         </View>
                         <View style={styles.statusBadge}>
                             <View style={styles.statusDot} />
@@ -61,33 +61,33 @@ export default function SyncScreen({ navigation }) {
                     </View>
                 </LinearGradient>
 
-                <Text style={styles.secTitle}>CONFIGURAÇÕES GERAIS</Text>
+                <Text style={styles.secTitle}>CONFIGURAÃ‡Ã•ES GERAIS</Text>
                 <View style={styles.card}>
                     <ControlItem icon="business" label="Minha Fazenda" description="Ajustar nome, CNPJ e dados" onPress={() => setActiveModal('FAZENDA')} />
                     <View style={styles.line} />
-                    <ControlItem icon="color-palette" label="Visual & Tema" description="Cores e modo de exibição" color="#8B5CF6" onPress={() => setActiveModal('TEMA')} />
+                    <ControlItem icon="color-palette" label="Visual & Tema" description="Cores e modo de exibiÃ§Ã£o" color="#8B5CF6" onPress={() => setActiveModal('TEMA')} />
                     <View style={styles.line} />
-                    <ControlItem icon="cloud-download" label="Atualizar Telas" description="Puxar melhorias automáticas" color="#3B82F6" onPress={() => Alert.alert('Check', 'Buscando atualizações...')} />
+                    <ControlItem icon="cloud-download" label="Atualizar Telas" description="Puxar melhorias automÃ¡ticas" color="#3B82F6" onPress={() => Alert.alert('Check', 'Buscando atualizaÃ§Ãµes...')} />
                 </View>
 
-                <Text style={styles.secTitle}>SEGURANÇA & DADOS</Text>
+                <Text style={styles.secTitle}>SEGURANÃ‡A & DADOS</Text>
                 <View style={styles.card}>
-                    <ControlItem icon="sync" label="Sincronizar Agora" description="Enviar dados para nuvem" color="#10B981" onPress={() => showToast('Iniciando sincronização...')} />
+                    <ControlItem icon="sync" label="Sincronizar Agora" description="Enviar dados para nuvem" color="#10B981" onPress={() => showToast('Iniciando sincronizaÃ§Ã£o...')} />
                     <View style={styles.line} />
                     <ControlItem icon="shield-checkmark" label="Backup Total" description="XLSX e Nuvem unificados" color="#FBBF24" onPress={() => showToast('Gerando backup seguro...')} />
                     <View style={styles.line} />
-                    <ControlItem icon="trash-outline" label="Manutenção" description="Limpar cache e otimizar" color="#EF4444" onPress={() => Alert.alert('Aviso', 'Isso irá reiniciar o app.')} />
+                    <ControlItem icon="trash-outline" label="ManutenÃ§Ã£o" description="Limpar cache e otimizar" color="#EF4444" onPress={() => Alert.alert('Aviso', 'Isso irÃ¡ reiniciar o app.')} />
                 </View>
 
                 <View style={styles.footer}>
-                    <Text style={styles.footerTxt}>AgroGB Tecnologia • Todos os direitos reservados</Text>
+                    <Text style={styles.footerTxt}>AgroGB Tecnologia â€¢ Todos os direitos reservados</Text>
                 </View>
             </ScrollView>
 
             {/* MODAL FAZENDA SIMPLE & CLEAN */}
             <Modal visible={activeModal === 'FAZENDA'} animationType="slide" transparent>
                 <View style={styles.modalOverlay}>
-                    <SafeBlurView intensity={90} tint="dark" style={styles.modalContent}>
+                    <View intensity={90} tint="dark" style={styles.modalContent}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Dados da Propriedade</Text>
                             <TouchableOpacity onPress={() => setActiveModal(null)}><Ionicons name="close" size={24} color="#FFF" /></TouchableOpacity>
@@ -101,10 +101,10 @@ export default function SyncScreen({ navigation }) {
                         />
                         <TouchableOpacity style={styles.saveBtn} onPress={() => setActiveModal(null)}>
                             <LinearGradient colors={['#10B981', '#059669']} style={styles.saveGrad}>
-                                <Text style={styles.saveTxt}>SALVAR ALTERAÇÕES</Text>
+                                <Text style={styles.saveTxt}>SALVAR ALTERAÃ‡Ã•ES</Text>
                             </LinearGradient>
                         </TouchableOpacity>
-                    </SafeBlurView>
+                    </View>
                 </View>
             </Modal>
         </FundoAnimado>
@@ -141,3 +141,4 @@ const styles = StyleSheet.create({
     saveGrad: { height: 64, justifyContent: 'center', alignItems: 'center' },
     saveTxt: { color: '#FFF', fontSize: 16, fontWeight: '900', letterSpacing: 1 }
 });
+

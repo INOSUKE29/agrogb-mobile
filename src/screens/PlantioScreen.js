@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, StatusBar, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,7 +23,7 @@ export default function PlantioScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
-            <LinearGradient colors={['#065F46', '#047857', '#F3F4F6', '#FFFFFF']} style={StyleSheet.absoluteFill} />
+            
             <StatusBar barStyle="light-content" translucent />
 
             <ScrollView contentContainerStyle={styles.scroll}>
@@ -39,7 +39,7 @@ export default function PlantioScreen({ navigation }) {
                             <View style={styles.iconCircle}><Ionicons name="leaf" size={20} color="#10B981" /></View>
                             <View style={{flex: 1, marginLeft: 12}}>
                                 <Text style={styles.hTitle}>{item.cultura_nome || 'Lavoura'}</Text>
-                                <Text style={styles.hSub}>{item.talhao || 'Área Principal'} • {item.area_ha} ha</Text>
+                                <Text style={styles.hSub}>{item.talhao || 'Ãrea Principal'} â€¢ {item.area_ha} ha</Text>
                             </View>
                             <View style={styles.statusBadge}><Text style={styles.statusText}>ATIVO</Text></View>
                         </View>
@@ -72,3 +72,4 @@ const styles = StyleSheet.create({
     fab: { position: 'absolute', right: 20, bottom: 40, shadowColor: '#10B981', shadowOpacity: 0.3, shadowRadius: 15, elevation: 12 },
     fabGrad: { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center' }
 });
+

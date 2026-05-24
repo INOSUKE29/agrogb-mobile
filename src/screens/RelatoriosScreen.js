@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useMemo } from 'react';
+﻿import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Dimensions, Platform, StatusBar, SafeAreaView } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import SafeBlurView from '../ui/SafeBlurView';
+
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { generateVendasPDF, generateEstoquePDF, generateColheitaPDF } from '../services/ReportService';
@@ -13,8 +13,8 @@ import { executeQuery } from '../database/database';
 const { width } = Dimensions.get('window');
 
 /**
- * AgroGB OS - Dashboard Intelligence (Diamond Pro Level) 💎
- * Tela mais avançada e premium de relatórios já criada para o sistema.
+ * AgroGB OS - Dashboard Intelligence (Diamond Pro Level) ðŸ’Ž
+ * Tela mais avanÃ§ada e premium de relatÃ³rios jÃ¡ criada para o sistema.
  */
 export default function RelatoriosScreen() {
     const navigation = useNavigation();
@@ -22,7 +22,7 @@ export default function RelatoriosScreen() {
     const [tab, setTab] = useState('DASHBOARD');
     const [periodo, setPeriodo] = useState('MES'); // 7D, MES, ANO, TUDO
 
-    // Gráficos e Inteligência
+    // GrÃ¡ficos e InteligÃªncia
     const [prodSemanal, setProdSemanal] = useState([0, 0, 0, 0, 0, 0, 0]);
     const [finMensal, setFinMensal] = useState({ vendas: 0, custos: 0, lucro: 0 });
     const [metricasBi, setMetricasBi] = useState({ margem: 0, ticketMedio: 0 });
@@ -38,7 +38,7 @@ export default function RelatoriosScreen() {
         try {
             let dataFound = false;
 
-            // Motor Lógico Temporal Nível Enterprise
+            // Motor LÃ³gico Temporal NÃ­vel Enterprise
             let filtroData = "";
             let filtroPrev = "";
             let dataStrColheita = "";
@@ -105,23 +105,23 @@ export default function RelatoriosScreen() {
                 diffLucro: diffLucro
             });
             
-            // MÉTRICAS BI
+            // MÃ‰TRICAS BI
             const margem = v > 0 ? ((lucroNow / v) * 100) : 0;
             const ticketMedio = qVendas > 0 ? (v / qVendas) : 0;
             setMetricasBi({ margem, ticketMedio });
 
-            // AGROBOT CORTEX (INTELIGÊNCIA PREDITIVA)
-            if (v === 0 && c === 0) setCortexInsight({ tipo: 'info', msg: 'Sem movimentações financeiras para analisar no momento.' });
+            // AGROBOT CORTEX (INTELIGÃŠNCIA PREDITIVA)
+            if (v === 0 && c === 0) setCortexInsight({ tipo: 'info', msg: 'Sem movimentaÃ§Ãµes financeiras para analisar no momento.' });
             else if (lucroNow < 0) {
-                setCortexInsight({ tipo: 'alert', msg: `Seus custos estão consumindo as vendas. Tente represar saídas e avaliar o preço da colheita atual.` });
+                setCortexInsight({ tipo: 'alert', msg: `Seus custos estÃ£o consumindo as vendas. Tente represar saÃ­das e avaliar o preÃ§o da colheita atual.` });
             } else if (calcPerc(c, prev_c) > 10 && calcPerc(v, prev_v) < 0) {
-                setCortexInsight({ tipo: 'alert', msg: `Atenção: Seus Custos subiram enquanto suas Vendas caíram comparado ao período anterior. Revise compras de insumos.` });
+                setCortexInsight({ tipo: 'alert', msg: `AtenÃ§Ã£o: Seus Custos subiram enquanto suas Vendas caÃ­ram comparado ao perÃ­odo anterior. Revise compras de insumos.` });
             } else if (margem > 40) {
-                setCortexInsight({ tipo: 'success', msg: `Excelente performance! Operação rodando com margem incrível de ${margem.toFixed(0)}%. O negócio está altamente escalável.` });
+                setCortexInsight({ tipo: 'success', msg: `Excelente performance! OperaÃ§Ã£o rodando com margem incrÃ­vel de ${margem.toFixed(0)}%. O negÃ³cio estÃ¡ altamente escalÃ¡vel.` });
             } else if (v > prev_v) {
-                setCortexInsight({ tipo: 'success', msg: `Crescimento constante. Você aumentou o faturamento em relação à marca histórica. Continue a aceleração.` });
+                setCortexInsight({ tipo: 'success', msg: `Crescimento constante. VocÃª aumentou o faturamento em relaÃ§Ã£o Ã  marca histÃ³rica. Continue a aceleraÃ§Ã£o.` });
             } else {
-                setCortexInsight({ tipo: 'info', msg: `Operação estável. Foque em fechar bons clientes e economizar insumos para aumentar a margem bruta de ${Math.max(margem, 0).toFixed(0)}%.` });
+                setCortexInsight({ tipo: 'info', msg: `OperaÃ§Ã£o estÃ¡vel. Foque em fechar bons clientes e economizar insumos para aumentar a margem bruta de ${Math.max(margem, 0).toFixed(0)}%.` });
             }
 
             if (v > 0 || c > 0) dataFound = true;
@@ -163,7 +163,7 @@ export default function RelatoriosScreen() {
             }
             setRecentFeeds(feeds);
 
-            // Fetch Previsão de Colheita
+            // Fetch PrevisÃ£o de Colheita
             try {
                 const prevQ = await executeQuery(`SELECT quantidade_pes, observacao FROM plantio WHERE is_deleted = 0 AND observacao LIKE '%PREV: %'`);
                 let mesesMap = {};
@@ -194,10 +194,10 @@ export default function RelatoriosScreen() {
                     setPrevisaoColheita({ labels: ['Sem dados'], data: [0] });
                 }
             } catch (e) {
-                console.log('Erro ao consultar previsão', e);
+                console.log('Erro ao consultar previsÃ£o', e);
             }
 
-            // Fetch Cadastros (Visão Geral)
+            // Fetch Cadastros (VisÃ£o Geral)
             try {
                 const cCli = await executeQuery('SELECT COUNT(*) as c FROM clientes WHERE is_deleted = 0');
                 const cIns = await executeQuery('SELECT COUNT(*) as c FROM cadastro WHERE is_deleted = 0');
@@ -224,7 +224,7 @@ export default function RelatoriosScreen() {
             else if (type === 'COLHEITA') await generateColheitaPDF();
             Alert.alert('Sucesso', 'PDF gravado e pronto para envio!');
         } catch {
-            Alert.alert('Erro', 'Não foi possível gerar o PDF.');
+            Alert.alert('Erro', 'NÃ£o foi possÃ­vel gerar o PDF.');
         } finally { setLoading(false); }
     };
 
@@ -239,7 +239,7 @@ export default function RelatoriosScreen() {
             const res = await executeQuery(query);
             
             if(res.rows.length === 0) {
-               Alert.alert('Vazio', 'Não há registros nesta área ainda.');
+               Alert.alert('Vazio', 'NÃ£o hÃ¡ registros nesta Ã¡rea ainda.');
                return;
             }
             
@@ -261,7 +261,7 @@ export default function RelatoriosScreen() {
             await Sharing.shareAsync(uri, { dialogTitle: 'Baixar ' + title });
         } catch(e) {
             console.log(e);
-            Alert.alert('Erro', 'Não foi possível exportar a planilha.');
+            Alert.alert('Erro', 'NÃ£o foi possÃ­vel exportar a planilha.');
         } finally { setLoading(false); }
     };
 
@@ -314,7 +314,7 @@ export default function RelatoriosScreen() {
 
     return (
         <View style={styles.container}>
-            <LinearGradient colors={['#040914', '#0A1220']} style={StyleSheet.absoluteFill} />
+            
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
             
             <SafeAreaView style={{ flex: 1, width: '100%', maxWidth: 600, alignSelf: 'center' }}>
@@ -325,7 +325,7 @@ export default function RelatoriosScreen() {
                         <Ionicons name="chevron-back" size={26} color="#FFF" />
                     </TouchableOpacity>
                     <View style={styles.headerTextContainer}>
-                        <Text style={styles.headerTitle}>Inteligência de Dados</Text>
+                        <Text style={styles.headerTitle}>InteligÃªncia de Dados</Text>
                         <Text style={styles.headerSubtitle}>Monitoramento Global</Text>
                     </View>
                     <View style={{ width: 44 }} />
@@ -333,16 +333,16 @@ export default function RelatoriosScreen() {
 
                 {/* SEGMENTED CONTROL NEON */}
                 <View style={styles.segmentWrapper}>
-                    <SafeBlurView intensity={20} tint="dark" style={styles.segmentInner}>
-                        {['DASHBOARD', 'TODOS RELATÓRIOS'].map(mode => {
-                            const isActive = mode === (tab === 'DASHBOARD' ? 'DASHBOARD' : 'TODOS RELATÓRIOS');
+                    <View intensity={20} tint="dark" style={styles.segmentInner}>
+                        {['DASHBOARD', 'TODOS RELATÃ“RIOS'].map(mode => {
+                            const isActive = mode === (tab === 'DASHBOARD' ? 'DASHBOARD' : 'TODOS RELATÃ“RIOS');
                             return (
                                 <TouchableOpacity
                                     key={mode}
                                     style={[styles.segmentBtn, isActive && styles.segmentBtnActive]}
                                     onPress={() => setTab(mode === 'DASHBOARD' ? 'DASHBOARD' : 'PDF')}
                                 >
-                                    {isActive && <LinearGradient colors={['rgba(16, 185, 129, 0.2)', 'transparent']} style={StyleSheet.absoluteFill} />}
+                                    {isActive && }
                                     <Text style={[styles.segmentText, isActive ? styles.segmentTextActive : {}]}>
                                         {mode}
                                     </Text>
@@ -350,7 +350,7 @@ export default function RelatoriosScreen() {
                                 </TouchableOpacity>
                             );
                         })}
-                    </SafeBlurView>
+                    </View>
                 </View>
 
                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -361,9 +361,9 @@ export default function RelatoriosScreen() {
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, marginBottom: 20 }}>
                                 {[
                                     { k: '7D', l: '7 Dias' },
-                                    { k: 'MES', l: 'Este Mês' },
+                                    { k: 'MES', l: 'Este MÃªs' },
                                     { k: 'ANO', l: 'Este Ano' },
-                                    { k: 'TUDO', l: 'Início Global' }
+                                    { k: 'TUDO', l: 'InÃ­cio Global' }
                                 ].map(f => {
                                     const active = periodo === f.k;
                                     return (
@@ -380,26 +380,26 @@ export default function RelatoriosScreen() {
                                     <View style={styles.cortexBrain}>
                                         <Ionicons name="hardware-chip" size={16} color={cortexInsight.tipo === 'alert' ? '#F87171' : cortexInsight.tipo === 'success' ? '#34D399' : '#3B82F6'} />
                                     </View>
-                                    <Text style={styles.cortexTitle}>AgroGB Insights™</Text>
+                                    <Text style={styles.cortexTitle}>AgroGB Insightsâ„¢</Text>
                                 </View>
                                 <Text style={styles.cortexMessage}>{cortexInsight.msg}</Text>
                             </View>
 
-                            <Text style={styles.sectionHeader}>💰 BALANÇO FINANCEIRO</Text>
+                            <Text style={styles.sectionHeader}>ðŸ’° BALANÃ‡O FINANCEIRO</Text>
                             {/* KPI GRID */}
                             <View style={styles.kpiGrid}>
-                                <SafeBlurView intensity={30} tint="dark" style={styles.kpiCard}>
+                                <View intensity={30} tint="dark" style={styles.kpiCard}>
                                     <View style={styles.kpiIconBox}>
                                         <Ionicons name="cash" size={16} color="#34D399" />
                                     </View>
                                     <Text style={styles.kpiValue}>{formatCurrency(finMensal.vendas)}</Text>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <Text style={styles.kpiLabel}>FATURAMENTO MÊS</Text>
+                                        <Text style={styles.kpiLabel}>FATURAMENTO MÃŠS</Text>
                                         <PercBadge value={finMensal.diffVendas} />
                                     </View>
-                                </SafeBlurView>
+                                </View>
                                 
-                                <SafeBlurView intensity={30} tint="dark" style={styles.kpiCard}>
+                                <View intensity={30} tint="dark" style={styles.kpiCard}>
                                     <View style={styles.kpiIconBox}>
                                         <Ionicons name="leaf" size={16} color="#34D399" />
                                     </View>
@@ -407,20 +407,20 @@ export default function RelatoriosScreen() {
                                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                                         <Text style={styles.kpiLabel}>COLHEITA 7 DIAS</Text>
                                     </View>
-                                </SafeBlurView>
+                                </View>
 
-                                <SafeBlurView intensity={30} tint="dark" style={styles.kpiCard}>
+                                <View intensity={30} tint="dark" style={styles.kpiCard}>
                                     <View style={styles.kpiIconBox}>
                                         <Ionicons name="trending-down" size={16} color="#64748B" />
                                     </View>
                                     <Text style={styles.kpiValue}>{formatCurrency(finMensal.custos)}</Text>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <Text style={styles.kpiLabel}>CUSTOS MÊS</Text>
+                                        <Text style={styles.kpiLabel}>CUSTOS MÃŠS</Text>
                                         <PercBadge value={finMensal.diffCustos} invert={true} />
                                     </View>
-                                </SafeBlurView>
+                                </View>
                                 
-                                <SafeBlurView intensity={30} tint="dark" style={styles.kpiCard}>
+                                <View intensity={30} tint="dark" style={styles.kpiCard}>
                                     <View style={styles.kpiIconBox}>
                                         <Ionicons name="wallet" size={16} color="#FBBF24" />
                                     </View>
@@ -428,30 +428,30 @@ export default function RelatoriosScreen() {
                                         {formatCurrency(finMensal.lucro)}
                                     </Text>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <Text style={styles.kpiLabel}>LUCRO LÍQUIDO</Text>
+                                        <Text style={styles.kpiLabel}>LUCRO LÃQUIDO</Text>
                                         <PercBadge value={finMensal.diffLucro} />
                                     </View>
-                                </SafeBlurView>
+                                </View>
                             </View>
 
                             {/* BI METRICS (TICKET & MARGIN) */}
                             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
-                                <SafeBlurView intensity={30} tint="dark" style={[styles.mainCard, { flex: 1, marginBottom: 0, paddingVertical: 15 }]}>
+                                <View intensity={30} tint="dark" style={[styles.mainCard, { flex: 1, marginBottom: 0, paddingVertical: 15 }]}>
                                     <Text style={styles.kpiLabel}>MARGEM BRUTA</Text>
                                     <Text style={[styles.kpiValue, { fontSize: 20, color: metricasBi.margem > 0 ? '#34D399' : '#F87171' }]}>{metricasBi.margem.toFixed(1)}%</Text>
-                                </SafeBlurView>
-                                <SafeBlurView intensity={30} tint="dark" style={[styles.mainCard, { flex: 1, marginBottom: 0, paddingVertical: 15 }]}>
-                                    <Text style={styles.kpiLabel}>TICKET MÉDIO</Text>
+                                </View>
+                                <View intensity={30} tint="dark" style={[styles.mainCard, { flex: 1, marginBottom: 0, paddingVertical: 15 }]}>
+                                    <Text style={styles.kpiLabel}>TICKET MÃ‰DIO</Text>
                                     <Text style={[styles.kpiValue, { fontSize: 20, color: '#3B82F6' }]}>{formatCurrency(metricasBi.ticketMedio)}</Text>
-                                </SafeBlurView>
+                                </View>
                             </View>
 
-                            <Text style={[styles.sectionHeader, { marginTop: 10 }]}>🌾 OPERACIONAL & CAMPO</Text>
-                            {/* GRÁFICO 1: PRODUÇÃO (Green Line) */}
-                            <SafeBlurView intensity={30} tint="dark" style={styles.mainCard}>
+                            <Text style={[styles.sectionHeader, { marginTop: 10 }]}>ðŸŒ¾ OPERACIONAL & CAMPO</Text>
+                            {/* GRÃFICO 1: PRODUÃ‡ÃƒO (Green Line) */}
+                            <View intensity={30} tint="dark" style={styles.mainCard}>
                                 <View style={styles.cardHeader}>
                                     <Ionicons name="leaf-outline" size={18} color="#34D399" />
-                                    <Text style={styles.cardTitle}>PRODUÇÃO ÚLTIMOS 7 DIAS (KG)</Text>
+                                    <Text style={styles.cardTitle}>PRODUÃ‡ÃƒO ÃšLTIMOS 7 DIAS (KG)</Text>
                                 </View>
                                 {totalProdSemanal > 0 ? (
                                     <LineChart
@@ -462,13 +462,13 @@ export default function RelatoriosScreen() {
                                 ) : (
                                     <View style={styles.emptyState}>
                                         <MaterialCommunityIcons name="finance" size={40} color="rgba(255,255,255,0.1)" />
-                                        <Text style={styles.emptyText}>Nenhuma colheita nos últimos 7 dias.</Text>
+                                        <Text style={styles.emptyText}>Nenhuma colheita nos Ãºltimos 7 dias.</Text>
                                     </View>
                                 )}
-                            </SafeBlurView>
+                            </View>
 
-                            {/* GRÁFICO 2: FINANCEIRO (Blue Bars) */}
-                            <SafeBlurView intensity={30} tint="dark" style={styles.mainCard}>
+                            {/* GRÃFICO 2: FINANCEIRO (Blue Bars) */}
+                            <View intensity={30} tint="dark" style={styles.mainCard}>
                                 <View style={styles.cardHeader}>
                                     <Ionicons name="bar-chart-outline" size={18} color="#3B82F6" />
                                     <Text style={styles.cardTitle}>PERFORMANCE FINANCEIRA</Text>
@@ -481,16 +481,16 @@ export default function RelatoriosScreen() {
                                 ) : (
                                     <View style={styles.emptyState}>
                                         <MaterialCommunityIcons name="finance" size={40} color="rgba(255,255,255,0.1)" />
-                                        <Text style={styles.emptyText}>Sem movimentações financeiras este mês.</Text>
+                                        <Text style={styles.emptyText}>Sem movimentaÃ§Ãµes financeiras este mÃªs.</Text>
                                     </View>
                                 )}
-                            </SafeBlurView>
+                            </View>
 
-                            {/* GRÁFICO 2.5: PREVISÃO DE COLHEITA (Orange Bars) */}
-                            <SafeBlurView intensity={30} tint="dark" style={styles.mainCard}>
+                            {/* GRÃFICO 2.5: PREVISÃƒO DE COLHEITA (Orange Bars) */}
+                            <View intensity={30} tint="dark" style={styles.mainCard}>
                                 <View style={styles.cardHeader}>
                                     <Ionicons name="calendar-outline" size={18} color="#F59E0B" />
-                                    <Text style={styles.cardTitle}>PREVISÃO DE COLHEITA FUTURA (PÉS)</Text>
+                                    <Text style={styles.cardTitle}>PREVISÃƒO DE COLHEITA FUTURA (PÃ‰S)</Text>
                                 </View>
                                 {previsaoColheita.data.reduce((a,b) => a + b, 0) > 0 ? (
                                     <BarChart
@@ -500,14 +500,14 @@ export default function RelatoriosScreen() {
                                 ) : (
                                     <View style={styles.emptyState}>
                                         <MaterialCommunityIcons name="finance" size={40} color="rgba(255,255,255,0.1)" />
-                                        <Text style={styles.emptyText}>Sem previsões de colheita ativas.</Text>
+                                        <Text style={styles.emptyText}>Sem previsÃµes de colheita ativas.</Text>
                                     </View>
                                 )}
-                            </SafeBlurView>
+                            </View>
 
-                            {/* GRÁFICO 3: DISTRIBUIÇÃO (Pie) */}
+                            {/* GRÃFICO 3: DISTRIBUIÃ‡ÃƒO (Pie) */}
                             {custosCat.length > 0 && (
-                                <SafeBlurView intensity={30} tint="dark" style={styles.mainCard}>
+                                <View intensity={30} tint="dark" style={styles.mainCard}>
                                     <View style={styles.cardHeader}>
                                         <Ionicons name="pie-chart-outline" size={18} color="#A78BFA" />
                                         <Text style={styles.cardTitle}>TOP 5 CENTROS DE CUSTO</Text>
@@ -515,30 +515,30 @@ export default function RelatoriosScreen() {
                                     <PieChart
                                         data={custosCat} width={width - 60} height={180} chartConfig={chartConfig} accessor="total" backgroundColor="transparent" paddingLeft="10" absolute
                                     />
-                                </SafeBlurView>
+                                </View>
                             )}
 
-                            <Text style={[styles.sectionHeader, { marginTop: 10 }]}>🗂️ BASE DE DADOS (VISÃO GERAL)</Text>
+                            <Text style={[styles.sectionHeader, { marginTop: 10 }]}>ðŸ—‚ï¸ BASE DE DADOS (VISÃƒO GERAL)</Text>
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
-                                <SafeBlurView intensity={30} tint="dark" style={styles.miniCard}>
+                                <View intensity={30} tint="dark" style={styles.miniCard}>
                                     <Ionicons name="people" size={18} color="#A78BFA" style={{ marginBottom: 4 }} />
                                     <Text style={styles.miniCardValue}>{cadastrosTot.clientes}</Text>
                                     <Text style={styles.miniCardLabel}>CLIENTES</Text>
-                                </SafeBlurView>
-                                <SafeBlurView intensity={30} tint="dark" style={styles.miniCard}>
+                                </View>
+                                <View intensity={30} tint="dark" style={styles.miniCard}>
                                     <Ionicons name="list" size={18} color="#FBBF24" style={{ marginBottom: 4 }} />
                                     <Text style={styles.miniCardValue}>{cadastrosTot.insumos}</Text>
                                     <Text style={styles.miniCardLabel}>INSUMOS</Text>
-                                </SafeBlurView>
-                                <SafeBlurView intensity={30} tint="dark" style={styles.miniCard}>
+                                </View>
+                                <View intensity={30} tint="dark" style={styles.miniCard}>
                                     <Ionicons name="flask" size={18} color="#34D399" style={{ marginBottom: 4 }} />
                                     <Text style={styles.miniCardValue}>{cadastrosTot.plantios}</Text>
                                     <Text style={styles.miniCardLabel}>PLANTIOS</Text>
-                                </SafeBlurView>
+                                </View>
                             </View>
 
-                            <Text style={[styles.sectionHeader, { marginTop: 10 }]}>⏱️ ÚLTIMOS ACONTECIMENTOS (LIVE FEED)</Text>
-                            <SafeBlurView intensity={30} tint="dark" style={[styles.mainCard, { paddingVertical: 10 }]}>
+                            <Text style={[styles.sectionHeader, { marginTop: 10 }]}>â±ï¸ ÃšLTIMOS ACONTECIMENTOS (LIVE FEED)</Text>
+                            <View intensity={30} tint="dark" style={[styles.mainCard, { paddingVertical: 10 }]}>
                                 {recentFeeds.length > 0 ? recentFeeds.map((feed, idx) => {
                                     const isVenda = feed.tipo === 'VENDA';
                                     const isCusto = feed.tipo === 'CUSTO';
@@ -551,7 +551,7 @@ export default function RelatoriosScreen() {
                                                 <Ionicons name={icon} size={14} color={iconColor} />
                                             </View>
                                             <View style={styles.feedContent}>
-                                                <Text style={styles.feedTitle}>{feed.tipo === 'COLHEITA' ? 'Colheita Registrada' : feed.tipo === 'VENDA' ? 'Nova Venda' : 'Despesa Lançada'}</Text>
+                                                <Text style={styles.feedTitle}>{feed.tipo === 'COLHEITA' ? 'Colheita Registrada' : feed.tipo === 'VENDA' ? 'Nova Venda' : 'Despesa LanÃ§ada'}</Text>
                                                 <Text style={styles.feedSub}>{feed.detalhe}</Text>
                                             </View>
                                             <View style={{ alignItems: 'flex-end' }}>
@@ -567,18 +567,18 @@ export default function RelatoriosScreen() {
                                         <Text style={styles.emptyText}>Sem atividades recentes na fazenda.</Text>
                                     </View>
                                 )}
-                            </SafeBlurView>
+                            </View>
 
                         </>
                     ) : (
                         <View style={styles.pdfSection}>
-                            <Text style={styles.sectionHeader}>👑 PDFs FORMAIS (Impressoes Globais)</Text>
+                            <Text style={styles.sectionHeader}>ðŸ‘‘ PDFs FORMAIS (Impressoes Globais)</Text>
                             <TouchableOpacity style={styles.pdfCard} activeOpacity={0.8} onPress={() => handleReport('VENDAS')}>
                                 <View style={styles.pdfIconBg}>
                                     <Ionicons name="receipt-outline" size={20} color="#34D399" />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.pdfTitle}>Relatório de Vendas (Recibos)</Text>
+                                    <Text style={styles.pdfTitle}>RelatÃ³rio de Vendas (Recibos)</Text>
                                     <Text style={styles.pdfSub}>Listagem pronta para enviar.</Text>
                                 </View>
                                 <View style={styles.pdfDownloadBtn}>
@@ -591,21 +591,21 @@ export default function RelatoriosScreen() {
                                     <Ionicons name="cube-outline" size={20} color="#34D399" />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.pdfTitle}>Posição de Estoque</Text>
-                                    <Text style={styles.pdfSub}>Resumo do seu inventário atual.</Text>
+                                    <Text style={styles.pdfTitle}>PosiÃ§Ã£o de Estoque</Text>
+                                    <Text style={styles.pdfSub}>Resumo do seu inventÃ¡rio atual.</Text>
                                 </View>
                                 <View style={styles.pdfDownloadBtn}>
                                     <Ionicons name="document-text-outline" size={16} color="#FFF" />
                                 </View>
                             </TouchableOpacity>
 
-                            <Text style={[styles.sectionHeader, { marginTop: 15 }]}>📊 PLANILHAS EM EXCEL (.CSV)</Text>
+                            <Text style={[styles.sectionHeader, { marginTop: 15 }]}>ðŸ“Š PLANILHAS EM EXCEL (.CSV)</Text>
                             {[
-                                { t: 'vendas', n: 'Histórico de Vendas', i: 'cash-outline' },
-                                { t: 'compras', n: 'Relatório de Custos/Compras', i: 'trending-down-outline' },
+                                { t: 'vendas', n: 'HistÃ³rico de Vendas', i: 'cash-outline' },
+                                { t: 'compras', n: 'RelatÃ³rio de Custos/Compras', i: 'trending-down-outline' },
                                 { t: 'colheitas', n: 'Registros de Colheita', i: 'leaf-outline' },
-                                { t: 'plantio', n: 'Histórico de Plantios', i: 'flask-outline' },
-                                { t: 'cadastro', n: 'Catálogo de Produtos / Insumos', i: 'list-outline' },
+                                { t: 'plantio', n: 'HistÃ³rico de Plantios', i: 'flask-outline' },
+                                { t: 'cadastro', n: 'CatÃ¡logo de Produtos / Insumos', i: 'list-outline' },
                                 { t: 'clientes', n: 'Base de Parceiros', i: 'people-outline' }
                             ].map(item => (
                                 <TouchableOpacity key={item.t} style={styles.xlsCard} activeOpacity={0.8} onPress={() => exportCSV(item.t, item.n)}>
@@ -623,7 +623,7 @@ export default function RelatoriosScreen() {
                             
                             <View style={[styles.pdfDisclaimer, { marginBottom: 30 }]}>
                                 <Ionicons name="information-circle-outline" size={16} color="#64748B" />
-                                <Text style={styles.pdfDisclaimerText}>Os PDFs são adequados para impressão A4. As planilhas CSV exportam os bancos de dados puros para contabilidade.</Text>
+                                <Text style={styles.pdfDisclaimerText}>Os PDFs sÃ£o adequados para impressÃ£o A4. As planilhas CSV exportam os bancos de dados puros para contabilidade.</Text>
                             </View>
                         </View>
                     )}
@@ -716,3 +716,4 @@ const styles = StyleSheet.create({
     overlayLoading: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', zIndex: 100 },
     loadingText: { color: '#FFF', marginTop: 15, fontSize: 12, fontWeight: '800', letterSpacing: 1 }
 });
+

@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
     View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, 
     Modal, TextInput, SafeAreaView, StatusBar, Platform, KeyboardAvoidingView 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { v4 as uuidv4 } from 'uuid';
-import { BlurView } from 'expo-blur';
+
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFertilization } from '../modules/production/hooks/useFertilization';
 import { useInventory } from '../modules/inventory/hooks/useInventory';
@@ -39,7 +39,7 @@ export default function AdubacaoFormScreen({ route, navigation }) {
 
     const handleAddItem = () => {
         if (!selectedStockItem || !itemQty) {
-            Alert.alert('Atenção', 'Selecione um insumo e digite a quantidade.');
+            Alert.alert('AtenÃ§Ã£o', 'Selecione um insumo e digite a quantidade.');
             return;
         }
         addInsumo({
@@ -55,7 +55,7 @@ export default function AdubacaoFormScreen({ route, navigation }) {
 
     const handleSave = async () => {
         if (!nome || !cultura) {
-            Alert.alert('Obrigatório', 'Preencha o Nome do Plano e a Cultura.');
+            Alert.alert('ObrigatÃ³rio', 'Preencha o Nome do Plano e a Cultura.');
             return;
         }
 
@@ -72,7 +72,7 @@ export default function AdubacaoFormScreen({ route, navigation }) {
             };
 
             await savePlan(data);
-            showToast('✅ Plano de adubação salvo com sucesso!');
+            showToast('âœ… Plano de adubaÃ§Ã£o salvo com sucesso!');
             navigation.goBack();
         } catch {
             Alert.alert('Erro', 'Falha ao salvar plano.');
@@ -108,7 +108,7 @@ export default function AdubacaoFormScreen({ route, navigation }) {
 
     return (
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-            <LinearGradient colors={['#040914', '#0A1220']} style={StyleSheet.absoluteFill} />
+            
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
             <SafeAreaView style={{ flex: 1 }}>
@@ -125,21 +125,21 @@ export default function AdubacaoFormScreen({ route, navigation }) {
 
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                     
-                    {/* Formulário */}
-                    {renderInput('NOME DO PLANO', nome, setNome, 'EX: ADUBAÇÃO DE COBERTURA', 'nome')}
+                    {/* FormulÃ¡rio */}
+                    {renderInput('NOME DO PLANO', nome, setNome, 'EX: ADUBAÃ‡ÃƒO DE COBERTURA', 'nome')}
                     
                     <View style={{ flexDirection: 'row', gap: 15 }}>
                         {renderInput('CULTURA', cultura, setCultura, 'EX: MILHO', 'cultura', false, true)}
-                        {renderInput('ÁREA / LOCAL', area, setArea, 'G01', 'area', false, true)}
+                        {renderInput('ÃREA / LOCAL', area, setArea, 'G01', 'area', false, true)}
                     </View>
 
                     {/* Selector de Tipo (Pills Neon) */}
-                    <Text style={[styles.label, { marginTop: 10 }]}>MÉTODO DE APLICAÇÃO</Text>
+                    <Text style={[styles.label, { marginTop: 10 }]}>MÃ‰TODO DE APLICAÃ‡ÃƒO</Text>
                     <View style={styles.pillContainer}>
                         {[
                             { id: 'GOTEJO', label: 'GOTEJO', icon: 'water', color: '#3B82F6' },
-                            { id: 'PULVERIZACAO', label: 'PULVERIZAÇÃO', icon: 'cloud-outline', color: '#10B981' },
-                            { id: 'LANCO', label: 'A LANÇO', icon: 'tractor', color: '#F59E0B' }
+                            { id: 'PULVERIZACAO', label: 'PULVERIZAÃ‡ÃƒO', icon: 'cloud-outline', color: '#10B981' },
+                            { id: 'LANCO', label: 'A LANÃ‡O', icon: 'tractor', color: '#F59E0B' }
                         ].map(m => {
                             const active = tipo === m.id;
                             return (
@@ -168,7 +168,7 @@ export default function AdubacaoFormScreen({ route, navigation }) {
                         {itens.length === 0 ? (
                             <View style={styles.emptyInsumos}>
                                 <Ionicons name="flask-outline" size={32} color="rgba(255,255,255,0.1)" />
-                                <Text style={styles.emptyInsumosText}>A receita está vazia.</Text>
+                                <Text style={styles.emptyInsumosText}>A receita estÃ¡ vazia.</Text>
                             </View>
                         ) : (
                             <View style={{ gap: 10 }}>
@@ -190,9 +190,9 @@ export default function AdubacaoFormScreen({ route, navigation }) {
                         )}
                     </View>
 
-                    {renderInput('NOTAS TÉCNICAS (OPCIONAL)', descricao, setDescricao, 'Digite observações importantes...', 'desc', true)}
+                    {renderInput('NOTAS TÃ‰CNICAS (OPCIONAL)', descricao, setDescricao, 'Digite observaÃ§Ãµes importantes...', 'desc', true)}
 
-                    {/* Ações */}
+                    {/* AÃ§Ãµes */}
                     <View style={styles.actionRow}>
                         <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()}>
                             <Text style={styles.cancelBtnText}>CANCELAR</Text>
@@ -213,13 +213,13 @@ export default function AdubacaoFormScreen({ route, navigation }) {
                 <View style={styles.modalOverlay}>
                     <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setItemSelectorVisible(false)} />
                     
-                    <BlurView intensity={60} tint="dark" style={styles.modalSheet}>
+                    <View intensity={60} tint="dark" style={styles.modalSheet}>
                         <View style={styles.modalHandle} />
-                        <Text style={styles.modalTitle}>CATÁLOGO DE ESTOQUE</Text>
+                        <Text style={styles.modalTitle}>CATÃLOGO DE ESTOQUE</Text>
 
                         <ScrollView style={{ maxHeight: 250 }} showsVerticalScrollIndicator={false}>
                             {stockItems.length === 0 ? (
-                                <Text style={styles.modalEmpty}>Seu estoque está vazio.</Text>
+                                <Text style={styles.modalEmpty}>Seu estoque estÃ¡ vazio.</Text>
                             ) : stockItems.map(item => {
                                 const active = selectedStockItem?.produto === item.produto;
                                 return (
@@ -260,7 +260,7 @@ export default function AdubacaoFormScreen({ route, navigation }) {
                                 </TouchableOpacity>
                             </View>
                         )}
-                    </BlurView>
+                    </View>
                 </View>
             </Modal>
 
@@ -329,3 +329,4 @@ const styles = StyleSheet.create({
     confirmBtnGradient: { height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center', shadowColor: '#10B981', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
     confirmBtnText: { color: '#FFF', fontSize: 13, fontWeight: '900', letterSpacing: 1 }
 });
+

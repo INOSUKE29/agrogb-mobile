@@ -1,6 +1,6 @@
-/**
- * RegisterScreen.js — AgroGB OS
- * Réplica exata do LoginScreen com fundo Azul Marinho Escuro limpo.
+﻿/**
+ * RegisterScreen.js â€” AgroGB OS
+ * RÃ©plica exata do LoginScreen com fundo Azul Marinho Escuro limpo.
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -17,7 +17,7 @@ import { register } from '../services/authService';
 
 const { width } = Dimensions.get('window');
 
-// ── FORÇA DA SENHA ────────────────────────────────────────────────────────────
+// â”€â”€ FORÃ‡A DA SENHA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const getPasswordStrength = (pwd) => {
     if (!pwd) return { level: 0, label: '', color: '#374151' };
     let score = 0;
@@ -57,24 +57,24 @@ export default function RegisterScreen() {
     const pwStrength = getPasswordStrength(password);
 
     const handleRegister = async () => {
-        if (!nome.trim() || !email.trim()) return Alert.alert('Atenção', 'Preencha todos os campos.');
-        if (!password || password.length < 8) return Alert.alert('Senha fraca', 'Use no mínimo 8 caracteres.');
-        if (password !== confirmPassword) return Alert.alert('Senhas diferentes', 'A confirmação falhou.');
+        if (!nome.trim() || !email.trim()) return Alert.alert('AtenÃ§Ã£o', 'Preencha todos os campos.');
+        if (!password || password.length < 8) return Alert.alert('Senha fraca', 'Use no mÃ­nimo 8 caracteres.');
+        if (password !== confirmPassword) return Alert.alert('Senhas diferentes', 'A confirmaÃ§Ã£o falhou.');
 
         setLoading(true);
         try {
             const res = await register(nome.trim(), email.trim(), password);
             if (res.success) {
                 Alert.alert(
-                    '✅ Conta criada!',
-                    'Bem-vindo ao AgroGB. Faça login para acessar sua fazenda.',
+                    'âœ… Conta criada!',
+                    'Bem-vindo ao AgroGB. FaÃ§a login para acessar sua fazenda.',
                     [{ text: 'Fazer Login', onPress: () => navigation.navigate('Login') }]
                 );
             } else {
                 Alert.alert('Erro no Cadastro', res.message || 'Tente novamente.');
             }
         } catch {
-            Alert.alert('Erro', 'Falha na conexão com o servidor.');
+            Alert.alert('Erro', 'Falha na conexÃ£o com o servidor.');
         } finally {
             setLoading(false);
         }
@@ -84,18 +84,15 @@ export default function RegisterScreen() {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.root}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-            {/* ── BACKGROUND NAVY ───────────────── */}
+            {/* â”€â”€ BACKGROUND NAVY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <View style={StyleSheet.absoluteFill}>
-                <LinearGradient
-                    colors={['#05111C', '#0B1626', '#0A1523', '#060D15']} // Fundo dark navy identico ao login
-                    style={StyleSheet.absoluteFill}
-                />
+                
             </View>
 
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                 <Animated.View style={[{ opacity: fadeAnim, transform: [{ translateY: slideAnim }], flex: 1 }]}>
                     
-                    {/* ── HEADER ──────────────────────────────────────── */}
+                    {/* â”€â”€ HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                     <View style={styles.header}>
                         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                             <Ionicons name="arrow-back" size={24} color="#FFF" />
@@ -104,9 +101,9 @@ export default function RegisterScreen() {
                     </View>
 
                     <Text style={styles.brandTitle}>Criar Conta</Text>
-                    <Text style={styles.brandSubtitle}>INFORMAÇÕES DE ACESSO</Text>
+                    <Text style={styles.brandSubtitle}>INFORMAÃ‡Ã•ES DE ACESSO</Text>
 
-                    {/* ── FORM CARD ──────────────── */}
+                    {/* â”€â”€ FORM CARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                     <View style={styles.formSection}>
 
                         {step === 1 ? (
@@ -116,7 +113,7 @@ export default function RegisterScreen() {
                                     <Ionicons name="person-outline" size={20} color="#6B7280" />
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="ex: João da Silva"
+                                        placeholder="ex: JoÃ£o da Silva"
                                         placeholderTextColor="#4B5563"
                                         value={nome}
                                         onChangeText={setNome}
@@ -138,11 +135,11 @@ export default function RegisterScreen() {
                                 </View>
 
                                 <TouchableOpacity style={styles.enterBtn} onPress={() => {
-                                    if (!nome.trim() || !email.trim()) return Alert.alert('Atenção', 'Preencha os dados.');
+                                    if (!nome.trim() || !email.trim()) return Alert.alert('AtenÃ§Ã£o', 'Preencha os dados.');
                                     setStep(2);
                                 }} activeOpacity={0.87}>
                                     <LinearGradient colors={['#178243', '#25508D']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.enterBtnGradient}>
-                                        <Text style={styles.enterBtnText}>AVANÇAR</Text>
+                                        <Text style={styles.enterBtnText}>AVANÃ‡AR</Text>
                                     </LinearGradient>
                                 </TouchableOpacity>
                             </>
@@ -153,7 +150,7 @@ export default function RegisterScreen() {
                                     <Ionicons name="lock-closed-outline" size={20} color="#6B7280" />
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="••••••••"
+                                        placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                                         placeholderTextColor="#4B5563"
                                         value={password}
                                         onChangeText={setPassword}
@@ -181,7 +178,7 @@ export default function RegisterScreen() {
                                     <Ionicons name="shield-checkmark-outline" size={20} color="#6B7280" />
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="••••••••"
+                                        placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                                         placeholderTextColor="#4B5563"
                                         value={confirmPassword}
                                         onChangeText={setConfirmPassword}
@@ -287,7 +284,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center', alignItems: 'center'
     },
 
-    /* FORÇA DA SENHA */
+    /* FORÃ‡A DA SENHA */
     strengthWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, marginLeft: 2 },
     strengthBars: { flexDirection: 'row', gap: 6, flex: 1 },
     strengthBar: { flex: 1, height: 4, borderRadius: 2 },
@@ -298,3 +295,4 @@ const styles = StyleSheet.create({
     footerText: { color: '#6B7280', fontSize: 12 },
     footerLink: { color: '#9CA3AF', fontSize: 12, fontWeight: 'bold', letterSpacing: 1 },
 });
+

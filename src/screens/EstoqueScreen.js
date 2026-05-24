@@ -1,5 +1,5 @@
-/**
- * EstoqueScreen.js — AgroGB Diamond Pro
+﻿/**
+ * EstoqueScreen.js â€” AgroGB Diamond Pro
  * Ultra Premium Glassmorphism & Neon Glow Design
  */
 
@@ -17,7 +17,7 @@ import { showToast } from '../ui/Toast';
 
 const { width } = Dimensions.get('window');
 
-// ── CONSTANTES ────────────────────────────────────────────────────────────────
+// â”€â”€ CONSTANTES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const CATEGORIAS = [
     { key: 'TODOS',     label: 'Todos',     icon: 'apps',       color: '#9CA3AF' },
     { key: 'INSUMO',    label: 'Insumos',   icon: 'flask',      color: '#A855F7' },
@@ -81,15 +81,15 @@ export default function EstoqueScreen({ navigation }) {
 
     const handleAdjust = async () => {
         const val = parseFloat(qty);
-        if (!val || val <= 0) return Alert.alert('Ops', 'Informe uma quantidade válida!');
+        if (!val || val <= 0) return Alert.alert('Ops', 'Informe uma quantidade vÃ¡lida!');
         setSaving(true);
         try {
             const delta = modalType === 'ENTRADA' ? val : -val;
             await adjustStock(modalItem.produto, delta);
             setModalItem(null);
             showToast(modalType === 'ENTRADA'
-                ? `✨ +${val} ${modalItem.unidade || 'un'} no estoque`
-                : `📤 -${val} ${modalItem.unidade || 'un'} baixado`
+                ? `âœ¨ +${val} ${modalItem.unidade || 'un'} no estoque`
+                : `ðŸ“¤ -${val} ${modalItem.unidade || 'un'} baixado`
             );
         } catch {
             Alert.alert('Erro', 'Falha ao processar o estoque.');
@@ -131,7 +131,7 @@ export default function EstoqueScreen({ navigation }) {
                             <Text style={[styles.itemQty, { color: st.color }]}>{item.quantidade}</Text>
                             <Text style={styles.itemUnit}> {item.unidade || 'un'}</Text>
                         </View>
-                        {item.estoque_minimo && <Text style={styles.itemMin}>ESTOQUE MÍN: {item.estoque_minimo}</Text>}
+                        {item.estoque_minimo && <Text style={styles.itemMin}>ESTOQUE MÃN: {item.estoque_minimo}</Text>}
                     </View>
                 </View>
 
@@ -155,20 +155,20 @@ export default function EstoqueScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
-            <LinearGradient colors={['#030712', '#0A0F1C', '#020617']} style={StyleSheet.absoluteFill} />
-            <View style={styles.ambientOrb1} />
-            <View style={styles.ambientOrb2} />
+            
+            
+            
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             <SafeAreaView style={{ flex: 1, width: '100%', maxWidth: 500, alignSelf: 'center' }}>
-                {/* ── HEADER ────────────────────────────────────────────────── */}
+                {/* â”€â”€ HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.backBtn} onPress={() => navigation?.goBack?.()}>
                         <Ionicons name="chevron-back" size={24} color="#FFF" />
                     </TouchableOpacity>
                     <View style={{ flex: 1, paddingLeft: 4 }}>
-                        <Text style={styles.headerTitle}>Armazém <Text style={{ color: '#F59E0B' }}>&</Text> Estoque</Text>
-                        <Text style={styles.headerSub}>Visão Geral e Movimentações</Text>
+                        <Text style={styles.headerTitle}>ArmazÃ©m <Text style={{ color: '#F59E0B' }}>&</Text> Estoque</Text>
+                        <Text style={styles.headerSub}>VisÃ£o Geral e MovimentaÃ§Ãµes</Text>
                     </View>
                     <TouchableOpacity style={styles.addBtnHeader} onPress={() => navigation?.navigate?.('CadastroForm')}>
                         <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.addGradientIcon}>
@@ -186,7 +186,7 @@ export default function EstoqueScreen({ navigation }) {
                     contentContainerStyle={styles.listContent}
                     ListHeaderComponent={() => (
                         <View style={{ paddingBottom: 10 }}>
-                            {/* ── STATS DASHBOARD ──────────────────────── */}
+                            {/* â”€â”€ STATS DASHBOARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                             <View style={styles.statsRow}>
                                 {[
                                     { label: 'Total',    value: stats.total,    color: '#38BDF8', icon: 'cube-outline' },
@@ -215,7 +215,7 @@ export default function EstoqueScreen({ navigation }) {
                                 ))}
                             </View>
 
-                            {/* ── SEARCH ───────────────────────────────── */}
+                            {/* â”€â”€ SEARCH â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                             <View style={styles.searchContainer}>
                                 <LinearGradient colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.03)']} style={styles.searchBox}>
                                     <Ionicons name="search" size={18} color="#9CA3AF" />
@@ -234,7 +234,7 @@ export default function EstoqueScreen({ navigation }) {
                                 </LinearGradient>
                             </View>
 
-                            {/* ── CATEGORY FILTER ──────────────────────── */}
+                            {/* â”€â”€ CATEGORY FILTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                             <View style={styles.chipScrollContainer}>
                                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
                                     {CATEGORIAS.map(cat => (
@@ -255,9 +255,9 @@ export default function EstoqueScreen({ navigation }) {
                                 </ScrollView>
                             </View>
 
-                            {/* ── LIST HEADER ─────────────────────────── */}
+                            {/* â”€â”€ LIST HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                             <View style={styles.listHeaderRow}>
-                                <Text style={styles.listHeaderText}>INVENTÁRIO</Text>
+                                <Text style={styles.listHeaderText}>INVENTÃRIO</Text>
                                 {activeFilter !== 'TODOS' && (
                                     <TouchableOpacity onPress={() => setActiveFilter('TODOS')} style={styles.clearFilter}>
                                         <Text style={styles.clearFilterText}>Limpar filtro</Text>
@@ -273,9 +273,9 @@ export default function EstoqueScreen({ navigation }) {
                                 <LinearGradient colors={['rgba(245,158,11,0.2)', 'rgba(245,158,11,0.01)']} style={styles.emptyRing}>
                                     <MaterialCommunityIcons name="warehouse" size={38} color="#F59E0B" />
                                 </LinearGradient>
-                                <Text style={styles.emptyTitle}>Armazém vazio</Text>
+                                <Text style={styles.emptyTitle}>ArmazÃ©m vazio</Text>
                                 <Text style={styles.emptyDesc}>
-                                    {searchText ? 'Nenhum item encontrado para esta busca.' : 'Cadastre insumos para o controle diário.'}
+                                    {searchText ? 'Nenhum item encontrado para esta busca.' : 'Cadastre insumos para o controle diÃ¡rio.'}
                                 </Text>
                                 {!searchText && (
                                     <TouchableOpacity onPress={() => navigation?.navigate?.('CadastroForm')}>
@@ -291,7 +291,7 @@ export default function EstoqueScreen({ navigation }) {
                 />
             </SafeAreaView>
 
-            {/* ── MODAL ─────────────────────────────────── */}
+            {/* â”€â”€ MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <Modal visible={!!modalItem} transparent animationType="slide">
                 <View style={styles.modalBg}>
                     <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setModalItem(null)} />
@@ -303,7 +303,7 @@ export default function EstoqueScreen({ navigation }) {
                                 <Ionicons name={modalType === 'ENTRADA' ? 'arrow-down' : 'arrow-up'} size={26} color={modalType === 'ENTRADA' ? '#10B981' : '#F43F5E'} />
                             </View>
                             <View style={{ flex: 1, marginLeft: 16 }}>
-                                <Text style={styles.modalTitle}>{modalType === 'ENTRADA' ? 'ENTRADA DE ESTOQUE' : 'SAÍDA DE ESTOQUE'}</Text>
+                                <Text style={styles.modalTitle}>{modalType === 'ENTRADA' ? 'ENTRADA DE ESTOQUE' : 'SAÃDA DE ESTOQUE'}</Text>
                                 <Text style={styles.modalProductName} numberOfLines={1}>{modalItem?.produto}</Text>
                             </View>
                         </View>
@@ -319,7 +319,7 @@ export default function EstoqueScreen({ navigation }) {
                                 style={[styles.typeToggleBtn, modalType === 'SAIDA' ? { backgroundColor: '#F43F5E20', borderColor: '#F43F5E' } : {}]}
                                 onPress={() => setModalType('SAIDA')}
                             >
-                                <Text style={[styles.typeToggleBtnText, { color: modalType === 'SAIDA' ? '#F43F5E' : '#6B7280' }]}>SAÍDA</Text>
+                                <Text style={[styles.typeToggleBtnText, { color: modalType === 'SAIDA' ? '#F43F5E' : '#6B7280' }]}>SAÃDA</Text>
                             </TouchableOpacity>
                         </View>
 
@@ -445,3 +445,4 @@ const styles = StyleSheet.create({
     confirmGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 20, borderRadius: 18, gap: 12 },
     confirmText: { color: '#FAFAFA', fontSize: 15, fontWeight: '900', letterSpacing: 1 },
 });
+

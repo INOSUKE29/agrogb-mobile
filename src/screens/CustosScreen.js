@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { 
     View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, 
     Modal, TextInput, Platform, SafeAreaView, StatusBar, 
@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AutoSyncService from '../services/AutoSyncService';
 import { showToast } from '../ui/Toast';
 import { LinearGradient } from 'expo-linear-gradient';
-import SafeBlurView from '../ui/SafeBlurView';
+
 
 export default function CustosScreen({ navigation }) {
     const [categoria, setCategoria] = useState(null);
@@ -40,12 +40,12 @@ export default function CustosScreen({ navigation }) {
             
             if (!categories || categories.length === 0) {
                 const defaultCats = [
-                    'SEMENTES E MUDAS', 'FERTILIZANTES E ADUBOS', 'DEFENSIVOS AGRÍCOLAS', 
-                    'MANUTENÇÃO DE MÁQUINAS', 'COMBUSTÍVEL', 'MÃO DE OBRA', 
-                    'SERVIÇOS TERCEIRIZADOS', 'ENERGIA ELÉTRICA', 'IMPOSTOS E TAXAS', 'OUTROS'
+                    'SEMENTES E MUDAS', 'FERTILIZANTES E ADUBOS', 'DEFENSIVOS AGRÃCOLAS', 
+                    'MANUTENÃ‡ÃƒO DE MÃQUINAS', 'COMBUSTÃVEL', 'MÃƒO DE OBRA', 
+                    'SERVIÃ‡OS TERCEIRIZADOS', 'ENERGIA ELÃ‰TRICA', 'IMPOSTOS E TAXAS', 'OUTROS'
                 ];
                 for (const cat of defaultCats) {
-                    await insertCostCategory(cat, 'VARIÁVEL');
+                    await insertCostCategory(cat, 'VARIÃVEL');
                 }
                 categories = await getCostCategories();
             }
@@ -70,17 +70,17 @@ export default function CustosScreen({ navigation }) {
     }, [quantidade, valorUnitario]);
 
     const salvarNovaCategoria = async () => {
-        if (!newCatName) return Alert.alert('Atenção', 'Informe o nome.');
+        if (!newCatName) return Alert.alert('AtenÃ§Ã£o', 'Informe o nome.');
         try {
-            await insertCostCategory(newCatName, 'VARIÁVEL');
+            await insertCostCategory(newCatName, 'VARIÃVEL');
             setNewCatModalVisible(false); setNewCatName(''); loadItems();
-            showToast('✅ Categoria salva!');
-        } catch { Alert.alert('Erro', 'Não foi possível salvar.'); }
+            showToast('âœ… Categoria salva!');
+        } catch { Alert.alert('Erro', 'NÃ£o foi possÃ­vel salvar.'); }
     };
 
     const salvar = async () => {
         if (!categoria || !quantidade || !valorUnitario) {
-            return Alert.alert('Atenção', 'Informe Categoria, Quantidade e Valor.');
+            return Alert.alert('AtenÃ§Ã£o', 'Informe Categoria, Quantidade e Valor.');
         }
         setIsSaving(true);
         const dados = {
@@ -96,11 +96,11 @@ export default function CustosScreen({ navigation }) {
         };
         try {
             await FinanceService.recordCost(dados);
-            showToast('✅ Custo registrado!');
+            showToast('âœ… Custo registrado!');
             try { AutoSyncService.trigger(); } catch (e) {}
             navigation.goBack();
         } catch { 
-            Alert.alert('Erro', 'Não foi possível salvar.'); 
+            Alert.alert('Erro', 'NÃ£o foi possÃ­vel salvar.'); 
         } finally {
             setIsSaving(false);
         }
@@ -109,9 +109,9 @@ export default function CustosScreen({ navigation }) {
     return (
         <View style={styles.webContainer}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            <LinearGradient colors={['#020617', '#0A0F1C', '#030712']} style={StyleSheet.absoluteFill} />
+            
 
-            {/* 🌀 AMBIENT ORBS */}
+            {/* ðŸŒ€ AMBIENT ORBS */}
             <View style={[styles.ambientOrb, { top: -40, right: -60, backgroundColor: '#10B981', opacity: 0.1 }]} />
             <View style={[styles.ambientOrb, { bottom: 80, left: -80, backgroundColor: '#D4AF37', opacity: 0.08 }]} />
 
@@ -123,31 +123,31 @@ export default function CustosScreen({ navigation }) {
                     </TouchableOpacity>
                     <View style={{ flex: 1, marginLeft: 12 }}>
                         <Text style={styles.headerTitle}>CUSTOS & DESPESAS</Text>
-                        <Text style={styles.headerSub}>SAÍDA DE CAPITAL OPERACIONAL</Text>
+                        <Text style={styles.headerSub}>SAÃDA DE CAPITAL OPERACIONAL</Text>
                     </View>
                 </View>
 
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
-                    <Text style={styles.sectionTitle}>ALOCAÇÃO DE CUSTO</Text>
-                    <SafeBlurView intensity={20} style={styles.glassCard} webFallbackColor="rgba(255,255,255,0.03)">
+                    <Text style={styles.sectionTitle}>ALOCAÃ‡ÃƒO DE CUSTO</Text>
+                    <View intensity={20} style={styles.glassCard} webFallbackColor="rgba(255,255,255,0.03)">
                         <TouchableOpacity style={styles.cardActionRow} onPress={() => setCultureModalVisible(true)}>
                             <View style={[styles.iconBox, { backgroundColor: 'rgba(212, 175, 55, 0.1)' }]}>
                                 <Ionicons name="leaf" size={20} color="#D4AF37" />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.mainValue}>{culture?.nome || 'GERAL / NÃO ALOCADO'}</Text>
-                                <Text style={styles.subValue}>{culture ? 'CUSTO ATRIBUÍDO À CULTURA' : 'DESPESA ADMINISTRATIVA'}</Text>
+                                <Text style={styles.mainValue}>{culture?.nome || 'GERAL / NÃƒO ALOCADO'}</Text>
+                                <Text style={styles.subValue}>{culture ? 'CUSTO ATRIBUÃDO Ã€ CULTURA' : 'DESPESA ADMINISTRATIVA'}</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.2)" />
                         </TouchableOpacity>
-                    </SafeBlurView>
+                    </View>
 
                     <Text style={[styles.sectionTitle, { marginTop: 25 }]}>DETALHES DA DESPESA</Text>
-                    <SafeBlurView intensity={20} style={styles.glassCard} webFallbackColor="rgba(255,255,255,0.03)">
+                    <View intensity={20} style={styles.glassCard} webFallbackColor="rgba(255,255,255,0.03)">
                         
                         <View style={styles.quickCatRow}>
-                            {['Mão de Obra', 'Combustível', 'Insumos'].map(quickCat => {
+                            {['MÃ£o de Obra', 'CombustÃ­vel', 'Insumos'].map(quickCat => {
                                 const isSelected = categoria?.name === quickCat.toUpperCase();
                                 return (
                                     <TouchableOpacity 
@@ -203,8 +203,8 @@ export default function CustosScreen({ navigation }) {
                         </View>
 
                         {/* TOTAL DIAMOND BOX */}
-                        <SafeBlurView intensity={50} style={styles.totalGlassBox} webFallbackColor="rgba(212, 175, 55, 0.05)">
-                            <LinearGradient colors={['rgba(212, 175, 55, 0.12)', 'transparent']} style={StyleSheet.absoluteFill} />
+                        <View intensity={50} style={styles.totalGlassBox} webFallbackColor="rgba(212, 175, 55, 0.05)">
+                            
                             <View style={styles.totalRow}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                                     <View style={styles.totalIconBg}>
@@ -214,9 +214,9 @@ export default function CustosScreen({ navigation }) {
                                 </View>
                                 <Text style={styles.totalValue}>R$ {calcularTotal}</Text>
                             </View>
-                        </SafeBlurView>
+                        </View>
 
-                        <Text style={styles.inputLabel}>OBSERVAÇÕES GERAIS</Text>
+                        <Text style={styles.inputLabel}>OBSERVAÃ‡Ã•ES GERAIS</Text>
                         <View style={styles.obsBox}>
                             <TextInput
                                 style={styles.obsInput}
@@ -231,14 +231,14 @@ export default function CustosScreen({ navigation }) {
                                 <Text style={styles.photoText}>ANEXAR COMPROVANTE</Text>
                             </TouchableOpacity>
                         </View>
-                    </SafeBlurView>
+                    </View>
 
                     <TouchableOpacity style={styles.btnPrimary} onPress={salvar} disabled={isSaving}>
                         <LinearGradient colors={['#10B981', '#059669']} style={styles.btnGradient}>
                             {isSaving ? <ActivityIndicator color="#FFF" /> : (
                                 <>
                                     <Ionicons name="server" size={20} color="#FFF" />
-                                    <Text style={styles.btnPrimaryText}>EFETIVAR LANÇAMENTO</Text>
+                                    <Text style={styles.btnPrimaryText}>EFETIVAR LANÃ‡AMENTO</Text>
                                 </>
                             )}
                         </LinearGradient>
@@ -249,7 +249,7 @@ export default function CustosScreen({ navigation }) {
                 {/* MODAL CATEGORIA */}
                 <Modal visible={modalVisible} animationType="slide" transparent>
                     <View style={styles.modalBg}>
-                        <SafeBlurView intensity={60} style={styles.modalSheet} webFallbackColor="#020617">
+                        <View intensity={60} style={styles.modalSheet} webFallbackColor="#020617">
                             <View style={styles.modalHeader}>
                                 <Text style={styles.modalTitle}>SELECIONAR CATEGORIA</Text>
                                 <TouchableOpacity onPress={() => setNewCatModalVisible(true)} style={styles.modalAddBtn}>
@@ -280,7 +280,7 @@ export default function CustosScreen({ navigation }) {
                             <TouchableOpacity style={styles.btnModalClose} onPress={() => setModalVisible(false)}>
                                 <Text style={styles.btnModalCloseText}>FECHAR</Text>
                             </TouchableOpacity>
-                        </SafeBlurView>
+                        </View>
                     </View>
                 </Modal>
 
@@ -308,10 +308,10 @@ export default function CustosScreen({ navigation }) {
                 {/* MODAL CULTURA */}
                 <Modal visible={cultureModalVisible} animationType="slide" transparent>
                     <View style={styles.modalBg}>
-                        <SafeBlurView intensity={60} style={styles.modalSheet} webFallbackColor="#020617">
+                        <View intensity={60} style={styles.modalSheet} webFallbackColor="#020617">
                             <Text style={styles.modalTitle}>EXCLUIR / MUDAR CULTURA</Text>
                             <FlatList
-                                data={[{ id: null, nome: 'GERAL / NÃO ALOCADO' }, ...culturasDB]}
+                                data={[{ id: null, nome: 'GERAL / NÃƒO ALOCADO' }, ...culturasDB]}
                                 keyExtractor={i => i.id ? i.id.toString() : 'geral'}
                                 style={{ maxHeight: 400, marginTop: 15 }}
                                 renderItem={({ item }) => (
@@ -328,7 +328,7 @@ export default function CustosScreen({ navigation }) {
                             <TouchableOpacity style={styles.btnModalClose} onPress={() => setCultureModalVisible(false)}>
                                 <Text style={styles.btnModalCloseText}>VOLTAR</Text>
                             </TouchableOpacity>
-                        </SafeBlurView>
+                        </View>
                     </View>
                 </Modal>
 
@@ -419,4 +419,5 @@ const styles = StyleSheet.create({
     btnModalSecondary: { flex: 1, height: 56, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
     btnModalSecondaryText: { color: '#EF4444', fontSize: 13, fontWeight: '900' }
 });
+
 

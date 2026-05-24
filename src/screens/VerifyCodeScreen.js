@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,7 +12,7 @@ export default function VerifyCodeScreen({ route, navigation }) {
 
     const handleVerify = async () => {
         if (code.length < 6) {
-            Alert.alert('Erro', 'O código deve ter 6 dígitos.');
+            Alert.alert('Erro', 'O cÃ³digo deve ter 6 dÃ­gitos.');
             return;
         }
 
@@ -23,28 +23,28 @@ export default function VerifyCodeScreen({ route, navigation }) {
         if (result.success) {
             navigation.navigate('ResetPassword', { tokenId: result.tokenId });
         } else {
-            Alert.alert('Inválido', result.message);
+            Alert.alert('InvÃ¡lido', result.message);
         }
     };
 
     return (
         <View style={styles.container}>
-            <LinearGradient colors={['#064e3b', '#022c22']} style={StyleSheet.absoluteFill} />
+            
 
             <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                 <Ionicons name="arrow-back" size={24} color="#FFF" />
             </TouchableOpacity>
 
             <View style={styles.content}>
-                <Text style={styles.title}>Verificar Código</Text>
+                <Text style={styles.title}>Verificar CÃ³digo</Text>
                 <Text style={styles.subtitle}>
-                    Digite o código de 6 dígitos enviado para{'\n'}
+                    Digite o cÃ³digo de 6 dÃ­gitos enviado para{'\n'}
                     <Text style={{ fontWeight: 'bold' }}>{identifier}</Text>
                 </Text>
 
                 <View style={styles.card}>
                     <InputField
-                        label="Código de Verificação"
+                        label="CÃ³digo de VerificaÃ§Ã£o"
                         icon="key-outline"
                         value={code}
                         onChangeText={setCode}
@@ -95,3 +95,4 @@ const styles = StyleSheet.create({
     },
     btnText: { color: '#064e3b', fontWeight: 'bold', fontSize: 16, letterSpacing: 1 }
 });
+

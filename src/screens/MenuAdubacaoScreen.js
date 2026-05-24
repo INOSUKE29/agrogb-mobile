@@ -1,13 +1,13 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar as RNStatusBar, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import SafeBlurView from '../ui/SafeBlurView';
+
 
 export default function MenuAdubacaoScreen({ navigation }) {
-    // AÇÕES RÁPIDAS (Atalhos diretos)
+    // AÃ‡Ã•ES RÃPIDAS (Atalhos diretos)
     const QUICK_ACTIONS = [
         {
-            title: "Nova Aplicação",
+            title: "Nova AplicaÃ§Ã£o",
             icon: "flask",
             route: "AdubacaoForm",
             color: "#A3E635" 
@@ -19,13 +19,13 @@ export default function MenuAdubacaoScreen({ navigation }) {
             color: "#10B981"
         },
         {
-            title: "Receituário",
+            title: "ReceituÃ¡rio",
             icon: "document-text",
             route: "RecipeForm",
             color: "#3B82F6"
         },
         {
-            title: "Fertirrigação",
+            title: "FertirrigaÃ§Ã£o",
             icon: "water",
             route: "Fertilization",
             color: "#0EA5E9"
@@ -35,42 +35,42 @@ export default function MenuAdubacaoScreen({ navigation }) {
     // GERENCIAMENTO (Monitoramento e Listas)
     const MENU_ITEMS = [
         {
-            title: "HISTÓRICO DE APLICAÇÕES",
-            subtitle: "Registro de Adubações",
+            title: "HISTÃ“RICO DE APLICAÃ‡Ã•ES",
+            subtitle: "Registro de AdubaÃ§Ãµes",
             icon: "list-circle-outline",
-            description: "Acesse todas as aplicações executadas no campo.",
+            description: "Acesse todas as aplicaÃ§Ãµes executadas no campo.",
             route: "AdubacaoList",
             color: "#A3E635" 
         },
         {
-            title: "PLANOS DE ADUBAÇÃO",
-            subtitle: "Consultar prescrições",
+            title: "PLANOS DE ADUBAÃ‡ÃƒO",
+            subtitle: "Consultar prescriÃ§Ãµes",
             icon: "layers-outline",
             description: "Lista de planos de fertilizantes aprovados.",
             route: "PlanoAdubacao",
             color: "#10B981" 
         },
         {
-            title: "RECEITUÁRIOS AGRONÔMICOS",
-            subtitle: "Prescrições Oficiais",
+            title: "RECEITUÃRIOS AGRONÃ”MICOS",
+            subtitle: "PrescriÃ§Ãµes Oficiais",
             icon: "book-outline",
-            description: "Receituários assinados para defensivos e nutrição.",
+            description: "ReceituÃ¡rios assinados para defensivos e nutriÃ§Ã£o.",
             route: "RecipeForm",
             color: "#3B82F6" 
         },
         {
-            title: "APLICAÇÕES AVULSAS",
-            subtitle: "Pulverização Rápida",
+            title: "APLICAÃ‡Ã•ES AVULSAS",
+            subtitle: "PulverizaÃ§Ã£o RÃ¡pida",
             icon: "color-wand-outline",
-            description: "Registro rápido de aplicações foliares ou avulsas.",
+            description: "Registro rÃ¡pido de aplicaÃ§Ãµes foliares ou avulsas.",
             route: "ApplicationForm",
             color: "#F59E0B" 
         },
         {
-            title: "SISTEMA DE FERTIRRIGAÇÃO",
-            subtitle: "Gotejamento & Pivô",
+            title: "SISTEMA DE FERTIRRIGAÃ‡ÃƒO",
+            subtitle: "Gotejamento & PivÃ´",
             icon: "water-outline",
-            description: "Controle da nutrição via sistemas de irrigação.",
+            description: "Controle da nutriÃ§Ã£o via sistemas de irrigaÃ§Ã£o.",
             route: "Fertilization",
             color: "#0EA5E9" 
         }
@@ -88,15 +88,15 @@ export default function MenuAdubacaoScreen({ navigation }) {
                     <Ionicons name="chevron-back" size={28} color="#FFF" />
                 </TouchableOpacity>
                 <View style={{ flex: 1 }}>
-                    <Text style={styles.headerTitle}>Central de Nutrição</Text>
-                    <Text style={styles.headerSub}>ADUBAÇÃO & FERTILIZANTES</Text>
+                    <Text style={styles.headerTitle}>Central de NutriÃ§Ã£o</Text>
+                    <Text style={styles.headerSub}>ADUBAÃ‡ÃƒO & FERTILIZANTES</Text>
                 </View>
             </View>
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 
-                {/* AÇÕES RÁPIDAS DE CRIAÇÃO */}
-                <Text style={styles.sectionHeader}>AÇÕES RÁPIDAS (NUTRIÇÃO)</Text>
+                {/* AÃ‡Ã•ES RÃPIDAS DE CRIAÃ‡ÃƒO */}
+                <Text style={styles.sectionHeader}>AÃ‡Ã•ES RÃPIDAS (NUTRIÃ‡ÃƒO)</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickActionsContainer}>
                     {QUICK_ACTIONS.map((action, idx) => (
                         <TouchableOpacity
@@ -105,18 +105,18 @@ export default function MenuAdubacaoScreen({ navigation }) {
                             activeOpacity={0.8}
                             onPress={() => navigation.navigate(action.route)}
                         >
-                            <SafeBlurView intensity={20} style={styles.quickCard}>
+                            <View intensity={20} style={styles.quickCard}>
                                 <View style={[styles.quickIconBox, { backgroundColor: action.color + '15' }]}>
                                     <Ionicons name={action.icon} size={28} color={action.color} />
                                 </View>
                                 <Text style={styles.quickTitle}>{action.title}</Text>
-                            </SafeBlurView>
+                            </View>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
 
                 {/* LISTA DE GERENCIAMENTO */}
-                <Text style={[styles.sectionHeader, { marginTop: 20 }]}>GERENCIAR NUTRIÇÃO DA LAVOURA</Text>
+                <Text style={[styles.sectionHeader, { marginTop: 20 }]}>GERENCIAR NUTRIÃ‡ÃƒO DA LAVOURA</Text>
                 {MENU_ITEMS.map((item, index) => (
                     <TouchableOpacity
                         key={index}
@@ -124,7 +124,7 @@ export default function MenuAdubacaoScreen({ navigation }) {
                         onPress={() => navigation.navigate(item.route)}
                         activeOpacity={0.8}
                     >
-                        <SafeBlurView intensity={15} style={styles.card}>
+                        <View intensity={15} style={styles.card}>
                             <View style={[styles.iconBox, { backgroundColor: `${item.color}10` }]}>
                                 <Ionicons name={item.icon} size={26} color={item.color} />
                             </View>
@@ -136,7 +136,7 @@ export default function MenuAdubacaoScreen({ navigation }) {
                             </View>
                             
                             <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.2)" />
-                        </SafeBlurView>
+                        </View>
                     </TouchableOpacity>
                 ))}
             </ScrollView>
@@ -185,3 +185,4 @@ const styles = StyleSheet.create({
     cardSub: { fontSize: 14, fontWeight: '800', color: '#F8FAFC', marginBottom: 2 },
     cardDesc: { fontSize: 11, color: '#64748B', fontWeight: '600' },
 });
+

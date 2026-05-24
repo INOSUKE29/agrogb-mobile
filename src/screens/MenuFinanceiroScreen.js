@@ -1,10 +1,10 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar as RNStatusBar, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import SafeBlurView from '../ui/SafeBlurView';
+
 
 export default function MenuFinanceiroScreen({ navigation }) {
-    // AÇÕES RÁPIDAS (Atalhos diretos para transações)
+    // AÃ‡Ã•ES RÃPIDAS (Atalhos diretos para transaÃ§Ãµes)
     const QUICK_ACTIONS = [
         {
             title: "Nova Venda",
@@ -19,26 +19,26 @@ export default function MenuFinanceiroScreen({ navigation }) {
             color: "#3B82F6"
         },
         {
-            title: "Lançar Custo",
+            title: "LanÃ§ar Custo",
             icon: "wallet",
             route: "Custos",
             color: "#EF4444"
         }
     ];
 
-    // GERENCIAMENTO (Finanças e Suprimentos)
+    // GERENCIAMENTO (FinanÃ§as e Suprimentos)
     const MENU_ITEMS = [
         {
-            title: "ESTOQUE & ARMAZÉM",
-            subtitle: "Controle de saldo diário",
+            title: "ESTOQUE & ARMAZÃ‰M",
+            subtitle: "Controle de saldo diÃ¡rio",
             icon: "cube-outline",
-            description: "Auditoria de insumos, sementes e maquinário.",
+            description: "Auditoria de insumos, sementes e maquinÃ¡rio.",
             route: "Estoque",
             color: "#A3E635" 
         },
         {
             title: "ENCOMENDAS & CARGAS",
-            subtitle: "Logística e Pedidos",
+            subtitle: "LogÃ­stica e Pedidos",
             icon: "car-outline",
             description: "Lista de pedidos e status de entrega de carga.",
             route: "Encomendas",
@@ -46,7 +46,7 @@ export default function MenuFinanceiroScreen({ navigation }) {
         },
         {
             title: "CATEGORIAS DE DESPESA",
-            subtitle: "Classificação Financeira",
+            subtitle: "ClassificaÃ§Ã£o Financeira",
             icon: "options-outline",
             description: "Organize as categorias de custos e gastos.",
             route: "CategoriasDespesa",
@@ -54,15 +54,15 @@ export default function MenuFinanceiroScreen({ navigation }) {
         },
         {
             title: "CONTAS FINANCEIRAS",
-            subtitle: "Gestão Bancária",
+            subtitle: "GestÃ£o BancÃ¡ria",
             icon: "wallet-outline",
-            description: "Gerencie suas contas e saldos bancários.",
+            description: "Gerencie suas contas e saldos bancÃ¡rios.",
             route: "FinancialAccounts",
             color: "#10B981" 
         },
         {
             title: "SCANNER OCR DE NOTAS",
-            subtitle: "Digitalização Inteligente",
+            subtitle: "DigitalizaÃ§Ã£o Inteligente",
             icon: "scan-outline",
             description: "Capture notas fiscais e transforme em registros.",
             route: "Ocr",
@@ -83,14 +83,14 @@ export default function MenuFinanceiroScreen({ navigation }) {
                 </TouchableOpacity>
                 <View style={{ flex: 1 }}>
                     <Text style={styles.headerTitle}>Central Financeira</Text>
-                    <Text style={styles.headerSub}>CAIXA, ESTOQUE & LOGÍSTICA</Text>
+                    <Text style={styles.headerSub}>CAIXA, ESTOQUE & LOGÃSTICA</Text>
                 </View>
             </View>
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 
-                {/* AÇÕES RÁPIDAS DE CRIAÇÃO */}
-                <Text style={styles.sectionHeader}>NOVA TRANSAÇÃO</Text>
+                {/* AÃ‡Ã•ES RÃPIDAS DE CRIAÃ‡ÃƒO */}
+                <Text style={styles.sectionHeader}>NOVA TRANSAÃ‡ÃƒO</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickActionsContainer}>
                     {QUICK_ACTIONS.map((action, idx) => (
                         <TouchableOpacity
@@ -99,12 +99,12 @@ export default function MenuFinanceiroScreen({ navigation }) {
                             activeOpacity={0.8}
                             onPress={() => navigation.navigate(action.route)}
                         >
-                            <SafeBlurView intensity={20} style={styles.quickCard}>
+                            <View intensity={20} style={styles.quickCard}>
                                 <View style={[styles.quickIconBox, { backgroundColor: action.color + '15' }]}>
                                     <Ionicons name={action.icon} size={28} color={action.color} />
                                 </View>
                                 <Text style={styles.quickTitle}>{action.title}</Text>
-                            </SafeBlurView>
+                            </View>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
@@ -118,7 +118,7 @@ export default function MenuFinanceiroScreen({ navigation }) {
                         onPress={() => navigation.navigate(item.route)}
                         activeOpacity={0.8}
                     >
-                        <SafeBlurView intensity={15} style={styles.card}>
+                        <View intensity={15} style={styles.card}>
                             <View style={[styles.iconBox, { backgroundColor: `${item.color}10` }]}>
                                 <Ionicons name={item.icon} size={26} color={item.color} />
                             </View>
@@ -130,7 +130,7 @@ export default function MenuFinanceiroScreen({ navigation }) {
                             </View>
                             
                             <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.2)" />
-                        </SafeBlurView>
+                        </View>
                     </TouchableOpacity>
                 ))}
             </ScrollView>
@@ -180,4 +180,5 @@ const styles = StyleSheet.create({
     cardSub: { fontSize: 14, fontWeight: '800', color: '#F8FAFC', marginBottom: 2 },
     cardDesc: { fontSize: 11, color: '#64748B', fontWeight: '600' },
 });
+
 

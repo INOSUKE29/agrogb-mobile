@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, Alert, 
     TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform,
@@ -59,7 +59,7 @@ export default function ProfileEditScreen({ navigation }) {
 
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') return Alert.alert('Permissão', 'Acesso à galeria é necessário para mudar a foto.');
+        if (status !== 'granted') return Alert.alert('PermissÃ£o', 'Acesso Ã  galeria Ã© necessÃ¡rio para mudar a foto.');
 
         let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -93,7 +93,7 @@ export default function ProfileEditScreen({ navigation }) {
             showToast('Perfil atualizado com sucesso!');
             navigation.goBack();
         } catch (e) {
-            Alert.alert('Erro', 'Não foi possível salvar as alterações.');
+            Alert.alert('Erro', 'NÃ£o foi possÃ­vel salvar as alteraÃ§Ãµes.');
         } finally {
             setLoading(false);
         }
@@ -167,7 +167,7 @@ export default function ProfileEditScreen({ navigation }) {
                     </View>
 
                     {/* DADOS DE CONTATO */}
-                    <SectionCard title="INFORMAÇÕES DE CONTATO">
+                    <SectionCard title="INFORMAÃ‡Ã•ES DE CONTATO">
                         <InputBlock 
                             label="NOME COMPLETO" icon="person-outline"
                             value={user.nome} onChange={v => setUser({ ...user, nome: v })}
@@ -178,13 +178,13 @@ export default function ProfileEditScreen({ navigation }) {
                             keyboardType="phone-pad"
                         />
                         <InputBlock 
-                            label="ENDEREÇO / BASE" icon="location-outline"
+                            label="ENDEREÃ‡O / BASE" icon="location-outline"
                             value={user.endereco} onChange={v => setUser({ ...user, endereco: v })}
                         />
                     </SectionCard>
 
-                    {/* SEGURANÇA */}
-                    <SectionCard title="SEGURANÇA" style={{ marginTop: 16 }}>
+                    {/* SEGURANÃ‡A */}
+                    <SectionCard title="SEGURANÃ‡A" style={{ marginTop: 16 }}>
                         <InputBlock 
                             label="NOVA SENHA" icon="lock-closed-outline"
                             value={user.nova_senha} onChange={v => setUser({ ...user, nova_senha: v })}
@@ -192,12 +192,12 @@ export default function ProfileEditScreen({ navigation }) {
                             secureTextEntry={true} autoCapitalize="none"
                         />
                         <Text style={styles.infoNote}>
-                            A senha deve ser mantida em sigilo. Se alterar, sua sessão será mantida no aparelho local.
+                            A senha deve ser mantida em sigilo. Se alterar, sua sessÃ£o serÃ¡ mantida no aparelho local.
                         </Text>
                     </SectionCard>
 
-                    {/* APARÊNCIA */}
-                    <SectionCard title="APARÊNCIA DO APLICATIVO" style={{ marginTop: 16 }}>
+                    {/* APARÃŠNCIA */}
+                    <SectionCard title="APARÃŠNCIA DO APLICATIVO" style={{ marginTop: 16 }}>
                         <View style={styles.appearanceGrid}>
                             {[
                                 { id: 'system', label: 'Auto', icon: 'settings-outline' },
@@ -242,7 +242,7 @@ export default function ProfileEditScreen({ navigation }) {
                     >
                         <View style={styles.saveSolid}>
                             <Text style={styles.saveBtnText}>
-                                {loading ? 'AGUARDE...' : 'SALVAR ALTERAÇÕES'}
+                                {loading ? 'AGUARDE...' : 'SALVAR ALTERAÃ‡Ã•ES'}
                             </Text>
                         </View>
                     </TouchableOpacity>
@@ -329,3 +329,4 @@ const styles = StyleSheet.create({
     },
     saveBtnText: { color: '#FFF', fontSize: 15, fontWeight: '800', letterSpacing: 1 }
 });
+

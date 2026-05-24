@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -46,7 +46,7 @@ export default function ConfigScreen({ navigation, user }) {
     if (lang) setLanguage(lang);
   }
 
-  // Pull settings stored in Supabase (cloud) – useful when user logs in on a new device
+  // Pull settings stored in Supabase (cloud) â€“ useful when user logs in on a new device
   async function loadRemoteSettings() {
     if (!user?.id) return;
     const { data, error } = await supabase
@@ -80,16 +80,16 @@ export default function ConfigScreen({ navigation, user }) {
 
   // ---------- Handlers for each feature ----------
 
-  // Biometric toggle – performs a real authentication when enabling
+  // Biometric toggle â€“ performs a real authentication when enabling
   async function handleBiometricToggle(value) {
     if (value) {
       if (!LocalAuthentication) {
-        Alert.alert("Indisponível", "Biometria não está disponível no Web.");
+        Alert.alert("IndisponÃ­vel", "Biometria nÃ£o estÃ¡ disponÃ­vel no Web.");
         return;
       }
       const hasHardware = await LocalAuthentication.hasHardwareAsync();
       if (!hasHardware) {
-        Alert.alert("Erro", "Dispositivo não suporta biometria");
+        Alert.alert("Erro", "Dispositivo nÃ£o suporta biometria");
         return;
       }
       const isEnrolled = await LocalAuthentication.isEnrolledAsync();
@@ -102,7 +102,7 @@ export default function ConfigScreen({ navigation, user }) {
         fallbackLabel: "Usar senha",
       });
       if (!result.success) {
-        Alert.alert("Falha", "Biometria não confirmada");
+        Alert.alert("Falha", "Biometria nÃ£o confirmada");
         return;
       }
     }
@@ -113,17 +113,17 @@ export default function ConfigScreen({ navigation, user }) {
     }
   }
 
-  // 2FA toggle – only persists the flag; real 2FA flow would be implemented elsewhere
+  // 2FA toggle â€“ only persists the flag; real 2FA flow would be implemented elsewhere
   async function handle2FAToggle(value) {
     setTwoFactor(value);
     await persistSetting("two_factor", value);
     Alert.alert(
       "2FA",
-      value ? "Autenticação em duas etapas ativada" : "Autenticação em duas etapas desativada"
+      value ? "AutenticaÃ§Ã£o em duas etapas ativada" : "AutenticaÃ§Ã£o em duas etapas desativada"
     );
   }
 
-  // Dark mode toggle – updates UI theme (implementation of theme provider is outside this file)
+  // Dark mode toggle â€“ updates UI theme (implementation of theme provider is outside this file)
   async function handleDarkModeToggle(value) {
     setDarkMode(value);
     await persistSetting("dark_mode", value);
@@ -135,30 +135,30 @@ export default function ConfigScreen({ navigation, user }) {
     await persistSetting("notifications", value);
   }
 
-  // Language selection – for simplicity we just toggle between PT-BR and EN-US
+  // Language selection â€“ for simplicity we just toggle between PT-BR and EN-US
   async function handleLanguageChange(newLang) {
     setLanguage(newLang);
     await persistSetting("language", newLang);
     Alert.alert("Idioma", `Idioma alterado para ${newLang}`);
   }
 
-  // Sync data – placeholder that would call a Supabase RPC or pull latest changes
+  // Sync data â€“ placeholder that would call a Supabase RPC or pull latest changes
   async function syncData() {
     // In a real app you would call a sync service here
-    Alert.alert("Sincronização", "Dados sincronizados com sucesso!");
+    Alert.alert("SincronizaÃ§Ã£o", "Dados sincronizados com sucesso!");
   }
 
-  // Backup – placeholder for exporting local DB or sending a snapshot to cloud storage
+  // Backup â€“ placeholder for exporting local DB or sending a snapshot to cloud storage
   async function backupData() {
-    Alert.alert("Backup", "Backup concluído e salvo na nuvem.");
+    Alert.alert("Backup", "Backup concluÃ­do e salvo na nuvem.");
   }
 
-  // Restore – placeholder for importing a backup file
+  // Restore â€“ placeholder for importing a backup file
   async function restoreData() {
     Alert.alert("Restaurar", "Restaurado o backup mais recente.");
   }
 
-  // Logout – clears session and navigates to login screen
+  // Logout â€“ clears session and navigates to login screen
   async function logout() {
     await supabase.auth.signOut();
     await AsyncStorage.removeItem("session");
@@ -189,32 +189,32 @@ export default function ConfigScreen({ navigation, user }) {
   return (
     <View style={styles.outerContainer}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <LinearGradient colors={['#0F172A', '#0B121E']} style={StyleSheet.absoluteFill} />
+      
       <SafeAreaView style={styles.safeArea}>
-        {/* Header com botão de voltar */}
+        {/* Header com botÃ£o de voltar */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={26} color="#FFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Configurações</Text>
+          <Text style={styles.headerTitle}>ConfiguraÃ§Ãµes</Text>
           <View style={{ width: 44 }} />
         </View>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* PERFIL */}
       <Section title="Perfil">
-        <Text style={styles.title}>{user?.name || "Usuário"}</Text>
+        <Text style={styles.title}>{user?.name || "UsuÃ¡rio"}</Text>
         <Text style={styles.sub}>{user?.email || "email@exemplo.com"}</Text>
         <TouchableOpacity onPress={() => navigation.navigate("EditProfile")}>
           <Text style={styles.link}>Editar Perfil</Text>
         </TouchableOpacity>
       </Section>
 
-      {/* SEGURANÇA */}
-      <Section title="Segurança">
+      {/* SEGURANÃ‡A */}
+      <Section title="SeguranÃ§a">
         <Row label="Login com Biometria">
           <Switch value={biometric} onValueChange={handleBiometricToggle} />
         </Row>
-        <Row label="Autenticação em 2 Fatores">
+        <Row label="AutenticaÃ§Ã£o em 2 Fatores">
           <Switch value={twoFactor} onValueChange={handle2FAToggle} />
         </Row>
         <Item label="Alterar Senha" onPress={() => navigation.navigate("ChangePassword")} />
@@ -226,21 +226,21 @@ export default function ConfigScreen({ navigation, user }) {
 
       {/* EQUIPE */}
       <Section title="Equipe">
-        <Item label="Gerenciar Usuários" onPress={() => navigation.navigate("ManageUsers")} />
-        <Item label="Permissões & Acessos" onPress={() => navigation.navigate("Permissions")} />
+        <Item label="Gerenciar UsuÃ¡rios" onPress={() => navigation.navigate("ManageUsers")} />
+        <Item label="PermissÃµes & Acessos" onPress={() => navigation.navigate("Permissions")} />
       </Section>
 
-      {/* PREFERÊNCIAS */}
-      <Section title="Preferências">
+      {/* PREFERÃŠNCIAS */}
+      <Section title="PreferÃªncias">
         <Row label="Tema Escuro">
           <Switch value={darkMode} onValueChange={handleDarkModeToggle} />
         </Row>
-        <Row label="Notificações">
+        <Row label="NotificaÃ§Ãµes">
           <Switch value={notifications} onValueChange={handleNotificationsToggle} />
         </Row>
         <Row label="Idioma">
           <TouchableOpacity onPress={() => handleLanguageChange(language === "pt-BR" ? "en-US" : "pt-BR")}>
-            <Text style={styles.link}>{language === "pt-BR" ? "Português (BR)" : "English (US)"}</Text>
+            <Text style={styles.link}>{language === "pt-BR" ? "PortuguÃªs (BR)" : "English (US)"}</Text>
           </TouchableOpacity>
         </Row>
       </Section>
@@ -248,7 +248,7 @@ export default function ConfigScreen({ navigation, user }) {
       {/* DADOS */}
       <Section title="Dados">
         <Item label="Sincronizar" onPress={syncData} />
-        <Item label="Backup Automático" onPress={backupData} />
+        <Item label="Backup AutomÃ¡tico" onPress={backupData} />
         <Item label="Restaurar Dados" onPress={restoreData} />
       </Section>
 
@@ -261,8 +261,8 @@ export default function ConfigScreen({ navigation, user }) {
 
       {/* APP INFO */}
       <Section title="Sobre o App">
-        <Text style={styles.text}>Versão 1.0.0</Text>
-        <Text style={styles.text}>© 2026 AgroGB</Text>
+        <Text style={styles.text}>VersÃ£o 1.0.0</Text>
+        <Text style={styles.text}>Â© 2026 AgroGB</Text>
       </Section>
       <View style={{ height: 40 }} />
     </ScrollView>
@@ -335,3 +335,4 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
+

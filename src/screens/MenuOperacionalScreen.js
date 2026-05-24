@@ -1,10 +1,10 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar as RNStatusBar, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import SafeBlurView from '../ui/SafeBlurView';
+
 
 export default function MenuOperacionalScreen({ navigation }) {
-    // AÇÕES RÁPIDAS (Atalhos diretos para criar algo no campo)
+    // AÃ‡Ã•ES RÃPIDAS (Atalhos diretos para criar algo no campo)
     const QUICK_ACTIONS = [
         {
             title: "Novo Plantio",
@@ -25,7 +25,7 @@ export default function MenuOperacionalScreen({ navigation }) {
             color: "#8B5CF6"
         },
         {
-            title: "Nova Máquina",
+            title: "Nova MÃ¡quina",
             icon: "construct",
             route: "MaquinaForm",
             color: "#64748B"
@@ -36,49 +36,49 @@ export default function MenuOperacionalScreen({ navigation }) {
     const MENU_ITEMS = [
         {
             title: "MONITORAMENTO DE SAFRA",
-            subtitle: "Diário de bordo das áreas",
+            subtitle: "DiÃ¡rio de bordo das Ã¡reas",
             icon: "calendar-outline",
-            description: "Registro de anomalias, dados meteorológicos e status do lote.",
+            description: "Registro de anomalias, dados meteorolÃ³gicos e status do lote.",
             route: "Monitoramento",
             color: "#3B82F6" 
         },
         {
-            title: "PLANOS DE ADUBAÇÃO",
-            subtitle: "Consultar prescrições",
+            title: "PLANOS DE ADUBAÃ‡ÃƒO",
+            subtitle: "Consultar prescriÃ§Ãµes",
             icon: "layers-outline",
-            description: "Lista de planos de fertilizantes gerados ou aprovados pelo agrônomo.",
+            description: "Lista de planos de fertilizantes gerados ou aprovados pelo agrÃ´nomo.",
             route: "AdubacaoList",
             color: "#A3E635" 
         },
         {
             title: "CADERNO DE CAMPO OFICIAL",
-            subtitle: "Relatório fitossanitário",
+            subtitle: "RelatÃ³rio fitossanitÃ¡rio",
             icon: "book-outline",
-            description: "Acesse as receitas, histórico de aplicações e restrições legais.",
+            description: "Acesse as receitas, histÃ³rico de aplicaÃ§Ãµes e restriÃ§Ãµes legais.",
             route: "CadernoCampo",
             color: "#EF4444" 
         },
         {
-            title: "GESTÃO DE FROTA",
-            subtitle: "Máquinas e Implementos",
+            title: "GESTÃƒO DE FROTA",
+            subtitle: "MÃ¡quinas e Implementos",
             icon: "car-outline",
-            description: "Controle de horas, manutenção e consumo das máquinas.",
+            description: "Controle de horas, manutenÃ§Ã£o e consumo das mÃ¡quinas.",
             route: "Frota",
             color: "#F59E0B" 
         },
         {
-            title: "ÁREAS E CULTURAS",
-            subtitle: "Talhões e Variedades",
+            title: "ÃREAS E CULTURAS",
+            subtitle: "TalhÃµes e Variedades",
             icon: "map-outline",
-            description: "Gestão cartográfica e histórico de produtividade por área.",
+            description: "GestÃ£o cartogrÃ¡fica e histÃ³rico de produtividade por Ã¡rea.",
             route: "Culturas",
             color: "#10B981" 
         },
         {
             title: "PROCESSAMENTO DE DADOS",
-            subtitle: "Análise de Perdas",
+            subtitle: "AnÃ¡lise de Perdas",
             icon: "analytics-outline",
-            description: "Cálculo de rendimento e perdas por processamento.",
+            description: "CÃ¡lculo de rendimento e perdas por processamento.",
             route: "Processamento",
             color: "#3B82F6" 
         }
@@ -96,15 +96,15 @@ export default function MenuOperacionalScreen({ navigation }) {
                     <Ionicons name="chevron-back" size={28} color="#FFF" />
                 </TouchableOpacity>
                 <View style={{ flex: 1 }}>
-                    <Text style={styles.headerTitle}>Central de Operações</Text>
+                    <Text style={styles.headerTitle}>Central de OperaÃ§Ãµes</Text>
                     <Text style={styles.headerSub}>CAMPO & LAVOURAS</Text>
                 </View>
             </View>
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 
-                {/* AÇÕES RÁPIDAS DE CRIAÇÃO */}
-                <Text style={styles.sectionHeader}>AÇÕES DE CAMPO RÁPIDAS</Text>
+                {/* AÃ‡Ã•ES RÃPIDAS DE CRIAÃ‡ÃƒO */}
+                <Text style={styles.sectionHeader}>AÃ‡Ã•ES DE CAMPO RÃPIDAS</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickActionsContainer}>
                     {QUICK_ACTIONS.map((action, idx) => (
                         <TouchableOpacity
@@ -113,18 +113,18 @@ export default function MenuOperacionalScreen({ navigation }) {
                             activeOpacity={0.8}
                             onPress={() => navigation.navigate(action.route)}
                         >
-                            <SafeBlurView intensity={20} style={styles.quickCard}>
+                            <View intensity={20} style={styles.quickCard}>
                                 <View style={[styles.quickIconBox, { backgroundColor: action.color + '15' }]}>
                                     <Ionicons name={action.icon} size={28} color={action.color} />
                                 </View>
                                 <Text style={styles.quickTitle}>{action.title}</Text>
-                            </SafeBlurView>
+                            </View>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
 
                 {/* LISTA DE GERENCIAMENTO */}
-                <Text style={[styles.sectionHeader, { marginTop: 20 }]}>GERENCIAR PRODUÇÃO</Text>
+                <Text style={[styles.sectionHeader, { marginTop: 20 }]}>GERENCIAR PRODUÃ‡ÃƒO</Text>
                 {MENU_ITEMS.map((item, index) => (
                     <TouchableOpacity
                         key={index}
@@ -132,7 +132,7 @@ export default function MenuOperacionalScreen({ navigation }) {
                         onPress={() => navigation.navigate(item.route)}
                         activeOpacity={0.8}
                     >
-                        <SafeBlurView intensity={15} style={styles.card}>
+                        <View intensity={15} style={styles.card}>
                             <View style={[styles.iconBox, { backgroundColor: `${item.color}10` }]}>
                                 <Ionicons name={item.icon} size={26} color={item.color} />
                             </View>
@@ -144,7 +144,7 @@ export default function MenuOperacionalScreen({ navigation }) {
                             </View>
                             
                             <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.2)" />
-                        </SafeBlurView>
+                        </View>
                     </TouchableOpacity>
                 ))}
             </ScrollView>
@@ -194,4 +194,5 @@ const styles = StyleSheet.create({
     cardSub: { fontSize: 14, fontWeight: '800', color: '#F8FAFC', marginBottom: 2 },
     cardDesc: { fontSize: 11, color: '#64748B', fontWeight: '600' },
 });
+
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
     View, Text, StyleSheet, FlatList, TouchableOpacity, 
     Alert, TextInput, Modal, ActivityIndicator, SafeAreaView, StatusBar, Platform 
@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { v4 as uuidv4 } from 'uuid';
 import { getCategoriasDespesa, insertCategoriaDespesa, deleteCategoriaDespesa } from '../database/database';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
+
 
 export default function CategoriasDespesaScreen({ navigation }) {
     const [categorias, setCategorias] = useState([]);
@@ -27,7 +27,7 @@ export default function CategoriasDespesaScreen({ navigation }) {
             setCategorias(data);
         } catch {
             // log error
-            Alert.alert('Erro', 'Não foi possível carregar as categorias.');
+            Alert.alert('Erro', 'NÃ£o foi possÃ­vel carregar as categorias.');
         } finally {
             setLoading(false);
         }
@@ -35,7 +35,7 @@ export default function CategoriasDespesaScreen({ navigation }) {
 
     const handleSave = async () => {
         if (!nome) {
-            Alert.alert('Atenção', 'Informe o nome da categoria.');
+            Alert.alert('AtenÃ§Ã£o', 'Informe o nome da categoria.');
             return;
         }
 
@@ -47,14 +47,14 @@ export default function CategoriasDespesaScreen({ navigation }) {
             setTipo('FIXA');
             loadData();
         } catch {
-            Alert.alert('Erro', 'Não foi possível registrar a categoria.');
+            Alert.alert('Erro', 'NÃ£o foi possÃ­vel registrar a categoria.');
         }
     };
 
     const handleDelete = (id, nomeCategoria) => {
         Alert.alert(
             'Excluir Categoria',
-            `Deseja realmente apagar "${nomeCategoria}"?\nIsso não apagará os custos já lançados.`,
+            `Deseja realmente apagar "${nomeCategoria}"?\nIsso nÃ£o apagarÃ¡ os custos jÃ¡ lanÃ§ados.`,
             [
                 { text: 'Cancelar', style: 'cancel' },
                 {
@@ -75,7 +75,7 @@ export default function CategoriasDespesaScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
-            <LinearGradient colors={['#040914', '#0A1220']} style={StyleSheet.absoluteFill} />
+            
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             <SafeAreaView style={{ flex: 1, width: '100%', maxWidth: 500, alignSelf: 'center' }}>
@@ -85,7 +85,7 @@ export default function CategoriasDespesaScreen({ navigation }) {
                     </TouchableOpacity>
                     <View style={{flex: 1, marginLeft: 10}}>
                         <Text style={styles.headerTitle}>Categorias de Custo</Text>
-                        <Text style={styles.headerSub}>Gerencie o balanço das contas</Text>
+                        <Text style={styles.headerSub}>Gerencie o balanÃ§o das contas</Text>
                     </View>
                     <TouchableOpacity style={styles.topAddBtn} onPress={() => setModalVisible(true)}>
                         <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.topAddGradient}>
@@ -107,8 +107,8 @@ export default function CategoriasDespesaScreen({ navigation }) {
                         ListEmptyComponent={
                             <View style={styles.emptyContainer}>
                                 <Ionicons name="wallet-outline" size={60} color="rgba(255,255,255,0.1)" />
-                                <Text style={styles.emptyText}>Opções financeiras em branco.</Text>
-                                <Text style={styles.emptySubText}>Comece mapeando os custos da operação.</Text>
+                                <Text style={styles.emptyText}>OpÃ§Ãµes financeiras em branco.</Text>
+                                <Text style={styles.emptySubText}>Comece mapeando os custos da operaÃ§Ã£o.</Text>
                             </View>
                         }
                         renderItem={({ item }) => (
@@ -146,7 +146,7 @@ export default function CategoriasDespesaScreen({ navigation }) {
                 <View style={styles.modalBg}>
                     <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setModalVisible(false)} />
                     
-                    <BlurView intensity={50} tint="dark" style={styles.modalSheet}>
+                    <View intensity={50} tint="dark" style={styles.modalSheet}>
                         <View style={styles.modalHandle} />
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>NOVO GRUPO</Text>
@@ -156,12 +156,12 @@ export default function CategoriasDespesaScreen({ navigation }) {
                         </View>
 
                         <View style={styles.field}>
-                            <Text style={styles.label}>TÍTULO DO GASTO DA OPERAÇÃO</Text>
+                            <Text style={styles.label}>TÃTULO DO GASTO DA OPERAÃ‡ÃƒO</Text>
                             <View style={styles.inputPill}>
                                 <TextInput
                                     style={styles.input}
                                     placeholderTextColor="#64748B"
-                                    placeholder="Ex: QUÍMICOS, COMBUSTÍVEL, TRATOR"
+                                    placeholder="Ex: QUÃMICOS, COMBUSTÃVEL, TRATOR"
                                     value={nome}
                                     onChangeText={t => setNome(t.toUpperCase())}
                                     autoCapitalize="characters"
@@ -182,11 +182,11 @@ export default function CategoriasDespesaScreen({ navigation }) {
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
-                                    style={[styles.radioBtn, tipo === 'VARIÁVEL' && styles.radioBtnActiveB]}
-                                    onPress={() => setTipo('VARIÁVEL')}>
-                                    <Ionicons name="stats-chart-outline" size={16} color={tipo === 'VARIÁVEL' ? '#E879F9' : '#64748B'} />
-                                    <Text style={[styles.radioText, tipo === 'VARIÁVEL' && { color: '#E879F9' }]}> VARIAVEL</Text>
-                                    {tipo === 'VARIÁVEL' && <View style={[styles.glowDot, { backgroundColor: '#E879F9'} ]} />}
+                                    style={[styles.radioBtn, tipo === 'VARIÃVEL' && styles.radioBtnActiveB]}
+                                    onPress={() => setTipo('VARIÃVEL')}>
+                                    <Ionicons name="stats-chart-outline" size={16} color={tipo === 'VARIÃVEL' ? '#E879F9' : '#64748B'} />
+                                    <Text style={[styles.radioText, tipo === 'VARIÃVEL' && { color: '#E879F9' }]}> VARIAVEL</Text>
+                                    {tipo === 'VARIÃVEL' && <View style={[styles.glowDot, { backgroundColor: '#E879F9'} ]} />}
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -197,7 +197,7 @@ export default function CategoriasDespesaScreen({ navigation }) {
                                 <Text style={styles.saveBtnText}>ADICIONAR CATEGORIA</Text>
                             </LinearGradient>
                         </TouchableOpacity>
-                    </BlurView>
+                    </View>
                 </View>
             </Modal>
         </View>
@@ -253,3 +253,4 @@ const styles = StyleSheet.create({
     saveBtnGradient: { flexDirection: 'row', height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: '#34D399' },
     saveBtnText: { color: '#FFF', fontSize: 15, fontWeight: '900', letterSpacing: 1 }
 });
+

@@ -1,111 +1,132 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Platform } from 'react-native';
-import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Platform, Alert } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { supabase } from '../../services/supabaseClient';
 
-const ALL_OPERATIONAL_TOOLS = [
-    { id: 'CadernoCampo', label: 'Caderno', icon: 'book-open-outline', color: '#0F766E' },
-    { id: 'Colheita', label: 'Colheita', icon: 'leaf', color: '#059669' },
-    { id: 'Vendas', label: 'Vendas', icon: 'cash', color: '#10B981' },
-    { id: 'Estoque', label: 'Estoque', icon: 'cube-outline', color: '#3B82F6' },
-    { id: 'Monitoramento', label: 'Monitorar', icon: 'camera-outline', color: '#EC4899' },
-    { id: 'MenuAdubacao', label: 'Adubação', icon: 'flask-outline', color: '#A855F7' },
-    { id: 'Compras', label: 'Compras', icon: 'cart-outline', color: '#D97706' },
-    { id: 'Encomendas', label: 'Encomendas', icon: 'clipboard-outline', color: '#F59E0B' },
-    { id: 'Plantio', label: 'Plantio', icon: 'apple', color: '#8B5CF6' },
-    { id: 'Custos', label: 'Custos', icon: 'calculator-variant-outline', color: '#EA580C' },
-    { id: 'Processamento', label: 'Descarte', icon: 'trash-can-outline', color: '#EF4444' },
-    { id: 'Frota', label: 'Frota', icon: 'car-outline', color: '#3B82F6' },
-    { id: 'Relatorios', label: 'Relatórios', icon: 'chart-pie', color: '#475569' },
-    { id: 'MenuCadastros', label: 'Cadastros', icon: 'square-edit-outline', color: '#475569' },
-    { id: 'Scanner', label: 'Scanner', icon: 'barcode-scan', color: '#475569' },
-    { id: 'MenuSistema', label: 'Ajustes', icon: 'cog-outline', color: '#475569' },
+const MENU_ITEMS = [
+    { id: 'Dashboard', label: 'Dashboard', icon: 'home-outline', route: 'HomeClient' },
+    { id: 'Talhoes', label: 'Talhões', icon: 'grid-outline', route: 'MyFarm' },
+    { id: 'Plantio', label: 'Plantio', icon: 'leaf-outline', route: null },
+    { id: 'Monitoramento', label: 'Monitoramento', icon: 'scan-outline', route: null },
+    { id: 'Adubacao', label: 'Adubação', icon: 'flask-outline', route: 'MenuAdubacao' },
+    { id: 'Pulverizacao', label: 'Pulverização', icon: 'water-outline', route: null },
+    { id: 'Irrigacao', label: 'Irrigação', icon: 'rainy-outline', route: null },
+    { id: 'Colheita', label: 'Colheita', icon: 'basket-outline', route: 'Colheita' },
+    { id: 'Financeiro', label: 'Financeiro', icon: 'cash-outline', route: 'MenuFinanceiro' },
+    { id: 'Relatorios', label: 'Relatórios', icon: 'bar-chart-outline', route: null },
+    { id: 'Documentos', label: 'Documentos', icon: 'document-text-outline', route: null },
+    { id: 'MeuAgronomo', label: 'Meu Agrônomo', icon: 'person-outline', route: null },
+    { id: 'Configuracoes', label: 'Configurações', icon: 'settings-outline', route: 'Settings' },
+    { id: 'Ajuda', label: 'Ajuda e Suporte', icon: 'help-circle-outline', route: null },
 ];
 
 export default function ClientMenuScreen({ navigation }) {
-    const renderTool = (item) => (
-        <TouchableOpacity 
-            key={item.id}
-            style={styles.gridItem} 
-            activeOpacity={0.7}
-            onPress={() => navigation.navigate(item.id)}
-        >
-            <View style={styles.cardInternal}>
-                <View style={[styles.balloon, { backgroundColor: item.color + '15' }]}>
-                    <MaterialCommunityIcons name={item.icon} size={28} color={item.color} />
-                </View>
-                <Text style={styles.itemLabel} numberOfLines={1}>{item.label}</Text>
-            </View>
-        </TouchableOpacity>
-    );
+
+    const handleLogout = async () => {
+        Alert.alert('Sair', 'Deseja realmente sair da sua conta?', [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Sair', style: 'destructive', onPress: async () => {
+                await supabase.auth.signOut();
+            }}
+        ]);
+    };
+
+    const handlePress = (item) => {
+        if (item.route) {
+            navigation.navigate(item.route);
+        } else {
+            Alert.alert('Em breve', `Módulo ${item.label} em desenvolvimento.`);
+        }
+    };
 
     return (
         <SafeAreaView style={styles.container}>
-            <LinearGradient
-                colors={['#1B5E20', '#166534']}
-                style={styles.headerGradient}
-            >
-                <View style={styles.headerRow}>
-                    <View>
-                        <Text style={styles.headerTitle}>Central de Operações</Text>
-                        <Text style={styles.headerSub}>Todas as ferramentas da fazenda</Text>
+            {/* Header Profile */}
+            <View style={styles.header}>
+                <View style={styles.profileRow}>
+                    <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>JS</Text>
                     </View>
-                    <Ionicons name="apps" size={30} color="rgba(255,255,255,0.7)" />
+                    <View style={styles.profileInfo}>
+                        <Text style={styles.userName}>João da Silva</Text>
+                        <Text style={styles.farmName}>Fazenda Boa Vista</Text>
+                        <View style={styles.planBadge}>
+                            <Text style={styles.planText}>Plano Básico</Text>
+                        </View>
+                    </View>
                 </View>
-            </LinearGradient>
+            </View>
 
-            <ScrollView 
-                contentContainerStyle={styles.scroll} 
-                showsVerticalScrollIndicator={false}
-            >
-                <View style={styles.gridContainer}>
-                    {ALL_OPERATIONAL_TOOLS.map(renderTool)}
-                </View>
+            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+                {MENU_ITEMS.map((item, index) => (
+                    <TouchableOpacity 
+                        key={item.id} 
+                        style={styles.menuItem} 
+                        activeOpacity={0.7}
+                        onPress={() => handlePress(item)}
+                    >
+                        <View style={styles.menuItemLeft}>
+                            <Ionicons name={item.icon} size={22} color="#10B981" style={styles.menuIcon} />
+                            <Text style={styles.menuText}>{item.label}</Text>
+                        </View>
+                        {/* Only add bottom border if not the last item in a visual block, but here let's keep it clean without borders or subtle ones */}
+                    </TouchableOpacity>
+                ))}
+
+                <View style={styles.divider} />
+
+                <TouchableOpacity style={styles.logoutItem} activeOpacity={0.7} onPress={handleLogout}>
+                    <View style={styles.menuItemLeft}>
+                        <Ionicons name="log-out-outline" size={22} color="#EF4444" style={styles.menuIcon} />
+                        <Text style={styles.logoutText}>Sair da conta</Text>
+                    </View>
+                </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F8FAFC' },
-    headerGradient: {
+    container: { flex: 1, backgroundColor: '#0B121E' },
+    
+    header: {
         paddingTop: Platform.OS === 'android' ? 50 : 20,
-        paddingBottom: 25,
+        paddingBottom: 20,
         paddingHorizontal: 20,
-        borderBottomLeftRadius: 20,
-        borderBottomRightRadius: 20,
-        elevation: 5,
-        shadowColor: '#1B5E20',
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        marginBottom: 20
+        backgroundColor: '#111827',
+        borderBottomWidth: 1,
+        borderBottomColor: '#1F2937',
     },
-    headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    headerTitle: { fontSize: 24, fontWeight: '800', color: '#FFF' },
-    headerSub: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4 },
+    profileRow: { flexDirection: 'row', alignItems: 'center' },
+    avatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#064E3B', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#10B981', marginRight: 15 },
+    avatarText: { color: '#10B981', fontSize: 20, fontWeight: '900' },
+    profileInfo: { flex: 1 },
+    userName: { color: '#F8FAFC', fontSize: 18, fontWeight: '800', marginBottom: 2 },
+    farmName: { color: '#94A3B8', fontSize: 14, fontWeight: '500', marginBottom: 6 },
+    planBadge: { backgroundColor: 'rgba(16, 185, 129, 0.15)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, alignSelf: 'flex-start' },
+    planText: { color: '#10B981', fontSize: 11, fontWeight: '800' },
+
+    scroll: { paddingVertical: 15 },
     
-    scroll: { paddingHorizontal: 15, paddingBottom: 40 },
-    
-    gridContainer: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -5 },
-    gridItem: { 
-        width: '33.33%', 
-        paddingHorizontal: 5,
-        paddingVertical: 5,
-        marginBottom: 8
-    },
-    cardInternal: {
-        backgroundColor: '#FFF',
-        borderRadius: 20,
-        paddingVertical: 18,
-        paddingHorizontal: 5,
+    menuItem: {
+        flexDirection: 'row',
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOpacity: 0.04, 
-        shadowRadius: 8, 
-        elevation: 2,
-        height: 110, 
-        justifyContent: 'center'
+        justifyContent: 'space-between',
+        paddingVertical: 14,
+        paddingHorizontal: 20,
     },
-    balloon: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-    itemLabel: { fontSize: 11, fontWeight: '700', color: '#334155', textAlign: 'center' },
+    menuItemLeft: { flexDirection: 'row', alignItems: 'center' },
+    menuIcon: { marginRight: 15 },
+    menuText: { color: '#F8FAFC', fontSize: 16, fontWeight: '600' },
+    
+    divider: { height: 1, backgroundColor: '#1F2937', marginVertical: 15, marginHorizontal: 20 },
+    
+    logoutItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        marginBottom: 30
+    },
+    logoutText: { color: '#EF4444', fontSize: 16, fontWeight: '600' }
 });

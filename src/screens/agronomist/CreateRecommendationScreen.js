@@ -1,100 +1,96 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../services/supabaseClient';
-import { sendPushNotification } from '../../services/notificationService'; // NOVO: Serviço de Push
+import { sendPushNotification } from '../../services/notificationService';
 
 export default function CreateRecommendationScreen({ route, navigation }) {
-    // Parâmetros passados pela tela de Clientes
-    const { clientId, clientName } = route.params || {};
+    const { clientId, clientName, recommendationId } = route.params || {};
 
-    const [title, setTitle] = useState('');
-    const [description, setDescription] = useState('');
-    const [date, setDate] = useState('');
+    const [farm, setFarm] = useState('');
+    const [farmId, setFarmId] = useState(null);
+    const [talhao, setTalhao] = useState('');
+    const [cultura, setCultura] = useState('');
+    const [instructions, setInstructions] = useState('');
     
-    const [farms, setFarms] = useState([]);
-    const [selectedFarmId, setSelectedFarmId] = useState(null);
-    const [loading, setLoading] = useState(true);
+    // Dynamic products array: { name, dosage }
+    const [products, setProducts] = useState([{ id: Date.now().toString(), name: '', dosage: '' }]);
+
+    const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        const loadFarms = async () => {
+        const fetchFarm = async () => {
             if (!clientId) {
-                Alert.alert('Erro', 'Nenhum cliente selecionado.');
+                Alert.alert('Erro', 'Cliente não selecionado.');
                 navigation.goBack();
                 return;
             }
             try {
-                const { data, error } = await supabase.from('farms').select('id, name').eq('owner_id', clientId);
-                if (error) throw error;
-                setFarms(data || []);
-                if (data && data.length > 0) {
-                    setSelectedFarmId(data[0].id); // Seleciona a primeira por padrão
+                const { data, error } = await supabase.from('farms').select('id, name').eq('owner_id', clientId).limit(1).single();
+                if (data) {
+                    setFarm(data.name);
+                    setFarmId(data.id);
+                } else {
+                    setFarm(clientName || 'Fazenda Exemplo');
                 }
             } catch (err) {
-                console.log(err);
-            } finally {
-                setLoading(false);
+                setFarm(clientName || 'Fazenda Exemplo');
             }
         };
-        loadFarms();
+        fetchFarm();
     }, [clientId]);
 
-    const handleSave = async () => {
-        if (!title || !date || !selectedFarmId) {
-            Alert.alert('Atenção', 'Preencha o título, data e garanta que uma fazenda esteja selecionada.');
+    const addProduct = () => {
+        setProducts([...products, { id: Date.now().toString(), name: '', dosage: '' }]);
+    };
+
+    const removeProduct = (id) => {
+        setProducts(products.filter(p => p.id !== id));
+    };
+
+    const updateProduct = (id, field, value) => {
+        setProducts(products.map(p => p.id === id ? { ...p, [field]: value } : p));
+    };
+
+    const handleSave = async (isDraft = false) => {
+        if (!talhao || !cultura || products.length === 0 || !farmId) {
+            Alert.alert('Atenção', 'Preencha Talhão, Cultura e adicione ao menos um produto. O cliente precisa ter uma fazenda cadastrada.');
             return;
         }
 
         try {
             setSaving(true);
             const { data: sessionData } = await supabase.auth.getSession();
-            const agronomistId = sessionData.session.user.id;
-
-            // Converter data DD/MM/AAAA para YYYY-MM-DD
-            const [day, month, year] = date.split('/');
-            const formattedDate = `${year}-${month}-${day}`;
+            const agronomistId = sessionData?.session?.user?.id;
+            
+            if (!agronomistId) throw new Error("Usuário não autenticado.");
 
             const { error } = await supabase.from('recommendations').insert([{
                 agronomist_id: agronomistId,
                 client_id: clientId,
-                farm_id: selectedFarmId,
-                title: title,
-                description: description,
-                application_type: 'Pulverização', // fixo no MVP
-                scheduled_date: formattedDate,
-                status: 'PENDING'
+                farm_id: farmId,
+                title: `Recomendação ${cultura} - ${talhao}`,
+                description: JSON.stringify({ products, instructions }),
+                status: isDraft ? 'DRAFT' : 'PENDING'
             }]);
 
             if (error) throw error;
 
-            Alert.alert('Sucesso', 'Recomendação enviada para o produtor!', [
+            Alert.alert('Sucesso', isDraft ? 'Rascunho salvo!' : 'Recomendação enviada para o produtor!', [
                 { text: 'OK', onPress: () => navigation.goBack() }
             ]);
 
-            // NOVO: Disparo da Notificação Push
-            try {
-                // 1. Pega o nome do agrônomo atual
-                const { data: agroProfile } = await supabase.from('profiles').select('full_name').eq('id', agronomistId).single();
-                const agroName = agroProfile?.full_name || 'Seu Agrônomo';
-
-                // 2. Busca o Push Token do Produtor
-                const { data: clientProfile } = await supabase.from('profiles').select('expo_push_token').eq('id', clientId).single();
-                
-                if (clientProfile && clientProfile.expo_push_token) {
-                    await sendPushNotification(
-                        clientProfile.expo_push_token,
-                        'Nova Receita Recebida! 📝',
-                        `${agroName} enviou a recomendação: ${title}. Abra para ver os detalhes da aplicação.`
-                    );
-                }
-            } catch (pushErr) {
-                console.log('[CreateRecommendation] Falha não crítica ao enviar Push:', pushErr.message);
+            if (!isDraft) {
+                try {
+                    const { data: clientProfile } = await supabase.from('profiles').select('expo_push_token').eq('id', clientId).single();
+                    if (clientProfile?.expo_push_token) {
+                        await sendPushNotification(clientProfile.expo_push_token, 'Nova Receita Recebida! 📝', `Nova recomendação para ${cultura} no ${talhao}.`);
+                    }
+                } catch (e) { }
             }
-
         } catch (error) {
-            Alert.alert('Erro', 'Falha ao salvar a recomendação: ' + error.message);
+            Alert.alert('Erro', 'Falha ao salvar a recomendação.');
         } finally {
             setSaving(false);
         }
@@ -105,103 +101,94 @@ export default function CreateRecommendationScreen({ route, navigation }) {
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{flex: 1}}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                        <Ionicons name="close" size={24} color="#1B5E20" />
+                        <Ionicons name="arrow-back" size={24} color="#64748B" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Nova Receita</Text>
+                    <Text style={styles.headerTitle}>Nova Recomendação</Text>
                     <View style={{ width: 40 }} />
                 </View>
 
                 {loading ? (
                     <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
-                        <ActivityIndicator size="large" color="#1B5E20" />
+                        <ActivityIndicator size="large" color="#10B981" />
                     </View>
                 ) : (
                     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                        <Text style={styles.sectionTitle}>Destinatário</Text>
                         
-                        <View style={styles.selectorCard}>
-                            <View style={styles.selectorRow}>
-                                <Ionicons name="person" size={20} color="#64748B" />
-                                <Text style={styles.selectorLabel}>Produtor:</Text>
-                                <Text style={styles.selectorValue}>{clientName || 'Desconhecido'}</Text>
+                        <View style={styles.infoCard}>
+                            <View style={styles.infoRow}>
+                                <View style={styles.iconCircle}><Ionicons name="person" size={16} color="#10B981" /></View>
+                                <View>
+                                    <Text style={styles.infoLabel}>Cliente</Text>
+                                    <Text style={styles.infoValue}>{farm}</Text>
+                                </View>
                             </View>
                             <View style={styles.divider} />
-                            <View style={styles.selectorRow}>
-                                <MaterialCommunityIcons name="barn" size={20} color="#64748B" />
-                                <Text style={styles.selectorLabel}>Fazenda:</Text>
-                                {farms.length > 0 ? (
-                                    <Text style={styles.selectorValue}>{farms.find(f => f.id === selectedFarmId)?.name}</Text>
-                                ) : (
-                                    <Text style={[styles.selectorValue, {color: '#EF4444'}]}>Nenhuma fazenda cadastrada</Text>
-                                )}
+                            
+                            <View style={styles.inputRow}>
+                                <MaterialCommunityIcons name="map-marker-path" size={20} color="#64748B" style={styles.inputIcon} />
+                                <TextInput style={styles.inputGhost} placeholder="Talhão (Ex: Talhão 12)" placeholderTextColor="#64748B" value={talhao} onChangeText={setTalhao} />
+                            </View>
+                            <View style={styles.divider} />
+                            
+                            <View style={styles.inputRow}>
+                                <Ionicons name="leaf-outline" size={20} color="#64748B" style={styles.inputIcon} />
+                                <TextInput style={styles.inputGhost} placeholder="Cultura (Ex: Soja)" placeholderTextColor="#64748B" value={cultura} onChangeText={setCultura} />
                             </View>
                         </View>
 
-                        <Text style={styles.sectionTitle}>Detalhes da Aplicação</Text>
-
-                        <View style={styles.inputBox}>
-                            <Text style={styles.label}>TÍTULO DA RECOMENDAÇÃO *</Text>
-                            <View style={styles.inputContainer}>
-                                <TextInput 
-                                    style={styles.input} 
-                                    placeholder="Ex: Adubação Foliar - Cálcio e Boro" 
-                                    value={title} 
-                                    onChangeText={setTitle} 
-                                />
-                            </View>
+                        <View style={styles.sectionHeaderRow}>
+                            <Text style={styles.sectionTitle}>Produtos</Text>
+                            <TouchableOpacity onPress={addProduct}>
+                                <Text style={styles.addBtnText}>Adicionar produto</Text>
+                            </TouchableOpacity>
                         </View>
 
-                        <View style={styles.row}>
-                            <View style={[styles.inputBox, { flex: 1, marginRight: 15 }]}>
-                                <Text style={styles.label}>DATA PROGRAMADA *</Text>
-                                <View style={styles.inputContainer}>
-                                    <Ionicons name="calendar-outline" size={20} color="#1B5E20" style={styles.icon} />
+                        {products.map((prod, index) => (
+                            <View key={prod.id} style={styles.productCard}>
+                                <View style={{ flex: 1 }}>
                                     <TextInput 
-                                        style={styles.input} 
-                                        placeholder="DD/MM/AAAA" 
-                                        value={date} 
-                                        onChangeText={setDate} 
-                                        keyboardType="numeric"
+                                        style={styles.productInput} 
+                                        placeholder="Nome do Produto (Ex: Roundup)" 
+                                        placeholderTextColor="#64748B"
+                                        value={prod.name}
+                                        onChangeText={(val) => updateProduct(prod.id, 'name', val)}
+                                    />
+                                    <TextInput 
+                                        style={styles.dosageInput} 
+                                        placeholder="Dosagem (Ex: 2,0 L/ha)" 
+                                        placeholderTextColor="#64748B"
+                                        value={prod.dosage}
+                                        onChangeText={(val) => updateProduct(prod.id, 'dosage', val)}
                                     />
                                 </View>
+                                {products.length > 1 && (
+                                    <TouchableOpacity onPress={() => removeProduct(prod.id)} style={styles.trashBtn}>
+                                        <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                    </TouchableOpacity>
+                                )}
                             </View>
-                            <View style={[styles.inputBox, { flex: 1 }]}>
-                                <Text style={styles.label}>TIPO</Text>
-                                <View style={styles.inputContainer}>
-                                    <TextInput style={styles.input} placeholder="Pulverização" editable={false} />
-                                </View>
-                            </View>
-                        </View>
+                        ))}
 
-                        <View style={styles.inputBox}>
-                            <Text style={styles.label}>PREPARO DA CALDA / OBSERVAÇÕES</Text>
-                            <View style={[styles.inputContainer, { borderBottomWidth: 0, backgroundColor: '#F1F5F9', borderRadius: 12, padding: 10, marginTop: 5 }]}>
-                                <TextInput 
-                                    style={[styles.input, { height: 100, textAlignVertical: 'top' }]} 
-                                    placeholder="Descreva os produtos, dosagens e orientações..." 
-                                    multiline 
-                                    value={description} 
-                                    onChangeText={setDescription} 
-                                />
-                            </View>
-                        </View>
+                        <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Instruções</Text>
+                        <TextInput 
+                            style={styles.textArea} 
+                            placeholder="Aplicar em pré-emergência..." 
+                            placeholderTextColor="#64748B"
+                            multiline 
+                            value={instructions}
+                            onChangeText={setInstructions}
+                        />
 
                     </ScrollView>
                 )}
 
                 {!loading && (
-                    <View style={styles.footer}>
-                        <TouchableOpacity style={styles.btnAction} onPress={handleSave} activeOpacity={0.9} disabled={saving}>
-                            <LinearGradient colors={['#1B5E20', '#166534']} style={styles.btnGrad}>
-                                {saving ? (
-                                    <ActivityIndicator color="#FFF" />
-                                ) : (
-                                    <>
-                                        <Text style={styles.btnText}>ENVIAR PARA O PRODUTOR</Text>
-                                        <Ionicons name="send" size={18} color="#FFF" style={{ marginLeft: 10 }} />
-                                    </>
-                                )}
-                            </LinearGradient>
+                    <View style={styles.footerRow}>
+                        <TouchableOpacity style={[styles.btnAction, styles.btnDraft]} onPress={() => handleSave(true)} disabled={saving}>
+                            <Text style={styles.btnDraftText}>Salvar rascunho</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.btnAction, styles.btnSend]} onPress={() => handleSave(false)} disabled={saving}>
+                            {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.btnSendText}>Enviar ao cliente</Text>}
                         </TouchableOpacity>
                     </View>
                 )}
@@ -211,25 +198,39 @@ export default function CreateRecommendationScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#FFF' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, paddingTop: Platform.OS === 'android' ? 40 : 20, borderBottomWidth: 1, borderColor: '#ECEFF1' },
-    backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F1F8E9', justifyContent: 'center', alignItems: 'center' },
-    headerTitle: { fontSize: 16, fontWeight: 'bold', color: '#1B5E20' },
+    container: { flex: 1, backgroundColor: '#0B121E' },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, paddingTop: Platform.OS === 'android' ? 40 : 20, backgroundColor: '#111827', borderBottomWidth: 1, borderBottomColor: '#1F2937' },
+    backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#1F2937', justifyContent: 'center', alignItems: 'center' },
+    headerTitle: { fontSize: 18, fontWeight: '800', color: '#F8FAFC' },
+    
     content: { padding: 20 },
-    sectionTitle: { fontSize: 16, fontWeight: '800', color: '#1E293B', marginBottom: 15, marginTop: 10 },
-    selectorCard: { backgroundColor: '#F8FAFC', borderRadius: 16, padding: 15, marginBottom: 30, borderWidth: 1, borderColor: '#E2E8F0' },
-    selectorRow: { flexDirection: 'row', alignItems: 'center' },
-    selectorLabel: { fontSize: 14, color: '#64748B', marginLeft: 10, width: 80 },
-    selectorValue: { fontSize: 15, fontWeight: '700', color: '#1E293B', flex: 1 },
-    divider: { height: 1, backgroundColor: '#E2E8F0', marginVertical: 12 },
-    inputBox: { marginBottom: 25 },
-    row: { flexDirection: 'row' },
-    label: { fontSize: 11, fontWeight: '900', color: '#90A4AE', marginBottom: 8, letterSpacing: 0.5 },
-    inputContainer: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1.5, borderColor: '#ECEFF1', paddingBottom: 5 },
-    icon: { marginRight: 10 },
-    input: { flex: 1, fontSize: 16, color: '#263238' },
-    footer: { padding: 20, borderTopWidth: 1, borderColor: '#ECEFF1' },
-    btnAction: { borderRadius: 15, overflow: 'hidden' },
-    btnGrad: { height: 60, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-    btnText: { color: '#FFF', fontWeight: '900', fontSize: 14, letterSpacing: 1 }
+    
+    infoCard: { backgroundColor: '#111827', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#1F2937', marginBottom: 30 },
+    infoRow: { flexDirection: 'row', alignItems: 'center' },
+    iconCircle: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(16, 185, 129, 0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    infoLabel: { color: '#64748B', fontSize: 11, fontWeight: '700' },
+    infoValue: { color: '#F8FAFC', fontSize: 15, fontWeight: '800' },
+    divider: { height: 1, backgroundColor: '#1F2937', marginVertical: 15 },
+    
+    inputRow: { flexDirection: 'row', alignItems: 'center' },
+    inputIcon: { marginRight: 15 },
+    inputGhost: { flex: 1, color: '#F8FAFC', fontSize: 15, fontWeight: '600' },
+    
+    sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+    sectionTitle: { fontSize: 16, fontWeight: '800', color: '#F8FAFC' },
+    addBtnText: { color: '#10B981', fontSize: 13, fontWeight: '700' },
+    
+    productCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#111827', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#1F2937', marginBottom: 10 },
+    productInput: { color: '#F8FAFC', fontSize: 15, fontWeight: '700', marginBottom: 5 },
+    dosageInput: { color: '#94A3B8', fontSize: 13, fontWeight: '500' },
+    trashBtn: { padding: 10 },
+    
+    textArea: { backgroundColor: '#111827', borderWidth: 1, borderColor: '#1F2937', borderRadius: 12, padding: 15, color: '#F8FAFC', height: 120, textAlignVertical: 'top', marginTop: 10 },
+    
+    footerRow: { flexDirection: 'row', padding: 20, borderTopWidth: 1, borderColor: '#1F2937', gap: 10 },
+    btnAction: { flex: 1, height: 50, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+    btnDraft: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#334155' },
+    btnDraftText: { color: '#94A3B8', fontWeight: '700' },
+    btnSend: { backgroundColor: '#10B981' },
+    btnSendText: { color: '#FFF', fontWeight: '800' }
 });

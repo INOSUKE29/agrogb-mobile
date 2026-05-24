@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Alert, SafeAreaView, StatusBar, Platform } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { getPlanosAdubacao, deletePlanoAdubacao } from '../database/database';
@@ -18,8 +18,8 @@ export default function AdubacaoListScreen({ navigation }) {
             // Mocking some data if empty to show the gorgeous UI
             if (!data || data.length === 0) {
                 setPlanos([
-                    { uuid: '1', nome_plano: 'Adubação Cobertura NPK', cultura: 'Milho', status: 'AGENDADO', tipo_aplicacao: 'Tratorizada', area_local: 'Talhão 04', lowStock: true, data: '14 Abr' },
-                    { uuid: '2', nome_plano: 'Fosfatagem Preparatória', cultura: 'Soja', status: 'CONCLUÍDO', tipo_aplicacao: 'Lançço', area_local: 'Talhão 01', lowStock: false, data: '10 Abr' }
+                    { uuid: '1', nome_plano: 'AdubaÃ§Ã£o Cobertura NPK', cultura: 'Milho', status: 'AGENDADO', tipo_aplicacao: 'Tratorizada', area_local: 'TalhÃ£o 04', lowStock: true, data: '14 Abr' },
+                    { uuid: '2', nome_plano: 'Fosfatagem PreparatÃ³ria', cultura: 'Soja', status: 'CONCLUÃDO', tipo_aplicacao: 'LanÃ§Ã§o', area_local: 'TalhÃ£o 01', lowStock: false, data: '10 Abr' }
                 ]);
             } else {
                 setPlanos(data); 
@@ -39,13 +39,13 @@ export default function AdubacaoListScreen({ navigation }) {
 
     const filteredPlanos = planos.filter(p => {
         if (activeTab === 'Todos') return true;
-        if (activeTab === 'Agendados') return p.status !== 'APLICADO' && p.status !== 'CONCLUÍDO';
-        if (activeTab === 'Concluídos') return p.status === 'APLICADO' || p.status === 'CONCLUÍDO';
+        if (activeTab === 'Agendados') return p.status !== 'APLICADO' && p.status !== 'CONCLUÃDO';
+        if (activeTab === 'ConcluÃ­dos') return p.status === 'APLICADO' || p.status === 'CONCLUÃDO';
         return true;
     });
 
     const renderItem = ({ item }) => {
-        const isDone = item.status === 'APLICADO' || item.status === 'CONCLUÍDO';
+        const isDone = item.status === 'APLICADO' || item.status === 'CONCLUÃDO';
         const isWarning = item.lowStock;
 
         return (
@@ -57,14 +57,14 @@ export default function AdubacaoListScreen({ navigation }) {
                             <Text style={styles.cardTitle}>{item.nome_plano}</Text>
                         </View>
                         <View style={[styles.statusBadge, { backgroundColor: isDone ? 'rgba(52, 211, 153, 0.2)' : 'rgba(251, 191, 36, 0.2)' }]}>
-                            <Text style={[styles.statusText, { color: isDone ? '#34D399' : '#FBBF24' }]}>{isDone ? 'CONCLUÍDO' : 'AGENDADO'}</Text>
+                            <Text style={[styles.statusText, { color: isDone ? '#34D399' : '#FBBF24' }]}>{isDone ? 'CONCLUÃDO' : 'AGENDADO'}</Text>
                         </View>
                     </View>
 
                     <View style={styles.cardBody}>
                         <View style={styles.infoCol}>
                             <Text style={styles.infoLabel}>CULTURA / LOCAL</Text>
-                            <Text style={styles.infoValue}>{item.cultura} • {item.area_local || 'S/N'}</Text>
+                            <Text style={styles.infoValue}>{item.cultura} â€¢ {item.area_local || 'S/N'}</Text>
                         </View>
                         <View style={styles.infoColRight}>
                             <Text style={styles.infoLabel}>DATA PREVISTA</Text>
@@ -75,7 +75,7 @@ export default function AdubacaoListScreen({ navigation }) {
                     {isWarning && !isDone && (
                         <View style={styles.alertBox}>
                             <Ionicons name="warning" size={14} color="#F87171" style={{marginRight: 5}}/>
-                            <Text style={styles.alertText}>Atenção: Insumo com baixo estoque para esta área.</Text>
+                            <Text style={styles.alertText}>AtenÃ§Ã£o: Insumo com baixo estoque para esta Ã¡rea.</Text>
                         </View>
                     )}
                 </View>
@@ -85,7 +85,7 @@ export default function AdubacaoListScreen({ navigation }) {
 
     return (
         <View style={styles.webContainer}>
-            <LinearGradient colors={['#1c2921', '#111b15', '#09100c']} style={StyleSheet.absoluteFill} />
+            
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
             <View style={styles.mobileFrame}>
@@ -95,7 +95,7 @@ export default function AdubacaoListScreen({ navigation }) {
                             <Ionicons name="arrow-back" size={24} color="#D1FAE5" />
                         </TouchableOpacity>
                         <View>
-                            <Text style={styles.headerTitle}>Adubação</Text>
+                            <Text style={styles.headerTitle}>AdubaÃ§Ã£o</Text>
                             <Text style={styles.headerSub}>Planos e Receitas</Text>
                         </View>
                         <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('AdubacaoForm')}>
@@ -103,7 +103,7 @@ export default function AdubacaoListScreen({ navigation }) {
                         </TouchableOpacity>
                     </View>
 
-                    {/* 🧪 HUB DE ADUBAÇÃO (4 BOTÕES) */}
+                    {/* ðŸ§ª HUB DE ADUBAÃ‡ÃƒO (4 BOTÃ•ES) */}
                     <View style={styles.hubContainer}>
                         <TouchableOpacity style={styles.hubItem} onPress={() => navigation.navigate('AdubacaoForm')}>
                             <View style={[styles.hubIconBg, { backgroundColor: 'rgba(52, 211, 153, 0.15)' }]}>
@@ -136,7 +136,7 @@ export default function AdubacaoListScreen({ navigation }) {
 
                     {/* TABS */}
                     <View style={styles.tabContainer}>
-                        {['Todos', 'Agendados', 'Concluídos'].map(tab => (
+                        {['Todos', 'Agendados', 'ConcluÃ­dos'].map(tab => (
                             <TouchableOpacity 
                                 key={tab} 
                                 style={[styles.tab, activeTab === tab && styles.tabActive]}
@@ -210,3 +210,4 @@ const styles = StyleSheet.create({
     emptyBox: { alignItems: 'center', justifyContent: 'center', marginTop: 100 },
     emptyText: { color: '#6B7280', marginTop: 15, fontSize: 14 }
 });
+

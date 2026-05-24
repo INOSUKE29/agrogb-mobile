@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
     View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, 
     Alert, SafeAreaView, Platform 
@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
+
 
 export default function NovaEncomendaScreen({ route }) {
     const navigation = useNavigation();
@@ -25,7 +25,7 @@ export default function NovaEncomendaScreen({ route }) {
     const [dataPrevista, setDataPrevista] = useState('');
     const [observacao, setObservacao] = useState('');
 
-    // Edição
+    // EdiÃ§Ã£o
     const [editingId, setEditingId] = useState(null);
     const [oldQuantidadeTotal, setOldQuantidadeTotal] = useState(0);
     const [oldQuantidadeRestante, setOldQuantidadeRestante] = useState(0);
@@ -62,19 +62,19 @@ export default function NovaEncomendaScreen({ route }) {
             for (let i = 0; i < resProd.rows.length; i++) dataProd.push(resProd.rows.item(i));
             setProdutos(dataProd);
         } catch {
-            Alert.alert('Erro', 'Não foi possível carregar as listas.');
+            Alert.alert('Erro', 'NÃ£o foi possÃ­vel carregar as listas.');
         }
     };
 
     const handleSalvar = async () => {
         if (!clienteId || !produtoId || !quantidade) {
-            Alert.alert('Atenção', 'Preencha Cliente, Produto e Quantidade.');
+            Alert.alert('AtenÃ§Ã£o', 'Preencha Cliente, Produto e Quantidade.');
             return;
         }
 
         const qtdTotal = parseFloat(quantidade.replace(',', '.'));
         if (isNaN(qtdTotal) || qtdTotal <= 0) {
-            Alert.alert('Atenção', 'Quantidade inválida.');
+            Alert.alert('AtenÃ§Ã£o', 'Quantidade invÃ¡lida.');
             return;
         }
 
@@ -106,13 +106,13 @@ export default function NovaEncomendaScreen({ route }) {
             }
             navigation.goBack();
         } catch (error) {
-            Alert.alert('Erro', 'Não foi possível salvar a encomenda.');
+            Alert.alert('Erro', 'NÃ£o foi possÃ­vel salvar a encomenda.');
         }
     };
 
     const handleExcluir = () => {
         Alert.alert('Excluir', 'Deseja realmente apagar esta encomenda?', [
-            { text: 'Não', style: 'cancel' },
+            { text: 'NÃ£o', style: 'cancel' },
             {
                 text: 'Sim',
                 style: 'destructive',
@@ -126,7 +126,7 @@ export default function NovaEncomendaScreen({ route }) {
 
     return (
         <SafeAreaView style={styles.container}>
-            <LinearGradient colors={['#040914', '#0A1220']} style={StyleSheet.absoluteFill} />
+            
             
             {/* Minimalist Neo-Brutal Header */}
             <View style={styles.header}>
@@ -135,14 +135,14 @@ export default function NovaEncomendaScreen({ route }) {
                 </TouchableOpacity>
                 <View style={styles.headerTextContainer}>
                     <Text style={styles.headerTitle}>{editingId ? 'Editar Encomenda' : 'Nova Encomenda'}</Text>
-                    <Text style={styles.headerSubtitle}>Setup de Operação Logística</Text>
+                    <Text style={styles.headerSubtitle}>Setup de OperaÃ§Ã£o LogÃ­stica</Text>
                 </View>
                 <View style={{ width: 44 }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                 
-                <BlurView intensity={40} tint="dark" style={styles.glassCard}>
+                <View intensity={40} tint="dark" style={styles.glassCard}>
                     {/* Linha de brilho no topo do card */}
                     <LinearGradient colors={['rgba(52, 211, 153, 0.4)', 'transparent']} style={styles.cardTopGlow} />
 
@@ -279,12 +279,12 @@ export default function NovaEncomendaScreen({ route }) {
                         <View style={styles.fieldGroup}>
                             <View style={styles.labelRow}>
                                 <Ionicons name="document-text-outline" size={16} color="#94A3B8" />
-                                <Text style={styles.label}>Instruções Relevantes</Text>
+                                <Text style={styles.label}>InstruÃ§Ãµes Relevantes</Text>
                             </View>
                             <View style={[styles.inputContainer, styles.textAreaContainer, activeField === 'obs' && styles.inputContainerActive]}>
                                 <TextInput
                                     style={styles.textArea}
-                                    placeholder="Informações para a transportadora ou motorista..."
+                                    placeholder="InformaÃ§Ãµes para a transportadora ou motorista..."
                                     placeholderTextColor="#475569"
                                     multiline
                                     numberOfLines={4}
@@ -300,7 +300,7 @@ export default function NovaEncomendaScreen({ route }) {
                         <TouchableOpacity style={styles.saveBtnOuter} activeOpacity={0.8} onPress={handleSalvar}>
                             <LinearGradient colors={['#10B981', '#059669']} style={styles.saveBtnGradient} start={{x:0, y:0}} end={{x:1, y:1}}>
                                 <Ionicons name="rocket-outline" size={20} color="#FFF" />
-                                <Text style={styles.saveBtnText}>{editingId ? 'ATUALIZAR DADOS' : 'LANÇAR ENCOMENDA'}</Text>
+                                <Text style={styles.saveBtnText}>{editingId ? 'ATUALIZAR DADOS' : 'LANÃ‡AR ENCOMENDA'}</Text>
                             </LinearGradient>
                         </TouchableOpacity>
 
@@ -311,7 +311,7 @@ export default function NovaEncomendaScreen({ route }) {
                             </TouchableOpacity>
                         )}
                     </View>
-                </BlurView>
+                </View>
             </ScrollView>
         </SafeAreaView>
     );
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
         overflow: 'hidden', 
         borderWidth: 1, 
         borderColor: 'rgba(255, 255, 255, 0.08)',
-        backgroundColor: 'rgba(15, 23, 42, 0.4)', // Base escura translúcida
+        backgroundColor: 'rgba(15, 23, 42, 0.4)', // Base escura translÃºcida
     },
     cardTopGlow: { height: 1.5, width: '100%', position: 'absolute', top: 0 },
     cardInner: { padding: 24 },
@@ -437,3 +437,4 @@ const styles = StyleSheet.create({
     },
     deleteBtnText: { color: '#F87171', fontSize: 14, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }
 });
+

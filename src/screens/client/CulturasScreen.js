@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform, TextInput, Modal, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform, TextInput } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const INITIAL_MOCK_CULTURAS = [
+const MOCK_CULTURAS = [
     {
         id: '1',
         nome: 'Morango',
@@ -43,7 +43,7 @@ const INITIAL_MOCK_CULTURAS = [
         area: 1.5,
         plantio: '20/09/2024',
         variedade: 'Crespa',
-        status: 'Finalizadas',
+        status: 'Finalizada',
         ultimaColheita: 100,
         producaoTotal: 900,
         icone: 'sprout'
@@ -53,50 +53,23 @@ const INITIAL_MOCK_CULTURAS = [
 const FILTERS = ['Todas', 'Produção', 'Desenvolvimento', 'Plantado', 'Finalizadas'];
 
 export default function CulturasScreen({ navigation }) {
-    const [culturas, setCulturas] = useState(INITIAL_MOCK_CULTURAS);
     const [search, setSearch] = useState('');
     const [activeFilter, setActiveFilter] = useState('Todas');
-    
-    // Modal state
-    const [modalVisible, setModalVisible] = useState(false);
-    const [formData, setFormData] = useState({ nome: '', variedade: '', area: '', status: 'Plantado' });
 
-    const filteredCulturas = culturas.filter(c => {
+    const filteredCulturas = MOCK_CULTURAS.filter(c => {
         const matchSearch = c.nome.toLowerCase().includes(search.toLowerCase());
-        const matchFilter = activeFilter === 'Todas' || c.status === activeFilter;
+        const matchFilter = activeFilter === 'Todas' || (activeFilter === 'Finalizadas' ? c.status === 'Finalizada' : c.status === activeFilter);
         return matchSearch && matchFilter;
     });
 
     const getStatusStyle = (status) => {
         switch(status) {
-            case 'Produção': return { color: '#10B981', dot: '#10B981', bg: 'rgba(16, 185, 129, 0.1)' };
-            case 'Desenvolvimento': return { color: '#F59E0B', dot: '#F59E0B', bg: 'rgba(245, 158, 11, 0.1)' };
-            case 'Plantado': return { color: '#3B82F6', dot: '#3B82F6', bg: 'rgba(59, 130, 246, 0.1)' };
-            case 'Finalizadas': return { color: '#EF4444', dot: '#EF4444', bg: 'rgba(239, 68, 68, 0.1)' };
-            default: return { color: '#94A3B8', dot: '#94A3B8', bg: 'rgba(148, 163, 184, 0.1)' };
+            case 'Produção': return { color: '#10B981', dot: '#10B981' };
+            case 'Desenvolvimento': return { color: '#F59E0B', dot: '#F59E0B' };
+            case 'Plantado': return { color: '#3B82F6', dot: '#3B82F6' };
+            case 'Finalizada': return { color: '#EF4444', dot: '#EF4444' };
+            default: return { color: '#94A3B8', dot: '#94A3B8' };
         }
-    };
-
-    const handleSave = () => {
-        if (!formData.nome || !formData.area) {
-            Alert.alert('Erro', 'Preencha o nome e a área.');
-            return;
-        }
-        const newItem = {
-            id: Math.random().toString(),
-            nome: formData.nome,
-            area: parseFloat(formData.area) || 0,
-            plantio: new Date().toLocaleDateString('pt-BR'),
-            variedade: formData.variedade || 'Padrão',
-            status: formData.status,
-            ultimaColheita: 0,
-            producaoTotal: 0,
-            icone: 'sprout'
-        };
-        setCulturas([newItem, ...culturas]);
-        setModalVisible(false);
-        setFormData({ nome: '', variedade: '', area: '', status: 'Plantado' });
-        Alert.alert('Sucesso', 'Nova cultura registrada!');
     };
 
     return (
@@ -110,7 +83,7 @@ export default function CulturasScreen({ navigation }) {
                     <MaterialCommunityIcons name="leaf" size={28} color="#10B981" />
                     <Text style={styles.headerTitle}>Culturas</Text>
                 </View>
-                <TouchableOpacity style={styles.addBtn} onPress={() => setModalVisible(true)}>
+                <TouchableOpacity style={styles.addBtn}>
                     <Text style={styles.addBtnText}>+ Nova Cultura</Text>
                 </TouchableOpacity>
             </View>
@@ -124,25 +97,20 @@ export default function CulturasScreen({ navigation }) {
                         <Text style={styles.summaryLabel}>Total Culturas</Text>
                         <View style={styles.summaryValueRow}>
                             <MaterialCommunityIcons name="seed-outline" size={20} color="#F59E0B" />
-                            <Text style={styles.summaryValue}>{culturas.length}</Text>
+                            <Text style={styles.summaryValue}>5</Text>
                         </View>
                     </View>
                     <View style={styles.summaryCard}>
                         <Text style={styles.summaryLabel}>Área Total</Text>
                         <View style={styles.summaryValueRow}>
-                            <Text style={styles.summaryValue}>
-                                {culturas.reduce((acc, curr) => acc + curr.area, 0).toFixed(1)}
-                                <Text style={styles.unitText}> ha</Text>
-                            </Text>
+                            <Text style={styles.summaryValue}>25.4<Text style={styles.unitText}> ha</Text></Text>
                         </View>
                     </View>
                     <View style={styles.summaryCard}>
                         <Text style={styles.summaryLabel}>Em Produção</Text>
                         <View style={styles.summaryValueRow}>
                             <Ionicons name="checkmark-circle" size={18} color="#10B981" />
-                            <Text style={styles.summaryValue}>
-                                {culturas.filter(c => c.status === 'Produção').length}
-                            </Text>
+                            <Text style={styles.summaryValue}>3</Text>
                         </View>
                     </View>
                 </View>
@@ -178,7 +146,7 @@ export default function CulturasScreen({ navigation }) {
                     return (
                         <View key={c.id} style={styles.culturaCard}>
                             <View style={styles.cardHeader}>
-                                <MaterialCommunityIcons name={c.icone} size={28} color="#10B981" />
+                                <MaterialCommunityIcons name={c.icone} size={24} color="#10B981" />
                                 <Text style={styles.culturaNome}>{c.nome}</Text>
                             </View>
                             
@@ -195,7 +163,7 @@ export default function CulturasScreen({ navigation }) {
                                 </View>
                                 <View style={styles.infoCol}>
                                     <View style={styles.dotLabel}><View style={styles.dotGrey}/> <Text style={styles.infoLabel}>Plantio: <Text style={styles.infoBold}>{c.plantio}</Text></Text></View>
-                                    {c.status !== 'Produção' && c.status !== 'Finalizadas' && (
+                                    {c.status !== 'Produção' && c.status !== 'Finalizada' && (
                                         <View style={styles.dotLabel}><View style={[styles.dotBig, { backgroundColor: statusStyle.dot }]}/> <Text style={[styles.infoLabel, { color: '#F8FAFC', fontWeight: '800' }]}>{c.status}</Text></View>
                                     )}
                                 </View>
@@ -219,7 +187,7 @@ export default function CulturasScreen({ navigation }) {
                                     <MaterialCommunityIcons name="pencil-outline" size={16} color="#64748B" />
                                     <Text style={styles.actionText}>Editar</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={styles.actionBtn} onPress={() => setCulturas(culturas.filter(item => item.id !== c.id))}>
+                                <TouchableOpacity style={styles.actionBtn}>
                                     <Ionicons name="trash-outline" size={16} color="#EF4444" />
                                     <Text style={[styles.actionText, {color: '#EF4444'}]}>Excluir</Text>
                                 </TouchableOpacity>
@@ -231,94 +199,8 @@ export default function CulturasScreen({ navigation }) {
                 {filteredCulturas.length === 0 && (
                     <Text style={{textAlign: 'center', color: '#64748B', marginTop: 30}}>Nenhuma cultura encontrada.</Text>
                 )}
+
             </ScrollView>
-
-            {/* MODAL NOVA CULTURA */}
-            <Modal visible={modalVisible} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeaderOrb}>
-                            <LinearGradient colors={['#10B981', '#059669']} style={styles.modalHeaderOrbGradient}>
-                                <Ionicons name="leaf" size={28} color="#FFF" />
-                            </LinearGradient>
-                        </View>
-                        <View style={styles.modalHeader}>
-                            <View>
-                                <Text style={styles.modalTitle}>Nova Cultura</Text>
-                                <Text style={styles.modalSubTitle}>Registre uma nova safra</Text>
-                            </View>
-                            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
-                                <Ionicons name="close" size={20} color="#94A3B8" />
-                            </TouchableOpacity>
-                        </View>
-
-                        <ScrollView style={styles.formScroll} showsVerticalScrollIndicator={false}>
-                            <Text style={styles.inputLabel}>NOME DA CULTURA</Text>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons name="pricetag-outline" size={18} color="#10B981" style={styles.inputIcon} />
-                                <TextInput 
-                                    style={styles.modalInput} 
-                                    placeholder="Ex: Soja, Milho, Manga..." 
-                                    placeholderTextColor="#64748B"
-                                    value={formData.nome}
-                                    onChangeText={t => setFormData({...formData, nome: t})}
-                                />
-                            </View>
-
-                            <Text style={styles.inputLabel}>VARIEDADE DE SEMENTE</Text>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons name="flask-outline" size={18} color="#3B82F6" style={styles.inputIcon} />
-                                <TextInput 
-                                    style={styles.modalInput} 
-                                    placeholder="Ex: Híbrido XP, Palmer..." 
-                                    placeholderTextColor="#64748B"
-                                    value={formData.variedade}
-                                    onChangeText={t => setFormData({...formData, variedade: t})}
-                                />
-                            </View>
-
-                            <Text style={styles.inputLabel}>EXTENSÃO (ha)</Text>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons name="map-outline" size={18} color="#FBBF24" style={styles.inputIcon} />
-                                <TextInput 
-                                    style={styles.modalInput} 
-                                    placeholder="Ex: 10" 
-                                    placeholderTextColor="#64748B"
-                                    keyboardType="numeric"
-                                    value={formData.area}
-                                    onChangeText={t => setFormData({...formData, area: t})}
-                                />
-                            </View>
-
-                            <Text style={styles.inputLabel}>STATUS INICIAL</Text>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 5, paddingTop: 5 }}>
-                                {['Plantado', 'Desenvolvimento', 'Produção'].map(s => {
-                                    const isActive = formData.status === s;
-                                    const sStyle = getStatusStyle(s);
-                                    return (
-                                        <TouchableOpacity 
-                                            key={s} 
-                                            activeOpacity={0.8}
-                                            onPress={() => setFormData({...formData, status: s})}
-                                            style={[styles.statusChip, isActive && { backgroundColor: sStyle.bg, borderColor: sStyle.color }]}
-                                        >
-                                            <View style={[styles.statusDot, { backgroundColor: sStyle.color }]} />
-                                            <Text style={[styles.statusChipText, isActive && { color: sStyle.color }]}>{s}</Text>
-                                        </TouchableOpacity>
-                                    );
-                                })}
-                            </ScrollView>
-
-                            <TouchableOpacity style={styles.saveBtn} onPress={handleSave} activeOpacity={0.8}>
-                                <LinearGradient colors={['#10B981', '#047857']} style={styles.saveBtnGradient}>
-                                    <Ionicons name="flash" size={20} color="#D1FAE5" />
-                                    <Text style={styles.saveBtnText}>REGISTRAR CULTURA</Text>
-                                </LinearGradient>
-                            </TouchableOpacity>
-                        </ScrollView>
-                    </View>
-                </View>
-            </Modal>
         </SafeAreaView>
     );
 }
@@ -370,28 +252,5 @@ const styles = StyleSheet.create({
 
     actionRow: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 5 },
     actionBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1F2937', paddingHorizontal: 20, paddingVertical: 8, borderRadius: 8 },
-    actionText: { color: '#94A3B8', fontSize: 13, fontWeight: '700', marginLeft: 6 },
-
-    modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.8)' },
-    modalContent: { width: '90%', maxWidth: 450, backgroundColor: '#111827', borderRadius: 32, padding: 30, borderWidth: 1, borderColor: '#1F2937' },
-    modalHeaderOrb: { alignSelf: 'center', marginTop: -50, marginBottom: 15, borderRadius: 30, padding: 4, backgroundColor: '#111827' },
-    modalHeaderOrbGradient: { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center' },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 30 },
-    modalTitle: { fontSize: 24, fontWeight: '900', color: '#FFF' },
-    modalSubTitle: { fontSize: 13, color: '#94A3B8', marginTop: 4 },
-    closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#1F2937', justifyContent: 'center', alignItems: 'center' },
-    
-    formScroll: { flexGrow: 0 },
-    inputLabel: { fontSize: 10, fontWeight: '900', color: '#64748B', letterSpacing: 1.5, marginBottom: 8, marginTop: 15 },
-    inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0B121E', borderRadius: 16, borderWidth: 1, borderColor: '#1F2937', height: 55 },
-    inputIcon: { marginLeft: 15, marginRight: 10 },
-    modalInput: { flex: 1, color: '#F8FAFC', fontSize: 15, height: '100%' },
-    
-    statusChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0B121E', borderWidth: 1, borderColor: '#1F2937', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 20 },
-    statusDot: { width: 6, height: 6, borderRadius: 3, marginRight: 8 },
-    statusChipText: { color: '#94A3B8', fontSize: 13, fontWeight: '800' },
-    
-    saveBtn: { marginTop: 40, borderRadius: 18, overflow: 'hidden' },
-    saveBtnGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 20, gap: 10 },
-    saveBtnText: { color: '#FFF', fontSize: 15, fontWeight: '900', letterSpacing: 1.5 }
+    actionText: { color: '#94A3B8', fontSize: 13, fontWeight: '700', marginLeft: 6 }
 });

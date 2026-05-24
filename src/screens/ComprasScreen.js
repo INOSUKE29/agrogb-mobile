@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+﻿import React, { useState, useCallback, useMemo } from 'react';
 import { 
     View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, 
     TextInput, Platform, SafeAreaView, StatusBar, ActivityIndicator 
@@ -11,7 +11,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import AutoSyncService from '../services/AutoSyncService';
 import { showToast } from '../ui/Toast';
 import { LinearGradient } from 'expo-linear-gradient';
-import SafeBlurView from '../ui/SafeBlurView';
+
 
 export default function ComprasScreen({ navigation }) {
     const [insumo, setInsumo] = useState('');
@@ -49,7 +49,7 @@ export default function ComprasScreen({ navigation }) {
     }, [quantidade, valorTotal]);
 
     const handleSalvar = useCallback(async () => {
-        if (!insumo || !quantidade || !valorTotal) return Alert.alert('Atenção', 'Informe Insumo, Quantidade e Valor.');
+        if (!insumo || !quantidade || !valorTotal) return Alert.alert('AtenÃ§Ã£o', 'Informe Insumo, Quantidade e Valor.');
         
         setSaving(true);
         const dados = {
@@ -64,7 +64,7 @@ export default function ComprasScreen({ navigation }) {
         
         try {
             await CompraService.registrarCompra(dados);
-            showToast(editingUuid ? '✨ Registro atualizado!' : '✅ Compra e Estoque atualizados!');
+            showToast(editingUuid ? 'âœ¨ Registro atualizado!' : 'âœ… Compra e Estoque atualizados!');
             setInsumo(''); setQuantidade(''); setValorTotal(''); setCultura(''); setDetalhes(''); setObservacoes(''); setEditingUuid(null);
             setView('LIST');
             loadHistory();
@@ -77,15 +77,15 @@ export default function ComprasScreen({ navigation }) {
     }, [insumo, quantidade, valorTotal, cultura, detalhes, observacoes, editingUuid, loadHistory]);
 
     const handleDelete = async (item) => {
-        Alert.alert('Excluir Compra', `Deseja apagar a entrada de ${item.produto}? O saldo de estoque será estornado.`, [
+        Alert.alert('Excluir Compra', `Deseja apagar a entrada de ${item.produto}? O saldo de estoque serÃ¡ estornado.`, [
             { text: 'Cancelar', style: 'cancel' },
             { text: 'Excluir', style: 'destructive', onPress: async () => {
                 try {
                     await CompraService.excluirCompra(item.uuid);
-                    showToast('✅ Registro e Estoque estornados!');
+                    showToast('âœ… Registro e Estoque estornados!');
                     loadHistory();
                 } catch (e) {
-                    Alert.alert('Erro', 'Não foi possível excluir.');
+                    Alert.alert('Erro', 'NÃ£o foi possÃ­vel excluir.');
                 }
             }}
         ]);
@@ -99,7 +99,7 @@ export default function ComprasScreen({ navigation }) {
                 </TouchableOpacity>
                 <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={styles.headerTitle}>COMPRAS</Text>
-                    <Text style={styles.headerSub}>HISTÓRICO ESTOQUE</Text>
+                    <Text style={styles.headerSub}>HISTÃ“RICO ESTOQUE</Text>
                 </View>
                 <View style={{ width: 42 }} />
             </View>
@@ -112,7 +112,7 @@ export default function ComprasScreen({ navigation }) {
             ) : (
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
                     {history.map((item, index) => (
-                        <SafeBlurView key={item.uuid || index} intensity={15} style={styles.historyCard} webFallbackColor="rgba(255,255,255,0.02)">
+                        <View key={item.uuid || index} intensity={15} style={styles.historyCard} webFallbackColor="rgba(255,255,255,0.02)">
                             <View style={styles.historyHeader}>
                                 <View style={styles.historyIconBg}>
                                     <Ionicons name="cart" size={16} color="#D4AF37" />
@@ -143,7 +143,7 @@ export default function ComprasScreen({ navigation }) {
                                     </TouchableOpacity>
                                 </View>
                             </View>
-                        </SafeBlurView>
+                        </View>
                     ))}
                 </ScrollView>
             )}
@@ -172,7 +172,7 @@ export default function ComprasScreen({ navigation }) {
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
-                <SafeBlurView intensity={20} style={styles.glassCard} webFallbackColor="rgba(255,255,255,0.03)">
+                <View intensity={20} style={styles.glassCard} webFallbackColor="rgba(255,255,255,0.03)">
                     <Text style={styles.sectionTitle}>DETALHES DA ENTRADA</Text>
 
                         {/* BUSCA DE INSUMO */}
@@ -216,7 +216,7 @@ export default function ComprasScreen({ navigation }) {
                                 </View>
                             </View>
                         </View>
-                        <Text style={styles.unitPriceCalc}>VALOR UNITÁRIO ESTIMADO: R$ {unitPrice}</Text>
+                        <Text style={styles.unitPriceCalc}>VALOR UNITÃRIO ESTIMADO: R$ {unitPrice}</Text>
 
                         <View style={{ marginTop: 24, gap: 16 }}>
                             <View>
@@ -234,7 +234,7 @@ export default function ComprasScreen({ navigation }) {
                             </View>
 
                             <View>
-                                <Text style={styles.inputLabel}>OBSERVAÇÕES E FORNECEDOR</Text>
+                                <Text style={styles.inputLabel}>OBSERVAÃ‡Ã•ES E FORNECEDOR</Text>
                                 <View style={styles.obsBox}>
                                     <TextInput
                                         style={styles.obsInput}
@@ -247,13 +247,13 @@ export default function ComprasScreen({ navigation }) {
                                 </View>
                             </View>
                         </View>
-                </SafeBlurView>
+                </View>
 
                 <TouchableOpacity style={styles.btnPrimary} onPress={handleSalvar} disabled={saving}>
                     <LinearGradient colors={['#D4AF37', '#9A7B2C']} style={styles.btnGradient} start={{x:0,y:0}} end={{x:1,y:1}}>
                         {saving 
                             ? <ActivityIndicator color="#FFF" />
-                            : <><Ionicons name="checkmark-circle" size={22} color="#FFF" /><Text style={styles.btnPrimaryText}>{editingUuid ? 'SALVAR ALTERAÇÕES' : 'CONFIRMAR COMPRA'}</Text></>
+                            : <><Ionicons name="checkmark-circle" size={22} color="#FFF" /><Text style={styles.btnPrimaryText}>{editingUuid ? 'SALVAR ALTERAÃ‡Ã•ES' : 'CONFIRMAR COMPRA'}</Text></>
                         }
                     </LinearGradient>
                 </TouchableOpacity>
@@ -265,9 +265,9 @@ export default function ComprasScreen({ navigation }) {
     return (
         <View style={styles.webContainer}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            <LinearGradient colors={['#020617', '#0A0F1C', '#030712']} style={StyleSheet.absoluteFill} />
+            
 
-            {/* 🌀 AMBIENT ORBS */}
+            {/* ðŸŒ€ AMBIENT ORBS */}
             <View style={[styles.ambientOrb, { top: -60, left: -40, backgroundColor: '#10B981', opacity: 0.12 }]} />
             <View style={[styles.ambientOrb, { bottom: 40, right: -60, backgroundColor: '#D4AF37', opacity: 0.08 }]} />
 
@@ -353,3 +353,4 @@ const styles = StyleSheet.create({
     fab: { position: 'absolute', right: 24, bottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 15, elevation: 10 },
     fabGradient: { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center' }
 });
+

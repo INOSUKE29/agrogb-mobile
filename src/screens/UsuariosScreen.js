@@ -1,7 +1,7 @@
 /**
- * UsuariosScreen.js — AgroGB OS: Gestão de Usuários ERP
- * Sistema de permissões por módulo, roles e controle granular de acesso.
- * Arquitetura: user → role → permissions → módulos liberados
+ * UsuariosScreen.js â€” AgroGB OS: GestÃ£o de UsuÃ¡rios ERP
+ * Sistema de permissÃµes por mÃ³dulo, roles e controle granular de acesso.
+ * Arquitetura: user â†’ role â†’ permissions â†’ mÃ³dulos liberados
  */
 
 import React, { useState, useEffect } from 'react';
@@ -13,32 +13,33 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { insertUsuario, getUsuarios, deleteUsuario, updateUsuario } from '../database/database';
+import { supabase } from '../services/supabaseClient';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-// ─────────────────────────────────────────────
-// MÓDULOS DO SISTEMA (AgroGB OS — camadas)
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// MÃ“DULOS DO SISTEMA (AgroGB OS â€” camadas)
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const MODULES = [
-    { key: 'clientes',      label: 'Clientes',        icon: 'people',              layer: 'Domínio', color: '#8B5CF6' },
-    { key: 'fazendas',      label: 'Fazendas',         icon: 'home',                layer: 'Domínio', color: '#F59E0B' },
-    { key: 'talhoes',       label: 'Talhões / Áreas',  icon: 'map',                 layer: 'Domínio', color: '#10B981' },
-    { key: 'culturas',      label: 'Culturas',         icon: 'leaf',                layer: 'Domínio', color: '#34D399' },
-    { key: 'equipes',       label: 'Equipes',          icon: 'people-circle',       layer: 'Domínio', color: '#60A5FA' },
-    { key: 'plantio',       label: 'Plantio',          icon: 'git-branch',          layer: 'Operação', color: '#6EE7B7' },
-    { key: 'adubacao',      label: 'Adubação',         icon: 'flask',               layer: 'Operação', color: '#FCD34D' },
-    { key: 'aplicacoes',    label: 'Aplicações',       icon: 'water',               layer: 'Operação', color: '#93C5FD' },
-    { key: 'colheita',      label: 'Colheita',         icon: 'basket',              layer: 'Operação', color: '#F87171' },
-    { key: 'monitoramento', label: 'Monitoramento',    icon: 'pulse',               layer: 'Operação', color: '#A78BFA' },
+    { key: 'clientes',      label: 'Clientes',        icon: 'people',              layer: 'DomÃ­nio', color: '#8B5CF6' },
+    { key: 'fazendas',      label: 'Fazendas',         icon: 'home',                layer: 'DomÃ­nio', color: '#F59E0B' },
+    { key: 'talhoes',       label: 'TalhÃµes / Ãreas',  icon: 'map',                 layer: 'DomÃ­nio', color: '#10B981' },
+    { key: 'culturas',      label: 'Culturas',         icon: 'leaf',                layer: 'DomÃ­nio', color: '#34D399' },
+    { key: 'equipes',       label: 'Equipes',          icon: 'people-circle',       layer: 'DomÃ­nio', color: '#60A5FA' },
+    { key: 'plantio',       label: 'Plantio',          icon: 'git-branch',          layer: 'OperaÃ§Ã£o', color: '#6EE7B7' },
+    { key: 'adubacao',      label: 'AdubaÃ§Ã£o',         icon: 'flask',               layer: 'OperaÃ§Ã£o', color: '#FCD34D' },
+    { key: 'aplicacoes',    label: 'AplicaÃ§Ãµes',       icon: 'water',               layer: 'OperaÃ§Ã£o', color: '#93C5FD' },
+    { key: 'colheita',      label: 'Colheita',         icon: 'basket',              layer: 'OperaÃ§Ã£o', color: '#F87171' },
+    { key: 'monitoramento', label: 'Monitoramento',    icon: 'pulse',               layer: 'OperaÃ§Ã£o', color: '#A78BFA' },
     { key: 'compras',       label: 'Compras',          icon: 'cart',                layer: 'Financeiro', color: '#FB923C' },
     { key: 'estoque',       label: 'Estoque / Silo',   icon: 'cube',                layer: 'Financeiro', color: '#FBBF24' },
     { key: 'custos',        label: 'Custos',           icon: 'cash',                layer: 'Financeiro', color: '#F472B6' },
     { key: 'vendas',        label: 'Vendas',           icon: 'trending-up',         layer: 'Financeiro', color: '#34D399' },
-    { key: 'relatorios',    label: 'Relatórios',       icon: 'bar-chart',           layer: 'Inteligência', color: '#C084FC' },
-    { key: 'caderno',       label: 'Caderno de Campo', icon: 'journal',             layer: 'Inteligência', color: '#67E8F9' },
-    { key: 'usuarios',      label: 'Usuários',         icon: 'shield-checkmark',    layer: 'Core', color: '#EF4444' },
+    { key: 'relatorios',    label: 'RelatÃ³rios',       icon: 'bar-chart',           layer: 'InteligÃªncia', color: '#C084FC' },
+    { key: 'caderno',       label: 'Caderno de Campo', icon: 'journal',             layer: 'InteligÃªncia', color: '#67E8F9' },
+    { key: 'usuarios',      label: 'UsuÃ¡rios',         icon: 'shield-checkmark',    layer: 'Core', color: '#EF4444' },
 ];
 
 const ACTIONS = [
@@ -48,7 +49,7 @@ const ACTIONS = [
     { key: 'excluir',label: 'Excluir',icon: 'trash' },
 ];
 
-// Permissões padrão por role
+// PermissÃµes padrÃ£o por role
 const ROLE_DEFAULTS = {
     ADMIN: Object.fromEntries(MODULES.map(m => [m.key, { ver: true, criar: true, editar: true, excluir: true }])),
     TECNICO: Object.fromEntries(MODULES.map(m => [m.key, {
@@ -66,9 +67,11 @@ const ROLE_DEFAULTS = {
 };
 
 const ROLES = [
-    { id: 'ADMIN',    label: 'Administrador', icon: 'shield-checkmark', color: '#EF4444', desc: 'Acesso total ao sistema' },
-    { id: 'TECNICO',  label: 'Técnico',        icon: 'construct',        color: '#F59E0B', desc: 'Operações e relatórios' },
-    { id: 'OPERADOR', label: 'Operador',        icon: 'person',           color: '#10B981', desc: 'Campo e produção' },
+    { id: 'ADMIN',    label: 'Administrador', icon: 'shield-checkmark', color: '#EF4444',  desc: 'Acesso total ao sistema',  supabaseRole: 'admin'     },
+    { id: 'AGRONOMO', label: 'Agrônomo',       icon: 'leaf',             color: '#10B981',  desc: 'Dashboard do agrônomo',   supabaseRole: 'agronomo'  },
+    { id: 'CLIENTE',  label: 'Cliente',        icon: 'person',           color: '#3B82F6',  desc: 'Portal do cliente',       supabaseRole: 'cliente'   },
+    { id: 'TECNICO',  label: 'Técnico',        icon: 'construct',        color: '#F59E0B',  desc: 'Operações e relatórios',  supabaseRole: 'tecnico'   },
+    { id: 'OPERADOR', label: 'Operador',        icon: 'person-outline',   color: '#8B5CF6',  desc: 'Campo e produção',        supabaseRole: 'operador'  },
 ];
 
 const buildDefaultPermissions = (role) => ROLE_DEFAULTS[role] || ROLE_DEFAULTS.OPERADOR;
@@ -80,7 +83,7 @@ const getLayerColor = (layer) => {
     return '#60A5FA';
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
 export default function UsuariosScreen({ navigation }) {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -153,36 +156,124 @@ export default function UsuariosScreen({ navigation }) {
     };
 
     const handleSave = async () => {
-        if (!formLogin.trim() || (!editId && !formSenha.trim())) {
-            return Alert.alert('Campos obrigatórios', 'Login e senha são obrigatórios.');
-        }
-        const dados = {
-            id: editId || undefined,
-            usuario: formLogin.toUpperCase(),
-            senha: formSenha || undefined,
-            nivel: formRole === 'ADMIN' ? 'ADM' : formRole,
-            nome_completo: formNome.toUpperCase(),
-            email: formEmail.toLowerCase(),
-            telefone: formTelefone,
-            ativo: formActive,
-            permissoes: JSON.stringify(formPerms),
-        };
+        if (!formEmail.trim()) return Alert.alert('E-mail obrigatório', 'Informe o e-mail para criar conta no sistema.');
+        if (!editId && !formSenha.trim()) return Alert.alert('Senha obrigatória', 'Defina uma senha para o novo usuário.');
+        if (!editId && formSenha.length < 6) return Alert.alert('Senha fraca', 'A senha deve ter pelo menos 6 caracteres.');
+
+        setLoading(true);
+        const roleInfo = ROLES.find(r => r.id === formRole);
+        const supabaseRole = roleInfo?.supabaseRole || 'cliente';
+        const nivelLocal = formRole === 'ADMIN' ? 'ADM' : formRole;
+
         try {
-            if (editId) { await updateUsuario(dados); }
-            else { await insertUsuario(dados); }
+            if (editId) {
+                // ── EDITAR: atualiza perfil no Supabase e localmente ──
+                const { error: profileErr } = await supabase
+                    .from('profiles')
+                    .update({
+                        full_name: formNome,
+                        role: supabaseRole,
+                        is_active: formActive,
+                        updated_at: new Date().toISOString(),
+                    })
+                    .eq('id', editId);
+
+                if (profileErr) console.warn('[UsuariosScreen] Supabase profile update warn:', profileErr.message);
+
+                await updateUsuario({
+                    id: editId,
+                    usuario: formLogin.toUpperCase() || formEmail.split('@')[0].toUpperCase(),
+                    nivel: nivelLocal,
+                    nome_completo: formNome.toUpperCase(),
+                    email: formEmail.toLowerCase(),
+                    telefone: formTelefone,
+                    ativo: formActive,
+                    permissoes: JSON.stringify(formPerms),
+                });
+
+                Alert.alert('✅ Atualizado', `${formNome || formEmail} foi atualizado com sucesso.`);
+
+            } else {
+                // ── CRIAR: cria no Supabase Auth + profiles + local ──
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: formEmail.toLowerCase(),
+                    password: formSenha,
+                    options: { data: { full_name: formNome } },
+                });
+
+                if (authError) throw new Error(authError.message);
+
+                const userId = authData?.user?.id;
+                if (!userId) throw new Error('Usuário criado mas ID não retornado.');
+
+                // Insere/atualiza perfil no Supabase
+                const { error: profileErr } = await supabase
+                    .from('profiles')
+                    .upsert({
+                        id: userId,
+                        full_name: formNome,
+                        email: formEmail.toLowerCase(),
+                        role: supabaseRole,
+                        is_active: formActive,
+                        created_at: new Date().toISOString(),
+                    });
+
+                if (profileErr) console.warn('[UsuariosScreen] profile upsert warn:', profileErr.message);
+
+                // Salva localmente também (SQLite)
+                await insertUsuario({
+                    id: userId,
+                    usuario: formLogin.toUpperCase() || formEmail.split('@')[0].toUpperCase(),
+                    senha: formSenha,
+                    nivel: nivelLocal,
+                    nome_completo: formNome.toUpperCase(),
+                    email: formEmail.toLowerCase(),
+                    telefone: formTelefone,
+                    ativo: formActive,
+                    permissoes: JSON.stringify(formPerms),
+                });
+
+                Alert.alert(
+                    '✅ Usuário Criado!',
+                    `${formNome || formEmail} criado como ${roleInfo?.label}.\n\nEle já pode fazer login no app com:\nE-mail: ${formEmail}\nSenha: (definida agora)`,
+                );
+            }
+
             setStep(null);
             loadData();
-        } catch {
-            Alert.alert('Erro', 'Falha ao salvar. Verifique se o login já existe.');
+
+        } catch (e) {
+            console.error('[UsuariosScreen] handleSave error:', e);
+            Alert.alert('Erro ao Salvar', e.message || 'Verifique a conexão e tente novamente.');
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleDelete = (item) => {
         if (item.usuario === 'ADMIN') return Alert.alert('Protegido', 'O usuário master não pode ser removido.');
-        Alert.alert('Remover Acesso', `Remover ${item.nome_completo || item.usuario}?`, [
-            { text: 'Cancelar', style: 'cancel' },
-            { text: 'Remover', style: 'destructive', onPress: async () => { await deleteUsuario(item.id); loadData(); } }
-        ]);
+        Alert.alert(
+            'Remover Acesso',
+            `Remover ${item.nome_completo || item.usuario}?\n\nIsso vai bloquear o acesso ao app mobile.`,
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Remover', style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            // Desativa no Supabase (não deleta — mantém histórico)
+                            if (item.id && item.id.length > 10) { // UUID do Supabase
+                                await supabase.from('profiles').update({ is_active: false }).eq('id', item.id);
+                            }
+                            await deleteUsuario(item.id);
+                            loadData();
+                        } catch (e) {
+                            Alert.alert('Erro', e.message);
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     const filteredItems = items.filter(i => {
@@ -193,13 +284,15 @@ export default function UsuariosScreen({ navigation }) {
 
     const getRoleInfo = (nivel) => {
         if (nivel === 'ADM' || nivel === 'ADMIN') return ROLES[0];
-        if (nivel === 'TECNICO') return ROLES[1];
-        return ROLES[2];
+        if (nivel === 'AGRONOMO') return ROLES[1];
+        if (nivel === 'CLIENTE') return ROLES[2];
+        if (nivel === 'TECNICO') return ROLES[3];
+        return ROLES[4];
     };
 
     const layers = [...new Set(MODULES.map(m => m.layer))];
 
-    // ─── RENDER USER CARD ────────────────────────────────────────────────────
+    // ——— RENDER USER CARD —————————————————————————————————————————————
     const renderUser = ({ item }) => {
         const role = getRoleInfo(item.nivel);
         const initials = (item.nome_completo || item.usuario || '?').charAt(0).toUpperCase();
@@ -231,7 +324,7 @@ export default function UsuariosScreen({ navigation }) {
         );
     };
 
-    // ─── PERMISSION ROW ────────────────────────────────────────
+    // ——— PERMISSION ROW ———————————————————————————————————————————————
     const PermissionRow = ({ mod }) => {
         const allOn = ACTIONS.every(a => formPerms[mod.key]?.[a.key]);
         return (
@@ -269,10 +362,10 @@ export default function UsuariosScreen({ navigation }) {
         );
     };
 
-    // ─── MAIN ─────────────────────────────────────────────────────────────────
+    // ——— MAIN ——————————————————————————————————————————————————————————
     return (
         <View style={styles.container}>
-            <LinearGradient colors={['#050B08', '#0A120E', '#030504']} style={StyleSheet.absoluteFill} />
+            
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             <SafeAreaView style={{ flex: 1 }}>
@@ -364,7 +457,7 @@ export default function UsuariosScreen({ navigation }) {
                 )}
             </SafeAreaView>
 
-            {/* ── MODAL: FORM (STEP 1) ─────────────────────────────────── */}
+            {/* —— MODAL: FORM (STEP 1) ————————————————————————————————————— */}
             <Modal visible={step === 'FORM'} animationType="slide" transparent>
                 <View style={styles.modalBg}>
                     <View style={styles.modalSheet}>
@@ -373,6 +466,11 @@ export default function UsuariosScreen({ navigation }) {
 
                         <View style={styles.modalHeaderRow}>
                             <Text style={styles.modalTitle}>{editId ? '✏️ Editar Perfil' : '👤 Novo Usuário'}</Text>
+                            {!editId && (
+                                <Text style={{ color: '#34D399', fontSize: 10, fontWeight: '700', marginTop: 4 }}>
+                                    ☁️ Será criado no Supabase — acesso imediato ao app
+                                </Text>
+                            )}
                             <TouchableOpacity onPress={() => setStep(null)} style={styles.closeBtn}>
                                 <Ionicons name="close" size={22} color="#9CA3AF" />
                             </TouchableOpacity>
@@ -396,8 +494,8 @@ export default function UsuariosScreen({ navigation }) {
                                 ))}
                             </View>
 
-                            {/* DADOS BÁSICOS */}
-                            <Text style={styles.sectionLabel}>DADOS DO USUÁRIO</Text>
+                            {/* DADOS BÃSICOS */}
+                            <Text style={styles.sectionLabel}>DADOS DO USUÃRIO</Text>
 
                             <View style={styles.formGroup}>
                                 <Text style={styles.formLabel}>NOME COMPLETO</Text>
@@ -405,7 +503,7 @@ export default function UsuariosScreen({ navigation }) {
                                     <Ionicons name="person-outline" size={16} color="#6B7280" />
                                     <TextInput
                                         style={styles.formInput}
-                                        placeholder="Ex: João Silva"
+                                        placeholder="Ex: JoÃ£o Silva"
                                         placeholderTextColor="#4B5563"
                                         value={formNome}
                                         onChangeText={setFormNome}
@@ -434,7 +532,7 @@ export default function UsuariosScreen({ navigation }) {
                                         <Ionicons name="lock-closed-outline" size={16} color="#6B7280" />
                                         <TextInput
                                             style={[styles.formInput, { flex: 1 }]}
-                                            placeholder="••••••"
+                                            placeholder="â€¢â€¢â€¢â€¢â€¢â€¢"
                                             placeholderTextColor="#4B5563"
                                             value={formSenha}
                                             onChangeText={setFormSenha}
@@ -497,9 +595,9 @@ export default function UsuariosScreen({ navigation }) {
                             {/* PERMISSIONS BUTTON */}
                             <TouchableOpacity style={styles.permissionsNavBtn} onPress={() => setStep('PERMISSIONS')}>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.permissionsNavTitle}>🔐 Configurar Permissões por Módulo</Text>
+                                    <Text style={styles.permissionsNavTitle}>ðŸ” Configurar PermissÃµes por MÃ³dulo</Text>
                                     <Text style={styles.permissionsNavSub}>
-                                        Permissões aplicadas automaticamente pelo role. Personalize por módulo.
+                                        PermissÃµes aplicadas automaticamente pelo role. Personalize por mÃ³dulo.
                                     </Text>
                                 </View>
                                 <Ionicons name="chevron-forward" size={20} color="#34D399" />
@@ -509,7 +607,7 @@ export default function UsuariosScreen({ navigation }) {
                             <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
                                 <LinearGradient colors={['#10B981', '#047857']} style={styles.saveBtnGradient}>
                                     <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-                                    <Text style={styles.saveBtnText}>SALVAR USUÁRIO</Text>
+                                    <Text style={styles.saveBtnText}>SALVAR USUÃRIO</Text>
                                 </LinearGradient>
                             </TouchableOpacity>
 
@@ -518,7 +616,7 @@ export default function UsuariosScreen({ navigation }) {
                 </View>
             </Modal>
 
-            {/* ── MODAL: PERMISSIONS (STEP 2) ─────────────────────────── */}
+            {/* â”€â”€ MODAL: PERMISSIONS (STEP 2) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <Modal visible={step === 'PERMISSIONS'} animationType="slide" transparent>
                 <View style={styles.modalBg}>
                     <View style={[styles.modalSheet, { height: '95%' }]}>
@@ -526,7 +624,7 @@ export default function UsuariosScreen({ navigation }) {
 
                         <View style={styles.modalHeaderRow}>
                             <View>
-                                <Text style={styles.modalTitle}>🔐 Permissões</Text>
+                                <Text style={styles.modalTitle}>ðŸ” PermissÃµes</Text>
                                 <Text style={{ color: '#6B7280', fontSize: 11 }}>Role: {ROLES.find(r => r.id === formRole)?.label}</Text>
                             </View>
                             <TouchableOpacity onPress={() => setStep('FORM')} style={styles.closeBtn}>
@@ -552,7 +650,7 @@ export default function UsuariosScreen({ navigation }) {
                         <TouchableOpacity style={styles.saveBtn} onPress={() => setStep('FORM')}>
                             <LinearGradient colors={['#10B981', '#047857']} style={styles.saveBtnGradient}>
                                 <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-                                <Text style={styles.saveBtnText}>CONFIRMAR PERMISSÕES</Text>
+                                <Text style={styles.saveBtnText}>CONFIRMAR PERMISSÃ•ES</Text>
                             </LinearGradient>
                         </TouchableOpacity>
                     </View>
@@ -562,7 +660,7 @@ export default function UsuariosScreen({ navigation }) {
     );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#000' },
 
@@ -605,7 +703,7 @@ const styles = StyleSheet.create({
     emptyActionBtn: { marginTop: 20, backgroundColor: 'rgba(52,211,153,0.1)', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 12, borderWidth: 1, borderColor: 'rgba(52,211,153,0.3)' },
     emptyActionText: { color: '#34D399', fontWeight: '900', fontSize: 13 },
 
-    // ── MODAL ──────────────────────────────────────
+    // â”€â”€ MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center' },
     modalSheet: { width: '90%', maxWidth: 500, alignSelf: 'center', backgroundColor: '#0D1711', borderRadius: 32, padding: 24, maxHeight: '90%', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderTopColor: 'rgba(255,255,255,0.15)' },
     modalHandle: { display: 'none' },
@@ -634,7 +732,7 @@ const styles = StyleSheet.create({
     saveBtnGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 18, borderRadius: 16, gap: 10 },
     saveBtnText: { color: '#FFF', fontSize: 14, fontWeight: '900', letterSpacing: 1.5 },
 
-    // ── PERMISSIONS ─────────────────────────────────────────
+    // â”€â”€ PERMISSIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     layerSection: { marginBottom: 20 },
     layerHeader: { borderLeftWidth: 3, paddingLeft: 12, marginBottom: 12 },
     layerTitle: { fontSize: 11, fontWeight: '900', letterSpacing: 2 },
@@ -650,3 +748,4 @@ const styles = StyleSheet.create({
     permChip: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', gap: 4 },
     permChipText: { fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
 });
+

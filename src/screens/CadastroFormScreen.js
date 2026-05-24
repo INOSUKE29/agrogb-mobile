@@ -1,7 +1,7 @@
-/**
- * CadastroFormScreen.js — AgroGB OS: Cadastro de Produtos & Insumos
+﻿/**
+ * CadastroFormScreen.js â€” AgroGB OS: Cadastro de Produtos & Insumos
  * UI: Dark Farm Glassmorphism Premium
- * Lógica: 100% preservada (banco, rascunho, validação)
+ * LÃ³gica: 100% preservada (banco, rascunho, validaÃ§Ã£o)
  */
 
 import React, { useState, useEffect } from 'react';
@@ -20,7 +20,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-// ── CONSTANTES ────────────────────────────────────────────────────────────────
+// â”€â”€ CONSTANTES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const UNIDADES = [
     { key: 'KG', icon: 'scale' },
     { key: 'LT', icon: 'beaker' },
@@ -41,7 +41,7 @@ const CATEGORIAS_TIPOS = [
     { key: 'CULTURA',    label: 'Cultura',     icon: 'nutrition',   color: '#34D399' },
 ];
 
-// ── MAIN COMPONENT ──────────────────────────────────────────────────────────
+// â”€â”€ MAIN COMPONENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function CadastroFormScreen({ route, navigation }) {
     const { tipo = 'PRODUTO', title = 'Novo Cadastro' } = route?.params || {};
     const [loading, setLoading] = useState(false);
@@ -60,7 +60,7 @@ export default function CadastroFormScreen({ route, navigation }) {
 
     const DRAFT_KEY = `@draft_CadastroFormScreen_${tipo}`;
 
-    // Rascunho - Recuperação (original)
+    // Rascunho - RecuperaÃ§Ã£o (original)
     useEffect(() => {
         const checkDraft = async () => {
             try {
@@ -68,7 +68,7 @@ export default function CadastroFormScreen({ route, navigation }) {
                 if (saved) {
                     Alert.alert(
                         'Rascunho Encontrado',
-                        'Existe um formulário não finalizado. Deseja continuá-lo?',
+                        'Existe um formulÃ¡rio nÃ£o finalizado. Deseja continuÃ¡-lo?',
                         [
                             { text: 'Descartar', style: 'destructive', onPress: () => AsyncStorage.removeItem(DRAFT_KEY) },
                             {
@@ -113,10 +113,10 @@ export default function CadastroFormScreen({ route, navigation }) {
     // handleSave (100% original mantido)
     const handleSave = async () => {
         if (!nome || !nome.trim()) {
-            return Alert.alert('Atenção', 'Informe o nome do item.');
+            return Alert.alert('AtenÃ§Ã£o', 'Informe o nome do item.');
         }
         if (!unidade || !unidade.trim()) {
-            return Alert.alert('Atenção', 'Selecione a unidade de medida.');
+            return Alert.alert('AtenÃ§Ã£o', 'Selecione a unidade de medida.');
         }
 
         setLoading(true);
@@ -154,7 +154,7 @@ export default function CadastroFormScreen({ route, navigation }) {
                 if (typeof DB.insertCadastro === 'function') {
                     await DB.insertCadastro(baseObj);
                 } else {
-                    throw new Error('Função de banco não importada.');
+                    throw new Error('FunÃ§Ã£o de banco nÃ£o importada.');
                 }
             }
 
@@ -171,15 +171,15 @@ export default function CadastroFormScreen({ route, navigation }) {
 
             if (vendavel) {
                 Alert.alert(
-                    '✅ Cadastrado!',
-                    'Deseja configurar a composição (receita) deste produto agora?',
+                    'âœ… Cadastrado!',
+                    'Deseja configurar a composiÃ§Ã£o (receita) deste produto agora?',
                     [
-                        { text: 'Não', onPress: () => navigation.goBack() },
+                        { text: 'NÃ£o', onPress: () => navigation.goBack() },
                         { text: 'Sim', onPress: () => navigation.navigate('Cadastro', { openRecipeFor: baseObj.uuid, itemName: baseObj.nome }) }
                     ]
                 );
             } else {
-                Alert.alert('✅ Pronto!', 'Salvo com sucesso.', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+                Alert.alert('âœ… Pronto!', 'Salvo com sucesso.', [{ text: 'OK', onPress: () => navigation.goBack() }]);
             }
         } catch (error) {
             Alert.alert('Erro', error.message || 'Falha ao salvar dados.');
@@ -190,10 +190,10 @@ export default function CadastroFormScreen({ route, navigation }) {
 
     const catInfo = CATEGORIAS_TIPOS.find(c => c.key === categoria) || CATEGORIAS_TIPOS[0];
 
-    // ── RENDER ─────────────────────────────────────────────────────────────────
+    // â”€â”€ RENDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     return (
         <View style={styles.container}>
-            <LinearGradient colors={['#050B08', '#0A120E', '#030504']} style={StyleSheet.absoluteFill} />
+            
             <View style={[styles.orb, { backgroundColor: catInfo.color, top: -80, right: -80 }]} />
 
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
@@ -206,17 +206,17 @@ export default function CadastroFormScreen({ route, navigation }) {
                     </TouchableOpacity>
                     <View>
                         <Text style={styles.headerTitle}>{title}</Text>
-                        <Text style={styles.headerSub}>AgroGB OS — Cadastro de Item</Text>
+                        <Text style={styles.headerSub}>AgroGB OS â€” Cadastro de Item</Text>
                     </View>
                     <View style={{ width: 42 }} />
                 </View>
 
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
-                    {/* ── SEÇÃO 1: IDENTIFICAÇÃO ──────────────────────────── */}
+                    {/* â”€â”€ SEÃ‡ÃƒO 1: IDENTIFICAÃ‡ÃƒO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                     <View style={styles.sectionStrip}>
                         <View style={[styles.sectionDot, { backgroundColor: catInfo.color }]} />
-                        <Text style={[styles.sectionLabel, { color: catInfo.color }]}>IDENTIFICAÇÃO</Text>
+                        <Text style={[styles.sectionLabel, { color: catInfo.color }]}>IDENTIFICAÃ‡ÃƒO</Text>
                     </View>
 
                     <View style={styles.card}>
@@ -232,9 +232,9 @@ export default function CadastroFormScreen({ route, navigation }) {
                             placeholderTextColor="#374151"
                         />
 
-                        {/* Código */}
+                        {/* CÃ³digo */}
                         <Text style={styles.fieldLabel}>
-                            <Ionicons name="barcode-outline" size={12} color="#6B7280" /> CÓDIGO (OPCIONAL)
+                            <Ionicons name="barcode-outline" size={12} color="#6B7280" /> CÃ“DIGO (OPCIONAL)
                         </Text>
                         <TextInput
                             style={styles.input}
@@ -288,7 +288,7 @@ export default function CadastroFormScreen({ route, navigation }) {
                         </View>
                     </View>
 
-                    {/* ── SEÇÃO 2: VALORES & ESTOQUE ──────────────────────── */}
+                    {/* â”€â”€ SEÃ‡ÃƒO 2: VALORES & ESTOQUE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                     {tipo !== 'CULTURA' && (
                         <>
                             <View style={styles.sectionStrip}>
@@ -299,7 +299,7 @@ export default function CadastroFormScreen({ route, navigation }) {
                             <View style={styles.card}>
                                 <View style={styles.rowGrid}>
                                     <View style={{ flex: 1 }}>
-                                        <Text style={styles.fieldLabel}>PREÇO CUSTO (R$)</Text>
+                                        <Text style={styles.fieldLabel}>PREÃ‡O CUSTO (R$)</Text>
                                         <TextInput
                                             style={styles.input}
                                             value={valor}
@@ -322,7 +322,7 @@ export default function CadastroFormScreen({ route, navigation }) {
                                     </View>
                                 </View>
 
-                                <Text style={styles.fieldLabel}>ESTOQUE MÍNIMO (alerta)</Text>
+                                <Text style={styles.fieldLabel}>ESTOQUE MÃNIMO (alerta)</Text>
                                 <TextInput
                                     style={styles.input}
                                     value={estoqueMinimo}
@@ -333,13 +333,13 @@ export default function CadastroFormScreen({ route, navigation }) {
                                 />
                                 <Text style={styles.fieldHint}>
                                     <Ionicons name="information-circle-outline" size={11} color="#6B7280" /> 
-                                    {' '}Abaixo deste valor, o item aparecerá no alerta de estoque crítico.
+                                    {' '}Abaixo deste valor, o item aparecerÃ¡ no alerta de estoque crÃ­tico.
                                 </Text>
                             </View>
                         </>
                     )}
 
-                    {/* ── SEÇÃO 3: COMPORTAMENTO ──────────────────────────── */}
+                    {/* â”€â”€ SEÃ‡ÃƒO 3: COMPORTAMENTO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                     <View style={styles.sectionStrip}>
                         <View style={[styles.sectionDot, { backgroundColor: '#60A5FA' }]} />
                         <Text style={[styles.sectionLabel, { color: '#60A5FA' }]}>COMPORTAMENTO DO ITEM</Text>
@@ -352,7 +352,7 @@ export default function CadastroFormScreen({ route, navigation }) {
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.toggleLabel}>CONTROLA ESTOQUE</Text>
-                                <Text style={styles.toggleSub}>Pode ser comprado e armazenado no armazém</Text>
+                                <Text style={styles.toggleSub}>Pode ser comprado e armazenado no armazÃ©m</Text>
                             </View>
                             <Switch
                                 value={estocavel}
@@ -370,7 +370,7 @@ export default function CadastroFormScreen({ route, navigation }) {
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.toggleLabel}>PERMITIR VENDAS</Text>
-                                <Text style={styles.toggleSub}>Aparecerá na tela "Registrar Venda"</Text>
+                                <Text style={styles.toggleSub}>AparecerÃ¡ na tela "Registrar Venda"</Text>
                             </View>
                             <Switch
                                 value={vendavel}
@@ -381,7 +381,7 @@ export default function CadastroFormScreen({ route, navigation }) {
                         </View>
                     </View>
 
-                    {/* ── SEÇÃO 4: OBSERVAÇÕES ────────────────────────────── */}
+                    {/* â”€â”€ SEÃ‡ÃƒO 4: OBSERVAÃ‡Ã•ES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                     <View style={styles.sectionStrip}>
                         <View style={[styles.sectionDot, { backgroundColor: '#9CA3AF' }]} />
                         <Text style={[styles.sectionLabel, { color: '#9CA3AF' }]}>NOTAS (OPCIONAL)</Text>
@@ -391,13 +391,13 @@ export default function CadastroFormScreen({ route, navigation }) {
                             style={[styles.input, { height: 90, textAlignVertical: 'top', paddingTop: 14 }]}
                             value={obs}
                             onChangeText={setObs}
-                            placeholder="Fabricante, composição, instruções, prazo de validade..."
+                            placeholder="Fabricante, composiÃ§Ã£o, instruÃ§Ãµes, prazo de validade..."
                             placeholderTextColor="#374151"
                             multiline
                         />
                     </View>
 
-                    {/* ── BOTÃO SALVAR ──────────────────────────────────────── */}
+                    {/* â”€â”€ BOTÃƒO SALVAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                     <TouchableOpacity style={[styles.saveBtn, { shadowColor: catInfo.color }]} onPress={handleSave}>
                         <LinearGradient
                             colors={[catInfo.color, catInfo.color + '80']}
@@ -421,7 +421,7 @@ export default function CadastroFormScreen({ route, navigation }) {
     );
 }
 
-// ── STYLES ─────────────────────────────────────────────────────────────────
+// â”€â”€ STYLES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#000' },
     orb: { position: 'absolute', width: 300, height: 300, borderRadius: 150, opacity: 0.08 },
@@ -470,3 +470,4 @@ const styles = StyleSheet.create({
     saveGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 20, borderRadius: 18, gap: 12, borderWidth: 1, borderTopColor: 'rgba(255,255,255,0.3)' },
     saveBtnText: { color: '#FFF', fontSize: 15, fontWeight: '900', letterSpacing: 1.5 },
 });
+

@@ -91,9 +91,29 @@ export default function AgronomistClientsScreen({ navigation }) {
         }
     };
 
-    const filteredClients = clients.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    const getInitials = (name) => {
+        const names = name.trim().split(' ');
+        if (names.length >= 2) return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+        return name.substring(0, 2).toUpperCase();
+    };
 
     const renderClient = ({ item }) => (
+        <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={() => navigation.navigate('AgronomistClientProfile', { client: item })}>
+            <View style={styles.cardHeader}>
+                <View style={styles.cardIcon}>
+                    <Text style={styles.initialsText}>{getInitials(item.farm || item.name)}</Text>
+                </View>
+                <View style={styles.cardInfo}>
+                    <Text style={styles.farmName}>{item.farm || 'Fazenda Sem Nome'}</Text>
+                    <Text style={styles.clientName}>{item.name}</Text>
+                    <Text style={styles.farmDetails}>
+                        Soja, Milho • {Math.floor(Math.random() * 2000 + 500)} ha
+                    </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#64748B" />
+            </View>
+        </TouchableOpacity>
+    );
         <View style={styles.card}>
             <View style={styles.cardHeader}>
                 <View style={styles.cardIcon}>
@@ -115,9 +135,13 @@ export default function AgronomistClientsScreen({ navigation }) {
                     <MaterialCommunityIcons name="flask-outline" size={18} color="#8E24AA" />
                     <Text style={[styles.actionText, {color: '#8E24AA'}]}>Receita</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionBtn, {backgroundColor: '#E3F2FD'}]}>
+                <TouchableOpacity style={[styles.actionBtn, {backgroundColor: '#E3F2FD'}]} onPress={() => navigation.navigate('AgronomistEstoque', { clientId: item.id, clientName: item.name })}>
                     <MaterialCommunityIcons name="cube-outline" size={18} color="#1565C0" />
                     <Text style={[styles.actionText, {color: '#1565C0'}]}>Estoque</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.actionBtn, {backgroundColor: '#E8F5E9'}]} onPress={() => navigation.navigate('AgronomistCaderno', { clientId: item.id, clientName: item.name })}>
+                    <Ionicons name="book-outline" size={18} color="#2E7D32" />
+                    <Text style={[styles.actionText, {color: '#2E7D32'}]}>Caderno</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -125,19 +149,22 @@ export default function AgronomistClientsScreen({ navigation }) {
 
     const renderPending = ({ item }) => (
         <View style={styles.card}>
-            <View style={[styles.cardIcon, { backgroundColor: '#FFF3E0' }]}>
-                <Ionicons name="time" size={24} color="#E65100" />
-            </View>
-            <View style={styles.cardInfo}>
-                <Text style={styles.clientName}>{item.name}</Text>
-                <Text style={styles.farmName}>Solicitou vínculo em {item.date}</Text>
+            <View style={styles.cardHeader}>
+                <View style={[styles.cardIcon, { backgroundColor: 'rgba(245, 158, 11, 0.15)' }]}>
+                    <Ionicons name="time" size={20} color="#F59E0B" />
+                </View>
+                <View style={styles.cardInfo}>
+                    <Text style={styles.farmName}>{item.name}</Text>
+                    <Text style={styles.clientName}>Solicitou vínculo</Text>
+                    <Text style={styles.farmDetails}>{item.date}</Text>
+                </View>
             </View>
             <View style={styles.row}>
-                <TouchableOpacity style={[styles.btnSmall, { backgroundColor: '#E8F5E9', marginRight: 10 }]} onPress={() => handleAction(item.link_id, 'accept')}>
-                    <Text style={[styles.btnSmallText, { color: '#2E7D32' }]}>Aceitar</Text>
+                <TouchableOpacity style={[styles.btnSmall, { backgroundColor: 'rgba(16, 185, 129, 0.15)', marginRight: 10 }]} onPress={() => handleAction(item.link_id, 'accept')}>
+                    <Text style={[styles.btnSmallText, { color: '#10B981' }]}>Aceitar</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.btnSmall, { backgroundColor: '#FFEBEE' }]} onPress={() => handleAction(item.link_id, 'reject')}>
-                    <Text style={[styles.btnSmallText, { color: '#C62828' }]}>Recusar</Text>
+                <TouchableOpacity style={[styles.btnSmall, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]} onPress={() => handleAction(item.link_id, 'reject')}>
+                    <Text style={[styles.btnSmallText, { color: '#EF4444' }]}>Recusar</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -154,10 +181,11 @@ export default function AgronomistClientsScreen({ navigation }) {
             </View>
 
             <View style={styles.searchContainer}>
-                <Ionicons name="search" size={20} color="#94A3B8" style={styles.searchIcon} />
+                <Ionicons name="search" size={20} color="#64748B" style={styles.searchIcon} />
                 <TextInput 
                     style={styles.searchInput} 
-                    placeholder="Buscar produtor..." 
+                    placeholder="Buscar cliente..." 
+                    placeholderTextColor="#64748B"
                     value={searchQuery}
                     onChangeText={setSearchQuery}
                 />
@@ -168,13 +196,13 @@ export default function AgronomistClientsScreen({ navigation }) {
                     style={[styles.tab, activeTab === 'ativos' && styles.tabActive]} 
                     onPress={() => setActiveTab('ativos')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'ativos' && styles.tabTextActive]}>Carteira Ativa ({clients.length})</Text>
+                    <Text style={[styles.tabText, activeTab === 'ativos' && styles.tabTextActive]}>Ativos <Text style={styles.badge}>{clients.length}</Text></Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                     style={[styles.tab, activeTab === 'pendentes' && styles.tabActive]} 
                     onPress={() => setActiveTab('pendentes')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'pendentes' && styles.tabTextActive]}>Solicitações ({pending.length})</Text>
+                    <Text style={[styles.tabText, activeTab === 'pendentes' && styles.tabTextActive]}>Pendentes <Text style={styles.badge}>{pending.length}</Text></Text>
                 </TouchableOpacity>
             </View>
 
@@ -197,29 +225,33 @@ export default function AgronomistClientsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F8FAFC' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, paddingTop: Platform.OS === 'android' ? 40 : 20, backgroundColor: '#FFF' },
-    backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#E3F2FD', justifyContent: 'center', alignItems: 'center' },
-    headerTitle: { fontSize: 18, fontWeight: '800', color: '#1E293B' },
-    searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', marginHorizontal: 20, marginTop: 10, borderRadius: 12, paddingHorizontal: 15, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5 },
+    container: { flex: 1, backgroundColor: '#0B121E' },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, paddingTop: Platform.OS === 'android' ? 40 : 20, backgroundColor: '#111827', borderBottomWidth: 1, borderBottomColor: '#1F2937' },
+    backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#1F2937', justifyContent: 'center', alignItems: 'center' },
+    headerTitle: { fontSize: 18, fontWeight: '800', color: '#F8FAFC' },
+    
+    searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#111827', marginHorizontal: 20, marginTop: 15, borderRadius: 20, paddingHorizontal: 15, borderWidth: 1, borderColor: '#1F2937' },
     searchIcon: { marginRight: 10 },
-    searchInput: { flex: 1, height: 45, fontSize: 15, color: '#334155' },
-    tabs: { flexDirection: 'row', paddingHorizontal: 20, marginTop: 20, marginBottom: 10 },
-    tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
-    tabActive: { borderBottomColor: '#1565C0' },
-    tabText: { fontSize: 14, fontWeight: '600', color: '#94A3B8' },
-    tabTextActive: { color: '#1565C0', fontWeight: '800' },
+    searchInput: { flex: 1, height: 45, fontSize: 15, color: '#F8FAFC' },
+    
+    tabs: { flexDirection: 'row', paddingHorizontal: 20, marginTop: 20, marginBottom: 10, gap: 10 },
+    tab: { paddingVertical: 8, paddingHorizontal: 16, alignItems: 'center', borderRadius: 20, backgroundColor: '#111827', borderWidth: 1, borderColor: '#1F2937' },
+    tabActive: { backgroundColor: 'rgba(16, 185, 129, 0.1)', borderColor: '#10B981' },
+    tabText: { fontSize: 13, fontWeight: '700', color: '#64748B' },
+    tabTextActive: { color: '#10B981' },
+    badge: { color: '#64748B', fontSize: 11 },
+    
     listContent: { padding: 20 },
-    card: { backgroundColor: '#FFF', borderRadius: 16, padding: 15, marginBottom: 15, elevation: 2, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 5 },
-    cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
-    cardIcon: { width: 50, height: 50, borderRadius: 12, backgroundColor: '#E3F2FD', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    card: { backgroundColor: '#111827', borderRadius: 16, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: '#1F2937' },
+    cardHeader: { flexDirection: 'row', alignItems: 'center' },
+    cardIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(16, 185, 129, 0.2)', justifyContent: 'center', alignItems: 'center', marginRight: 15, borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.3)' },
+    initialsText: { color: '#10B981', fontSize: 16, fontWeight: '900' },
     cardInfo: { flex: 1 },
-    clientName: { fontSize: 16, fontWeight: '800', color: '#1E293B', marginBottom: 4 },
-    farmName: { fontSize: 13, color: '#64748B', fontWeight: '500' },
-    cardActions: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 15 },
-    actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, borderRadius: 10, marginHorizontal: 4 },
-    actionText: { fontSize: 12, fontWeight: '800', marginLeft: 6 },
-    row: { flexDirection: 'row', marginTop: 15 },
+    farmName: { fontSize: 15, fontWeight: '800', color: '#F8FAFC', marginBottom: 2 },
+    clientName: { fontSize: 13, color: '#94A3B8', fontWeight: '500', marginBottom: 2 },
+    farmDetails: { fontSize: 11, color: '#64748B', fontWeight: '500' },
+    
+    row: { flexDirection: 'row', marginTop: 15, borderTopWidth: 1, borderTopColor: '#1F2937', paddingTop: 15 },
     btnSmall: { paddingHorizontal: 15, paddingVertical: 8, borderRadius: 8 },
     btnSmallText: { fontSize: 12, fontWeight: '800' }
 });

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+﻿import React, { useState, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
@@ -14,21 +14,21 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { executeQuery } from '../database/database';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import SafeBlurView from '../ui/SafeBlurView';
+
 
 export default function EncomendasScreen() {
     const navigation = useNavigation();
 
-    // ── VIEW ──────────────────────────────────────────────────────────────────
+    // â”€â”€ VIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const [view, setView] = useState('LIST');
     const [filter, setFilter] = useState('TODOS');
 
-    // ── DATA ────────────────────────────────────────────────────────────────
+    // â”€â”€ DATA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const [encomendas, setEncomendas] = useState([]);
     const [loading, setLoading] = useState(false);
     const [dashboardData, setDashboardData] = useState({ totalValor: 0, totalAtivas: 0 });
 
-    // ── LOAD ─────────────────────────────────────────────────────────────────
+    // â”€â”€ LOAD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const loadEncomendas = useCallback(async () => {
         setLoading(true);
         try {
@@ -63,7 +63,7 @@ export default function EncomendasScreen() {
 
     useFocusEffect(useCallback(() => { loadEncomendas(); }, [loadEncomendas]));
 
-    // ── COMPUTED ────────────────────────────────────────────────────────────
+    // â”€â”€ COMPUTED â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const filteredData = useMemo(() => {
         let list = encomendas;
         if (filter === 'PENDENTE') list = encomendas.filter(e => e.status === 'PENDENTE' || e.status === 'PARCIAL');
@@ -87,7 +87,7 @@ export default function EncomendasScreen() {
         }
     };
 
-    // ── RENDER LIST ──────────────────────────────────────────────────────────
+    // â”€â”€ RENDER LIST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const renderList = () => (
         <View style={{ flex: 1, paddingHorizontal: 22 }}>
             {/* HEADER */}
@@ -97,13 +97,13 @@ export default function EncomendasScreen() {
                 </TouchableOpacity>
                 <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={styles.headerTitle}>ENCOMENDAS</Text>
-                    <Text style={styles.headerSub}>LOGÍSTICA & ENTREGAS</Text>
+                    <Text style={styles.headerSub}>LOGÃSTICA & ENTREGAS</Text>
                 </View>
                 <View style={{ width: 42 }} />
             </View>
 
             {/* DASHBOARD STRIP */}
-            <SafeBlurView intensity={20} style={styles.dashStrip} webFallbackColor="rgba(255,255,255,0.03)">
+            <View intensity={20} style={styles.dashStrip} webFallbackColor="rgba(255,255,255,0.03)">
                 <View>
                     <Text style={styles.dashLabel}>EM ABERTO</Text>
                     <Text style={styles.dashValue}>
@@ -114,7 +114,7 @@ export default function EncomendasScreen() {
                     <Text style={styles.dashBadgeNum}>{dashboardData.totalAtivas}</Text>
                     <Text style={styles.dashBadgeLbl}>ATIVAS</Text>
                 </View>
-            </SafeBlurView>
+            </View>
 
             {/* FILTER CHIPS */}
             <View style={styles.filterRow}>
@@ -149,13 +149,13 @@ export default function EncomendasScreen() {
                         const cfg = statusConfig(item.status);
                         const total = item.quantidade_total * (item.valor_unitario || 0);
                         return (
-                            <SafeBlurView key={item.id?.toString()} intensity={15} style={styles.orderCard} webFallbackColor="rgba(255,255,255,0.02)">
+                            <View key={item.id?.toString()} intensity={15} style={styles.orderCard} webFallbackColor="rgba(255,255,255,0.02)">
                                 <View style={[styles.orderIndicator, { backgroundColor: cfg.color }]} />
                                 <View style={{ flex: 1, padding: 16 }}>
                                     {/* Card Header */}
                                     <View style={styles.cardHeaderRow}>
                                         <View style={{ flex: 1 }}>
-                                            <Text style={styles.clientName}>{item.cliente_nome || 'CLIENTE NÃO INFORMADO'}</Text>
+                                            <Text style={styles.clientName}>{item.cliente_nome || 'CLIENTE NÃƒO INFORMADO'}</Text>
                                             <Text style={styles.dateText}>
                                                 {item.data_prevista
                                                     ? new Date(item.data_prevista).toLocaleDateString('pt-BR')
@@ -213,7 +213,7 @@ export default function EncomendasScreen() {
                                         )}
                                     </View>
                                 </View>
-                            </SafeBlurView>
+                            </View>
                         );
                     })}
                 </ScrollView>
@@ -228,11 +228,11 @@ export default function EncomendasScreen() {
         </View>
     );
 
-    // ── MAIN RENDER ──────────────────────────────────────────────────────────
+    // â”€â”€ MAIN RENDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     return (
         <View style={styles.webContainer}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            <LinearGradient colors={['#020617', '#0A0F1C', '#030712']} style={StyleSheet.absoluteFill} />
+            
 
             {/* AMBIENT ORBS */}
             <View style={[styles.ambientOrb, { top: -60, right: -40, backgroundColor: '#D4AF37', opacity: 0.08 }]} />
@@ -320,3 +320,4 @@ const styles = StyleSheet.create({
     },
     fabGradient: { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center' },
 });
+

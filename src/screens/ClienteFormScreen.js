@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, 
     TextInput, SafeAreaView, StatusBar, Platform, KeyboardAvoidingView 
@@ -43,7 +43,7 @@ export default function ClienteFormScreen({ navigation, route }) {
 
     const handleSave = async () => {
         if (!nome.trim()) { 
-            Alert.alert('Obrigatório', 'Nome ou Empresa é obrigatório.'); 
+            Alert.alert('ObrigatÃ³rio', 'Nome ou Empresa Ã© obrigatÃ³rio.'); 
             return; 
         }
         setLoading(true);
@@ -119,7 +119,7 @@ export default function ClienteFormScreen({ navigation, route }) {
 
     return (
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-            <LinearGradient colors={['#040914', '#0A1220']} style={StyleSheet.absoluteFill} />
+            
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
             <SafeAreaView style={{ flex: 1 }}>
@@ -137,9 +137,9 @@ export default function ClienteFormScreen({ navigation, route }) {
 
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                     
-                    {/* Sessão 1: Controle/Status */}
+                    {/* SessÃ£o 1: Controle/Status */}
                     <View style={styles.groupCard}>
-                        <Text style={styles.sectionHeader}>CLASSIFICAÇÃO DO REGISTRO</Text>
+                        <Text style={styles.sectionHeader}>CLASSIFICAÃ‡ÃƒO DO REGISTRO</Text>
                         
                         <View style={styles.pillContainer}>
                             {[
@@ -173,32 +173,32 @@ export default function ClienteFormScreen({ navigation, route }) {
                         </View>
                     </View>
 
-                    {/* Sessão 2: Informações Principais */}
-                    <Text style={styles.groupTitleDivider}>IDENTIFICAÇÃO</Text>
-                    {renderInput('NOME COMPLETO / RAZÃO SOCIAL', nome, setNome, 'Ex: João Silva ou Agrotech LTDA', 'nome')}
-                    {renderInput('CPF / CNPJ (Somente Números)', cpf, setCpf, '12345678900', 'cpf', false, false, 'numeric')}
+                    {/* SessÃ£o 2: InformaÃ§Ãµes Principais */}
+                    <Text style={styles.groupTitleDivider}>IDENTIFICAÃ‡ÃƒO</Text>
+                    {renderInput('NOME COMPLETO / RAZÃƒO SOCIAL', nome, setNome, 'Ex: JoÃ£o Silva ou Agrotech LTDA', 'nome')}
+                    {renderInput('CPF / CNPJ (Somente NÃºmeros)', cpf, setCpf, '12345678900', 'cpf', false, false, 'numeric')}
 
-                    {/* Sessão 3: Contatos */}
+                    {/* SessÃ£o 3: Contatos */}
                     <Text style={styles.groupTitleDivider}>CONTATOS DIRETOS</Text>
                     <View style={{ flexDirection: 'row', gap: 15 }}>
                         {renderInput('ATENDIMENTO (WHATSAPP)', telefone, setTelefone, '(11) 999...', 'tel1', false, true, 'phone-pad')}
                         {renderInput('TELEFONE FIXO/EXTRA', telefone2, setTelefone2, '(11) 321...', 'tel2', false, true, 'phone-pad')}
                     </View>
-                    {renderInput('ENDEREÇO DE E-MAIL', email, setEmail, 'contato@email.com', 'email', false, false, 'email-address')}
+                    {renderInput('ENDEREÃ‡O DE E-MAIL', email, setEmail, 'contato@email.com', 'email', false, false, 'email-address')}
 
-                    {/* Sessão 4: Endereçamento */}
-                    <Text style={styles.groupTitleDivider}>LOGÍSTICA / ENDEREÇO</Text>
-                    {renderInput('LOGRADOURO, NÚMERO E BAIRRO', endereco, setEndereco, 'Rua das Ostras, 10 - Centro', 'end')}
+                    {/* SessÃ£o 4: EndereÃ§amento */}
+                    <Text style={styles.groupTitleDivider}>LOGÃSTICA / ENDEREÃ‡O</Text>
+                    {renderInput('LOGRADOURO, NÃšMERO E BAIRRO', endereco, setEndereco, 'Rua das Ostras, 10 - Centro', 'end')}
                     <View style={{ flexDirection: 'row', gap: 15 }}>
-                        {renderInput('MUNICÍPIO / CIDADE', cidade, setCidade, 'São Paulo', 'cidade', false, true)}
+                        {renderInput('MUNICÃPIO / CIDADE', cidade, setCidade, 'SÃ£o Paulo', 'cidade', false, true)}
                         <View style={{ width: 80 }}>
                             {renderInput('UF', estado, setEstado, 'SP', 'estado', false)}
                         </View>
                     </View>
 
-                    {renderInput('OBSERVAÇÕES E NOTAS INTERNAS', observacaoInterna, setObservacaoInterna, 'Anotações gerais visíveis com a operação...', 'obs', true)}
+                    {renderInput('OBSERVAÃ‡Ã•ES E NOTAS INTERNAS', observacaoInterna, setObservacaoInterna, 'AnotaÃ§Ãµes gerais visÃ­veis com a operaÃ§Ã£o...', 'obs', true)}
 
-                    {/* Ações */}
+                    {/* AÃ§Ãµes */}
                     <View style={styles.actionRow}>
                         <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()}>
                             <Text style={styles.cancelBtnText}>VOLTAR</Text>
@@ -260,3 +260,4 @@ const styles = StyleSheet.create({
     saveBtnGradient: { height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
     saveBtnText: { color: '#FFF', fontSize: 14, fontWeight: '900', letterSpacing: 1 },
 });
+
