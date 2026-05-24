@@ -11,4 +11,22 @@
 -keep class com.swmansion.reanimated.** { *; }
 -keep class com.facebook.react.turbomodule.** { *; }
 
-# Add any project specific keep options here:
+# react-native-gesture-handler
+-keep class com.swmansion.gesturehandler.** { *; }
+
+# react-native-vector-icons
+-keep class com.oblador.vectoricons.** { *; }
+
+# react-navigation
+-keep class com.th3rdwave.safeareacontext.** { *; }
+-keep class com.reactnativecommunity.asyncstorage.** { *; }
+
+# Evita que o código essencial do React Native seja removido na otimização Release
+-keep class com.facebook.react.** { *; }
+-keep class com.facebook.yoga.** { *; }
+-keep class com.facebook.hermes.reactexecutor.** { *; }
+
+# Supabase e Fetch (Networking)
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
