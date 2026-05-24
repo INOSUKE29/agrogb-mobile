@@ -5,7 +5,7 @@ import { supabase } from '../../services/supabaseClient';
 
 const MENU_ITEMS = [
     { id: 'Dashboard', label: 'Dashboard', icon: 'home-outline', route: 'HomeClient' },
-    { id: 'Talhoes', label: 'Talhões', icon: 'grid-outline', route: 'MyFarm' },
+    { id: 'Talhoes', label: 'Talhões / Culturas', icon: 'grid-outline', route: 'Culturas' },
     { id: 'Plantio', label: 'Plantio', icon: 'leaf-outline', route: null },
     { id: 'Monitoramento', label: 'Monitoramento', icon: 'scan-outline', route: null },
     { id: 'Adubacao', label: 'Adubação', icon: 'flask-outline', route: 'MenuAdubacao' },

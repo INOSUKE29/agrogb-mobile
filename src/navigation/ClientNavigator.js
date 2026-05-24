@@ -5,6 +5,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 // Telas do Cliente
 import ClientDashboardScreen from '../screens/client/ClientDashboardScreen';
 import MyFarmScreen from '../screens/client/MyFarmScreen';
+import CulturasScreen from '../screens/CulturasScreen';
 import ClientMenuScreen from '../screens/client/ClientMenuScreen';
 import { View } from 'react-native';
 
@@ -62,8 +63,8 @@ export default function ClientNavigator() {
                 options={{ tabBarLabel: 'Início' }} 
             />
             <Tab.Screen 
-                name="MyFarm" 
-                component={MyFarmScreen} 
+                name="Culturas" 
+                component={CulturasScreen} 
                 options={{ tabBarLabel: 'Talhões' }} 
             />
             <Tab.Screen 
