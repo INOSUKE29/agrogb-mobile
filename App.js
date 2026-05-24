@@ -67,6 +67,8 @@ import ClientNavigator from './src/navigation/ClientNavigator';
 import AdminSelectorScreen from './src/screens/admin/AdminSelectorScreen';
 import AgronomistClientsScreen from './src/screens/agronomist/AgronomistClientsScreen';
 import CreateRecommendationScreen from './src/screens/agronomist/CreateRecommendationScreen';
+import VisitsScreen from './src/screens/agronomist/VisitsScreen';
+import ScheduleVisitFormScreen from './src/screens/agronomist/ScheduleVisitFormScreen';
 import ErrorBoundary from './src/ui/ErrorBoundary';
 import { WeatherProvider } from './src/context/WeatherContext';
 import { ThemeProvider } from './src/theme/ThemeContext';
@@ -206,6 +208,8 @@ export default function App() {
                                         <Stack.Screen name="AdminSelector" component={AdminSelectorScreen} options={{ headerShown: false }} />
                                         <Stack.Screen name="AgronomistClients" component={AgronomistClientsScreen} options={{ headerShown: false }} />
                                         <Stack.Screen name="CreateRecommendation" component={CreateRecommendationScreen} options={{ headerShown: false }} />
+                                        <Stack.Screen name="Visitas" component={VisitsScreen} options={{ headerShown: false }} />
+                                        <Stack.Screen name="ScheduleVisitForm" component={ScheduleVisitFormScreen} options={{ headerShown: false }} />
                                         <Stack.Screen name="Dashboard" component={HomeScreen} options={{ headerShown: false }} />
                                         <Stack.Screen name="Colheita" component={ColheitaScreen} options={{ title: 'Registrar Colheita' }} />
                                         <Stack.Screen name="Vendas" component={VendasScreen} options={{ title: 'Registrar Venda' }} />

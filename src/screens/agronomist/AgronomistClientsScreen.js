@@ -94,21 +94,33 @@ export default function AgronomistClientsScreen({ navigation }) {
     const filteredClients = clients.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const renderClient = ({ item }) => (
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('CreateRecommendation', { clientId: item.id, clientName: item.name })}>
-            <View style={styles.cardIcon}>
-                <Ionicons name="person" size={24} color="#1565C0" />
+        <View style={styles.card}>
+            <View style={styles.cardHeader}>
+                <View style={styles.cardIcon}>
+                    <Ionicons name="person" size={24} color="#1565C0" />
+                </View>
+                <View style={styles.cardInfo}>
+                    <Text style={styles.clientName}>{item.name}</Text>
+                    <Text style={styles.farmName}>
+                        <Ionicons name="location-outline" size={12} color="#64748B" /> {item.farm}
+                    </Text>
+                </View>
             </View>
-            <View style={styles.cardInfo}>
-                <Text style={styles.clientName}>{item.name}</Text>
-                <Text style={styles.farmName}>
-                    <Ionicons name="location-outline" size={12} color="#64748B" /> {item.farm}
-                </Text>
+            <View style={styles.cardActions}>
+                <TouchableOpacity style={[styles.actionBtn, {backgroundColor: '#FFF8E1'}]} onPress={() => navigation.navigate('ScheduleVisitForm', { clientId: item.id, clientName: item.name })}>
+                    <Ionicons name="calendar-outline" size={18} color="#FF8F00" />
+                    <Text style={[styles.actionText, {color: '#FF8F00'}]}>Visita</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.actionBtn, {backgroundColor: '#F3E5F5'}]} onPress={() => navigation.navigate('CreateRecommendation', { clientId: item.id, clientName: item.name })}>
+                    <MaterialCommunityIcons name="flask-outline" size={18} color="#8E24AA" />
+                    <Text style={[styles.actionText, {color: '#8E24AA'}]}>Receita</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.actionBtn, {backgroundColor: '#E3F2FD'}]}>
+                    <MaterialCommunityIcons name="cube-outline" size={18} color="#1565C0" />
+                    <Text style={[styles.actionText, {color: '#1565C0'}]}>Estoque</Text>
+                </TouchableOpacity>
             </View>
-            <View style={styles.actionBtn}>
-                <MaterialCommunityIcons name="spray-bottle" size={20} color="#1B5E20" />
-                <Text style={styles.actionText}>Receitar</Text>
-            </View>
-        </TouchableOpacity>
+        </View>
     );
 
     const renderPending = ({ item }) => (
@@ -198,14 +210,16 @@ const styles = StyleSheet.create({
     tabText: { fontSize: 14, fontWeight: '600', color: '#94A3B8' },
     tabTextActive: { color: '#1565C0', fontWeight: '800' },
     listContent: { padding: 20 },
-    card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: 16, padding: 15, marginBottom: 15, elevation: 2, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 5 },
+    card: { backgroundColor: '#FFF', borderRadius: 16, padding: 15, marginBottom: 15, elevation: 2, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 5 },
+    cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
     cardIcon: { width: 50, height: 50, borderRadius: 12, backgroundColor: '#E3F2FD', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
     cardInfo: { flex: 1 },
     clientName: { fontSize: 16, fontWeight: '800', color: '#1E293B', marginBottom: 4 },
     farmName: { fontSize: 13, color: '#64748B', fontWeight: '500' },
-    actionBtn: { alignItems: 'center', backgroundColor: '#F1F8E9', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
-    actionText: { fontSize: 11, fontWeight: '800', color: '#1B5E20', marginTop: 4 },
-    row: { flexDirection: 'row' },
+    cardActions: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 15 },
+    actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, borderRadius: 10, marginHorizontal: 4 },
+    actionText: { fontSize: 12, fontWeight: '800', marginLeft: 6 },
+    row: { flexDirection: 'row', marginTop: 15 },
     btnSmall: { paddingHorizontal: 15, paddingVertical: 8, borderRadius: 8 },
     btnSmallText: { fontSize: 12, fontWeight: '800' }
 });
