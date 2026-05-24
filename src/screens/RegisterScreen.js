@@ -3,9 +3,8 @@ import { View, Text, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollVi
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { getSupabase } from '../services/supabase';
-import { Validation, ErrorHelpers } from '@agrogb/shared';
-const { validateRegisterExpress, getPasswordStrength } = Validation;
-const { translateAuthError } = ErrorHelpers;
+import { validateRegisterExpress, getPasswordStrength } from '../utils/validation';
+import { translateAuthError } from '../utils/errorHelpers';
 import AgroInput from '../components/common/AgroInput';
 import AgroButton from '../components/common/AgroButton';
 import Card from '../components/common/Card';
