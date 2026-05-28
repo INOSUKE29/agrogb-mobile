@@ -16,7 +16,6 @@ import AutoSyncService from './src/services/AutoSyncService';
 // Contextos e Providers
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ThemeProvider } from './src/theme/ThemeContext';
-import { WeatherProvider } from './src/context/WeatherContext';
 import ErrorBoundary from './src/ui/ErrorBoundary';
 import Toast from './src/ui/Toast';
 
@@ -237,11 +236,9 @@ export default function App() {
                         <ErrorBoundary>
                             <AuthProvider>
                                 <ThemeProvider>
-                                    <WeatherProvider>
                                         <StatusBar style="light" />
                                         <AppInner />
                                         <Toast />
-                                    </WeatherProvider>
                                 </ThemeProvider>
                             </AuthProvider>
                         </ErrorBoundary>
