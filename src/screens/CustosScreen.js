@@ -84,8 +84,8 @@ export default function CustosScreen({ navigation }) {
     };
 
     return (
-        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
-            <LinearGradient colors={['#EF4444', '#DC2626']} style={styles.header}>
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#0B121E' }]}>
+            <LinearGradient colors={['#111827', '#0F172A']} style={styles.header}>
                 <View style={styles.headerTop}>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Ionicons name="arrow-back" size={24} color="#FFF" />
@@ -106,7 +106,7 @@ export default function CustosScreen({ navigation }) {
             </LinearGradient>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-                <Card style={styles.formCard}>
+                <LinearGradient colors={['#1F2937', '#111827']} style={styles.formCard}>
                     <Text style={styles.sectionTitle}>LANÇAR DESPESA</Text>
                     
                     <AgroInput 
@@ -159,7 +159,7 @@ export default function CustosScreen({ navigation }) {
                         onPress={salvar}
                         color="#EF4444"
                     />
-                </Card>
+                </LinearGradient>
 
                 {/* MODALS */}
                 <Modal visible={modalVisible} animationType="slide" transparent>
@@ -167,8 +167,8 @@ export default function CustosScreen({ navigation }) {
                         <View style={styles.modalBg}>
                             <View style={styles.modalHeader}>
                                 <Text style={styles.modalTitle}>ESCOLHA A CATEGORIA</Text>
-                                <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                    <Ionicons name="close" size={24} color="#374151" />
+                                <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
+                                    <Ionicons name="close" size={24} color="#9CA3AF" />
                                 </TouchableOpacity>
                             </View>
 
@@ -205,17 +205,18 @@ const styles = StyleSheet.create({
     summaryRow: { flexDirection: 'row' },
     summaryCard: { flex: 1, height: 90 },
     sectionTitle: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1, marginBottom: 15 },
-    formCard: { padding: 20 },
+    formCard: { padding: 20, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
     row: { flexDirection: 'row' },
-    totalBox: { backgroundColor: '#F9FAFB', padding: 15, borderRadius: 16, marginBottom: 15, alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' },
-    totalLabel: { fontSize: 9, fontWeight: '900', color: '#6B7280', letterSpacing: 1 },
-    totalValue: { fontSize: 24, fontWeight: '900', color: '#111827', marginTop: 5 },
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    modalBg: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '80%', padding: 20 },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-    modalTitle: { fontSize: 16, fontWeight: '900', color: '#1F2937' },
-    searchBar: { backgroundColor: '#F3F4F6', padding: 12, borderRadius: 12, marginBottom: 10, fontSize: 14 },
-    itemRow: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-    itemText: { fontSize: 14, fontWeight: 'bold', color: '#374151' },
-    itemSub: { fontSize: 10, color: '#9CA3AF' }
+    totalBox: { backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: 15, borderRadius: 16, marginBottom: 15, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' },
+    totalLabel: { fontSize: 9, fontWeight: '900', color: '#EF4444', letterSpacing: 1 },
+    totalValue: { fontSize: 24, fontWeight: '900', color: '#FFF', marginTop: 5 },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' },
+    modalBg: { backgroundColor: '#1F2937', borderTopLeftRadius: 30, borderTopRightRadius: 30, height: '80%', padding: 25 },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
+    modalTitle: { fontSize: 16, fontWeight: '900', color: '#FFF' },
+    closeBtn: { backgroundColor: 'rgba(255,255,255,0.05)', padding: 8, borderRadius: 20 },
+    searchBar: { backgroundColor: '#111827', padding: 15, borderRadius: 12, marginBottom: 15, fontSize: 14, color: '#FFF', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    itemRow: { paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+    itemText: { fontSize: 15, fontWeight: '800', color: '#FFF' },
+    itemSub: { fontSize: 11, color: '#9CA3AF', marginTop: 2, fontWeight: 'bold' }
 });
