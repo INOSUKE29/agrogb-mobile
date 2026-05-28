@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { executeQuery, getAppSettings, updateAppSetting } from '../database/database';
-import { pushLocalChanges, pullServerChanges } from '../services/SyncService';
+import SyncService, { performSync } from '../services/SyncService';
 
 // Design System
 import AgroButton from '../components/common/AgroButton';
@@ -36,6 +36,12 @@ export default function SyncScreen({ navigation }) {
         loadSettings();
         countLixeira();
         checkBiometrics();
+        
+        // Inscreve no SyncService para saber quando está rodando no background
+        const unsubscribe = SyncService.subscribe((status) => {
+            setSyncing(status);
+        });
+        return () => unsubscribe();
     }, []);
 
     const checkBiometrics = async () => {
@@ -47,19 +53,15 @@ export default function SyncScreen({ navigation }) {
 
     const runManualSync = async () => {
         if (syncing) return;
-        setSyncing(true);
         try {
-            const push = await pushLocalChanges();
-            const pull = await pullServerChanges();
+            await performSync();
             Alert.alert(
                 'Sincronização Concluída', 
-                `Backup em nuvem atualizado com sucesso!\n\nDados Enviados: ${push?.pushed || 0}\nDados Recebidos: ${pull?.pulled || 0}\n\nSeu banco de dados local está 100% em paridade com a nuvem Supabase.`
+                'Backup em nuvem e dados locais foram atualizados com sucesso e estão 100% em paridade com o Supabase.'
             );
             await countLixeira();
         } catch (e) {
-            Alert.alert('Falha na Sincronização', 'Não foi possível sincronizar com o Supabase. Verifique sua conexão com a internet. Detalhes: ' + e.message);
-        } finally {
-            setSyncing(false);
+            Alert.alert('Falha na Sincronização', 'Não foi possível sincronizar com o Supabase. Verifique sua conexão com a internet.');
         }
     };
 
