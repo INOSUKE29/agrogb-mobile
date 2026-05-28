@@ -449,7 +449,7 @@ export default function LoginScreen({ navigation }) {
                     <Text style={styles.tagline}>Gestão Inteligente Rural</Text>
                 </View>
 
-                <View style={[styles.formCard, { backgroundColor: activeColors.card || '#FFF' }]}>
+                <View style={[styles.formCard, { backgroundColor: 'rgba(17,24,39,0.85)' }]}>
                     <AgroInput
                         label="Telefone ou E-mail"
                         placeholder="Ex: 62999999999"
@@ -584,16 +584,17 @@ const styles = StyleSheet.create({
         borderRadius: 18, 
         marginTop: 15, 
         borderWidth: 1.5, 
-        borderColor: '#E5E7EB' 
+        borderColor: 'rgba(16,185,129,0.3)',
+        backgroundColor: 'rgba(16,185,129,0.05)'
     },
-    bioBtnText: { color: '#374151', fontSize: 14, fontWeight: 'bold', marginLeft: 10 },
+    bioBtnText: { color: '#D1FAE5', fontSize: 14, fontWeight: 'bold', marginLeft: 10 },
     linksRow: { 
         flexDirection: 'row', 
         justifyContent: 'space-between', 
         alignItems: 'center',
         marginTop: 30 
     },
-    linkText: { fontSize: 13, color: '#6B7280' },
+    linkText: { fontSize: 13, color: '#9CA3AF' },
     linkTextBold: { color: '#10B981', fontWeight: 'bold', fontSize: 13 },
     footer: { position: 'absolute', bottom: 30, left: 0, right: 0, alignItems: 'center' },
     footerText: { color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 'bold' },

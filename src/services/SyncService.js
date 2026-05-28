@@ -1,4 +1,4 @@
-import { syncTable, testConnection } from './supabase';
+import { syncTable, testConnection, processOutbox } from './supabase';
 import { AppState } from 'react-native';
 
 /**
@@ -90,6 +90,10 @@ const SyncService = {
         console.log('🚀 Iniciando sincronização automática de todas as tabelas...');
 
         try {
+            console.log('📦 Processando Fila de Postagem (Outbox)...');
+            await processOutbox();
+
+            console.log('📥 Sincronizando novas atualizações (Pull)...');
             for (const table of TABLES_TO_SYNC) {
                 await syncTable(table);
             }

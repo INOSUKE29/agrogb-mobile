@@ -62,6 +62,16 @@ export const initDB = async () => {
 const createTables = async () => {
     try {
         const queries = [
+            `CREATE TABLE IF NOT EXISTS sync_outbox (
+                uuid TEXT PRIMARY KEY,
+                tabela TEXT NOT NULL,
+                registro_uuid TEXT,
+                acao TEXT NOT NULL,
+                payload_json TEXT,
+                status TEXT DEFAULT 'PENDENTE',
+                tentativas INTEGER DEFAULT 0,
+                criado_em TEXT NOT NULL
+            );`,
             `CREATE TABLE IF NOT EXISTS usuarios (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 uuid TEXT UNIQUE,
@@ -796,7 +806,26 @@ const createTables = async () => {
         }
         console.log('✅ Colunas de Anexo migradas');
 
+        // MIGRATION: Outbox Pattern (Fila de Postagem)
+        try {
+            await executeQuery(`
+                CREATE TABLE IF NOT EXISTS sync_outbox (
+                    uuid TEXT PRIMARY KEY,
+                    tabela TEXT NOT NULL,
+                    registro_uuid TEXT,
+                    acao TEXT NOT NULL,
+                    payload_json TEXT,
+                    status TEXT DEFAULT 'PENDENTE',
+                    tentativas INTEGER DEFAULT 0,
+                    criado_em TEXT NOT NULL
+                )
+            `);
+            console.log('✅ Tabela sync_outbox verificada/criada com sucesso');
+        } catch (e) { console.error('Erro na migração do sync_outbox', e); }
+
         console.log('✅ Soft delete migrado');
+
+        await generateOutboxTriggers();
 
         console.log('✅ Arquitetura Monitoramento v6.0 Implementada');
 
@@ -910,6 +939,46 @@ const createTables = async () => {
 
     } catch (error) {
         console.error('❌ Erro ao criar tabelas:', error);
+    }
+};
+
+const TABLES_TO_SYNC = [
+    'usuarios', 'colheitas', 'vendas', 'compras', 'plantio', 'custos', 
+    'descarte', 'cadastro', 'clientes', 'culturas', 'maquinas', 
+    'manutencao_frota', 'planos_adubacao', 'etapas_adubacao',
+    'equipes', 'financeiro_transacoes', 'farms', 'fields', 'plantings',
+    'agronomist_codes', 'agronomist_client_links', 'products', 'recommendations'
+];
+
+const generateOutboxTriggers = async () => {
+    try {
+        for (const table of TABLES_TO_SYNC) {
+            // INSERT Trigger
+            await executeQuery(`
+                CREATE TRIGGER IF NOT EXISTS outbox_insert_${table}
+                AFTER INSERT ON ${table}
+                FOR EACH ROW
+                WHEN NEW.sync_status = 0
+                BEGIN
+                    INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, criado_em)
+                    VALUES (lower(hex(randomblob(16))), '${table}', NEW.uuid, 'INSERT', datetime('now'));
+                END;
+            `);
+            // UPDATE Trigger
+            await executeQuery(`
+                CREATE TRIGGER IF NOT EXISTS outbox_update_${table}
+                AFTER UPDATE ON ${table}
+                FOR EACH ROW
+                WHEN NEW.sync_status = 0 AND OLD.sync_status = 0
+                BEGIN
+                    INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, criado_em)
+                    VALUES (lower(hex(randomblob(16))), '${table}', NEW.uuid, 'UPDATE', datetime('now'));
+                END;
+            `);
+        }
+        console.log('✅ Triggers do Outbox gerados com sucesso!');
+    } catch (e) {
+        console.error('❌ Erro ao gerar Triggers do Outbox', e);
     }
 };
 
@@ -1052,7 +1121,40 @@ export const deleteUsuario = async (identifier) => {
     }
 };
 
-// --- OPERAÇÕES (TODAS COM up()) ---
+// --- UTILS PARA TRANSACTION OUTBOX ---
+export const addToOutbox = async (tabela, acao, registro_uuid, payload) => {
+    try {
+        const payload_json = payload ? JSON.stringify(payload) : null;
+        await executeQuery(
+            `INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, ?, ?, ?, ?, 'PENDENTE', ?)`,
+            [uuidv4(), tabela, registro_uuid, acao, payload_json, new Date().toISOString()]
+        );
+    } catch (e) {
+        console.error('Erro ao adicionar na fila Outbox:', e);
+    }
+};
+
+export const getPendingOutbox = async () => {
+    const res = await executeQuery("SELECT * FROM sync_outbox WHERE status = 'PENDENTE' ORDER BY criado_em ASC LIMIT 50");
+    const outbox = [];
+    for (let i = 0; i < res.rows.length; i++) {
+        outbox.push(res.rows.item(i));
+    }
+    return outbox;
+};
+
+export const markOutboxSuccess = async (uuid) => {
+    await executeQuery("UPDATE sync_outbox SET status = 'CONCLUIDO' WHERE uuid = ?", [uuid]);
+    // Optionally delete it to save space: await executeQuery("DELETE FROM sync_outbox WHERE uuid = ?", [uuid]);
+};
+
+export const incrementOutboxRetry = async (uuid) => {
+    await executeQuery("UPDATE sync_outbox SET tentativas = tentativas + 1 WHERE uuid = ?", [uuid]);
+};
+
+// ----------------------------------------------------
+// OPERAÇÕES DE MÓDULOS AGRÍCOLAS
+// ----------------------------------------------------
 
 export const insertColheita = async (c) => {
     await executeQuery(

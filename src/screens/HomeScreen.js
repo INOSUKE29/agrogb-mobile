@@ -71,7 +71,7 @@ export default function HomeScreen({ navigation }) {
     }
 
     return (
-        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#0B121E' }]}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
             
             <ScrollView 

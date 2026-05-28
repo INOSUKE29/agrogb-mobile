@@ -159,7 +159,7 @@ export default function ClientesScreen({ navigation }) {
     return (
         <View style={[styles.container, { backgroundColor: activeColors.bg || '#F3F4F6' }]}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            <LinearGradient colors={[activeColors.primary || '#10B981', activeColors.primaryDeep || '#064E3B']} style={styles.header}>
+            <LinearGradient colors={isDark ? ['#111827', '#0F172A'] : [activeColors.primary || '#10B981', activeColors.primaryDeep || '#064E3B']} style={styles.header}>
                 <SafeAreaView>
                     <View style={styles.headerTop}>
                         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>

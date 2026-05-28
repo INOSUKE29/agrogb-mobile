@@ -69,7 +69,7 @@ export default function RegisterScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
-            <LinearGradient colors={['#064E3B', '#10B981']} style={styles.header}>
+            <LinearGradient colors={['#0B121E', '#111827']} style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                     <Ionicons name="arrow-back" size={24} color="#FFF" />
                 </TouchableOpacity>
@@ -78,7 +78,7 @@ export default function RegisterScreen({ navigation }) {
             </LinearGradient>
 
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-                <Card style={[styles.card, { backgroundColor: activeColors.card || '#FFF' }]}>
+                <LinearGradient colors={['#1F2937', '#111827']} style={styles.card}>
                     <View style={styles.sectionHeader}>
                         <Ionicons name="mail-outline" size={20} color="#10B981" />
                         <Text style={styles.sectionTitle}>CREDENCIAS DE ENTRADA</Text>
@@ -139,7 +139,7 @@ export default function RegisterScreen({ navigation }) {
                     <TouchableOpacity style={styles.loginLink} onPress={() => navigation.navigate('Login')}>
                         <Text style={styles.loginLinkText}>Já tem uma conta? <Text style={{ fontWeight: '900', color: '#10B981' }}>Fazer Login</Text></Text>
                     </TouchableOpacity>
-                </Card>
+                </LinearGradient>
             </ScrollView>
 
             <FriendlyModal
@@ -160,20 +160,20 @@ export default function RegisterScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F3F4F6' },
-    header: { paddingTop: 60, paddingBottom: 40, paddingHorizontal: 25, borderBottomLeftRadius: 40, borderBottomRightRadius: 40 },
+    container: { flex: 1, backgroundColor: '#0B121E' },
+    header: { paddingTop: 60, paddingBottom: 60, paddingHorizontal: 25, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
     backBtn: { marginBottom: 20 },
     title: { color: '#FFF', fontSize: 20, fontWeight: '900', letterSpacing: 2 },
-    subtitle: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 5, fontWeight: '600' },
+    subtitle: { color: 'rgba(255,255,255,0.6)', fontSize: 13, marginTop: 5, fontWeight: '600' },
     scroll: { padding: 20, paddingBottom: 100 },
-    card: { padding: 25, marginTop: -30, borderRadius: 30 },
+    card: { padding: 25, marginTop: -30, borderRadius: 30, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
     sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 15, marginBottom: 15 },
-    sectionTitle: { fontSize: 10, fontWeight: '900', color: '#6B7280', letterSpacing: 1.5 },
-    strengthContainer: { height: 4, backgroundColor: '#E5E7EB', borderRadius: 2, marginBottom: 5, marginTop: -10 },
+    sectionTitle: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1.5 },
+    strengthContainer: { height: 4, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 2, marginBottom: 5, marginTop: -10 },
     strengthBar: { height: '100%', borderRadius: 2 },
-    passwordHint: { fontSize: 10, color: '#9CA3AF', marginBottom: 15, fontStyle: 'italic' },
+    passwordHint: { fontSize: 10, color: '#6B7280', marginBottom: 15, fontStyle: 'italic' },
     termsRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 25 },
-    termsText: { marginLeft: 10, fontSize: 12, color: '#6B7280', fontWeight: '600', flex: 1 },
+    termsText: { marginLeft: 10, fontSize: 12, color: '#9CA3AF', fontWeight: '600', flex: 1 },
     loginLink: { alignSelf: 'center', marginTop: 20, padding: 10 },
-    loginLinkText: { fontSize: 14, color: '#4B5563', fontWeight: '600' }
+    loginLinkText: { fontSize: 14, color: '#9CA3AF', fontWeight: '600' }
 });

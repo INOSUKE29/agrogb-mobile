@@ -50,7 +50,6 @@ import SyncScreen from './src/screens/SyncScreen';
 import ComprasScreen from './src/screens/ComprasScreen';
 import PlantioScreen from './src/screens/PlantioScreen';
 import CustosScreen from './src/screens/CustosScreen';
-import ProcessamentoScreen from './src/screens/ProcessamentoScreen';
 import RelatoriosScreen from './src/screens/RelatoriosScreen';
 import MonitoramentoScreen from './src/screens/MonitoramentoScreen';
 import CadastroScreen from './src/screens/CadastroScreen';
@@ -69,20 +68,11 @@ import AdubacaoListScreen from './src/screens/AdubacaoListScreen';
 import AdubacaoFormScreen from './src/screens/AdubacaoFormScreen';
 import AdubacaoDetailScreen from './src/screens/AdubacaoDetailScreen';
 import ClienteFormScreen from './src/screens/ClienteFormScreen';
-import CadastroFormScreen from './src/screens/CadastroFormScreen';
-import MenuCadastrosScreen from './src/screens/MenuCadastrosScreen';
-import MenuOperacionalScreen from './src/screens/MenuOperacionalScreen';
-import MenuFinanceiroScreen from './src/screens/MenuFinanceiroScreen';
-import MenuAdubacaoScreen from './src/screens/MenuAdubacaoScreen';
-import MenuSistemaScreen from './src/screens/MenuSistemaScreen';
 import EncomendasScreen from './src/screens/EncomendasScreen';
 import NovaEncomendaScreen from './src/screens/NovaEncomendaScreen';
 import GraficosScreen from './src/screens/GraficosScreen';
 import IntelligenceScreen from './src/screens/IntelligenceScreen';
-import CategoriasDespesaScreen from './src/screens/CategoriasDespesaScreen';
 import FinancialAccountsScreen from './src/screens/FinancialAccountsScreen';
-import ApplicationFormScreen from './src/screens/ApplicationFormScreen';
-import ConfigScreen from './src/screens/ConfigScreen';
 import FertilizationScreen from './src/screens/FertilizationScreen';
 import PlanoAdubacaoScreen from './src/screens/PlanoAdubacaoScreen';
 import RecipeFormScreen from './src/screens/RecipeFormScreen';
@@ -205,7 +195,6 @@ function AppInner() {
                         <Stack.Screen name="Compras" component={ComprasScreen} />
                         <Stack.Screen name="Plantio" component={PlantioScreen} />
                         <Stack.Screen name="Custos" component={CustosScreen} />
-                        <Stack.Screen name="Processamento" component={ProcessamentoScreen} />
                         <Stack.Screen name="Cadastro" component={CadastroScreen} />
                         <Stack.Screen name="Clientes" component={ClientesScreen} />
                         <Stack.Screen name="Culturas" component={CulturasScreen} />
@@ -224,20 +213,11 @@ function AppInner() {
                         <Stack.Screen name="AdubacaoForm" component={AdubacaoFormScreen} />
                         <Stack.Screen name="AdubacaoDetail" component={AdubacaoDetailScreen} />
                         <Stack.Screen name="ClienteForm" component={ClienteFormScreen} />
-                        <Stack.Screen name="CadastroForm" component={CadastroFormScreen} />
-                        <Stack.Screen name="MenuCadastros" component={MenuCadastrosScreen} />
-                        <Stack.Screen name="MenuOperacional" component={MenuOperacionalScreen} />
-                        <Stack.Screen name="MenuFinanceiro" component={MenuFinanceiroScreen} />
-                        <Stack.Screen name="MenuAdubacao" component={MenuAdubacaoScreen} />
-                        <Stack.Screen name="MenuSistema" component={MenuSistemaScreen} />
                         <Stack.Screen name="Encomendas" component={EncomendasScreen} />
                         <Stack.Screen name="NovaEncomenda" component={NovaEncomendaScreen} />
                         <Stack.Screen name="Graficos" component={GraficosScreen} />
                         <Stack.Screen name="Intelligence" component={IntelligenceScreen} />
-                        <Stack.Screen name="CategoriasDespesa" component={CategoriasDespesaScreen} />
                         <Stack.Screen name="FinancialAccounts" component={FinancialAccountsScreen} />
-                        <Stack.Screen name="ApplicationForm" component={ApplicationFormScreen} />
-                        <Stack.Screen name="Config" component={ConfigScreen} />
                         <Stack.Screen name="Fertilization" component={FertilizationScreen} />
                         <Stack.Screen name="PlanoAdubacao" component={PlanoAdubacaoScreen} />
                         <Stack.Screen name="RecipeForm" component={RecipeFormScreen} />

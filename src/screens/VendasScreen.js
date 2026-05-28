@@ -116,11 +116,11 @@ export default function VendasScreen({ navigation }) {
         ]);
     };
 
-    const isDark = theme?.theme_mode === 'dark';
-    const textColor = activeColors.text || '#1E293B';
-    const textMutedColor = activeColors.textMuted || '#64748B';
-    const cardBg = activeColors.card || '#FFFFFF';
-    const borderCol = activeColors.border || 'rgba(0,0,0,0.1)';
+    const isDark = true;
+    const textColor = '#FFF';
+    const textMutedColor = '#9CA3AF';
+    const cardBg = '#1F2937';
+    const borderCol = 'rgba(255,255,255,0.05)';
 
     if (loading) {
         return (
@@ -131,9 +131,9 @@ export default function VendasScreen({ navigation }) {
     }
 
     return (
-        <View style={[styles.container, { backgroundColor: activeColors.bg || '#F3F4F6' }]}>
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#0B121E' }]}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            <LinearGradient colors={[activeColors.primary || '#10B981', activeColors.primaryDeep || '#059669']} style={styles.header}>
+            <LinearGradient colors={['#111827', '#0F172A']} style={styles.header}>
                 <SafeAreaView>
                     <View style={styles.headerTop}>
                         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
@@ -163,7 +163,7 @@ export default function VendasScreen({ navigation }) {
             </LinearGradient>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-                <Card style={styles.formCard}>
+                <LinearGradient colors={['#1F2937', '#111827']} style={styles.formCard}>
                     <Text style={[styles.sectionTitle, { color: textMutedColor }]}>{editingUuid ? 'EDITAR REGISTRO' : 'NOVA VENDA'}</Text>
                     
                                         <SmartAutocomplete
@@ -234,11 +234,11 @@ export default function VendasScreen({ navigation }) {
                         onPress={salvar}
                         variant={editingUuid ? 'secondary' : 'primary'}
                     />
-                </Card>
+                </LinearGradient>
 
                 <Text style={[styles.historyTitle, { color: textColor }]}>HISTÓRICO RECENTE</Text>
                 {history.map(item => (
-                    <Card key={item.uuid} style={styles.historyCard} noPadding>
+                    <LinearGradient colors={['#1F2937', '#111827']} key={item.uuid} style={styles.historyCard}>
                         <View style={styles.historyContent}>
                             <View style={[styles.historyIcon, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#F9FAFB' }]}>
                                 <Ionicons name="receipt" size={20} color={activeColors.primary || '#10B981'} />
@@ -257,7 +257,7 @@ export default function VendasScreen({ navigation }) {
                                 </TouchableOpacity>
                             </View>
                         </View>
-                    </Card>
+                    </LinearGradient>
                 ))}
             </ScrollView>
 
@@ -283,10 +283,10 @@ const styles = StyleSheet.create({
     summaryRow: { flexDirection: 'row', gap: 10 },
     summaryCard: { flex: 1, height: 90, marginHorizontal: 0 },
     sectionTitle: { fontSize: 10, fontWeight: '900', letterSpacing: 1, marginBottom: 15 },
-    formCard: { padding: 20 },
+    formCard: { padding: 20, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
     row: { flexDirection: 'row' },
     historyTitle: { fontSize: 12, fontWeight: '900', letterSpacing: 1, marginTop: 25, marginBottom: 15, marginLeft: 5 },
-    historyCard: { marginBottom: 12 },
+    historyCard: { marginBottom: 12, borderRadius: 15, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
     historyContent: { flexDirection: 'row', alignItems: 'center', padding: 15 },
     historyIcon: { width: 40, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
     hProd: { fontSize: 14, fontWeight: 'bold' },

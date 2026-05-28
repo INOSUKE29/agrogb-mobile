@@ -131,16 +131,16 @@ export default function ComprasScreen({ navigation }) {
         ]);
     };
 
-    const isDark = theme?.theme_mode === 'dark';
-    const textColor = activeColors.text || '#1E293B';
-    const textMutedColor = activeColors.textMuted || '#64748B';
-    const cardBg = activeColors.card || '#FFFFFF';
-    const borderCol = activeColors.border || 'rgba(0,0,0,0.1)';
+    const isDark = true;
+    const textColor = '#FFF';
+    const textMutedColor = '#9CA3AF';
+    const cardBg = '#1F2937';
+    const borderCol = 'rgba(255,255,255,0.05)';
 
     return (
-        <View style={[styles.container, { backgroundColor: activeColors.bg || '#F3F4F6' }]}>
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#0B121E' }]}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            <LinearGradient colors={[activeColors.primary || '#10B981', activeColors.primaryDeep || '#059669']} style={styles.header}>
+            <LinearGradient colors={['#111827', '#0F172A']} style={styles.header}>
                 <SafeAreaView>
                     <View style={styles.headerTop}>
                         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
@@ -155,7 +155,7 @@ export default function ComprasScreen({ navigation }) {
 
             <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 50 }}>
                 <View style={styles.content}>
-                    <Card style={styles.formCard}>
+                    <LinearGradient colors={['#1F2937', '#111827']} style={styles.formCard}>
                         <TouchableOpacity 
                             style={[
                                 styles.cameraBtn, 
@@ -229,32 +229,34 @@ export default function ComprasScreen({ navigation }) {
                                 />
                             )}
                         </View>
-                    </Card>
+                    </LinearGradient>
 
                     <Text style={[styles.histTitle, { color: textColor }]}>ENTRADAS RECENTES</Text>
                     {history.map(rec => (
-                        <Card key={rec.uuid} style={styles.histCard} noPadding onPress={() => handleEdit(rec)}>
-                            <View style={styles.histInner}>
-                                <View style={{ flex: 1 }}>
-                                    <View style={styles.histHeader}>
-                                        <Text style={[styles.hProd, { color: textColor }]}>{rec.item}</Text>
-                                        <Text style={[styles.hDate, { color: textMutedColor }]}>{new Date(rec.data).toLocaleDateString('pt-BR').slice(0, 5)}</Text>
+                        <TouchableOpacity key={rec.uuid} activeOpacity={0.8} onPress={() => handleEdit(rec)}>
+                            <LinearGradient colors={['#1F2937', '#111827']} style={styles.histCard}>
+                                <View style={styles.histInner}>
+                                    <View style={{ flex: 1 }}>
+                                        <View style={styles.histHeader}>
+                                            <Text style={[styles.hProd, { color: textColor }]}>{rec.item}</Text>
+                                            <Text style={[styles.hDate, { color: textMutedColor }]}>{new Date(rec.data).toLocaleDateString('pt-BR').slice(0, 5)}</Text>
+                                        </View>
+                                        <Text style={[styles.hCultura, { color: textMutedColor }]}>{rec.cultura || 'GERAL'}</Text>
+                                        <View style={[styles.valBadge, { backgroundColor: isDark ? 'rgba(16,185,129,0.15)' : '#F0FDF4' }]}>
+                                            <Text style={[styles.hVal, { color: activeColors.primary || '#10B981' }]}>{rec.quantidade} UN • R$ {rec.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</Text>
+                                        </View>
                                     </View>
-                                    <Text style={[styles.hCultura, { color: textMutedColor }]}>{rec.cultura || 'GERAL'}</Text>
-                                    <View style={[styles.valBadge, { backgroundColor: isDark ? 'rgba(16,185,129,0.15)' : '#F0FDF4' }]}>
-                                        <Text style={[styles.hVal, { color: activeColors.primary || '#10B981' }]}>{rec.quantidade} UN • R$ {rec.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</Text>
+                                    <View style={styles.histActions}>
+                                        <TouchableOpacity 
+                                            onPress={() => handleDelete(rec)} 
+                                            style={[styles.delBtn, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2' }]}
+                                        >
+                                            <Ionicons name="trash-outline" size={18} color={activeColors.error || '#EF4444'} />
+                                        </TouchableOpacity>
                                     </View>
                                 </View>
-                                <View style={styles.histActions}>
-                                    <TouchableOpacity 
-                                        onPress={() => handleDelete(rec)} 
-                                        style={[styles.delBtn, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2' }]}
-                                    >
-                                        <Ionicons name="trash-outline" size={18} color={activeColors.error || '#EF4444'} />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        </Card>
+                            </LinearGradient>
+                        </TouchableOpacity>
                     ))}
                 </View>
             </ScrollView>
@@ -280,7 +282,7 @@ const styles = StyleSheet.create({
     },
     scroll: { flex: 1 },
     content: { padding: 20 },
-    formCard: { padding: 20, marginBottom: 25 },
+    formCard: { padding: 20, marginBottom: 25, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
     cameraBtn: { flexDirection: 'row', padding: 12, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginBottom: 20, borderStyle: 'dashed', borderWidth: 1 },
     cameraBtnText: { fontWeight: '800', marginLeft: 8, fontSize: 11, letterSpacing: 0.5 },
     field: { marginBottom: 15 },
@@ -290,7 +292,7 @@ const styles = StyleSheet.create({
     row: { flexDirection: 'row' },
     actionRow: { flexDirection: 'row', marginTop: 15 },
     histTitle: { fontSize: 10, fontWeight: '900', marginBottom: 15, letterSpacing: 1.5 },
-    histCard: { marginBottom: 12 },
+    histCard: { marginBottom: 12, borderRadius: 15, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
     histInner: { padding: 15, flexDirection: 'row', alignItems: 'center' },
     histHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     hProd: { fontSize: 15, fontWeight: '800', flex: 1 },

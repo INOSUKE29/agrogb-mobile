@@ -24,39 +24,48 @@ export const getSupabase = () => {
     return supabaseInstance;
 };
 
-// Sincronização Bidirecional
-export const syncTable = async (tableName) => {
+// Sincronização Bidirecional via Outbox
+export const processOutbox = async () => {
     const supabase = getSupabase();
+    
+    // Pega itens da fila de postagem cronologicamente (limite de batching para não estourar)
+    const outboxRes = await executeQuery("SELECT * FROM sync_outbox WHERE status = 'PENDENTE' ORDER BY criado_em ASC LIMIT 50");
+    const outbox = [];
+    for (let i = 0; i < outboxRes.rows.length; i++) outbox.push(outboxRes.rows.item(i));
 
-    // 1. PUSH: Envia dados locais pendentes (sync_status = 0)
-    try {
-        const res = await executeQuery(`SELECT * FROM ${tableName} WHERE sync_status = 0`);
-        const rows = [];
-        for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
+    if (outbox.length === 0) return;
 
-        if (rows.length > 0) {
-            // Remove campos locais antes de enviar (id, sync_status)
-            const cleanRows = rows.map(r => {
-                const { id, sync_status, ...rest } = r;
-                return rest;
-            });
+    for (const item of outbox) {
+        try {
+            // Busca o payload mais atual direto da tabela afetada usando o UUID do evento
+            const resData = await executeQuery(`SELECT * FROM ${item.tabela} WHERE uuid = ?`, [item.registro_uuid]);
+            if (resData.rows.length > 0) {
+                const row = resData.rows.item(0);
+                const { id, sync_status, ...cleanRow } = row;
 
-            try {
-                const { error } = await supabase.from(tableName).upsert(cleanRows, { onConflict: 'uuid' });
+                const { error } = await supabase.from(item.tabela).upsert([cleanRow], { onConflict: 'uuid' });
 
                 if (!error) {
-                    // Marca como sincronizado localmente
-                    for (const row of rows) {
-                        await executeQuery(`UPDATE ${tableName} SET sync_status = 1 WHERE uuid = ?`, [row.uuid]);
-                    }
+                    await executeQuery(`UPDATE sync_outbox SET status = 'CONCLUIDO' WHERE uuid = ?`, [item.uuid]);
+                    await executeQuery(`UPDATE ${item.tabela} SET sync_status = 1 WHERE uuid = ?`, [item.registro_uuid]);
                 } else {
-                    console.log(`⚠️ Aviso envio ${tableName} (PostgREST Error):`, error);
+                    console.log(`⚠️ Aviso Fila (PostgREST Error):`, error);
+                    await executeQuery("UPDATE sync_outbox SET tentativas = tentativas + 1 WHERE uuid = ?", [item.uuid]);
                 }
-            } catch (netErr) {
-                console.log(`📡 Falha de Rede no Envio de ${tableName}:`, netErr.message || netErr);
+            } else {
+                // Registro não existe mais (pode ter sido hard deleted antes do envio).
+                // Como usamos soft delete (is_deleted = 1), isso não deve ocorrer, mas limpamos o outbox por precaução.
+                await executeQuery(`UPDATE sync_outbox SET status = 'CANCELADO_ORFÃO' WHERE uuid = ?`, [item.uuid]);
             }
+        } catch (netErr) {
+            console.log(`📡 Falha de Rede na Fila:`, netErr.message || netErr);
+            break; // Se falhou a rede, pausa o processamento da fila para respeitar ordem
         }
-    } catch (e) { console.log(`⚠️ Aviso local ${tableName}:`, e.message || e); }
+    }
+};
+
+export const syncTable = async (tableName) => {
+    const supabase = getSupabase();
 
     // 2. PULL: Baixa dados novos da nuvem
     try {

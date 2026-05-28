@@ -174,9 +174,9 @@ export default function AdubacaoFormScreen({ route, navigation }) {
     return (
         <KeyboardAvoidingView 
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-            style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}
+            style={[styles.container, { backgroundColor: theme?.colors?.bg || '#0B121E' }]}
         >
-            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
+            <LinearGradient colors={['#111827', '#0F172A']} style={styles.header}>
                 <View style={styles.headerTop}>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Ionicons name="arrow-back" size={24} color="#FFF" />
@@ -188,7 +188,7 @@ export default function AdubacaoFormScreen({ route, navigation }) {
             </LinearGradient>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <Card style={styles.formCard}>
+                <LinearGradient colors={['#1F2937', '#111827']} style={styles.formCard}>
                     <AgroInput 
                         label="NOME DO PLANO" 
                         value={nome} 
@@ -243,7 +243,7 @@ export default function AdubacaoFormScreen({ route, navigation }) {
                             <Text style={[styles.pillText, tipo === 'PULVERIZACAO' && { color: theme?.colors?.primary }]}>🌫️ PULVERIZAÇÃO</Text>
                         </TouchableOpacity>
                     </View>
-                </Card>
+                </LinearGradient>
 
                 {/* CARRINHO DE INSUMOS DO ESTOQUE (INTEGRAÇÃO COMPLETA) */}
                 <View style={styles.section}>
@@ -258,7 +258,7 @@ export default function AdubacaoFormScreen({ route, navigation }) {
                         </TouchableOpacity>
                     </View>
 
-                    <Card noPadding>
+                    <LinearGradient colors={['#1F2937', '#111827']} style={styles.recipeCard}>
                         {itensAdicao.length === 0 ? (
                             <View style={{ padding: 25, alignItems: 'center' }}>
                                 <MaterialCommunityIcons name="flask-empty-outline" size={32} color="#9CA3AF" />
@@ -285,12 +285,12 @@ export default function AdubacaoFormScreen({ route, navigation }) {
                                 </View>
                             ))
                         )}
-                    </Card>
+                    </LinearGradient>
                 </View>
 
                 <View style={styles.section}>
                     <Text style={styles.sectionLabel}>RECEITA TÉCNICA / INSTRUÇÕES ADICIONAIS</Text>
-                    <Card noPadding>
+                    <LinearGradient colors={['#1F2937', '#111827']} style={styles.recipeCard}>
                         <AgroInput
                             value={descricao}
                             onChangeText={setDescricao}
@@ -298,7 +298,7 @@ export default function AdubacaoFormScreen({ route, navigation }) {
                             placeholder="Descreva aqui orientações, velocidade do trator, clima ou observações gerais..."
                             multiline={true}
                         />
-                    </Card>
+                    </LinearGradient>
                 </View>
 
                 <View style={styles.section}>
@@ -398,8 +398,8 @@ const styles = StyleSheet.create({
     row: { flexDirection: 'row' },
     label: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', marginBottom: 10, marginTop: 10, letterSpacing: 1 },
     pillContainer: { flexDirection: 'row', gap: 10, marginTop: 5 },
-    pill: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', alignItems: 'center' },
-    pillText: { fontWeight: '900', color: '#6B7280', fontSize: 11 },
+    pill: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center' },
+    pillText: { fontWeight: '900', color: '#9CA3AF', fontSize: 11 },
     section: { marginBottom: 25 },
     sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
     sectionLabel: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1 },
@@ -407,11 +407,12 @@ const styles = StyleSheet.create({
     btnAddText: { fontSize: 11, fontWeight: '900' },
     
     // Insumo item list in form
+    recipeCard: { borderRadius: 15, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', overflow: 'hidden' },
     insumoRow: { flexDirection: 'row', alignItems: 'center', padding: 16 },
-    borderBottom: { borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
-    insumoIconBox: { width: 34, height: 34, borderRadius: 10, backgroundColor: '#F0FDF4', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-    insumoName: { color: '#1F2937', fontSize: 14, fontWeight: '700' },
-    insumoQty: { color: '#6B7280', fontSize: 12, fontWeight: '600', marginTop: 2 },
+    borderBottom: { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+    insumoIconBox: { width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(16,185,129,0.15)', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    insumoName: { color: '#FFF', fontSize: 14, fontWeight: '700' },
+    insumoQty: { color: '#9CA3AF', fontSize: 12, fontWeight: '600', marginTop: 2 },
     btnRemove: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
 
     textArea: { height: 120, textAlignVertical: 'top', borderBottomWidth: 0 },
@@ -424,18 +425,18 @@ const styles = StyleSheet.create({
     removeBtn: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(239, 68, 68, 0.8)', padding: 8, borderRadius: 10 },
 
     // Modal Styles
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 20 },
-    modalSheet: { backgroundColor: '#FFF', borderRadius: 24, padding: 25, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 15, elevation: 10 },
-    modalTitle: { fontSize: 15, fontWeight: '900', color: '#1F2937', textAlign: 'center', marginBottom: 20, letterSpacing: 0.5 },
-    modalEmpty: { color: '#6B7280', textAlign: 'center', paddingVertical: 20, fontStyle: 'italic', fontSize: 13 },
-    stockCard: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 12, backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 10 },
-    stockCardActive: { borderColor: '#10B981', backgroundColor: '#F0FDF4' },
-    stockCardName: { fontSize: 14, fontWeight: '700', color: '#374151' },
-    stockCardQty: { fontSize: 11, color: '#6B7280', marginTop: 2, fontWeight: '600' },
-    qtyBox: { marginTop: 15, paddingTop: 15, borderTopWidth: 1, borderTopColor: '#E5E7EB' },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 20 },
+    modalSheet: { backgroundColor: '#1F2937', borderRadius: 24, padding: 25, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 15, elevation: 10 },
+    modalTitle: { fontSize: 15, fontWeight: '900', color: '#FFF', textAlign: 'center', marginBottom: 20, letterSpacing: 0.5 },
+    modalEmpty: { color: '#9CA3AF', textAlign: 'center', paddingVertical: 20, fontStyle: 'italic', fontSize: 13 },
+    stockCard: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', marginBottom: 10 },
+    stockCardActive: { borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)' },
+    stockCardName: { fontSize: 14, fontWeight: '700', color: '#E5E7EB' },
+    stockCardQty: { fontSize: 11, color: '#9CA3AF', marginTop: 2, fontWeight: '600' },
+    qtyBox: { marginTop: 15, paddingTop: 15, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' },
     qtyLabel: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', marginBottom: 8, letterSpacing: 1 },
-    qtyInputContainer: { backgroundColor: '#F9FAFB', borderRadius: 12, height: 50, justifyContent: 'center', borderWidth: 1, borderColor: '#E5E7EB', paddingHorizontal: 15 },
-    qtyInput: { fontSize: 16, fontWeight: '700', color: '#1F2937' },
+    qtyInputContainer: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, height: 50, justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 15 },
+    qtyInput: { fontSize: 16, fontWeight: '700', color: '#FFF' },
     btnConfirmAdd: { backgroundColor: '#10B981', height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginTop: 15 },
     btnConfirmAddText: { color: '#FFF', fontSize: 12, fontWeight: '900', letterSpacing: 1 }
 });
