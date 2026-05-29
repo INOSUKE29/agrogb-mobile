@@ -74,7 +74,8 @@
     "react-native-view-shot": "3.8.0",
     "react-native-web": "~0.19.6",
     "typescript": "^5.3.0",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@babel/core": "^7.23.0",
