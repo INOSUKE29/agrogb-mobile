@@ -48,6 +48,7 @@ const MARKET_STANDARDS = [
 
 export default function CadastroScreen({ navigation }) {
     const { theme } = useTheme();
+    const isDark = theme?.theme_mode === 'dark';
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -152,7 +153,7 @@ export default function CadastroScreen({ navigation }) {
 
     return (
         <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
-            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
+            <LinearGradient colors={isDark ? ['#111827', '#0F172A'] : [theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
                 <View style={styles.headerTop}>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Ionicons name="arrow-back" size={24} color="#FFF" />

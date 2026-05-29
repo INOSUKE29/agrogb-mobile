@@ -17,6 +17,7 @@ const { width } = Dimensions.get('window');
 
 export default function ProfileScreen({ navigation }) {
     const { theme } = useTheme();
+    const isDark = theme?.theme_mode === 'dark';
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -137,7 +138,7 @@ export default function ProfileScreen({ navigation }) {
 
     return (
         <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
-            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#064E3B']} style={styles.header}>
+            <LinearGradient colors={isDark ? ['#111827', '#0F172A'] : [theme?.colors?.primary || '#10B981', '#064E3B']} style={styles.header}>
                 <View style={styles.headerTop}>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Ionicons name="arrow-back" size={24} color="#FFF" />

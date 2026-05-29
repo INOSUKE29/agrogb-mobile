@@ -432,7 +432,7 @@ export default function SettingsScreen({ navigation }) {
     return (
         <AppContainer>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            <LinearGradient colors={['#030712', '#060B18', '#020617']} style={StyleSheet.absoluteFill} />
+            <LinearGradient colors={['#111827', '#0F172A']} style={StyleSheet.absoluteFill} />
             
             {/* 🌀 AMBIENT ORBS */}
             <View style={[styles.ambientOrb, { top: -80, right: -40, backgroundColor: '#10B981', opacity: 0.06 }]} />
@@ -700,7 +700,7 @@ const styles = StyleSheet.create({
     profileCard: {
         borderRadius: 28, marginBottom: 26, overflow: 'hidden',
         borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
-        backgroundColor: 'rgba(15, 23, 42, 0.4)',
+        backgroundColor: 'rgba(31, 41, 55, 0.4)',
     },
     profileContent: { flexDirection: 'row', alignItems: 'center', padding: 20 },
     avatarWrapper: {
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
     groupCard: {
         borderRadius: 24, overflow: 'hidden',
         borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
-        backgroundColor: 'rgba(30, 41, 59, 0.3)',
+        backgroundColor: 'rgba(31, 41, 55, 0.3)',
     },
 
     // Items

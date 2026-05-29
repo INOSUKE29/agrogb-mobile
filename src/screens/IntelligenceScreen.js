@@ -104,7 +104,7 @@ export default function IntelligenceScreen({ navigation }) {
 
     const renderHeader = () => (
         <LinearGradient 
-            colors={[activeColors.primary || '#10B981', activeColors.primaryDeep || '#064E3B']} 
+            colors={isDark ? ['#111827', '#0F172A'] : [activeColors.primary || '#10B981', activeColors.primaryDeep || '#064E3B']} 
             style={styles.header}
         >
             <View style={styles.headerTop}>
@@ -298,10 +298,10 @@ const styles = StyleSheet.create({
 
     // Consultor CSS
     phaseSelector: { flexDirection: 'row', gap: 8, marginBottom: 10 },
-    phaseBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: '#E5E7EB', alignItems: 'center' },
-    phaseBtnText: { fontSize: 10, fontWeight: '900', color: '#4B5563' },
+    phaseBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    phaseBtnText: { fontSize: 10, fontWeight: '900', color: '#9CA3AF' },
     recTitle: { fontSize: 15, fontWeight: '900', marginBottom: 12 },
     recLabel: { fontSize: 9, fontWeight: '900', letterSpacing: 1, marginBottom: 4 },
     recDesc: { fontSize: 13, lineHeight: 18, marginBottom: 15 },
-    recItemBox: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#F3F4F6', padding: 12, borderRadius: 12, marginTop: 10 }
+    recItemBox: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: 'rgba(255,255,255,0.05)', padding: 12, borderRadius: 12, marginTop: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }
 });

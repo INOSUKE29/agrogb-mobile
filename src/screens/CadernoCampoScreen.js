@@ -12,6 +12,7 @@ import AgroInput from '../components/common/AgroInput';
 
 export default function CadernoCampoScreen({ navigation }) {
     const { theme } = useTheme();
+    const isDark = theme?.theme_mode === 'dark';
     const activeColors = theme?.colors || {};
     const [timeline, setTimeline] = useState([]);
 
@@ -95,7 +96,7 @@ export default function CadernoCampoScreen({ navigation }) {
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* CABEÇALHO GLASSMORPHISM */}
-            <LinearGradient colors={['#111827', '#0F172A']} style={styles.header}>
+            <LinearGradient colors={isDark ? ['#111827', '#0F172A'] : [activeColors.primary || '#10B981', '#059669']} style={styles.header}>
                 <SafeAreaView>
                     <View style={styles.headerTop}>
                         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -142,17 +143,17 @@ export default function CadernoCampoScreen({ navigation }) {
                                     <View style={styles.timelineContent}>
                                         <Text style={styles.dateText}>{formattedDate}</Text>
                                         <LinearGradient 
-                                            colors={['#1F2937', '#111827']} 
-                                            style={[styles.itemCard, { borderLeftColor: iconConfig.color }]}
+                                            colors={isDark ? ['#1F2937', '#111827'] : ['#FFFFFF', '#F9FAFB']} 
+                                            style={[styles.itemCard, { borderLeftColor: iconConfig.color, borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}
                                         >
                                             <View style={styles.cardHeader}>
                                                 <Text style={[styles.tipoBadge, { color: iconConfig.color }]}>{item.tipo}</Text>
                                             </View>
-                                            <Text style={styles.descText}>{item.descricao}</Text>
+                                            <Text style={[styles.descText, !isDark && { color: '#1F2937' }]}>{item.descricao}</Text>
                                             {item.observacao && (
-                                                <View style={styles.obsBox}>
+                                                <View style={[styles.obsBox, !isDark && { backgroundColor: '#F3F4F6' }]}>
                                                     <Ionicons name="chatbubble-ellipses-outline" size={14} color="#6B7280" style={{marginRight: 6, marginTop: 2}} />
-                                                    <Text style={styles.obsText} selectable>{item.observacao}</Text>
+                                                    <Text style={[styles.obsText, !isDark && { color: '#4B5563' }]} selectable>{item.observacao}</Text>
                                                 </View>
                                             )}
                                         </LinearGradient>
@@ -170,12 +171,12 @@ export default function CadernoCampoScreen({ navigation }) {
                 </LinearGradient>
             </TouchableOpacity>
 
-            {/* MODAL DE NOVA ANOTAÇÃO DARK */}
+            {/* MODAL DE NOVA ANOTAÇÃO */}
             <Modal visible={modalVisible} transparent animationType="slide">
                 <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.overlay}>
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, !isDark && { backgroundColor: '#FFFFFF' }]}>
                         <View style={styles.modalHeaderRow}>
-                            <Text style={styles.modalTitle}>NOVA ANOTAÇÃO</Text>
+                            <Text style={[styles.modalTitle, !isDark && { color: '#1F2937' }]}>NOVA ANOTAÇÃO</Text>
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
                                 <Ionicons name="close-circle" size={30} color="#4B5563" />
                             </TouchableOpacity>

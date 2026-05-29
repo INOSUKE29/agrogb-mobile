@@ -310,7 +310,7 @@ export default function MonitoramentoScreen({ navigation }) {
 
     const renderHeader = () => (
         <LinearGradient 
-            colors={[activeColors.primary || '#10B981', activeColors.primaryDeep || '#064E3B']} 
+            colors={isDark ? ['#111827', '#0F172A'] : [activeColors.primary || '#10B981', activeColors.primaryDeep || '#064E3B']} 
             style={styles.header}
         >
             <View style={styles.headerTop}>
@@ -575,14 +575,14 @@ export default function MonitoramentoScreen({ navigation }) {
                     </Text>
                     
                     {selectedItem.classificacao_principal && (
-                        <View style={{ backgroundColor: '#F3F4F6', padding: 15, borderRadius: 12, marginTop: 10 }}>
+                        <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F3F4F6', padding: 15, borderRadius: 12, marginTop: 10 }}>
                             <Text style={{ fontSize: 10, fontWeight: '900', color: '#4F46E5', letterSpacing: 1, marginBottom: 5 }}>🤖 DIAGNÓSTICO IA</Text>
                             <Text style={{ fontSize: 15, fontWeight: '800', color: textColor }}>{selectedItem.classificacao_principal}</Text>
                             
                             {selectedItem.sugestao_controle && (
                                 <View style={{ marginTop: 15 }}>
-                                    <Text style={{ fontSize: 10, fontWeight: '900', color: '#065F46', letterSpacing: 0.5, marginBottom: 4 }}>RECOMENDAÇÃO TÉCNICA</Text>
-                                    <Text style={{ fontSize: 13, color: '#374151', lineHeight: 18 }}>{selectedItem.sugestao_controle}</Text>
+                                    <Text style={{ fontSize: 10, fontWeight: '900', color: isDark ? '#34D399' : '#065F46', letterSpacing: 0.5, marginBottom: 4 }}>RECOMENDAÇÃO TÉCNICA</Text>
+                                    <Text style={{ fontSize: 13, color: isDark ? '#D1D5DB' : '#374151', lineHeight: 18 }}>{selectedItem.sugestao_controle}</Text>
                                 </View>
                             )}
                         </View>
@@ -590,17 +590,17 @@ export default function MonitoramentoScreen({ navigation }) {
                 </Card>
                 
                 {selectedItem.pdf_uri && (
-                    <Card style={{ marginBottom: 20, backgroundColor: '#ECFDF5', borderColor: '#10B981', borderStyle: 'dashed' }}>
+                    <Card style={{ marginBottom: 20, backgroundColor: isDark ? 'rgba(16, 185, 129, 0.1)' : '#ECFDF5', borderColor: activeColors.primary || '#10B981', borderStyle: 'dashed', borderWidth: 1 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                                <Ionicons name="document-text" size={24} color="#10B981" />
+                                <Ionicons name="document-text" size={24} color={activeColors.primary || '#10B981'} />
                                 <View>
-                                    <Text style={{ fontSize: 13, fontWeight: '800', color: '#065F46' }}>Relatório PDF Gerado</Text>
-                                    <Text style={{ fontSize: 10, color: '#6B7280' }}>Disponível para compartilhar</Text>
+                                    <Text style={{ fontSize: 13, fontWeight: '800', color: isDark ? '#34D399' : '#065F46' }}>Relatório PDF Gerado</Text>
+                                    <Text style={{ fontSize: 10, color: textMutedColor }}>Disponível para compartilhar</Text>
                                 </View>
                             </View>
                             <TouchableOpacity 
-                                style={{ backgroundColor: '#10B981', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}
+                                style={{ backgroundColor: activeColors.primary || '#10B981', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}
                                 onPress={() => handleOpenPDF(selectedItem.pdf_uri)}
                             >
                                 <Text style={{ fontSize: 11, fontWeight: '900', color: '#FFF' }}>ABRIR</Text>
@@ -734,10 +734,10 @@ const styles = StyleSheet.create({
     premiumDateText: { fontSize: 11, fontWeight: '800' },
     premiumCulturaText: { fontSize: 16, fontWeight: '800', marginBottom: 4 },
     premiumDescText: { fontSize: 13, lineHeight: 18, marginBottom: 12 },
-    premiumAiBox: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#EEF2FF', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, alignSelf: 'flex-start', marginBottom: 12 },
-    premiumAiText: { fontSize: 11, fontWeight: '800', color: '#4F46E5', maxWidth: width - 100 },
-    premiumCardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingTop: 10, marginTop: 4 },
+    premiumAiBox: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(79, 70, 229, 0.1)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, alignSelf: 'flex-start', marginBottom: 12 },
+    premiumAiText: { fontSize: 11, fontWeight: '800', color: '#6366f1', maxWidth: width - 100 },
+    premiumCardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: 'rgba(156, 163, 175, 0.2)', paddingTop: 10, marginTop: 4 },
     premiumMediaCount: { fontSize: 11, fontWeight: '700' },
-    premiumPdfBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#E6FDF5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+    premiumPdfBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(16, 185, 129, 0.15)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
     premiumPdfBadgeText: { fontSize: 11, fontWeight: '900' }
 });

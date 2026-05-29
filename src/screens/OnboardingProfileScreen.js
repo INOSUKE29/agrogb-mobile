@@ -12,7 +12,7 @@ import Card from '../components/common/Card';
 import FriendlyModal from '../components/common/FriendlyModal';
 
 const { width } = Dimensions.get('window');
-const RURAL_BG = require('../../assets/login_bg.jpg');
+const RURAL_BG = require('../../assets/farm_bg.png');
 
 export default function OnboardingProfileScreen({ navigation }) {
     const { login } = useAuth();

@@ -176,11 +176,11 @@ export default function BIRelatoriosAvancadosScreen({ navigation }) {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: isDark ? '#0B121E' : '#F3F4F6' }]}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
             
             <LinearGradient 
-                colors={['#0F3D2E', '#1F7A55', '#111827']} 
+                colors={isDark ? ['#111827', '#0F172A'] : [theme?.colors?.primary || '#10B981', '#064E3B']} 
                 style={styles.header}
             >
                 <View style={styles.headerTop}>
@@ -283,7 +283,7 @@ export default function BIRelatoriosAvancadosScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#0B0F19' },
+    container: { flex: 1 },
     header: { paddingTop: 60, paddingBottom: 25, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
     headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
     headerTitle: { fontSize: 18, fontWeight: '900', color: '#FFF', letterSpacing: 2 },

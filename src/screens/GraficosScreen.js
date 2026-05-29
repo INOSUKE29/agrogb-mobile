@@ -191,8 +191,8 @@ export default function GraficosScreen({ navigation }) {
 
     // Chart configs
     const chartConfig = {
-        backgroundGradientFrom: '#243447',
-        backgroundGradientTo: '#243447',
+        backgroundGradientFrom: '#1F2937',
+        backgroundGradientTo: '#111827',
         color: () => `rgba(255, 255, 255, 1)`,
         labelColor: () => `rgba(255, 255, 255, 1)`,
         strokeWidth: 3, 
@@ -203,7 +203,7 @@ export default function GraficosScreen({ navigation }) {
     };
 
     return (
-        <AppContainer style={{ backgroundColor: '#0B1F35' }}>
+        <AppContainer style={{ backgroundColor: '#0B121E' }}>
             <ScreenHeader 
                 title="GRÁFICOS" 
                 subtitle="Análise da produção e financeiro"
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
         paddingBottom: 40
     },
     card: {
-        backgroundColor: '#243447',
+        backgroundColor: '#1E293B',
         borderRadius: 16,
         padding: 16,
         marginBottom: 16,

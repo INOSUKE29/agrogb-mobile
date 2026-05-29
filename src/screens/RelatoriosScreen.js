@@ -18,6 +18,7 @@ const { width } = Dimensions.get('window');
 
 export default function RelatoriosScreen({ navigation }) {
     const { theme } = useTheme();
+    const isDark = theme?.theme_mode === 'dark';
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState({ prod: 0, vendas: 0, custos: 0, perdas: 0 });
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
@@ -67,7 +68,7 @@ export default function RelatoriosScreen({ navigation }) {
 
     return (
         <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
-            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
+            <LinearGradient colors={isDark ? ['#111827', '#0F172A'] : [theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
                 <View style={styles.headerTop}>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Ionicons name="arrow-back" size={24} color="#FFF" />
@@ -242,9 +243,9 @@ const styles = StyleSheet.create({
     sectionLabel: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', marginBottom: 15, letterSpacing: 1 },
     pdfCard: { padding: 20 },
     presetRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-    presetBtn: { flex: 1, paddingVertical: 10, backgroundColor: '#F3F4F6', borderRadius: 10, alignItems: 'center' },
-    presetText: { fontSize: 11, fontWeight: '900', color: '#4B5563' },
+    presetBtn: { flex: 1, paddingVertical: 10, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 10, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    presetText: { fontSize: 11, fontWeight: '900', color: '#9CA3AF' },
     dateGrid: { flexDirection: 'row', gap: 15, marginBottom: 25 },
     inputLabel: { fontSize: 9, fontWeight: '900', color: '#9CA3AF', marginBottom: 8, letterSpacing: 1 },
-    dateInput: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 12, fontSize: 13, fontWeight: 'bold', color: '#1F2937', textAlign: 'center' }
+    dateInput: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#374151', borderRadius: 12, padding: 12, fontSize: 13, fontWeight: 'bold', color: '#9CA3AF', textAlign: 'center' }
 });

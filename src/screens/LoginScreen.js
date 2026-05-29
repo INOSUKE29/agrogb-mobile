@@ -13,7 +13,7 @@ import FriendlyModal from '../components/common/FriendlyModal';
 
 const { width, height } = Dimensions.get('window');
 const LOGO = require('../../assets/icon.png');
-const RURAL_BG = require('../../assets/login_bg.jpg');
+const RURAL_BG = require('../../assets/farm_bg.png');
 const BIO_KEY = 'agrogb_biometric_credentials';
 
 export default function LoginScreen({ navigation }) {

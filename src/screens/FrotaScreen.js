@@ -15,6 +15,7 @@ import AgroInput from '../components/common/AgroInput';
 
 export default function FrotaScreen({ navigation }) {
     const { theme } = useTheme();
+    const isDark = theme?.theme_mode === 'dark';
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -114,7 +115,7 @@ export default function FrotaScreen({ navigation }) {
 
     return (
         <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
-            <LinearGradient colors={[theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
+            <LinearGradient colors={isDark ? ['#111827', '#0F172A'] : [theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
                 <View style={styles.headerTop}>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Ionicons name="arrow-back" size={24} color="#FFF" />
@@ -158,11 +159,11 @@ export default function FrotaScreen({ navigation }) {
                             <Card style={styles.card} noPadding>
                                 <View style={styles.cardContent}>
                                     <View style={styles.cardHeader}>
-                                        <View style={styles.iconBox}>
+                                        <View style={[styles.iconBox, isDark && { backgroundColor: 'rgba(255,255,255,0.05)' }]}>
                                             <Ionicons name={isCar ? "car" : "construct"} size={24} color={theme?.colors?.primary} />
                                         </View>
                                         <View style={{ flex: 1, marginLeft: 12 }}>
-                                            <Text style={styles.cardTitle}>{item.nome}</Text>
+                                            <Text style={[styles.cardTitle, isDark && { color: '#FFF' }]}>{item.nome}</Text>
                                             <Text style={styles.cardSub}>{item.tipo} {item.placa ? `• ${item.placa}` : ''}</Text>
                                         </View>
                                         <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
@@ -172,17 +173,17 @@ export default function FrotaScreen({ navigation }) {
 
                                     <View style={styles.statsRow}>
                                         <View>
-                                            <Text style={styles.statVal}>{item.horimetro_atual.toLocaleString()} <Text style={styles.statUnit}>{unit}</Text></Text>
+                                            <Text style={[styles.statVal, isDark && { color: '#FFF' }]}>{item.horimetro_atual.toLocaleString()} <Text style={styles.statUnit}>{unit}</Text></Text>
                                             <Text style={styles.statLabel}>Atual</Text>
                                         </View>
                                         <View style={{ alignItems: 'flex-end' }}>
-                                            <Text style={styles.statVal}>{item.intervalo_revisao.toLocaleString()} <Text style={styles.statUnit}>{unit}</Text></Text>
+                                            <Text style={[styles.statVal, isDark && { color: '#FFF' }]}>{item.intervalo_revisao.toLocaleString()} <Text style={styles.statUnit}>{unit}</Text></Text>
                                             <Text style={styles.statLabel}>Próx. Revisão</Text>
                                         </View>
                                     </View>
 
                                     <View style={styles.progressContainer}>
-                                        <View style={styles.progressBar}>
+                                        <View style={[styles.progressBar, isDark && { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
                                             <View style={[styles.progressFill, { width: `${pct * 100}%`, backgroundColor: st.bar }]} />
                                         </View>
                                         <Text style={[styles.remainText, { color: st.text }]}>
@@ -202,7 +203,7 @@ export default function FrotaScreen({ navigation }) {
                                             onPress={() => { setSelectedId(item.uuid); setServiceModalVisible(true); }}
                                             style={{ flex: 1, height: 40 }}
                                         />
-                                        <TouchableOpacity style={styles.deleteBtn} onPress={() => deleteItem(item.uuid)}>
+                                        <TouchableOpacity style={[styles.deleteBtn, isDark && { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]} onPress={() => deleteItem(item.uuid)}>
                                             <Ionicons name="trash-outline" size={20} color="#EF4444" />
                                         </TouchableOpacity>
                                     </View>
@@ -218,16 +219,16 @@ export default function FrotaScreen({ navigation }) {
             {/* MODAL NOVOS */}
             <Modal visible={modalVisible} transparent animationType="slide">
                 <View style={styles.overlay}>
-                    <Card style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>NOVO VEÍCULO</Text>
+                    <Card style={[styles.modalContent, isDark && { backgroundColor: '#1F2937' }]}>
+                        <Text style={[styles.modalTitle, isDark && { color: '#FFF' }]}>NOVO VEÍCULO</Text>
                         
                         <AgroInput label="Nome" value={nome} onChangeText={t => up(t, setNome)} placeholder="EX: TRATOR CASE" />
                         
                         <Text style={styles.label}>TIPO</Text>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
                             {['TRATOR', 'CARRO', 'CAMINHAO', 'OUTRO'].map(t => (
-                                <TouchableOpacity key={t} onPress={() => setTipo(t)} style={[styles.chip, tipo === t && { backgroundColor: theme?.colors?.primary }]}>
-                                    <Text style={[styles.chipText, tipo === t && { color: '#FFF' }]}>{t}</Text>
+                                <TouchableOpacity key={t} onPress={() => setTipo(t)} style={[styles.chip, isDark && { backgroundColor: 'rgba(255,255,255,0.1)' }, tipo === t && { backgroundColor: theme?.colors?.primary }]}>
+                                    <Text style={[styles.chipText, isDark && { color: '#9CA3AF' }, tipo === t && { color: '#FFF' }]}>{t}</Text>
                                 </TouchableOpacity>
                             ))}
                         </ScrollView>
@@ -254,8 +255,8 @@ export default function FrotaScreen({ navigation }) {
             {/* MODAL UPDATE KM */}
             <Modal visible={updateModalVisible} transparent animationType="fade">
                 <View style={styles.overlay}>
-                    <Card style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>ATUALIZAR KM/HORÍMETRO</Text>
+                    <Card style={[styles.modalContent, isDark && { backgroundColor: '#1F2937' }]}>
+                        <Text style={[styles.modalTitle, isDark && { color: '#FFF' }]}>ATUALIZAR KM/HORÍMETRO</Text>
                         <AgroInput 
                             placeholder="Novo valor total..." 
                             keyboardType="numeric" 
@@ -274,8 +275,8 @@ export default function FrotaScreen({ navigation }) {
             {/* MODAL SERVICO */}
             <Modal visible={serviceModalVisible} transparent animationType="slide">
                 <View style={styles.overlay}>
-                    <Card style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>REGISTRAR MANUTENÇÃO</Text>
+                    <Card style={[styles.modalContent, isDark && { backgroundColor: '#1F2937' }]}>
+                        <Text style={[styles.modalTitle, isDark && { color: '#FFF' }]}>REGISTRAR MANUTENÇÃO</Text>
                         <AgroInput label="Descrição" value={servicoDesc} onChangeText={t => up(t, setServicoDesc)} placeholder="EX: TROCA DE ÓLEO" />
                         <AgroInput label="Valor (R$)" keyboardType="numeric" value={servicoValor} onChangeText={setServicoValor} placeholder="0,00" />
                         
