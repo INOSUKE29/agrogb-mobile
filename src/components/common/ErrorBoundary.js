@@ -41,11 +41,12 @@ export default class ErrorBoundary extends React.Component {
                         </Text>
 
                         <ScrollView style={styles.errorBox}>
-                            <Text style={styles.technicalTitle}>DETALHES TÉCNICOS:</Text>
-                            <Text style={styles.errorText}>
-                                {this.state.error?.toString()}
+                            <Text style={styles.technicalTitle}>DETALHE EXATO DO ERRO:</Text>
+                            <Text style={styles.errorText} selectable={true}>
+                                {this.state.error?.message || this.state.error?.toString() || 'Erro desconhecido'}
                             </Text>
-                            <Text style={styles.errorInfoText}>
+                            <Text style={[styles.technicalTitle, {marginTop: 10}]}>PILHA DE ERRO (STACK):</Text>
+                            <Text style={styles.errorInfoText} selectable={true}>
                                 {this.state.errorInfo?.componentStack}
                             </Text>
                         </ScrollView>
