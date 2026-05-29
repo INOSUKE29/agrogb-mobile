@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Alert } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { getPlanosAdubacao, deletePlanoAdubacao } from '../database/database';

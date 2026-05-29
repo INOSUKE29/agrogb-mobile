@@ -79,7 +79,7 @@ export default function ProfileScreen({ navigation }) {
                     const hash = res.rows.item(0).senha;
                     let isValid = false;
                     if (hash && hash.startsWith('$2')) {
-                        const bcrypt = require('bcryptjs');
+                        const bcrypt = require('react-native-bcrypt');
                         isValid = bcrypt.compareSync(user.senha_atual, hash);
                     } else {
                         isValid = (hash === user.senha_atual);

@@ -8,7 +8,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { v4 as uuidv4 } from 'uuid';
 
 // Design System
-import Card from '../components/common/Card';
 import AgroInput from '../components/common/AgroInput';
 import AgroButton from '../components/common/AgroButton';
 import SmartAutocomplete from '../components/common/SmartAutocomplete';
