@@ -25,7 +25,29 @@ class CompraService {
                 [purchaseUuid, produto, quantidade, valor, observacao, data, cultura, timestamp]
             );
 
-            // 2. Integração Automática com Estoque
+            // 2. Integração com Financeiro (Gera transação PAGAR pendente)
+            const finUuid = uuidv4();
+            await executeQuery(
+                `INSERT INTO financeiro_transacoes (
+                    uuid, tipo, descricao, valor, vencimento, data_pagamento, status,
+                    categoria, origem_uuid, entidade_nome, last_updated, sync_status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+                [
+                    finUuid,
+                    'PAGAR',
+                    `COMPRA: ${produto.toUpperCase().trim()}`,
+                    valor,
+                    data,
+                    null,
+                    'PENDENTE',
+                    'COMPRA',
+                    purchaseUuid,
+                    null,
+                    timestamp
+                ]
+            );
+
+            // 3. Integração Automática com Estoque
             // Toda compra de insumo deve entrar no estoque físico
             await EstoqueService.movimentar(produto, quantidade, `COMPRA: ${purchaseUuid}`, purchaseUuid);
 

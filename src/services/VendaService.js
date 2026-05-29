@@ -1,5 +1,5 @@
 import { executeQuery, logActivity } from '../database/database';
-import { v4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import EstoqueService from './EstoqueService';
 
 /**
@@ -23,7 +23,7 @@ class VendaService {
             pagamento_status = 'PENDENTE'
         } = vendaData;
 
-        const uuid = v4();
+        const uuid = uuidv4();
         const timestamp = new Date().toISOString();
 
         try {
@@ -47,11 +47,33 @@ class VendaService {
                 ]
             );
 
-            // 2. Realiza a baixa no estoque através do serviço mestre
+            // 2. Integração com Financeiro (Gera transação RECEBER pendente)
+            const finUuid = uuidv4();
+            await executeQuery(
+                `INSERT INTO financeiro_transacoes (
+                    uuid, tipo, descricao, valor, vencimento, data_pagamento, status,
+                    categoria, origem_uuid, entidade_nome, last_updated, sync_status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+                [
+                    finUuid,
+                    'RECEBER',
+                    `VENDA: ${produto.toUpperCase().trim()}`,
+                    valor_total,
+                    data,
+                    null,
+                    pagamento_status === 'PAGO' ? 'PAGO' : 'PENDENTE',
+                    'VENDA',
+                    uuid,
+                    cliente_nome.toUpperCase().trim(),
+                    timestamp
+                ]
+            );
+
+            // 3. Realiza a baixa no estoque através do serviço mestre
             // Toda venda gera uma auditoria automática em v2_estoque_movimentacoes
             await EstoqueService.movimentar(produto, -quantidade, `VENDA: ${uuid}`, uuid);
 
-            // 3. Registra Log de Atividade
+            // 4. Registra Log de Atividade
             await logActivity('VENDA', 'VENDAS', `Venda de ${quantidade} de ${produto} para ${cliente_nome}`);
 
             return { success: true, uuid };
