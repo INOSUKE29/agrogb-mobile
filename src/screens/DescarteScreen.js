@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Dimensions } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertDescarte } from '../database/database';
 import { LinearGradient } from 'expo-linear-gradient';

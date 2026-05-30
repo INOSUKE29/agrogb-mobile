@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, Dimensions, ScrollView, StatusBar, SafeAreaView, Linking } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Alert, ActivityIndicator, Dimensions, ScrollView, StatusBar, SafeAreaView, Linking } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import * as Location from 'expo-location';
 import { insertCliente, getClientes, deleteCliente, updateCliente } from '../database/database';

@@ -1,4 +1,3 @@
-import { Alert } from 'react-native';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 3️⃣ PROMPT INTERNO DA IA

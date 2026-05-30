@@ -1,5 +1,5 @@
 import { executeQuery, genericUpsert } from '../database/database';
-import { getSupabase, syncTable } from './supabase';
+import { syncTable } from './supabase';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 

@@ -5,8 +5,7 @@ import {
     StyleSheet, 
     ImageBackground, 
     Image, 
-    Dimensions, 
-    Animated 
+    Dimensions 
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';

@@ -8,7 +8,8 @@ import {
     ScrollView,
     TouchableOpacity,
     StatusBar,
-    SafeAreaView
+    SafeAreaView,
+    Platform
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';

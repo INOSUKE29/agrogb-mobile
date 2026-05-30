@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { getSupabase } from '../services/supabase';
 import { validateRegisterExpress, getPasswordStrength } from '../utils/validation';
 import { translateAuthError } from '../utils/errorHelpers';
 import AgroInput from '../components/common/AgroInput';
 import AgroButton from '../components/common/AgroButton';
-import Card from '../components/common/Card';
 import FriendlyModal from '../components/common/FriendlyModal';
 
 const { width } = Dimensions.get('window');

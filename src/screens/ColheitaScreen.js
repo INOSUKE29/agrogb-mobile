@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator, SafeAreaView, StatusBar } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertColheita, getCadastro, executeQuery, insertDescarte, getColheitasRecentes, deleteColheita, insertCadastro as insertCadastros } from '../database/database';

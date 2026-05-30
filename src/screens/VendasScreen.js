@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, StatusBar, SafeAreaView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, StatusBar, SafeAreaView } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertVenda, getVendasRecentes, deleteVenda, updateVenda, executeQuery } from '../database/database';
 import SmartAutocomplete from '../components/common/SmartAutocomplete';
@@ -10,7 +10,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 
 // Design System
-import Card from '../components/common/Card';
 import MetricCard from '../components/common/MetricCard';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';

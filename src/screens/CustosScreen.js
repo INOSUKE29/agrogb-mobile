@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator } from 'react-native';
-import { v4 as uuidv4 } from 'uuid';
-import { insertCost, getCostCategories, insertCostCategory, executeQuery, getCosts } from '../database/database';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList } from 'react-native';
+import { insertCost, getCostCategories, getCosts } from '../database/database';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
 
 // Design System
-import Card from '../components/common/Card';
 import MetricCard from '../components/common/MetricCard';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';

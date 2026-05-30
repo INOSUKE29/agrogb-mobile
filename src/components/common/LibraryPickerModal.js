@@ -16,9 +16,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import Card from './Card';
-import AgroButton from './AgroButton';
 
 export default function LibraryPickerModal({
     visible,

@@ -12,7 +12,6 @@ import { useTheme } from '../context/ThemeContext';
 import Card from '../components/common/Card';
 import MetricCard from '../components/common/MetricCard';
 import AgroButton from '../components/common/AgroButton';
-import AgroInput from '../components/common/AgroInput';
 
 const { width } = Dimensions.get('window');
 

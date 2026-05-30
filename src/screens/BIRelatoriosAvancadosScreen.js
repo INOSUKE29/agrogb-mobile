@@ -6,7 +6,6 @@ import { useTheme } from '../context/ThemeContext';
 import { executeQuery } from '../database/database';
 import { useFocusEffect } from '@react-navigation/native';
 import Card from '../components/common/Card';
-import AgroButton from '../components/common/AgroButton';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
