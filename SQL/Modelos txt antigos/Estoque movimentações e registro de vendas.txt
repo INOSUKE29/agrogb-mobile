@@ -1,0 +1,52 @@
+-- BLOCO 3: MOTOR DE ESTOQUE (BUILD #107)
+-- Objetivo: Unificar movimentações e lógica com segurança máxima.
+
+CREATE TABLE IF NOT EXISTS public.v2_estoque_movimentacoes (
+    uuid UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    usuario_id UUID REFERENCES auth.users(id),
+    produto_uuid UUID,
+    tipo TEXT NOT NULL,
+    quantidade DECIMAL NOT NULL,
+    origem TEXT,
+    data TIMESTAMPTZ DEFAULT NOW(),
+    last_updated TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.v2_estoque_atual (
+    uuid UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    usuario_id UUID REFERENCES auth.users(id),
+    produto_uuid UUID REFERENCES public.cadastro(uuid),
+    quantidade DECIMAL DEFAULT 0,
+    last_updated TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Limpeza de funções antigas
+DROP FUNCTION IF EXISTS public.process_sale_v2(uuid, uuid, real, real);
+
+-- Função de Venda Enterprise Segura (Search Path Travado)
+CREATE OR REPLACE FUNCTION public.process_sale_v2(
+  p_usuario_id UUID,
+  p_produto_uuid UUID,
+  p_quantidade REAL,
+  p_valor REAL
+)
+RETURNS UUID 
+LANGUAGE plpgsql 
+SECURITY DEFINER
+SET search_path = '' -- Trava de segurança Advisor
+AS $$
+DECLARE v_uuid UUID := gen_random_uuid();
+BEGIN
+    INSERT INTO public.v2_vendas (uuid, usuario_id, quantidade, valor, data_venda, last_updated)
+    VALUES (v_uuid, p_usuario_id, p_quantidade, p_valor, now(), now());
+
+    UPDATE public.v2_estoque_atual 
+    SET quantidade = quantidade - p_quantidade, last_updated = now()
+    WHERE (produto_uuid = p_produto_uuid OR uuid = p_produto_uuid) AND usuario_id = p_usuario_id;
+
+    INSERT INTO public.v2_estoque_movimentacoes (uuid, usuario_id, produto_uuid, tipo, quantidade, origem, data)
+    VALUES (gen_random_uuid(), p_usuario_id, p_produto_uuid, 'SAÍDA', p_quantidade, 'VENDA: ' || v_uuid::text, now());
+
+    RETURN v_uuid;
+END;
+$$;

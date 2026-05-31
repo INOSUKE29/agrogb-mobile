@@ -1,0 +1,31 @@
+-- 1. Limpamos qualquer regra antiga que esteja causando o loop infinito na tabela profiles
+DO $$ 
+DECLARE 
+    pol record;
+BEGIN 
+    FOR pol IN SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'profiles' LOOP
+        EXECUTE format('DROP POLICY IF EXISTS %I ON public.profiles', pol.policyname);
+    END LOOP;
+END $$;
+-- 2. Criamos uma função VIP e segura que verifica quem é ADMIN sem causar loop
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean AS $$
+DECLARE
+  user_role text;
+BEGIN
+  SELECT role INTO user_role FROM public.profiles WHERE id = auth.uid();
+  RETURN user_role = 'ADMIN';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- 3. Habilitamos a segurança máxima novamente
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+-- 4. Criamos as DUAS regras de segurança perfeitas e sem falhas:
+-- Regra A: Cada usuário comum só pode ler o seu próprio perfil
+CREATE POLICY "Usuario le o proprio perfil" ON public.profiles 
+FOR SELECT USING (auth.uid() = id);
+-- Regra B: Se o cara for Admin, ele pode ver o perfil de TODO MUNDO
+CREATE POLICY "Admin le todos os perfis" ON public.profiles 
+FOR SELECT USING (public.is_admin());
+-- Regra C: O Admin pode atualizar e deletar qualquer perfil
+CREATE POLICY "Admin gerencia perfis" ON public.profiles 
+FOR ALL USING (public.is_admin());

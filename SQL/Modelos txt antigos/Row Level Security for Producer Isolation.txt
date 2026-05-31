@@ -1,0 +1,27 @@
+-- BLOCO 4: SEGURANÇA TOTAL (RLS) - VERSÃO BLINDADA 🛡️
+-- Objetivo: Isolar dados priorizando usuario_id.
+
+DO $$
+DECLARE
+  extra_tables TEXT[] := ARRAY[
+    'user_profiles', 'v2_vendas', 'v2_custos', 'v2_estoque_movimentacoes', 'v2_estoque_atual', 'cadastro'
+  ];
+  t TEXT;
+  owner_col TEXT;
+BEGIN
+  FOREACH t IN ARRAY extra_tables LOOP
+    IF to_regclass(format('public.%I', t)) IS NOT NULL THEN
+      EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t);
+
+      SELECT column_name INTO owner_col
+      FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = t AND column_name IN ('usuario_id', 'user_id', 'id')
+      ORDER BY CASE column_name WHEN 'usuario_id' THEN 1 WHEN 'user_id' THEN 2 ELSE 3 END LIMIT 1;
+
+      IF owner_col IS NOT NULL THEN
+        EXECUTE format('DROP POLICY IF EXISTS "Manage own %s" ON public.%I', t, t);
+        EXECUTE format('CREATE POLICY "Manage own %s" ON public.%I FOR ALL USING (auth.uid() = %I)', t, t, owner_col);
+      END IF;
+    END IF;
+  END LOOP;
+END $$;

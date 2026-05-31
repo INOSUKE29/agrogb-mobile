@@ -1,0 +1,7 @@
+REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.apply_fertilization_v2 TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_my_financial_summary TO authenticated;
+GRANT EXECUTE ON FUNCTION public.monitoramento_entidade_run_checks TO authenticated;
+GRANT EXECUTE ON FUNCTION public.process_sale_v2 TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.handle_new_user FROM PUBLIC, authenticated, anon;
+REVOKE EXECUTE ON FUNCTION public.update_last_updated_column FROM PUBLIC, authenticated, anon;

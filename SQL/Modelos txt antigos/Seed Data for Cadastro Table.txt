@@ -1,0 +1,9 @@
+-- BLOCO 6: CAMADA DE SEMENTES (SEED)
+-- Objetivo: Inserir dados básicos na tabela CADASTRO.
+
+INSERT INTO public.cadastro (nome, unidade, categoria)
+VALUES 
+    ('Fertilizante NPK 10-10-10', 'KG', 'INSUMO'),
+    ('Ureia Agrícola', 'KG', 'INSUMO'),
+    ('Semente de Milho Tradicional', 'KG', 'SEMENTE')
+ON CONFLICT (nome) DO NOTHING;

@@ -1,0 +1,3 @@
+ALTER TABLE monitoramento_entidade ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Atualizacao para autenticados" ON monitoramento_entidade;
+CREATE POLICY "Acesso restrito ao proprietario" ON monitoramento_entidade FOR ALL USING (auth.uid() = usuario_id);

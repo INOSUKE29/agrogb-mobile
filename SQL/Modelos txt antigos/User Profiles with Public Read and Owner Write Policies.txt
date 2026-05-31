@@ -1,0 +1,22 @@
+DROP TABLE IF EXISTS profiles CASCADE;
+
+CREATE TABLE profiles (
+  id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
+    nome_completo TEXT NOT NULL,
+      ano_de_nascimento INTEGER,
+        email TEXT UNIQUE,
+          sms TEXT,
+            username TEXT UNIQUE,
+              nome_da_fazenda TEXT,
+                avatar_url TEXT,
+                  biometric_enabled BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                      updated_at TIMESTAMPTZ DEFAULT NOW()
+                      );
+
+                      ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+                      CREATE POLICY "Perfis publicos sao visiveis para todos." ON profiles FOR SELECT USING (true);
+                      CREATE POLICY "Os usuarios podem inserir seu proprio perfil." ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+                      CREATE POLICY "Os usuarios podem atualizar seu proprio perfil." ON profiles FOR UPDATE USING (auth.uid() = id);
+                      

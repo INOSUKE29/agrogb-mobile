@@ -1,0 +1,21 @@
+-- BLOCO 5: CAMADA DE BI (VIEWS) 📊
+-- Objetivo: Relatórios operacionais corrigidos para usuario_id.
+
+DROP VIEW IF EXISTS public.view_financeiro_resumo CASCADE;
+
+CREATE OR REPLACE VIEW public.view_financeiro_resumo WITH (security_invoker = true) AS
+SELECT 
+    v.usuario_id,
+    COALESCE(SUM(v.valor), 0) AS total_vendas,
+    (
+      SELECT COALESCE(SUM(c.valor_total), 0) 
+      FROM public.v2_custos c 
+      WHERE c.usuario_id = v.usuario_id
+    ) AS total_custos,
+    COALESCE(SUM(v.valor), 0) - (
+      SELECT COALESCE(SUM(c.valor_total), 0) 
+      FROM public.v2_custos c 
+      WHERE c.usuario_id = v.usuario_id
+    ) AS lucro_liquido
+FROM public.v2_vendas v
+GROUP BY v.usuario_id;

@@ -1,0 +1,13 @@
+-- BLOCO 0: RESET TOTAL (GÊNESIS)
+-- Use apenas se quiser apagar tudo e recomeçar do zero!
+DO $$ 
+DECLARE t TEXT;
+BEGIN
+  FOR t IN SELECT unnest(ARRAY[
+    'user_profiles', 'areas', 'cadastro', 'estoque', 'v2_vendas', 
+    'v2_custos', 'v2_plantio', 'v2_maquinas', 'v2_colheitas', 'v2_compras', 
+    'v2_estoque_movimentacoes', 'v2_estoque_atual', 'items'
+  ]::text[]) LOOP
+    EXECUTE format('DROP TABLE IF EXISTS public.%I CASCADE', t);
+  END LOOP;
+END $$;

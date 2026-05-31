@@ -1,5 +1,5 @@
 const fs = require('fs');
-const path = './src/database/database.js';
+const path = 'C:/Users/Bruno/Documents/AppAgro/agrogb-mobile.-main/src/database/database.js';
 let content = fs.readFileSync(path, 'utf8');
 
 // 1. Add Migration for is_deleted
@@ -54,4 +54,4 @@ deletes.forEach(d => {
 });
 
 fs.writeFileSync(path, content, 'utf8');
-console.log('Patch aplicado com sucesso!');
+console.log('Patch aplicado com sucesso na base original!');

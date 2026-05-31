@@ -1,0 +1,3 @@
+-- COMANDO CORRETIVO RÁPIDO ⚡
+ALTER TABLE public.cadastro
+ADD CONSTRAINT cadastro_nome_unique UNIQUE (nome);

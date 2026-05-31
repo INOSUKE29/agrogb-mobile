@@ -1,0 +1,41 @@
+# MAPA DE ARQUITETURA AGROGB (MONOREPO TURBO)
+
+Conforme a nossa decisão estratégica, o projeto AgroGB migrou de aplicações separadas para um **Ecossistema Unificado Monorepo** usando `pnpm workspaces` e `Turborepo`.
+
+## Estrutura Física Criada
+```text
+C:\Users\Bruno\Documents\AgroGB\
+│
+├── apps/
+│   ├── desktop/      (Onde construiremos o painel Electron/React)
+│   ├── web/          (Onde construiremos o painel para navegadores)
+│   └── mobile/       
+│       └── mobile_app/ (Repositório Original - Single Source of Truth do App e Builds)
+│
+├── packages/
+│   ├── auth/         (Regras de autenticação Supabase / Permissões RLS)
+│   ├── database/     (Schemas do banco de dados)
+│   ├── services/     (Acesso ao banco: recommendationService.ts, etc)
+│   ├── shared/       (Tipos globais, Constantes, Regras agronômicas)
+│   └── ui/           (Botões, Cards, Cores, Design System Premium)
+│
+├── pnpm-workspace.yaml
+└── turbo.json
+```
+
+## Como o Cérebro Funciona Agora
+- **Nenhum código se repete.**
+- Quando formos criar a função de "Adicionar Talhão" no Desktop, nós **não** vamos escrever a lógica no Desktop. Vamos escrever dentro de `packages/services/talhoesService.ts`.
+- O aplicativo Mobile vai importar exatamente a mesma função.
+- O aplicativo Desktop vai importar exatamente a mesma função.
+- **Resultado:** A manutenção cai pela metade e os dois aplicativos trabalham em perfeita harmonia (Tempo Real).
+
+## Próximos Passos
+1. Iremos mover a sua pasta atual do Mobile para `apps/mobile/`.
+2. Iremos inicializar o React/TypeScript dentro de `apps/desktop/`.
+3. Começaremos a quebrar o código "solto" do mobile atual, jogando as lógicas para dentro da pasta `packages/`.
+
+## Dinâmica de Trabalho com IA (Antigravity + Jules)
+Para garantir máxima eficiência no desenvolvimento do AgroGB, estabelecemos um modelo de **Liderança Técnica (Tech Lead)**:
+- **Antigravity (Eu):** Atuo como Tech Lead e desenvolvedor focado no momento. Faço modificações rápidas, ajustes de UI/UX, resolvo erros instantâneos e tomo decisões de arquitetura em pair programming.
+- **Jules (Agente Autônomo Google):** Atua como desenvolvedor de background. Recebe as tarefas que eu delego via terminal (ex: `jules new "tarefa"`) para realizar o "trabalho pesado" (refatorações em massa, criação de testes, atualizações em dezenas de arquivos) de forma assíncrona, abrindo Pull Requests no GitHub quando finalizar.

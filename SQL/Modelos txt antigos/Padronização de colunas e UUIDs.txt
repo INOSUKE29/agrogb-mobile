@@ -1,0 +1,76 @@
+--- BLOCO 1: INFRAESTRUTURA E AUDITORIA (AUTO-GERENCIÁVEL) 🛠️
+-- Objetivo: Garantir que TODAS as tabelas e auditorias existam sem erros.
+
+-- 1. Criação das Tabelas Base com Regras de Unicidade e Dono
+CREATE TABLE IF NOT EXISTS public.cadastro (
+    uuid UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    usuario_id UUID REFERENCES auth.users(id), -- Adicionado para resolver RLS
+    nome TEXT NOT NULL, 
+    unidade TEXT DEFAULT 'UN',
+    categoria TEXT DEFAULT 'INSUMO',
+    last_updated TIMESTAMPTZ DEFAULT NOW(),
+    farm_id TEXT DEFAULT 'fazenda_padrao',
+    is_deleted BOOLEAN DEFAULT FALSE,
+    UNIQUE(nome, usuario_id) -- Unicidade por usuário
+);
+
+CREATE TABLE IF NOT EXISTS public.v2_vendas (
+    uuid UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    usuario_id UUID REFERENCES auth.users(id),
+    quantidade DECIMAL,
+    valor DECIMAL,
+    data_venda DATE DEFAULT CURRENT_DATE,
+    last_updated TIMESTAMPTZ DEFAULT NOW(),
+    farm_id TEXT DEFAULT 'fazenda_padrao',
+    is_deleted BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE IF NOT EXISTS public.v2_custos (
+    uuid UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    usuario_id UUID REFERENCES auth.users(id),
+    valor_total DECIMAL,
+    descricao TEXT,
+    data DATE DEFAULT CURRENT_DATE,
+    last_updated TIMESTAMPTZ DEFAULT NOW(),
+    farm_id TEXT DEFAULT 'fazenda_padrao',
+    is_deleted BOOLEAN DEFAULT FALSE
+);
+
+-- 2. Garantir colunas de auditoria em um loop resiliente
+DO $$ 
+DECLARE t TEXT;
+BEGIN
+  FOR t IN SELECT unnest(ARRAY[
+    'v2_vendas', 'v2_custos', 'cadastro', 'v2_estoque_atual', 'v2_estoque_movimentacoes'
+  ]::text[]) LOOP
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = t) THEN
+      EXECUTE format('ALTER TABLE public.%I ADD COLUMN IF NOT EXISTS farm_id TEXT DEFAULT %L', t, 'fazenda_padrao');
+      EXECUTE format('ALTER TABLE public.%I ADD COLUMN IF NOT EXISTS last_updated TIMESTAMPTZ DEFAULT NOW()', t);
+      EXECUTE format('ALTER TABLE public.%I ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE', t);
+    END IF;
+  END LOOP;
+END $$;
+
+-- 3. Automação de Timestamp Blindada
+CREATE OR REPLACE FUNCTION public.update_last_updated_column()
+RETURNS trigger 
+LANGUAGE plpgsql 
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  NEW.last_updated = now();
+  RETURN NEW;
+END;
+$$;
+
+DO $$
+DECLARE t TEXT;
+BEGIN
+  FOR t IN SELECT unnest(ARRAY['v2_vendas', 'v2_custos', 'v2_estoque_atual', 'cadastro', 'v2_estoque_movimentacoes']::text[]) LOOP
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = t) THEN
+      EXECUTE format('DROP TRIGGER IF EXISTS tr_update_last_updated_%I ON public.%I', t, t);
+      EXECUTE format('CREATE TRIGGER tr_update_last_updated_%I BEFORE UPDATE ON public.%I FOR EACH ROW EXECUTE FUNCTION public.update_last_updated_column()', t, t);
+    END IF;
+  END LOOP;
+END $$;

@@ -1,0 +1,27 @@
+REVOKE ALL ON FUNCTION apply_fertilization_v2(uuid, uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION get_my_financial_summary() FROM PUBLIC;
+REVOKE ALL ON FUNCTION monitoramento_entidade_run_checks() FROM PUBLIC;
+REVOKE ALL ON FUNCTION process_sale_v2(uuid, uuid, real, real) FROM PUBLIC;
+REVOKE ALL ON FUNCTION handle_new_user() FROM PUBLIC;
+REVOKE ALL ON FUNCTION update_last_updated_column() FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION apply_fertilization_v2(uuid, uuid) FROM authenticated;
+REVOKE ALL ON FUNCTION get_my_financial_summary() FROM authenticated;
+REVOKE ALL ON FUNCTION monitoramento_entidade_run_checks() FROM authenticated;
+REVOKE ALL ON FUNCTION process_sale_v2(uuid, uuid, real, real) FROM authenticated;
+REVOKE ALL ON FUNCTION handle_new_user() FROM authenticated;
+REVOKE ALL ON FUNCTION update_last_updated_column() FROM authenticated;
+
+REVOKE ALL ON FUNCTION apply_fertilization_v2(uuid, uuid) FROM anon;
+REVOKE ALL ON FUNCTION get_my_financial_summary() FROM anon;
+REVOKE ALL ON FUNCTION monitoramento_entidade_run_checks() FROM anon;
+REVOKE ALL ON FUNCTION process_sale_v2(uuid, uuid, real, real) FROM anon;
+REVOKE ALL ON FUNCTION handle_new_user() FROM anon;
+REVOKE ALL ON FUNCTION update_last_updated_column() FROM anon;
+
+GRANT EXECUTE ON FUNCTION apply_fertilization_v2(uuid, uuid) TO service_role, postgres;
+GRANT EXECUTE ON FUNCTION get_my_financial_summary() TO service_role, postgres;
+GRANT EXECUTE ON FUNCTION monitoramento_entidade_run_checks() TO service_role, postgres;
+GRANT EXECUTE ON FUNCTION process_sale_v2(uuid, uuid, real, real) TO service_role, postgres;
+GRANT EXECUTE ON FUNCTION handle_new_user() TO service_role, postgres;
+GRANT EXECUTE ON FUNCTION update_last_updated_column() TO service_role, postgres;

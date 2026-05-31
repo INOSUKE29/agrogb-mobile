@@ -1,0 +1,7 @@
+-- =====================================================================================
+-- AGROGB - PARTE 2: Infraestrutura para Notificações Push (Expo)
+-- =====================================================================================
+-- Adiciona a coluna para guardar o Token de Notificação (Endereço do Celular) de cada usuário
+-- Usamos 'IF NOT EXISTS' para garantir que não dê erro se rodar o script mais de uma vez.
+ALTER TABLE public.profiles 
+ADD COLUMN IF NOT EXISTS expo_push_token TEXT;

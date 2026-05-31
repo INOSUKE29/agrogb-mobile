@@ -1,0 +1,59 @@
+-- 1. LIMPAR DADOS EXISTENTES (Desativado para nunca mais apagar seu admin)
+-- DELETE FROM auth.users WHERE email != 'bruno@agrogb.com';
+-- 2. RECRIAR TABELA PROFILES
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  username TEXT,
+  nome_completo TEXT,
+  role TEXT DEFAULT 'PENDENTE' CHECK (role IN ('AGRICULTOR', 'AGRONOMO', 'ADMIN', 'PENDENTE')),
+  telefone TEXT,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+-- 3. RLS
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+-- 4. POLICIES
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+CREATE POLICY "Users can view own profile"
+ON public.profiles
+FOR SELECT
+USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+CREATE POLICY "Users can update own profile"
+ON public.profiles
+FOR UPDATE
+USING (auth.uid() = id);
+-- 5. TRIGGER FUNCTION
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  user_role TEXT;
+  full_name TEXT;
+BEGIN
+  full_name := COALESCE(new.raw_user_meta_data->>'nome_completo', 'Usuário AgroGB');
+  user_role := COALESCE(new.raw_user_meta_data->>'role', 'AGRICULTOR');
+  
+  INSERT INTO public.profiles (id, email, username, nome_completo, role)
+  VALUES (
+    new.id,
+    new.email,
+    SPLIT_PART(new.email, '@', 1),
+    full_name,
+    user_role
+  )
+  ON CONFLICT (id) DO NOTHING;
+  
+  RETURN new;
+END;
+$$;
+-- 6. ATTACH TRIGGER
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+-- 7. RECUPERAR ADMIN (Automático)
+UPDATE public.profiles SET role = 'ADMIN' WHERE email = 'bruno@agrogb.com';

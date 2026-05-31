@@ -1,0 +1,30 @@
+ALTER FUNCTION public.trigger_set_timestamp() SET search_path = pg_catalog, public;
+ALTER FUNCTION public.handle_new_user() SET search_path = pg_catalog, public;
+
+DROP TABLE IF EXISTS public.cadastro CASCADE;
+DROP TABLE IF EXISTS public.devices CASCADE;
+DROP TABLE IF EXISTS public.system_settings CASCADE;
+
+DROP POLICY IF EXISTS "Leitura de notificacoes proprias" ON public.notifications;
+CREATE POLICY "Leitura de notificacoes proprias" ON public.notifications FOR SELECT USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Insercao pelo proprio usuario ou sistema" ON public.notifications;
+CREATE POLICY "Insercao pelo proprio usuario ou sistema" ON public.notifications FOR INSERT WITH CHECK (user_id = auth.uid() OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Leitura livre de permissoes de cargo" ON public.role_permissions;
+CREATE POLICY "Leitura livre de permissoes de cargo" ON public.role_permissions FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Apenas admins alteram permissoes de cargo" ON public.role_permissions;
+CREATE POLICY "Apenas admins alteram permissoes de cargo" ON public.role_permissions FOR ALL USING (EXISTS (SELECT 1 FROM public.profiles WHERE profiles.id = auth.uid() AND profiles.role = 'ADMIN'));
+
+DROP POLICY IF EXISTS "Leitura livre de planos de assinatura" ON public.subscription_plans;
+CREATE POLICY "Leitura livre de planos de assinatura" ON public.subscription_plans FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Apenas admins alteram planos de assinatura" ON public.subscription_plans;
+CREATE POLICY "Apenas admins alteram planos de assinatura" ON public.subscription_plans FOR ALL USING (EXISTS (SELECT 1 FROM public.profiles WHERE profiles.id = auth.uid() AND profiles.role = 'ADMIN'));
+
+DROP POLICY IF EXISTS "Leitura de assinaturas da organizacao do usuario" ON public.subscriptions;
+CREATE POLICY "Leitura de assinaturas da organizacao do usuario" ON public.subscriptions FOR SELECT USING (organization_id = (SELECT organization_id FROM public.profiles WHERE id = auth.uid()));
+
+DROP POLICY IF EXISTS "Leitura de historico de faturamento proprio" ON public.billing_events;
+CREATE POLICY "Leitura de historico de faturamento proprio" ON public.billing_events FOR SELECT USING (EXISTS (SELECT 1 FROM public.subscriptions s JOIN public.profiles p ON p.organization_id = s.organization_id WHERE s.id = billing_events.subscription_id AND p.id = auth.uid()));

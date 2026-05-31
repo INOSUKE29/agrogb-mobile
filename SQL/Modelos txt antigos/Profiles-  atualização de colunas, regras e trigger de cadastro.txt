@@ -1,0 +1,56 @@
+-- 1. ADICIONA AS COLUNAS QUE PODEM ESTAR FALTANDO 
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS username TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS subscription_plan TEXT DEFAULT 'FREE';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS organization_id UUID;
+-- 2. DESTROI QUALQUER REGRA ANTIGA DE "ROLE" QUE ESTEJA BLOQUEANDO O CADASTRO
+DO $$
+DECLARE
+    r record;
+BEGIN
+    FOR r IN (
+        SELECT conname
+        FROM pg_constraint
+        WHERE conrelid = 'public.profiles'::regclass AND contype = 'c'
+    ) LOOP
+        EXECUTE 'ALTER TABLE public.profiles DROP CONSTRAINT ' || r.conname;
+    END LOOP;
+END;
+$$;
+-- 3. CRIA A REGRA NOVA UNIFICADA (Aceita tudo)
+ALTER TABLE public.profiles ADD CONSTRAINT profiles_role_check 
+CHECK (role IN ('AGRICULTOR', 'AGRONOMO', 'ADMIN', 'STAFF', 'PENDENTE', 'CLIENTE'));
+-- 4. ATUALIZA A TRIGGER PARA UMA VERSÃO INDESTRUTÍVEL
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  user_role TEXT;
+  full_name TEXT;
+BEGIN
+  full_name := COALESCE(new.raw_user_meta_data->>'nome_completo', 'Usuário AgroGB');
+  user_role := COALESCE(new.raw_user_meta_data->>'role', 'AGRICULTOR');
+  
+  INSERT INTO public.profiles (id, email, username, nome_completo, role, status, subscription_plan)
+  VALUES (
+    new.id,
+    new.email,
+    SPLIT_PART(new.email, '@', 1),
+    full_name,
+    user_role,
+    'active',
+    'FREE'
+  )
+  ON CONFLICT (id) DO NOTHING;
+  
+  RETURN new;
+END;
+$$;
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+-- 5. DEVOLVE O SEU ADMIN
+UPDATE public.profiles SET role = 'ADMIN', nome_completo = 'Bruno Pedro' WHERE email = 'bruno@agrogb.com';

@@ -1,0 +1,27 @@
+DO $$
+BEGIN
+    EXECUTE 'DROP POLICY IF EXISTS "Usu' || chr(225) || 'rio acessa sua organiza' || chr(231) || chr(227) || 'o" ON public.organizations';
+        EXECUTE 'DROP POLICY IF EXISTS "Donos gerenciam organiza' || chr(231) || chr(227) || 'o" ON public.organizations';
+            EXECUTE 'DROP POLICY IF EXISTS "Agr' || chr(244) || 'nomos gerenciam seu pr' || chr(243) || 'prio c' || chr(243) || 'digo" ON public.agronomist_codes';
+                EXECUTE 'DROP POLICY IF EXISTS "Qualquer autenticado l' || chr(234) || ' convites" ON public.agronomist_codes';
+                    EXECUTE 'DROP POLICY IF EXISTS "Acesso bilateral a v' || chr(237) || 'nculos" ON public.agronomist_client_links';
+                        EXECUTE 'DROP POLICY IF EXISTS "Clientes gerenciam v' || chr(237) || 'nculos" ON public.agronomist_client_links';
+                            EXECUTE 'DROP POLICY IF EXISTS "Admin l' || chr(234) || ' auditoria" ON public.audit_logs';
+
+                                EXECUTE 'DROP POLICY IF EXISTS "Usuario acessa sua organizacao" ON public.organizations';
+                                    EXECUTE 'DROP POLICY IF EXISTS "Donos gerenciam organizacao" ON public.organizations';
+                                        EXECUTE 'DROP POLICY IF EXISTS "Agronomos gerenciam seu proprio codigo" ON public.agronomist_codes';
+                                            EXECUTE 'DROP POLICY IF EXISTS "Qualquer autenticado le convites" ON public.agronomist_codes';
+                                                EXECUTE 'DROP POLICY IF EXISTS "Acesso bilateral a vinculos" ON public.agronomist_client_links';
+                                                    EXECUTE 'DROP POLICY IF EXISTS "Clientes gerenciam vinculos" ON public.agronomist_client_links';
+                                                        EXECUTE 'DROP POLICY IF EXISTS "Admin le auditoria" ON public.audit_logs';
+                                                        END $$;
+
+                                                        CREATE POLICY "Usuario acessa sua organizacao" ON public.organizations FOR SELECT USING (id = (SELECT organization_id FROM public.profiles WHERE id = auth.uid()) OR owner_user_id = auth.uid());
+                                                        CREATE POLICY "Donos gerenciam organizacao" ON public.organizations FOR UPDATE USING (owner_user_id = auth.uid());
+                                                        CREATE POLICY "Agronomos gerenciam seu proprio codigo" ON public.agronomist_codes FOR ALL USING (auth.uid() = agronomist_id);
+                                                        CREATE POLICY "Qualquer autenticado le convites" ON public.agronomist_codes FOR SELECT USING (auth.role() = 'authenticated');
+                                                        CREATE POLICY "Acesso bilateral a vinculos" ON public.agronomist_client_links FOR SELECT USING (auth.uid() = client_id OR auth.uid() = agronomist_id);
+                                                        CREATE POLICY "Clientes gerenciam vinculos" ON public.agronomist_client_links FOR ALL USING (auth.uid() = client_id);
+                                                        CREATE POLICY "Admin le auditoria" ON public.audit_logs FOR SELECT USING ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'ADMIN');
+                                                        
