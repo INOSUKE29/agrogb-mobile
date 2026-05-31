@@ -34,23 +34,22 @@ BEGIN
   END IF;
   
   -- 3. Inserir o perfil. Adaptado para as colunas reais da tabela 'profiles' atual.
-  -- Usamos o CAST (::public.user_role) porque a coluna no banco é do tipo ENUM customizado.
   INSERT INTO public.profiles (
     id, 
     email, 
-    full_name, 
+    nome_completo, 
     role
   )
   VALUES (
     new.id,
     new.email,
     full_name,
-    user_role::public.user_role
+    user_role
   )
   ON CONFLICT (id) DO UPDATE 
     SET 
       email = EXCLUDED.email,
-      full_name = EXCLUDED.full_name,
+      nome_completo = EXCLUDED.nome_completo,
       role = EXCLUDED.role;
   
   RETURN new;
