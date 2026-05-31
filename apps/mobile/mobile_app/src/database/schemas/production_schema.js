@@ -1,0 +1,111 @@
+export const PRODUCTION_SCHEMA = [
+    `CREATE TABLE IF NOT EXISTS colheitas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        uuid TEXT UNIQUE NOT NULL, 
+        area_id TEXT, 
+        usuario_id TEXT, 
+        cultura TEXT NOT NULL, 
+        produto TEXT NOT NULL, 
+        quantidade REAL NOT NULL, 
+        congelado REAL DEFAULT 0,
+        data_colheita TEXT, 
+        data TEXT NOT NULL, 
+        observacao TEXT, 
+        anexo TEXT, 
+        last_updated TEXT NOT NULL, 
+        sync_status INTEGER DEFAULT 0
+    );`,
+    `CREATE TABLE IF NOT EXISTS plantio (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        uuid TEXT UNIQUE NOT NULL, 
+        cultura TEXT NOT NULL, 
+        quantidade_pes INTEGER NOT NULL, 
+        tipo_plantio TEXT, 
+        data TEXT NOT NULL, 
+        observacao TEXT, 
+        last_updated TEXT NOT NULL, 
+        sync_status INTEGER DEFAULT 0
+    );`,
+    `CREATE TABLE IF NOT EXISTS monitoramento (
+        uuid TEXT PRIMARY KEY, 
+        cultura TEXT, 
+        data TEXT, 
+        imagem_base64 TEXT, 
+        observacao TEXT, 
+        sync_status INTEGER DEFAULT 0, 
+        last_updated TEXT NOT NULL
+    );`,
+    `CREATE TABLE IF NOT EXISTS planos_adubacao (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        uuid TEXT UNIQUE NOT NULL, 
+        nome_plano TEXT NOT NULL, 
+        cultura TEXT, 
+        tipo_aplicacao TEXT, 
+        area_local TEXT, 
+        descricao_tecnica TEXT, 
+        status TEXT DEFAULT 'PLANEJADO', 
+        data_criacao TEXT NOT NULL, 
+        data_aplicacao TEXT, 
+        anexos_uri TEXT, 
+        last_updated TEXT NOT NULL, 
+        sync_status INTEGER DEFAULT 0
+    );`,
+    `CREATE TABLE IF NOT EXISTS monitoramento_entidade (
+        uuid TEXT PRIMARY KEY, 
+        usuario_id TEXT, 
+        area_id TEXT, 
+        cultura_id TEXT, 
+        data TEXT NOT NULL, 
+        observacao_usuario TEXT, 
+        status TEXT DEFAULT 'RASCUNHO', 
+        nivel_confianca TEXT DEFAULT 'TÉCNICO', 
+        severidade TEXT DEFAULT 'BAIXA', 
+        categoria TEXT DEFAULT 'OUTROS', 
+        criado_em TEXT NOT NULL, 
+        sync_status INTEGER DEFAULT 0, 
+        last_updated TEXT NOT NULL
+    );`,
+    `CREATE TABLE IF NOT EXISTS monitoramento_media (
+        uuid TEXT PRIMARY KEY, 
+        monitoramento_uuid TEXT NOT NULL, 
+        tipo TEXT NOT NULL, 
+        caminho_arquivo TEXT NOT NULL, 
+        criado_em TEXT NOT NULL, 
+        sync_status INTEGER DEFAULT 0, 
+        last_updated TEXT NOT NULL
+    );`,
+    `CREATE TABLE IF NOT EXISTS v2_colheitas (
+        id TEXT PRIMARY KEY,
+        plantio_id TEXT,
+        data_colheita TEXT,
+        quantidade_total REAL,
+        unidade TEXT DEFAULT 'KG',
+        qualidade TEXT,
+        observacao TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT,
+        sync_status TEXT DEFAULT 'pending'
+    );`,
+    `CREATE TABLE IF NOT EXISTS fertilization_recipes (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT,
+        culture TEXT,
+        description TEXT,
+        user_id TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        last_updated TEXT DEFAULT (datetime('now')),
+        sync_status INTEGER DEFAULT 0,
+        is_deleted INTEGER DEFAULT 0
+    );`,
+    `CREATE TABLE IF NOT EXISTS production_fertilization_items (
+        id TEXT PRIMARY KEY,
+        plano_uuid TEXT NOT NULL,
+        produto_id TEXT NOT NULL,
+        quantidade REAL NOT NULL,
+        unidade TEXT,
+        criado_em TEXT DEFAULT (datetime('now')),
+        sync_status INTEGER DEFAULT 0,
+        FOREIGN KEY(plano_uuid) REFERENCES planos_adubacao(uuid)
+    );`
+];

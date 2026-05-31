@@ -1,0 +1,13 @@
+node_modules/
+android/
+ios/
+.expo/
+assets/
+dist/
+web-build/
+scripts/
+*.config.js
+*extracted/
+*.bak
+*.exe
+*.apk

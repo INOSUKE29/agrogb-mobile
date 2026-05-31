@@ -1,0 +1,20 @@
+{
+  "login": {
+    "welcome": "WELCOME TO AGROGB",
+    "emailLabel": "EMAIL OR USERNAME",
+    "passwordLabel": "PASSWORD",
+    "emailPlaceholder": "your@email.com",
+    "passwordPlaceholder": "••••••••",
+    "enterBtn": "LOGIN TO SYSTEM",
+    "bioBtn": "Login with Biometrics",
+    "recoverPass": "🔑 Recover Password",
+    "firstAccess": "✨ First Access"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Critical Error",
+    "success": "Success",
+    "save": "Save",
+    "cancel": "Cancel"
+  }
+}

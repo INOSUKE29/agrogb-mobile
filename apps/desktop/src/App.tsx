@@ -1,0 +1,96 @@
+import { HashRouter, Routes, Route } from 'react-router-dom';
+import LoginScreen from './screens/Auth/LoginScreen';
+import DashboardLayout from './screens/Dashboard/DashboardLayout';
+import OverviewScreen from './screens/Dashboard/OverviewScreen';
+import HarvestScreen from './screens/Dashboard/HarvestScreen';
+import FinancialScreen from './screens/Dashboard/FinancialScreen';
+import UsersScreen from './screens/Dashboard/UsersScreen';
+import AgroDashboard from './screens/Dashboard/AgroDashboard';
+import ClienteDashboard from './screens/Dashboard/ClienteDashboard';
+import TalhoesScreen from './screens/Dashboard/TalhoesScreen';
+import CadernoAgricolaScreen from './screens/Dashboard/CadernoAgricolaScreen';
+import RecomendacoesScreen from './screens/Dashboard/RecomendacoesScreen';
+import MeusClientesScreen from './screens/Dashboard/MeusClientesScreen';
+import SettingsScreen from './screens/Dashboard/SettingsScreen';
+import VendasScreen from './screens/Dashboard/VendasScreen';
+import CulturasScreen from './screens/Dashboard/CulturasScreen';
+import MonitoramentoScreen from './screens/Dashboard/MonitoramentoScreen';
+import EstoqueScreen from './screens/Dashboard/EstoqueScreen';
+import FrotaScreen from './screens/Dashboard/FrotaScreen';
+import TarefasScreen from './screens/Dashboard/TarefasScreen';
+import ComprasScreen from './screens/Dashboard/ComprasScreen';
+import ClimaScreen from './screens/Dashboard/ClimaScreen';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from './contexts/AuthContext';
+
+function App() {
+  return (
+    <AuthProvider>
+      <div className="dark" style={{ height: '100vh', width: '100vw', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <Toaster 
+          position="top-right" 
+          toastOptions={{
+            className: 'glass text-white border border-[var(--color-border)]',
+            style: {
+              background: 'var(--color-background)',
+              color: '#fff',
+              borderRadius: '12px',
+            },
+            success: {
+              iconTheme: { primary: '#10B981', secondary: '#fff' },
+            },
+            error: {
+              iconTheme: { primary: '#EF4444', secondary: '#fff' },
+            },
+          }} 
+        />
+        <HashRouter>
+          <Routes>
+            {/* Rota de Login */}
+            <Route path="/" element={<LoginScreen />} />
+            
+            {/* Rotas Autenticadas */}
+            <Route path="/dashboard" element={<DashboardLayout />}>
+              {/* Redirecionamento Padrão */}
+              <Route index element={<OverviewScreen />} />
+
+              {/* PORTAL ADMIN */}
+              <Route path="admin" element={<OverviewScreen />} />
+              <Route path="admin/usuarios" element={<UsersScreen />} />
+              <Route path="admin/planos" element={<div className="text-white p-8">Em breve: Gestão de Planos e Assinaturas (Admin)</div>} />
+              <Route path="admin/financeiro" element={<FinancialScreen />} />
+
+              {/* PORTAL AGRÔNOMO */}
+              <Route path="agronomo" element={<AgroDashboard />} />
+              <Route path="agronomo/clientes" element={<MeusClientesScreen />} />
+              <Route path="agronomo/recomendacoes" element={<RecomendacoesScreen />} />
+              <Route path="agronomo/visitas" element={<div className="text-white p-8">Em breve: Visitas Técnicas</div>} />
+
+              {/* PORTAL CLIENTE (PRODUTOR) */}
+              <Route path="cliente" element={<ClienteDashboard />} />
+              <Route path="cliente/talhoes" element={<TalhoesScreen />} />
+              <Route path="cliente/culturas" element={<CulturasScreen />} />
+              <Route path="cliente/monitoramento" element={<MonitoramentoScreen />} />
+              <Route path="cliente/caderno" element={<CadernoAgricolaScreen />} />
+              <Route path="cliente/financeiro" element={<FinancialScreen />} />
+              <Route path="cliente/vendas" element={<VendasScreen />} />
+              <Route path="cliente/estoque" element={<EstoqueScreen />} />
+              <Route path="cliente/frota" element={<FrotaScreen />} />
+              <Route path="cliente/tarefas" element={<TarefasScreen />} />
+              <Route path="cliente/compras" element={<ComprasScreen />} />
+              <Route path="cliente/clima" element={<ClimaScreen />} />
+
+              {/* Antigas Rotas de Fallback (para não quebrar a compilação) */}
+              <Route path="colheita" element={<HarvestScreen />} />
+              <Route path="financeiro" element={<FinancialScreen />} />
+              <Route path="usuarios" element={<UsersScreen />} />
+              <Route path="configuracoes" element={<SettingsScreen />} />
+            </Route>
+          </Routes>
+        </HashRouter>
+      </div>
+    </AuthProvider>
+  );
+}
+
+export default App;

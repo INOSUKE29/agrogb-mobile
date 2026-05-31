@@ -1,0 +1,207 @@
+
+> agrogb-mobile@1.0.0 verify
+> node scripts/prebuild-check.js
+
+­ƒøí´©Å  INICIANDO SUPER AUDIT v12.0 (DEEP SCAN & TEST)...
+
+Step 1: ESLint Check...
+
+> agrogb-mobile@1.0.0 lint
+> eslint .
+
+(node:20928) ESLintIgnoreWarning: The ".eslintignore" file is no longer supported. Switch to using the "ignores" property in "eslint.config.js": https://eslint.org/docs/latest/use/configure/migration-guide#ignoring-files
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\CadastroScreen.js
+  100:18  warning  'error' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\CadernoCampoScreen.js
+   97:18  warning  'e' is defined but never used  no-unused-vars
+  123:34  warning  'e' is defined but never used  no-unused-vars
+  209:45  warning  'e' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\CategoriasDespesaScreen.js
+  49:18  warning  'error' is defined but never used  no-unused-vars
+  67:34  warning  'error' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\ClientesScreen.js
+  3:57  warning  'Alert' is defined but never used     no-unused-vars
+  7:10  warning  'BlurView' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\ColheitaScreen.js
+   43:12  warning  'productsDB' is assigned a value but never used  no-unused-vars
+   51:18  warning  'err' is defined but never used                  no-unused-vars
+  148:86  warning  'e' is defined but never used                    no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\ComprasScreen.js
+   1:27  warning  'useEffect' is defined but never used  no-unused-vars
+  34:18  warning  'err' is defined but never used        no-unused-vars
+  41:18  warning  'e' is defined but never used          no-unused-vars
+  77:18  warning  'error' is defined but never used      no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\CulturasScreen.js
+   3:20  warning  'MaterialCommunityIcons' is defined but never used  no-unused-vars
+   8:7   warning  'screenWidth' is assigned a value but never used    no-unused-vars
+  55:18  warning  'e' is defined but never used                       no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\CustosScreen.js
+    1:38  warning  'useCallback' is defined but never used       no-unused-vars
+    7:16  warning  'uuidv4' is defined but never used            no-unused-vars
+   11:10  warning  'useFocusEffect' is defined but never used    no-unused-vars
+   28:12  warning  'loading' is assigned a value but never used  no-unused-vars
+  102:55  warning  'e' is defined but never used                 no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\EncomendasScreen.js
+  20:9   warning  'width' is assigned a value but never used         no-unused-vars
+  57:14  warning  'e' is defined but never used                      no-unused-vars
+  62:9   warning  'statusCounts' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\EstoqueScreen.js
+  18:9  warning  'width' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\FertilizationScreen.js
+  12:9   warning  'width' is assigned a value but never used   no-unused-vars
+  20:13  warning  'colors' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\FinancialAccountsScreen.js
+  6:8  warning  'AppContainer' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\FrotaScreen.js
+  47:22  warning  'error' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\HomeScreen.js
+  8:9  warning  'width' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\LoginScreen.js
+  24:9   warning  'width' is assigned a value but never used                 no-unused-vars
+  24:16  warning  'height' is assigned a value but never used                no-unused-vars
+  30:12  warning  'isBiometricAvailable' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\MaquinaFormScreen.js
+  2:117  warning  'Image' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\MonitoramentoScreen.js
+   12:40  warning  'useRef' is defined but never used    no-unused-vars
+   14:47  warning  'FlatList' is defined but never used  no-unused-vars
+   17:21  warning  'Animated' is defined but never used  no-unused-vars
+  128:18  warning  'e' is defined but never used         no-unused-vars
+  271:40  warning  'index' is defined but never used     no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\NovaEncomendaScreen.js
+    4:36  warning  'Dimensions' is defined but never used  no-unused-vars
+  108:18  warning  'error' is defined but never used       no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\PlantioScreen.js
+    2:118  warning  'KeyboardAvoidingView' is defined but never used  no-unused-vars
+  100:18   warning  'err' is defined but never used                   no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\ProfileEditScreen.js
+  19:13  warning  'colors' is assigned a value but never used  no-unused-vars
+  95:18  warning  'e' is defined but never used                no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\ProfileScreen.js
+   5:16  warning  'SafeAreaView' is defined but never used            no-unused-vars
+   8:20  warning  'MaterialCommunityIcons' is defined but never used  no-unused-vars
+  27:13  warning  'colors' is assigned a value but never used         no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\RecipeFormScreen.js
+  30:22  warning  'setItemUnit' is assigned a value but never used  no-unused-vars
+  87:18  warning  'error' is defined but never used                 no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\RegisterScreen.js
+  18:9  warning  'width' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\RelatoriosScreen.js
+  34:12  warning  'hasData' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\SettingsScreen.js
+   5:16  warning  'SafeAreaView' is defined but never used            no-unused-vars
+   8:20  warning  'MaterialCommunityIcons' is defined but never used  no-unused-vars
+  23:13  warning  'colors' is assigned a value but never used         no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\SyncScreen.js
+   12:8    warning  'GlowCard' is defined but never used        no-unused-vars
+   13:8    warning  'PrimaryButton' is defined but never used   no-unused-vars
+   18:10   warning  'WeatherService' is defined but never used  no-unused-vars
+  599:166  warning  'e' is defined but never used               no-unused-vars
+  616:141  warning  'e' is defined but never used               no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\UsuariosScreen.js
+  7:38  warning  'useCallback' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\screens\VendasScreen.js
+   9:5   warning  'Modal' is defined but never used                         no-unused-vars
+  15:23  warning  'marcarVendaRecebida' is defined but never used           no-unused-vars
+  28:52  warning  'route' is defined but never used                         no-unused-vars
+  39:12  warning  'history' is assigned a value but never used              no-unused-vars
+  43:12  warning  'recebimentoModal' is assigned a value but never used     no-unused-vars
+  43:30  warning  'setRecebimentoModal' is assigned a value but never used  no-unused-vars
+  44:12  warning  'recebimentoItem' is assigned a value but never used      no-unused-vars
+  44:29  warning  'setRecebimentoItem' is assigned a value but never used   no-unused-vars
+  45:12  warning  'valorRecebido' is assigned a value but never used        no-unused-vars
+  45:27  warning  'setValorRecebido' is assigned a value but never used     no-unused-vars
+  47:12  warning  'items' is assigned a value but never used                no-unused-vars
+  48:12  warning  'clients' is assigned a value but never used              no-unused-vars
+  89:18  warning  'err' is defined but never used                           no-unused-vars
+  96:18  warning  'e' is defined but never used                             no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\services\DashboardService.js
+  22:22  warning  'e' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\services\supabaseClient.js
+  28:17  warning  'data' is assigned a value but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\theme\themeDark.js
+  1:10  warning  'COLORS' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\theme\themeLight.js
+  1:10  warning  'COLORS' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\cadastro\CadastroPlantios.js
+  1:40  warning  'useEffect' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\components\AgroButton.js
+  5:10  warning  'TYPOGRAPHY' is defined but never used  no-unused-vars
+
+C:\Users\Bruno\Documents\AgroGB\mobile_app\src\ui\components\AnalyticsDashboard.js
+  3:20  warning  'LineChart' is defined but never used  no-unused-vars
+
+Ô£û 84 problems (0 errors, 84 warnings)
+
+
+Step 2: Senior Auditor Scan (Security & Integrity)...
+--- ­ƒøí´©Å  SENIOR AUDIT v12.0 STARTING (DEEP ANALYSIS) ---
+
+--- ­ƒôè AUDIT SUMMARY ---
+Ô£à PASSED: No critical errors found.
+ÔÜá´©Å  ADVISORY: 68 Warnings found (Check logs).
+------------------------
+
+
+Step 3: Automated Unit & Component Tests (Jest)...
+
+> agrogb-mobile@1.0.0 test
+> jest
+
+  console.log
+    ­ƒöä [SyncWorker] Iniciando processamento da fila...
+
+      at Object.log (src/services/SyncWorker.js:25:34)
+
+  console.log
+    Ô£à [SyncWorker] Ciclo de sincroniza├º├úo conclu├¡do.
+
+      at Object.log (src/services/SyncWorker.js:42:34)
+
+PASS __tests__/SyncWorker.test.js
+  SyncWorker Audit
+    ÔêÜ deve interromper o ciclo se n├úo houver internet (4 ms)
+    ÔêÜ deve processar itens da fila quando houver internet (45 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       2 passed, 2 total
+Snapshots:   0 total
+Time:        3.953 s
+Ran all test suites.
+
+Ô£à Auditoria Profunda conclu├¡da! O projeto est├í est├ível para build.

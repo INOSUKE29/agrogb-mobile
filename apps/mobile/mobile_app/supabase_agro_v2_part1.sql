@@ -1,0 +1,154 @@
+-- =====================================================================================
+-- AGROGB - PARTE 1: Perfis, Propriedades, Vínculos e Recomendações
+-- =====================================================================================
+
+-- 1. Criar Enums para Roles e Status
+DO $$ BEGIN
+    CREATE TYPE user_role AS ENUM ('ADMIN', 'AGRONOMO', 'CLIENTE');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE link_status AS ENUM ('PENDING', 'ACTIVE', 'REVOKED');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+-- 2. Atualizar tabela PROFILES (se já existir, adiciona as colunas)
+-- Supõe-se que a tabela profiles já exista ligada a auth.users. Vamos garantir.
+CREATE TABLE IF NOT EXISTS public.profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    full_name TEXT,
+    email TEXT,
+    phone TEXT,
+    role user_role DEFAULT 'CLIENTE',
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- Adicionar colunas com segurança caso a tabela já existisse
+DO $$ BEGIN
+    ALTER TABLE public.profiles ADD COLUMN full_name TEXT;
+EXCEPTION WHEN duplicate_column THEN null; END $$;
+DO $$ BEGIN
+    ALTER TABLE public.profiles ADD COLUMN role user_role DEFAULT 'CLIENTE';
+EXCEPTION WHEN duplicate_column THEN null; END $$;
+
+-- 3. Tabela FARMS (Propriedades)
+DROP TABLE IF EXISTS public.farms CASCADE;
+CREATE TABLE public.farms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    city TEXT,
+    state TEXT,
+    area_total NUMERIC,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 4. Tabela FIELDS (Talhões)
+DROP TABLE IF EXISTS public.fields CASCADE;
+CREATE TABLE public.fields (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    farm_id UUID NOT NULL REFERENCES public.farms(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    area NUMERIC,
+    plant_count INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 5. Tabela PLANTINGS (Plantios)
+DROP TABLE IF EXISTS public.plantings CASCADE;
+CREATE TABLE public.plantings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    field_id UUID NOT NULL REFERENCES public.fields(id) ON DELETE CASCADE,
+    crop_name TEXT NOT NULL,
+    variety_name TEXT,
+    planting_date DATE,
+    expected_yield NUMERIC,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 6. Tabela AGRONOMIST_CODES (Códigos de Convite)
+DROP TABLE IF EXISTS public.agronomist_codes CASCADE;
+CREATE TABLE public.agronomist_codes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    agronomist_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    invite_code TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 7. Tabela AGRONOMIST_CLIENT_LINKS (Vínculos)
+DROP TABLE IF EXISTS public.agronomist_client_links CASCADE;
+CREATE TABLE public.agronomist_client_links (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    agronomist_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    client_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    status link_status DEFAULT 'PENDING',
+    permissions JSONB DEFAULT '{}'::jsonb,
+    approved_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+    UNIQUE(agronomist_id, client_id)
+);
+
+-- 8. Tabela RECOMMENDATIONS (Recomendações Técnicas)
+DROP TABLE IF EXISTS public.recommendations CASCADE;
+CREATE TABLE public.recommendations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    agronomist_id UUID NOT NULL REFERENCES public.profiles(id),
+    client_id UUID NOT NULL REFERENCES public.profiles(id),
+    farm_id UUID NOT NULL REFERENCES public.farms(id),
+    field_id UUID REFERENCES public.fields(id),
+    planting_id UUID REFERENCES public.plantings(id),
+    title TEXT NOT NULL,
+    description TEXT,
+    application_type TEXT,
+    scheduled_date DATE,
+    status TEXT DEFAULT 'PENDING',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- =====================================================================================
+-- ROW LEVEL SECURITY (RLS) POLICIES
+-- =====================================================================================
+
+-- Habilitar RLS em todas as tabelas
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.farms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.fields ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.plantings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.agronomist_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.agronomist_client_links ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.recommendations ENABLE ROW LEVEL SECURITY;
+
+-- Políticas PROFILES: Usuário vê e edita o próprio perfil.
+CREATE POLICY "Usuário vê o próprio perfil" ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Usuário edita o próprio perfil" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+
+-- Políticas FARMS: Dono vê/edita sua fazenda.
+CREATE POLICY "Dono acessa sua farm" ON public.farms FOR ALL USING (auth.uid() = owner_id);
+
+-- Políticas FIELDS e PLANTINGS: Dono da fazenda acessa.
+-- (Simplificado para o MVP: RLS baseada no sub-query da farm)
+CREATE POLICY "Dono acessa fields da farm" ON public.fields FOR ALL USING (
+    EXISTS (SELECT 1 FROM public.farms WHERE farms.id = fields.farm_id AND farms.owner_id = auth.uid())
+);
+CREATE POLICY "Dono acessa plantings" ON public.plantings FOR ALL USING (
+    EXISTS (
+        SELECT 1 FROM public.fields 
+        JOIN public.farms ON farms.id = fields.farm_id 
+        WHERE fields.id = plantings.field_id AND farms.owner_id = auth.uid()
+    )
+);
+
+-- Políticas VÍNCULOS: Cliente ou Agrônomo podem ver.
+CREATE POLICY "Ver links envolvidos" ON public.agronomist_client_links FOR SELECT USING (
+    auth.uid() = client_id OR auth.uid() = agronomist_id
+);
+
+-- Políticas RECOMENDAÇÕES: Cliente (dono da farm) ou Agrônomo (criador) podem acessar.
+CREATE POLICY "Cliente ou Agrônomo veem recomendação" ON public.recommendations FOR SELECT USING (
+    auth.uid() = client_id OR auth.uid() = agronomist_id
+);
+CREATE POLICY "Agrônomo cria recomendação" ON public.recommendations FOR INSERT WITH CHECK (
+    auth.uid() = agronomist_id
+);

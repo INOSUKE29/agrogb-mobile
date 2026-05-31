@@ -1,0 +1,20 @@
+{
+  "login": {
+    "welcome": "BEM-VINDO AO AGROGB",
+    "emailLabel": "E-MAIL OU USUÁRIO",
+    "passwordLabel": "SENHA DE ACESSO",
+    "emailPlaceholder": "seu@email.com",
+    "passwordPlaceholder": "••••••••",
+    "enterBtn": "ENTRAR NO SISTEMA",
+    "bioBtn": "Entrar com Biometria",
+    "recoverPass": "🔑 Recuperar Senha",
+    "firstAccess": "✨ Primeiro Acesso"
+  },
+  "common": {
+    "loading": "Carregando...",
+    "error": "Erro Crítico",
+    "success": "Sucesso",
+    "save": "Salvar",
+    "cancel": "Cancelar"
+  }
+}
