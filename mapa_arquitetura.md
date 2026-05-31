@@ -30,10 +30,14 @@ C:\Users\Bruno\Documents\AgroGB\
 - O aplicativo Desktop vai importar exatamente a mesma função.
 - **Resultado:** A manutenção cai pela metade e os dois aplicativos trabalham em perfeita harmonia (Tempo Real).
 
-## Próximos Passos
-1. Iremos mover a sua pasta atual do Mobile para `apps/mobile/`.
-2. Iremos inicializar o React/TypeScript dentro de `apps/desktop/`.
-3. Começaremos a quebrar o código "solto" do mobile atual, jogando as lógicas para dentro da pasta `packages/`.
+## Evolução Recente (Maio/2026)
+- **Migração Concluída:** Toda a base do aplicativo Mobile foi isolada em `apps/mobile/mobile_app`.
+- **Auditoria Máxima:** Concluímos as 10 Fases da Auditoria Estrutural. Foi provado que o erro `useTheme` decorria de cache de versões anteriores, visto que os provedores relacionados (`WeatherProvider`, `SyncProvider`) foram expurgados da branch principal.
+- **Limpeza de Build:** Limpamos mais de 350 MB de arquivos pesados inúteis (`agrogb-dev.apk`, backups `.zip`) que travavam o envio para o GitHub Actions.
+
+## Próximos Passos (Imediatos)
+1. Iniciar o desenvolvimento dos Shared Services dentro da pasta `packages/` (transferindo lógicas do Mobile para a raiz).
+2. Plugar o React Native (Mobile) e o Vite/Next.js (Desktop) simultaneamente neste novo motor compartilhado.
 
 ## Dinâmica de Trabalho com IA (Antigravity + Jules)
 Para garantir máxima eficiência no desenvolvimento do AgroGB, estabelecemos um modelo de **Liderança Técnica (Tech Lead)**:
