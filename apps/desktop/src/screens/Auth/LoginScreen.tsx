@@ -93,13 +93,24 @@ export default function LoginScreen() {
                     alt="AgroGB Fazenda"
                     className="absolute inset-0 w-full h-full object-cover"
                 />
-                <div className="absolute bottom-16 left-16 z-20 max-w-md animate-fade-in">
-                    <h1 className="text-4xl font-black text-white mb-4 leading-tight">
-                        A evolução da <br/>gestão no campo.
+                <div className="absolute inset-0 flex flex-col justify-center items-center z-20 p-16 text-center">
+                    <div 
+                        className="w-48 h-48 rounded-3xl flex items-center justify-center mb-8 overflow-hidden shadow-[0_0_60px_rgba(34,197,94,0.4)] border border-[var(--color-primary)]/40 cursor-pointer" 
+                        onClick={handleLogoClick}
+                    >
+                        <img src="/logo.png" alt="AgroGB Logo" className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />
+                    </div>
+                    <h1 className="text-5xl font-black text-white mb-6 leading-tight">
+                        AgroGB <span className="text-[var(--color-primary)]">Pro</span>
                     </h1>
-                    <p className="text-[var(--color-muted)] text-lg font-medium">
+                    <p className="text-[var(--color-muted)] text-xl font-medium max-w-md mx-auto">
                         Plataforma de alta performance para agrônomos e gestores de produção agrícola.
                     </p>
+                </div>
+                
+                {/* Espaço reservado para mensagens informativas futuras no canto inferior esquerdo */}
+                <div className="absolute bottom-8 left-8 z-20">
+                    {/* Placeholder para informativos */}
                 </div>
             </div>
 
@@ -111,8 +122,9 @@ export default function LoginScreen() {
                 <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl" />
 
                 <div className="w-full max-w-sm relative z-10">
+                    {/* Logo Mobile (Só aparece em telas pequenas) */}
                     <div 
-                        className="flex flex-col items-center mb-10 cursor-pointer" 
+                        className="flex lg:hidden flex-col items-center mb-10 cursor-pointer" 
                         onClick={handleLogoClick}
                     >
                         <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-4 overflow-hidden shadow-lg border border-[var(--color-primary)]/20">
@@ -120,6 +132,12 @@ export default function LoginScreen() {
                         </div>
                         <h2 className="text-2xl font-black text-white tracking-tight">AgroGB <span className="text-[var(--color-primary)]">Pro</span></h2>
                         <p className="text-[var(--color-muted)] text-sm font-medium mt-1">Acesso Restrito ao Sistema</p>
+                    </div>
+                    
+                    {/* Título do Form Desktop */}
+                    <div className="hidden lg:flex flex-col items-center mb-10">
+                        <h2 className="text-3xl font-black text-white tracking-tight">Bem-vindo(a)</h2>
+                        <p className="text-[var(--color-muted)] text-base font-medium mt-2">Acesse sua conta para continuar</p>
                     </div>
 
                     <form onSubmit={handleLogin} className="glass p-8 rounded-3xl shadow-2xl flex flex-col gap-5 animate-fade-in">
