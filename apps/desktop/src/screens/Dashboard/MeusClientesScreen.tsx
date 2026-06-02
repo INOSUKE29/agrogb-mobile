@@ -12,10 +12,6 @@ export default function MeusClientesScreen() {
     const [emailProdutor, setEmailProdutor] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
-    useEffect(() => {
-        loadClientes();
-    }, []);
-
     const loadClientes = async () => {
         setLoading(true);
         try {
@@ -37,6 +33,10 @@ export default function MeusClientesScreen() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        loadClientes();
+    }, []);
 
     const handleVincular = async (e: React.FormEvent) => {
         e.preventDefault();

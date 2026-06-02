@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
-import { ShoppingCart, Store, FileText, Plus, Search, Building2, CheckCircle, XCircle, AlertCircle, TrendingUp, Package, Box } from 'lucide-react';
+import { ShoppingCart, Store, FileText, Plus, Building2, CheckCircle, XCircle, AlertCircle, TrendingUp, Package, Box } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function ComprasScreen() {
@@ -22,10 +22,6 @@ export default function ComprasScreen() {
     const [itemNome, setItemNome] = useState('');
     const [quantidade, setQuantidade] = useState('');
     const [valorUnitario, setValorUnitario] = useState('');
-
-    useEffect(() => {
-        fetchDados();
-    }, []);
 
     const fetchDados = async () => {
         try {
@@ -52,6 +48,12 @@ export default function ComprasScreen() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchDados();
+    }, []);
+
+
 
     const handleSaveFornecedor = async (e: React.FormEvent) => {
         e.preventDefault();

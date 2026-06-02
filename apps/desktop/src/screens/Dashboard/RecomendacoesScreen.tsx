@@ -65,14 +65,6 @@ export default function RecomendacoesScreen() {
     const [statusTab, setStatusTab] = useState<'Rascunho' | 'Pendente' | 'Aprovada'>('Pendente');
     const [receitasList, setReceitasList] = useState<any[]>([]);
 
-    useEffect(() => {
-        if (viewMode === 'list') {
-            loadReceitas();
-        } else {
-            fetchMocks();
-        }
-    }, [viewMode, statusTab]);
-
     const loadReceitas = async () => {
         setLoading(true);
         try {
@@ -100,6 +92,14 @@ export default function RecomendacoesScreen() {
         // Se conectarmos de verdade, seria algo como:
         // const { data } = await supabase.from('agronomist_client_links').select('client_name, client_id');
     };
+
+    useEffect(() => {
+        if (viewMode === 'list') {
+            loadReceitas();
+        } else {
+            fetchMocks();
+        }
+    }, [viewMode, statusTab]);
 
     useEffect(() => {
         if (selectedClient) {

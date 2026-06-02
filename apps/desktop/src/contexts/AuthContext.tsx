@@ -21,6 +21,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [role, setRole] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const fetchRole = async (userId: string) => {
+        try {
+            setRole(null); // Limpa o cargo anterior para evitar que o Admin continue vendo a tela errada
+            const { data } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', userId)
+                .single();
+            
+            if (data) {
+                setRole(data.role);
+            }
+        } catch (error) {
+            console.error('Error fetching role:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         // Fetch initial session
         const initSession = async () => {
@@ -49,24 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => subscription.unsubscribe();
     }, []);
 
-    const fetchRole = async (userId: string) => {
-        try {
-            setRole(null); // Limpa o cargo anterior para evitar que o Admin continue vendo a tela errada
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', userId)
-                .single();
-            
-            if (data) {
-                setRole(data.role);
-            }
-        } catch (error) {
-            console.error('Error fetching role:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+
 
     const signOut = async () => {
         await supabase.auth.signOut();

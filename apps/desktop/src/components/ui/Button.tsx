@@ -26,7 +26,7 @@ export const Button: React.FC<ButtonProps> = ({
     ...props
 }) => {
     // Base classes
-    const baseClasses = 'inline-flex items-center justify-center font-bold transition-all rounded-xl border focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--color-background)] disabled:opacity-50 disabled:cursor-not-allowed';
+    const baseClasses = 'inline-flex items-center justify-center font-bold transition-all rounded-xl border focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-[var(--color-background)] focus:ring-offset-white disabled:opacity-50 disabled:cursor-not-allowed';
     
     // Sizing
     const sizeClasses = {
@@ -37,11 +37,11 @@ export const Button: React.FC<ButtonProps> = ({
 
     // Variants
     const variantClasses = {
-        primary: 'bg-green-600 hover:bg-green-500 text-white border-transparent shadow-lg shadow-green-500/20 focus:ring-green-500',
-        secondary: 'bg-white/5 hover:bg-white/10 text-white border-[var(--color-border)] focus:ring-gray-500',
-        danger: 'bg-red-500/10 hover:bg-red-500/20 text-red-500 border-red-500/30 focus:ring-red-500',
-        ghost: 'bg-transparent hover:bg-white/5 text-[var(--color-muted)] hover:text-white border-transparent focus:ring-gray-500',
-        outline: 'bg-transparent hover:bg-white/5 text-white border-[var(--color-border)] focus:ring-gray-500'
+        primary: 'bg-[var(--color-primary)] hover:bg-emerald-600 dark:hover:bg-[var(--color-primary)]/90 text-white border-transparent shadow-lg shadow-[var(--color-primary)]/20 focus:ring-[var(--color-primary)]',
+        secondary: 'bg-slate-100 hover:bg-slate-200 text-slate-900 dark:bg-white/5 dark:hover:bg-white/10 dark:text-white border-slate-200 dark:border-white/5 focus:ring-slate-500',
+        danger: 'bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-500/10 dark:hover:bg-red-500/20 dark:text-red-500 border-red-200 dark:border-red-500/30 focus:ring-red-500',
+        ghost: 'bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 text-slate-600 dark:text-[var(--color-muted)] hover:text-slate-900 dark:hover:text-white border-transparent focus:ring-slate-500',
+        outline: 'bg-transparent hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-white border-slate-300 dark:border-[var(--color-border)] focus:ring-slate-500'
     };
 
     const widthClass = fullWidth ? 'w-full' : '';

@@ -83,10 +83,10 @@ export default function LoginScreen() {
     };
 
     return (
-        <div className="flex flex-row-reverse min-h-screen bg-[var(--color-background)] relative overflow-hidden">
+        <div className="flex flex-row-reverse min-h-screen bg-slate-50 dark:bg-[var(--color-background)] relative overflow-hidden">
             
             {/* BACKGROUND GLOBAL UNIFICADO (Degradê Contínuo) */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#0A101D] via-[#0d1b2a] to-[#042f1f] z-0" />
+            <div className="absolute inset-0 bg-gradient-to-br from-slate-200 via-slate-50 to-emerald-100 dark:from-[#0A101D] dark:via-[#0d1b2a] dark:to-[#042f1f] z-0" />
             
             {/* Efeito de Malha / Grid Premium - Cobrindo a tela toda */}
             <div className="absolute inset-0 opacity-10 z-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
@@ -100,12 +100,12 @@ export default function LoginScreen() {
             <div className="hidden lg:flex lg:w-1/2 relative z-10">
                 <div className="absolute inset-0 flex flex-col justify-center items-center p-16 text-center">
                     <div 
-                        className="w-48 h-48 rounded-3xl flex items-center justify-center mb-8 overflow-hidden shadow-[0_0_80px_rgba(34,197,94,0.3)] border border-[var(--color-primary)]/30 cursor-pointer backdrop-blur-md bg-white/5 transition-all duration-500 hover:shadow-[0_0_100px_rgba(34,197,94,0.5)] hover:border-[var(--color-primary)]/60 hover:scale-105" 
+                        className="w-48 h-48 rounded-3xl flex items-center justify-center mb-8 overflow-hidden shadow-2xl shadow-emerald-500/20 dark:shadow-[0_0_80px_rgba(34,197,94,0.3)] border border-white dark:border-[var(--color-primary)]/30 cursor-pointer backdrop-blur-md bg-white dark:bg-white/5 transition-all duration-500 hover:scale-105" 
                         onClick={handleLogoClick}
                     >
                         <img src="/logo.png" alt="AgroGB Logo" className="w-full h-full object-cover" />
                     </div>
-                    <h1 className="text-5xl font-black text-white mb-6 leading-tight drop-shadow-2xl">
+                    <h1 className="text-5xl font-black text-gray-900 dark:text-white mb-6 leading-tight drop-shadow-2xl">
                         AgroGB <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500 drop-shadow-none">Pro</span>
                     </h1>
                     <p className="text-[var(--color-muted)] text-xl font-medium max-w-md mx-auto leading-relaxed">
@@ -113,9 +113,9 @@ export default function LoginScreen() {
                     </p>
                     
                     {/* Badge de Confiança Premium */}
-                    <div className="mt-12 flex items-center gap-3 px-6 py-3 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-xl">
-                        <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                        <span className="text-sm font-semibold text-white/90 tracking-wide uppercase">Ambiente Seguro e Criptografado</span>
+                    <div className="mt-12 flex items-center gap-3 px-6 py-3 rounded-full border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 backdrop-blur-md shadow-xl shadow-slate-200/50 dark:shadow-none">
+                        <ShieldCheck className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+                        <span className="text-sm font-semibold text-slate-700 dark:text-white/90 tracking-wide uppercase">Ambiente Seguro e Criptografado</span>
                     </div>
                 </div>
                 
@@ -137,17 +137,17 @@ export default function LoginScreen() {
                         <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-4 overflow-hidden shadow-lg border border-[var(--color-primary)]/20">
                             <img src="/logo.png" alt="AgroGB Logo" className="w-full h-full object-cover" />
                         </div>
-                        <h2 className="text-2xl font-black text-white tracking-tight">AgroGB <span className="text-[var(--color-primary)]">Pro</span></h2>
+                        <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">AgroGB <span className="text-[var(--color-primary)]">Pro</span></h2>
                         <p className="text-[var(--color-muted)] text-sm font-medium mt-1">Acesso Restrito ao Sistema</p>
                     </div>
                     
                     {/* Título do Form Desktop */}
                     <div className="hidden lg:flex flex-col items-center mb-10">
-                        <h2 className="text-3xl font-black text-white tracking-tight">Bem-vindo(a)</h2>
+                        <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Bem-vindo(a)</h2>
                         <p className="text-[var(--color-muted)] text-base font-medium mt-2">Acesse sua conta para continuar</p>
                     </div>
 
-                    <form onSubmit={handleLogin} className="glass p-8 rounded-3xl shadow-2xl flex flex-col gap-5 animate-fade-in">
+                    <form onSubmit={handleLogin} className="bg-white dark:bg-[#0A101D]/60 dark:backdrop-blur-2xl p-8 rounded-3xl shadow-2xl shadow-slate-200/50 dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-100 dark:border-white/5 flex flex-col gap-5 animate-fade-in relative z-10">
                         
                         {errorMsg && (
                             <div className="p-4 bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/20 rounded-xl flex items-center gap-3">
@@ -165,7 +165,7 @@ export default function LoginScreen() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="agronomo@fazenda.com"
-                                    className="w-full bg-[var(--color-background)]/50 border border-[var(--color-border)] rounded-xl py-3 pl-12 pr-4 text-white placeholder-[var(--color-muted)]/50 focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] transition-all"
+                                    className="w-full bg-slate-50 dark:bg-[var(--color-background)]/50 border border-slate-200 dark:border-[var(--color-border)] rounded-xl py-3 pl-12 pr-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[var(--color-muted)]/50 focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] transition-all"
                                     required
                                 />
                             </div>
@@ -180,7 +180,7 @@ export default function LoginScreen() {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full bg-[var(--color-background)]/50 border border-[var(--color-border)] rounded-xl py-3 pl-12 pr-4 text-white placeholder-[var(--color-muted)]/50 focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] transition-all"
+                                    className="w-full bg-slate-50 dark:bg-[var(--color-background)]/50 border border-slate-200 dark:border-[var(--color-border)] rounded-xl py-3 pl-12 pr-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[var(--color-muted)]/50 focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] transition-all"
                                     required
                                 />
                             </div>
@@ -189,7 +189,7 @@ export default function LoginScreen() {
                         <button 
                             type="submit" 
                             disabled={loading}
-                            className="mt-4 w-full bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-[var(--color-primary)]/20 transition-all flex items-center justify-center gap-2 group disabled:opacity-70"
+                            className="mt-4 w-full bg-[var(--color-primary)] hover:bg-emerald-600 dark:hover:bg-[var(--color-primary)]/90 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-[var(--color-primary)]/30 dark:shadow-[var(--color-primary)]/20 transition-all flex items-center justify-center gap-2 group disabled:opacity-70"
                         >
                             {loading ? (
                                 <span className="animate-pulse">Autenticando...</span>

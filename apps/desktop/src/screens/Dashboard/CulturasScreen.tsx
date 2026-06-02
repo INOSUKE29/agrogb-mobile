@@ -46,10 +46,13 @@ export default function CulturasScreen() {
         setLoading(true);
         try {
             // Tenta v2 primeiro
-            let { data, error } = await supabase
+            const response = await supabase
                 .from('v2_culturas')
                 .select('*')
                 .order('created_at', { ascending: false });
+            
+            let data = response.data;
+            const error = response.error;
 
             if (error) {
                 // Fallback para tabela v1

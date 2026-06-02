@@ -2,10 +2,16 @@ import React, { useState } from 'react';
 import { User, Shield, Monitor, Key, Bell, Save } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
+import { Switch } from '../../components/ui/Switch';
+import { Card, CardContent } from '../../components/ui/Card';
+import { Avatar } from '../../components/ui/Avatar';
 import toast from 'react-hot-toast';
+import { useTheme } from '../../contexts/ThemeProvider';
 
 export default function SettingsScreen() {
     const [activeTab, setActiveTab] = useState<'conta' | 'seguranca' | 'sistema'>('conta');
+    const { theme, setTheme } = useTheme();
 
     const handleSave = () => {
         toast.success('Configurações salvas com sucesso!');
@@ -17,11 +23,11 @@ export default function SettingsScreen() {
             {/* CABEÇALHO */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 border-b border-[var(--color-border)] pb-6 pt-4">
                 <div>
-                    <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+                    <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
                         <Settings className="w-8 h-8 text-blue-500" />
                         Configurações
                     </h1>
-                    <p className="text-[var(--color-muted)] font-medium mt-1">
+                    <p className="text-gray-600 dark:text-[var(--color-muted)] font-medium mt-1">
                         Gerencie sua conta, preferências de sistema e segurança.
                     </p>
                 </div>
@@ -37,38 +43,36 @@ export default function SettingsScreen() {
                 <aside className="w-full md:w-64 flex flex-col gap-2 flex-shrink-0">
                     <button 
                         onClick={() => setActiveTab('conta')}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all text-left ${activeTab === 'conta' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'text-[var(--color-muted)] hover:bg-white/5 hover:text-white border border-transparent'}`}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all text-left ${activeTab === 'conta' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'text-gray-600 dark:text-[var(--color-muted)] hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:text-white border border-transparent'}`}
                     >
                         <User className="w-5 h-5" /> Minha Conta
                     </button>
                     <button 
                         onClick={() => setActiveTab('seguranca')}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all text-left ${activeTab === 'seguranca' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'text-[var(--color-muted)] hover:bg-white/5 hover:text-white border border-transparent'}`}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all text-left ${activeTab === 'seguranca' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'text-gray-600 dark:text-[var(--color-muted)] hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:text-white border border-transparent'}`}
                     >
                         <Shield className="w-5 h-5" /> Segurança
                     </button>
                     <button 
                         onClick={() => setActiveTab('sistema')}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all text-left ${activeTab === 'sistema' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'text-[var(--color-muted)] hover:bg-white/5 hover:text-white border border-transparent'}`}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all text-left ${activeTab === 'sistema' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'text-gray-600 dark:text-[var(--color-muted)] hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:text-white border border-transparent'}`}
                     >
                         <Monitor className="w-5 h-5" /> Sistema
                     </button>
                 </aside>
 
                 {/* ÁREA DE CONTEÚDO DA ABA */}
-                <div className="flex-1 glass p-6 md:p-8 rounded-3xl border border-[var(--color-border)] relative overflow-hidden">
+                <Card className="flex-1 p-6 md:p-8 relative">
                     
                     {/* Efeito luminoso de fundo */}
                     <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500 opacity-5 rounded-full blur-[80px] pointer-events-none" />
 
                     {activeTab === 'conta' && (
                         <div className="flex flex-col gap-6 animate-fade-in relative z-10">
-                            <h2 className="text-xl font-bold text-white mb-2">Perfil de Usuário</h2>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Perfil de Usuário</h2>
                             
                             <div className="flex items-center gap-6 mb-4">
-                                <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center text-3xl font-bold text-white border-4 border-[var(--color-background)] shadow-xl">
-                                    B
-                                </div>
+                                <Avatar fallback="B" size="lg" className="w-24 h-24 text-3xl border-4 border-white dark:border-[#111111] shadow-xl" />
                                 <Button variant="secondary" size="sm">Alterar Foto</Button>
                             </div>
 
@@ -83,7 +87,7 @@ export default function SettingsScreen() {
 
                     {activeTab === 'seguranca' && (
                         <div className="flex flex-col gap-6 animate-fade-in relative z-10">
-                            <h2 className="text-xl font-bold text-white mb-2">Segurança da Conta</h2>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Segurança da Conta</h2>
                             
                             <div className="grid grid-cols-1 gap-6 max-w-md">
                                 <Input label="Senha Atual" type="password" placeholder="••••••••" leftIcon={<Key className="w-4 h-4" />} />
@@ -93,7 +97,7 @@ export default function SettingsScreen() {
 
                             <div className="mt-6 border-t border-[var(--color-border)] pt-6">
                                 <h3 className="text-lg font-bold text-red-400 mb-2">Sessões Ativas</h3>
-                                <p className="text-sm text-[var(--color-muted)] mb-4">Você está conectado em 1 dispositivo no momento (Desktop Atual).</p>
+                                <p className="text-sm text-gray-600 dark:text-[var(--color-muted)] mb-4">Você está conectado em 1 dispositivo no momento (Desktop Atual).</p>
                                 <Button variant="danger" size="sm">Encerrar todas as outras sessões</Button>
                             </div>
                         </div>
@@ -101,39 +105,40 @@ export default function SettingsScreen() {
 
                     {activeTab === 'sistema' && (
                         <div className="flex flex-col gap-6 animate-fade-in relative z-10">
-                            <h2 className="text-xl font-bold text-white mb-2">Preferências do Sistema</h2>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Preferências do Sistema</h2>
                             
-                            <div className="flex flex-col gap-6">
-                                <div>
-                                    <label className="block text-sm font-bold text-white mb-2">Tema</label>
-                                    <select className="w-full max-w-sm bg-[var(--color-background)] border border-[var(--color-border)] text-white text-sm rounded-xl focus:ring-2 focus:ring-blue-500 block p-3">
-                                        <option value="dark">Escuro (Padrão)</option>
-                                        <option value="light" disabled>Claro (Em breve)</option>
-                                        <option value="system" disabled>Sistema</option>
-                                    </select>
-                                </div>
+                            <div className="flex flex-col gap-6 max-w-sm">
+                                <Select 
+                                    label="Tema"
+                                    value={theme}
+                                    onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
+                                    options={[
+                                        { label: 'Claro', value: 'light' },
+                                        { label: 'Escuro', value: 'dark' },
+                                        { label: 'Sistema (Automático)', value: 'system' }
+                                    ]}
+                                />
                                 
-                                <div>
-                                    <label className="block text-sm font-bold text-white mb-2">Idioma</label>
-                                    <select className="w-full max-w-sm bg-[var(--color-background)] border border-[var(--color-border)] text-white text-sm rounded-xl focus:ring-2 focus:ring-blue-500 block p-3">
-                                        <option value="pt-BR">Português (Brasil)</option>
-                                        <option value="en-US">English</option>
-                                    </select>
-                                </div>
+                                <Select 
+                                    label="Idioma"
+                                    defaultValue="pt-BR"
+                                    options={[
+                                        { label: 'Português (Brasil)', value: 'pt-BR' },
+                                        { label: 'English', value: 'en-US' }
+                                    ]}
+                                />
 
-                                <div className="border-t border-[var(--color-border)] pt-6 mt-2">
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                        <input type="checkbox" className="w-5 h-5 rounded border-white/20 bg-black/50 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900" defaultChecked />
-                                        <span className="text-white font-medium flex items-center gap-2">
-                                            <Bell className="w-4 h-4 text-blue-400" />
-                                            Receber notificações importantes do sistema
-                                        </span>
-                                    </label>
+                                <div className="border-t border-[var(--color-border)] pt-6 mt-2 flex items-center justify-between">
+                                    <span className="text-gray-900 dark:text-white font-medium flex items-center gap-2">
+                                        <Bell className="w-4 h-4 text-blue-400" />
+                                        Receber notificações importantes do sistema
+                                    </span>
+                                    <Switch defaultChecked />
                                 </div>
                             </div>
                         </div>
                     )}
-                </div>
+                </Card>
             </div>
         </div>
     );

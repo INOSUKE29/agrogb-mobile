@@ -9,10 +9,17 @@ import {
     CheckCircle2,
     Maximize,
     Leaf,
-    MapPin
+    MapPin,
+    AlertTriangle
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Skeleton } from '../../components/ui/Skeleton';
+import { Modal } from '../../components/ui/Modal';
+import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/TableBase';
 
 interface Talhao {
     uuid: string;
@@ -33,19 +40,21 @@ export default function TalhoesScreen() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editItem, setEditItem] = useState<Talhao | null>(null);
     const [form, setForm] = useState({ nome: '', area_ha: '', observacao: '' });
-
-    useEffect(() => {
-        fetchTalhoes();
-    }, []);
+    
+    // Deletion Modal State
+    const [itemToDelete, setItemToDelete] = useState<Talhao | null>(null);
 
     const fetchTalhoes = async () => {
         setLoading(true);
         try {
             // Tenta buscar da v2 primeiro
-            let { data, error } = await supabase
+            const response = await supabase
                 .from('v2_talhoes')
                 .select('*')
                 .order('nome', { ascending: true });
+            
+            let data = response.data;
+            const error = response.error;
                 
             if (error) {
                 // Se falhar (não existe/cache), tenta a v1
@@ -76,6 +85,10 @@ export default function TalhoesScreen() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchTalhoes();
+    }, []);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -132,23 +145,25 @@ export default function TalhoesScreen() {
         }
     };
 
-    const handleDelete = async (item: Talhao) => {
-        if (window.confirm(`Atenção: Deseja realmente excluir o talhão ${item.nome}?`)) {
-            try {
-                const idField = item.tableUsed === 'v2_talhoes' ? 'id' : 'uuid';
-                if (item.tableUsed === 'v2_talhoes') {
-                    // Hard delete or sync flag depending on V2 design
-                    await supabase.from('v2_talhoes').delete().eq(idField, item.uuid);
-                } else {
-                    // Soft Delete V1
-                    await supabase.from('talhoes').update({ is_deleted: true, last_updated: new Date().toISOString() }).eq(idField, item.uuid);
-                }
-                toast.success('Talhão removido com sucesso!');
-                fetchTalhoes();
-            } catch (err) {
-                console.error('Erro ao excluir talhão', err);
-                toast.error('Erro ao excluir talhão.');
+    const handleDeleteClick = (item: Talhao) => {
+        setItemToDelete(item);
+    };
+
+    const confirmDelete = async () => {
+        if (!itemToDelete) return;
+        try {
+            const idField = itemToDelete.tableUsed === 'v2_talhoes' ? 'id' : 'uuid';
+            if (itemToDelete.tableUsed === 'v2_talhoes') {
+                await supabase.from('v2_talhoes').delete().eq(idField, itemToDelete.uuid);
+            } else {
+                await supabase.from('talhoes').update({ is_deleted: true, last_updated: new Date().toISOString() }).eq(idField, itemToDelete.uuid);
             }
+            toast.success('Talhão removido com sucesso!');
+            setItemToDelete(null);
+            fetchTalhoes();
+        } catch (err) {
+            console.error('Erro ao excluir talhão', err);
+            toast.error('Erro ao excluir talhão.');
         }
     };
 
@@ -184,7 +199,7 @@ export default function TalhoesScreen() {
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-bold mb-4">
                             <MapPin className="w-4 h-4" /> Inteligência Geoespacial
                         </div>
-                        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-2">
+                        <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight mb-2">
                             Gestão de Talhões
                         </h1>
                         <p className="text-[var(--color-muted)] text-lg max-w-xl">
@@ -194,7 +209,7 @@ export default function TalhoesScreen() {
                     
                     <button 
                         onClick={() => openModal()}
-                        className="px-6 py-3 rounded-xl flex items-center justify-center gap-2 bg-[var(--color-primary)] hover:opacity-90 text-white font-bold shadow-lg shadow-[var(--color-primary)]/20 transition-all group"
+                        className="px-6 py-3 rounded-xl flex items-center justify-center gap-2 bg-[var(--color-primary)] hover:opacity-90 text-gray-900 dark:text-white font-bold shadow-lg shadow-[var(--color-primary)]/20 transition-all group"
                     >
                         <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
                         Novo Talhão
@@ -204,216 +219,212 @@ export default function TalhoesScreen() {
 
             {/* KPIs */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="glass-card p-6 rounded-3xl flex items-center justify-between group border-b-4 border-blue-500 hover:-translate-y-1 transition-all">
-                    <div>
+                <div className="glass p-6 rounded-3xl flex items-center justify-between group bg-white dark:bg-[#111111] border border-gray-200 dark:border-white/5 shadow-xl shadow-slate-200/60 dark:shadow-none hover:border-white/10 hover:-translate-y-1 transition-all overflow-hidden relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="relative z-10">
                         <p className="text-[var(--color-muted)] font-bold text-sm uppercase tracking-wider mb-1">Total de Áreas</p>
-                        <h3 className="text-3xl font-black text-white">{talhoes.length} <span className="text-sm text-[var(--color-muted)] font-medium">talhões mapeados</span></h3>
+                        <h3 className="text-3xl font-black text-gray-900 dark:text-white">{talhoes.length} <span className="text-sm text-[var(--color-muted)] font-medium">talhões mapeados</span></h3>
                     </div>
-                    <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <Map className="w-7 h-7 text-blue-500" />
+                    <div className="relative z-10 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center group-hover:bg-[var(--color-primary)]/10 transition-colors">
+                        <Map className="w-5 h-5 text-gray-900 dark:text-white group-hover:text-[var(--color-primary)] transition-colors" />
                     </div>
                 </div>
-                <div className="glass-card p-6 rounded-3xl flex items-center justify-between group border-b-4 border-green-500 hover:-translate-y-1 transition-all">
-                    <div>
+                <div className="glass p-6 rounded-3xl flex items-center justify-between group bg-white dark:bg-[#111111] border border-gray-200 dark:border-white/5 shadow-xl shadow-slate-200/60 dark:shadow-none hover:border-[var(--color-primary)]/30 hover:-translate-y-1 transition-all overflow-hidden relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-primary)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="relative z-10">
                         <p className="text-[var(--color-muted)] font-bold text-sm uppercase tracking-wider mb-1">Área Produtiva Total</p>
-                        <h3 className="text-3xl font-black text-white">{totalArea.toFixed(2)} <span className="text-xl text-green-400 font-black">ha</span></h3>
+                        <h3 className="text-3xl font-black text-gray-900 dark:text-white">{totalArea.toFixed(2)} <span className="text-xl text-[var(--color-muted)] font-black">ha</span></h3>
                     </div>
-                    <div className="w-14 h-14 rounded-2xl bg-green-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <Maximize className="w-7 h-7 text-green-500" />
+                    <div className="relative z-10 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center group-hover:bg-[var(--color-primary)]/10 transition-colors">
+                        <Maximize className="w-5 h-5 text-gray-900 dark:text-white group-hover:text-[var(--color-primary)] transition-colors" />
                     </div>
                 </div>
-                <div className="glass-card p-6 rounded-3xl flex items-center justify-between group border-b-4 border-purple-500 hover:-translate-y-1 transition-all">
-                    <div>
+                <div className="glass p-6 rounded-3xl flex items-center justify-between group bg-white dark:bg-[#111111] border border-gray-200 dark:border-white/5 shadow-xl shadow-slate-200/60 dark:shadow-none hover:border-white/10 hover:-translate-y-1 transition-all overflow-hidden relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="relative z-10">
                         <p className="text-[var(--color-muted)] font-bold text-sm uppercase tracking-wider mb-1">Status Base de Dados</p>
-                        <h3 className="text-xl font-black text-white flex items-center gap-2">
-                            <CheckCircle2 className="w-6 h-6 text-purple-400" />
+                        <h3 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                            <CheckCircle2 className="w-5 h-5 text-[var(--color-primary)]" />
                             Sincronizado
                         </h3>
                     </div>
-                    <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <Leaf className="w-7 h-7 text-purple-500" />
+                    <div className="relative z-10 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center group-hover:bg-[var(--color-primary)]/10 transition-colors">
+                        <Leaf className="w-5 h-5 text-gray-900 dark:text-white group-hover:text-[var(--color-primary)] transition-colors" />
                     </div>
                 </div>
             </div>
 
             {/* TABELA DE DADOS PREMIUM */}
-            <div className="glass rounded-3xl flex flex-col border border-[var(--color-border)] overflow-hidden">
-                <div className="p-6 border-b border-[var(--color-border)] flex flex-col sm:flex-row justify-between items-center gap-4 bg-gradient-to-r from-white/[0.02] to-transparent">
-                    <h2 className="text-2xl font-black text-white">Relação de Talhões</h2>
+            <Card className="flex flex-col p-0">
+                <div className="p-6 border-b border-slate-200 dark:border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gradient-to-r from-slate-50 to-transparent dark:from-white/[0.02]">
+                    <h2 className="text-2xl font-black text-gray-900 dark:text-white">Relação de Talhões</h2>
                     <div className="relative w-full sm:w-80">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <Search className="h-5 w-5 text-[var(--color-muted)]" />
-                        </div>
-                        <input
-                            type="text"
+                        <Input 
                             placeholder="Pesquisar por nome ou área..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl focus:ring-2 focus:ring-[var(--color-primary)] block pl-12 pr-4 py-3 transition-all outline-none"
+                            leftIcon={<Search className="h-5 w-5" />}
+                            className="bg-white dark:bg-[#111111]"
                         />
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm text-[var(--color-muted)]">
-                        <thead className="bg-white/[0.02] border-b border-[var(--color-border)]">
-                            <tr>
-                                <th scope="col" className="px-6 py-4 font-bold uppercase tracking-wider text-[var(--color-muted)]">Identificação / Nome</th>
-                                <th scope="col" className="px-6 py-4 font-bold uppercase tracking-wider text-[var(--color-muted)]">Extensão (ha)</th>
-                                <th scope="col" className="px-6 py-4 font-bold uppercase tracking-wider text-[var(--color-muted)]">Detalhes do Solo / Obs.</th>
-                                <th scope="col" className="px-6 py-4 font-bold uppercase tracking-wider text-right text-[var(--color-muted)]">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[var(--color-border)]">
+                <div className="overflow-x-auto p-4 pt-0">
+                    <Table>
+                        <Thead>
+                            <Tr>
+                                <Th>Identificação / Nome</Th>
+                                <Th>Extensão (ha)</Th>
+                                <Th>Detalhes do Solo / Obs.</Th>
+                                <Th className="text-right">Ações</Th>
+                            </Tr>
+                        </Thead>
+                        <Tbody>
                             {loading ? (
-                                <tr>
-                                    <td colSpan={4} className="px-6 py-16 text-center">
-                                        <div className="flex flex-col items-center justify-center">
-                                            <div className="w-12 h-12 border-4 border-[var(--color-primary)]/30 border-t-[var(--color-primary)] rounded-full animate-spin mb-4"></div>
-                                            <span className="font-medium text-lg">Mapeando áreas via satélite...</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : filteredTalhoes.length === 0 ? (
-                                <tr>
-                                    <td colSpan={4} className="px-6 py-16 text-center">
-                                        <div className="flex flex-col items-center justify-center">
-                                            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
-                                                <MapPin className="w-10 h-10 text-[var(--color-muted)] opacity-50" />
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <Tr key={`skel-${i}`}>
+                                        <Td><Skeleton className="h-12 w-full" /></Td>
+                                        <Td><Skeleton className="h-8 w-24" /></Td>
+                                        <Td><Skeleton className="h-6 w-48" /></Td>
+                                        <Td>
+                                            <div className="flex justify-end gap-2">
+                                                <Skeleton className="h-10 w-10" />
+                                                <Skeleton className="h-10 w-10" />
                                             </div>
-                                            <p className="text-white font-black text-2xl mb-2">Nenhuma área demarcada</p>
-                                            <p className="text-[var(--color-muted)] text-lg">Inicie mapeando seu primeiro talhão para habilitar as funções de plantio.</p>
+                                        </Td>
+                                    </Tr>
+                                ))
+                            ) : filteredTalhoes.length === 0 ? (
+                                <Tr>
+                                    <Td colSpan={4} className="py-12">
+                                        <div className="flex flex-col items-center justify-center bg-slate-50 dark:bg-white/[0.02] border-2 border-dashed border-slate-200 dark:border-white/10 rounded-3xl p-12 max-w-2xl mx-auto relative overflow-hidden group hover:border-[var(--color-primary)]/50 transition-colors">
+                                            <div className="w-24 h-24 bg-[var(--color-primary)]/10 rounded-full flex items-center justify-center mb-6 relative z-10 border border-[var(--color-primary)]/20 shadow-[0_0_30px_rgba(var(--color-primary-rgb),0.2)]">
+                                                <MapPin className="w-12 h-12 text-[var(--color-primary)]" />
+                                            </div>
+                                            <p className="text-gray-900 dark:text-white font-black text-2xl mb-3 relative z-10">Nenhuma área demarcada</p>
+                                            <p className="text-slate-500 dark:text-[var(--color-muted)] text-lg mb-8 text-center max-w-md relative z-10">
+                                                Inicie mapeando seu primeiro talhão para habilitar as funções de plantio e monitoramento.
+                                            </p>
+                                            <Button onClick={() => openModal()} size="lg" leftIcon={<Plus className="w-5 h-5" />}>
+                                                Cadastrar Primeiro Talhão
+                                            </Button>
                                         </div>
-                                    </td>
-                                </tr>
+                                    </Td>
+                                </Tr>
                             ) : (
                                 filteredTalhoes.map((talhao) => (
-                                    <tr key={talhao.uuid} className="bg-transparent hover:bg-white/[0.03] transition-colors group">
-                                        <td className="px-6 py-5 whitespace-nowrap">
+                                    <Tr key={talhao.uuid} className="group">
+                                        <Td>
                                             <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--color-primary)]/20 to-transparent flex items-center justify-center border border-[var(--color-primary)]/10 shadow-inner group-hover:scale-110 transition-transform">
+                                                <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-[var(--color-primary)]/10 flex items-center justify-center border border-[var(--color-primary)]/20 group-hover:scale-110 transition-transform">
                                                     <Map className="w-6 h-6 text-[var(--color-primary)]" />
                                                 </div>
-                                                <span className="font-black text-white text-lg">{talhao.nome}</span>
+                                                <span className="font-black text-gray-900 dark:text-white text-lg">{talhao.nome}</span>
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-5 whitespace-nowrap">
-                                            <div className="inline-flex items-baseline gap-1 bg-green-500/10 px-3 py-1 rounded-lg border border-green-500/20">
-                                                <span className="font-black text-green-400 text-lg">{talhao.area_ha.toLocaleString('pt-BR')}</span> 
-                                                <span className="text-xs font-bold text-green-500 uppercase">Hectares</span>
+                                        </Td>
+                                        <Td>
+                                            <div className="inline-flex items-baseline gap-1 bg-emerald-50 dark:bg-green-500/10 px-3 py-1 rounded-lg border border-emerald-200 dark:border-green-500/20">
+                                                <span className="font-black text-[var(--color-primary)] dark:text-green-400 text-lg">{talhao.area_ha.toLocaleString('pt-BR')}</span> 
+                                                <span className="text-xs font-bold text-emerald-600 dark:text-green-500 uppercase">Hectares</span>
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-5">
+                                        </Td>
+                                        <Td>
                                             <span className="text-sm font-medium">{talhao.observacao || 'Nenhum detalhe informado'}</span>
-                                        </td>
-                                        <td className="px-6 py-5 whitespace-nowrap text-right">
-                                            <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button 
-                                                    onClick={() => openModal(talhao)}
-                                                    className="p-3 text-[var(--color-primary)] bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)]/20 rounded-xl transition-colors shadow-sm"
-                                                    title="Editar"
-                                                >
-                                                    <Edit2 className="w-5 h-5" />
-                                                </button>
-                                                <button 
-                                                    onClick={() => handleDelete(talhao)}
-                                                    className="p-3 text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-colors shadow-sm"
-                                                    title="Excluir"
-                                                >
-                                                    <Trash2 className="w-5 h-5" />
-                                                </button>
+                                        </Td>
+                                        <Td className="text-right">
+                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Button variant="secondary" size="sm" onClick={() => openModal(talhao)}>
+                                                    <Edit2 className="w-4 h-4" />
+                                                </Button>
+                                                <Button variant="danger" size="sm" onClick={() => handleDeleteClick(talhao)}>
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
                                             </div>
-                                        </td>
-                                    </tr>
+                                        </Td>
+                                    </Tr>
                                 ))
                             )}
-                        </tbody>
-                    </table>
+                        </Tbody>
+                    </Table>
                 </div>
-            </div>
+            </Card>
 
             {/* MODAL CADASTRAR/EDITAR */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={closeModal}></div>
-                    <div className="glass border border-[var(--color-border)] rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden relative z-10 animate-fade-in flex flex-col max-h-[90vh]">
-                        <div className="h-2 w-full bg-[var(--color-primary)]"></div>
-                        
-                        <div className="p-6 border-b border-[var(--color-border)] flex justify-between items-center bg-white/[0.02]">
-                            <h2 className="text-2xl font-black text-white flex items-center gap-3">
-                                <Map className="text-[var(--color-primary)] w-8 h-8 bg-[var(--color-primary)]/10 rounded-lg p-1.5" />
-                                {editItem ? 'Editar Talhão' : 'Demarcar Novo Talhão'}
-                            </h2>
-                            <button onClick={closeModal} className="text-[var(--color-muted)] hover:text-white p-2 bg-white/5 rounded-full transition-colors">
-                                &times;
-                            </button>
-                        </div>
-                        
-                        <div className="p-6 overflow-y-auto">
-                            <form id="talhaoForm" onSubmit={handleSave} className="space-y-5">
-                                <div>
-                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">
-                                        Identificação do Talhão *
-                                    </label>
-                                    <input 
-                                        type="text" 
-                                        required
-                                        value={form.nome}
-                                        onChange={(e) => setForm({...form, nome: e.target.value})}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all uppercase"
-                                        placeholder="Ex: T-01 SOJA"
-                                    />
-                                </div>
-                                
-                                <div>
-                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">
-                                        Extensão Produtiva em Hectares (ha) *
-                                    </label>
-                                    <input 
-                                        type="number" 
-                                        step="0.01"
-                                        required
-                                        value={form.area_ha}
-                                        onChange={(e) => setForm({...form, area_ha: e.target.value})}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all"
-                                        placeholder="Ex: 15.5"
-                                    />
-                                </div>
+            <Modal
+                isOpen={isModalOpen}
+                onClose={closeModal}
+                title={editItem ? 'Editar Talhão' : 'Demarcar Novo Talhão'}
+                maxWidth="md"
+            >
+                <form id="talhaoForm" onSubmit={handleSave} className="space-y-5">
+                    <Input 
+                        label="Identificação do Talhão *"
+                        required
+                        value={form.nome}
+                        onChange={(e) => setForm({...form, nome: e.target.value})}
+                        placeholder="Ex: T-01 SOJA"
+                        className="uppercase"
+                    />
+                    
+                    <Input 
+                        label="Extensão Produtiva em Hectares (ha) *"
+                        type="number"
+                        step="0.01"
+                        required
+                        value={form.area_ha}
+                        onChange={(e) => setForm({...form, area_ha: e.target.value})}
+                        placeholder="Ex: 15.5"
+                    />
 
-                                <div>
-                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">
-                                        Características do Solo / Observações
-                                    </label>
-                                    <textarea 
-                                        rows={4}
-                                        value={form.observacao}
-                                        onChange={(e) => setForm({...form, observacao: e.target.value})}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all resize-none"
-                                        placeholder="Solo arenoso, curva de nível, etc."
-                                    />
-                                </div>
-                            </form>
-                        </div>
-
-                        <div className="p-6 border-t border-[var(--color-border)] bg-white/[0.02] flex gap-3">
-                            <button 
-                                type="button"
-                                onClick={closeModal}
-                                className="flex-1 py-3.5 rounded-xl font-bold text-[var(--color-muted)] hover:text-white hover:bg-white/5 transition-colors"
-                            >
-                                Cancelar
-                            </button>
-                            <button 
-                                type="submit"
-                                form="talhaoForm"
-                                className="flex-1 py-3.5 font-black rounded-xl text-white bg-[var(--color-primary)] hover:opacity-90 shadow-lg shadow-[var(--color-primary)]/20 transition-transform active:scale-95"
-                            >
-                                {editItem ? 'Salvar Alterações' : 'Confirmar Demarcação'}
-                            </button>
-                        </div>
+                    <div>
+                        <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">
+                            Características do Solo / Observações
+                        </label>
+                        <textarea 
+                            rows={4}
+                            value={form.observacao}
+                            onChange={(e) => setForm({...form, observacao: e.target.value})}
+                            className="w-full bg-slate-50 dark:bg-[var(--color-background)] border border-slate-200 dark:border-[var(--color-border)] text-gray-900 dark:text-white text-sm rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all resize-none"
+                            placeholder="Solo arenoso, curva de nível, etc."
+                        />
                     </div>
+
+                    <div className="flex gap-3 pt-4 border-t border-slate-100 dark:border-white/5 mt-6">
+                        <Button type="button" variant="ghost" onClick={closeModal} fullWidth>
+                            Cancelar
+                        </Button>
+                        <Button type="submit" variant="primary" fullWidth>
+                            {editItem ? 'Salvar Alterações' : 'Confirmar Demarcação'}
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* MODAL CONFIRMAR EXCLUSÃO */}
+            <Modal
+                isOpen={!!itemToDelete}
+                onClose={() => setItemToDelete(null)}
+                title="Excluir Talhão"
+                maxWidth="sm"
+            >
+                <div className="flex flex-col items-center text-center gap-4 py-4">
+                    <div className="w-16 h-16 bg-red-100 dark:bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-2">
+                        <AlertTriangle className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Você tem certeza?</h3>
+                    <p className="text-slate-500 dark:text-[var(--color-muted)]">
+                        A exclusão do talhão <strong>{itemToDelete?.nome}</strong> é permanente e não poderá ser desfeita. Todos os dados associados a ele serão perdidos.
+                    </p>
                 </div>
-            )}
+                <div className="flex gap-3 pt-4 border-t border-slate-100 dark:border-white/5 mt-4">
+                    <Button type="button" variant="secondary" onClick={() => setItemToDelete(null)} fullWidth>
+                        Cancelar
+                    </Button>
+                    <Button type="button" variant="danger" onClick={confirmDelete} fullWidth>
+                        Excluir Permanentemente
+                    </Button>
+                </div>
+            </Modal>
         </div>
     );
 }

@@ -23,10 +23,6 @@ export default function TarefasScreen() {
     const [prioridade, setPrioridade] = useState<'BAIXA' | 'MÉDIA' | 'ALTA'>('MÉDIA');
     const [dataVencimento, setDataVencimento] = useState('');
 
-    useEffect(() => {
-        fetchTarefas();
-    }, []);
-
     const fetchTarefas = async () => {
         try {
             setLoading(true);
@@ -51,6 +47,10 @@ export default function TarefasScreen() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchTarefas();
+    }, []);
 
     const handleSaveTask = async (e: React.FormEvent) => {
         e.preventDefault();

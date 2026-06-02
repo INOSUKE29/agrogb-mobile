@@ -15,21 +15,21 @@ export default function EstoqueScreen() {
     const [quantidade, setQuantidade] = useState('');
     const [origem, setOrigem] = useState('COMPRA'); // ou VENDA, ADUBAÇÃO, etc
 
-    useEffect(() => {
-        fetchEstoque();
-    }, []);
-
     const fetchEstoque = async () => {
         try {
             setLoading(true);
-            // v2_estoque_atual joined with v2_produtos
+            // v2_estoque_atual query without explicit join to avoid PGRST200
             const { data, error } = await supabase
                 .from('v2_estoque_atual')
-                .select(`
-                    *,
-                    v2_produtos (nome, categoria, unidade_medida)
-                `)
+                .select('*')
                 .order('last_updated', { ascending: false });
+
+            // Fetch produtos separately
+            let produtosData: any[] = [];
+            if (!error) {
+                const prodResponse = await supabase.from('v2_produtos').select('id, nome, categoria, unidade_medida');
+                produtosData = prodResponse.data || [];
+            }
 
             if (error) {
                 // If it fails, fallback to old estoque table just in case
@@ -43,14 +43,17 @@ export default function EstoqueScreen() {
             }
             
             // Normalize data to expected format
-            const normalizedData = (data || []).map(item => ({
-                uuid: item.id || item.uuid,
-                produto: item.v2_produtos?.nome || 'Produto Desconhecido',
-                categoria: item.v2_produtos?.categoria || 'Insumo',
-                unidade: item.v2_produtos?.unidade_medida || 'UN',
-                quantidade: item.quantidade,
-                last_updated: item.last_updated || item.created_at
-            }));
+            const normalizedData = (data || []).map(item => {
+                const prod = produtosData.find(p => p.id === item.produto_id) || {};
+                return {
+                    uuid: item.id || item.uuid,
+                    produto: prod.nome || item.produto || 'Produto Desconhecido',
+                    categoria: prod.categoria || 'Insumo',
+                    unidade: prod.unidade_medida || 'UN',
+                    quantidade: item.quantidade,
+                    last_updated: item.last_updated || item.created_at
+                };
+            });
 
             setEstoque(normalizedData);
         } catch (error: any) {
@@ -60,6 +63,10 @@ export default function EstoqueScreen() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchEstoque();
+    }, []);
 
     const handleTransaction = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -73,7 +80,7 @@ export default function EstoqueScreen() {
             const { data: userData } = await supabase.auth.getUser();
             const userId = userData.user?.id;
 
-            let currentItem = estoque.find(item => item.produto?.toLowerCase() === produto.toLowerCase());
+            const currentItem = estoque.find(item => item.produto?.toLowerCase() === produto.toLowerCase());
             let itemUuid = currentItem?.uuid;
             let novaQuantidade = modalType === 'ENTRADA' ? qtdNum : -qtdNum;
 

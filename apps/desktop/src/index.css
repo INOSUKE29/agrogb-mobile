@@ -1,24 +1,35 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+@custom-variant dark (&:is(.dark *));
 
 @theme {
+  --color-primary: #10B981; /* Agro Emerald */
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #00F0FF; /* Cyber cyan for futuristic accents */
+  --color-accent: #7000FF; /* Vibrant purple */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+}
+
+:root {
+  /* LIGHT THEME VARIABLES */
+  --color-background: #F8FAFC; /* Slate 50 */
+  --color-foreground: #0F172A; /* Slate 900 */
+  --color-card: #FFFFFF;
+  --color-card-foreground: #0F172A;
+  --color-border: rgba(0, 0, 0, 0.1);
+  --color-muted: #64748B; /* Slate 500 */
+}
+
+.dark {
+  /* DARK THEME VARIABLES */
   --color-background: #050914; /* Deep rich dark space */
   --color-foreground: #FFFFFF;
   --color-card: #0A101D;
   --color-card-foreground: #FFFFFF;
-  
-  --color-primary: #10B981; /* Agro Emerald */
-  --color-primary-foreground: #FFFFFF;
-  
-  --color-secondary: #00F0FF; /* Cyber cyan for futuristic accents */
-  --color-accent: #7000FF; /* Vibrant purple */
-  
   --color-border: rgba(255, 255, 255, 0.06);
   --color-muted: #8A9CAE;
-  
-  --color-success: #10B981;
-  --color-warning: #F59E0B;
-  --color-danger: #EF4444;
 }
 
 /* ── Reset global ─────────────────────────────────────────────────── */
@@ -62,17 +73,20 @@ h1, h2, h3, h4, h5, h6 {
 /* ── Scrollbar premium ────────────────────────────────────────────── */
 ::-webkit-scrollbar          { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track    { background: transparent; }
-::-webkit-scrollbar-thumb    { background: rgba(255,255,255,0.08); border-radius: 99px; transition: background 0.2s; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+::-webkit-scrollbar-thumb    { background: rgba(0,0,0,0.1); border-radius: 99px; transition: background 0.2s; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+
+.dark ::-webkit-scrollbar-thumb    { background: rgba(255,255,255,0.08); }
+.dark ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
 
 /* ── Utilitários ──────────────────────────────────────────────────── */
 @layer utilities {
   .glass {
-    @apply bg-[#0A101D]/70 backdrop-blur-xl border border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.3)];
+    @apply bg-white/70 dark:bg-[#0A101D]/70 backdrop-blur-xl border border-gray-200 dark:border-white/5 shadow-md dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)];
   }
   
   .glass-card {
-    @apply bg-white/[0.02] backdrop-blur-xl border border-white/5 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:bg-white/[0.05] hover:border-white/10 transition-all duration-300;
+    @apply bg-white/50 dark:bg-white/[0.02] backdrop-blur-xl border border-gray-200 dark:border-white/5 rounded-2xl shadow-sm dark:shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:bg-white/80 dark:hover:bg-white/[0.05] hover:border-gray-300 dark:hover:border-white/10 transition-all duration-300;
   }
   
   .text-gradient {

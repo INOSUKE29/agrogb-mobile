@@ -55,6 +55,7 @@ jobs:
         run: |
           # Remoção de limites de lint e injeção do R8 Full Mode
           echo "android { lintOptions { checkReleaseBuilds false; abortOnError false } }" >> app/build.gradle
+          echo "" >> gradle.properties
           echo "android.enableR8.fullMode=true" >> gradle.properties
           
           chmod +x ./gradlew

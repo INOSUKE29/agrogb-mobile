@@ -12,7 +12,6 @@ import PlantioScreen from './screens/Dashboard/PlantioScreen';
 import CadernoAgricolaScreen from './screens/Dashboard/CadernoAgricolaScreen';
 import RecomendacoesScreen from './screens/Dashboard/RecomendacoesScreen';
 import ReceituarioAgronomicoScreen from './screens/Dashboard/ReceituarioAgronomicoScreen';
-import RelatoriosDashboardScreen from './screens/Dashboard/RelatoriosDashboardScreen';
 import MeusClientesScreen from './screens/Dashboard/MeusClientesScreen';
 import SettingsScreen from './screens/Dashboard/SettingsScreen';
 import VendasScreen from './screens/Dashboard/VendasScreen';
@@ -24,16 +23,20 @@ import TarefasScreen from './screens/Dashboard/TarefasScreen';
 import CustosScreen from './screens/Dashboard/CustosScreen';
 import CategoriasDespesaScreen from './screens/Dashboard/CategoriasDespesaScreen';
 import CadastroBasicoScreen from './screens/Dashboard/CadastroBasicoScreen';
+import AdminCatalogScreen from './screens/Dashboard/AdminCatalogScreen';
 import ComprasScreen from './screens/Dashboard/ComprasScreen';
 import EncomendasScreen from './screens/Dashboard/EncomendasScreen';
 import ClimaScreen from './screens/Dashboard/ClimaScreen';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 
+import { ThemeProvider } from './contexts/ThemeProvider';
+
 function App() {
   return (
-    <AuthProvider>
-      <div className="dark" style={{ height: '100vh', width: '100vw', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    <ThemeProvider>
+      <AuthProvider>
+        <div className="text-foreground bg-background transition-colors duration-300" style={{ height: '100vh', width: '100vw', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <Toaster 
           position="top-right" 
           toastOptions={{
@@ -66,6 +69,7 @@ function App() {
               <Route path="admin/usuarios" element={<UsersScreen />} />
               <Route path="admin/planos" element={<div className="text-white p-8">Em breve: Gestão de Planos e Assinaturas (Admin)</div>} />
               <Route path="admin/financeiro" element={<FinancialScreen />} />
+              <Route path="admin/biblioteca" element={<AdminCatalogScreen />} />
 
               {/* PORTAL AGRÔNOMO */}
               <Route path="agronomo" element={<AgroDashboard />} />
@@ -92,18 +96,20 @@ function App() {
               <Route path="cliente/encomendas" element={<EncomendasScreen />} />
               <Route path="cliente/clima" element={<ClimaScreen />} />
               <Route path="cliente/recomendacoes" element={<ReceituarioAgronomicoScreen />} />
-              <Route path="cliente/relatorios" element={<RelatoriosDashboardScreen />} />
 
               {/* Antigas Rotas de Fallback (para não quebrar a compilação) */}
               <Route path="colheita" element={<HarvestScreen />} />
               <Route path="financeiro" element={<FinancialScreen />} />
               <Route path="usuarios" element={<UsersScreen />} />
+              <Route path="agenda" element={<TarefasScreen />} />
               <Route path="configuracoes" element={<SettingsScreen />} />
+              <Route path="recomendacoes" element={<RecomendacoesScreen />} />
             </Route>
           </Routes>
         </HashRouter>
-      </div>
-    </AuthProvider>
+        </div>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

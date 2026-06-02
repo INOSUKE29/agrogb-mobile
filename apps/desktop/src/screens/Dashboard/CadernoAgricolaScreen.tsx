@@ -9,7 +9,6 @@ import {
     FileText,
     DollarSign,
     Search,
-    AlertCircle,
     Calendar as CalendarIcon
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
@@ -34,10 +33,6 @@ export default function CadernoAgricolaScreen() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [novaNota, setNovaNota] = useState('');
     const [isSaving, setIsSaving] = useState(false);
-
-    useEffect(() => {
-        fetchTimeline();
-    }, []);
 
     const fetchTimeline = async () => {
         setLoading(true);
@@ -198,6 +193,12 @@ export default function CadernoAgricolaScreen() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchTimeline();
+    }, []);
+
+
 
     const handleSaveNota = async (e: React.FormEvent) => {
         e.preventDefault();

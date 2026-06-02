@@ -29,7 +29,8 @@ import {
     CheckSquare,
     TrendingDown,
     Tags,
-    Database
+    Database,
+    ChevronRight
 } from 'lucide-react';
 
 export default function DashboardLayout() {
@@ -44,6 +45,13 @@ export default function DashboardLayout() {
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const [selectedNotification, setSelectedNotification] = useState<any>(null);
+    
+    // Accordion state
+    const [openGroups, setOpenGroups] = useState<string[]>(['Visão Geral', 'Operação Agrícola']);
+
+    const toggleGroup = (group: string) => {
+        setOpenGroups(prev => prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]);
+    };
 
     const [notifications, setNotifications] = useState([
         {
@@ -137,25 +145,28 @@ export default function DashboardLayout() {
             ];
         } else if (role === 'AGRICULTOR') {
             return [
-                { path: '/dashboard/cliente', label: 'Dashboard Produtor', icon: LayoutDashboard },
-                { path: '/dashboard/cliente/recomendacoes', label: 'Recomendações Técnicas', icon: FileText },
-                { path: '/dashboard/cliente/talhoes', label: 'Talhões e Áreas', icon: Map },
-                { path: '/dashboard/cliente/plantio', label: 'Ciclo de Plantio', icon: Sprout },
-                { path: '/dashboard/cliente/culturas', label: 'Culturas e Safras', icon: Sprout },
-                { path: '/dashboard/cliente/monitoramento', label: 'Monitoramento', icon: Activity },
-                { path: '/dashboard/cliente/estoque', label: 'Estoque de Insumos', icon: Package },
-                { path: '/dashboard/cliente/frota', label: 'Gestão de Frota', icon: Truck },
-                { path: '/dashboard/cliente/tarefas', label: 'Minhas Tarefas', icon: CheckSquare },
-                { path: '/dashboard/cliente/custos', label: 'Controle de Custos', icon: TrendingDown },
-                { path: '/dashboard/cliente/categorias', label: 'Categorias Financeiras', icon: Tags },
-                { path: '/dashboard/cliente/cadastro', label: 'Catálogo Geral', icon: Database },
-                { path: '/dashboard/cliente/compras', label: 'Compras e Cotações', icon: Store },
-                { path: '/dashboard/cliente/vendas', label: 'Vendas e Comercialização', icon: DollarSign },
-                { path: '/dashboard/cliente/encomendas', label: 'Encomendas e Logística', icon: Package },
-                { path: '/dashboard/cliente/clima', label: 'Estação Meteorológica', icon: CloudRain },
-                { path: '/dashboard/cliente/caderno', label: 'Caderno Agrícola', icon: FileText },
-                { path: '/dashboard/cliente/financeiro', label: 'Financeiro', icon: DollarSign },
-                { path: '/dashboard/cliente/relatorios', label: 'Relatórios', icon: FileText },
+                { path: '/dashboard/cliente', label: 'Dashboard Produtor', icon: LayoutDashboard, group: 'Visão Geral' },
+                { path: '/dashboard/cliente/relatorios', label: 'Relatórios', icon: FileText, group: 'Visão Geral' },
+
+                { path: '/dashboard/cliente/talhoes', label: 'Talhões e Áreas', icon: Map, group: 'Operação Agrícola' },
+                { path: '/dashboard/cliente/plantio', label: 'Ciclo de Plantio', icon: Sprout, group: 'Operação Agrícola' },
+                { path: '/dashboard/cliente/culturas', label: 'Culturas e Safras', icon: Sprout, group: 'Operação Agrícola' },
+                { path: '/dashboard/cliente/monitoramento', label: 'Monitoramento', icon: Activity, group: 'Operação Agrícola' },
+                { path: '/dashboard/cliente/caderno', label: 'Caderno Agrícola', icon: FileText, group: 'Operação Agrícola' },
+                { path: '/dashboard/cliente/recomendacoes', label: 'Recomendações Técnicas', icon: FileText, group: 'Operação Agrícola' },
+                { path: '/dashboard/cliente/clima', label: 'Estação Meteorológica', icon: CloudRain, group: 'Operação Agrícola' },
+
+                { path: '/dashboard/cliente/estoque', label: 'Estoque de Insumos', icon: Package, group: 'Logística e Suprimentos' },
+                { path: '/dashboard/cliente/compras', label: 'Compras e Cotações', icon: Store, group: 'Logística e Suprimentos' },
+                { path: '/dashboard/cliente/encomendas', label: 'Encomendas e Logística', icon: Package, group: 'Logística e Suprimentos' },
+                { path: '/dashboard/cliente/frota', label: 'Gestão de Frota', icon: Truck, group: 'Logística e Suprimentos' },
+                { path: '/dashboard/cliente/tarefas', label: 'Minhas Tarefas', icon: CheckSquare, group: 'Logística e Suprimentos' },
+
+                { path: '/dashboard/cliente/financeiro', label: 'Painel Financeiro', icon: DollarSign, group: 'Financeiro e Comercial' },
+                { path: '/dashboard/cliente/custos', label: 'Controle de Custos', icon: TrendingDown, group: 'Financeiro e Comercial' },
+                { path: '/dashboard/cliente/vendas', label: 'Vendas', icon: DollarSign, group: 'Financeiro e Comercial' },
+                { path: '/dashboard/cliente/categorias', label: 'Categorias', icon: Tags, group: 'Financeiro e Comercial' },
+                { path: '/dashboard/cliente/cadastro', label: 'Catálogo Geral', icon: Database, group: 'Financeiro e Comercial' },
             ];
         } else {
             return [
@@ -163,6 +174,7 @@ export default function DashboardLayout() {
                 { path: '/dashboard/admin/usuarios', label: 'Gestão de Usuários', icon: Users },
                 { path: '/dashboard/admin/planos', label: 'Planos e Assinaturas', icon: CreditCard },
                 { path: '/dashboard/admin/financeiro', label: 'Financeiro Global', icon: DollarSign },
+                { path: '/dashboard/admin/biblioteca', label: 'Biblioteca Global', icon: Database },
             ];
         }
     };
@@ -200,7 +212,7 @@ export default function DashboardLayout() {
         return 'bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)]/20';
     };
 
-    if (!user) return <div className="min-h-screen bg-[var(--color-background)] flex items-center justify-center text-white">Carregando...</div>;
+    if (!user) return <div className="min-h-screen bg-[var(--color-background)] flex items-center justify-center text-gray-900 dark:text-white">Carregando...</div>;
 
     // TELA DE SELEÇÃO DE PORTAL (MODO AUDITORIA / SIMULADOR FULLSCREEN)
     if (!simulatedRole) {
@@ -213,7 +225,7 @@ export default function DashboardLayout() {
                     <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 overflow-hidden shadow-lg border border-[var(--color-primary)]/20">
                         <img src="/logo.png" alt="AgroGB Logo" className="w-full h-full object-cover" />
                     </div>
-                    <h1 className="text-4xl font-black text-white mb-2">Modo Auditoria</h1>
+                    <h1 className="text-4xl font-black text-gray-900 dark:text-white mb-2">Modo Auditoria</h1>
                     <p className="text-[var(--color-muted)] text-lg mb-12">Selecione qual portal você deseja simular na sessão atual.</p>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
@@ -225,7 +237,7 @@ export default function DashboardLayout() {
                             <div className="w-24 h-24 rounded-full bg-purple-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                                 <Settings className="w-12 h-12 text-purple-500" />
                             </div>
-                            <h2 className="text-2xl font-black text-white mb-2">Portal Admin</h2>
+                            <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Portal Admin</h2>
                             <p className="text-[var(--color-muted)] text-sm">Gestão global da plataforma, usuários, planos e fluxo financeiro geral.</p>
                         </button>
 
@@ -237,7 +249,7 @@ export default function DashboardLayout() {
                             <div className="w-24 h-24 rounded-full bg-green-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                                 <Sprout className="w-12 h-12 text-green-500" />
                             </div>
-                            <h2 className="text-2xl font-black text-white mb-2">Portal Agrônomo</h2>
+                            <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Portal Agrônomo</h2>
                             <p className="text-[var(--color-muted)] text-sm">Carteira de clientes, emissão de receituários e visitas técnicas.</p>
                         </button>
 
@@ -249,7 +261,7 @@ export default function DashboardLayout() {
                             <div className="w-24 h-24 rounded-full bg-blue-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                                 <Leaf className="w-12 h-12 text-blue-500" />
                             </div>
-                            <h2 className="text-2xl font-black text-white mb-2">Portal Produtor</h2>
+                            <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Portal Produtor</h2>
                             <p className="text-[var(--color-muted)] text-sm">Controle da fazenda, talhões, operações agrícolas e financeiro.</p>
                         </button>
                     </div>
@@ -263,13 +275,13 @@ export default function DashboardLayout() {
             
             {/* SIDEBAR - Aprimorada com Glassmorphism */}
             <aside
-                className="transition-all duration-300 bg-[#0A101D]/70 backdrop-blur-xl border-r border-white/5 flex flex-col z-20 shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.2)]"
+                className="transition-all duration-300 bg-white/80 dark:bg-[#0A101D]/70 backdrop-blur-xl border-r border-gray-200 dark:border-white/5 flex flex-col z-20 shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.2)]"
                 style={{ width: isSidebarOpen ? 'clamp(180px, 16vw, 260px)' : 'clamp(56px, 5vw, 72px)' }}
             >
                 
                 {/* Logo Area */}
                 <div
-                    className="flex items-center border-b border-white/5 shrink-0 hover:bg-white/[0.02] transition-colors"
+                    className="flex items-center border-b border-gray-200 dark:border-white/5 shrink-0 hover:bg-white/[0.02] transition-colors"
                     style={{ height: 'clamp(52px, 5vh, 72px)', padding: '0 clamp(12px, 1.5vw, 24px)' }}
                 >
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden shadow-md border border-white/10 group-hover:border-white/20 transition-all">
@@ -277,7 +289,7 @@ export default function DashboardLayout() {
                     </div>
                     {isSidebarOpen && (
                         <div className="flex flex-col ml-3 animate-slide-in-right">
-                            <span className="font-black text-xl text-white tracking-tight whitespace-nowrap leading-tight">
+                            <span className="font-black text-xl text-gray-900 dark:text-white tracking-tight whitespace-nowrap leading-tight">
                                 AgroGB
                             </span>
                             <span className={`text-xs font-bold ${getAccentColorClass()}`}>
@@ -288,31 +300,73 @@ export default function DashboardLayout() {
                 </div>
 
                 {/* Navigation Links */}
-                <nav className="flex-1 py-6 flex flex-col gap-2 px-3 overflow-y-auto">
-                    {navItems.map((item, index) => {
-                        const Icon = item.icon;
-                        const isActive = location.pathname === item.path;
-                        return (
-                            <Link
-                                key={item.path}
-                                to={item.path}
-                                style={{ animationDelay: `${index * 50}ms` }}
-                                className={`flex items-center px-3 py-3 rounded-xl transition-all duration-300 animate-slide-in-right opacity-0 [animation-fill-mode:forwards] group ${
-                                    isActive 
-                                        ? `${getBgLightClass()} ${getAccentColorClass()} border border-current/20 shadow-lg` 
-                                        : 'text-[var(--color-muted)] hover:bg-white/5 hover:text-white hover:translate-x-1 border border-transparent'
-                                }`}
-                                title={!isSidebarOpen ? item.label : undefined}
-                            >
-                                <Icon className={`w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? getAccentColorClass() : ''}`} />
-                                {isSidebarOpen && <span className={`ml-3 font-semibold text-sm whitespace-nowrap ${isActive ? 'text-white' : ''}`}>{item.label}</span>}
-                            </Link>
-                        );
-                    })}
+                <nav className="flex-1 py-4 flex flex-col gap-1 px-3 overflow-y-auto overflow-x-hidden" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent' }}>
+                    
+                    {/* Render Grouped Items */}
+                    {simulatedRole === 'AGRICULTOR' ? (
+                        Array.from(new Set(navItems.map(i => i.group))).map(group => (
+                            <div key={group} className="mb-2">
+                                {/* Group Header */}
+                                {isSidebarOpen && group && (
+                                    <button 
+                                        onClick={() => toggleGroup(group)}
+                                        className="w-full flex items-center justify-between px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--color-muted)] hover:text-gray-900 dark:text-white transition-colors"
+                                    >
+                                        <span>{group}</span>
+                                        <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${openGroups.includes(group) ? 'rotate-180' : ''}`} />
+                                    </button>
+                                )}
+                                
+                                {/* Group Items */}
+                                <div className={`flex flex-col gap-1 overflow-hidden transition-all duration-300 ${(!isSidebarOpen || openGroups.includes(group)) ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                                    {navItems.filter(i => i.group === group).map((item, index) => {
+                                        const Icon = item.icon;
+                                        const isActive = location.pathname === item.path;
+                                        return (
+                                            <Link
+                                                key={item.path}
+                                                to={item.path}
+                                                className={`flex items-center px-3 py-2.5 rounded-xl transition-all duration-300 group ${
+                                                    isActive 
+                                                        ? `${getBgLightClass()} ${getAccentColorClass()} border border-current/20 shadow-lg` 
+                                                        : 'text-[var(--color-muted)] hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:text-white hover:translate-x-1 border border-transparent'
+                                                }`}
+                                                title={!isSidebarOpen ? item.label : undefined}
+                                            >
+                                                <Icon className={`w-4 h-4 shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? getAccentColorClass() : ''}`} />
+                                                {isSidebarOpen && <span className={`ml-3 font-semibold text-sm whitespace-nowrap ${isActive ? 'text-gray-900 dark:text-white' : ''}`}>{item.label}</span>}
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        // Render Flat Items for Admin/Agronomo
+                        navItems.map((item, index) => {
+                            const Icon = item.icon;
+                            const isActive = location.pathname === item.path;
+                            return (
+                                <Link
+                                    key={item.path}
+                                    to={item.path}
+                                    className={`flex items-center px-3 py-3 rounded-xl transition-all duration-300 group ${
+                                        isActive 
+                                            ? `${getBgLightClass()} ${getAccentColorClass()} border border-current/20 shadow-lg` 
+                                            : 'text-[var(--color-muted)] hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:text-white hover:translate-x-1 border border-transparent'
+                                    }`}
+                                    title={!isSidebarOpen ? item.label : undefined}
+                                >
+                                    <Icon className={`w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? getAccentColorClass() : ''}`} />
+                                    {isSidebarOpen && <span className={`ml-3 font-semibold text-sm whitespace-nowrap ${isActive ? 'text-gray-900 dark:text-white' : ''}`}>{item.label}</span>}
+                                </Link>
+                            );
+                        })
+                    )}
                 </nav>
 
                 {/* User Area Bottom */}
-                <div className="p-4 border-t border-white/5">
+                <div className="p-4 border-t border-gray-200 dark:border-white/5">
                     <button 
                         onClick={handleLogout}
                         className="w-full flex items-center px-3 py-3 rounded-xl text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 border border-transparent hover:border-[var(--color-danger)]/20 transition-all duration-300 group hover:-translate-y-1"
@@ -328,17 +382,17 @@ export default function DashboardLayout() {
                 
                 {/* Header - Glassmorphism Navbar */}
                 <header
-                    className="bg-[#0A101D]/70 backdrop-blur-xl border-b border-white/5 flex items-center justify-between z-10 shrink-0 shadow-[0_4px_24px_rgba(0,0,0,0.2)]"
+                    className="bg-white/80 dark:bg-[#0A101D]/70 backdrop-blur-xl border-b border-gray-200 dark:border-white/5 flex items-center justify-between z-10 shrink-0 shadow-[0_4px_24px_rgba(0,0,0,0.2)]"
                     style={{ height: 'clamp(52px, 5vh, 72px)', padding: '0 clamp(16px, 2vw, 32px)' }}
                 >
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => setIsSidebarOpen(true)}
-                            className="lg:hidden p-2 rounded-lg text-[var(--color-muted)] hover:text-white hover:bg-white/5 transition-colors"
+                            className="lg:hidden p-2 rounded-lg text-[var(--color-muted)] hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
                         >
                             <Menu className="w-5 h-5" />
                         </button>
-                        <h2 className="text-xl font-bold text-white hidden md:block">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white hidden md:block">
                             {navItems.find(i => i.path === location.pathname)?.label || 'Painel Administrativo'}
                         </h2>
                     </div>
@@ -349,7 +403,7 @@ export default function DashboardLayout() {
                         <input 
                             type="text" 
                             placeholder="Buscar clientes, relatórios..." 
-                            className="w-full bg-[#1A1A1A] border border-[var(--color-border)] text-white text-sm rounded-full pl-10 pr-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all outline-none"
+                            className="w-full bg-gray-100 dark:bg-[#1A1A1A] border border-[var(--color-border)] text-gray-900 dark:text-white text-sm rounded-full pl-10 pr-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all outline-none"
                         />
                     </div>
 
@@ -362,7 +416,7 @@ export default function DashboardLayout() {
                                     setShowNotifications(!showNotifications);
                                     setShowProfileMenu(false);
                                 }}
-                                className={`relative p-2 transition-colors rounded-full ${showNotifications ? 'bg-white/10 text-white' : 'text-[var(--color-muted)] hover:text-white hover:bg-white/5'}`}
+                                className={`relative p-2 transition-colors rounded-full ${showNotifications ? 'bg-white/10 text-gray-900 dark:text-white' : 'text-[var(--color-muted)] hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-white/5'}`}
                             >
                                 <Bell className="w-5 h-5" />
                                 {unreadCount > 0 && (
@@ -372,9 +426,9 @@ export default function DashboardLayout() {
 
                             {/* DROPDOWN NOTIFICAÇÕES */}
                             {showNotifications && (
-                                <div className="absolute right-0 mt-3 w-80 rounded-2xl border border-[var(--color-border)] bg-[#121212] shadow-[0_8px_30px_rgb(0,0,0,0.5)] overflow-hidden z-50 animate-fade-in">
+                                <div className="absolute right-0 mt-3 w-80 rounded-2xl border border-[var(--color-border)] bg-white dark:bg-[#121212] shadow-[0_8px_30px_rgb(0,0,0,0.5)] overflow-hidden z-50 animate-fade-in">
                                     <div className="p-4 border-b border-[var(--color-border)] bg-white/5 flex justify-between items-center">
-                                        <h3 className="text-sm font-bold text-white">Notificações {unreadCount > 0 && `(${unreadCount})`}</h3>
+                                        <h3 className="text-sm font-bold text-gray-900 dark:text-white">Notificações {unreadCount > 0 && `(${unreadCount})`}</h3>
                                         {unreadCount > 0 && (
                                             <button onClick={handleMarkAllAsRead} className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
                                                 Marcar todas como lidas
@@ -393,13 +447,13 @@ export default function DashboardLayout() {
                                                     <div 
                                                         key={n.id}
                                                         onClick={() => handleOpenNotification(n)}
-                                                        className={`p-4 border-b border-[var(--color-border)] hover:bg-white/5 transition-colors cursor-pointer flex gap-3 ${n.read ? 'opacity-60' : ''}`}
+                                                        className={`p-4 border-b border-[var(--color-border)] hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer flex gap-3 ${n.read ? 'opacity-60' : ''}`}
                                                     >
                                                         <div className={`w-8 h-8 rounded-full bg-${n.color}-500/20 flex items-center justify-center shrink-0`}>
                                                             <Icon className={`w-4 h-4 text-${n.color}-400`} />
                                                         </div>
                                                         <div>
-                                                            <p className={`text-sm font-medium ${n.read ? 'text-[var(--color-muted)]' : 'text-white'}`}>{n.title}</p>
+                                                            <p className={`text-sm font-medium ${n.read ? 'text-[var(--color-muted)]' : 'text-gray-900 dark:text-white'}`}>{n.title}</p>
                                                             <p className="text-xs text-[var(--color-muted)] mt-0.5 line-clamp-1">{n.message}</p>
                                                             <p className={`text-xs mt-1 ${n.read ? 'text-[var(--color-muted)]' : `text-${n.color}-400`}`}>{n.time}</p>
                                                         </div>
@@ -408,7 +462,7 @@ export default function DashboardLayout() {
                                             })
                                         )}
                                     </div>
-                                    <div className="p-3 bg-black/20 text-center border-t border-[var(--color-border)] hover:bg-white/5 transition-colors cursor-pointer">
+                                    <div className="p-3 bg-black/20 text-center border-t border-[var(--color-border)] hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer">
                                         <span className="text-sm text-[var(--color-muted)] font-medium">Ver todas as notificações</span>
                                     </div>
                                 </div>
@@ -436,27 +490,27 @@ export default function DashboardLayout() {
                                 className="flex items-center gap-3 hover:opacity-80 transition-opacity"
                             >
                                 <div className="text-right hidden sm:block">
-                                    <p className="text-sm font-bold text-white leading-tight">{user?.email}</p>
+                                    <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{user?.email}</p>
                                     <p className={`text-xs font-semibold mt-0.5 ${getAccentColorClass()}`}>Acesso Autorizado</p>
                                 </div>
                                 <div className={`w-10 h-10 rounded-full ${getBgColorClass()} flex items-center justify-center border-2 border-[var(--color-background)] shadow-lg`}>
-                                    <span className="text-white font-bold">{user?.email?.charAt(0).toUpperCase() || 'A'}</span>
+                                    <span className="text-gray-900 dark:text-white font-bold">{user?.email?.charAt(0).toUpperCase() || 'A'}</span>
                                 </div>
                                 <ChevronDown className={`w-4 h-4 text-[var(--color-muted)] transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
                             </button>
 
                             {/* MENU DROPDOWN */}
                             {showProfileMenu && (
-                                <div className="absolute right-0 mt-3 w-56 rounded-2xl border border-[var(--color-border)] bg-[#121212] shadow-[0_8px_30px_rgb(0,0,0,0.5)] overflow-hidden z-50 animate-fade-in">
+                                <div className="absolute right-0 mt-3 w-56 rounded-2xl border border-[var(--color-border)] bg-white dark:bg-[#121212] shadow-[0_8px_30px_rgb(0,0,0,0.5)] overflow-hidden z-50 animate-fade-in">
                                     <div className="p-4 border-b border-[var(--color-border)] bg-white/5">
-                                        <p className="text-sm font-bold text-white truncate">{user?.email}</p>
+                                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user?.email}</p>
                                         <p className="text-xs text-[var(--color-muted)] mt-1">Nível: {simulatedRole || 'Admin'}</p>
                                     </div>
                                     <div className="p-2">
                                         <Link 
                                             to="/dashboard/configuracoes" 
                                             onClick={() => setShowProfileMenu(false)}
-                                            className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-[var(--color-muted)] hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                                            className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-[var(--color-muted)] hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors"
                                         >
                                             <UserCircle className="w-4 h-4" />
                                             Minha Conta
@@ -502,7 +556,10 @@ export default function DashboardLayout() {
                     />
 
                     {/* Conteúdo da página — cresce livremente, scroll ativa quando passar da tela */}
-                    <div style={{ maxWidth: '1280px', margin: '0 auto', position: 'relative', zIndex: 1, paddingBottom: '3rem' }}>
+                    <div 
+                        className="bg-white/[0.02] border border-gray-200 dark:border-white/5 shadow-2xl backdrop-blur-xl transition-all duration-500"
+                        style={{ maxWidth: '1400px', margin: '0 auto', position: 'relative', zIndex: 1, padding: 'clamp(1rem, 3vw, 2.5rem)', paddingBottom: '3rem', borderRadius: 'clamp(1.5rem, 3vw, 2.5rem)' }}
+                    >
                         <Outlet />
                     </div>
                 </div>
@@ -511,7 +568,7 @@ export default function DashboardLayout() {
                 {selectedNotification && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setSelectedNotification(null)}>
                         <div 
-                            className="bg-[#121212] border border-[var(--color-border)] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+                            className="bg-white dark:bg-[#121212] border border-[var(--color-border)] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="p-6 border-b border-[var(--color-border)] flex items-start justify-between">
@@ -520,26 +577,26 @@ export default function DashboardLayout() {
                                         <selectedNotification.icon className={`w-6 h-6 text-${selectedNotification.color}-400`} />
                                     </div>
                                     <div>
-                                        <h2 className="text-lg font-bold text-white">{selectedNotification.title}</h2>
+                                        <h2 className="text-lg font-bold text-gray-900 dark:text-white">{selectedNotification.title}</h2>
                                         <p className="text-sm text-[var(--color-muted)]">{selectedNotification.time}</p>
                                     </div>
                                 </div>
                                 <button 
                                     onClick={() => setSelectedNotification(null)}
-                                    className="p-2 rounded-lg text-[var(--color-muted)] hover:text-white hover:bg-white/5 transition-colors"
+                                    className="p-2 rounded-lg text-[var(--color-muted)] hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
                             <div className="p-6">
-                                <p className="text-white text-base leading-relaxed">
+                                <p className="text-gray-900 dark:text-white text-base leading-relaxed">
                                     {selectedNotification.message}
                                 </p>
                             </div>
                             <div className="p-4 bg-white/5 border-t border-[var(--color-border)] flex justify-end">
                                 <button 
                                     onClick={() => setSelectedNotification(null)}
-                                    className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors"
+                                    className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-gray-900 dark:text-white font-bold rounded-xl transition-colors"
                                 >
                                     Fechar
                                 </button>

@@ -50,7 +50,7 @@ export default function ClienteDashboard() {
                     .eq('user_id', user.id);
 
                 let areaTotal = 0;
-                let culturasUnicas = new Set();
+                const culturasUnicas = new Set();
                 
                 if (talhoes && talhoes.length > 0) {
                     talhoes.forEach(t => {
@@ -127,10 +127,11 @@ export default function ClienteDashboard() {
             {/* KPI CARDS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
                 
-                <div className="glass p-6 rounded-2xl relative overflow-hidden group">
-                    <div className="flex flex-col">
+                <div className="glass p-6 rounded-2xl relative overflow-hidden group bg-white/5 border border-white/10 shadow-lg hover:shadow-emerald-500/10 transition-all">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
+                    <div className="flex flex-col relative z-10">
                         <div className="flex items-center gap-3 mb-2">
-                            <MapIcon className="w-5 h-5 text-blue-400" />
+                            <MapIcon className="w-5 h-5 text-emerald-400" />
                             <h3 className="text-[var(--color-muted)] font-bold text-sm">Talhões</h3>
                         </div>
                         <span className="text-2xl lg:text-3xl font-black text-white break-words">
@@ -139,10 +140,11 @@ export default function ClienteDashboard() {
                     </div>
                 </div>
 
-                <div className="glass p-6 rounded-2xl relative overflow-hidden group">
-                    <div className="flex flex-col">
+                <div className="glass p-6 rounded-2xl relative overflow-hidden group bg-white/5 border border-white/10 shadow-lg hover:shadow-emerald-500/10 transition-all">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
+                    <div className="flex flex-col relative z-10">
                         <div className="flex items-center gap-3 mb-2">
-                            <Maximize className="w-5 h-5 text-blue-400" />
+                            <Maximize className="w-5 h-5 text-emerald-400" />
                             <h3 className="text-[var(--color-muted)] font-bold text-sm">Área Total (ha)</h3>
                         </div>
                         <span className="text-2xl lg:text-3xl font-black text-white break-words">
@@ -151,10 +153,11 @@ export default function ClienteDashboard() {
                     </div>
                 </div>
 
-                <div className="glass p-6 rounded-2xl relative overflow-hidden group">
-                    <div className="flex flex-col">
+                <div className="glass p-6 rounded-2xl relative overflow-hidden group bg-white/5 border border-white/10 shadow-lg hover:shadow-emerald-500/10 transition-all">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
+                    <div className="flex flex-col relative z-10">
                         <div className="flex items-center gap-3 mb-2">
-                            <Calendar className="w-5 h-5 text-blue-400" />
+                            <Calendar className="w-5 h-5 text-emerald-400" />
                             <h3 className="text-[var(--color-muted)] font-bold text-sm">Culturas</h3>
                         </div>
                         <span className="text-2xl lg:text-3xl font-black text-white break-words">
@@ -163,10 +166,11 @@ export default function ClienteDashboard() {
                     </div>
                 </div>
 
-                <div className="glass p-6 rounded-2xl relative overflow-hidden group border-b-4 border-blue-500">
-                    <div className="flex flex-col">
+                <div className="glass p-6 rounded-2xl relative overflow-hidden group border-b-4 border-emerald-500 bg-white/5 shadow-lg hover:shadow-emerald-500/20 transition-all">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
+                    <div className="flex flex-col relative z-10">
                         <div className="flex items-center gap-3 mb-2">
-                            <FileText className="w-5 h-5 text-blue-500" />
+                            <FileText className="w-5 h-5 text-emerald-500" />
                             <h3 className="text-[var(--color-muted)] font-bold text-sm">Ativ. em Andamento</h3>
                         </div>
                         <span className="text-2xl lg:text-3xl font-black text-white break-words">
@@ -181,12 +185,12 @@ export default function ClienteDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
                 {/* Próximas Atividades */}
-                <div className="glass p-6 rounded-2xl flex flex-col">
+                <div className="glass p-6 rounded-2xl flex flex-col bg-white/5 border border-white/10 shadow-lg">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-lg font-bold text-white">Atividades Recentes</h3>
                         <button 
                             onClick={() => navigate('/dashboard/cliente/caderno')}
-                            className="text-sm text-blue-400 hover:text-blue-300 font-bold transition-colors"
+                            className="text-sm text-emerald-400 hover:text-emerald-300 font-bold transition-colors"
                         >
                             Ver Caderno
                         </button>
@@ -221,15 +225,15 @@ export default function ClienteDashboard() {
                     </div>
                     <button 
                         onClick={() => navigate('/dashboard/cliente/caderno')}
-                        className="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-white font-bold shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2"
+                        className="w-full mt-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 rounded-xl text-white font-black text-lg shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                     >
                         Nova Atividade
-                        <ArrowRight className="w-4 h-4" />
+                        <ArrowRight className="w-5 h-5" />
                     </button>
                 </div>
 
                 {/* Previsão do Clima */}
-                <div className="glass p-6 rounded-2xl">
+                <div className="glass p-6 rounded-2xl bg-white/5 border border-white/10 shadow-lg">
                     <h3 className="text-lg font-bold text-white mb-6">Previsão Diária (Chuva vs Temperatura)</h3>
                     <div className="h-72 w-full">
                         {loading ? (
@@ -243,8 +247,8 @@ export default function ClienteDashboard() {
                                             <stop offset="95%" stopColor="#F97316" stopOpacity={0}/>
                                         </linearGradient>
                                         <linearGradient id="colorChuva" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                                            <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                                            <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
+                                            <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -256,7 +260,7 @@ export default function ClienteDashboard() {
                                         itemStyle={{ color: '#fff', fontWeight: 'bold' }}
                                     />
                                     <Area yAxisId="left" type="monotone" dataKey="temp" stroke="#F97316" strokeWidth={3} fillOpacity={1} fill="url(#colorTemp)" name="Temperatura" />
-                                    <Area yAxisId="right" type="monotone" dataKey="chuva" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorChuva)" name="Prob. Chuva" />
+                                    <Area yAxisId="right" type="monotone" dataKey="chuva" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#colorChuva)" name="Prob. Chuva" />
                                 </AreaChart>
                             </ResponsiveContainer>
                         )}

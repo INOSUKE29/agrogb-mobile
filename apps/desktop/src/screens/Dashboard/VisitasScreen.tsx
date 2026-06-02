@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Plus, MapPin, Clock, FileText, CheckCircle2 } from 'lucide-react';
+import { Calendar, Plus, Clock } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 
 export default function VisitasScreen() {
@@ -13,10 +13,6 @@ export default function VisitasScreen() {
     const [observacoes, setObservacoes] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
-    useEffect(() => {
-        loadVisitas();
-    }, []);
-
     const loadVisitas = async () => {
         setLoading(true);
         try {
@@ -24,7 +20,7 @@ export default function VisitasScreen() {
             if (!user) return;
 
             // Busca visitas (ignora erro se tabela não existir ainda)
-            const { data, error } = await supabase
+            const { data } = await supabase
                 .from('visitas')
                 .select('*')
                 .eq('agronomist_id', user.id)
@@ -39,6 +35,10 @@ export default function VisitasScreen() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        loadVisitas();
+    }, []);
 
     const handleAgendar = async (e: React.FormEvent) => {
         e.preventDefault();
