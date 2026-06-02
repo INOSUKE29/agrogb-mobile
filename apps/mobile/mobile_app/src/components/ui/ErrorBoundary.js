@@ -44,11 +44,13 @@ class ErrorBoundary extends React.Component {
                         <Text style={styles.title}>Ops! Algo deu errado.</Text>
                         <Text style={styles.subtitle}>
                             Ocorreu um erro inesperado na visualização.
-                            {__DEV__ && this.state.error && `\n\nErro: ${this.state.error.message}`}
+                            {this.state.error && `\n\nErro: ${this.state.error.message}`}
                         </Text>
-                        {__DEV__ && this.state.error && (
-                            <ScrollView style={{ maxHeight: 150, backgroundColor: '#EEE', padding: 10, borderRadius: 10, marginBottom: 20 }}>
-                                <Text style={{ fontSize: 10, color: '#333' }}>{this.state.error.stack}</Text>
+                        {this.state.error && (
+                            <ScrollView style={{ maxHeight: 200, width: '100%', backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', padding: 10, borderRadius: 10, marginBottom: 20 }}>
+                                <Text selectable={true} style={{ fontSize: 11, color: '#EF4444', fontFamily: 'monospace' }}>
+                                    {this.state.error.stack || this.state.error.toString()}
+                                </Text>
                             </ScrollView>
                         )}
 
