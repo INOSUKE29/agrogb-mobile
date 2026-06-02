@@ -21,6 +21,7 @@ import EstoqueScreen from './screens/Dashboard/EstoqueScreen';
 import FrotaScreen from './screens/Dashboard/FrotaScreen';
 import TarefasScreen from './screens/Dashboard/TarefasScreen';
 import ComprasScreen from './screens/Dashboard/ComprasScreen';
+import EncomendasScreen from './screens/Dashboard/EncomendasScreen';
 import ClimaScreen from './screens/Dashboard/ClimaScreen';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
@@ -80,6 +81,7 @@ function App() {
               <Route path="cliente/frota" element={<FrotaScreen />} />
               <Route path="cliente/tarefas" element={<TarefasScreen />} />
               <Route path="cliente/compras" element={<ComprasScreen />} />
+              <Route path="cliente/encomendas" element={<EncomendasScreen />} />
               <Route path="cliente/clima" element={<ClimaScreen />} />
               <Route path="cliente/recomendacoes" element={<ReceituarioAgronomicoScreen />} />
               <Route path="cliente/relatorios" element={<RelatoriosDashboardScreen />} />

@@ -41,6 +41,11 @@ C:\Users\Bruno\Documents\AgroGB\
 1. Iniciar o desenvolvimento dos Shared Services dentro da pasta `packages/` (transferindo lógicas do Mobile para a raiz).
 2. Plugar o React Native (Mobile) e o Vite/Next.js (Desktop) simultaneamente neste novo motor compartilhado.
 
+## Documentos Essenciais
+- [AgroGB Knowledge Map](./AGROGB_KNOWLEDGE_MAP.md) - Regras de negócio.
+- [Plano de Melhoria de Produtividade](./AGROGB_PRODUCTIVITY_ENHANCEMENT_PLAN.md) - Plano de desenvolvimento UI/UX futuro.
+- **[Relatório de Ouro do AgroGB](file:///C:/Users/Bruno/.gemini/antigravity/brain/0dea86f6-86d7-4607-ae4c-0a0711bd4641/artifacts/RELATORIO_DE_OURO.md)** - Dossiê técnico definitivo contendo os melhores componentes, motores e integrações já desenvolvidos na história do projeto.
+
 ## Dinâmica de Trabalho com IA (Antigravity + Jules)
 Para garantir máxima eficiência no desenvolvimento do AgroGB, estabelecemos um modelo de **Liderança Técnica (Tech Lead)**:
 - **Antigravity (Eu):** Atuo como Tech Lead e desenvolvedor focado no momento. Faço modificações rápidas, ajustes de UI/UX, resolvo erros instantâneos e tomo decisões de arquitetura em pair programming.

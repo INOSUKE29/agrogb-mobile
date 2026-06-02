@@ -143,6 +143,7 @@ export default function DashboardLayout() {
                 { path: '/dashboard/cliente/tarefas', label: 'Tarefas e Operações', icon: LayoutList },
                 { path: '/dashboard/cliente/compras', label: 'Compras e Cotações', icon: Store },
                 { path: '/dashboard/cliente/vendas', label: 'Vendas e Comercialização', icon: DollarSign },
+                { path: '/dashboard/cliente/encomendas', label: 'Encomendas e Logística', icon: Package },
                 { path: '/dashboard/cliente/clima', label: 'Estação Meteorológica', icon: CloudRain },
                 { path: '/dashboard/cliente/caderno', label: 'Caderno Agrícola', icon: FileText },
                 { path: '/dashboard/cliente/financeiro', label: 'Financeiro', icon: DollarSign },
