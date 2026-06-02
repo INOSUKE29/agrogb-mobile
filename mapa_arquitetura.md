@@ -34,7 +34,7 @@ C:\Users\Bruno\Documents\AgroGB\
 - **Migração Concluída:** Toda a base do aplicativo Mobile foi isolada em `apps/mobile/mobile_app`.
 - **Auditoria Máxima:** Concluímos as 10 Fases da Auditoria Estrutural. Foi provado que o erro `useTheme` decorria de cache de versões anteriores, visto que os provedores relacionados (`WeatherProvider`, `SyncProvider`) foram expurgados da branch principal.
 - **Limpeza de Build:** Limpamos mais de 350 MB de arquivos pesados inúteis (`agrogb-dev.apk`, backups `.zip`) que travavam o envio para o GitHub Actions.
-- **Correção de CI/CD (GitHub Actions):** Removemos pastas `.git` residuais dentro de `apps/desktop` e `apps/mobile/mobile_app` que causavam falsos conflitos de submódulo na compilação em nuvem.
+- **Correção de CI/CD (GitHub Actions):** Removemos pastas `.git` residuais dentro de `apps/desktop` e `apps/mobile/mobile_app` e atualizamos todos os caminhos do arquivo `build-apk.yml` para apontarem corretamente para o novo Monorepo (`./apps/mobile/mobile_app/...`), garantindo que o NodeJS consiga fazer cache e compilar a APK em nuvem sem erros de rota.
 - **Banco de Dados (SQL):** Mapeamos e adicionamos novos módulos cruciais para o ecossistema: Tarefas Kanban (`06_A_tarefas_kanban.sql`) e Compras/Fornecedores (`07_A_compras_fornecedores.sql`).
 
 ## Próximos Passos (Imediatos)

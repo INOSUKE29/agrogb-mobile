@@ -10,6 +10,8 @@ import ClienteDashboard from './screens/Dashboard/ClienteDashboard';
 import TalhoesScreen from './screens/Dashboard/TalhoesScreen';
 import CadernoAgricolaScreen from './screens/Dashboard/CadernoAgricolaScreen';
 import RecomendacoesScreen from './screens/Dashboard/RecomendacoesScreen';
+import ReceituarioAgronomicoScreen from './screens/Dashboard/ReceituarioAgronomicoScreen';
+import RelatoriosDashboardScreen from './screens/Dashboard/RelatoriosDashboardScreen';
 import MeusClientesScreen from './screens/Dashboard/MeusClientesScreen';
 import SettingsScreen from './screens/Dashboard/SettingsScreen';
 import VendasScreen from './screens/Dashboard/VendasScreen';
@@ -79,6 +81,8 @@ function App() {
               <Route path="cliente/tarefas" element={<TarefasScreen />} />
               <Route path="cliente/compras" element={<ComprasScreen />} />
               <Route path="cliente/clima" element={<ClimaScreen />} />
+              <Route path="cliente/recomendacoes" element={<ReceituarioAgronomicoScreen />} />
+              <Route path="cliente/relatorios" element={<RelatoriosDashboardScreen />} />
 
               {/* Antigas Rotas de Fallback (para não quebrar a compilação) */}
               <Route path="colheita" element={<HarvestScreen />} />
