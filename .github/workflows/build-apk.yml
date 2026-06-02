@@ -36,6 +36,9 @@ jobs:
       - name: 📦 Instalando Dependências do AgroGB
         run: npm ci
 
+      - name: 🚀 Gerando Código Nativo Android (Expo Prebuild)
+        run: npx expo prebuild -p android --clean
+
       - name: 🏗️ Construindo o APK Release (Sem Expo EAS)
         working-directory: apps/mobile/mobile_app/android
         run: |
