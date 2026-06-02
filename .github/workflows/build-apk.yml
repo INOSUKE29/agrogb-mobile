@@ -5,7 +5,12 @@ on:
     branches:
       - main
       - master
-  workflow_dispatch: # Permite rodar manualmente clicando num botão no GitHub
+  workflow_dispatch: # Permite rodar manualmente
+
+# Cancela builds antigas pendentes no mesmo branch caso um novo push aconteça
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -21,7 +26,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: ☕ Configurando Java 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -39,16 +44,64 @@ jobs:
       - name: 🚀 Gerando Código Nativo Android (Expo Prebuild)
         run: npx expo prebuild -p android --clean
 
-      - name: 🏗️ Construindo o APK Release (Sem Expo EAS)
+      - name: ⚡ Configurando Gradle Cache Avançado
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: wrapper
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: 🏗️ Construindo o APK Release
         working-directory: apps/mobile/mobile_app/android
         run: |
+          # Remoção de limites de lint e injeção do R8 Full Mode
           echo "android { lintOptions { checkReleaseBuilds false; abortOnError false } }" >> app/build.gradle
+          echo "android.enableR8.fullMode=true" >> gradle.properties
+          
           chmod +x ./gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleRelease --stacktrace
 
-      - name: 📤 Salvando o APK no GitHub (Artefato)
+      - name: 🔐 Processando Keystore Dinâmico e Otimizando (Zipalign + Signer)
+        working-directory: apps/mobile/mobile_app/android/app/build/outputs/apk/release
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "⚠️ Secret ANDROID_KEYSTORE não encontrado. O APK permanecerá assinado em Debug."
+            # Mudar o nome apenas para não quebrar a proxima etapa de artefato
+            mv app-release.apk app-release-unsigned.apk
+          else
+            echo "🔒 Secret encontrado! Aplicando Zipalign e Apksigner criptográfico."
+            
+            # 1. Obter utilitários do build-tools instalado
+            BUILD_TOOLS_DIR=$ANDROID_HOME/build-tools/34.0.0
+            
+            # 2. Zipalign (Alinhamento OBRIGATÓRIO de 4 bytes)
+            $BUILD_TOOLS_DIR/zipalign -v -p 4 app-release.apk app-release-aligned.apk
+            
+            # 3. Decodificando Keystore temporário do Base64
+            echo "$KEYSTORE_B64" | base64 --decode > release.keystore
+            
+            # 4. Assinando
+            $BUILD_TOOLS_DIR/apksigner sign --ks release.keystore \
+              --ks-key-alias "$KEY_ALIAS" \
+              --ks-pass "pass:$KEYSTORE_PASSWORD" \
+              --key-pass "pass:$KEY_PASSWORD" \
+              --out app-release-signed.apk \
+              app-release-aligned.apk
+              
+            # Substitui para que o artefato final seja a versão assinada
+            mv app-release-signed.apk app-release-unsigned.apk
+            
+            # Limpeza do keystore por segurança
+            rm release.keystore
+          fi
+
+      - name: 📤 Salvando o APK Otimizado no GitHub
         uses: actions/upload-artifact@v4
         with:
           name: AgroGB-App-Release
-          path: apps/mobile/mobile_app/android/app/build/outputs/apk/release/app-release.apk
+          path: apps/mobile/mobile_app/android/app/build/outputs/apk/release/app-release-unsigned.apk
           retention-days: 15
