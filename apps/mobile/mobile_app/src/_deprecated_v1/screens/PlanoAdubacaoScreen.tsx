@@ -1,2 +1,2 @@
-// Este arquivo foi desativado. Usar PlanoAdubacaoScreen.js
-export { default } from "./PlanoAdubacaoScreen.js";
+// Este arquivo foi desativado.
+export default function PlanoAdubacaoScreen() { return null; }

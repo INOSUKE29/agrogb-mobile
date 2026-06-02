@@ -1,2 +1,2 @@
-// Este arquivo foi desativado. Usar ConfigScreen.js
-export { default } from "./ConfigScreen.js";
+// Este arquivo foi desativado.
+export default function ConfigScreen() { return null; }
