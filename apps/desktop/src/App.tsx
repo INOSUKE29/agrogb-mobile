@@ -8,6 +8,7 @@ import UsersScreen from './screens/Dashboard/UsersScreen';
 import AgroDashboard from './screens/Dashboard/AgroDashboard';
 import ClienteDashboard from './screens/Dashboard/ClienteDashboard';
 import TalhoesScreen from './screens/Dashboard/TalhoesScreen';
+import PlantioScreen from './screens/Dashboard/PlantioScreen';
 import CadernoAgricolaScreen from './screens/Dashboard/CadernoAgricolaScreen';
 import RecomendacoesScreen from './screens/Dashboard/RecomendacoesScreen';
 import ReceituarioAgronomicoScreen from './screens/Dashboard/ReceituarioAgronomicoScreen';
@@ -72,6 +73,7 @@ function App() {
               {/* PORTAL CLIENTE (PRODUTOR) */}
               <Route path="cliente" element={<ClienteDashboard />} />
               <Route path="cliente/talhoes" element={<TalhoesScreen />} />
+              <Route path="cliente/plantio" element={<PlantioScreen />} />
               <Route path="cliente/culturas" element={<CulturasScreen />} />
               <Route path="cliente/monitoramento" element={<MonitoramentoScreen />} />
               <Route path="cliente/caderno" element={<CadernoAgricolaScreen />} />
@@ -80,6 +82,7 @@ function App() {
               <Route path="cliente/estoque" element={<EstoqueScreen />} />
               <Route path="cliente/frota" element={<FrotaScreen />} />
               <Route path="cliente/tarefas" element={<TarefasScreen />} />
+              <Route path="cliente/custos" element={<CustosScreen />} />
               <Route path="cliente/compras" element={<ComprasScreen />} />
               <Route path="cliente/encomendas" element={<EncomendasScreen />} />
               <Route path="cliente/clima" element={<ClimaScreen />} />

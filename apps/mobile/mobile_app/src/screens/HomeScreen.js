@@ -24,6 +24,10 @@ import SidebarDrawer from '../components/SidebarDrawer';
 import ProductionChart from '../components/dashboard/ProductionChart';
 import OnboardingTour from '../components/common/OnboardingTour';
 
+// Componentes "Órfãos de Ouro" resgatados
+import WeatherWidget from '../ui/WeatherWidget';
+import GlowFAB from '../ui/GlowFAB';
+
 export default function HomeScreen({ navigation }) {
     const { theme } = useTheme();
     const [period, setPeriod] = useState('month');
@@ -95,6 +99,8 @@ export default function HomeScreen({ navigation }) {
                     onPeriodChange={setPeriod}
                 />
 
+                <WeatherWidget />
+
                 {data && (
                     <>
                         <FinancialSummary 
@@ -120,6 +126,12 @@ export default function HomeScreen({ navigation }) {
 
             <SidebarDrawer visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
             <OnboardingTour visible={showOnboarding} onClose={handleCloseOnboarding} />
+
+            <GlowFAB 
+                icon="add" 
+                onPress={() => navigation.navigate('Cadastro')} 
+                style={styles.fabPosition}
+            />
         </View>
     );
 }
@@ -127,5 +139,10 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    fabPosition: {
+        position: 'absolute',
+        bottom: 30,
+        right: 20
     }
 });
