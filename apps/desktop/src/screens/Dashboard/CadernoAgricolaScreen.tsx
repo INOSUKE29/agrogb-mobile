@@ -49,14 +49,16 @@ export default function CadernoAgricolaScreen() {
                 resCustos,
                 resCompras,
                 resPlantio,
-                resNotas
+                resNotas,
+                resAdubacao
             ] = await Promise.allSettled([
                 supabase.from('colheitas').select('*').eq('is_deleted', false),
                 supabase.from('vendas').select('*').eq('is_deleted', false),
                 supabase.from('custos').select('*').eq('is_deleted', false),
                 supabase.from('compras').select('*').eq('is_deleted', false),
                 supabase.from('plantio').select('*').eq('is_deleted', false),
-                supabase.from('caderno_notas').select('*').eq('is_deleted', false)
+                supabase.from('caderno_notas').select('*').eq('is_deleted', false),
+                supabase.from('planos_adubacao').select('*').eq('is_deleted', false)
             ]);
 
             const allItems: TimelineItem[] = [];
@@ -140,6 +142,23 @@ export default function CadernoAgricolaScreen() {
                     });
                 });
             }
+
+            // Processar Adubação / Aplicações
+            if (resAdubacao.status === 'fulfilled' && resAdubacao.value.data) {
+                resAdubacao.value.data.forEach((row: any) => {
+                    allItems.push({
+                        id: row.uuid || Math.random().toString(),
+                        tipo: 'ADUBAÇÃO',
+                        data: row.data_aplicacao || row.data_criacao || new Date().toISOString(),
+                        descricao: `${row.nome_plano} - ${row.cultura} (${row.tipo_aplicacao})`,
+                        observacao: `Status: ${row.status} | Área: ${row.area_local || 'N/A'}`,
+                        icon: Leaf,
+                        colorClass: 'text-green-500',
+                        bgClass: 'bg-green-500/10'
+                    });
+                });
+            }
+
 
             // Processar Anotações do Caderno
             if (resNotas.status === 'fulfilled' && resNotas.value.data) {

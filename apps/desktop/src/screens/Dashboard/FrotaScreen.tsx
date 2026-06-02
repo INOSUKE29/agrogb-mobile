@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
-import { Truck, Search, Plus, Filter, Wrench, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Truck, Search, Plus, Filter, Wrench, AlertTriangle, CheckCircle, Clock, Activity, PenTool } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function FrotaScreen() {
@@ -22,16 +22,31 @@ export default function FrotaScreen() {
     const fetchFrota = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('farm_machines')
+            let { data, error } = await supabase
+                .from('v2_maquinas')
                 .select('*')
                 .order('nome', { ascending: true });
 
-            if (error) throw error;
-            setFrota(data || []);
+            if (error) {
+                const fallback = await supabase.from('farm_machines').select('*').order('nome', { ascending: true });
+                if (fallback.error) throw error;
+                data = fallback.data;
+            }
+
+            const normalizedData = (data || []).map(item => ({
+                uuid: item.id || item.uuid,
+                nome: item.nome,
+                tipo: item.tipo,
+                placa: item.placa,
+                horimetro: item.horimetro_atual || item.horimetro || 0,
+                status: item.status || 'ATIVO',
+                tableUsed: item.id ? 'v2_maquinas' : 'farm_machines'
+            }));
+
+            setFrota(normalizedData);
         } catch (error: any) {
             console.error('Erro ao buscar frota:', error);
-            toast.error('Não foi possível carregar as máquinas.');
+            toast.error('Não foi possível carregar as máquinas. Verifique sua conexão.');
         } finally {
             setLoading(false);
         }
@@ -48,18 +63,32 @@ export default function FrotaScreen() {
             const { data: userData } = await supabase.auth.getUser();
             const userId = userData.user?.id;
 
+            // Try to insert in v2_maquinas first
             const { error } = await supabase
-                .from('farm_machines')
+                .from('v2_maquinas')
                 .insert([{
                     user_id: userId,
                     nome: nome,
                     tipo: tipo,
                     placa: placa,
-                    horimetro: parseFloat(horimetro) || 0,
+                    horimetro_atual: parseFloat(horimetro) || 0,
                     status: 'ATIVO'
                 }]);
             
-            if (error) throw error;
+            if (error) {
+                // Fallback
+                const { error: fallbackError } = await supabase
+                    .from('farm_machines')
+                    .insert([{
+                        user_id: userId,
+                        nome: nome,
+                        tipo: tipo,
+                        placa: placa,
+                        horimetro: parseFloat(horimetro) || 0,
+                        status: 'ATIVO'
+                    }]);
+                if (fallbackError) throw fallbackError;
+            }
 
             toast.success('Máquina cadastrada com sucesso!');
             setShowModal(false);
@@ -74,13 +103,14 @@ export default function FrotaScreen() {
         }
     };
 
-    const toggleStatus = async (uuid: string, currentStatus: string) => {
+    const toggleStatus = async (uuid: string, currentStatus: string, tableUsed: string) => {
         const novoStatus = currentStatus === 'ATIVO' ? 'MANUTENÇÃO' : 'ATIVO';
         try {
+            const idField = tableUsed === 'v2_maquinas' ? 'id' : 'uuid';
             const { error } = await supabase
-                .from('farm_machines')
+                .from(tableUsed)
                 .update({ status: novoStatus })
-                .eq('uuid', uuid);
+                .eq(idField, uuid);
 
             if (error) throw error;
             toast.success(`Status alterado para ${novoStatus}`);
@@ -95,88 +125,138 @@ export default function FrotaScreen() {
         item.placa?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const ativos = frota.filter(f => f.status === 'ATIVO').length;
+    const manutencao = frota.filter(f => f.status === 'MANUTENÇÃO').length;
+
     const getStatusIcon = (status: string) => {
-        if (status === 'ATIVO') return <CheckCircle className="w-5 h-5 text-green-400" />;
-        if (status === 'MANUTENÇÃO') return <Wrench className="w-5 h-5 text-red-400" />;
-        return <AlertTriangle className="w-5 h-5 text-yellow-400" />;
+        if (status === 'ATIVO') return <CheckCircle className="w-6 h-6 text-green-400" />;
+        if (status === 'MANUTENÇÃO') return <Wrench className="w-6 h-6 text-orange-400" />;
+        return <AlertTriangle className="w-6 h-6 text-red-400" />;
     };
 
     return (
-        <div className="space-y-6 animate-fade-in">
-            {/* CABEÇALHO */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-white flex items-center gap-3">
-                        <Truck className="w-8 h-8 text-[var(--color-primary)]" />
-                        Gestão de Frota
-                    </h1>
-                    <p className="text-[var(--color-muted)] mt-1">Controle de maquinários, manutenções e horímetro</p>
+        <div className="space-y-8 animate-fade-in pb-12">
+            {/* CABEÇALHO HERO */}
+            <div className="relative rounded-3xl overflow-hidden glass border border-[var(--color-border)] p-8">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--color-primary)]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-bold mb-4">
+                            <PenTool className="w-4 h-4" /> Gestão de Ativos
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-2">
+                            Gestão de Frota
+                        </h1>
+                        <p className="text-[var(--color-muted)] text-lg max-w-xl">
+                            Controle de maquinários, manutenção preventiva e monitoramento de horímetros.
+                        </p>
+                    </div>
+                    <button 
+                        onClick={() => setShowModal(true)}
+                        className="px-6 py-3 rounded-xl flex items-center justify-center gap-2 bg-[var(--color-primary)] hover:opacity-90 text-white font-bold shadow-lg shadow-[var(--color-primary)]/20 transition-all group"
+                    >
+                        <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+                        Nova Máquina
+                    </button>
                 </div>
-                <button 
-                    onClick={() => setShowModal(true)}
-                    className="glass-card px-4 py-2 flex items-center gap-2 text-[var(--color-primary)] hover:text-white font-semibold group"
-                >
-                    <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-                    Nova Máquina
-                </button>
+            </div>
+
+            {/* KPIs */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="glass-card p-6 flex items-center justify-between group">
+                    <div>
+                        <p className="text-[var(--color-muted)] font-bold text-sm uppercase tracking-wider mb-1">Total da Frota</p>
+                        <h3 className="text-3xl font-black text-white">{frota.length}</h3>
+                    </div>
+                    <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Truck className="w-7 h-7 text-blue-500" />
+                    </div>
+                </div>
+                <div className="glass-card p-6 flex items-center justify-between group">
+                    <div>
+                        <p className="text-[var(--color-muted)] font-bold text-sm uppercase tracking-wider mb-1">Operacional</p>
+                        <h3 className="text-3xl font-black text-green-400">{ativos}</h3>
+                    </div>
+                    <div className="w-14 h-14 rounded-2xl bg-green-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <CheckCircle className="w-7 h-7 text-green-500" />
+                    </div>
+                </div>
+                <div className="glass-card p-6 flex items-center justify-between group border-b-4 border-orange-500">
+                    <div>
+                        <p className="text-[var(--color-muted)] font-bold text-sm uppercase tracking-wider mb-1">Em Manutenção</p>
+                        <h3 className="text-3xl font-black text-orange-400">{manutencao}</h3>
+                    </div>
+                    <div className="w-14 h-14 rounded-2xl bg-orange-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Wrench className="w-7 h-7 text-orange-500" />
+                    </div>
+                </div>
             </div>
 
             {/* BARRA DE PESQUISA E FILTROS */}
-            <div className="glass-card p-4 flex flex-col md:flex-row gap-4">
-                <div className="relative flex-1">
-                    <Search className="w-5 h-5 text-[var(--color-muted)] absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="glass p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between border border-[var(--color-border)]">
+                <div className="relative w-full md:w-96">
+                    <Search className="w-5 h-5 text-[var(--color-muted)] absolute left-4 top-1/2 -translate-y-1/2" />
                     <input 
                         type="text" 
                         placeholder="Buscar por nome ou placa..." 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-[#121212] border border-[var(--color-border)] text-white rounded-xl pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all"
+                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none transition-all"
                     />
                 </div>
-                <button className="glass px-4 py-2 rounded-xl flex items-center gap-2 text-[var(--color-muted)] hover:text-white transition-colors">
+                <button className="w-full md:w-auto px-6 py-3 rounded-xl flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white font-bold transition-all">
                     <Filter className="w-4 h-4" />
-                    Filtros
+                    Filtros Avançados
                 </button>
             </div>
 
             {/* GRID DE MÁQUINAS */}
             {loading ? (
-                <div className="glass-card p-12 text-center text-[var(--color-muted)] animate-pulse">Carregando frota...</div>
+                <div className="glass-card p-16 flex flex-col items-center justify-center text-[var(--color-muted)]">
+                    <div className="w-10 h-10 border-4 border-[var(--color-primary)]/30 border-t-[var(--color-primary)] rounded-full animate-spin mb-4"></div>
+                    <p className="font-medium text-lg">Sincronizando frota...</p>
+                </div>
             ) : filteredFrota.length === 0 ? (
-                <div className="glass-card p-12 text-center text-[var(--color-muted)] flex flex-col items-center">
-                    <Truck className="w-12 h-12 mb-4 opacity-50" />
-                    <p className="text-lg font-medium text-white">Nenhuma máquina cadastrada</p>
-                    <p className="mt-1">Cadastre seu primeiro maquinário para começar o controle.</p>
+                <div className="glass-card p-16 text-center text-[var(--color-muted)] flex flex-col items-center">
+                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
+                        <Truck className="w-10 h-10 opacity-50" />
+                    </div>
+                    <h3 className="text-2xl font-black text-white mb-2">Nenhuma máquina encontrada</h3>
+                    <p className="text-lg max-w-md mx-auto">Cadastre seu primeiro maquinário para começar a rastrear horas e manutenções.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {filteredFrota.map(item => (
-                        <div key={item.uuid} className="glass-card p-6 flex flex-col relative overflow-hidden group">
-                            {/* Glow de fundo baseado no status */}
-                            <div className={`absolute -right-6 -top-6 w-32 h-32 rounded-full blur-3xl opacity-10 group-hover:opacity-20 transition-all ${item.status === 'ATIVO' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                        <div key={item.uuid} className={`glass-card p-6 flex flex-col relative overflow-hidden group transition-all hover:-translate-y-1 ${item.status === 'MANUTENÇÃO' ? 'border-orange-500/30' : ''}`}>
+                            <div className={`absolute -right-10 -top-10 w-32 h-32 rounded-full blur-3xl opacity-10 group-hover:opacity-20 transition-all ${item.status === 'ATIVO' ? 'bg-green-500' : 'bg-orange-500'}`}></div>
                             
-                            <div className="flex justify-between items-start mb-4 relative z-10">
+                            <div className="flex justify-between items-start mb-6 relative z-10">
                                 <div>
-                                    <h3 className="text-xl font-bold text-white mb-1 truncate">{item.nome}</h3>
-                                    <p className="text-sm font-medium text-[var(--color-muted)] bg-white/5 inline-block px-2 py-0.5 rounded-md border border-white/5">{item.tipo}</p>
+                                    <h3 className="text-2xl font-black text-white mb-1 truncate" title={item.nome}>{item.nome}</h3>
+                                    <div className="inline-block bg-[var(--color-background)] border border-[var(--color-border)] px-3 py-1 rounded-lg text-sm font-bold text-[var(--color-primary)]">
+                                        {item.tipo}
+                                    </div>
                                 </div>
                                 <button 
-                                    onClick={() => toggleStatus(item.uuid, item.status)}
-                                    className={`p-2 rounded-xl transition-all ${item.status === 'ATIVO' ? 'bg-green-500/10 hover:bg-green-500/20' : 'bg-red-500/10 hover:bg-red-500/20'}`}
+                                    onClick={() => toggleStatus(item.uuid, item.status, item.tableUsed)}
+                                    className={`p-3 rounded-2xl transition-all shadow-lg ${item.status === 'ATIVO' ? 'bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/20' : 'bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20'}`}
                                     title="Clique para alternar o status"
                                 >
                                     {getStatusIcon(item.status)}
                                 </button>
                             </div>
                             
-                            <div className="space-y-3 mb-6 relative z-10">
-                                <div className="flex justify-between items-center bg-[#121212] p-3 rounded-lg border border-[var(--color-border)]">
-                                    <span className="text-sm text-[var(--color-muted)]">Placa/Identificação</span>
-                                    <span className="text-sm font-bold text-white">{item.placa || 'N/A'}</span>
+                            <div className="space-y-3 mt-auto relative z-10">
+                                <div className="flex justify-between items-center bg-white/5 p-4 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
+                                    <span className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-wider">Placa/Identificação</span>
+                                    <span className="text-base font-black text-white">{item.placa || 'N/A'}</span>
                                 </div>
-                                <div className="flex justify-between items-center bg-[#121212] p-3 rounded-lg border border-[var(--color-border)]">
-                                    <span className="text-sm text-[var(--color-muted)] flex items-center gap-2"><Clock className="w-4 h-4" /> Horímetro/KM</span>
-                                    <span className="text-sm font-bold text-[var(--color-primary)]">{item.horimetro}</span>
+                                <div className="flex justify-between items-center bg-white/5 p-4 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
+                                    <span className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-wider flex items-center gap-2">
+                                        <Clock className="w-4 h-4" /> Horímetro
+                                    </span>
+                                    <span className="text-xl font-black text-[var(--color-primary)]">{item.horimetro} <span className="text-sm font-bold text-[var(--color-muted)]">h</span></span>
                                 </div>
                             </div>
                         </div>
@@ -186,88 +266,93 @@ export default function FrotaScreen() {
 
             {/* MODAL DE NOVA MÁQUINA */}
             {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setShowModal(false)}>
-                    <div 
-                        className="glass border border-[var(--color-border)] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden relative"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="h-1 w-full bg-[var(--color-primary)]"></div>
-                        <div className="p-6">
-                            <h2 className="text-2xl font-black text-white flex items-center gap-2 mb-6">
-                                <Plus className="text-[var(--color-primary)]" />
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowModal(false)}></div>
+                    <div className="glass border border-[var(--color-border)] rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden relative z-10 animate-fade-in flex flex-col max-h-[90vh]">
+                        <div className="h-2 w-full bg-[var(--color-primary)]"></div>
+                        
+                        <div className="p-6 border-b border-[var(--color-border)] flex justify-between items-center bg-white/[0.02]">
+                            <h2 className="text-2xl font-black text-white flex items-center gap-3">
+                                <Plus className="text-[var(--color-primary)] w-8 h-8 bg-[var(--color-primary)]/10 rounded-lg p-1" />
                                 Cadastrar Máquina
                             </h2>
+                            <button onClick={() => setShowModal(false)} className="text-[var(--color-muted)] hover:text-white p-2 bg-white/5 rounded-full transition-colors">
+                                &times;
+                            </button>
+                        </div>
 
-                            <form onSubmit={handleSaveMachine} className="space-y-4">
+                        <div className="p-6 overflow-y-auto">
+                            <form id="frotaForm" onSubmit={handleSaveMachine} className="space-y-5">
                                 <div>
-                                    <label className="block text-sm font-medium text-[var(--color-muted)] mb-1">Nome/Modelo</label>
+                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Nome/Modelo *</label>
                                     <input 
                                         type="text" 
                                         required
                                         value={nome}
                                         onChange={(e) => setNome(e.target.value)}
-                                        className="w-full bg-[#121212] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all"
                                         placeholder="Ex: Trator John Deere 6100J"
                                     />
                                 </div>
                                 
                                 <div>
-                                    <label className="block text-sm font-medium text-[var(--color-muted)] mb-1">Tipo</label>
+                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Categoria / Tipo *</label>
                                     <select 
                                         value={tipo}
                                         onChange={(e) => setTipo(e.target.value)}
-                                        className="w-full bg-[#121212] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none appearance-none"
+                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none appearance-none transition-all"
                                     >
                                         <option value="TRATOR">Trator</option>
                                         <option value="COLHEITADEIRA">Colheitadeira</option>
                                         <option value="PULVERIZADOR">Pulverizador</option>
-                                        <option value="CAMINHÃO">Caminhão</option>
-                                        <option value="VEÍCULO LEVE">Veículo Leve</option>
+                                        <option value="CAMINHÃO">Caminhão / Veículo Pesado</option>
+                                        <option value="VEÍCULO LEVE">Caminhonete / Veículo Leve</option>
                                         <option value="IMPLEMENTO">Implemento Agrícola</option>
-                                        <option value="OUTROS">Outros</option>
+                                        <option value="OUTROS">Outros Equipamentos</option>
                                     </select>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 gap-5">
                                     <div>
-                                        <label className="block text-sm font-medium text-[var(--color-muted)] mb-1">Placa/Chassi</label>
+                                        <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Placa/Identificação</label>
                                         <input 
                                             type="text" 
                                             value={placa}
                                             onChange={(e) => setPlaca(e.target.value)}
-                                            className="w-full bg-[#121212] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all uppercase"
                                             placeholder="ABC-1234"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-[var(--color-muted)] mb-1">Horímetro Inicial</label>
+                                        <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Horímetro / KM Inicial</label>
                                         <input 
                                             type="number" 
                                             step="0.1"
                                             value={horimetro}
                                             onChange={(e) => setHorimetro(e.target.value)}
-                                            className="w-full bg-[#121212] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all"
                                             placeholder="0.0"
                                         />
                                     </div>
                                 </div>
-
-                                <div className="pt-4 flex gap-3">
-                                    <button 
-                                        type="button"
-                                        onClick={() => setShowModal(false)}
-                                        className="flex-1 py-3 text-[var(--color-muted)] hover:text-white font-semibold transition-colors"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button 
-                                        type="submit"
-                                        className="flex-1 py-3 font-bold rounded-xl text-white bg-[var(--color-primary)] hover:opacity-90 transition-all active:scale-95"
-                                    >
-                                        Salvar
-                                    </button>
-                                </div>
                             </form>
+                        </div>
+
+                        <div className="p-6 border-t border-[var(--color-border)] bg-white/[0.02] flex gap-3">
+                            <button 
+                                type="button"
+                                onClick={() => setShowModal(false)}
+                                className="flex-1 py-3.5 rounded-xl font-bold text-[var(--color-muted)] hover:text-white hover:bg-white/5 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                type="submit"
+                                form="frotaForm"
+                                className="flex-1 py-3.5 font-black rounded-xl text-white bg-[var(--color-primary)] hover:opacity-90 shadow-lg shadow-[var(--color-primary)]/20 transition-transform active:scale-95"
+                            >
+                                Salvar Máquina
+                            </button>
                         </div>
                     </div>
                 </div>

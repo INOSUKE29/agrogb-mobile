@@ -11,6 +11,7 @@ import {
     Trash2,
     Loader2
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface Cultura {
     id: string;
@@ -20,6 +21,7 @@ interface Cultura {
     data_plantio: string;
     status: string;
     producao_total_kg: number;
+    tableUsed: string;
 }
 
 export default function CulturasScreen() {
@@ -43,16 +45,38 @@ export default function CulturasScreen() {
     const fetchCulturas = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('culturas')
+            // Tenta v2 primeiro
+            let { data, error } = await supabase
+                .from('v2_culturas')
                 .select('*')
-                .eq('is_deleted', 0)
                 .order('created_at', { ascending: false });
 
-            if (error) throw error;
-            setCulturas(data || []);
+            if (error) {
+                // Fallback para tabela v1
+                const fallback = await supabase
+                    .from('culturas')
+                    .select('*')
+                    .eq('is_deleted', 0)
+                    .order('created_at', { ascending: false });
+                if (fallback.error) throw fallback.error;
+                data = fallback.data;
+            }
+
+            const normalizedData = (data || []).map(item => ({
+                id: item.id || item.uuid,
+                nome: item.nome,
+                variedade: item.variedade || '',
+                area_ha: item.area_ha || 0,
+                data_plantio: item.data_plantio || '',
+                status: item.status || 'EM CRESCIMENTO',
+                producao_total_kg: item.producao_total_kg || 0,
+                tableUsed: item.id ? 'v2_culturas' : 'culturas'
+            }));
+
+            setCulturas(normalizedData);
         } catch (error) {
             console.error('Erro ao buscar culturas:', error);
+            toast.error('Erro ao carregar culturas da base de dados.');
         } finally {
             setLoading(false);
         }
@@ -93,27 +117,39 @@ export default function CulturasScreen() {
 
         try {
             if (editItem) {
-                await supabase.from('culturas').update(payload).eq('id', editItem.id);
+                await supabase.from(editItem.tableUsed).update(payload).eq('id', editItem.id);
             } else {
-                await supabase.from('culturas').insert([payload]);
+                // Tenta inserir na v2 primeiro
+                const { error } = await supabase.from('v2_culturas').insert([payload]);
+                if (error) {
+                    // Fallback para v1
+                    await supabase.from('culturas').insert([{ ...payload, is_deleted: 0 }]);
+                }
             }
             setIsModalOpen(false);
+            toast.success(editItem ? 'Cultura atualizada!' : 'Cultura cadastrada!');
             fetchCulturas();
         } catch (error) {
             console.error('Erro ao salvar cultura:', error);
-            alert('Falha ao salvar');
+            toast.error('Falha ao salvar cultura');
         } finally {
             setSaving(false);
         }
     };
 
-    const handleDelete = async (id: string, nome: string) => {
-        if (!window.confirm(`Excluir a cultura de ${nome}?`)) return;
+    const handleDelete = async (item: Cultura) => {
+        if (!window.confirm(`Excluir a cultura de ${item.nome}?`)) return;
         try {
-            await supabase.from('culturas').update({ is_deleted: 1 }).eq('id', id);
+            if (item.tableUsed === 'v2_culturas') {
+                await supabase.from('v2_culturas').delete().eq('id', item.id);
+            } else {
+                await supabase.from('culturas').update({ is_deleted: 1 }).eq('id', item.id);
+            }
+            toast.success('Cultura removida!');
             fetchCulturas();
         } catch (error) {
             console.error(error);
+            toast.error('Falha ao excluir cultura');
         }
     };
 
@@ -124,108 +160,119 @@ export default function CulturasScreen() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'COLHIDO': return 'bg-green-500/20 text-green-400 border-green-500/30';
-            case 'EM CRESCIMENTO': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-            case 'PREPARO DE SOLO': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-            case 'PRAGA/DOENÇA': return 'bg-red-500/20 text-red-400 border-red-500/30';
-            default: return 'bg-gray-500/20 text-gray-400';
+            case 'COLHIDO': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+            case 'EM CRESCIMENTO': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+            case 'PREPARO DE SOLO': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+            case 'PRAGA/DOENÇA': return 'bg-red-500/10 text-red-400 border-red-500/20';
+            default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
         }
     };
 
     return (
-        <div className="animate-fade-in pb-12 max-w-7xl mx-auto">
+        <div className="animate-fade-in pb-12 max-w-7xl mx-auto space-y-8">
             
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 border-b border-[var(--color-border)] pb-6 pt-4">
-                <div>
-                    <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-                        <Leaf className="w-8 h-8 text-green-500" />
-                        Gestão de Culturas e Safras
-                    </h1>
-                    <p className="text-[var(--color-muted)] font-medium mt-1">
-                        Acompanhe o que está plantado, status de crescimento e expectativas de colheita.
-                    </p>
-                </div>
+            {/* HERO CABEÇALHO */}
+            <div className="relative rounded-3xl overflow-hidden glass border border-[var(--color-border)] p-8">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--color-primary)]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
                 
-                <button 
-                    onClick={() => openModal()}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl shadow-lg shadow-green-500/20 transition-all"
-                >
-                    <Plus className="w-5 h-5" />
-                    Nova Cultura
-                </button>
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-bold mb-4">
+                            <Sprout className="w-4 h-4" /> Gestão Agrícola
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-2">
+                            Culturas e Safras
+                        </h1>
+                        <p className="text-[var(--color-muted)] text-lg max-w-xl">
+                            Acompanhe o que está plantado, o status de crescimento e prepare-se para a colheita.
+                        </p>
+                    </div>
+                    <button 
+                        onClick={() => openModal()}
+                        className="px-6 py-3 rounded-xl flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white font-bold shadow-lg shadow-green-500/20 transition-all group"
+                    >
+                        <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+                        Nova Cultura
+                    </button>
+                </div>
             </div>
 
-            {/* BARRA DE PESQUISA */}
-            <div className="glass p-4 rounded-2xl mb-8 flex items-center">
-                <div className="relative w-full max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-muted)]" />
+            {/* BARRA DE PESQUISA E FILTROS */}
+            <div className="glass p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between border border-[var(--color-border)]">
+                <div className="relative w-full md:w-96">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-muted)]" />
                     <input 
                         type="text" 
                         placeholder="Buscar cultura ou variedade..." 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-[var(--color-background)]/50 border border-[var(--color-border)] rounded-xl py-2.5 pl-10 pr-4 text-white placeholder-[var(--color-muted)] focus:outline-none focus:border-green-500 transition-all"
+                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 pl-12 pr-4 text-white placeholder-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
                     />
                 </div>
             </div>
 
             {/* LISTA EM CARDS */}
             {loading ? (
-                <div className="flex flex-col items-center justify-center py-20 text-[var(--color-muted)]">
-                    <Loader2 className="w-10 h-10 animate-spin mb-4 text-green-500" />
-                    <p className="font-bold">Buscando plantações...</p>
+                <div className="glass-card p-16 flex flex-col items-center justify-center text-[var(--color-muted)]">
+                    <Loader2 className="w-12 h-12 animate-spin mb-4 text-green-500" />
+                    <p className="font-bold text-lg">Buscando banco de culturas...</p>
                 </div>
             ) : filtered.length === 0 ? (
-                <div className="glass p-12 rounded-3xl flex flex-col items-center justify-center text-[var(--color-muted)] border border-[var(--color-border)]">
-                    <Sprout className="w-16 h-16 mb-4 text-gray-600" />
-                    <p className="font-bold text-white text-xl mb-2">Nenhuma cultura encontrada</p>
-                    <p className="text-sm">Cadastre o que você está plantando agora.</p>
+                <div className="glass-card p-16 rounded-3xl flex flex-col items-center justify-center text-[var(--color-muted)] border border-[var(--color-border)]">
+                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
+                        <Sprout className="w-10 h-10 text-[var(--color-muted)] opacity-50" />
+                    </div>
+                    <p className="font-black text-white text-2xl mb-2">Nenhuma cultura encontrada</p>
+                    <p className="text-lg max-w-md text-center">Cadastre o que você está plantando agora para monitorar a safra.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filtered.map(c => (
-                        <div key={c.id} className="glass rounded-3xl border border-[var(--color-border)] overflow-hidden group hover:-translate-y-1 transition-all">
+                        <div key={c.id} className="glass-card rounded-3xl overflow-hidden group hover:-translate-y-1 transition-all">
                             <div className="p-6">
-                                <div className="flex justify-between items-start mb-4">
+                                <div className="flex justify-between items-start mb-6">
                                     <div className="flex-1">
-                                        <h3 className="text-2xl font-black text-white leading-tight">{c.nome}</h3>
-                                        <p className="text-sm font-bold text-green-400 mt-1">{c.variedade || 'Variedade não informada'}</p>
+                                        <h3 className="text-2xl font-black text-white leading-tight mb-1">{c.nome}</h3>
+                                        <div className="inline-block bg-[var(--color-background)] border border-[var(--color-border)] px-3 py-1 rounded-lg text-sm font-bold text-green-400">
+                                            {c.variedade || 'Variedade Genérica'}
+                                        </div>
                                     </div>
                                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => openModal(c)} className="p-2 bg-white/5 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-colors">
+                                        <button onClick={() => openModal(c)} className="p-2.5 bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)]/20 text-[var(--color-primary)] rounded-xl transition-colors">
                                             <Edit2 className="w-4 h-4" />
                                         </button>
-                                        <button onClick={() => handleDelete(c.id, c.nome)} className="p-2 bg-white/5 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors">
+                                        <button onClick={() => handleDelete(c)} className="p-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-colors">
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                     </div>
                                 </div>
 
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-400">
-                                            <Scale className="w-5 h-5" />
+                                    <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5">
+                                        <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center text-green-400 shadow-inner">
+                                            <Scale className="w-6 h-6" />
                                         </div>
                                         <div>
-                                            <p className="text-xs text-[var(--color-muted)] font-bold uppercase tracking-wider">Área Plantada</p>
-                                            <p className="text-white font-bold">{c.area_ha} hectares</p>
+                                            <p className="text-xs text-[var(--color-muted)] font-bold uppercase tracking-wider mb-1">Área Plantada</p>
+                                            <p className="text-xl font-black text-white">{c.area_ha} <span className="text-sm font-bold text-[var(--color-muted)]">ha</span></p>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
-                                            <CalendarDays className="w-5 h-5" />
+                                    <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5">
+                                        <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 shadow-inner">
+                                            <CalendarDays className="w-6 h-6" />
                                         </div>
                                         <div>
-                                            <p className="text-xs text-[var(--color-muted)] font-bold uppercase tracking-wider">Data do Plantio</p>
-                                            <p className="text-white font-bold">{c.data_plantio ? new Date(c.data_plantio).toLocaleDateString('pt-BR') : 'Não definida'}</p>
+                                            <p className="text-xs text-[var(--color-muted)] font-bold uppercase tracking-wider mb-1">Data do Plantio</p>
+                                            <p className="text-lg font-bold text-white">{c.data_plantio ? new Date(c.data_plantio).toLocaleDateString('pt-BR') : 'Não definida'}</p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-black/20 p-4 border-t border-[var(--color-border)] flex justify-between items-center">
-                                <span className="text-xs text-[var(--color-muted)] font-bold uppercase">Status Atual:</span>
-                                <span className={`text-xs font-bold px-3 py-1 rounded-lg border ${getStatusColor(c.status)}`}>
+                            <div className="bg-black/30 p-5 border-t border-[var(--color-border)] flex justify-between items-center">
+                                <span className="text-xs text-[var(--color-muted)] font-bold uppercase tracking-wider">Fase Atual</span>
+                                <span className={`text-xs font-black tracking-wider uppercase px-3 py-1.5 rounded-lg border shadow-sm ${getStatusColor(c.status)}`}>
                                     {c.status}
                                 </span>
                             </div>
@@ -236,70 +283,76 @@ export default function CulturasScreen() {
 
             {/* MODAL */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
-                    <div className="bg-[#121212] border border-[var(--color-border)] w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
-                        <div className="p-6 border-b border-[var(--color-border)] bg-white/5">
-                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                <Leaf className="w-5 h-5 text-green-500" />
-                                {editItem ? 'Editar Cultura' : 'Nova Cultura'}
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setIsModalOpen(false)}></div>
+                    <div className="glass border border-[var(--color-border)] w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative z-10 animate-fade-in flex flex-col max-h-[90vh]">
+                        <div className="h-2 w-full bg-green-500"></div>
+                        
+                        <div className="p-6 border-b border-[var(--color-border)] bg-white/[0.02] flex justify-between items-center">
+                            <h2 className="text-2xl font-black text-white flex items-center gap-3">
+                                <Leaf className="w-8 h-8 text-green-500 bg-green-500/10 rounded-lg p-1.5" />
+                                {editItem ? 'Editar Cultura' : 'Cadastrar Cultura'}
                             </h2>
+                            <button onClick={() => setIsModalOpen(false)} className="text-[var(--color-muted)] hover:text-white p-2 bg-white/5 rounded-full transition-colors">
+                                &times;
+                            </button>
                         </div>
                         
-                        <div className="p-6">
-                            <form id="culturaForm" onSubmit={handleSave} className="flex flex-col gap-5">
+                        <div className="p-6 overflow-y-auto">
+                            <form id="culturaForm" onSubmit={handleSave} className="space-y-5">
                                 <div>
-                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-2">Nome da Cultura *</label>
+                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Nome da Cultura *</label>
                                     <input 
                                         type="text" 
                                         required
                                         value={form.nome}
                                         onChange={(e) => setForm({...form, nome: e.target.value})}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl focus:ring-2 focus:ring-green-500 p-3"
+                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl focus:ring-2 focus:ring-green-500 p-3 transition-all"
                                         placeholder="Ex: Soja, Milho, Feijão"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-2">Variedade</label>
+                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Variedade / Híbrido</label>
                                     <input 
                                         type="text" 
                                         value={form.variedade}
                                         onChange={(e) => setForm({...form, variedade: e.target.value})}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl focus:ring-2 focus:ring-green-500 p-3"
+                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl focus:ring-2 focus:ring-green-500 p-3 transition-all"
                                         placeholder="Ex: M8349 IPRO"
                                     />
                                 </div>
                                 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 gap-5">
                                     <div>
-                                        <label className="block text-sm font-bold text-[var(--color-muted)] mb-2">Área (ha) *</label>
+                                        <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Área Destinada (ha) *</label>
                                         <input 
                                             type="number" 
                                             step="0.01"
                                             required
                                             value={form.area_ha}
                                             onChange={(e) => setForm({...form, area_ha: e.target.value})}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl focus:ring-2 focus:ring-green-500 p-3"
+                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl focus:ring-2 focus:ring-green-500 p-3 transition-all"
                                             placeholder="Ex: 100"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-bold text-[var(--color-muted)] mb-2">Data do Plantio</label>
+                                        <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Data do Plantio</label>
                                         <input 
                                             type="date" 
                                             value={form.data_plantio}
                                             onChange={(e) => setForm({...form, data_plantio: e.target.value})}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl focus:ring-2 focus:ring-green-500 p-3"
+                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl focus:ring-2 focus:ring-green-500 p-3 transition-all"
                                         />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-2">Status da Cultura</label>
+                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Fase / Status</label>
                                     <select
                                         value={form.status}
                                         onChange={(e) => setForm({...form, status: e.target.value})}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl focus:ring-2 focus:ring-green-500 p-3"
+                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl focus:ring-2 focus:ring-green-500 p-3 transition-all appearance-none"
                                     >
                                         <option value="PREPARO DE SOLO">Preparo de Solo</option>
                                         <option value="EM CRESCIMENTO">Em Crescimento</option>
@@ -311,11 +364,11 @@ export default function CulturasScreen() {
                             </form>
                         </div>
 
-                        <div className="p-6 border-t border-[var(--color-border)] flex justify-end gap-3 bg-white/5">
+                        <div className="p-6 border-t border-[var(--color-border)] flex justify-end gap-3 bg-white/[0.02]">
                             <button 
                                 type="button"
                                 onClick={() => setIsModalOpen(false)}
-                                className="px-6 py-3 rounded-xl font-bold text-[var(--color-muted)] hover:text-white hover:bg-white/10 transition-all"
+                                className="flex-1 py-3.5 rounded-xl font-bold text-[var(--color-muted)] hover:text-white hover:bg-white/10 transition-all"
                             >
                                 Cancelar
                             </button>
@@ -323,7 +376,7 @@ export default function CulturasScreen() {
                                 type="submit"
                                 form="culturaForm"
                                 disabled={saving}
-                                className="px-6 py-3 rounded-xl font-bold text-white bg-green-600 hover:bg-green-500 transition-all flex items-center gap-2"
+                                className="flex-1 py-3.5 rounded-xl font-black text-white bg-green-600 hover:bg-green-500 shadow-lg shadow-green-500/20 transition-all flex items-center justify-center gap-2 active:scale-95"
                             >
                                 {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
                                 Salvar Cultura
