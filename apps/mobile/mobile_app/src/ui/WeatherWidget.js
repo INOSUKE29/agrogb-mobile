@@ -12,12 +12,9 @@ export default function WeatherWidget() {
     useEffect(() => {
         const updateTime = () => {
             const now = new Date();
-            const formatter = new Intl.DateTimeFormat('pt-BR', {
-                hour: '2-digit',
-                minute: '2-digit',
-                timeZone: 'America/Sao_Paulo',
-            });
-            setCurrentTime(formatter.format(now));
+            const h = now.getHours().toString().padStart(2, '0');
+            const m = now.getMinutes().toString().padStart(2, '0');
+            setCurrentTime(`${h}:${m}`);
         };
         updateTime();
         const interval = setInterval(updateTime, 60000);
@@ -61,7 +58,7 @@ export default function WeatherWidget() {
                         <Ionicons name={getIcon(weather?.icon || '01d')} size={30} color={colors.primary} />
                     </View>
                     <View style={styles.infoCol}>
-                        <Text style={[styles.mainText, { color: colors.text }]}>{weather.temp}°C</Text>
+                        <Text style={[styles.mainText, { color: colors.textPrimary || colors.textMain || '#FFF' }]}>{weather.temp}°C</Text>
                         <Text style={[styles.subText, { color: colors.textSecondary }]}>{weather.city}</Text>
                     </View>
                 </View>
