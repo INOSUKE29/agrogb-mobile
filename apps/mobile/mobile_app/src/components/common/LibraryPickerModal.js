@@ -14,7 +14,7 @@ import {
     ScrollView
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../theme/ThemeContext';
 import { BlurView } from 'expo-blur';
 import Card from './Card';
 

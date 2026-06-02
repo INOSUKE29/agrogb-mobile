@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Dim
 import { Camera } from 'expo-camera';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 

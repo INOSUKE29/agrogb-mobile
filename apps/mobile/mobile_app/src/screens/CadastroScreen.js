@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { insertCadastro, getCadastro, deleteCadastro, updateCadastro, insertReceita, getReceita, deleteItemReceita } from '../database/database';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 // Design System
 import Card from '../components/common/Card';

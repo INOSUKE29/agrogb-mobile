@@ -10,7 +10,7 @@ import {
 } from '../database/database';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';

@@ -6,7 +6,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { AgronomistService } from '../services/AgronomistService';
 import Card from '../components/common/Card';
 import AgroButton from '../components/common/AgroButton';

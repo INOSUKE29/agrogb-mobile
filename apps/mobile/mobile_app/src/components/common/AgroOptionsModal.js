@@ -10,7 +10,7 @@ import {
     Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../theme/ThemeContext';
 import { BlurView } from 'expo-blur';
 
 const { width } = Dimensions.get('window');

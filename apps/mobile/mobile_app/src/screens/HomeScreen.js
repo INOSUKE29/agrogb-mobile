@@ -8,7 +8,7 @@ import {
     Alert 
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { useDashboardData } from '../hooks/useDashboardData';
 import SyncService from '../services/SyncService';
 
@@ -25,8 +25,8 @@ import ProductionChart from '../components/dashboard/ProductionChart';
 import OnboardingTour from '../components/common/OnboardingTour';
 
 // Componentes "Órfãos de Ouro" resgatados
-import WeatherWidget from '../ui/WeatherWidget';
-import GlowFAB from '../ui/GlowFAB';
+import WeatherWidget from '../components/ui/WeatherWidget';
+import GlowFAB from '../components/ui/GlowFAB';
 
 export default function HomeScreen({ navigation }) {
     const { theme } = useTheme();

@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { AgronomistService } from '../services/AgronomistService';
 import { RecommendationService } from '../services/RecommendationService';
 import { executeQuery } from '../database/database';

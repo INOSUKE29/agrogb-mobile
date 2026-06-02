@@ -5,7 +5,7 @@ import { insertMaquina, updateMaquinaRevisao } from '../database/database';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { showToast } from '../ui/Toast';
+import { showToast } from '../components/ui/Toast';
 
 const TIPOS = [
     { id: 'TRATOR', label: 'Trator', icon: 'tractor' },

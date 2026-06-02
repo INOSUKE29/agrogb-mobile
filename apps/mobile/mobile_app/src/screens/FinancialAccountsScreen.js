@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, 
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
-import ScreenHeader from '../ui/ScreenHeader';
-import GlowCard from '../ui/GlowCard';
+import ScreenHeader from '../components/ui/ScreenHeader';
+import GlowCard from '../components/ui/GlowCard';
 import { FinanceService } from '../modules/finance/services/FinanceService';
 
 export default function FinancialAccountsScreen({ navigation }) {

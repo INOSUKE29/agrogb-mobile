@@ -7,7 +7,7 @@ import SmartAutocomplete from '../components/common/SmartAutocomplete';
 import { TalhaoLibraryService, CropLibraryService } from '../services/LibraryServices';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 // Design System
 import AgroButton from '../components/common/AgroButton';

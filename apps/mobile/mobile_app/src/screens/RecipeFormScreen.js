@@ -6,9 +6,9 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { FertilizationService } from '../services/FertilizationService';
-import ScreenHeader from '../ui/ScreenHeader';
+import ScreenHeader from '../components/ui/ScreenHeader';
 import { Picker } from '@react-native-picker/picker';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import SmartAutocomplete from '../components/common/SmartAutocomplete';
 import { CropLibraryService, ProductLibraryService } from '../services/LibraryServices';
 

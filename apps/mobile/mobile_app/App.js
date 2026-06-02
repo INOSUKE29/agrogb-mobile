@@ -16,8 +16,8 @@ import AutoSyncService from './src/services/AutoSyncService';
 // Contextos e Providers
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ThemeProvider } from './src/theme/ThemeContext';
-import ErrorBoundary from './src/ui/ErrorBoundary';
-import Toast from './src/ui/Toast';
+import ErrorBoundary from './src/components/ui/ErrorBoundary';
+import Toast from './src/components/ui/Toast';
 
 // Telas Autenticação
 import LoginScreen from './src/screens/LoginScreen';

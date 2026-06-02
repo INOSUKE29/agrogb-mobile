@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, StyleSheet, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../theme/ThemeContext';
 import Card from '../common/Card';
 
 const { width } = Dimensions.get('window');

@@ -3,12 +3,13 @@ import { useColorScheme } from 'react-native';
 import { getAppSettings, updateAppSetting } from '../database/database';
 import { themeLight } from './themeLight';
 import { themeDark } from './themeDark';
+import { theme as legacyTheme } from './styles/theme';
 
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
     const systemColorScheme = useColorScheme();
-    const [themeConfig, setThemeConfig] = useState('system'); // system, light, dark
+    const [themeConfig, setThemeConfig] = useState('system');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -42,14 +43,25 @@ export const ThemeProvider = ({ children }) => {
         : themeConfig;
         
     const activeTheme = effectiveMode === 'dark' ? themeDark : themeLight;
+    
+    // Mesclar temas para manter retrocompatibilidade com telas antigas
+    const mergedTheme = {
+        ...legacyTheme,
+        colors: {
+            ...legacyTheme.colors,
+            ...activeTheme.colors
+        }
+    };
 
     return (
         <ThemeContext.Provider value={{
-            theme: themeConfig,
+            theme: mergedTheme,
+            themeMode: themeConfig,
             effectiveTheme: effectiveMode,
-            colors: activeTheme.colors,
+            colors: mergedTheme.colors,
             setTheme,
-            isDark: effectiveMode === 'dark'
+            isDark: effectiveMode === 'dark',
+            isDarkMode: effectiveMode === 'dark'
         }}>
             {!loading && children}
         </ThemeContext.Provider>
@@ -65,14 +77,15 @@ export const AVAILABLE_THEMES = [
 export const useTheme = () => {
     const context = useContext(ThemeContext);
     if (!context) {
-        // Fallback para evitar crash se usado fora do Provider
         return {
-            theme: 'light',
+            theme: legacyTheme,
             effectiveTheme: 'light',
-            colors: themeLight.colors,
+            colors: { ...legacyTheme.colors, ...themeLight.colors },
             setTheme: () => { },
-            isDark: false
+            isDark: false,
+            isDarkMode: false
         };
     }
     return context;
 };
+

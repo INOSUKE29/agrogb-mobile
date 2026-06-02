@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../theme/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function DashboardHeader({ userName, propertyName, onProfilePress, onNotifyPress, isSyncing, selectedPeriod, onPeriodChange }) {

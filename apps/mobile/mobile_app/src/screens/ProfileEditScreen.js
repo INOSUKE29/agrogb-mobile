@@ -9,9 +9,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '../theme/ThemeContext';
-import AppContainer from '../ui/AppContainer';
-import ScreenHeader from '../ui/ScreenHeader';
-import { showToast } from '../ui/Toast';
+import AppContainer from '../components/ui/AppContainer';
+import ScreenHeader from '../components/ui/ScreenHeader';
+import { showToast } from '../components/ui/Toast';
 import { AuthService } from '../services/authService';
 import { executeQuery } from '../database/database';
 

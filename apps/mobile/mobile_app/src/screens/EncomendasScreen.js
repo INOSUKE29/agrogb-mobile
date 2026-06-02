@@ -14,7 +14,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { executeQuery } from '../database/database';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import SafeBlurView from '../ui/SafeBlurView';
+import SafeBlurView from '../components/ui/SafeBlurView';
 
 export default function EncomendasScreen() {
     const navigation = useNavigation();

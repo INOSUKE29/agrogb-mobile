@@ -7,7 +7,7 @@ import { ClientLibraryService, ProductLibraryService } from '../services/Library
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 // Design System
 import MetricCard from '../components/common/MetricCard';

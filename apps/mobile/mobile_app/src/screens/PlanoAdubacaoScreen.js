@@ -12,7 +12,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { executeQuery } from "../database/database";
-import { useTheme } from "../context/ThemeContext";
+import { useTheme } from '../theme/ThemeContext';
 import Card from "../components/common/Card";
 import AgroButton from "../components/common/AgroButton";
 import { performSync } from "../services/SyncService";

@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { insertCliente, executeQuery } from '../database/database';
-import { showToast } from '../ui/Toast';
+import { showToast } from '../components/ui/Toast';
 
 export default function ClienteFormScreen({ navigation, route }) {
     const { cliente, returnTo } = route.params || {};

@@ -9,7 +9,7 @@ import * as SecureStore from 'expo-secure-store';
 import { translateAuthError } from '../utils/errorHelpers';
 import { getSupabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import FriendlyModal from '../components/common/FriendlyModal';
 
 const { width, height } = Dimensions.get('window');

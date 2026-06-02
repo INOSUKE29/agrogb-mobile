@@ -10,7 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { executeQuery, getCadastro } from '../database/database';
 import { analyzeContent } from '../services/AIService';
 import { MenuConfigService } from '../services/MenuConfigService';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 // Design System
 import Card from '../components/common/Card';

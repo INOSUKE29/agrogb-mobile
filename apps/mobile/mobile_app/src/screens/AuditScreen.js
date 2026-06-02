@@ -10,10 +10,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { executeQuery } from '../database/database';
-import { useTheme } from '../context/ThemeContext';
-import AppContainer from '../ui/AppContainer';
-import ScreenHeader from '../ui/ScreenHeader';
-import { showToast } from '../ui/Toast';
+import { useTheme } from '../theme/ThemeContext';
+import AppContainer from '../components/ui/AppContainer';
+import ScreenHeader from '../components/ui/ScreenHeader';
+import { showToast } from '../components/ui/Toast';
 import { LoggingService } from '../modules/system/services/LoggingService';
 
 export default function AuditScreen({ navigation }) {

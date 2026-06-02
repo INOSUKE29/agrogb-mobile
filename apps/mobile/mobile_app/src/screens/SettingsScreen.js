@@ -11,12 +11,12 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
 import Constants from 'expo-constants';
-import SafeBlurView from '../ui/SafeBlurView';
+import SafeBlurView from '../components/ui/SafeBlurView';
 
-import { useTheme } from '../context/ThemeContext';
-import AppContainer from '../ui/AppContainer';
-import ScreenHeader from '../ui/ScreenHeader';
-import { showToast } from '../ui/Toast';
+import { useTheme } from '../theme/ThemeContext';
+import AppContainer from '../components/ui/AppContainer';
+import ScreenHeader from '../components/ui/ScreenHeader';
+import { showToast } from '../components/ui/Toast';
 import { AuthService } from '../services/authService';
 import { executeQuery, getAppSettings, updateAppSetting } from '../database/database';
 import { getSupabase } from '../services/supabase';

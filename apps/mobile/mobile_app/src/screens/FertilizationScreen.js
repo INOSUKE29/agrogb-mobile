@@ -5,9 +5,9 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { FertilizationService } from '../services/FertilizationService';
-import ScreenHeader from '../ui/ScreenHeader';
+import ScreenHeader from '../components/ui/ScreenHeader';
 
 const { width } = Dimensions.get('window');
 

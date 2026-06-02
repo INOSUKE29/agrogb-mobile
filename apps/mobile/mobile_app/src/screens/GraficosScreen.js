@@ -1,8 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import AppContainer from '../ui/AppContainer';
-import ScreenHeader from '../ui/ScreenHeader';
+import AppContainer from '../components/ui/AppContainer';
+import ScreenHeader from '../components/ui/ScreenHeader';
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
 import { executeQuery } from '../database/database';
 

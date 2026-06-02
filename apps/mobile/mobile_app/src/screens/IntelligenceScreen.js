@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Dimensions, StatusBar, SafeAreaView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 
 // Design System
 import Card from '../components/common/Card';

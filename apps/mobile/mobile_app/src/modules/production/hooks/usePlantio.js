@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { PlantioService } from '../services/PlantioService';
-import { showToast } from '../../../ui/Toast';
+import { showToast } from '../../../components/ui/Toast';
 import { useInventory } from '../../inventory/hooks/useInventory';
 
 /**
