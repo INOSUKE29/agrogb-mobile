@@ -25,7 +25,11 @@ import {
     Truck,
     LayoutList,
     Store,
-    CloudRain
+    CloudRain,
+    CheckSquare,
+    TrendingDown,
+    Tags,
+    Database
 } from 'lucide-react';
 
 export default function DashboardLayout() {
@@ -143,6 +147,8 @@ export default function DashboardLayout() {
                 { path: '/dashboard/cliente/frota', label: 'Gestão de Frota', icon: Truck },
                 { path: '/dashboard/cliente/tarefas', label: 'Minhas Tarefas', icon: CheckSquare },
                 { path: '/dashboard/cliente/custos', label: 'Controle de Custos', icon: TrendingDown },
+                { path: '/dashboard/cliente/categorias', label: 'Categorias Financeiras', icon: Tags },
+                { path: '/dashboard/cliente/cadastro', label: 'Catálogo Geral', icon: Database },
                 { path: '/dashboard/cliente/compras', label: 'Compras e Cotações', icon: Store },
                 { path: '/dashboard/cliente/vendas', label: 'Vendas e Comercialização', icon: DollarSign },
                 { path: '/dashboard/cliente/encomendas', label: 'Encomendas e Logística', icon: Package },

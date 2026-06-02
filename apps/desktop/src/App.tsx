@@ -21,6 +21,9 @@ import MonitoramentoScreen from './screens/Dashboard/MonitoramentoScreen';
 import EstoqueScreen from './screens/Dashboard/EstoqueScreen';
 import FrotaScreen from './screens/Dashboard/FrotaScreen';
 import TarefasScreen from './screens/Dashboard/TarefasScreen';
+import CustosScreen from './screens/Dashboard/CustosScreen';
+import CategoriasDespesaScreen from './screens/Dashboard/CategoriasDespesaScreen';
+import CadastroBasicoScreen from './screens/Dashboard/CadastroBasicoScreen';
 import ComprasScreen from './screens/Dashboard/ComprasScreen';
 import EncomendasScreen from './screens/Dashboard/EncomendasScreen';
 import ClimaScreen from './screens/Dashboard/ClimaScreen';
@@ -83,6 +86,8 @@ function App() {
               <Route path="cliente/frota" element={<FrotaScreen />} />
               <Route path="cliente/tarefas" element={<TarefasScreen />} />
               <Route path="cliente/custos" element={<CustosScreen />} />
+              <Route path="cliente/categorias" element={<CategoriasDespesaScreen />} />
+              <Route path="cliente/cadastro" element={<CadastroBasicoScreen />} />
               <Route path="cliente/compras" element={<ComprasScreen />} />
               <Route path="cliente/encomendas" element={<EncomendasScreen />} />
               <Route path="cliente/clima" element={<ClimaScreen />} />
