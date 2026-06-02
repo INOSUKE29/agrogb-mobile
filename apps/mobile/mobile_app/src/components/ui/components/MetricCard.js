@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
-import { SPACING } from '../theme/spacing';
-import { TYPOGRAPHY } from '../theme/typography';
+import { SPACING } from '../../theme/spacing';
+import { TYPOGRAPHY } from '../../theme/typography';
 
 export const MetricCard = ({ icon, label, value, color }) => {
     const { colors } = useTheme();

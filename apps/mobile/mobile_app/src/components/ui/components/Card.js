@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
-import { SHADOWS } from '../theme/shadows';
-import { RADIUS } from '../theme/radius';
-import { SPACING } from '../theme/spacing';
+import { SHADOWS } from '../../theme/shadows';
+import { RADIUS } from '../../theme/radius';
+import { SPACING } from '../../theme/spacing';
 
 export const Card = ({ children, style, onPress, noPadding = false }) => {
     const { colors, isDark } = useTheme();

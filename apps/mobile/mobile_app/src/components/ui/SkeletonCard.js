@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
+import { useTheme } from '../../theme/ThemeContext';
 
 export default function SkeletonCard({ height = 120, width = '100%', borderRadius = 24, style }) {
     const { colors, isDark } = useTheme();

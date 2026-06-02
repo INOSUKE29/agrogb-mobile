@@ -10,7 +10,7 @@ import ScreenHeader from '../ScreenHeader';
 import GlowCard from '../GlowCard';
 import GlowInput from '../GlowInput';
 import PrimaryButton from '../PrimaryButton';
-import CultureSelector from '../components/CultureSelector';
+import CultureSelector from '../../components/CultureSelector';
 import { useTheme } from '../../theme/ThemeContext';
 import { showToast } from '../Toast';
 

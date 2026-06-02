@@ -2,10 +2,10 @@ import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, View, Vibration, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
-import { RADIUS } from '../theme/radius';
-import { SPACING } from '../theme/spacing';
-import { SHADOWS } from '../theme/shadows';
-import { TYPOGRAPHY } from '../theme/typography';
+import { RADIUS } from '../../theme/radius';
+import { SPACING } from '../../theme/spacing';
+import { SHADOWS } from '../../theme/shadows';
+import { TYPOGRAPHY } from '../../theme/typography';
 
 export const IconButton = ({ icon, label, onPress, size = 56 }) => {
     const { colors, isDark } = useTheme();

@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Animated, 
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
-import { executeQuery } from '../database/database';
-import { useTheme } from '../theme/ThemeContext';
-import { AuthService } from '../services/authService';
+import { executeQuery } from '../../database/database';
+import { useTheme } from '../../theme/ThemeContext';
+import { AuthService } from '../../services/authService';
 
 const { width } = Dimensions.get('window');
 const DRAWER_WIDTH = width * 0.75;

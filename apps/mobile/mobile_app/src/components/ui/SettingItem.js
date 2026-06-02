@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Switch, StyleSheet, Modal, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../theme/ThemeContext';
-import { AVAILABLE_THEMES } from '../theme/ThemeContext';
+import { useTheme } from '../../theme/ThemeContext';
+import { AVAILABLE_THEMES } from '../../theme/ThemeContext';
 
 export default function SettingItem({
     type,

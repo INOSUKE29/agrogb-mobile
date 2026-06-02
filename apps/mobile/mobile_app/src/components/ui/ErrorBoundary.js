@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import * as Updates from 'expo-updates';
-import { ErrorService } from '../services/ErrorService';
+import { ErrorService } from '../../services/ErrorService';
 import { Ionicons } from '@expo/vector-icons';
 
 /**

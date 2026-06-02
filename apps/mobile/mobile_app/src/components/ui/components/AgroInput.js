@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, TextInput, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
-import { RADIUS } from '../theme/radius';
-import { TYPOGRAPHY } from '../theme/typography';
-import { SPACING } from '../theme/spacing';
+import { RADIUS } from '../../theme/radius';
+import { TYPOGRAPHY } from '../../theme/typography';
+import { SPACING } from '../../theme/spacing';
 
 export default function AgroInput({
     label,

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useWeather } from '../context/WeatherContext';
-import { useTheme } from '../theme/ThemeContext';
+import { useWeather } from '../../context/WeatherContext';
+import { useTheme } from '../../theme/ThemeContext';
 
 export default function WeatherWidget() {
     const { weather, loading, permissionDenied, refreshWeather } = useWeather();
