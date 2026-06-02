@@ -39,9 +39,7 @@ CREATE POLICY "Profiles - Leitura (prio ou ADMIN)"
 ON public.profiles
 FOR SELECT
 USING (
-  (select auth.uid()) = id
-  OR ((select auth.jwt())->> 'user_role') = 'ADMIN'
-  OR organization_id = (((select auth.jwt())->> 'organization_id'))::uuid
+  auth.role() = 'authenticated'
 );
 
 CREATE POLICY "Profiles - Escrita (somente o próprio ou ADMIN)"

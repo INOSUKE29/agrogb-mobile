@@ -83,45 +83,52 @@ export default function LoginScreen() {
     };
 
     return (
-        <div className="flex min-h-screen bg-[var(--color-background)]">
+        <div className="flex flex-row-reverse min-h-screen bg-[var(--color-background)] relative overflow-hidden">
             
-            {/* PAINEL ESQUERDO: Imagem Hero */}
-            <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-transparent z-10" />
-                <img 
-                    src="https://images.unsplash.com/photo-1592982537447-6f2c6c0c1692?q=80&w=2070&auto=format&fit=crop" 
-                    alt="AgroGB Fazenda"
-                    className="absolute inset-0 w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 flex flex-col justify-center items-center z-20 p-16 text-center">
+            {/* BACKGROUND GLOBAL UNIFICADO (Degradê Contínuo) */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#0A101D] via-[#0d1b2a] to-[#042f1f] z-0" />
+            
+            {/* Efeito de Malha / Grid Premium - Cobrindo a tela toda */}
+            <div className="absolute inset-0 opacity-10 z-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+            
+            {/* Luzes dinâmicas animadas (Blur) Espalhadas pela tela */}
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-green-500/10 rounded-full blur-[120px] animate-pulse z-0" style={{ animationDuration: '7s' }} />
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] animate-pulse z-0" style={{ animationDuration: '10s' }} />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-4xl max-h-4xl bg-emerald-900/10 rounded-full blur-[150px] z-0" />
+
+            {/* PAINEL HERO (DIREITA) */}
+            <div className="hidden lg:flex lg:w-1/2 relative z-10">
+                <div className="absolute inset-0 flex flex-col justify-center items-center p-16 text-center">
                     <div 
-                        className="w-48 h-48 rounded-3xl flex items-center justify-center mb-8 overflow-hidden shadow-[0_0_60px_rgba(34,197,94,0.4)] border border-[var(--color-primary)]/40 cursor-pointer" 
+                        className="w-48 h-48 rounded-3xl flex items-center justify-center mb-8 overflow-hidden shadow-[0_0_80px_rgba(34,197,94,0.3)] border border-[var(--color-primary)]/30 cursor-pointer backdrop-blur-md bg-white/5 transition-all duration-500 hover:shadow-[0_0_100px_rgba(34,197,94,0.5)] hover:border-[var(--color-primary)]/60 hover:scale-105" 
                         onClick={handleLogoClick}
                     >
-                        <img src="/logo.png" alt="AgroGB Logo" className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />
+                        <img src="/logo.png" alt="AgroGB Logo" className="w-full h-full object-cover" />
                     </div>
-                    <h1 className="text-5xl font-black text-white mb-6 leading-tight">
-                        AgroGB <span className="text-[var(--color-primary)]">Pro</span>
+                    <h1 className="text-5xl font-black text-white mb-6 leading-tight drop-shadow-2xl">
+                        AgroGB <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500 drop-shadow-none">Pro</span>
                     </h1>
-                    <p className="text-[var(--color-muted)] text-xl font-medium max-w-md mx-auto">
+                    <p className="text-[var(--color-muted)] text-xl font-medium max-w-md mx-auto leading-relaxed">
                         Plataforma de alta performance para agrônomos e gestores de produção agrícola.
                     </p>
+                    
+                    {/* Badge de Confiança Premium */}
+                    <div className="mt-12 flex items-center gap-3 px-6 py-3 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-xl">
+                        <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                        <span className="text-sm font-semibold text-white/90 tracking-wide uppercase">Ambiente Seguro e Criptografado</span>
+                    </div>
                 </div>
                 
-                {/* Espaço reservado para mensagens informativas futuras no canto inferior esquerdo */}
-                <div className="absolute bottom-8 left-8 z-20">
+                {/* Espaço reservado para mensagens informativas futuras no canto inferior direito */}
+                <div className="absolute bottom-8 right-8">
                     {/* Placeholder para informativos */}
                 </div>
             </div>
 
-            {/* PAINEL DIREITO: Formulário */}
-            <div className="flex flex-1 flex-col justify-center items-center p-8 lg:p-24 relative">
+            {/* PAINEL DO FORMULÁRIO (ESQUERDA) */}
+            <div className="flex flex-1 flex-col justify-center items-center p-8 lg:p-24 relative z-10">
                 
-                {/* Efeitos de Luz no Fundo */}
-                <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--color-primary)]/10 rounded-full blur-3xl" />
-                <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl" />
-
-                <div className="w-full max-w-sm relative z-10">
+                <div className="w-full max-w-sm relative">
                     {/* Logo Mobile (Só aparece em telas pequenas) */}
                     <div 
                         className="flex lg:hidden flex-col items-center mb-10 cursor-pointer" 

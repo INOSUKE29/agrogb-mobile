@@ -224,3 +224,11 @@ Todas as principais telas comerciais, técnicas e financeiras foram atualizadas.
 - **Desktop (Acesso e Testes)**: Adicionado um *Backdoor/Easter Egg* local no `DashboardLayout.tsx` (clicar 7 vezes na logo) para desenvolvedores entrarem diretamente no "Modo Auditoria" sem precisarem de conexao com o Supabase durante testes rapidos locais.
 - **Desktop (Modernizacao UI)**: Iniciada a Fase 1 da modernizacao visual (Diamond Pro). O `index.css` global foi reescrito para utilizar o novo background escuro premium (`#050914`), fontes `Outfit/Inter`, micro-animacoes nativas, scrollbars customizadas e utilitarios `glass-card`.
 
+### Sessao 2026-05-31 (Noite)
+- **Desktop (Melhorias de Acesso e Layout)**: Corrigido o "piscar" da tela do modo Auditoria (Admin) durante o carregamento do portal do Agricultor em `DashboardLayout.tsx`. O componente agora aguarda a resolução completa do cargo no banco (`realRole`) antes de setar a sessão.
+- **Desktop (Login Screen)**: Layout invertido e otimizado com `flex-row-reverse` e background gradiente animado dinâmico, substituindo imagens quebradas e garantindo uma estética Diamond Pro.
+- **Desktop (Gestão de Acessos)**: O bug de tela vazia onde "Nenhum usuário encontrado" ocorria devido à política RLS restritiva na tabela `profiles`. Foi criado o patch `04_A_agrogb_rls_profiles_fix.sql` e a master script `04_agrogb_rls_policies.sql` foi atualizada com `auth.role() = 'authenticated'` para leitura.
+- **Desktop (Menu do Agricultor)**: Sincronia de interface iniciada. Adicionados menus nativos do Mobile que faltavam no Desktop: Recomendações Técnicas, Relatórios, e Vendas e Comercialização.
+
+### Próximos Passos Gerais
+- Avaliar e executar o plano mestre de migração de telas do Mobile para o Desktop, estabelecido no documento `implementation_plan.md`.

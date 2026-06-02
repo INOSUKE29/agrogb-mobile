@@ -36,6 +36,7 @@ export default function DashboardLayout() {
     
     // NOVO: Estado do Simulador de Perfil (Role Sandbox)
     const [simulatedRole, setSimulatedRole] = useState<'ADMIN' | 'AGRONOMO' | 'CLIENTE' | null>(null);
+    const [realRole, setRealRole] = useState<string | null>(null);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const [selectedNotification, setSelectedNotification] = useState<any>(null);
@@ -81,9 +82,8 @@ export default function DashboardLayout() {
             if (!session) {
                 // BACKDOOR PARA TESTE LOCAL (Se não tiver sessão real, usa o mock)
                 setUser({ email: 'bruno@agrogb.com', id: 'mock-admin' });
+                setRealRole('ADMIN'); // Força admin localmente para testes
             } else {
-                setUser(session.user);
-                
                 // Fetch real profile role to determine access
                 const { data: profile } = await supabase
                     .from('profiles')
@@ -92,6 +92,7 @@ export default function DashboardLayout() {
                     .single();
                 
                 if (profile) {
+                    setRealRole(profile.role);
                     if (profile.role === 'CLIENTE' || profile.role === 'AGRICULTOR') {
                         setSimulatedRole('AGRICULTOR');
                         if (location.pathname === '/dashboard') {
@@ -104,7 +105,14 @@ export default function DashboardLayout() {
                         }
                     }
                     // Se for ADMIN, deixa o simulatedRole como null para mostrar a tela de Auditoria
+                } else if (session.user.email === 'brunower2009@gmail.com') {
+                    // Fallback de segurança para o dono do sistema
+                    setRealRole('ADMIN');
                 }
+                
+                // IMPORTANTE: Só atualizamos o User DEPOIS de processar o role!
+                // Isso evita que a tela renderize e "pisque" o Modo Auditoria.
+                setUser(session.user);
             }
         };
         checkAuth();
@@ -126,6 +134,7 @@ export default function DashboardLayout() {
         } else if (role === 'AGRICULTOR') {
             return [
                 { path: '/dashboard/cliente', label: 'Dashboard Produtor', icon: LayoutDashboard },
+                { path: '/dashboard/cliente/recomendacoes', label: 'Recomendações Técnicas', icon: FileText },
                 { path: '/dashboard/cliente/talhoes', label: 'Talhões e Áreas', icon: Map },
                 { path: '/dashboard/cliente/culturas', label: 'Culturas e Safras', icon: Sprout },
                 { path: '/dashboard/cliente/monitoramento', label: 'Monitoramento', icon: Activity },
@@ -133,10 +142,11 @@ export default function DashboardLayout() {
                 { path: '/dashboard/cliente/frota', label: 'Gestão de Frota', icon: Truck },
                 { path: '/dashboard/cliente/tarefas', label: 'Tarefas e Operações', icon: LayoutList },
                 { path: '/dashboard/cliente/compras', label: 'Compras e Cotações', icon: Store },
+                { path: '/dashboard/cliente/vendas', label: 'Vendas e Comercialização', icon: DollarSign },
                 { path: '/dashboard/cliente/clima', label: 'Estação Meteorológica', icon: CloudRain },
                 { path: '/dashboard/cliente/caderno', label: 'Caderno Agrícola', icon: FileText },
                 { path: '/dashboard/cliente/financeiro', label: 'Financeiro', icon: DollarSign },
-                { path: '/dashboard/cliente/vendas', label: 'Vendas', icon: ShoppingCart },
+                { path: '/dashboard/cliente/relatorios', label: 'Relatórios', icon: FileText },
             ];
         } else {
             return [
@@ -397,13 +407,15 @@ export default function DashboardLayout() {
                         </div>
 
                         {/* SELETOR DE SIMULAÇÃO (ADMIN APENAS) */}
-                        <button 
-                            onClick={() => setSimulatedRole(null)}
-                            className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl border border-current/20 font-bold text-sm transition-all ${getBgLightClass()} ${getAccentColorClass()} hover:scale-105`}
-                        >
-                            <Settings className="w-4 h-4" />
-                            Trocar Visão
-                        </button>
+                        {realRole === 'ADMIN' && (
+                            <button 
+                                onClick={() => setSimulatedRole(null)}
+                                className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl border border-current/20 font-bold text-sm transition-all ${getBgLightClass()} ${getAccentColorClass()} hover:scale-105`}
+                            >
+                                <Settings className="w-4 h-4" />
+                                Trocar Visão
+                            </button>
+                        )}
 
                         {/* PERFIL E DROPDOWN */}
                         <div className="relative pl-4 sm:pl-6 border-l border-[var(--color-border)]">
