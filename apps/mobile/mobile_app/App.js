@@ -17,7 +17,6 @@ import AutoSyncService from './src/services/AutoSyncService';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ThemeProvider } from './src/theme/ThemeContext';
 import ErrorBoundary from './src/components/ui/ErrorBoundary';
-import Toast from './src/components/ui/Toast';
 
 // Telas Autenticação
 import LoginScreen from './src/screens/LoginScreen';
@@ -238,7 +237,6 @@ export default function App() {
                                 <ThemeProvider>
                                         <StatusBar style="light" />
                                         <AppInner />
-                                        <Toast />
                                 </ThemeProvider>
                             </AuthProvider>
                         </ErrorBoundary>

@@ -32,7 +32,7 @@ class ErrorBoundary extends React.Component {
     };
 
     handleReport = () => {
-        ErrorService.reportLatestError();
+        ErrorService.reportLatestError(this.state.error);
     };
 
     render() {

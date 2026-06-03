@@ -56,44 +56,40 @@ export const ErrorService = {
     /**
      * Gera e compartilha o relatório de erro (WhatsApp/Email)
      */
-    reportLatestError: async () => {
+    reportLatestError: async (currentError = null) => {
         try {
-            const res = await executeQuery(`SELECT * FROM error_logs ORDER BY created_at DESC LIMIT 1`);
-            if (res.rows.length === 0) {
-                Alert.alert('Info', 'Nenhum log de erro encontrado.');
-                return;
-            }
-
-            const lastError = res.rows.item(0);
-            const reportBody = `
---- RELATÓRIO DE ERRO AGROGB ---
-Data: ${lastError.created_at}
-Tela: ${lastError.tela}
-Erro: ${lastError.erro}
-Stack: ${lastError.stack ? lastError.stack.substring(0, 500) : 'N/A'}
--------------------------------
-            `;
-
-            // Tenta capturar o print da tela atual para o relatório
-            const uri = await captureScreen({ format: 'png', quality: 0.7 });
-
-            const isAvailable = await Sharing.isAvailableAsync();
-            if (isAvailable) {
-                await Sharing.shareAsync(uri, {
-                    dialogTitle: 'Enviar Relatório AgroGB',
-                    mimeType: 'image/png',
-                    UTI: 'public.png',
-                });
+            let errorText = '';
+            let stackText = '';
+            
+            if (currentError) {
+                errorText = currentError.message || String(currentError);
+                stackText = currentError.stack || 'N/A';
             } else {
-                // Alternativa via Email
-                await MailComposer.composeAsync({
-                    subject: 'Relatório de Erro AgroGB',
-                    body: reportBody,
-                    attachments: [uri],
-                });
+                const res = await executeQuery(`SELECT * FROM error_logs ORDER BY created_at DESC LIMIT 1`);
+                if (res.rows.length === 0) {
+                    Alert.alert('Info', 'Nenhum log de erro encontrado.');
+                    return;
+                }
+                const lastError = res.rows.item(0);
+                errorText = lastError.erro;
+                stackText = lastError.stack || 'N/A';
             }
-        } catch {
-            Alert.alert('Erro', 'Não foi possível gerar o relatório de compartilhamento.');
+
+            const reportBody = `--- RELATÓRIO DE ERRO AGROGB ---
+Data: ${new Date().toISOString()}
+Erro: ${errorText}
+Stack: ${stackText.substring(0, 1500)}
+-------------------------------`;
+
+            // Utilizar Share Nativo em vez do Expo Sharing com imagem, 
+            // garantindo alta resiliência (não quebra ao tentar tirar print de view destruída)
+            const { Share } = require('react-native');
+            await Share.share({
+                message: reportBody,
+                title: 'Relatório de Erro AgroGB'
+            });
+        } catch (e) {
+            Alert.alert('Erro', 'Não foi possível compartilhar: ' + e.message);
         }
     }
 };
