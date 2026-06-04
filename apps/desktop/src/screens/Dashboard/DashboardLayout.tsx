@@ -208,7 +208,13 @@ export default function DashboardLayout() {
         return 'bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)]/20';
     };
 
-    if (!user) return <div className="min-h-screen bg-[var(--color-background)] flex items-center justify-center text-gray-900 dark:text-white">Carregando...</div>;
+    useEffect(() => {
+        if (!loading && !user) {
+            navigate('/');
+        }
+    }, [user, loading, navigate]);
+
+    if (loading || !user) return <div className="min-h-screen bg-[var(--color-background)] flex items-center justify-center text-gray-900 dark:text-white">Carregando...</div>;
 
     // TELA DE SELEÇÃO DE PORTAL (MODO AUDITORIA / SIMULADOR FULLSCREEN)
     if (!simulatedRole) {

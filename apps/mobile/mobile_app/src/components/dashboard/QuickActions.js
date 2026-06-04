@@ -10,6 +10,7 @@ const CARD_WIDTH = (width - 50) / 2;
 
 const OPERATIONAL_ACTIONS = [
     { title: 'Caderno', icon: 'book-outline', color: '#10B981', screen: 'CadernoCampo', desc: 'Caderno de Campo' },
+    { title: 'Tarefas', icon: 'checkbox-outline', color: '#F59E0B', screen: 'Tasks', desc: 'Visitas e Ações' },
     { title: 'Calendário', icon: 'calendar-outline', color: '#8B5CF6', screen: 'CalendarTimeline', desc: 'Linha do Tempo' },
     { title: 'Colheita', icon: 'leaf-outline', color: '#EF4444', screen: 'Colheita', desc: 'Registro de Colheita' },
     { title: 'Plantio', icon: 'nutrition-outline', color: '#2563EB', screen: 'Plantio', desc: 'Controle de Plantios' },

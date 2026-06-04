@@ -349,5 +349,22 @@ export const SCHEMA_V10 = [
         sync_status INTEGER DEFAULT 0,
         is_deleted INTEGER DEFAULT 0,
         FOREIGN KEY(recipe_id) REFERENCES fertilization_recipes(id)
+    )`,
+    // --- 11. GESTÃO DE VISITAS E TAREFAS ---
+    `CREATE TABLE IF NOT EXISTS v2_tarefas (
+        id TEXT PRIMARY KEY,
+        titulo TEXT NOT NULL,
+        descricao TEXT,
+        tipo TEXT DEFAULT 'OPERACAO_CAMPO', 
+        status TEXT DEFAULT 'PENDENTE',
+        prioridade TEXT DEFAULT 'MEDIA',
+        data_agendada TEXT,
+        talhao_id TEXT,
+        fazenda_id TEXT,
+        criador_id TEXT,
+        responsavel_id TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        sync_status TEXT DEFAULT 'pending'
     )`
 ];

@@ -27,6 +27,7 @@ import OnboardingTour from '../components/common/OnboardingTour';
 // Componentes "Órfãos de Ouro" resgatados
 import WeatherWidget from '../components/ui/WeatherWidget';
 import GlowFAB from '../components/ui/GlowFAB';
+import TasksWidget from '../components/dashboard/TasksWidget';
 
 export default function HomeScreen({ navigation }) {
     const { theme } = useTheme();
@@ -100,6 +101,7 @@ export default function HomeScreen({ navigation }) {
                 />
 
                 <WeatherWidget />
+                <TasksWidget />
 
                 {data && (
                     <>
