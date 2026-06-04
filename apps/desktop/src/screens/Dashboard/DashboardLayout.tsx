@@ -29,14 +29,16 @@ import {
     CheckSquare,
     TrendingDown,
     Tags,
+import {
     Database,
     ChevronRight
 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function DashboardLayout() {
     const navigate = useNavigate();
     const location = useLocation();
-    const [user, setUser] = useState<any>(null);
+    const { user, role: contextRole, hasPermission } = useAuth();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     
     // NOVO: Estado do Simulador de Perfil (Role Sandbox)
@@ -89,46 +91,41 @@ export default function DashboardLayout() {
     };
 
     useEffect(() => {
-        const checkAuth = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                // BACKDOOR PARA TESTE LOCAL (Se não tiver sessão real, usa o mock)
-                setUser({ email: 'bruno@agrogb.com', id: 'mock-admin' });
-                setRealRole('ADMIN'); // Força admin localmente para testes
-            } else {
-                // Fetch real profile role to determine access
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', session.user.id)
-                    .single();
-                
-                if (profile) {
-                    setRealRole(profile.role);
-                    if (profile.role === 'CLIENTE' || profile.role === 'AGRICULTOR') {
-                        setSimulatedRole('AGRICULTOR');
-                        if (location.pathname === '/dashboard') {
-                            navigate('/dashboard/cliente');
-                        }
-                    } else if (profile.role === 'AGRONOMO') {
-                        setSimulatedRole('AGRONOMO');
-                        if (location.pathname === '/dashboard') {
-                            navigate('/dashboard/agronomo');
-                        }
-                    }
-                    // Se for ADMIN, deixa o simulatedRole como null para mostrar a tela de Auditoria
-                } else if (session.user.email === 'brunower2009@gmail.com') {
-                    // Fallback de segurança para o dono do sistema
-                    setRealRole('ADMIN');
+        // Redirecionamento inicial baseado nas permissões do motor granular
+        if (user) {
+            // Se possui permissão de ver tudo (Admin)
+            if (hasPermission('view_all_clients')) {
+                setRealRole('ADMIN');
+            } else if (hasPermission('manage_own_clients')) {
+                // Agrônomo
+                setRealRole('AGRONOMO');
+                if (!simulatedRole) {
+                    setSimulatedRole('AGRONOMO');
+                    if (location.pathname === '/dashboard') navigate('/dashboard/agronomo');
                 }
-                
-                // IMPORTANTE: Só atualizamos o User DEPOIS de processar o role!
-                // Isso evita que a tela renderize e "pisque" o Modo Auditoria.
-                setUser(session.user);
+            } else if (hasPermission('view_own_data')) {
+                // Produtor
+                setRealRole('CLIENTE');
+                if (!simulatedRole) {
+                    setSimulatedRole('AGRICULTOR');
+                    if (location.pathname === '/dashboard') navigate('/dashboard/cliente');
+                }
+            } else if (contextRole) {
+                // Fallback para role do profile caso as permissões granulares não estejam configuradas
+                setRealRole(contextRole.toUpperCase());
+                if (contextRole.toUpperCase() === 'CLIENTE' || contextRole.toUpperCase() === 'AGRICULTOR') {
+                    setSimulatedRole('AGRICULTOR');
+                    if (location.pathname === '/dashboard') navigate('/dashboard/cliente');
+                } else if (contextRole.toUpperCase() === 'AGRONOMO') {
+                    setSimulatedRole('AGRONOMO');
+                    if (location.pathname === '/dashboard') navigate('/dashboard/agronomo');
+                }
             }
-        };
-        checkAuth();
-    }, [navigate, location.pathname]);
+        } else if (!user && location.pathname.startsWith('/dashboard')) {
+            // BACKDOOR PARA TESTE LOCAL (Se não tiver sessão real, usa o mock)
+            // setUser({ email: 'bruno@agrogb.com', id: 'mock-admin' }); <-- Removido para usar o Context
+        }
+    }, [user, hasPermission, contextRole, navigate, location.pathname, simulatedRole]);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -273,23 +270,23 @@ export default function DashboardLayout() {
     return (
         <div style={{ display: 'flex', height: '100vh', width: '100%', overflow: 'hidden', background: 'var(--color-background)' }}>
             
-            {/* SIDEBAR - Aprimorada com Glassmorphism */}
+            {/* SIDEBAR - Navigation Rail / Drawer (8-point system) */}
             <aside
-                className="transition-all duration-300 bg-white/80 dark:bg-[#0A101D]/70 backdrop-blur-xl border-r border-gray-200 dark:border-white/5 flex flex-col z-20 shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.2)]"
-                style={{ width: isSidebarOpen ? 'clamp(180px, 16vw, 260px)' : 'clamp(56px, 5vw, 72px)' }}
+                className={`transition-all duration-300 bg-[var(--color-card)]/90 backdrop-blur-xl border-r border-[var(--color-border)] flex flex-col z-20 shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.05)] ${isSidebarOpen ? 'w-64' : 'w-20'}`}
             >
                 
                 {/* Logo Area */}
                 <div
-                    className="flex items-center border-b border-gray-200 dark:border-white/5 shrink-0 hover:bg-white/[0.02] transition-colors"
-                    style={{ height: 'clamp(52px, 5vh, 72px)', padding: '0 clamp(12px, 1.5vw, 24px)' }}
+                    className="flex items-center border-b border-[var(--color-border)] shrink-0 hover:bg-[var(--color-foreground)]/5 transition-colors cursor-pointer px-4"
+                    style={{ height: '72px' }}
+                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 >
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden shadow-md border border-white/10 group-hover:border-white/20 transition-all">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden shadow-sm border border-[var(--color-border)] transition-all">
                         <img src="/logo.png" alt="AgroGB Logo" className="w-full h-full object-cover" />
                     </div>
                     {isSidebarOpen && (
-                        <div className="flex flex-col ml-3 animate-slide-in-right">
-                            <span className="font-black text-xl text-gray-900 dark:text-white tracking-tight whitespace-nowrap leading-tight">
+                        <div className="flex flex-col ml-3 animate-slide-in-right overflow-hidden">
+                            <span className="font-black text-xl text-[var(--color-foreground)] tracking-tight whitespace-nowrap leading-tight">
                                 AgroGB
                             </span>
                             <span className={`text-xs font-bold ${getAccentColorClass()}`}>
@@ -300,7 +297,7 @@ export default function DashboardLayout() {
                 </div>
 
                 {/* Navigation Links */}
-                <nav className="flex-1 py-4 flex flex-col gap-1 px-3 overflow-y-auto overflow-x-hidden" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent' }}>
+                <nav className="flex-1 py-4 flex flex-col gap-2 px-3 overflow-y-auto overflow-x-hidden" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(128,128,128,0.2) transparent' }}>
                     
                     {/* Render Grouped Items */}
                     {simulatedRole === 'AGRICULTOR' ? (
@@ -310,7 +307,7 @@ export default function DashboardLayout() {
                                 {isSidebarOpen && group && (
                                     <button 
                                         onClick={() => toggleGroup(group)}
-                                        className="w-full flex items-center justify-between px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--color-muted)] hover:text-gray-900 dark:text-white transition-colors"
+                                        className="w-full flex items-center justify-between px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] rounded-lg"
                                     >
                                         <span>{group}</span>
                                         <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${openGroups.includes(group) ? 'rotate-180' : ''}`} />
@@ -326,15 +323,15 @@ export default function DashboardLayout() {
                                             <Link
                                                 key={item.path}
                                                 to={item.path}
-                                                className={`flex items-center px-3 py-2.5 rounded-xl transition-all duration-300 group ${
+                                                className={`flex items-center px-3 min-h-[44px] rounded-xl transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-1 focus:ring-offset-[var(--color-background)] ${
                                                     isActive 
-                                                        ? `${getBgLightClass()} ${getAccentColorClass()} border border-current/20 shadow-lg` 
-                                                        : 'text-[var(--color-muted)] hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:text-white hover:translate-x-1 border border-transparent'
+                                                        ? `${getBgLightClass()} ${getAccentColorClass()} border border-current/20 shadow-sm font-semibold` 
+                                                        : 'text-[var(--color-muted)] hover:bg-[var(--color-foreground)]/5 hover:text-[var(--color-foreground)] hover:translate-x-1 border border-transparent active:scale-95'
                                                 }`}
                                                 title={!isSidebarOpen ? item.label : undefined}
                                             >
-                                                <Icon className={`w-4 h-4 shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? getAccentColorClass() : ''}`} />
-                                                {isSidebarOpen && <span className={`ml-3 font-semibold text-sm whitespace-nowrap ${isActive ? 'text-gray-900 dark:text-white' : ''}`}>{item.label}</span>}
+                                                <Icon className={`w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? getAccentColorClass() : ''} ${!isSidebarOpen ? 'mx-auto' : ''}`} />
+                                                {isSidebarOpen && <span className={`ml-3 text-sm whitespace-nowrap ${isActive ? 'text-[var(--color-foreground)]' : ''}`}>{item.label}</span>}
                                             </Link>
                                         );
                                     })}
@@ -350,15 +347,15 @@ export default function DashboardLayout() {
                                 <Link
                                     key={item.path}
                                     to={item.path}
-                                    className={`flex items-center px-3 py-3 rounded-xl transition-all duration-300 group ${
+                                    className={`flex items-center px-3 min-h-[44px] rounded-xl transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-1 focus:ring-offset-[var(--color-background)] ${
                                         isActive 
-                                            ? `${getBgLightClass()} ${getAccentColorClass()} border border-current/20 shadow-lg` 
-                                            : 'text-[var(--color-muted)] hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:text-white hover:translate-x-1 border border-transparent'
+                                            ? `${getBgLightClass()} ${getAccentColorClass()} border border-current/20 shadow-sm font-semibold` 
+                                            : 'text-[var(--color-muted)] hover:bg-[var(--color-foreground)]/5 hover:text-[var(--color-foreground)] hover:translate-x-1 border border-transparent active:scale-95'
                                     }`}
                                     title={!isSidebarOpen ? item.label : undefined}
                                 >
-                                    <Icon className={`w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? getAccentColorClass() : ''}`} />
-                                    {isSidebarOpen && <span className={`ml-3 font-semibold text-sm whitespace-nowrap ${isActive ? 'text-gray-900 dark:text-white' : ''}`}>{item.label}</span>}
+                                    <Icon className={`w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? getAccentColorClass() : ''} ${!isSidebarOpen ? 'mx-auto' : ''}`} />
+                                    {isSidebarOpen && <span className={`ml-3 text-sm whitespace-nowrap ${isActive ? 'text-[var(--color-foreground)]' : ''}`}>{item.label}</span>}
                                 </Link>
                             );
                         })
@@ -366,12 +363,13 @@ export default function DashboardLayout() {
                 </nav>
 
                 {/* User Area Bottom */}
-                <div className="p-4 border-t border-gray-200 dark:border-white/5">
+                <div className="p-4 border-t border-[var(--color-border)] shrink-0">
                     <button 
                         onClick={handleLogout}
-                        className="w-full flex items-center px-3 py-3 rounded-xl text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 border border-transparent hover:border-[var(--color-danger)]/20 transition-all duration-300 group hover:-translate-y-1"
+                        className={`w-full flex items-center px-3 min-h-[44px] rounded-xl text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 border border-transparent hover:border-[var(--color-danger)]/20 transition-all duration-300 group focus:outline-none focus:ring-2 focus:ring-[var(--color-danger)] active:scale-95`}
+                        title={!isSidebarOpen ? 'Sair do Sistema' : undefined}
                     >
-                        <LogOut className="w-5 h-5 shrink-0 transition-transform group-hover:scale-110" />
+                        <LogOut className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 ${!isSidebarOpen ? 'mx-auto' : ''}`} />
                         {isSidebarOpen && <span className="ml-3 font-semibold text-sm whitespace-nowrap">Sair do Sistema</span>}
                     </button>
                 </div>
@@ -470,7 +468,7 @@ export default function DashboardLayout() {
                         </div>
 
                         {/* SELETOR DE SIMULAÇÃO (ADMIN APENAS) */}
-                        {realRole === 'ADMIN' && (
+                        {(realRole === 'ADMIN' || hasPermission('view_all_clients')) && (
                             <button 
                                 onClick={() => setSimulatedRole(null)}
                                 className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl border border-current/20 font-bold text-sm transition-all ${getBgLightClass()} ${getAccentColorClass()} hover:scale-105`}

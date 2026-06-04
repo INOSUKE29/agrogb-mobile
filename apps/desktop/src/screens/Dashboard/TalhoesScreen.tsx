@@ -145,26 +145,38 @@ export default function TalhoesScreen() {
         }
     };
 
+    const [undoToast, setUndoToast] = useState<{ id: string, name: string, timer: NodeJS.Timeout } | null>(null);
+
     const handleDeleteClick = (item: Talhao) => {
-        setItemToDelete(item);
+        // Optimistic UI: Remove from view instantly
+        setTalhoes(prev => prev.filter(t => t.uuid !== item.uuid));
+        
+        if (undoToast?.timer) clearTimeout(undoToast.timer);
+        
+        const timer = setTimeout(async () => {
+            try {
+                const idField = item.tableUsed === 'v2_talhoes' ? 'id' : 'uuid';
+                if (item.tableUsed === 'v2_talhoes') {
+                    await supabase.from('v2_talhoes').delete().eq(idField, item.uuid);
+                } else {
+                    await supabase.from('talhoes').update({ is_deleted: true, last_updated: new Date().toISOString() }).eq(idField, item.uuid);
+                }
+                setUndoToast(null);
+            } catch (err) {
+                console.error('Erro ao excluir talhão', err);
+                toast.error('Falha ao sincronizar exclusão.');
+                fetchTalhoes(); // rollback UI on error
+            }
+        }, 4000);
+
+        setUndoToast({ id: item.uuid, name: item.nome, timer });
     };
 
-    const confirmDelete = async () => {
-        if (!itemToDelete) return;
-        try {
-            const idField = itemToDelete.tableUsed === 'v2_talhoes' ? 'id' : 'uuid';
-            if (itemToDelete.tableUsed === 'v2_talhoes') {
-                await supabase.from('v2_talhoes').delete().eq(idField, itemToDelete.uuid);
-            } else {
-                await supabase.from('talhoes').update({ is_deleted: true, last_updated: new Date().toISOString() }).eq(idField, itemToDelete.uuid);
-            }
-            toast.success('Talhão removido com sucesso!');
-            setItemToDelete(null);
-            fetchTalhoes();
-        } catch (err) {
-            console.error('Erro ao excluir talhão', err);
-            toast.error('Erro ao excluir talhão.');
-        }
+    const handleUndoDelete = () => {
+        if (!undoToast) return;
+        clearTimeout(undoToast.timer);
+        setUndoToast(null);
+        fetchTalhoes(); // Restores the item
     };
 
     const openModal = (talhao?: Talhao) => {
@@ -187,8 +199,29 @@ export default function TalhoesScreen() {
     const totalArea = talhoes.reduce((acc, curr) => acc + (curr.area_ha || 0), 0);
 
     return (
-        <div className="animate-fade-in pb-12 space-y-8">
+        <div className="animate-fade-in pb-12 space-y-8 relative">
             
+            {/* TOAST DE DESFAZER (Optimistic UI) */}
+            {undoToast && (
+                <div className="fixed bottom-8 right-8 z-50 animate-fade-in">
+                    <div className="glass bg-[var(--color-card)]/95 border border-[var(--color-border)] shadow-2xl rounded-2xl p-4 flex items-center gap-4 max-w-md">
+                        <div className="p-2 rounded-xl bg-red-500/20 text-red-400">
+                            <Trash2 className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-[var(--color-foreground)] font-bold text-sm">Talhão excluído.</p>
+                            <p className="text-[var(--color-muted)] text-xs">{undoToast.name}</p>
+                        </div>
+                        <button 
+                            onClick={handleUndoDelete}
+                            className="px-4 py-2 bg-[var(--color-foreground)]/10 hover:bg-[var(--color-foreground)]/20 text-[var(--color-foreground)] text-sm font-bold rounded-xl transition-colors whitespace-nowrap active:scale-95"
+                        >
+                            Desfazer
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* CABEÇALHO HERO */}
             <div className="relative rounded-3xl overflow-hidden glass border border-[var(--color-border)] p-8">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--color-primary)]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
@@ -400,31 +433,6 @@ export default function TalhoesScreen() {
                 </form>
             </Modal>
 
-            {/* MODAL CONFIRMAR EXCLUSÃO */}
-            <Modal
-                isOpen={!!itemToDelete}
-                onClose={() => setItemToDelete(null)}
-                title="Excluir Talhão"
-                maxWidth="sm"
-            >
-                <div className="flex flex-col items-center text-center gap-4 py-4">
-                    <div className="w-16 h-16 bg-red-100 dark:bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-2">
-                        <AlertTriangle className="w-8 h-8" />
-                    </div>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Você tem certeza?</h3>
-                    <p className="text-slate-500 dark:text-[var(--color-muted)]">
-                        A exclusão do talhão <strong>{itemToDelete?.nome}</strong> é permanente e não poderá ser desfeita. Todos os dados associados a ele serão perdidos.
-                    </p>
-                </div>
-                <div className="flex gap-3 pt-4 border-t border-slate-100 dark:border-white/5 mt-4">
-                    <Button type="button" variant="secondary" onClick={() => setItemToDelete(null)} fullWidth>
-                        Cancelar
-                    </Button>
-                    <Button type="button" variant="danger" onClick={confirmDelete} fullWidth>
-                        Excluir Permanentemente
-                    </Button>
-                </div>
-            </Modal>
         </div>
     );
 }

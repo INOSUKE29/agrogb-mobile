@@ -11,6 +11,7 @@ import { getSupabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../theme/ThemeContext';
 import FriendlyModal from '../components/common/FriendlyModal';
+import SafeBlurView from '../components/ui/SafeBlurView';
 
 const { width, height } = Dimensions.get('window');
 const LOGO = require('../../assets/icon.png');
@@ -524,7 +525,7 @@ export default function LoginScreen({ navigation }) {
             />
 
             <Modal visible={showMasterModal} transparent animationType="fade">
-                <View style={styles.masterModalOverlay}>
+                <SafeBlurView intensity={30} tint="dark" style={styles.masterModalOverlay}>
                     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.masterModalContent}>
                         <Ionicons name="shield-checkmark" size={50} color="#10B981" />
                         <Text style={styles.masterTitle}>ACESSO RESTRITO</Text>
@@ -550,7 +551,7 @@ export default function LoginScreen({ navigation }) {
                             </TouchableOpacity>
                         </View>
                     </KeyboardAvoidingView>
-                </View>
+                </SafeBlurView>
             </Modal>
         </ImageBackground>
     );
@@ -615,8 +616,8 @@ const styles = StyleSheet.create({
     footerText: { color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 'bold' },
     
     // Master Key Styles
-    masterModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' },
-    masterModalContent: { backgroundColor: '#111827', padding: 30, borderRadius: 20, width: '85%', alignItems: 'center', borderWidth: 1, borderColor: '#374151' },
+    masterModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+    masterModalContent: { backgroundColor: 'rgba(17,24,39,0.85)', padding: 30, borderRadius: 20, width: '85%', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(55,65,81,0.5)' },
     masterTitle: { color: '#FFF', fontSize: 18, fontWeight: '900', marginTop: 15, letterSpacing: 2 },
     masterSubtitle: { color: '#9CA3AF', fontSize: 12, marginTop: 5, marginBottom: 20 },
     masterInput: { backgroundColor: '#1F2937', color: '#10B981', fontSize: 24, fontWeight: 'bold', width: '100%', textAlign: 'center', padding: 15, borderRadius: 10, letterSpacing: 5 },

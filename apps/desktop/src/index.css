@@ -3,33 +3,43 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --color-primary: #10B981; /* Agro Emerald */
+  /* TIER 1: Primitivos */
+  --color-emerald-500: #10B981;
+  --color-cyan-400: #00F0FF;
+  --color-purple-600: #7000FF;
+  --color-slate-50: #F8FAFC;
+  --color-slate-100: #F1F5F9;
+  --color-slate-800: #1E293B;
+  --color-slate-900: #0F172A;
+
+  /* TIER 2: Semânticos */
+  --color-primary: var(--color-emerald-500);
   --color-primary-foreground: #FFFFFF;
-  --color-secondary: #00F0FF; /* Cyber cyan for futuristic accents */
-  --color-accent: #7000FF; /* Vibrant purple */
-  --color-success: #10B981;
+  --color-secondary: var(--color-cyan-400);
+  --color-accent: var(--color-purple-600);
+  --color-success: var(--color-emerald-500);
   --color-warning: #F59E0B;
   --color-danger: #EF4444;
 }
 
 :root {
-  /* LIGHT THEME VARIABLES */
-  --color-background: #F8FAFC; /* Slate 50 */
-  --color-foreground: #0F172A; /* Slate 900 */
-  --color-card: #FFFFFF;
-  --color-card-foreground: #0F172A;
-  --color-border: rgba(0, 0, 0, 0.1);
-  --color-muted: #64748B; /* Slate 500 */
+  /* LIGHT THEME VARIABLES (Redução de brilho / Soft Light) */
+  --color-background: var(--color-slate-100); /* F1F5F9 - Remove o brilho excessivo do fundo */
+  --color-foreground: var(--color-slate-900);
+  --color-card: var(--color-slate-50); /* F8FAFC - Off-white ao invés de branco puro #FFFFFF */
+  --color-card-foreground: var(--color-slate-900);
+  --color-border: rgba(15, 23, 42, 0.08); /* Borda mais sutil */
+  --color-muted: #64748B;
 }
 
 .dark {
-  /* DARK THEME VARIABLES */
-  --color-background: #050914; /* Deep rich dark space */
-  --color-foreground: #FFFFFF;
-  --color-card: #0A101D;
-  --color-card-foreground: #FFFFFF;
-  --color-border: rgba(255, 255, 255, 0.06);
-  --color-muted: #8A9CAE;
+  /* DARK THEME VARIABLES (Contraste Suavizado) */
+  --color-background: #0B1120; /* Fundo escuro levemente mais quente que o #050914 original */
+  --color-foreground: var(--color-slate-50);
+  --color-card: #141E33; /* Elevação visível sem brilhar na escuridão */
+  --color-card-foreground: var(--color-slate-50);
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-muted: #94A3B8;
 }
 
 /* ── Reset global ─────────────────────────────────────────────────── */

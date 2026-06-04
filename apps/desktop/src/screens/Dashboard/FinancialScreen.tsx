@@ -11,9 +11,11 @@ import {
     Loader2,
     TrendingUp,
     TrendingDown,
-    Wallet
+    Wallet,
+    Download
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import * as XLSX from 'xlsx';
 
 export default function FinancialScreen() {
     const [transacoes, setTransacoes] = useState<any[]>([]);
@@ -75,40 +77,84 @@ export default function FinancialScreen() {
         fetchFinanceiro();
     }, []);
 
-    const baixarConta = async (id: string) => {
-        if (!window.confirm("Deseja marcar esta conta como PAGA?")) return;
-        
-        try {
-            const { error } = await supabase
-                .from('contas')
-                .update({ 
-                    status: 'PAGO'
-                })
-                .eq('id', id);
-
-            if (error) throw error;
-            fetchFinanceiro(); // Recarregar
-        } catch (error) {
-            console.error('Erro ao baixar conta:', error);
-            alert('Falha ao atualizar conta.');
+    const handleExportExcel = () => {
+        if (!transacoes || transacoes.length === 0) {
+            toast.error("Sem dados para exportar.");
+            return;
         }
+
+        const dataToExport = transacoes.map(t => ({
+            'ID': t.id,
+            'Descrição': t.descricao,
+            'Categoria': t.categoria,
+            'Valor (R$)': Number(t.valor).toFixed(2),
+            'Tipo': t.tipo,
+            'Status': t.status,
+            'Vencimento': format(parseISO(t.data_vencimento), 'dd/MM/yyyy')
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Financeiro");
+        XLSX.writeFile(workbook, "Relatorio_Financeiro_AgroGB.xlsx");
+        
+        toast.success("Excel gerado com sucesso!");
+    };
+
+    const [toast, setToast] = useState<{ msg: string; id: string; action: 'PAGO' | 'CANCELADO'; timer?: NodeJS.Timeout } | null>(null);
+
+    const baixarConta = async (id: string) => {
+        // Nielsen Heuristic: Visibility of System Status & Error Recovery (Undo)
+        const transacao = transacoes.find(t => t.id === id);
+        if (!transacao) return;
+
+        // Ocultar localmente (Optimistic UI)
+        setTransacoes(prev => prev.map(t => t.id === id ? { ...t, status: 'PAGO_TEMP' } : t));
+        
+        if (toast?.timer) clearTimeout(toast.timer);
+        
+        const timer = setTimeout(async () => {
+            // Commita no banco de dados após 4s
+            try {
+                await supabase.from('contas').update({ status: 'PAGO' }).eq('id', id);
+                setToast(null);
+                fetchFinanceiro();
+            } catch (error) {
+                console.error('Erro ao baixar conta:', error);
+            }
+        }, 4000);
+
+        setToast({ msg: `Título de R$ ${transacao.valor} marcado como pago.`, id, action: 'PAGO', timer });
     };
 
     const cancelarConta = async (id: string) => {
-        if (!window.confirm("Deseja CANCELAR esta conta permanentemente?")) return;
-        
-        try {
-            const { error } = await supabase
-                .from('contas')
-                .update({ status: 'CANCELADO' })
-                .eq('id', id);
+        const transacao = transacoes.find(t => t.id === id);
+        if (!transacao) return;
 
-            if (error) throw error;
-            fetchFinanceiro(); // Recarregar
-        } catch (error) {
-            console.error('Erro ao cancelar conta:', error);
-            alert('Falha ao cancelar conta.');
-        }
+        // Ocultar localmente
+        setTransacoes(prev => prev.map(t => t.id === id ? { ...t, status: 'CANCELADO_TEMP' } : t));
+        
+        if (toast?.timer) clearTimeout(toast.timer);
+        
+        const timer = setTimeout(async () => {
+            // Commita no banco de dados após 4s
+            try {
+                await supabase.from('contas').update({ status: 'CANCELADO' }).eq('id', id);
+                setToast(null);
+                fetchFinanceiro();
+            } catch (error) {
+                console.error('Erro ao cancelar conta:', error);
+            }
+        }, 4000);
+
+        setToast({ msg: `Título cancelado.`, id, action: 'CANCELADO', timer });
+    };
+
+    const desfazerAcao = () => {
+        if (!toast) return;
+        clearTimeout(toast.timer); // Aborta o commit
+        setTransacoes(prev => prev.map(t => t.id === toast.id ? { ...t, status: 'PENDENTE' } : t));
+        setToast(null);
     };
 
     const filteredData = transacoes.filter(t => {
@@ -118,21 +164,52 @@ export default function FinancialScreen() {
         if (filterTipo === 'RECEBER') matchTipo = (t.tipo === 'RECEITA' || t.tipo === 'RECEBER');
         if (filterTipo === 'PAGAR') matchTipo = (t.tipo === 'DESPESA' || t.tipo === 'PAGAR');
         
-        return matchSearch && matchTipo;
+        // Esconder os temporários da lista para simular ação completa (optimistic)
+        const isHidden = t.status === 'CANCELADO_TEMP';
+        
+        return matchSearch && matchTipo && !isHidden;
     });
 
     return (
-        <div className="animate-fade-in pb-12 max-w-7xl mx-auto">
+        <div className="animate-fade-in pb-12 max-w-7xl mx-auto relative">
             
+            {/* TOAST DE DESFAZER (Heurística Nielsen: Prevenção de Erro) */}
+            {toast && (
+                <div className="fixed bottom-8 right-8 z-50 animate-fade-in">
+                    <div className="glass bg-[var(--color-card)]/95 border border-[var(--color-border)] shadow-2xl rounded-2xl p-4 flex items-center gap-4 max-w-md">
+                        <div className={`p-2 rounded-xl ${toast.action === 'PAGO' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                            <CheckCircle className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-white font-bold text-sm">{toast.msg}</p>
+                        </div>
+                        <button 
+                            onClick={desfazerAcao}
+                            className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-bold rounded-xl transition-colors whitespace-nowrap active:scale-95"
+                        >
+                            Desfazer
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
-            <div className="flex flex-col mb-8 gap-1">
-                <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-                    <DollarSign className="w-8 h-8 text-[var(--color-primary)]" />
-                    Gestão Financeira Global
-                </h1>
-                <p className="text-[var(--color-muted)] font-medium mt-1">
-                    Acompanhe o fluxo de caixa, saúde financeira e contas a pagar/receber.
-                </p>
+            <div className="flex flex-col md:flex-row justify-between md:items-end mb-8 gap-4">
+                <div>
+                    <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+                        <DollarSign className="w-8 h-8 text-[var(--color-primary)]" />
+                        Gestão Financeira Global
+                    </h1>
+                    <p className="text-[var(--color-muted)] font-medium mt-1">
+                        Acompanhe o fluxo de caixa, saúde financeira e contas a pagar/receber.
+                    </p>
+                </div>
+                <button 
+                    onClick={handleExportExcel}
+                    className="px-5 py-2.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-xl text-sm font-bold border border-green-500/20 transition-all flex items-center gap-2"
+                >
+                    <Download className="w-4 h-4" /> Exportar Excel
+                </button>
             </div>
 
             {/* KPI Cards */}

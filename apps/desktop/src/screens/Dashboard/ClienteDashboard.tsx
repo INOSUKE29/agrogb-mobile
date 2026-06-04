@@ -87,38 +87,55 @@ export default function ClienteDashboard() {
     return (
         <div className="animate-fade-in pb-12">
             
-            {/* CABEÇALHO */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 border-b border-[var(--color-border)] pb-6">
-                <div>
-                    <h1 className="text-3xl font-black text-white tracking-tight">Dashboard da Propriedade</h1>
-                    <p className="text-[var(--color-muted)] font-medium mt-1">
-                        Acompanhe o clima, seus talhões e as próximas atividades operacionais.
-                    </p>
+            {/* CABEÇALHO HERO */}
+            <div className="relative rounded-3xl overflow-hidden mb-8 border border-[var(--color-border)] shadow-xl group">
+                <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105">
+                    <img src="/hero_agrogb.png" alt="Futuristic Agro Dashboard" className="w-full h-full object-cover opacity-80 dark:opacity-60 mix-blend-overlay" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-background)] via-[var(--color-background)]/80 to-transparent" />
                 </div>
-                
-                {/* Clima Resumo Header */}
-                <div className="glass flex items-center gap-6 px-6 py-2 rounded-2xl">
-                    <div className="flex items-center gap-2">
-                        <ThermometerSun className="w-5 h-5 text-orange-400" />
-                        <div>
-                            <p className="text-xs font-bold text-[var(--color-muted)]">Temp</p>
-                            <p className="text-white font-black">28°C</p>
+                <div className="relative z-10 p-8 sm:p-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                    <div className="max-w-xl">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-bold mb-4 backdrop-blur-md">
+                            <MapIcon className="w-4 h-4" /> Visão Produtor
                         </div>
+                        <h1 className="text-4xl sm:text-5xl font-black text-[var(--color-foreground)] tracking-tight drop-shadow-sm">
+                            Dashboard da Propriedade
+                        </h1>
+                        <p className="text-[var(--color-muted)] font-medium mt-3 text-lg drop-shadow-sm">
+                            Acompanhamento em tempo real das condições climáticas, ocupação de talhões e andamento da safra atual.
+                        </p>
                     </div>
-                    <div className="w-px h-8 bg-white/10"></div>
-                    <div className="flex items-center gap-2">
-                        <Droplet className="w-5 h-5 text-blue-400" />
-                        <div>
-                            <p className="text-xs font-bold text-[var(--color-muted)]">Umidade</p>
-                            <p className="text-white font-black">65%</p>
+                    
+                    {/* Clima Resumo Header (Glassmorphism) */}
+                    <div className="bg-[var(--color-card)]/80 backdrop-blur-xl flex flex-wrap items-center gap-6 px-8 py-4 rounded-2xl border border-[var(--color-border)] shadow-2xl">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-orange-500/10 rounded-lg">
+                                <ThermometerSun className="w-6 h-6 text-orange-500" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Temp</p>
+                                <p className="text-[var(--color-foreground)] font-black text-xl">28°C</p>
+                            </div>
                         </div>
-                    </div>
-                    <div className="w-px h-8 bg-white/10"></div>
-                    <div className="flex items-center gap-2">
-                        <Wind className="w-5 h-5 text-teal-400" />
-                        <div>
-                            <p className="text-xs font-bold text-[var(--color-muted)]">Vento</p>
-                            <p className="text-white font-black">12 km/h</p>
+                        <div className="hidden sm:block w-px h-10 bg-[var(--color-border)]"></div>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-500/10 rounded-lg">
+                                <Droplet className="w-6 h-6 text-blue-500" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Umidade</p>
+                                <p className="text-[var(--color-foreground)] font-black text-xl">65%</p>
+                            </div>
+                        </div>
+                        <div className="hidden sm:block w-px h-10 bg-[var(--color-border)]"></div>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-teal-500/10 rounded-lg">
+                                <Wind className="w-6 h-6 text-teal-500" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Vento</p>
+                                <p className="text-[var(--color-foreground)] font-black text-xl">12 km/h</p>
+                            </div>
                         </div>
                     </div>
                 </div>

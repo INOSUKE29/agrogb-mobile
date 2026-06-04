@@ -27,6 +27,7 @@ import AdminCatalogScreen from './screens/Dashboard/AdminCatalogScreen';
 import ComprasScreen from './screens/Dashboard/ComprasScreen';
 import EncomendasScreen from './screens/Dashboard/EncomendasScreen';
 import ClimaScreen from './screens/Dashboard/ClimaScreen';
+import RelatoriosScreen from './screens/Dashboard/RelatoriosScreen';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 
@@ -79,6 +80,7 @@ function App() {
 
               {/* PORTAL CLIENTE (PRODUTOR) */}
               <Route path="cliente" element={<ClienteDashboard />} />
+              <Route path="cliente/relatorios" element={<RelatoriosScreen />} />
               <Route path="cliente/talhoes" element={<TalhoesScreen />} />
               <Route path="cliente/plantio" element={<PlantioScreen />} />
               <Route path="cliente/culturas" element={<CulturasScreen />} />

@@ -18,11 +18,10 @@ export default function MeusClientesScreen() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            // Busca clientes vinculados (ignora erro se tabela não existir ainda)
             const { data, error } = await supabase
-                .from('agronomist_client_links')
-                .select('*, client:client_id(*)')
-                .eq('agronomist_id', user.id);
+                .from('clientes')
+                .select('*')
+                .eq('agronomo_id', user.id);
             
             if (data) {
                 setClientes(data);
@@ -45,16 +44,16 @@ export default function MeusClientesScreen() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            // 1. Achar o produtor pelo email
-            // (Num cenário real, o auth.users não é acessível assim direto, teríamos uma tabela `users` pública espelhada)
-            // Para fim de teste/MVP, vamos salvar direto o email como um "convite pendente" se não achar, 
-            // ou assumir que o produtor está na tabela `users` (se você espelhou).
-            // Aqui vamos salvar direto na tabela agronomist_client_links com um status 'PENDENTE'
+            // Agora usamos a tabela mestre 'clientes'
+            // O formulário pede apenas o email. Se houver um usuário no auth com este email e role 'cliente',
+            // nós atualizaríamos o agronomo_id dele. Mas por limitação do RLS para o Agrônomo atualizar de forma global,
+            // em produção, isso poderia chamar uma Edge Function ou ser feito via ADM. 
+            // Para o MVP (Simulação local), criamos um cliente fake ou atualizamos:
             
-            const { error } = await supabase.from('agronomist_client_links').insert({
-                agronomist_id: user.id,
-                client_email: emailProdutor,
-                status: 'ATIVO' // Simplificando para teste
+            const { error } = await supabase.from('clientes').insert({
+                agronomo_id: user.id,
+                email: emailProdutor,
+                nome: emailProdutor.split('@')[0] || 'Produtor',
             });
 
             if (error) throw error;
@@ -100,11 +99,11 @@ export default function MeusClientesScreen() {
                             ← Voltar para a lista
                         </button>
                         <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-                            {selectedClient.client?.nome || selectedClient.client_email}
+                            {selectedClient.nome || selectedClient.email}
                         </h1>
                         <p className="text-[var(--color-muted)] font-medium mt-1 flex items-center gap-2">
                             <MapPin className="w-4 h-4" />
-                            {selectedClient.client?.fazenda || 'Fazenda não informada'} • Soja, Milho (1.200 ha)
+                            {selectedClient.cpf_cnpj || 'CPF/CNPJ não informado'}
                         </p>
                     </div>
                     <div className="flex gap-3">
@@ -157,10 +156,10 @@ export default function MeusClientesScreen() {
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex gap-4 items-center">
                                             <div className="w-12 h-12 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center text-green-400 font-bold text-xl">
-                                                {(link.client?.nome || link.client_email || 'C').charAt(0).toUpperCase()}
+                                                {(link.nome || link.email || 'C').charAt(0).toUpperCase()}
                                             </div>
                                             <div>
-                                                <h3 className="text-white font-bold text-lg">{link.client?.nome || link.client_email}</h3>
+                                                <h3 className="text-white font-bold text-lg">{link.nome || link.email}</h3>
                                                 <span className="text-xs font-semibold text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full">Ativo</span>
                                             </div>
                                         </div>
@@ -172,11 +171,11 @@ export default function MeusClientesScreen() {
                                     <div className="space-y-3 mt-6">
                                         <div className="flex items-center gap-3 text-sm text-[var(--color-muted)]">
                                             <Mail className="w-4 h-4 shrink-0" />
-                                            <span className="truncate">{link.client_email || 'Email não cadastrado'}</span>
+                                            <span className="truncate">{link.email || 'Email não cadastrado'}</span>
                                         </div>
                                         <div className="flex items-center gap-3 text-sm text-[var(--color-muted)]">
                                             <MapPin className="w-4 h-4 shrink-0" />
-                                            <span className="truncate">{link.client?.fazenda || 'Fazenda não informada'}</span>
+                                            <span className="truncate">{link.telefone || 'Telefone não informado'}</span>
                                         </div>
                                     </div>
 

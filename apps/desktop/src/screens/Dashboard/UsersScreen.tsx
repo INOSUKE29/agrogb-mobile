@@ -45,6 +45,7 @@ export default function UsersScreen() {
     const [formEmail, setFormEmail] = useState('');
     const [formPass,  setFormPass]  = useState('');
     const [formRole,  setFormRole]  = useState('cliente');
+    const [formAgronomoId, setFormAgronomoId] = useState('');
     const [formError, setFormError] = useState('');
 
     // ── fetch ────────────────────────────────────────────────────────────────
@@ -96,6 +97,17 @@ export default function UsersScreen() {
             const userId = authData?.user?.id;
             if (!userId) throw new Error('Não foi possível obter o ID do usuário após a criação.');
 
+            // Se for cliente, cria o registro na tabela clientes já vinculado ao agrônomo
+            if (formRole === 'cliente') {
+                const { error: clienteErr } = await supabase.from('clientes').insert({
+                    id: userId,
+                    agronomo_id: formAgronomoId || null,
+                    nome: formName.trim(),
+                    email: formEmail.toLowerCase().trim()
+                });
+                if (clienteErr) console.warn("Erro ao criar registro na tabela clientes:", clienteErr);
+            }
+
             // Restaura a sessão do Admin imediatamente
             if (adminSession) {
                 await supabase.auth.setSession({
@@ -127,7 +139,7 @@ export default function UsersScreen() {
 
     const resetForm = () => {
         setFormName(''); setFormEmail(''); setFormPass('');
-        setFormRole('cliente'); setFormError(''); setShowPass(false);
+        setFormRole('cliente'); setFormAgronomoId(''); setFormError(''); setShowPass(false);
     };
 
     // ── alterar role ─────────────────────────────────────────────────────────
@@ -372,6 +384,23 @@ export default function UsersScreen() {
                                     {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                 </button>
                             </div>
+                            
+                            {formRole === 'cliente' && (
+                                <div className="mt-2">
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 px-2">Vincular a um Agrônomo</p>
+                                    <select
+                                        value={formAgronomoId}
+                                        onChange={e => setFormAgronomoId(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-2xl bg-black/40 border border-white/8 text-white text-sm font-medium focus:outline-none focus:border-green-500/50 transition-all appearance-none cursor-pointer"
+                                    >
+                                        <option value="">Sem vínculo imediato (Adicionar depois)</option>
+                                        {profiles.filter(p => p.role.toLowerCase() === 'agronomo').map(agro => (
+                                            <option key={agro.id} value={agro.id}>{agro.full_name || agro.email}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
                             <p className="text-[10px] text-gray-500 font-medium px-2 leading-tight">
                                 A senha deve conter pelo menos: 1 maiúscula, 1 minúscula, 1 número e 1 caractere especial (!@#$...).
                             </p>

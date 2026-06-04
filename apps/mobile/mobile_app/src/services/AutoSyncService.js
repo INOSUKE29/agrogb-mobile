@@ -14,6 +14,7 @@
  */
 
 import { performSync } from './SyncService';
+import NetInfo from '@react-native-community/netinfo';
 
 const SYNC_INTERVAL_MS = 2 * 60 * 1000; // 2 minutos
 const DEBOUNCE_MS = 3000; // aguarda 3s após último trigger para evitar spam
@@ -25,6 +26,7 @@ class AutoSyncService {
         this._isSyncing = false;
         this._listeners = [];
         this._lastSync = null;
+        this._unsubscribeNetInfo = null;
     }
 
     // Inicia o serviço de auto-sync
@@ -37,6 +39,14 @@ class AutoSyncService {
         setTimeout(() => {
             this._runSync();
         }, 25000);
+
+        // Gatilho de Reconexão de Rede (Smart Trigger)
+        this._unsubscribeNetInfo = NetInfo.addEventListener(state => {
+            if (state.isConnected && state.isInternetReachable !== false) {
+                console.log('🌐 AutoSyncService: Conexão detectada (' + state.type + '). Agendando sync inteligente...');
+                this.trigger();
+            }
+        });
 
         // Sync a cada 2 minutos
         this._interval = setInterval(() => {
@@ -53,6 +63,10 @@ class AutoSyncService {
         if (this._debounceTimer) {
             clearTimeout(this._debounceTimer);
             this._debounceTimer = null;
+        }
+        if (this._unsubscribeNetInfo) {
+            this._unsubscribeNetInfo();
+            this._unsubscribeNetInfo = null;
         }
         console.log('⏹ AutoSyncService: parado');
     }

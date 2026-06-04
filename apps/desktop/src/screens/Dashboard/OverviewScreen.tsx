@@ -4,11 +4,13 @@ import { subDays, format, isAfter, isBefore, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { 
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, Legend
+    PieChart, Pie, Cell, Legend, LineChart, Line
 } from 'recharts';
-import { Users, Sprout, ShieldCheck, DollarSign, Calendar as CalendarIcon, ArrowRight } from 'lucide-react';
+import { Users, Sprout, ShieldCheck, DollarSign, Calendar as CalendarIcon, ArrowRight, Activity, FileText, Settings, Database, FolderKanban } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function OverviewScreen() {
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [dateRange, setDateRange] = useState({
         start: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
@@ -24,6 +26,7 @@ export default function OverviewScreen() {
     // Chart Data States
     const [chartData, setChartData] = useState<any[]>([]);
     const [pieData, setPieData] = useState<any[]>([]);
+    const [activityData, setActivityData] = useState<any[]>([]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -59,6 +62,13 @@ export default function OverviewScreen() {
                 { name: 'Básico', value: 45, color: '#10B981' },
                 { name: 'Intermediário', value: 30, color: '#3B82F6' },
                 { name: 'Profissional', value: 25, color: '#8B5CF6' }
+            ]);
+
+            setActivityData([
+                { name: 'Semana 1', receitas: 120, visitas: 45 },
+                { name: 'Semana 2', receitas: 150, visitas: 60 },
+                { name: 'Semana 3', receitas: 180, visitas: 75 },
+                { name: 'Semana 4', receitas: 220, visitas: 90 },
             ]);
 
         } catch (error) {
@@ -159,6 +169,53 @@ export default function OverviewScreen() {
 
             </div>
 
+            {/* QUICK ACTIONS (ATALHOS GERENCIAIS) */}
+            <div className="mb-8">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-[var(--color-primary)]" /> Atalhos Táticos
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button onClick={() => navigate('/admin/users')} className="glass p-4 rounded-xl flex items-center justify-between hover:bg-white/5 transition-all group">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                                <Users className="w-5 h-5" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-white font-bold text-sm">Gerenciar Equipes</p>
+                                <p className="text-[var(--color-muted)] text-xs">Acessos e Vínculos</p>
+                            </div>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-[var(--color-muted)] group-hover:text-white transition-colors" />
+                    </button>
+
+                    <button onClick={() => navigate('/admin/catalog')} className="glass p-4 rounded-xl flex items-center justify-between hover:bg-white/5 transition-all group">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-green-500/20 text-green-400 flex items-center justify-center">
+                                <Database className="w-5 h-5" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-white font-bold text-sm">Biblioteca de Insumos</p>
+                                <p className="text-[var(--color-muted)] text-xs">Aprovar Produtos</p>
+                            </div>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-[var(--color-muted)] group-hover:text-white transition-colors" />
+                    </button>
+
+                    <button onClick={() => navigate('/admin/financial')} className="glass p-4 rounded-xl flex items-center justify-between hover:bg-white/5 transition-all group">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                                <FolderKanban className="w-5 h-5" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-white font-bold text-sm">Saúde Financeira</p>
+                                <p className="text-[var(--color-muted)] text-xs">Exportar Balanço</p>
+                            </div>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-[var(--color-muted)] group-hover:text-white transition-colors" />
+                    </button>
+                </div>
+            </div>
+
             {/* CHARTS AREA */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
@@ -187,35 +244,26 @@ export default function OverviewScreen() {
                     </div>
                 </div>
 
-                {/* Chart 2: Assinaturas por Plano */}
+                {/* Chart 2: Fluxo de Atividade (Receitas e Visitas) */}
                 <div className="glass p-6 rounded-2xl">
-                    <h3 className="text-lg font-bold text-white mb-6">Assinaturas por Plano</h3>
+                    <h3 className="text-lg font-bold text-white mb-6">Atividade da Plataforma (Mês Atual)</h3>
                     <div className="h-72 w-full">
                         {loading ? (
                             <div className="w-full h-full flex items-center justify-center text-[var(--color-muted)]">Carregando gráfico...</div>
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={pieData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={80}
-                                        outerRadius={110}
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                        stroke="none"
-                                    >
-                                        {pieData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Pie>
+                                <LineChart data={activityData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                    <XAxis dataKey="name" stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
                                     <Tooltip 
                                         contentStyle={{ backgroundColor: '#152336', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
                                         itemStyle={{ color: '#fff', fontWeight: 'bold' }}
                                     />
                                     <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                                </PieChart>
+                                    <Line type="monotone" dataKey="receitas" name="Prescrições Emitidas" stroke="#10B981" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} />
+                                    <Line type="monotone" dataKey="visitas" name="Visitas a Campo" stroke="#3B82F6" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} />
+                                </LineChart>
                             </ResponsiveContainer>
                         )}
                     </div>

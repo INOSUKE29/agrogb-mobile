@@ -82,21 +82,32 @@ export default function AgroDashboard() {
     return (
         <div className="animate-fade-in pb-12">
             
-            {/* CABEÇALHO */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 border-b border-[var(--color-border)] pb-6">
-                <div>
-                    <h1 className="text-3xl font-black text-white tracking-tight">Dashboard do Agrônomo</h1>
-                    <p className="text-[var(--color-muted)] font-medium mt-1">
-                        Visão geral da sua carteira de clientes e acompanhamento de talhões.
-                    </p>
+            {/* CABEÇALHO HERO */}
+            <div className="relative rounded-3xl overflow-hidden mb-8 border border-[var(--color-border)] shadow-xl group">
+                <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105">
+                    <img src="/hero_agrogb.png" alt="Futuristic Agro Dashboard" className="w-full h-full object-cover opacity-80 dark:opacity-60 mix-blend-overlay" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-background)] via-[var(--color-background)]/80 to-transparent" />
                 </div>
-                <button 
-                    onClick={() => navigate('/dashboard/agronomo/recomendacoes')}
-                    className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-xl shadow-lg shadow-green-500/20 transition-all flex items-center gap-2"
-                >
-                    <span>Nova Recomendação</span>
-                    <ArrowRight className="w-4 h-4" />
-                </button>
+                <div className="relative z-10 p-8 sm:p-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                    <div>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-bold mb-4 backdrop-blur-md">
+                            <Users className="w-4 h-4" /> Visão Agronômica
+                        </div>
+                        <h1 className="text-4xl sm:text-5xl font-black text-[var(--color-foreground)] tracking-tight drop-shadow-sm">
+                            Dashboard Central
+                        </h1>
+                        <p className="text-[var(--color-muted)] font-medium mt-3 max-w-xl text-lg drop-shadow-sm">
+                            Sincronização em tempo real da sua carteira de clientes, safras acompanhadas e fluxo de recomendações.
+                        </p>
+                    </div>
+                    <button 
+                        onClick={() => navigate('/dashboard/agronomo/recomendacoes')}
+                        className="bg-[var(--color-primary)] hover:brightness-110 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-[var(--color-primary)]/30 transition-all duration-300 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary)] focus:ring-offset-[var(--color-background)] active:scale-95 hover:shadow-xl hover:-translate-y-1"
+                    >
+                        <span>Nova Recomendação</span>
+                        <ArrowRight className="w-5 h-5" />
+                    </button>
+                </div>
             </div>
 
             {/* KPI CARDS */}

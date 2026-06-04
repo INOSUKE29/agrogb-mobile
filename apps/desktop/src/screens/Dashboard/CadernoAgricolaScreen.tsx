@@ -249,7 +249,7 @@ export default function CadernoAgricolaScreen() {
                 
                 <button 
                     onClick={() => setIsModalOpen(true)}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all shrink-0"
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-[var(--color-primary)] hover:brightness-110 text-white font-bold rounded-xl shadow-[0_0_20px_rgba(var(--color-primary-rgb),0.3)] hover:shadow-[0_0_30px_rgba(var(--color-primary-rgb),0.5)] transition-all duration-300 shrink-0 hover:-translate-y-0.5 active:scale-95"
                 >
                     <Plus className="w-5 h-5" />
                     Nova Anotação
@@ -283,12 +283,22 @@ export default function CadernoAgricolaScreen() {
                         <p className="text-[var(--color-muted)] font-bold">Folheando o caderno...</p>
                     </div>
                 ) : filteredTimeline.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 glass rounded-2xl">
-                        <BookOpen className="w-16 h-16 text-[var(--color-muted)] mb-4 opacity-50" />
-                        <h3 className="text-xl font-bold text-white mb-2">Páginas em branco</h3>
-                        <p className="text-[var(--color-muted)] text-center max-w-md">
-                            Nenhuma atividade encontrada. Suas anotações, colheitas, vendas e custos aparecerão aqui em ordem cronológica.
+                    <div className="flex flex-col items-center justify-center py-20 glass rounded-3xl border border-[var(--color-border)] shadow-xl relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-primary)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-duration-700"></div>
+                        <div className="relative z-10 w-24 h-24 bg-[var(--color-background)]/50 rounded-full flex items-center justify-center mb-6 shadow-inner border border-[var(--color-border)]">
+                            <BookOpen className="w-10 h-10 text-[var(--color-muted)]" />
+                        </div>
+                        <h3 className="relative z-10 text-2xl font-black text-white mb-3">Páginas em branco</h3>
+                        <p className="relative z-10 text-[var(--color-muted)] text-center max-w-md text-lg mb-8">
+                            Inicie seu caderno de campo agora mesmo. Suas observações diárias viram inteligência de dados amanhã.
                         </p>
+                        <button 
+                            onClick={() => setIsModalOpen(true)}
+                            className="relative z-10 px-6 py-3 rounded-xl flex items-center justify-center gap-2 bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold border border-[var(--color-primary)]/30 hover:bg-[var(--color-primary)] hover:text-white transition-all duration-300 active:scale-95 hover:-translate-y-0.5"
+                        >
+                            <Plus className="w-5 h-5" />
+                            Começar a Escrever
+                        </button>
                     </div>
                 ) : (
                     <div className="flex flex-col gap-6">
@@ -371,7 +381,7 @@ export default function CadernoAgricolaScreen() {
                                     required
                                     value={novaNota}
                                     onChange={(e) => setNovaNota(e.target.value)}
-                                    className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-base rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent block p-4 transition-all resize-none"
+                                    className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-base rounded-xl focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none ring-offset-2 ring-offset-[var(--color-card)] block p-4 transition-all resize-none shadow-inner"
                                     placeholder="Ex: Pulverização realizada no Talhão 02 devido à praga identificada. Dia muito quente."
                                 />
                             </form>
@@ -381,7 +391,7 @@ export default function CadernoAgricolaScreen() {
                             <button 
                                 type="button"
                                 onClick={() => setIsModalOpen(false)}
-                                className="px-6 py-3 rounded-xl font-bold text-[var(--color-muted)] hover:text-white hover:bg-white/5 transition-all"
+                                className="px-6 py-3 rounded-xl font-bold text-[var(--color-muted)] hover:text-white hover:bg-white/10 transition-all active:scale-95"
                             >
                                 Cancelar
                             </button>
@@ -389,9 +399,9 @@ export default function CadernoAgricolaScreen() {
                                 type="submit"
                                 form="notaForm"
                                 disabled={isSaving}
-                                className="px-6 py-3 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-6 py-3 rounded-xl font-bold text-white bg-[var(--color-primary)] hover:brightness-110 shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.4)] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 active:scale-95"
                             >
-                                {isSaving ? 'Salvando...' : 'Registrar Nota'}
+                                {isSaving ? 'Gravando...' : 'Registrar Nota'}
                             </button>
                         </div>
                     </div>

@@ -29,6 +29,10 @@ function createWindow() {
     title: "AgroGB Enterprise",
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
+      // Segurança: Heurísticas SSDLC 2026
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
     },
     // Esconder a barra de menu padrão do Windows para um visual mais limpo e moderno
     autoHideMenuBar: true
