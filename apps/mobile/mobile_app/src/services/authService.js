@@ -117,11 +117,21 @@ export const AuthService = {
                 console.warn('[AuthService] Erro ao buscar profile, usando dados padrão:', profileError);
             }
 
+            // [RBAC Granular] Busca a Role oficial do novo Motor de Permissões (Bloco 51)
+            const { data: userRoleData } = await supabase
+                .from('user_roles')
+                .select('roles(name)')
+                .eq('user_id', data.user.id)
+                .maybeSingle();
+
+            // Extrai o nome da nova Role, caso não exista, usa o fallback do profile legado
+            const rbacRole = userRoleData?.roles?.name?.toUpperCase() || profileData?.role || 'PENDENTE';
+
             const sessionObj = {
                 id: data.user.id,
                 email: data.user.email,
                 usuario: profileData?.username || cleanedEmail.split('@')[0],
-                role: profileData?.role || 'PENDENTE',
+                role: rbacRole,
                 nome_completo: profileData?.nome_completo || '',
                 token: data.session.access_token
             };

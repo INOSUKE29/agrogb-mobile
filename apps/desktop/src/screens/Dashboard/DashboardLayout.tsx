@@ -29,7 +29,6 @@ import {
     CheckSquare,
     TrendingDown,
     Tags,
-import {
     Database,
     ChevronRight
 } from 'lucide-react';
