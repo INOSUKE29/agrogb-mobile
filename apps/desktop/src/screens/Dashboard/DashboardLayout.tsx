@@ -37,7 +37,7 @@ import { useAuth } from '../../contexts/AuthContext';
 export default function DashboardLayout() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, role: contextRole, hasPermission } = useAuth();
+    const { user, role: contextRole, hasPermission, loading } = useAuth();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     
     // NOVO: Estado do Simulador de Perfil (Role Sandbox)
