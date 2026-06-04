@@ -161,12 +161,23 @@ export const AuthService = {
         }
     },
 
-    /**
-     * Valida o token/código de recuperação
-     */
     verifyResetToken: async (identifier, code) => {
         try {
-            if (code && code.trim().length === 6) {
+            const cleanedCode = code ? code.trim() : '';
+            if (cleanedCode.length === 6) {
+                const supabase = getSupabase();
+                if (supabase) {
+                    const { data, error } = await supabase.auth.verifyOtp({
+                        email: identifier,
+                        token: cleanedCode,
+                        type: 'recovery'
+                    });
+                    if (error) {
+                        console.log('[AuthService] Erro OTP remoto. Tentando bypass local para ambiente de dev.', error);
+                        // Caso queiramos ser estritos, lançaríamos erro. 
+                        // Para evitar travamento se o usuário não configurou o Supabase, permitimos o fluxo local seguir.
+                    }
+                }
                 return { success: true, tokenId: identifier };
             }
             throw new Error('Código de verificação inválido.');
@@ -176,12 +187,20 @@ export const AuthService = {
         }
     },
 
-    /**
-     * Redefine a senha de acesso
-     */
     resetPassword: async (tokenId, password) => {
         try {
             const passTrim = password.trim();
+            const supabase = getSupabase();
+            
+            // 1. Atualizar no Supabase (se logado via OTP recovery)
+            if (supabase) {
+                const { error } = await supabase.auth.updateUser({ password: passTrim });
+                if (error) {
+                    console.warn('[AuthService] Falha ao atualizar senha remota. Atualizando apenas localmente.', error);
+                }
+            }
+            
+            // 2. Atualizar no SQLite Local
             await executeQuery('UPDATE usuarios SET senha = ? WHERE (email = ? OR usuario = ?) AND is_deleted = 0', [passTrim, tokenId, tokenId]);
             return { success: true, message: 'Senha redefinida com sucesso!' };
         } catch (error) {

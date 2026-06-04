@@ -29,8 +29,8 @@ export default function ForgotPasswordScreen({ navigation }) {
         try {
             const res = await AuthService.requestPasswordReset(cleanedEmail);
             if (res.success || res.error === undefined) {
-                Alert.alert('Sucesso', res.message || 'E-mail de recuperação enviado com sucesso.', [
-                    { text: 'OK', onPress: () => navigation.goBack() }
+                Alert.alert('Sucesso', 'Um código de recuperação de 6 dígitos foi enviado para o seu e-mail.', [
+                    { text: 'OK', onPress: () => navigation.navigate('VerifyCode', { identifier: cleanedEmail }) }
                 ]);
             } else {
                 Alert.alert('Erro', res.message || 'Não foi possível solicitar a recuperação.');

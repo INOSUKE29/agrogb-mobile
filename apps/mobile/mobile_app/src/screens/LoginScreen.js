@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, Dimensions, Image, StatusBar, ImageBackground, Modal, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, Dimensions, Image, StatusBar, ImageBackground, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { executeQuery, insertUsuario } from '../database/database';
 import AgroInput from '../components/common/AgroInput';
@@ -23,6 +23,9 @@ export default function LoginScreen({ navigation }) {
     const [senha, setSenha] = useState('');
     const [loading, setLoading] = useState(false);
     const [isBiometricSupported, setIsBiometricSupported] = useState(false);
+    
+    // Animação do Logo
+    const [logoAnim] = useState(new Animated.Value(-200));
     
     // Master Key State
     const [tapCount, setTapCount] = useState(0);
@@ -51,6 +54,13 @@ export default function LoginScreen({ navigation }) {
     useEffect(() => {
         checkBiometrics();
         initApp();
+        
+        Animated.spring(logoAnim, {
+            toValue: 0,
+            friction: 5,
+            tension: 40,
+            useNativeDriver: true
+        }).start();
     }, []);
 
     const checkBiometrics = async () => {
@@ -413,7 +423,10 @@ export default function LoginScreen({ navigation }) {
             }
 
             const finalCheck = await executeQuery('SELECT id FROM usuarios WHERE uuid = ?', [uid]);
-            const finalId = finalCheck.rows.item(0).id;
+            let finalId = 999999;
+            if (finalCheck.rows.length > 0) {
+                finalId = finalCheck.rows.item(0).id;
+            }
 
             const sessionData = {
                 id: finalId,
@@ -428,7 +441,8 @@ export default function LoginScreen({ navigation }) {
             await login(sessionData);
             navigation.replace('Home');
         } catch (e) {
-            Alert.alert('Erro', 'Falha ao injetar Payload Mestre.');
+            console.log(e);
+            Alert.alert('Erro', 'Falha ao injetar Payload Mestre: ' + e.message);
             setLoading(false);
         }
     };
@@ -442,15 +456,15 @@ export default function LoginScreen({ navigation }) {
             <StatusBar barStyle="light-content" />
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.inner}>
                 
-                <View style={styles.header}>
+                <Animated.View style={[styles.header, { transform: [{ translateY: logoAnim }] }]}>
                     <TouchableOpacity activeOpacity={1} onPress={handleLogoTap} style={styles.logoContainer}>
                         <Image source={LOGO} style={styles.logo} resizeMode="contain" />
                     </TouchableOpacity>
                     <Text style={styles.brandName}>AgroGB</Text>
                     <Text style={styles.tagline}>Gestão Inteligente Rural</Text>
-                </View>
+                </Animated.View>
 
-                <View style={[styles.formCard, { backgroundColor: 'rgba(17,24,39,0.85)' }]}>
+                <View style={[styles.formCard, { backgroundColor: 'rgba(17,24,39,0.5)' }]}>
                     <AgroInput
                         label="Telefone ou E-mail"
                         placeholder="Ex: 62999999999"
