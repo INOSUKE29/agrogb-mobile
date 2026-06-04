@@ -21,6 +21,7 @@ import FinanceiroScreen from '../screens/FinanceiroScreen';
 import SyncScreen from '../screens/SyncScreen';
 import ComprasScreen from '../screens/ComprasScreen';
 import PlantioScreen from '../screens/PlantioScreen';
+import CalendarTimelineScreen from '../screens/CalendarTimelineScreen';
 import CustosScreen from '../screens/CustosScreen';
 import RelatoriosScreen from '../screens/RelatoriosScreen';
 import RegisterScreen from '../screens/RegisterScreen';
@@ -90,6 +91,7 @@ export default function AppNavigator() {
             <Stack.Screen name="Financeiro" component={FinanceiroScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Compras" component={ComprasScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Plantio" component={PlantioScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="CalendarTimeline" component={CalendarTimelineScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Custos" component={CustosScreen} options={{ headerShown: false }} />
             <Stack.Screen name="MenuCadastros" component={MenuCadastrosScreen} options={{ headerShown: false }} />
             <Stack.Screen name="CategoriasDespesa" component={CategoriasDespesaScreen} options={{ headerShown: false }} />

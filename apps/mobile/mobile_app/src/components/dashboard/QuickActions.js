@@ -10,9 +10,10 @@ const CARD_WIDTH = (width - 50) / 2;
 
 const OPERATIONAL_ACTIONS = [
     { title: 'Caderno', icon: 'book-outline', color: '#10B981', screen: 'CadernoCampo', desc: 'Caderno de Campo' },
+    { title: 'Calendário', icon: 'calendar-outline', color: '#8B5CF6', screen: 'CalendarTimeline', desc: 'Linha do Tempo' },
     { title: 'Colheita', icon: 'leaf-outline', color: '#EF4444', screen: 'Colheita', desc: 'Registro de Colheita' },
     { title: 'Plantio', icon: 'nutrition-outline', color: '#2563EB', screen: 'Plantio', desc: 'Controle de Plantios' },
-    { title: 'Monitorar', icon: 'eye-outline', color: '#8B5CF6', screen: 'Monitoramento', desc: 'Monitorar Pragas' },
+    { title: 'Monitorar', icon: 'eye-outline', color: '#F59E0B', screen: 'Monitoramento', desc: 'Monitorar Pragas' },
     { title: 'Estoque', icon: 'cube-outline', color: '#CA8A04', screen: 'Estoque', desc: 'Prateleiras Digitais' },
     { title: 'Cadastros', icon: 'construct-outline', color: '#4B5563', screen: 'Cadastro', desc: 'Catálogo Rural' },
     { title: 'Adubação', icon: 'flask-outline', color: '#0EA5E9', screen: 'AdubacaoList', desc: 'Plano de Nutrição' },
