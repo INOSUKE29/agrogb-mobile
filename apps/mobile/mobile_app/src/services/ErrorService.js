@@ -91,5 +91,40 @@ Stack: ${stackText.substring(0, 1500)}
         } catch (e) {
             Alert.alert('Erro', 'Não foi possível compartilhar: ' + e.message);
         }
+    },
+
+    /**
+     * Envia o erro diretamente para o WhatsApp do Suporte Técnico
+     */
+    sendToSupportWhatsApp: async (currentError = null) => {
+        try {
+            const { Linking, Alert } = require('react-native');
+            let errorText = '';
+            
+            if (currentError) {
+                errorText = currentError.message || String(currentError);
+            } else {
+                const res = await executeQuery(`SELECT * FROM error_logs ORDER BY created_at DESC LIMIT 1`);
+                if (res.rows.length > 0) {
+                    errorText = res.rows.item(0).erro;
+                }
+            }
+
+            const mensagem = `Olá Equipe de Suporte AgroGB! 👋\n\nEstou enfrentando um problema no aplicativo. Aqui está o código do erro para vocês analisarem:\n\n*Erro:* ${errorText}\n\nPor favor, podem me ajudar?`;
+            
+            // Número fictício do suporte (pode ser alterado depois)
+            const numeroSuporte = "5511999999999"; 
+            const url = `whatsapp://send?phone=${numeroSuporte}&text=${encodeURIComponent(mensagem)}`;
+            
+            const supported = await Linking.canOpenURL(url);
+            
+            if (supported) {
+                await Linking.openURL(url);
+            } else {
+                Alert.alert('WhatsApp não encontrado', 'Parece que você não tem o WhatsApp instalado. A opção de Compartilhar Relatório ainda está disponível.');
+            }
+        } catch (e) {
+            console.error("Erro ao abrir WhatsApp", e);
+        }
     }
 };

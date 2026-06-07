@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, Dimensions, Image, StatusBar, ImageBackground, Animated, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, Dimensions, Image, StatusBar, ImageBackground, Animated, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { executeQuery, insertUsuario } from '../database/database';
 import AgroInput from '../components/common/AgroInput';

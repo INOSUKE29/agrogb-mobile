@@ -35,6 +35,10 @@ class ErrorBoundary extends React.Component {
         ErrorService.reportLatestError(this.state.error);
     };
 
+    handleSupport = () => {
+        ErrorService.sendToSupportWhatsApp(this.state.error);
+    };
+
     render() {
         if (this.state.hasError) {
             return (
@@ -66,7 +70,15 @@ class ErrorBoundary extends React.Component {
                             onPress={this.handleReport}
                         >
                             <Ionicons name="share-social-outline" size={20} color="#6B7280" />
-                            <Text style={styles.secondaryText}>Enviar Relatório de Erro</Text>
+                            <Text style={styles.secondaryText}>Compartilhar Log (Outros)</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity 
+                            style={[styles.buttonSecondary, { marginTop: 10, borderColor: '#10B981', backgroundColor: '#ECFDF5' }]} 
+                            onPress={this.handleSupport}
+                        >
+                            <Ionicons name="logo-whatsapp" size={20} color="#10B981" />
+                            <Text style={[styles.secondaryText, { color: '#10B981' }]}>Falar com o Suporte</Text>
                         </TouchableOpacity>
 
                         <Text style={styles.footer}>AgroGB v1.0 • Sistema de Monitoramento Ativo</Text>
