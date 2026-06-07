@@ -78,6 +78,16 @@ const createTables = async () => {
                 usuario TEXT UNIQUE NOT NULL,
                 senha TEXT NOT NULL,
                 nivel TEXT DEFAULT 'USUARIO',
+                nome_completo TEXT,
+                email TEXT,
+                telefone TEXT,
+                endereco TEXT,
+                role TEXT DEFAULT 'CLIENTE',
+                avatar TEXT,
+                provider TEXT DEFAULT 'local',
+                avatar_url TEXT,
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0,
                 last_updated TEXT
             );`,
             `CREATE TABLE IF NOT EXISTS colheitas (
@@ -540,66 +550,29 @@ const createTables = async () => {
             console.error('⚠️ Erro ao verificar/inserir ADMIN:', adminError);
         }
 
-        // MIGRATION: Adicionar email se não existir (v3.5)
-        try {
-            await executeQuery('ALTER TABLE usuarios ADD COLUMN email TEXT');
-            console.log('✅ Coluna email adicionada com sucesso');
-        } catch (e) { }
-
+        // MIGRATION: Migrações Individuais Seguras para 'usuarios'
+        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN email TEXT'); } catch(e) {}
+        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN uuid TEXT'); } catch(e) {}
+        try { await executeQuery('CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_uuid ON usuarios(uuid)'); } catch(e) {}
+        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN nome_completo TEXT'); } catch(e) {}
+        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN telefone TEXT'); } catch(e) {}
+        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN endereco TEXT'); } catch(e) {}
+        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN avatar TEXT'); } catch(e) {}
+        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN provider TEXT DEFAULT "local"'); } catch(e) {}
+        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN avatar_url TEXT'); } catch(e) {}
+        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN role TEXT DEFAULT "CLIENTE"'); } catch(e) {}
 
         // MIGRATION: Cadastro (v4.0)
-        try {
-            await executeQuery('ALTER TABLE cadastro ADD COLUMN estocavel INTEGER DEFAULT 1');
-            await executeQuery('ALTER TABLE cadastro ADD COLUMN vendavel INTEGER DEFAULT 1');
-            console.log('✅ Colunas estocavel/vendavel adicionadas');
-        } catch (e) { }
+        try { await executeQuery('ALTER TABLE cadastro ADD COLUMN estocavel INTEGER DEFAULT 1'); } catch(e) {}
+        try { await executeQuery('ALTER TABLE cadastro ADD COLUMN vendavel INTEGER DEFAULT 1'); } catch(e) {}
+        try { await executeQuery('ALTER TABLE cadastro ADD COLUMN fator_conversao REAL DEFAULT 1'); } catch(e) {}
 
-        // MIGRATION: Compras Fornecedor (v7.1)
-        try {
-            await executeQuery('ALTER TABLE compras ADD COLUMN fornecedor_uuid TEXT');
-            console.log('✅ Coluna fornecedor_uuid adicionada em compras');
-        } catch (e) { }
+        // MIGRATION: Compras (v4.0 e v7.1)
+        try { await executeQuery('ALTER TABLE compras ADD COLUMN fornecedor_uuid TEXT'); } catch(e) {}
+        try { await executeQuery('ALTER TABLE compras ADD COLUMN detalhes TEXT'); } catch(e) {}
 
-        // MIGRATION: Perfil de Usuário (v4.1)
-        try {
-            await executeQuery('ALTER TABLE usuarios ADD COLUMN uuid TEXT');
-            await executeQuery('CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_uuid ON usuarios(uuid)');
-            await executeQuery('ALTER TABLE usuarios ADD COLUMN nome_completo TEXT');
-            await executeQuery('ALTER TABLE usuarios ADD COLUMN telefone TEXT');
-            await executeQuery('ALTER TABLE usuarios ADD COLUMN endereco TEXT');
-            console.log('✅ Colunas de perfil e UUID adicionadas');
-        } catch (e) { }
-
-        // MIGRATION: Colheita Congelado (v4.1)
-        try {
-            await executeQuery('ALTER TABLE colheitas ADD COLUMN congelado REAL DEFAULT 0');
-            console.log('✅ Coluna congelado adicionada');
-        } catch (e) { }
-
-        // MIGRATION: Avatar Profile (v6.1)
-        try {
-            await executeQuery('ALTER TABLE usuarios ADD COLUMN avatar TEXT');
-            console.log('✅ Coluna avatar adicionada');
-        } catch (e) { }
-
-        // MIGRATION: Cadastro Fator Conversão (v4.2)
-        try {
-            await executeQuery('ALTER TABLE cadastro ADD COLUMN fator_conversao REAL DEFAULT 1');
-            console.log('✅ Coluna fator_conversao adicionada');
-        } catch (e) { }
-
-        // MIGRATION: Compras Detalhes (v4.0)
-        try {
-            await executeQuery('ALTER TABLE compras ADD COLUMN detalhes TEXT');
-            console.log('✅ Coluna detalhes adicionada em compras');
-        } catch (e) { }
-
-        // MIGRATION: Auth Providers (v5.2)
-        try {
-            await executeQuery('ALTER TABLE usuarios ADD COLUMN provider TEXT DEFAULT "local"');
-            await executeQuery('ALTER TABLE usuarios ADD COLUMN avatar_url TEXT');
-            console.log('✅ Colunas de Auth Provider adicionadas');
-        } catch (e) { }
+        // MIGRATION: Colheita (v4.1)
+        try { await executeQuery('ALTER TABLE colheitas ADD COLUMN congelado REAL DEFAULT 0'); } catch(e) {}
 
         // MIGRATION: App Settings (FASE 10)
         try {
@@ -915,10 +888,7 @@ const createTables = async () => {
         } catch (e) { }
 
         // MIGRATION: User Roles Support (v9.0)
-        try {
-            await executeQuery("ALTER TABLE usuarios ADD COLUMN role TEXT DEFAULT 'CLIENTE'");
-            console.log('✅ Coluna role adicionada em usuarios');
-        } catch (e) { }
+        try { await executeQuery("ALTER TABLE usuarios ADD COLUMN role TEXT DEFAULT 'CLIENTE'"); } catch (e) { }
 
         // MIGRATION: Sync Support for equipes and agronomist_codes (v9.1)
         try {
