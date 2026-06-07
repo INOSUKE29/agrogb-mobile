@@ -478,10 +478,16 @@ export default function UsersScreen() {
                                                 </span>
                                             </td>
                                             <td className="p-5">
-                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black border tracking-wider ${row.status === 'ATIVO' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-red-500/15 text-red-400 border-red-500/30'}`}>
-                                                    {row.status === 'ATIVO' ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                                                    {row.status}
-                                                </span>
+                                                {(() => {
+                                                    const isActive = row.status === 'ATIVO' || row.status === 'active' || row.status === 'true' || row.status === true;
+                                                    const statusText = isActive ? 'ATIVO' : 'BLOQUEADO';
+                                                    return (
+                                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black border tracking-wider ${isActive ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-red-500/15 text-red-400 border-red-500/30'}`}>
+                                                            {isActive ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                                                            {statusText}
+                                                        </span>
+                                                    );
+                                                })()}
                                             </td>
                                             <td className="p-5">
                                                 <div className="flex flex-col">

@@ -151,7 +151,7 @@ export default function TalhoesScreen() {
         }
     };
 
-    const [undoToast, setUndoToast] = useState<{ id: string, name: string, timer: NodeJS.Timeout } | null>(null);
+    const [undoToast, setUndoToast] = useState<{ id: string, name: string, timer: ReturnType<typeof setTimeout> } | null>(null);
 
     const handleDeleteClick = (item: Talhao) => {
         // Optimistic UI: Remove from view instantly

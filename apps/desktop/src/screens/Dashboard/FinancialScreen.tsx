@@ -101,7 +101,7 @@ export default function FinancialScreen() {
         toast.success("Excel gerado com sucesso!");
     };
 
-    const [toast, setToast] = useState<{ msg: string; id: string; action: 'PAGO' | 'CANCELADO'; timer?: NodeJS.Timeout } | null>(null);
+    const [undoToast, setUndoToast] = useState<{ msg: string; id: string; action: 'PAGO' | 'CANCELADO'; timer?: ReturnType<typeof setTimeout> } | null>(null);
 
     const baixarConta = async (id: string) => {
         // Nielsen Heuristic: Visibility of System Status & Error Recovery (Undo)
@@ -111,20 +111,20 @@ export default function FinancialScreen() {
         // Ocultar localmente (Optimistic UI)
         setTransacoes(prev => prev.map(t => t.id === id ? { ...t, status: 'PAGO_TEMP' } : t));
         
-        if (toast?.timer) clearTimeout(toast.timer);
+        if (undoToast?.timer) clearTimeout(undoToast.timer);
         
         const timer = setTimeout(async () => {
             // Commita no banco de dados após 4s
             try {
                 await supabase.from('contas').update({ status: 'PAGO' }).eq('id', id);
-                setToast(null);
+                setUndoToast(null);
                 fetchFinanceiro();
             } catch (error) {
                 console.error('Erro ao baixar conta:', error);
             }
         }, 4000);
 
-        setToast({ msg: `Título de R$ ${transacao.valor} marcado como pago.`, id, action: 'PAGO', timer });
+        setUndoToast({ msg: `Título de R$ ${transacao.valor} marcado como pago.`, id, action: 'PAGO', timer });
     };
 
     const cancelarConta = async (id: string) => {
@@ -134,27 +134,27 @@ export default function FinancialScreen() {
         // Ocultar localmente
         setTransacoes(prev => prev.map(t => t.id === id ? { ...t, status: 'CANCELADO_TEMP' } : t));
         
-        if (toast?.timer) clearTimeout(toast.timer);
+        if (undoToast?.timer) clearTimeout(undoToast.timer);
         
         const timer = setTimeout(async () => {
             // Commita no banco de dados após 4s
             try {
                 await supabase.from('contas').update({ status: 'CANCELADO' }).eq('id', id);
-                setToast(null);
+                setUndoToast(null);
                 fetchFinanceiro();
             } catch (error) {
                 console.error('Erro ao cancelar conta:', error);
             }
         }, 4000);
 
-        setToast({ msg: `Título cancelado.`, id, action: 'CANCELADO', timer });
+        setUndoToast({ msg: `Título cancelado.`, id, action: 'CANCELADO', timer });
     };
 
     const desfazerAcao = () => {
-        if (!toast) return;
-        clearTimeout(toast.timer); // Aborta o commit
-        setTransacoes(prev => prev.map(t => t.id === toast.id ? { ...t, status: 'PENDENTE' } : t));
-        setToast(null);
+        if (!undoToast) return;
+        clearTimeout(undoToast.timer); // Aborta o commit
+        setTransacoes(prev => prev.map(t => t.id === undoToast.id ? { ...t, status: 'PENDENTE' } : t));
+        setUndoToast(null);
     };
 
     const filteredData = transacoes.filter(t => {
@@ -174,14 +174,14 @@ export default function FinancialScreen() {
         <div className="animate-fade-in pb-12 max-w-7xl mx-auto relative">
             
             {/* TOAST DE DESFAZER (Heurística Nielsen: Prevenção de Erro) */}
-            {toast && (
+            {undoToast && (
                 <div className="fixed bottom-8 right-8 z-50 animate-fade-in">
                     <div className="glass bg-[var(--color-card)]/95 border border-[var(--color-border)] shadow-2xl rounded-2xl p-4 flex items-center gap-4 max-w-md">
-                        <div className={`p-2 rounded-xl ${toast.action === 'PAGO' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                        <div className={`p-2 rounded-xl ${undoToast.action === 'PAGO' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                             <CheckCircle className="w-6 h-6" />
                         </div>
                         <div className="flex-1">
-                            <p className="text-white font-bold text-sm">{toast.msg}</p>
+                            <p className="text-white font-bold text-sm">{undoToast.msg}</p>
                         </div>
                         <button 
                             onClick={desfazerAcao}
@@ -277,7 +277,7 @@ export default function FinancialScreen() {
                                 <Tooltip 
                                     contentStyle={{ backgroundColor: '#152336', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
                                     itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-                                    formatter={(value: number) => [`R$ ${value}`, '']}
+                                    formatter={(value: any) => [`R$ ${value}`, '']}
                                 />
                                 <Area type="monotone" dataKey="receitas" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorRec)" name="Receitas" />
                                 <Area type="monotone" dataKey="despesas" stroke="#EF4444" strokeWidth={3} fillOpacity={1} fill="url(#colorDes)" name="Despesas" />

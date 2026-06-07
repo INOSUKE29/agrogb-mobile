@@ -310,7 +310,7 @@ export default function DashboardLayout() {
                     {/* Render Grouped Items */}
                     {simulatedRole === 'CLIENTE' ? (
                         Array.from(new Set(navItems.map(i => i.group))).map(group => (
-                            <div key={group} className="mb-2">
+                            <div key={group || 'geral'} className="mb-2">
                                 {/* Group Header */}
                                 {isSidebarOpen && group && (
                                     <button 

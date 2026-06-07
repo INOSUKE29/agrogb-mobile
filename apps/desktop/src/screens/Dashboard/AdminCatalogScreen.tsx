@@ -40,6 +40,10 @@ export default function AdminCatalogScreen() {
     const fetchDados = async () => {
         setLoading(true);
         try {
+            // SEMPRE busca aprovações pendentes para exibir o contador corretamente na aba
+            const { data: approvalsData } = await supabase.from('global_library_submissions').select('*').eq('status', 'PENDENTE_GLOBAL').order('created_at', { ascending: false });
+            if (approvalsData) setApprovals(approvalsData);
+
             if (activeTab === 'CULTURAS') {
                 const { data, error } = await supabase.from('kb_crops').select('*').eq('scope', 'GLOBAL').order('name');
                 if (!error && data) setCrops(data);
@@ -93,10 +97,9 @@ export default function AdminCatalogScreen() {
 
                 const { data: crData } = await supabase.from('kb_crops').select('id, name');
                 if (crData) setCrops(crData);
-            }
+            } 
             else if (activeTab === 'APROVACOES') {
-                const { data, error } = await supabase.from('global_library_submissions').select('*').eq('status', 'PENDENTE_GLOBAL').order('created_at', { ascending: false });
-                if (!error && data) setApprovals(data);
+                // A busca já foi feita no início da função
             }
         } catch (error) {
             console.error('Erro ao buscar biblioteca:', error);
