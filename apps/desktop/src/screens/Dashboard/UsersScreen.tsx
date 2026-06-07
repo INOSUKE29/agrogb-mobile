@@ -143,8 +143,9 @@ export default function UsersScreen() {
     // ── alterar role ─────────────────────────────────────────────────────────
     const updateRole = async (id: string, newRole: string) => {
         try {
-            const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', id);
+            const { data, error } = await supabase.from('profiles').update({ role: newRole }).eq('id', id).select();
             if (error) throw error;
+            if (!data || data.length === 0) throw new Error('Acesso negado pelas regras de segurança (RLS) do banco de dados.');
             fetchUsers();
         } catch (e: any) {
             alert('Erro ao alterar nível: ' + e.message);
@@ -156,9 +157,10 @@ export default function UsersScreen() {
         const action = current ? 'bloquear' : 'reativar';
         if (!window.confirm(`Deseja ${action} este usuário?`)) return;
         try {
-            const { error } = await supabase.from('profiles')
-                .update({ is_active: !current }).eq('id', id);
+            const { data, error } = await supabase.from('profiles')
+                .update({ is_active: !current }).eq('id', id).select();
             if (error) throw error;
+            if (!data || data.length === 0) throw new Error('Acesso negado pelas regras de segurança (RLS).');
             fetchUsers();
         } catch (e: any) {
             alert('Erro: ' + e.message);
