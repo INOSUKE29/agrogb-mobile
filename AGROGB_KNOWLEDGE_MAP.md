@@ -232,3 +232,13 @@ Todas as principais telas comerciais, técnicas e financeiras foram atualizadas.
 
 ### Próximos Passos Gerais
 - Avaliar e executar o plano mestre de migração de telas do Mobile para o Desktop, estabelecido no documento `implementation_plan.md`.
+
+## 11. O Enigma do "Payload Mestre" e a Blindagem do SQLite
+- **O Aprendizado:** No SQLite local do celular, nunca agrupe vários `ALTER TABLE` num mesmo bloco `try/catch`. 
+- **O que acontecia:** Se uma migração (como adicionar `uuid`) falhasse por a coluna já existir, ela abortava silenciosamente todo o bloco `try/catch`, impedindo a criação da coluna `nome_completo`. Isso fazia o "Payload Mestre" do login explodir por falta da coluna.
+- **Regra de Ouro Inviolável:** Toda coluna ou migração `ALTER TABLE` deve ter seu próprio `try/catch` individual e as colunas base (como `nome_completo`, `email`, `role`) devem estar nativamente na string original do `CREATE TABLE` para evitar falhas em cascata em instalações novas.
+
+## 12. O Roteamento de Sessões e JWT RBAC (Fase 8)
+- **O Aprendizado (Mobile):** O App Mobile estava ferindo a regra arquitetural da Fase 1 (Desktop) fazendo queries na tabela `user_roles` durante o login para descobrir o cargo do peão.
+- **Cura Definitiva (Colocando o Mapa em Prática):** O `authService.js` foi reescrito para extrair o `role` diretamente do passaporte JWT (injetado via Auth Hook no servidor Supabase): `data.user.app_metadata?.role`.
+- **Roteamento ADM (Pin):** O PIN Master `1234` entra instantaneamente. O `App.js` foi configurado para injetar o `AdminSelectorScreen` apenas quando o JWT (ou override local) informar a role `ADMIN`. Dentro do Painel ADM, as rotas foram corrigidas (de `Home` inexistente para `Dashboard`) para garantir alternância de perfis fluida. E o cliente ganhou os menus logísticos em `ClientMenuScreen` para parear perfeitamente com a visão do Desktop.

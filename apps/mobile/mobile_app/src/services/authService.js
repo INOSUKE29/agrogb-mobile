@@ -121,15 +121,9 @@ export const AuthService = {
                 console.warn('[AuthService] Erro ao buscar profile, usando dados padrão:', profileError);
             }
 
-            // [RBAC Granular] Busca a Role oficial do novo Motor de Permissões (Bloco 51)
-            const { data: userRoleData } = await supabase
-                .from('user_roles')
-                .select('roles(name)')
-                .eq('user_id', data.user.id)
-                .maybeSingle();
-
-            // Extrai o nome da nova Role, caso não exista, usa o fallback do profile legado
-            const rbacRole = userRoleData?.roles?.name?.toUpperCase() || profileData?.role || 'PENDENTE';
+            // [RBAC Granular - Supreme Architecture] Lê a claim injetada no JWT pelo Auth Hook (Evita query extra O(1))
+            const jwtRole = data.user.app_metadata?.role?.toUpperCase();
+            const rbacRole = jwtRole || profileData?.role || 'PENDENTE';
 
             const sessionObj = {
                 id: data.user.id,
