@@ -18,18 +18,16 @@ interface Profile {
 }
 
 const ROLES = [
-    { id: 'admin',    label: 'Administrador', color: 'purple',  icon: Shield,      desc: 'Acesso total ao sistema' },
-    { id: 'agronomo', label: 'Agrônomo',       color: 'green',   icon: Leaf,        desc: 'Dashboard do agrônomo'  },
-    { id: 'cliente',  label: 'Agricultor',     color: 'blue',    icon: User,        desc: 'Portal do agricultor'   },
+    { id: 'ADMIN',    label: 'Administrador', color: 'purple',  icon: Shield,      desc: 'Acesso total ao sistema' },
+    { id: 'AGRONOMO', label: 'Agrônomo',       color: 'green',   icon: Leaf,        desc: 'Dashboard do agrônomo'  },
+    { id: 'CLIENTE',  label: 'Agricultor',     color: 'yellow',    icon: User,        desc: 'Portal do agricultor'   },
 ];
 
 const roleStyle: Record<string, string> = {
-    admin:    'bg-purple-500/20 text-purple-400 border-purple-500/30',
-    agronomo: 'bg-green-500/20  text-green-400  border-green-500/30',
-    cliente:  'bg-blue-500/20   text-blue-400   border-blue-500/30',
     ADMIN:    'bg-purple-500/20 text-purple-400 border-purple-500/30',
     AGRONOMO: 'bg-green-500/20  text-green-400  border-green-500/30',
     AGRICULTOR:'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+    CLIENTE:  'bg-blue-500/20 text-blue-400 border-blue-500/30',
 };
 
 // ── Componente principal ─────────────────────────────────────────────────────
@@ -44,7 +42,7 @@ export default function UsersScreen() {
     const [formName,  setFormName]  = useState('');
     const [formEmail, setFormEmail] = useState('');
     const [formPass,  setFormPass]  = useState('');
-    const [formRole,  setFormRole]  = useState('cliente');
+    const [formRole,  setFormRole]  = useState('CLIENTE');
     const [formAgronomoId, setFormAgronomoId] = useState('');
     const [formError, setFormError] = useState('');
 
@@ -98,7 +96,7 @@ export default function UsersScreen() {
             if (!userId) throw new Error('Não foi possível obter o ID do usuário após a criação.');
 
             // Se for cliente, cria o registro na tabela clientes já vinculado ao agrônomo
-            if (formRole === 'cliente') {
+            if (formRole === 'CLIENTE') {
                 const { error: clienteErr } = await supabase.from('clientes').insert({
                     id: userId,
                     agronomo_id: formAgronomoId || null,
@@ -139,12 +137,11 @@ export default function UsersScreen() {
 
     const resetForm = () => {
         setFormName(''); setFormEmail(''); setFormPass('');
-        setFormRole('cliente'); setFormAgronomoId(''); setFormError(''); setShowPass(false);
+        setFormRole('CLIENTE'); setFormAgronomoId(''); setFormError(''); setShowPass(false);
     };
 
     // ── alterar role ─────────────────────────────────────────────────────────
     const updateRole = async (id: string, newRole: string) => {
-        if (!window.confirm(`Alterar nível de acesso para "${newRole}"?`)) return;
         try {
             const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', id);
             if (error) throw error;
@@ -277,14 +274,13 @@ export default function UsersScreen() {
                                                 {!isAdmin && (
                                                     <>
                                                         <select
-                                                            value=""
+                                                            value={row.role?.toUpperCase() || 'CLIENTE'}
                                                             onChange={(e) => updateRole(row.id, e.target.value)}
                                                             className="bg-[var(--color-background)]/50 border border-[var(--color-border)] rounded-xl py-1.5 px-3 text-white text-xs font-bold focus:outline-none focus:border-[var(--color-primary)] transition-all cursor-pointer"
                                                         >
-                                                            <option value="" disabled>Alterar role...</option>
-                                                            <option value="CLIENTE">→ Agricultor</option>
-                                                            <option value="agronomo">→ Agrônomo</option>
-                                                            <option value="admin">→ Admin</option>
+                                                            <option value="CLIENTE">Agricultor</option>
+                                                            <option value="AGRONOMO">Agrônomo</option>
+                                                            <option value="ADMIN">Admin</option>
                                                         </select>
                                                         <button
                                                             onClick={() => toggleActive(row.id, isActive)}
@@ -394,7 +390,7 @@ export default function UsersScreen() {
                                         className="w-full px-4 py-3 rounded-2xl bg-black/40 border border-white/8 text-white text-sm font-medium focus:outline-none focus:border-green-500/50 transition-all appearance-none cursor-pointer"
                                     >
                                         <option value="">Sem vínculo imediato (Adicionar depois)</option>
-                                        {profiles.filter(p => p.role.toLowerCase() === 'agronomo').map(agro => (
+                                        {profiles.filter(p => p.role?.toUpperCase() === 'AGRONOMO').map(agro => (
                                             <option key={agro.id} value={agro.id}>{agro.full_name || agro.email}</option>
                                         ))}
                                     </select>

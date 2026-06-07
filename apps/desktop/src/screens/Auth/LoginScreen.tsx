@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Leaf, Lock, Mail, ArrowRight, ShieldCheck, Terminal, X, Key } from 'lucide-react';
 import { supabase } from '../../services/supabase';
@@ -14,6 +14,12 @@ export default function LoginScreen() {
     const [logoClicks, setLogoClicks] = useState(0);
     const [isDevMode, setIsDevMode] = useState(false);
     const [devPin, setDevPin] = useState('');
+
+    // Dicionário de Crachás (PIN -> Credenciais Reais)
+    const adminBadges: Record<string, { email: string, pass: string }> = {
+        '29346702': { email: 'bruno@agrogb.com', pass: '29346702' },
+        // '11223344': { email: 'outro_admin@agrogb.com', pass: 'senha123' }
+    };
 
     const executeLogin = async (targetEmail: string, targetPassword: string) => {
         setLoading(true);
@@ -72,19 +78,36 @@ export default function LoginScreen() {
     const handleLogoClick = () => {
         const newClicks = logoClicks + 1;
         setLogoClicks(newClicks);
-        if (newClicks >= 7) {
+        if (newClicks >= 15) {
             setIsDevMode(true);
             setErrorMsg('');
         }
     };
 
+    // Atalho de Teclado (Ctrl + Alt + D) para abrir direto sem clicar
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'd') {
+                e.preventDefault();
+                setIsDevMode(true);
+                setErrorMsg('');
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     const handleDevPinSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (devPin === '29346702') {
-            setErrorMsg('👑 Chave Mestra Aceita. Iniciando injeção...');
-            await executeLogin('bruno@agrogb.com', '123456');
+        const badge = adminBadges[devPin];
+        
+        if (badge) {
+            setErrorMsg(`👑 Identificação reconhecida: ${badge.email}. Autenticando...`);
+            sessionStorage.setItem('dev_portal_unlocked', 'true');
+            await executeLogin(badge.email, badge.pass);
         } else {
-            setErrorMsg('Acesso Negado: PIN Inválido.');
+            setErrorMsg('Acesso Negado: Crachá/PIN não reconhecido.');
             setDevPin('');
         }
     };
@@ -230,7 +253,7 @@ export default function LoginScreen() {
                                 )}
 
                                 <div className="flex flex-col gap-3">
-                                    <label className="text-xs font-mono font-bold text-green-500 uppercase tracking-widest pl-1">Insira o PIN de Segurança</label>
+                                    <label className="text-xs font-mono font-bold text-green-500 uppercase tracking-widest pl-1">Insira o Crachá (PIN)</label>
                                     <div className="relative">
                                         <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500/50" />
                                         <input 
@@ -240,8 +263,8 @@ export default function LoginScreen() {
                                             placeholder="••••••••"
                                             className="w-full bg-black border-2 border-green-500/30 rounded-xl py-4 pl-12 pr-4 text-green-400 placeholder-green-500/30 focus:outline-none focus:border-green-400 focus:shadow-[0_0_20px_rgba(34,197,94,0.3)] transition-all font-mono text-xl tracking-[0.5em] text-center"
                                             maxLength={8}
-                                            autoFocus
                                             required
+                                            autoFocus
                                         />
                                     </div>
                                 </div>

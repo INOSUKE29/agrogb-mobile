@@ -12,6 +12,7 @@ import {
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '../../services/supabase';
 import { useNavigate } from 'react-router-dom';
+import { fetchRealWeather, WeatherData } from '../../services/weather';
 
 export default function ClienteDashboard() {
     const navigate = useNavigate();
@@ -26,19 +27,64 @@ export default function ClienteDashboard() {
 
     const [atividadesPendentes, setAtividadesPendentes] = useState<any[]>([]);
     
-    // Gráfico de clima mantido com mock pois depende de API externa (ex: OpenWeather)
-    const climaData = [
-        { time: '06:00', temp: 18, chuva: 0 },
-        { time: '09:00', temp: 22, chuva: 0 },
-        { time: '12:00', temp: 28, chuva: 10 },
-        { time: '15:00', temp: 31, chuva: 40 },
-        { time: '18:00', temp: 26, chuva: 15 },
-        { time: '21:00', temp: 21, chuva: 0 },
-    ];
+    // Estado do Clima Real
+    const [realWeather, setRealWeather] = useState<WeatherData | null>(null);
+    const [chartData, setChartData] = useState<any[]>([]);
+
+    const loadWeather = async () => {
+        try {
+            // Posição Padrão (Sorriso/MT) caso usuário negue localização
+            let lat = -12.73;
+            let lon = -56.32;
+
+            // Tenta pegar a localização do navegador se possível
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        const data = await fetchRealWeather(position.coords.latitude, position.coords.longitude);
+                        updateWeatherState(data);
+                    },
+                    async () => {
+                        const data = await fetchRealWeather(lat, lon);
+                        updateWeatherState(data);
+                    }
+                );
+            } else {
+                const data = await fetchRealWeather(lat, lon);
+                updateWeatherState(data);
+            }
+        } catch (error) {
+            console.error("Erro ao buscar clima:", error);
+        }
+    };
+
+    const updateWeatherState = (data: WeatherData) => {
+        setRealWeather(data);
+        
+        // Pega as próximas 12 horas para o gráfico
+        const nowIndex = data.hourly.time.findIndex(t => new Date(t) >= new Date());
+        const startIndex = nowIndex !== -1 ? nowIndex : 0;
+        
+        const nextHours = [];
+        for (let i = 0; i < 6; i++) { // 6 pontos pulando de 2 em 2 horas
+            const idx = startIndex + (i * 2);
+            if (idx < data.hourly.time.length) {
+                const date = new Date(data.hourly.time[idx]);
+                nextHours.push({
+                    time: `${date.getHours().toString().padStart(2, '0')}:00`,
+                    temp: data.hourly.temperature_2m[idx],
+                    chuva: data.hourly.precipitation_probability[idx]
+                });
+            }
+        }
+        setChartData(nextHours);
+    };
 
     useEffect(() => {
         async function loadData() {
             setLoading(true);
+            loadWeather(); // Chama em paralelo
+
             try {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) return;
@@ -114,7 +160,9 @@ export default function ClienteDashboard() {
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Temp</p>
-                                <p className="text-[var(--color-foreground)] font-black text-xl">28°C</p>
+                                <p className="text-[var(--color-foreground)] font-black text-xl">
+                                    {realWeather ? `${Math.round(realWeather.current.temperature)}°C` : '...'}
+                                </p>
                             </div>
                         </div>
                         <div className="hidden sm:block w-px h-10 bg-[var(--color-border)]"></div>
@@ -124,7 +172,9 @@ export default function ClienteDashboard() {
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Umidade</p>
-                                <p className="text-[var(--color-foreground)] font-black text-xl">65%</p>
+                                <p className="text-[var(--color-foreground)] font-black text-xl">
+                                    {realWeather ? `${Math.round(realWeather.current.humidity)}%` : '...'}
+                                </p>
                             </div>
                         </div>
                         <div className="hidden sm:block w-px h-10 bg-[var(--color-border)]"></div>
@@ -134,7 +184,9 @@ export default function ClienteDashboard() {
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Vento</p>
-                                <p className="text-[var(--color-foreground)] font-black text-xl">12 km/h</p>
+                                <p className="text-[var(--color-foreground)] font-black text-xl">
+                                    {realWeather ? `${Math.round(realWeather.current.wind_speed)} km/h` : '...'}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -257,7 +309,7 @@ export default function ClienteDashboard() {
                             <div className="w-full h-full flex items-center justify-center text-[var(--color-muted)]">Carregando gráfico...</div>
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={climaData}>
+                                <AreaChart data={chartData}>
                                     <defs>
                                         <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor="#F97316" stopOpacity={0.3}/>

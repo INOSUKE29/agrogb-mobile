@@ -46,6 +46,7 @@ export default function DashboardLayout() {
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const [selectedNotification, setSelectedNotification] = useState<any>(null);
+    const isDevPortalUnlocked = sessionStorage.getItem('dev_portal_unlocked') === 'true';
     
     // Accordion state
     const [openGroups, setOpenGroups] = useState<string[]>(['Visão Geral', 'Operação Agrícola']);
@@ -93,7 +94,7 @@ export default function DashboardLayout() {
         // Redirecionamento inicial baseado nas permissões do motor granular
         if (user) {
             // Se possui permissão de ver tudo (Admin)
-            if (hasPermission('view_all_clients')) {
+            if (hasPermission('view_all_clients') || isDevPortalUnlocked) {
                 setRealRole('ADMIN');
             } else if (hasPermission('manage_own_clients')) {
                 // Agrônomo
@@ -112,8 +113,8 @@ export default function DashboardLayout() {
             } else if (contextRole) {
                 // Fallback para role do profile caso as permissões granulares não estejam configuradas
                 setRealRole(contextRole.toUpperCase());
-                if (contextRole.toUpperCase() === 'CLIENTE' || contextRole.toUpperCase() === 'AGRICULTOR') {
-                    setSimulatedRole('AGRICULTOR');
+                if (contextRole.toUpperCase() === 'CLIENTE') {
+                    setSimulatedRole('CLIENTE');
                     if (location.pathname === '/dashboard') navigate('/dashboard/cliente');
                 } else if (contextRole.toUpperCase() === 'AGRONOMO') {
                     setSimulatedRole('AGRONOMO');
@@ -139,7 +140,7 @@ export default function DashboardLayout() {
                 { path: '/dashboard/agronomo/recomendacoes', label: 'Recomendações', icon: FileText },
                 { path: '/dashboard/agronomo/visitas', label: 'Visitas Técnicas', icon: Calendar },
             ];
-        } else if (role === 'AGRICULTOR') {
+        } else if (role === 'CLIENTE') {
             return [
                 { path: '/dashboard/cliente', label: 'Dashboard Produtor', icon: LayoutDashboard, group: 'Visão Geral' },
                 { path: '/dashboard/cliente/relatorios', label: 'Relatórios', icon: FileText, group: 'Visão Geral' },
@@ -177,12 +178,13 @@ export default function DashboardLayout() {
 
     const navItems = simulatedRole ? getNavItems(simulatedRole) : [];
 
-    const handleRoleChange = (role: 'ADMIN' | 'AGRONOMO' | 'AGRICULTOR') => {
+    const handleRoleChange = (role: 'ADMIN' | 'AGRONOMO' | 'CLIENTE') => {
         setSimulatedRole(role);
-        // Ao trocar de papel, redireciona para a raiz daquele portal
+        
+        // Redireciona para as rotas correspondentes
         if (role === 'ADMIN') navigate('/dashboard/admin');
         else if (role === 'AGRONOMO') navigate('/dashboard/agronomo');
-        else if (role === 'AGRICULTOR') navigate('/dashboard/cliente');
+        else if (role === 'CLIENTE') navigate('/dashboard/cliente');
     };
 
     // Cores dinâmicas baseadas no portal ativo
@@ -190,21 +192,20 @@ export default function DashboardLayout() {
         if (simulatedRole === 'ADMIN') return 'text-purple-500';
         if (simulatedRole === 'AGRONOMO') return 'text-green-500';
         if (simulatedRole === 'CLIENTE') return 'text-blue-500';
-        if (simulatedRole === 'AGRICULTOR') return 'text-blue-500';
         return 'text-[var(--color-primary)]';
     };
 
     const getBgColorClass = () => {
         if (simulatedRole === 'ADMIN') return 'bg-purple-500';
         if (simulatedRole === 'AGRONOMO') return 'bg-green-500';
-        if (simulatedRole === 'AGRICULTOR') return 'bg-blue-500';
+        if (simulatedRole === 'CLIENTE') return 'bg-blue-500';
         return 'bg-[var(--color-primary)]';
     };
 
     const getBgLightClass = () => {
         if (simulatedRole === 'ADMIN') return 'bg-purple-500/10 hover:bg-purple-500/20';
         if (simulatedRole === 'AGRONOMO') return 'bg-green-500/10 hover:bg-green-500/20';
-        if (simulatedRole === 'AGRICULTOR') return 'bg-blue-500/10 hover:bg-blue-500/20';
+        if (simulatedRole === 'CLIENTE') return 'bg-blue-500/10 hover:bg-blue-500/20';
         return 'bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)]/20';
     };
 
@@ -256,8 +257,8 @@ export default function DashboardLayout() {
                         </button>
 
                         {/* Agricultor Card */}
-                        <button 
-                            onClick={() => handleRoleChange('AGRICULTOR')}
+                        <div
+                            onClick={() => handleRoleChange('CLIENTE')}
                             className="glass p-10 rounded-3xl flex flex-col items-center text-center group hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-500/20 transition-all border-2 border-transparent hover:border-blue-500/50"
                         >
                             <div className="w-24 h-24 rounded-full bg-blue-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
@@ -265,7 +266,7 @@ export default function DashboardLayout() {
                             </div>
                             <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Portal Produtor</h2>
                             <p className="text-[var(--color-muted)] text-sm">Controle da fazenda, talhões, operações agrícolas e financeiro.</p>
-                        </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -305,7 +306,7 @@ export default function DashboardLayout() {
                 <nav className="flex-1 py-4 flex flex-col gap-2 px-3 overflow-y-auto overflow-x-hidden" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(128,128,128,0.2) transparent' }}>
                     
                     {/* Render Grouped Items */}
-                    {simulatedRole === 'AGRICULTOR' ? (
+                    {simulatedRole === 'CLIENTE' ? (
                         Array.from(new Set(navItems.map(i => i.group))).map(group => (
                             <div key={group} className="mb-2">
                                 {/* Group Header */}
@@ -473,7 +474,7 @@ export default function DashboardLayout() {
                         </div>
 
                         {/* SELETOR DE SIMULAÇÃO (ADMIN APENAS) */}
-                        {(realRole === 'ADMIN' || hasPermission('view_all_clients')) && (
+                        {(realRole === 'ADMIN' || hasPermission('view_all_clients') || isDevPortalUnlocked) && (
                             <button 
                                 onClick={() => setSimulatedRole(null)}
                                 className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl border border-current/20 font-bold text-sm transition-all ${getBgLightClass()} ${getAccentColorClass()} hover:scale-105`}

@@ -26,7 +26,8 @@ export default function LoginScreen({ navigation }) {
     const [isBiometricSupported, setIsBiometricSupported] = useState(false);
     
     // Animação do Logo
-    const [logoAnim] = useState(new Animated.Value(-200));
+    const [logoTranslateY] = useState(new Animated.Value(Dimensions.get('window').height * 0.3));
+    const [formOpacity] = useState(new Animated.Value(0));
     
     // Master Key State
     const [tapCount, setTapCount] = useState(0);
@@ -56,12 +57,24 @@ export default function LoginScreen({ navigation }) {
         checkBiometrics();
         initApp();
         
-        Animated.spring(logoAnim, {
-            toValue: 0,
-            friction: 5,
-            tension: 40,
-            useNativeDriver: true
-        }).start();
+        // Sequência da Animação
+        Animated.sequence([
+            // Pausa no meio
+            Animated.delay(1200),
+            // Sobe o logo e mostra o form
+            Animated.parallel([
+                Animated.timing(logoTranslateY, {
+                    toValue: 0,
+                    duration: 800,
+                    useNativeDriver: true
+                }),
+                Animated.timing(formOpacity, {
+                    toValue: 1,
+                    duration: 1000,
+                    useNativeDriver: true
+                })
+            ])
+        ]).start();
     }, []);
 
     const checkBiometrics = async () => {
@@ -457,15 +470,15 @@ export default function LoginScreen({ navigation }) {
             <StatusBar barStyle="light-content" />
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.inner}>
                 
-                <Animated.View style={[styles.header, { transform: [{ translateY: logoAnim }] }]}>
+                <Animated.View style={[styles.header, { transform: [{ translateY: logoTranslateY }] }]}>
                     <TouchableOpacity activeOpacity={1} onPress={handleLogoTap} style={styles.logoContainer}>
-                        <Image source={LOGO} style={styles.logo} resizeMode="contain" />
+                        <Image source={LOGO} style={styles.logo} resizeMode="cover" />
                     </TouchableOpacity>
                     <Text style={styles.brandName}>AgroGB</Text>
                     <Text style={styles.tagline}>Gestão Inteligente Rural</Text>
                 </Animated.View>
 
-                <View style={[styles.formCard, { backgroundColor: 'rgba(17,24,39,0.5)' }]}>
+                <Animated.View style={[styles.formCard, { backgroundColor: 'rgba(255,255,255,0.1)', opacity: formOpacity }]}>
                     <AgroInput
                         label="Telefone ou E-mail"
                         placeholder="Ex: 62999999999"
@@ -507,7 +520,7 @@ export default function LoginScreen({ navigation }) {
                             <Text style={styles.linkTextBold}>Recuperar Senha 🗝️</Text>
                         </TouchableOpacity>
                     </View>
-                </View>
+                </Animated.View>
 
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>Versão Pro • 2026</Text>
@@ -563,23 +576,26 @@ const styles = StyleSheet.create({
     inner: { flex: 1, justifyContent: 'center', padding: 25 },
     header: { alignItems: 'center', marginBottom: 40 },
     logoContainer: {
-        backgroundColor: 'rgba(255,255,255,0.15)',
-        padding: 20,
+        backgroundColor: 'transparent',
+        padding: 0,
         borderRadius: 40,
         marginBottom: 15,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.2)'
+        borderColor: 'rgba(255,255,255,0.4)',
+        overflow: 'hidden'
     },
-    logo: { width: 80, height: 80 },
-    brandName: { fontSize: 36, fontWeight: '900', color: '#FFF', letterSpacing: 2 },
-    tagline: { fontSize: 14, color: '#D1FAE5', fontWeight: '500', marginTop: -5, opacity: 0.8 },
+    logo: { width: 120, height: 120 },
+    brandName: { fontSize: 36, fontWeight: '900', color: '#FFF', letterSpacing: 2, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: {width: 1, height: 1}, textShadowRadius: 10 },
+    tagline: { fontSize: 14, color: '#D1FAE5', fontWeight: '500', marginTop: -5, opacity: 0.9, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: {width: 1, height: 1}, textShadowRadius: 10 },
     formCard: { 
         borderRadius: 35, 
         padding: 30, 
-        elevation: 20, 
+        elevation: 10, 
         shadowColor: '#000', 
-        shadowOpacity: 0.2, 
-        shadowRadius: 20 
+        shadowOpacity: 0.1, 
+        shadowRadius: 15,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)'
     },
     loginBtn: { 
         padding: 20, 

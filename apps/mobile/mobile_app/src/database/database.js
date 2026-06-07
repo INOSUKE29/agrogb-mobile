@@ -903,15 +903,11 @@ const createTables = async () => {
         } catch (e) { }
 
         // MIGRATION: Sync Support for Legacy Tables (v8.2)
-        try {
-            await executeQuery('ALTER TABLE usuarios ADD COLUMN uuid TEXT');
-            await executeQuery('ALTER TABLE usuarios ADD COLUMN sync_status INTEGER DEFAULT 0');
-        } catch (e) { }
+        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN uuid TEXT'); } catch (e) { }
+        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN sync_status INTEGER DEFAULT 0'); } catch (e) { }
 
-        try {
-            await executeQuery('ALTER TABLE estoque ADD COLUMN uuid TEXT');
-            await executeQuery('ALTER TABLE estoque ADD COLUMN sync_status INTEGER DEFAULT 0');
-        } catch (e) { }
+        try { await executeQuery('ALTER TABLE estoque ADD COLUMN uuid TEXT'); } catch (e) { }
+        try { await executeQuery('ALTER TABLE estoque ADD COLUMN sync_status INTEGER DEFAULT 0'); } catch (e) { }
 
         try {
             await executeQuery('ALTER TABLE app_settings ADD COLUMN usd_rate REAL DEFAULT 5.0');
@@ -930,11 +926,8 @@ const createTables = async () => {
             console.log('✅ Coluna sync_status adicionada em equipes');
         } catch (e) { }
 
-        try {
-            await executeQuery('ALTER TABLE agronomist_codes ADD COLUMN last_updated TEXT');
-            await executeQuery('ALTER TABLE agronomist_codes ADD COLUMN sync_status INTEGER DEFAULT 0');
-            console.log('✅ Colunas last_updated e sync_status adicionadas em agronomist_codes');
-        } catch (e) { }
+        try { await executeQuery('ALTER TABLE agronomist_codes ADD COLUMN last_updated TEXT'); } catch (e) { }
+        try { await executeQuery('ALTER TABLE agronomist_codes ADD COLUMN sync_status INTEGER DEFAULT 0'); } catch (e) { }
 
 
     } catch (error) {

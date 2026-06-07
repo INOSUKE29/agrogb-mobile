@@ -104,18 +104,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => subscription.unsubscribe();
     }, []);
 
-    const signOut = async () => {
-        await supabase.auth.signOut();
-    };
-
     const hasPermission = (perm: string) => {
-        // Fallback: se for admin no perfil legado ou se possuir a flag de admin (view_all_clients)
-        if (role === 'admin' || role === 'ADMIN') return true;
+        if (role === 'ADMIN') return true;
         return permissions.includes(perm);
     };
 
     return (
-        <AuthContext.Provider value={{ user, role, permissions, loading, signOut, hasPermission }}>
+        <AuthContext.Provider value={{ user, role, permissions, loading, signOut: async () => await supabase.auth.signOut(), hasPermission }}>
             {children}
         </AuthContext.Provider>
     );
