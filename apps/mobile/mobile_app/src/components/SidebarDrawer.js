@@ -76,15 +76,9 @@ export default function SidebarDrawer({ visible, onClose }) {
                     onPress: async () => {
                         onClose();
                         try {
-                            await AsyncStorage.multiRemove(['user_session', '@user_session', '@user_profile']);
-                            // Opcional: Limpar tudo exceto configurações importantes
-                            navigation.reset({
-                                index: 0,
-                                routes: [{ name: 'Login' }],
-                            });
+                            await logout();
                         } catch (e) {
                             console.log('Login error', e);
-                            navigation.replace('Login');
                         }
                     }
                 }

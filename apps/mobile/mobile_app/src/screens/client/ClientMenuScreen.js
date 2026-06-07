@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Platform, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../services/supabaseClient';
+import { useAuth } from '../../context/AuthContext';
 
 const MENU_ITEMS = [
     { id: 'Dashboard', label: 'Dashboard', icon: 'home-outline', route: 'HomeClient' },
@@ -22,12 +22,13 @@ const MENU_ITEMS = [
 ];
 
 export default function ClientMenuScreen({ navigation }) {
+    const { logout } = useAuth();
 
     const handleLogout = async () => {
         Alert.alert('Sair', 'Deseja realmente sair da sua conta?', [
             { text: 'Cancelar', style: 'cancel' },
             { text: 'Sair', style: 'destructive', onPress: async () => {
-                await supabase.auth.signOut();
+                await logout();
             }}
         ]);
     };

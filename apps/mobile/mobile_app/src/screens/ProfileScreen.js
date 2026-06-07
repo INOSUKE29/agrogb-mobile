@@ -7,6 +7,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { executeQuery } from '../database/database';
 import { useTheme } from '../theme/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 // Design System
 import Card from '../components/common/Card';
@@ -17,6 +18,7 @@ const { width } = Dimensions.get('window');
 
 export default function ProfileScreen({ navigation }) {
     const { theme } = useTheme();
+    const { logout } = useAuth();
     const isDark = theme?.theme_mode === 'dark';
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
@@ -127,8 +129,7 @@ export default function ProfileScreen({ navigation }) {
             {
                 text: 'Sair Agora', style: 'destructive',
                 onPress: async () => {
-                    await AsyncStorage.removeItem('user_session');
-                    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+                    await logout();
                 }
             }
         ]);

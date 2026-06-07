@@ -5,6 +5,7 @@ import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import { executeQuery } from '../../database/database';
 import { useTheme } from '../../theme/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import { AuthService } from '../../services/authService';
 
 const { width } = Dimensions.get('window');
@@ -14,6 +15,7 @@ export default function SidebarDrawer({ visible, onClose, navigation: navigation
     const navigationInternal = useNavigation();
     const navigation = navigationProp || navigationInternal;
     const { colors } = useTheme();
+    const { logout } = useAuth();
     const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current; 
     const [user, setUser] = useState({ name: 'Usuário', email: 'agrogb@sistema.com' });
 
@@ -75,7 +77,7 @@ export default function SidebarDrawer({ visible, onClose, navigation: navigation
                     onPress: async () => {
                         onClose();
                         try {
-                            await AuthService.logout();
+                            await logout();
                         } catch (e) {
                             console.log('Logout error', e);
                         }

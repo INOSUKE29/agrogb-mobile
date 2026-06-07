@@ -23,6 +23,7 @@ import { getSupabase } from '../services/supabase';
 import { pushLocalChanges, pullServerChanges } from '../services/SyncService';
 import { LoggingService } from '../modules/system/services/LoggingService';
 import { StorageHelper } from '../services/storageHelper';
+import { useAuth } from '../context/AuthContext';
 
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
@@ -33,6 +34,7 @@ const BIO_KEY = 'agrogb_biometric_credentials';
 
 export default function SettingsScreen({ navigation }) {
     const { theme, saveTheme } = useTheme();
+    const { logout } = useAuth();
     const activeColors = theme?.colors || {};
     const [loading, setLoading] = useState(false);
     const [user, setUser] = useState({ 
@@ -364,7 +366,7 @@ export default function SettingsScreen({ navigation }) {
     const handleLogout = async () => {
         Alert.alert('Sair', 'Deseja encerrar a sessão?', [
             { text: 'MANTER CONECTADO', style: 'cancel' },
-            { text: 'SAIR AGORA', style: 'destructive', onPress: async () => { await AuthService.logout(); } }
+            { text: 'SAIR AGORA', style: 'destructive', onPress: async () => { await logout(); } }
         ]);
     };
 

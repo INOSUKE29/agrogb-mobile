@@ -2,16 +2,16 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, TouchableWithoutFeedback } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../../context/AuthContext';
 
 export default function HeaderProfileMenu() {
     const navigation = useNavigation();
+    const { logout } = useAuth();
     const [visible, setVisible] = useState(false);
 
     const handleLogout = async () => {
         setVisible(false);
-        await AsyncStorage.removeItem('user_session');
-        navigation.replace('Login');
+        await logout();
     };
 
     const navigateTo = (screen) => {

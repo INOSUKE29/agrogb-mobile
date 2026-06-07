@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthService } from '../services/authService';
 
 const AuthContext = createContext({});
 
@@ -30,8 +31,10 @@ export function AuthProvider({ children }) {
     };
 
     const logout = async () => {
-        setUser(null);
-        await AsyncStorage.removeItem('user_session');
+        try {
+            setUser(null);
+            await AuthService.logout();
+        } catch(e) { console.error(e); }
     };
 
     const role = user?.role || (user?.nivel === 'ADM' ? 'ADMIN' : (user?.nivel === 'AGRONOMO' ? 'AGRONOMO' : (user?.nivel === 'STAFF' ? 'STAFF' : 'AGRICULTOR')));
