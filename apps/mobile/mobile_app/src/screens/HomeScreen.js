@@ -1,28 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { 
     View, 
-    Text, 
     StyleSheet, 
     ScrollView, 
-    TouchableOpacity, 
-    SafeAreaView, 
+    RefreshControl, 
     StatusBar, 
-    RefreshControl,
-    Platform
+    Alert,
+    Text,
+    TouchableOpacity
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../theme/ThemeContext';
 import { useDashboardData } from '../hooks/useDashboardData';
+import SyncService from '../services/SyncService';
+
+// Componentes do Dashboard
+import DashboardHeader from '../components/dashboard/DashboardHeader';
+import FinancialSummary from '../components/dashboard/FinancialSummary';
+import KPIGrid from '../components/dashboard/KPIGrid';
+import QuickActions from '../components/dashboard/QuickActions';
+import SmartAlerts from '../components/dashboard/SmartAlerts';
+import RecentActivities from '../components/dashboard/RecentActivities';
+import SkeletonDashboard from '../components/dashboard/SkeletonDashboard';
 import SidebarDrawer from '../components/SidebarDrawer';
+import ProductionChart from '../components/dashboard/ProductionChart';
+import OnboardingTour from '../components/common/OnboardingTour';
+
+// Componentes "Órfãos de Ouro" resgatados
+import WeatherWidget from '../components/ui/WeatherWidget';
+import GlowFAB from '../components/ui/GlowFAB';
+import TasksWidget from '../components/dashboard/TasksWidget';
 
 export default function HomeScreen({ navigation }) {
-    const [user, setUser] = useState(null);
-    const [drawerVisible, setDrawerVisible] = useState(false);
-    const { data, loading, refreshing, onRefresh } = useDashboardData('month');
+    const { theme } = useTheme();
+    const [period, setPeriod] = useState('month');
+    const { data, loading, refreshing, onRefresh } = useDashboardData(period);
+    
+     const [user, setUser] = useState(null);
+     const [drawerVisible, setDrawerVisible] = useState(false);
+     const [isSyncing, setIsSyncing] = useState(false);
+     const [showOnboarding, setShowOnboarding] = useState(false);
 
     useEffect(() => {
         loadUser();
+        const unsubscribe = SyncService.subscribe(status => setIsSyncing(status));
+        return () => unsubscribe();
     }, []);
 
     const loadUser = async () => {
@@ -30,296 +53,143 @@ export default function HomeScreen({ navigation }) {
             const userJson = await AsyncStorage.getItem('user_session');
             if (userJson) {
                 setUser(JSON.parse(userJson));
+                
+                // Checar se Onboarding já foi visualizado
+                const onboardingDone = await AsyncStorage.getItem('@onboarding_completed');
+                if (!onboardingDone) {
+                    setShowOnboarding(true);
+                }
             }
         } catch (e) {
             console.error('Error loading user session', e);
         }
     };
 
-    // Dados de fallback para a UI
-    const revenue = data?.financial?.revenue || 0;
-    const expenses = data?.financial?.expenses || 0;
-    const losses = 0; // Exemplo fixo ou vindo da API
-
-    const formatCurrency = (val) => {
-        return `R$ ${val.toFixed(2).replace('.', ',')}`;
+    const handleCloseOnboarding = async () => {
+        try {
+            await AsyncStorage.setItem('@onboarding_completed', 'true');
+        } catch (e) {
+            console.error('Error saving onboarding state', e);
+        }
+        setShowOnboarding(false);
     };
 
-    return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#0B121E" />
-            
-            <View style={styles.header}>
-                <Text style={styles.greeting}>Olá, {user?.usuario || 'Agricultor'}, <Ionicons name="leaf" size={24} color="#10B981" /></Text>
-                <TouchableOpacity onPress={() => setDrawerVisible(true)} style={styles.menuButton}>
-                    <Ionicons name="menu" size={28} color="#94A3B8" />
-                </TouchableOpacity>
-            </View>
+    if (loading && !refreshing) {
+        return <SkeletonDashboard />;
+    }
 
+    return (
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#0B121E' }]}>
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+            
             <ScrollView 
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContent}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10B981" />
+                    <RefreshControl 
+                        refreshing={refreshing} 
+                        onRefresh={onRefresh} 
+                        colors={[theme?.colors?.primary || '#10B981']}
+                        tintColor={theme?.colors?.primary || '#10B981'}
+                    />
                 }
             >
-                {/* Resumo Mensal */}
-                <LinearGradient colors={['#064E3B', '#022C22']} style={styles.summaryCard}>
-                    <View style={styles.summaryHeader}>
-                        <Text style={styles.summaryTitle}>RESUMO MENSAL</Text>
-                        <Ionicons name="bar-chart" size={18} color="#10B981" />
-                    </View>
-                    
-                    <View style={styles.summaryRow}>
-                        <View style={styles.summaryBlock}>
-                            <View style={styles.summaryLabelRow}>
-                                <View style={[styles.dot, { backgroundColor: '#10B981' }]} />
-                                <Text style={styles.summaryLabel}>TOTAL VENDAS</Text>
-                            </View>
-                            <Text style={styles.summaryValue}>{formatCurrency(revenue)}</Text>
+                <DashboardHeader 
+                    userName={user?.nome} 
+                    propertyName="Fazenda Santa Maria" 
+                    onProfilePress={() => navigation.navigate('Profile')}
+                    onProfileLongPress={() => navigation.navigate('AdminSelector')}
+                    onNotifyPress={() => Alert.alert('Notificações', 'Você não tem novas mensagens.')}
+                    isSyncing={isSyncing}
+                    selectedPeriod={period}
+                    onPeriodChange={setPeriod}
+                />
+
+                <WeatherWidget />
+                <TasksWidget />
+
+                {/* Banner de Upgrade para o Plano PRO */}
+                <TouchableOpacity 
+                    style={[styles.proBanner, { backgroundColor: theme?.colors?.primary || '#10B981' }]} 
+                    onPress={() => navigation.navigate('Planos')}
+                    activeOpacity={0.8}
+                >
+                    <View style={styles.proBannerContent}>
+                        <Ionicons name="star" size={24} color="#FBBF24" />
+                        <View style={{ marginLeft: 12, flex: 1 }}>
+                            <Text style={styles.proBannerTitle}>Desbloqueie o AgroGB PRO</Text>
+                            <Text style={styles.proBannerDesc}>CRM de vendas, Sincronização em nuvem e Exportação em PDF.</Text>
                         </View>
-                        
-                        <View style={styles.summaryBlock}>
-                            <View style={styles.summaryLabelRow}>
-                                <View style={[styles.dot, { backgroundColor: '#EF4444' }]} />
-                                <Text style={styles.summaryLabel}>CUSTOS TOTAIS</Text>
-                            </View>
-                            <Text style={styles.summaryValueWarning}>{formatCurrency(expenses)}</Text>
-                        </View>
+                        <Ionicons name="chevron-forward" size={20} color="#FFF" />
                     </View>
-                    
-                    <View style={styles.divider} />
-                    
-                    <Text style={styles.lossesText}>PERDAS (MÊS): <Text style={styles.lossesValue}>{losses} KG</Text></Text>
-                </LinearGradient>
+                </TouchableOpacity>
 
-                {/* Quick Actions */}
-                <View style={styles.quickActionsRow}>
-                    <TouchableOpacity style={[styles.quickActionBtn, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]} onPress={() => navigation.navigate('Vendas')}>
-                        <Text style={[styles.quickActionText, { color: '#10B981' }]}>+ Registrar{'\n'}Venda</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.quickActionBtn, { backgroundColor: 'rgba(245, 158, 11, 0.15)' }]} onPress={() => navigation.navigate('Custos')}>
-                        <Text style={[styles.quickActionText, { color: '#F59E0B' }]}>+ Registrar{'\n'}Custo</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.quickActionBtn, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]} onPress={() => navigation.navigate('Colheita')}>
-                        <Text style={[styles.quickActionText, { color: '#10B981' }]}>+ Registrar{'\n'}Colheita</Text>
-                    </TouchableOpacity>
-                </View>
+                {data && (
+                    <>
+                        <FinancialSummary 
+                            revenue={data.financial.revenue}
+                            expenses={data.financial.expenses}
+                            netResult={data.financial.netResult}
+                            trend={data.financial.trend}
+                            trendType={data.financial.trendType}
+                        />
 
-                {/* Seção 1: Gestão Operacional */}
-                <View style={styles.sectionContainer}>
-                    <View style={styles.sectionTitleRow}>
-                        <View style={styles.sectionTitleDash} />
-                        <Text style={styles.sectionTitle}>GESTÃO OPERACIONAL</Text>
-                    </View>
-                    <View style={styles.grid}>
-                        <BigCard icon="leaf" label="Plantio" color="#10B981" onPress={() => navigation.navigate('Plantio')} />
-                        <BigCard icon="basket" label="Colheita" color="#84CC16" onPress={() => navigation.navigate('Colheita')} />
-                        <BigCard icon="telescope" label="Monitorar" color="#8B5CF6" onPress={() => alert('Em breve')} />
-                        <BigCard icon="flask" label="Adubação" color="#10B981" onPress={() => navigation.navigate('MenuAdubacao')} />
-                    </View>
-                </View>
+                        <QuickActions navigation={navigation} />
 
-                {/* Seção 2: Comercial & Financeiro */}
-                <View style={styles.sectionContainer}>
-                    <View style={styles.sectionTitleRow}>
-                        <View style={[styles.sectionTitleDash, { backgroundColor: '#3B82F6' }]} />
-                        <Text style={styles.sectionTitle}>COMERCIAL & FINANCEIRO</Text>
-                    </View>
-                    <View style={styles.grid}>
-                        <BigCard icon="cart" label="Vendas" color="#3B82F6" onPress={() => navigation.navigate('Vendas')} />
-                        <BigCard icon="shopping" label="Compras" color="#F59E0B" onPress={() => navigation.navigate('Compras')} />
-                    </View>
-                </View>
+                        <ProductionChart data={data.chartData} />
 
-                {/* Seção 3: Sistema */}
-                <View style={styles.sectionContainer}>
-                    <View style={styles.sectionTitleRow}>
-                        <View style={[styles.sectionTitleDash, { backgroundColor: '#FCD34D' }]} />
-                        <Text style={styles.sectionTitle}>SISTEMA</Text>
-                    </View>
-                    <View style={styles.grid}>
-                        <BigCard icon="cube-outline" label="Cadastros" color="#64748B" onPress={() => navigation.navigate('Cadastro')} />
-                        <BigCard icon="account-group" label="Equipe" color="#FCD34D" onPress={() => alert('Em breve')} />
-                    </View>
-                </View>
+                        <KPIGrid kpis={data.kpis} />
 
-                <View style={{ height: 40 }} />
+                        <SmartAlerts alerts={data.alerts} navigation={navigation} />
+
+                        <RecentActivities activities={data.activities} />
+                    </>
+                )}
             </ScrollView>
 
             <SidebarDrawer visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
-        </SafeAreaView>
+            <OnboardingTour visible={showOnboarding} onClose={handleCloseOnboarding} />
+
+            <GlowFAB 
+                icon="add" 
+                onPress={() => navigation.navigate('Cadastro')} 
+                style={styles.fabPosition}
+            />
+        </View>
     );
 }
-
-// O Clássico BigCard (Design Ouro)
-const BigCard = ({ icon, label, color, onPress }) => (
-    <TouchableOpacity style={styles.bigCard} onPress={onPress} activeOpacity={0.8}>
-        <MaterialCommunityIcons name={icon} size={32} color={color} style={{ marginBottom: 12 }} />
-        <Text style={styles.bigCardText}>{label}</Text>
-    </TouchableOpacity>
-);
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0B121E',
     },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingTop: Platform.OS === 'android' ? 40 : 20,
-        paddingBottom: 20,
+    fabPosition: {
+        position: 'absolute',
+        bottom: 30,
+        right: 20
     },
-    greeting: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#F8FAFC',
-    },
-    menuButton: {
-        padding: 5,
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 8,
-    },
-    scrollContent: {
-        paddingHorizontal: 20,
-        paddingBottom: 20,
-    },
-    summaryCard: {
-        borderRadius: 16,
-        padding: 20,
+    proBanner: {
+        marginHorizontal: 20,
         marginBottom: 20,
-        borderWidth: 1,
-        borderColor: 'rgba(16, 185, 129, 0.2)',
+        borderRadius: 16,
+        padding: 15,
+        elevation: 4,
+        shadowColor: '#10B981',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
     },
-    summaryHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 15,
-    },
-    summaryTitle: {
-        color: '#F8FAFC',
-        fontSize: 12,
-        fontWeight: 'bold',
-        letterSpacing: 1,
-    },
-    summaryRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    summaryBlock: {
-        flex: 1,
-    },
-    summaryLabelRow: {
+    proBannerContent: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 4,
     },
-    dot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        marginRight: 6,
-    },
-    summaryLabel: {
-        color: '#94A3B8',
-        fontSize: 10,
+    proBannerTitle: {
+        color: '#FFF',
+        fontSize: 14,
         fontWeight: 'bold',
-        letterSpacing: 0.5,
+        marginBottom: 2,
     },
-    summaryValue: {
-        color: '#F8FAFC',
-        fontSize: 22,
-        fontWeight: 'bold',
-    },
-    summaryValueWarning: {
-        color: '#FCA5A5',
-        fontSize: 22,
-        fontWeight: 'bold',
-    },
-    divider: {
-        height: 1,
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        marginVertical: 15,
-    },
-    lossesText: {
-        color: '#94A3B8',
+    proBannerDesc: {
+        color: 'rgba(255,255,255,0.8)',
         fontSize: 11,
-        fontWeight: '600',
-    },
-    lossesValue: {
-        color: '#F8FAFC',
-        fontWeight: 'bold',
-    },
-    quickActionsRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 30,
-    },
-    quickActionBtn: {
-        flex: 1,
-        marginHorizontal: 4,
-        paddingVertical: 12,
-        borderRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
-    },
-    quickActionText: {
-        textAlign: 'center',
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
-    sectionContainer: {
-        marginBottom: 20,
-    },
-    sectionTitleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 15,
-    },
-    sectionTitleDash: {
-        width: 4,
-        height: 16,
-        backgroundColor: '#10B981',
-        borderRadius: 2,
-        marginRight: 8,
-    },
-    sectionTitle: {
-        color: '#F8FAFC',
-        fontSize: 13,
-        fontWeight: '900',
-        letterSpacing: 1.5,
-    },
-    grid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        gap: 12,
-    },
-    bigCard: {
-        width: '48%',
-        backgroundColor: '#F8FAFC', // BRANCO PREMIUM
-        borderRadius: 16,
-        paddingVertical: 20,
-        paddingHorizontal: 15,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 5,
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-    },
-    bigCardText: {
-        color: '#0F172A',
-        fontSize: 13,
-        fontWeight: '800',
-        textAlign: 'center'
     }
 });
