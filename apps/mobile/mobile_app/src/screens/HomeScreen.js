@@ -5,9 +5,12 @@ import {
     ScrollView, 
     RefreshControl, 
     StatusBar, 
-    Alert 
+    Alert,
+    Text,
+    TouchableOpacity
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { useDashboardData } from '../hooks/useDashboardData';
 import SyncService from '../services/SyncService';
@@ -104,6 +107,22 @@ export default function HomeScreen({ navigation }) {
                 <WeatherWidget />
                 <TasksWidget />
 
+                {/* Banner de Upgrade para o Plano PRO */}
+                <TouchableOpacity 
+                    style={[styles.proBanner, { backgroundColor: theme?.colors?.primary || '#10B981' }]} 
+                    onPress={() => navigation.navigate('Planos')}
+                    activeOpacity={0.8}
+                >
+                    <View style={styles.proBannerContent}>
+                        <Ionicons name="star" size={24} color="#FBBF24" />
+                        <View style={{ marginLeft: 12, flex: 1 }}>
+                            <Text style={styles.proBannerTitle}>Desbloqueie o AgroGB PRO</Text>
+                            <Text style={styles.proBannerDesc}>CRM de vendas, Sincronização em nuvem e Exportação em PDF.</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color="#FFF" />
+                    </View>
+                </TouchableOpacity>
+
                 {data && (
                     <>
                         <FinancialSummary 
@@ -147,5 +166,30 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 30,
         right: 20
+    },
+    proBanner: {
+        marginHorizontal: 20,
+        marginBottom: 20,
+        borderRadius: 16,
+        padding: 15,
+        elevation: 4,
+        shadowColor: '#10B981',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+    },
+    proBannerContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    proBannerTitle: {
+        color: '#FFF',
+        fontSize: 14,
+        fontWeight: 'bold',
+        marginBottom: 2,
+    },
+    proBannerDesc: {
+        color: 'rgba(255,255,255,0.8)',
+        fontSize: 11,
     }
 });

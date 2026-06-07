@@ -33,9 +33,9 @@ Este documento dita a esteira de construção e entrega de valor do AgroGB. Ele 
 
 | Eixo Produto (Operacional) | Eixo Plataforma (Engenharia) |
 | :--- | :--- |
-| Sistema de Planos (Básico, Pro) e Faturamento. | **Feature Flags** (Ligar/Desligar módulos por empresa). |
-| CRM de Consultoria Agrícola (Funil Vendas). | Auditoria de Segurança Inviolável (Event Sourcing). |
-| Dashboard Climático e Integração API Externa. | Data Lake Setup (Transferência de arquivos frios/antigos). |
+| ✅ Sistema de Planos (Básico, Pro) e Faturamento. | **Feature Flags** (Ligar/Desligar módulos por empresa). |
+| ✅ CRM de Consultoria Agrícola (Funil Vendas). | Auditoria de Segurança Inviolável (Event Sourcing). |
+| ✅ Dashboard Climático e Integração API Externa. | Data Lake Setup (Transferência de arquivos frios/antigos). |
 | Rastreabilidade Completa (Insumo -> Colheita). | Motor Dinâmico de Relatórios e Formulários. |
 
 ---

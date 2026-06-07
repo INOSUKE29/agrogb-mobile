@@ -14,6 +14,12 @@ import ClientNavigator from './ClientNavigator'; // <-- Novo módulo do Cliente
 import AgronomistClientsScreen from '../screens/agronomist/AgronomistClientsScreen'; // <-- Fase 3 CRM
 import CreateRecommendationScreen from '../screens/agronomist/CreateRecommendationScreen'; // <-- Fase 3 Receitas
 import AdminSelectorScreen from '../screens/admin/AdminSelectorScreen'; // <-- Fase 6 ADM
+
+// --- NOVO: FASE 3 (COMERCIAL E ASSINATURAS) ---
+import CRMScreen from '../screens/CRMScreen';
+import VendaFormScreen from '../screens/VendaFormScreen';
+import PlanosScreen from '../screens/PlanosScreen';
+// ----------------------------------------------
 import ColheitaScreen from '../screens/ColheitaScreen';
 import VendasScreen from '../screens/VendasScreen';
 import EstoqueScreen from '../screens/EstoqueScreen';
@@ -84,6 +90,11 @@ export default function AppNavigator() {
             
             {/* Tela Nova do ADM (V2) */}
             <Stack.Screen name="AdminSelector" component={AdminSelectorScreen} options={{ headerShown: false }} />
+            
+            {/* Novas Telas Fase 3 (Comercial e Planos) */}
+            <Stack.Screen name="CRM" component={CRMScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="VendaForm" component={VendaFormScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Planos" component={PlanosScreen} options={{ headerShown: false }} />
             
             <Stack.Screen name="ForgotPassword" component={RecoverScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />

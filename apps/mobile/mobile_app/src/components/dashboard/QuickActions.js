@@ -22,7 +22,7 @@ const OPERATIONAL_ACTIONS = [
 ];
 
 const COMMERCIAL_ACTIONS = [
-    { title: 'Vendas', icon: 'cash-outline', color: '#10B981', screen: 'Vendas', desc: 'Faturamento de Vendas' },
+    { title: 'Funil CRM', icon: 'funnel-outline', color: '#10B981', screen: 'CRM', desc: 'Venda de Safras' },
     { title: 'Compras', icon: 'cart-outline', color: '#3B82F6', screen: 'Compras', desc: 'Compras de Insumos' },
     { title: 'Custos', icon: 'stats-chart-outline', color: '#F59E0B', screen: 'Custos', desc: 'Centro de Custos' },
     { title: 'Clientes', icon: 'people-outline', color: '#8B5CF6', screen: 'Clientes', desc: 'Carteira de Clientes' },
