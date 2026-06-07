@@ -22,15 +22,17 @@ export default function LoginScreen({ navigation, onLoginSuccess }) {
         if (!u || !p) return Alert.alert('Campos Vazios', 'Por favor, informe suas credenciais.');
         setLoading(true);
         try {
-            const res = await AuthService.login(u, p);
+            const res = await AuthService.loginWithEmail(u, p);
             if (res.success) {
+                const sessionObj = res.session || res.user;
                 if (onLoginSuccess) {
                     onLoginSuccess(res.user);
                 } else {
                     // Roteamento baseado na Role
-                    if (res.user.role === 'CLIENTE') {
+                    const role = sessionObj?.role;
+                    if (role === 'CLIENTE') {
                         navigation.replace('ClientTabs');
-                    } else if (res.user.role === 'ADMIN') {
+                    } else if (role === 'ADMIN') {
                         navigation.replace('AdminSelector');
                     } else {
                         navigation.replace('Home'); // Painel do Agrônomo

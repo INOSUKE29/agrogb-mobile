@@ -147,6 +147,17 @@ export const AuthService = {
     },
 
     /**
+     * Mock de Login via Biometria para testes
+     */
+    loginWithBiometrics: async () => {
+        try {
+            return { success: false, message: 'Biometria ainda não configurada no dispositivo.' };
+        } catch (error) {
+            return { success: false, message: 'Erro na biometria' };
+        }
+    },
+
+    /**
      * Solicita redefinição de senha por e-mail
      */
     requestPasswordReset: async (email) => {
