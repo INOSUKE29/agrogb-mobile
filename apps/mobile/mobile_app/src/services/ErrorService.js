@@ -1,6 +1,4 @@
 import { Platform, Alert } from 'react-native';
-import * as Sharing from 'expo-sharing';
-import * as MailComposer from 'expo-mail-composer';
 // Importação dinâmica/mockada para Web evitar avisos no console
 const captureScreen = Platform.OS === 'web' ? async () => null : require('react-native-view-shot').captureScreen;
 import { executeQuery } from '../database/database';

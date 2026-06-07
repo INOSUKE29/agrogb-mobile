@@ -12,7 +12,8 @@ import {
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '../../services/supabase';
 import { useNavigate } from 'react-router-dom';
-import { fetchRealWeather, WeatherData } from '../../services/weather';
+import { fetchRealWeather } from '../../services/weather';
+import type { WeatherData } from '../../services/weather';
 
 export default function ClienteDashboard() {
     const navigate = useNavigate();
