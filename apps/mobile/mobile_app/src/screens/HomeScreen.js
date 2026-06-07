@@ -5,36 +5,29 @@ import {
     ScrollView, 
     RefreshControl, 
     StatusBar, 
-    Alert,
     Text,
-    TouchableOpacity
+    TouchableOpacity,
+    Platform
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../theme/ThemeContext';
 import { useDashboardData } from '../hooks/useDashboardData';
 import SyncService from '../services/SyncService';
 
-// Componentes do Dashboard
-import DashboardHeader from '../components/dashboard/DashboardHeader';
+// Componentes
 import SkeletonDashboard from '../components/dashboard/SkeletonDashboard';
 import SidebarDrawer from '../components/SidebarDrawer';
 import OnboardingTour from '../components/common/OnboardingTour';
-
-// Componentes "Órfãos de Ouro" resgatados
-import WeatherWidget from '../components/ui/WeatherWidget';
 import GlowFAB from '../components/ui/GlowFAB';
-import TasksWidget from '../components/dashboard/TasksWidget';
 
 export default function HomeScreen({ navigation }) {
-    const { theme } = useTheme();
     const [period, setPeriod] = useState('month');
     const { data, loading, refreshing, onRefresh } = useDashboardData(period);
     
-     const [user, setUser] = useState(null);
-     const [drawerVisible, setDrawerVisible] = useState(false);
-     const [isSyncing, setIsSyncing] = useState(false);
-     const [showOnboarding, setShowOnboarding] = useState(false);
+    const [user, setUser] = useState(null);
+    const [drawerVisible, setDrawerVisible] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [showOnboarding, setShowOnboarding] = useState(false);
 
     useEffect(() => {
         loadUser();
@@ -73,108 +66,84 @@ export default function HomeScreen({ navigation }) {
     }
 
     return (
-        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#0B121E' }]}>
+        <View style={styles.container}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
             
-            <ScrollView 
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                    <RefreshControl 
-                        refreshing={refreshing} 
-                        onRefresh={onRefresh} 
-                        colors={[theme?.colors?.primary || '#10B981']}
-                        tintColor={theme?.colors?.primary || '#10B981'}
-                    />
-                }
-            >
-                <DashboardHeader 
-                    userName={user?.nome} 
-                    propertyName="Fazenda Santa Maria" 
-                    onProfilePress={() => navigation.navigate('Profile')}
-                    onProfileLongPress={() => navigation.navigate('AdminSelector')}
-                    onNotifyPress={() => Alert.alert('Notificações', 'Você não tem novas mensagens.')}
-                    isSyncing={isSyncing}
-                    selectedPeriod={period}
-                    onPeriodChange={setPeriod}
-                />
-
-                <WeatherWidget />
-                <TasksWidget />
-
-                {/* Banner de Upgrade para o Plano PRO */}
-                <TouchableOpacity 
-                    style={[styles.proBanner, { backgroundColor: theme?.colors?.primary || '#10B981' }]} 
-                    onPress={() => navigation.navigate('Planos')}
-                    activeOpacity={0.8}
-                >
-                    <View style={styles.proBannerContent}>
-                        <Ionicons name="star" size={24} color="#FBBF24" />
-                        <View style={{ marginLeft: 12, flex: 1 }}>
-                            <Text style={styles.proBannerTitle}>Desbloqueie o AgroGB PRO</Text>
-                            <Text style={styles.proBannerDesc}>CRM de vendas, Sincronização em nuvem e Exportação em PDF.</Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color="#FFF" />
+            {/* CABEÇALHO VERDE CURVO (Idêntico à Imagem de Referência) */}
+            <View style={styles.greenHeader}>
+                <View style={styles.headerTopRow}>
+                    <TouchableOpacity onPress={() => setDrawerVisible(true)} style={styles.menuButtonSquare}>
+                        <Ionicons name="menu" size={26} color="#065F46" />
+                    </TouchableOpacity>
+                    <View style={styles.headerTitles}>
+                        <Text style={styles.headerTitleMain}>AgroGB</Text>
+                        <Text style={styles.headerTitleSub}>PAINEL GERENCIAL</Text>
                     </View>
+                </View>
+
+                {/* Weather Placeholder */}
+                <TouchableOpacity style={styles.weatherCard} onPress={() => alert('Clima')}>
+                    <Ionicons name="location-outline" size={20} color="#FFF" />
+                    <Text style={styles.weatherText}>Ativar Clima da Fazenda</Text>
                 </TouchableOpacity>
 
-                {data && (
-                    <>
-                        <View style={styles.actionPillsRow}>
-                            <TouchableOpacity style={styles.actionPill} onPress={() => navigation.navigate('Vendas')}>
-                                <Ionicons name="add" size={16} color="#10B981" />
-                                <Text style={styles.actionPillText}>Registrar Venda</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.actionPill, styles.actionPillHighlight]} onPress={() => navigation.navigate('Custos')}>
-                                <Ionicons name="add" size={16} color="#FFF" />
-                                <Text style={[styles.actionPillText, { color: '#FFF' }]}>Registrar Custo</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.actionPill} onPress={() => navigation.navigate('Colheita')}>
-                                <Ionicons name="add" size={16} color="#10B981" />
-                                <Text style={styles.actionPillText}>Registrar Colheita</Text>
-                            </TouchableOpacity>
+                {/* Resumo Rápido */}
+                <View style={styles.statsCard}>
+                    <View style={styles.statColumn}>
+                        <Text style={styles.statLabel}>COLHEITA (HOJE)</Text>
+                        <View style={styles.statValueRow}>
+                            <Ionicons name="leaf" size={14} color="#A3E635" />
+                            <Text style={styles.statValue}> 0 <Text style={styles.statUnit}>kg</Text></Text>
                         </View>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statColumn}>
+                        <Text style={styles.statLabel}>VENDAS (HOJE)</Text>
+                        <View style={styles.statValueRow}>
+                            <Ionicons name="cash" size={14} color="#34D399" />
+                            <Text style={styles.statValue}> R$ 0,00</Text>
+                        </View>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statColumn}>
+                        <Text style={styles.statLabel}>RESULTADO (MÊS)</Text>
+                        <Text style={[styles.statValue, { color: '#34D399', marginTop: 2 }]}>R$ 0,00</Text>
+                    </View>
+                </View>
+            </View>
 
-                        {/* GESTÃO OPERACIONAL */}
-                        <View style={styles.sectionContainer}>
-                            <View style={styles.sectionTitleRow}>
-                                <View style={styles.sectionTitleDash} />
-                                <Text style={styles.sectionTitle}>GESTÃO OPERACIONAL</Text>
-                            </View>
-                            <View style={styles.bigGridRow}>
-                                <BigCard icon="leaf" label="Plantio" color="#10B981" onPress={() => navigation.navigate('Plantio')} />
-                                <BigCard icon="basket" label="Colheita" color="#84CC16" onPress={() => navigation.navigate('Colheita')} />
-                                <BigCard icon="calendar" label="Monitorar" color="#3B82F6" onPress={() => navigation.navigate('Monitoramento')} />
-                                <BigCard icon="flask" label="Adubação" color="#8B5CF6" onPress={() => navigation.navigate('MenuAdubacao')} />
-                            </View>
-                        </View>
-
-                        {/* COMERCIAL & FINANCEIRO */}
-                        <View style={styles.sectionContainer}>
-                            <View style={styles.sectionTitleRow}>
-                                <View style={[styles.sectionTitleDash, { backgroundColor: '#3B82F6' }]} />
-                                <Text style={styles.sectionTitle}>COMERCIAL & FINANCEIRO</Text>
-                            </View>
-                            <View style={styles.bigGridRow}>
-                                <BigCard icon="cart" label="Vendas" color="#3B82F6" onPress={() => navigation.navigate('Vendas')} />
-                                <BigCard icon="cube" label="Estoque" color="#F59E0B" onPress={() => navigation.navigate('Estoque')} />
-                                <BigCard icon="wallet" label="Despesas" color="#EF4444" onPress={() => navigation.navigate('Custos')} />
-                                <BigCard icon="car" label="Compras" color="#14B8A6" onPress={() => navigation.navigate('Compras')} />
-                            </View>
-                        </View>
-
-                        {/* SISTEMA & INTELIGÊNCIA */}
-                        <View style={styles.sectionContainer}>
-                            <View style={styles.sectionTitleRow}>
-                                <View style={[styles.sectionTitleDash, { backgroundColor: '#FCD34D' }]} />
-                                <Text style={styles.sectionTitle}>SISTEMA</Text>
-                            </View>
-                            <View style={styles.bigGridRow}>
-                                <BigCard icon="people" label="Cadastros" color="#64748B" onPress={() => navigation.navigate('Cadastro')} />
-                                <BigCard icon="bulb" label="Inteligência" color="#FCD34D" onPress={() => navigation.navigate('Intelligence')} />
-                            </View>
-                        </View>
-                    </>
-                )}
+            <ScrollView 
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scrollContent}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10B981" />
+                }
+            >
+                <Text style={styles.sectionTitleLabel}>ACESSO RÁPIDO</Text>
+                <View style={styles.grid3x}>
+                    <BigCard icon="book-outline" label="Caderno" color="#059669" bgColor="rgba(5,150,105,0.1)" onPress={() => navigation.navigate('CadernoCampo')} />
+                    <BigCard icon="leaf-outline" label="Colheita" color="#10B981" bgColor="rgba(16,185,129,0.1)" onPress={() => navigation.navigate('Colheita')} />
+                    <BigCard icon="cash-outline" label="Vendas" color="#059669" bgColor="rgba(5,150,105,0.1)" onPress={() => navigation.navigate('Vendas')} />
+                    
+                    <BigCard icon="cube-outline" label="Estoque" color="#3B82F6" bgColor="rgba(59,130,246,0.1)" onPress={() => navigation.navigate('Estoque')} />
+                    <BigCard icon="camera-outline" label="Monitorar" color="#DB2777" bgColor="rgba(219,39,119,0.1)" onPress={() => navigation.navigate('Monitoramento')} />
+                    <BigCard icon="flask-outline" label="Adubação" color="#8B5CF6" bgColor="rgba(139,92,246,0.1)" onPress={() => navigation.navigate('MenuAdubacao')} />
+                    
+                    <BigCard icon="cart-outline" label="Compras" color="#F59E0B" bgColor="rgba(245,158,11,0.1)" onPress={() => navigation.navigate('Compras')} />
+                    <BigCard icon="clipboard-outline" label="Encomendas" color="#F59E0B" bgColor="rgba(245,158,11,0.1)" onPress={() => navigation.navigate('Encomendas')} />
+                    <BigCard icon="flower-outline" label="Plantio" color="#8B5CF6" bgColor="rgba(139,92,246,0.1)" onPress={() => navigation.navigate('Plantio')} />
+                    
+                    <BigCard icon="calculator-outline" label="Custos" color="#EA580C" bgColor="rgba(234,88,12,0.1)" onPress={() => navigation.navigate('Custos')} />
+                    <BigCard icon="trash-outline" label="Descarte" color="#EF4444" bgColor="rgba(239,68,68,0.1)" onPress={() => navigation.navigate('Descarte')} />
+                    <BigCard icon="car-sport-outline" label="Frota" color="#3B82F6" bgColor="rgba(59,130,246,0.1)" onPress={() => navigation.navigate('Frota')} />
+                    
+                    <BigCard icon="pie-chart-outline" label="Relatórios" color="#1E3A8A" bgColor="rgba(30,58,138,0.1)" onPress={() => navigation.navigate('Relatorios')} />
+                    <BigCard icon="create-outline" label="Cadastros" color="#1E3A8A" bgColor="rgba(30,58,138,0.1)" onPress={() => navigation.navigate('Cadastro')} />
+                    <BigCard icon="people-outline" label="Clientes" color="#1E3A8A" bgColor="rgba(30,58,138,0.1)" onPress={() => navigation.navigate('Clientes')} />
+                    
+                    <BigCard icon="map-outline" label="Áreas" color="#1E3A8A" bgColor="rgba(30,58,138,0.1)" onPress={() => alert('Em breve')} />
+                    <BigCard icon="cloud-upload-outline" label="Sync" color="#8B5CF6" bgColor="rgba(139,92,246,0.1)" onPress={() => navigation.navigate('Sync')} />
+                </View>
             </ScrollView>
 
             <SidebarDrawer visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
@@ -189,10 +158,12 @@ export default function HomeScreen({ navigation }) {
     );
 }
 
-// NOVO COMPONENTE: BIG CARD (Estilo do Print Oficial)
-const BigCard = ({ icon, label, color, onPress }) => (
+// O Clássico BigCard 3x4 (Design Branco com Círculo Colorido)
+const BigCard = ({ icon, label, color, bgColor, onPress }) => (
     <TouchableOpacity style={styles.bigCard} onPress={onPress} activeOpacity={0.8}>
-        <Ionicons name={icon} size={28} color={color} style={{ marginBottom: 10 }} />
+        <View style={[styles.iconCircle, { backgroundColor: bgColor }]}>
+            <Ionicons name={icon} size={26} color={color} />
+        </View>
         <Text style={styles.bigCardText}>{label}</Text>
     </TouchableOpacity>
 );
@@ -200,46 +171,148 @@ const BigCard = ({ icon, label, color, onPress }) => (
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#F3F4F6', // Fundo cinza claro igual o print
+    },
+    greenHeader: {
+        backgroundColor: '#166534', // Verde escuro premium
+        paddingTop: Platform.OS === 'android' ? 50 : 30,
+        paddingHorizontal: 20,
+        paddingBottom: 25,
+        borderBottomLeftRadius: 30,
+        borderBottomRightRadius: 30,
+        marginBottom: 10,
+    },
+    headerTopRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    menuButtonSquare: {
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 10,
+        width: 45,
+        height: 45,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 15,
+    },
+    headerTitles: {
+        flex: 1,
+    },
+    headerTitleMain: {
+        color: '#FFF',
+        fontSize: 22,
+        fontWeight: 'bold',
+    },
+    headerTitleSub: {
+        color: '#A7F3D0',
+        fontSize: 12,
+        fontWeight: '600',
+        letterSpacing: 1,
+    },
+    weatherCard: {
+        backgroundColor: '#064E3B',
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 15,
+        paddingVertical: 12,
+        marginBottom: 15,
+    },
+    weatherText: {
+        color: '#FFF',
+        fontSize: 14,
+        fontWeight: '500',
+        flex: 1,
+        marginLeft: 10,
+    },
+    statsCard: {
+        backgroundColor: '#064E3B',
+        borderRadius: 16,
+        flexDirection: 'row',
+        paddingVertical: 15,
+        paddingHorizontal: 10,
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    statColumn: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    statDivider: {
+        width: 1,
+        height: 30,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+    },
+    statLabel: {
+        color: '#D1FAE5',
+        fontSize: 9,
+        fontWeight: 'bold',
+        marginBottom: 4,
+    },
+    statValueRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    statValue: {
+        color: '#FFF',
+        fontSize: 14,
+        fontWeight: 'bold',
+    },
+    statUnit: {
+        fontSize: 10,
+        fontWeight: 'normal',
+    },
+    scrollContent: {
+        paddingHorizontal: 15,
+        paddingBottom: 40,
+    },
+    sectionTitleLabel: {
+        color: '#6B7280',
+        fontSize: 13,
+        fontWeight: 'bold',
+        letterSpacing: 1,
+        marginVertical: 15,
+        marginLeft: 5,
+    },
+    grid3x: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        gap: 10,
+    },
+    bigCard: {
+        width: '31%', // Para dar 3 colunas certinhas
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        paddingVertical: 15,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 5,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+    },
+    iconCircle: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 10,
+    },
+    bigCardText: {
+        color: '#1F2937',
+        fontSize: 11,
+        fontWeight: '700',
+        textAlign: 'center'
     },
     fabPosition: {
         position: 'absolute',
         bottom: 30,
         right: 20
-    },
-    proBanner: {
-        marginHorizontal: 20,
-        marginBottom: 20,
-        borderRadius: 16,
-        padding: 15,
-        elevation: 4,
-        shadowColor: '#10B981',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-    },
-    proBannerContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    proBannerTitle: {
-        color: '#FFF',
-        fontSize: 14,
-        fontWeight: 'bold',
-        marginBottom: 2,
-    },
-    proBannerDesc: {
-        color: 'rgba(255,255,255,0.8)',
-        fontSize: 11,
-    },
-    actionPillsRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 25, gap: 10 },
-    actionPill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', paddingVertical: 12, borderRadius: 20, height: 45 },
-    actionPillHighlight: { backgroundColor: 'rgba(16, 185, 129, 0.4)', borderColor: '#10B981' },
-    actionPillText: { color: '#E2E8F0', fontSize: 11, fontWeight: 'bold', marginLeft: 6, textAlign: 'center' },
-    sectionContainer: { paddingHorizontal: 20, marginBottom: 20 },
-    sectionTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
-    sectionTitleDash: { width: 4, height: 16, backgroundColor: '#10B981', borderRadius: 2, marginRight: 8 },
-    sectionTitle: { color: '#FFF', fontSize: 12, fontWeight: '900', letterSpacing: 1.5 },
-    bigGridRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 },
-    bigCard: { width: '48%', backgroundColor: '#F8FAFC', borderRadius: 16, paddingVertical: 20, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center', marginBottom: 5, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
-    bigCardText: { color: '#0F172A', fontSize: 13, fontWeight: '800' }
+    }
 });
