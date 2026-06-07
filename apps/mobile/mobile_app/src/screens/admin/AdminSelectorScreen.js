@@ -31,7 +31,7 @@ export default function AdminSelectorScreen({ navigation }) {
                 </TouchableOpacity>
 
                 {/* Visão Agrônomo */}
-                <TouchableOpacity activeOpacity={0.9} style={styles.cardWrapper} onPress={() => navigation.navigate('Home')}>
+                <TouchableOpacity activeOpacity={0.9} style={styles.cardWrapper} onPress={() => navigation.navigate('Dashboard')}>
                     <LinearGradient colors={['#1565C0', '#0D47A1']} style={styles.card}>
                         <View style={styles.cardHeader}>
                             <Ionicons name="leaf" size={30} color="#FFF" />
