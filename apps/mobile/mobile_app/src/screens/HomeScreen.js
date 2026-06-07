@@ -9,11 +9,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import SidebarDrawer from '../components/SidebarDrawer';
 import { useTheme } from '../theme/ThemeContext';
+import { useDashboardData } from '../hooks/useDashboardData';
+import TasksWidget from '../components/dashboard/TasksWidget';
+import SmartAlerts from '../components/dashboard/SmartAlerts';
+import ProductionChart from '../components/dashboard/ProductionChart';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
     const { theme } = useTheme();
+    const { data: dashboardData } = useDashboardData();
     const THEME = {
         bg: theme?.colors?.bg ?? '#F3F4F6',
         headerBg: [theme?.colors?.primary ?? '#10B981', theme?.colors?.primaryDeep ?? '#047857'],
@@ -147,6 +152,9 @@ export default function HomeScreen({ navigation }) {
                             </TouchableOpacity>
                         )}
 
+                        <TasksWidget />
+                        {dashboardData && <SmartAlerts alerts={dashboardData.alerts} navigation={navigation} />}
+
                         <Text style={styles.sectionTitle}>ACESSO RÁPIDO</Text>
                         {menuConfig ? (
                             <View style={styles.grid}>
@@ -173,6 +181,8 @@ export default function HomeScreen({ navigation }) {
                         ) : (
                             <View style={{ padding: 20, alignItems: 'center' }}><Text>Carregando menu...</Text></View>
                         )}
+
+                        {dashboardData && <ProductionChart data={dashboardData.chartData} />}
 
                         <View style={styles.footer}>
                             <Text style={styles.version}>AgroGB Mobile v6.0 • Premium</Text>
