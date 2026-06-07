@@ -38,5 +38,32 @@ Este documento registra os principais incidentes técnicos ("bugs") enfrentados 
 > 
 > **A Prevenção:** O uso do TypeScript (que já rodamos no Painel Web e começaremos a adotar no Mobile) junto com os inspetores de tela do React Native impedem que propriedades essenciais sejam descartadas sem aviso.
 
+## 5. Corrupção Silenciosa do SecureStore (Bug #007)
+
+> [!WARNING]
+> **O Sintoma:** Ao tentar usar o Login com Biometria ou PIN, o aplicativo travava infinitamente na tela "Autenticando..." sem dar qualquer retorno visual ou fechar.
+> 
+> **A Causa:** O módulo `Expo SecureStore` sofreu uma corrupção criptográfica (comum após reinstalações em ambiente de desenvolvimento) estourando o erro `Could not decrypt the value with provided keychain`. Como não havia captura de erros explícita no momento do carregamento automático, a thread principal engasgava.
+> 
+> **A Prevenção (O Escudo Atual):** Injetamos blocos absolutos de `try-catch` em volta de todos os métodos de acesso da biometria. Se ele detectar falha de descriptografia, o sistema agora invoca um comando automático de "Autodestruição da Chave" (`SecureStore.deleteItemAsync`) e notifica o usuário educadamente para refazer o login, ao invés de paralisar o app. Também foi construído um "Painel de Diagnóstico Oculto" acessível via 4 cliques na Versão do App.
+
+## 6. O "Timeout" Fatal e o Loading Congelado (Bug #008)
+
+> [!CAUTION]
+> **O Sintoma:** Em áreas rurais onde a conexão de internet cai subitamente durante a requisição de login ao Supabase, a promessa de resposta ficava no "limbo" esperando uma rede que nunca voltaria, travando a navegação.
+> 
+> **A Causa:** As APIs de conexão careciam de um invólucro limitador de tempo. E a interface apenas exibia "Autenticando...", sem informar em que parte o sistema estava (se no servidor, no perfil, ou na role).
+> 
+> **A Solução e o Aprendizado:** Foi criado o motor `withTimeout(promessa, 15000)`, que corta na raiz qualquer requisição que dure mais que 15 segundos. Também implantamos *Logs Visuais* `loadingState` que interagem com o botão: *Validando -> Acessando Servidor -> Preparando Ambiente*.
+
+## 7. O Enigma do "Ghost Routing" (Bug #009)
+
+> [!IMPORTANT]
+> **O Sintoma:** O usuário digitava E-mail e Senha (ou PIN), a validação era aprovada, a biometria era criada, MAS o aplicativo se recusava a sair da tela de Login. A navegação falhava silenciosamente.
+> 
+> **A Causa:** Erro grave na árvore de estados (Context). O roteador principal (`App.js`) aguardava a variável de sessão chamada `userSession` para fazer o swap de tela, porém o `AuthContext` fornecia a sessão com o nome `user`. Isso significa que o `App.js` monitorava uma variável que sempre seria nula/indefinida, travando o aplicativo de propósito achando que ninguém havia feito o login.
+> 
+> **A Solução e o Aprendizado:** Foi corrigida a desestruturação no `App.js` para alinhar com o Contexto (`const { user } = useAuth()`). A grande lição: sempre audite se as "chaves" (`props/states`) exportadas pelo fornecedor possuem o mesmo nome absoluto consumido pelo receptor.
+
 ---
 **Conclusão:** Cada erro enfrentado deixou o aplicativo e o ecossistema mais resiliente. O nível de blindagem do projeto AgroGB subiu para o nível Enterprise.
