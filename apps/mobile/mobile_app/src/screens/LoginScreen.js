@@ -18,11 +18,23 @@ const LOGO = require('../../assets/icon.png');
 const RURAL_BG = require('../../assets/farm_bg.png');
 const BIO_KEY = 'agrogb_biometric_credentials';
 
+const withTimeout = (promise, ms) => {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+            reject(new Error(`Timeout de ${ms/1000}s excedido. O servidor demorou muito para responder.`));
+        }, ms);
+        promise
+            .then(value => { clearTimeout(timer); resolve(value); })
+            .catch(reason => { clearTimeout(timer); reject(reason); });
+    });
+};
+
 export default function LoginScreen({ navigation }) {
     const { login } = useAuth();
     const [usuario, setUsuario] = useState('');
     const [senha, setSenha] = useState('');
     const [loading, setLoading] = useState(false);
+    const [loadingState, setLoadingState] = useState('');
     const [isBiometricSupported, setIsBiometricSupported] = useState(false);
     
     // Animação do Logo
@@ -156,6 +168,7 @@ export default function LoginScreen({ navigation }) {
         }
 
         setLoading(true);
+        setLoadingState('Validando...');
         try {
             // 1. LOGIN ADMIN LOCAL: Bypass instantâneo para a conta de administração
             if (userTrim === 'ADMIN' && passTrim === '1234') {
@@ -241,14 +254,24 @@ export default function LoginScreen({ navigation }) {
             let authError = null;
 
             try {
+                setLoadingState('Acessando servidor...');
                 const { AuthService } = require('../services/authService');
                 
                 // O authService centralizado lidará com o signIn e também irá buscar o Profile para montar a sessão
-                const loginResult = await AuthService.loginWithEmail(targetEmail || targetPhone || inputClean, passTrim);
+                console.log('🔄 [Rastreamento] Iniciando Login Remoto (15s Timeout)...');
+                const loginResult = await withTimeout(
+                    AuthService.loginWithEmail(targetEmail || targetPhone || inputClean, passTrim), 
+                    15000
+                );
+                console.log('✅ [Rastreamento] LOGIN OK');
                 authSession = loginResult.session;
+                console.log('✅ [Rastreamento] SESSÃO OK (ID: ' + authSession.id + ')');
+                console.log('✅ [Rastreamento] PERFIL OK (User: ' + authSession.usuario + ')');
+                console.log('✅ [Rastreamento] ROLE OK (' + authSession.role + ')');
+                setLoadingState('Preparando ambiente...');
             } catch (netError) {
                 // Se falhar a conexão, tenta o login off-line diretamente com o banco SQLite local
-                console.log('📡 Falha de rede. Tentando autenticação SQLite local (off-line)...');
+                console.log('📡 Falha de rede/Timeout. Tentando autenticação SQLite local (off-line)...');
                 const localRes = await executeQuery(
                     `SELECT * FROM usuarios WHERE (is_deleted = 0 OR is_deleted IS NULL) AND (LOWER(usuario) = ? OR REPLACE(REPLACE(REPLACE(REPLACE(telefone, ' ', ''), '(', ''), ')', ''), '-', '') = ? OR LOWER(email) = ?) AND senha = ?`,
                     [inputClean, phoneClean, inputClean, passTrim]
@@ -329,7 +352,10 @@ export default function LoginScreen({ navigation }) {
                             '🚀 Acesso Rápido',
                             'Deseja ativar o login por biometria (Digital/FaceID) para entrar automaticamente nos próximos acessos?',
                             [
-                                { text: 'Agora não', style: 'cancel' },
+                                { text: 'Agora não', style: 'cancel', onPress: () => {
+                                    console.log('✅ [Rastreamento] REDIRECIONANDO DASHBOARD (Sem Bio)...');
+                                    navigation.replace('Home');
+                                }},
                                 {
                                     text: 'ATIVAR AGORA',
                                     onPress: async () => {
@@ -339,16 +365,27 @@ export default function LoginScreen({ navigation }) {
                                             });
                                             if (auth.success) {
                                                 await SecureStore.setItemAsync(BIO_KEY, JSON.stringify({ usuario: userTrim, senha: passTrim }));
-                                                Alert.alert('Sucesso', 'Login biométrico ativado!');
+                                                Alert.alert('Sucesso', 'Login biométrico ativado!', [{
+                                                    text: 'OK', 
+                                                    onPress: () => {
+                                                        console.log('✅ [Rastreamento] REDIRECIONANDO DASHBOARD (Bio Criada)...');
+                                                        navigation.replace('Home');
+                                                    }
+                                                }]);
+                                            } else {
+                                                console.log('✅ [Rastreamento] REDIRECIONANDO DASHBOARD (Bio Falhou/Cancelada)...');
+                                                navigation.replace('Home');
                                             }
                                         } catch (e) {
                                             console.log('Erro biometria prompt:', e);
+                                            console.log('✅ [Rastreamento] REDIRECIONANDO DASHBOARD (Erro no Bio Prompt)...');
+                                            navigation.replace('Home');
                                         }
                                     }
                                 }
                             ]
                         );
-                        return;
+                        return; // Aguarda resposta do Alert
                     }
                 } catch (storeError) {
                     // Trata corrupção no momento da verificação pós-login
@@ -358,18 +395,24 @@ export default function LoginScreen({ navigation }) {
                     }
                 }
             }
-            // RootNavigator fará a transição automática
+            
+            // Corrige o congelamento: Assegura o redirecionamento quando a Biometria já existia ou foi bypassada
+            console.log('✅ [Rastreamento] REDIRECIONANDO DASHBOARD...');
+            navigation.replace('Home');
+            
         } catch (e) {
             const friendlyMsg = translateAuthError(e.message || e.toString());
             showAlert('🧐', 'Acesso Negado', friendlyMsg + ' Que tal tentar de novo com bastante calma? Se precisar, você pode recuperar sua senha abaixo.');
         } finally {
             setLoading(false);
+            setLoadingState('');
         }
     };
 
     const handleBiometricLogin = async (isAutoLogin = false) => {
         try {
             setLoading(true);
+            setLoadingState('Autenticando...');
             const hasHardware = await LocalAuthentication.hasHardwareAsync();
             if (!hasHardware) throw new Error('Biometria não suportada');
 
@@ -421,10 +464,12 @@ export default function LoginScreen({ navigation }) {
             }
         } catch (e) {
             console.log('Erro de catch global da bio:', e);
-            setLoading(false);
             if (!isAutoLogin) {
                 Alert.alert('Erro', 'Falha ao processar biometria: ' + (e.message || 'Desconhecido'));
             }
+        } finally {
+            setLoading(false);
+            setLoadingState('');
         }
     };
 
@@ -489,6 +534,7 @@ export default function LoginScreen({ navigation }) {
         }
 
         setLoading(true);
+        setLoadingState('Acesso Supremo...');
         setShowMasterModal(false);
         try {
             const supremeEmail = 'bruno.p.santos100@gmail.com';
@@ -551,7 +597,9 @@ export default function LoginScreen({ navigation }) {
         } catch (e) {
             console.log(e);
             Alert.alert('Erro', 'Falha ao injetar Payload Mestre: ' + e.message);
+        } finally {
             setLoading(false);
+            setLoadingState('');
         }
     };
 
@@ -595,13 +643,13 @@ export default function LoginScreen({ navigation }) {
                         onPress={() => handleLogin()} 
                         disabled={loading}
                     >
-                        <Text style={styles.loginBtnText}>{loading ? 'AUTENTICANDO...' : 'ENTRAR NO SISTEMA'}</Text>
+                        <Text style={styles.loginBtnText}>{loading ? (loadingState || 'AUTENTICANDO...') : 'ENTRAR NO SISTEMA'}</Text>
                     </TouchableOpacity>
 
                     {isBiometricSupported && (
-                        <TouchableOpacity style={styles.bioBtn} onPress={handleBiometricLogin}>
+                        <TouchableOpacity style={[styles.bioBtn, loading && { opacity: 0.7 }]} onPress={() => handleBiometricLogin()} disabled={loading}>
                             <Ionicons name="finger-print" size={26} color="#10B981" />
-                            <Text style={styles.bioBtnText}>Entrar com Biometria</Text>
+                            <Text style={styles.bioBtnText}>{loading && loadingState.includes('Biometria') ? 'Autenticando...' : 'Entrar com Biometria'}</Text>
                         </TouchableOpacity>
                     )}
 
