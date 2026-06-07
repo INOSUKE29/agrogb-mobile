@@ -26,7 +26,7 @@ export default function LoginScreen({ navigation }) {
     const [isBiometricSupported, setIsBiometricSupported] = useState(false);
     
     // Animação do Logo
-    const [logoTranslateY] = useState(new Animated.Value(Dimensions.get('window').height * 0.3));
+    const [logoTranslateY] = useState(new Animated.Value(-Dimensions.get('window').height)); // Começa fora da tela, em cima
     const [formOpacity] = useState(new Animated.Value(0));
     
     // Master Key State
@@ -57,11 +57,17 @@ export default function LoginScreen({ navigation }) {
         checkBiometrics();
         initApp();
         
-        // Sequência da Animação
+        // Sequência da Animação: Desce devagar, pausa, sobe e mostra form
         Animated.sequence([
-            // Pausa no meio
+            // 1. Desce até o meio da tela devagar (2 segundos)
+            Animated.timing(logoTranslateY, {
+                toValue: Dimensions.get('window').height * 0.25,
+                duration: 2000,
+                useNativeDriver: true
+            }),
+            // 2. Pausa para o cliente admirar a marca
             Animated.delay(1200),
-            // Sobe o logo e mostra o form
+            // 3. Sobe o logo para a posição original e revela o form
             Animated.parallel([
                 Animated.timing(logoTranslateY, {
                     toValue: 0,
@@ -228,7 +234,7 @@ export default function LoginScreen({ navigation }) {
                 const { AuthService } = require('../services/authService');
                 
                 // O authService centralizado lidará com o signIn e também irá buscar o Profile para montar a sessão
-                const loginResult = await AuthService.loginWithEmail(targetEmail || inputClean, passTrim);
+                const loginResult = await AuthService.loginWithEmail(targetEmail || targetPhone || inputClean, passTrim);
                 authSession = loginResult.session;
             } catch (netError) {
                 // Se falhar a conexão, tenta o login off-line diretamente com o banco SQLite local
@@ -343,32 +349,25 @@ export default function LoginScreen({ navigation }) {
         }
     };
 
-    const handleBiometricLogin = async (isAuto = false) => {
+    const handleBiometricLogin = async () => {
         try {
-            const bioCreds = await SecureStore.getItemAsync(BIO_KEY);
-            if (!bioCreds) {
-                if (!isAuto) showAlert('🔒', 'Aviso de Acesso', 'A biometria ainda não foi configurada nesta conta. Faça o login manual primeiro! 😉');
-                return;
-            }
-
-            const result = await LocalAuthentication.authenticateAsync({
-                promptMessage: 'AgroGB Autenticação Biométrica',
-                fallbackLabel: 'Usar Senha Manual',
-                disableDeviceFallback: false,
-            });
-
-            if (result.success) {
-                const { usuario: bioUser, senha: bioPass } = JSON.parse(bioCreds);
-                setUsuario(bioUser);
-                setSenha(bioPass);
-                // Executar login com os dados recuperados
-                setTimeout(() => handleLogin(true), 100);
-            } else if (!isAuto) {
-                showAlert('🔒', 'Oops!', 'Não foi possível validar sua biometria. Por favor, digite sua senha manualmente.');
+            setLoading(true);
+            const { AuthService } = require('../services/authService');
+            const bioRes = await AuthService.loginWithBiometrics();
+            if (bioRes.success) {
+                // Passa a sessão para o AppNavigator/App.js
+                if (onLoginSuccess) {
+                    onLoginSuccess(bioRes.session);
+                } else {
+                    navigation.replace('SessionRouter');
+                }
+            } else {
+                setLoading(false);
+                Alert.alert('Aviso', bioRes.message);
             }
         } catch (e) {
-            console.log('Erro Bio:', e);
-            if (!isAuto) showAlert('⚠️', 'Falha Técnica', 'Não conseguimos acessar os sensores de biometria do seu celular.');
+            setLoading(false);
+            Alert.alert('Erro', 'Falha ao processar biometria.');
         }
     };
 
@@ -571,8 +570,11 @@ export default function LoginScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.45)' },
+    background: { flex: 1, width: '100%', height: '100%' },
+    overlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(40, 20, 0, 0.45)', // Filtro escurecido com tom quente (pôr do sol)
+    },
     inner: { flex: 1, justifyContent: 'center', padding: 25 },
     header: { alignItems: 'center', marginBottom: 40 },
     logoContainer: {

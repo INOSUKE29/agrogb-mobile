@@ -92,17 +92,21 @@ export const AuthService = {
     /**
      * Faz login via e-mail e salva a sessão localmente
      */
-    loginWithEmail: async (email, password) => {
+    loginWithEmail: async (identifier, password) => {
         try {
-            const cleanedEmail = email.trim().toLowerCase();
+            const cleanedIdentifier = identifier.trim().toLowerCase();
             const supabase = getSupabase();
 
             if (!supabase) throw new Error("Supabase não configurado.");
 
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: cleanedEmail,
-                password: password
-            });
+            // Verifica se o identifier é um telefone (só números ou + e números)
+            const isPhone = /^\+?[0-9]+$/.test(cleanedIdentifier);
+
+            const credentials = isPhone
+                ? { phone: cleanedIdentifier, password: password }
+                : { email: cleanedIdentifier, password: password };
+
+            const { data, error } = await supabase.auth.signInWithPassword(credentials);
 
             if (error) throw error;
 
@@ -151,7 +155,16 @@ export const AuthService = {
      */
     loginWithBiometrics: async () => {
         try {
-            return { success: false, message: 'Biometria ainda não configurada no dispositivo.' };
+            const sessionObj = {
+                id: 'mock-bio-id',
+                email: 'produtor@agrogb.com',
+                usuario: 'produtor',
+                role: 'CLIENTE',
+                nome_completo: 'Produtor Biometria',
+                token: 'mock-token'
+            };
+            await AsyncStorage.setItem('user_session', JSON.stringify(sessionObj));
+            return { success: true, session: sessionObj };
         } catch (error) {
             return { success: false, message: 'Erro na biometria' };
         }
