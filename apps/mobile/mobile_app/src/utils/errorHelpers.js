@@ -28,5 +28,5 @@ export function translateAuthError(message) {
         return 'Muitas tentativas. Tente novamente em alguns minutos.';
     }
 
-    return 'Ocorreu um erro ao processar sua solicitação.';
+    return `Ocorreu um erro ao processar sua solicitação.\n[DEV MSG: ${message}]`;
 }

@@ -134,7 +134,7 @@ export const AuthService = {
             const sessionObj = {
                 id: data.user.id,
                 email: data.user.email,
-                usuario: profileData?.username || cleanedEmail.split('@')[0],
+                usuario: profileData?.username || cleanedIdentifier.split('@')[0],
                 role: rbacRole,
                 nome_completo: profileData?.nome_completo || '',
                 token: data.session.access_token
