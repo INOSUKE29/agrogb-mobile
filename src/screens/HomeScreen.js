@@ -2,13 +2,14 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, StatusBar as RNStatusBar, InteractionManager } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import WeatherWidget from '../components/WeatherWidget';
-import { getDashboardStats } from '../database/database';
+import { executeQuery, getConfig, getDashboardStats } from '../database/database';
 import { syncTable } from '../services/supabase';
 import { MenuConfigService } from '../services/MenuConfigService';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import SidebarDrawer from '../components/SidebarDrawer';
-import { useTheme } from '../theme/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -192,7 +193,7 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F3F4F6' },
+    container: { flex: 1, backgroundColor: THEME.bg },
     header: { paddingHorizontal: 20, paddingTop: 50, paddingBottom: 30, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
     headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
     brand: { fontSize: 22, fontWeight: '900', color: '#FFF', letterSpacing: 0.5 },
