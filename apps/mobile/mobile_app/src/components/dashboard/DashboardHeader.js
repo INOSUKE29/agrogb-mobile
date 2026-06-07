@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
-export default function DashboardHeader({ userName, propertyName, onProfilePress, onNotifyPress, isSyncing, selectedPeriod, onPeriodChange }) {
+export default function DashboardHeader({ userName, propertyName, onProfilePress, onProfileLongPress, onNotifyPress, isSyncing, selectedPeriod, onPeriodChange }) {
     const { theme } = useTheme();
     const activeColors = theme?.colors || {};
 
@@ -27,7 +27,7 @@ export default function DashboardHeader({ userName, propertyName, onProfilePress
             style={styles.container}
         >
             <View style={styles.topRow}>
-                <TouchableOpacity onPress={onProfilePress} style={styles.profileContainer}>
+                <TouchableOpacity onPress={onProfilePress} onLongPress={onProfileLongPress} delayLongPress={800} style={styles.profileContainer}>
                     <View style={styles.avatarPlaceholder}>
                         <Text style={styles.avatarText}>{userName?.charAt(0) || 'U'}</Text>
                     </View>

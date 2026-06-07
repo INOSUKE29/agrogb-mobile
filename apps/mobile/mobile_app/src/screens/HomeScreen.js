@@ -93,7 +93,8 @@ export default function HomeScreen({ navigation }) {
                 <DashboardHeader 
                     userName={user?.nome} 
                     propertyName="Fazenda Santa Maria" 
-                    onProfilePress={() => setDrawerVisible(true)}
+                    onProfilePress={() => navigation.navigate('Profile')}
+                    onProfileLongPress={() => navigation.navigate('AdminSelector')}
                     onNotifyPress={() => Alert.alert('Notificações', 'Você não tem novas mensagens.')}
                     isSyncing={isSyncing}
                     selectedPeriod={period}

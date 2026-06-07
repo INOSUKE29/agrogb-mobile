@@ -59,7 +59,10 @@ export default function WeatherWidget() {
                     </View>
                     <View style={styles.infoCol}>
                         <Text style={[styles.mainText, { color: colors.textPrimary || colors.textMain || '#FFF' }]}>{weather.temp}°C</Text>
-                        <Text style={[styles.subText, { color: colors.textSecondary }]}>{weather.city}</Text>
+                        <Text style={[styles.subText, { color: colors.textSecondary }]}>{weather.description}</Text>
+                        {(weather.tempMax && weather.tempMin) ? (
+                            <Text style={[styles.minMaxText, { color: colors.textSecondary }]}>Máx {weather.tempMax}° / Mín {weather.tempMin}°</Text>
+                        ) : null}
                     </View>
                 </View>
 
@@ -142,4 +145,5 @@ const styles = StyleSheet.create({
     text: { fontSize: 11, marginLeft: 6, fontWeight: '700' },
     mainText: { fontSize: 20, fontWeight: '900', letterSpacing: -0.5 },
     subText: { fontSize: 10, fontWeight: '800', opacity: 1, textTransform: 'uppercase' },
+    minMaxText: { fontSize: 9, fontWeight: 'bold', marginTop: 2 },
 });
