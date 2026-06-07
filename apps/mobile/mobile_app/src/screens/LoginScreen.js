@@ -35,6 +35,12 @@ export default function LoginScreen({ navigation }) {
     const [showMasterModal, setShowMasterModal] = useState(false);
     const [masterPin, setMasterPin] = useState('');
     
+    // Diagnostic Panel State
+    const [diagTapCount, setDiagTapCount] = useState(0);
+    const [lastDiagTap, setLastDiagTap] = useState(0);
+    const [showDiagnosticPanel, setShowDiagnosticPanel] = useState(false);
+    const [diagnosticData, setDiagnosticData] = useState(null);
+
     const [alertConfig, setAlertConfig] = useState({
         visible: false,
         emoji: '🧐',
@@ -115,6 +121,10 @@ export default function LoginScreen({ navigation }) {
             }
         } catch (e) {
             console.log('Erro ao checar auto-bio:', e);
+            if (e.message && e.message.includes('Could not decrypt')) {
+                console.log('Corrupção detectada no initApp. Limpando chaves antigas...');
+                await SecureStore.deleteItemAsync(BIO_KEY).catch(() => {});
+            }
         }
 
         // Inicializar Admin se banco estiver vazio
@@ -312,32 +322,40 @@ export default function LoginScreen({ navigation }) {
 
             // Pergunta biometria se aplicável
             if (!bypassBiometricPrompt && isBiometricSupported) {
-                const bioEnabled = await SecureStore.getItemAsync(BIO_KEY);
-                if (!bioEnabled) {
-                    Alert.alert(
-                        '🚀 Acesso Rápido',
-                        'Deseja ativar o login por biometria (Digital/FaceID) para entrar automaticamente nos próximos acessos?',
-                        [
-                            { text: 'Agora não', style: 'cancel' },
-                            {
-                                text: 'ATIVAR AGORA',
-                                onPress: async () => {
-                                    try {
-                                        const auth = await LocalAuthentication.authenticateAsync({
-                                            promptMessage: 'Confirme sua biometria para ativar',
-                                        });
-                                        if (auth.success) {
-                                            await SecureStore.setItemAsync(BIO_KEY, JSON.stringify({ usuario: userTrim, senha: passTrim }));
-                                            Alert.alert('Sucesso', 'Login biométrico ativado!');
+                try {
+                    const bioEnabled = await SecureStore.getItemAsync(BIO_KEY);
+                    if (!bioEnabled) {
+                        Alert.alert(
+                            '🚀 Acesso Rápido',
+                            'Deseja ativar o login por biometria (Digital/FaceID) para entrar automaticamente nos próximos acessos?',
+                            [
+                                { text: 'Agora não', style: 'cancel' },
+                                {
+                                    text: 'ATIVAR AGORA',
+                                    onPress: async () => {
+                                        try {
+                                            const auth = await LocalAuthentication.authenticateAsync({
+                                                promptMessage: 'Confirme sua biometria para ativar',
+                                            });
+                                            if (auth.success) {
+                                                await SecureStore.setItemAsync(BIO_KEY, JSON.stringify({ usuario: userTrim, senha: passTrim }));
+                                                Alert.alert('Sucesso', 'Login biométrico ativado!');
+                                            }
+                                        } catch (e) {
+                                            console.log('Erro biometria prompt:', e);
                                         }
-                                    } catch (e) {
-                                        console.log('Erro biometria prompt:', e);
                                     }
                                 }
-                            }
-                        ]
-                    );
-                    return;
+                            ]
+                        );
+                        return;
+                    }
+                } catch (storeError) {
+                    // Trata corrupção no momento da verificação pós-login
+                    if (storeError.message && storeError.message.includes('Could not decrypt')) {
+                        await SecureStore.deleteItemAsync(BIO_KEY).catch(() => {});
+                        console.log('Chave corrompida removida durante o login. O usuário precisará reativar na próxima sessão.');
+                    }
                 }
             }
             // RootNavigator fará a transição automática
@@ -349,25 +367,64 @@ export default function LoginScreen({ navigation }) {
         }
     };
 
-    const handleBiometricLogin = async () => {
+    const handleBiometricLogin = async (isAutoLogin = false) => {
         try {
             setLoading(true);
-            const { AuthService } = require('../services/authService');
-            const bioRes = await AuthService.loginWithBiometrics();
-            if (bioRes.success) {
-                // Passa a sessão para o AppNavigator/App.js
-                if (onLoginSuccess) {
-                    onLoginSuccess(bioRes.session);
-                } else {
-                    navigation.replace('SessionRouter');
+            const hasHardware = await LocalAuthentication.hasHardwareAsync();
+            if (!hasHardware) throw new Error('Biometria não suportada');
+
+            // Aqui é onde ocorria o Erro #007 Fatal
+            let rawCreds = null;
+            try {
+                rawCreds = await SecureStore.getItemAsync(BIO_KEY);
+            } catch (secErr) {
+                console.log('Erro crítico no SecureStore:', secErr.message);
+                if (secErr.message && secErr.message.includes('Could not decrypt')) {
+                    // CORREÇÃO 1 e 2: Limpar credenciais corrompidas
+                    await SecureStore.deleteItemAsync(BIO_KEY).catch(() => {});
+                    // CORREÇÃO 3: Fallback message
+                    showAlert('🔑', 'Chave de Segurança Alterada', 'Credenciais biométricas inválidas ou corrompidas. Por favor, faça login com sua senha novamente para reativar a biometria.');
+                    setLoading(false);
+                    return;
                 }
-            } else {
+                throw secErr;
+            }
+
+            if (!rawCreds) {
                 setLoading(false);
-                Alert.alert('Aviso', bioRes.message);
+                if (!isAutoLogin) showAlert('ℹ️', 'Atenção', 'Nenhuma biometria cadastrada. Faça login normal primeiro.');
+                return;
+            }
+
+            const auth = await LocalAuthentication.authenticateAsync({
+                promptMessage: 'Acesso AgroGB',
+                fallbackLabel: 'Usar Senha',
+                disableDeviceFallback: false
+            });
+
+            if (auth.success) {
+                const creds = JSON.parse(rawCreds);
+                // Preenche os campos e simula o clique do usuário para reusar o handleLogin real
+                setUsuario(creds.usuario);
+                setSenha(creds.senha);
+                
+                // Evita chamar novamente a biometria e limpa o loading interno já que handleLogin seta loading
+                setLoading(false);
+                
+                // O setTimeout permite que os states atualizem antes de chamar handleLogin
+                setTimeout(() => {
+                    handleLogin(true); // true = bypassBiometricPrompt
+                }, 100);
+            } else {
+                // Usuário cancelou ou falhou
+                setLoading(false);
             }
         } catch (e) {
+            console.log('Erro de catch global da bio:', e);
             setLoading(false);
-            Alert.alert('Erro', 'Falha ao processar biometria.');
+            if (!isAutoLogin) {
+                Alert.alert('Erro', 'Falha ao processar biometria: ' + (e.message || 'Desconhecido'));
+            }
         }
     };
 
@@ -385,6 +442,44 @@ export default function LoginScreen({ navigation }) {
             setTapCount(1);
         }
         setLastTap(now);
+    };
+
+    const handleFooterTap = async () => {
+        const now = new Date().getTime();
+        if (now - lastDiagTap < 800) {
+            const newCount = diagTapCount + 1;
+            setDiagTapCount(newCount);
+            if (newCount >= 4) {
+                setDiagTapCount(0);
+                await gatherDiagnosticData();
+                setShowDiagnosticPanel(true);
+            }
+        } else {
+            setDiagTapCount(1);
+        }
+        setLastDiagTap(now);
+    };
+
+    const gatherDiagnosticData = async () => {
+        try {
+            let storeStatus = 'OK';
+            let bioKeyPresent = false;
+            try {
+                const val = await SecureStore.getItemAsync(BIO_KEY);
+                if (val) bioKeyPresent = true;
+            } catch (e) {
+                storeStatus = 'CORROMPIDO (' + e.message + ')';
+            }
+            
+            setDiagnosticData({
+                biometriaHardware: isBiometricSupported ? 'SUPORTADO' : 'NÃO SUPORTADO',
+                secureStoreStatus: storeStatus,
+                chaveBiometricaSalva: bioKeyPresent ? 'SIM' : 'NÃO',
+                ultimoLoginLocal: await AsyncStorage.getItem('user_session') ? 'EXISTE SESSÃO ZUMBI' : 'LIMPO'
+            });
+        } catch (e) {
+            console.log(e);
+        }
     };
 
     const handleSupremeLogin = async () => {
@@ -522,7 +617,9 @@ export default function LoginScreen({ navigation }) {
                 </Animated.View>
 
                 <View style={styles.footer}>
-                    <Text style={styles.footerText}>Versão Pro • 2026</Text>
+                    <TouchableOpacity activeOpacity={1} onPress={handleFooterTap}>
+                        <Text style={styles.footerText}>Versão Pro • 2026</Text>
+                    </TouchableOpacity>
                 </View>
 
             </KeyboardAvoidingView>
@@ -563,6 +660,41 @@ export default function LoginScreen({ navigation }) {
                             </TouchableOpacity>
                         </View>
                     </KeyboardAvoidingView>
+                </SafeBlurView>
+            </Modal>
+
+            {/* MODAL DE DIAGNÓSTICO (BUG #007) */}
+            <Modal visible={showDiagnosticPanel} transparent animationType="slide">
+                <SafeBlurView intensity={40} tint="dark" style={styles.masterModalOverlay}>
+                    <View style={[styles.masterModalContent, { borderColor: '#F59E0B' }]}>
+                        <Ionicons name="construct" size={40} color="#F59E0B" />
+                        <Text style={[styles.masterTitle, { color: '#F59E0B' }]}>DIAGNÓSTICO</Text>
+                        
+                        <View style={styles.diagBox}>
+                            <Text style={styles.diagText}>Hardware Bio: <Text style={{fontWeight: 'bold', color: '#fff'}}>{diagnosticData?.biometriaHardware}</Text></Text>
+                            <Text style={styles.diagText}>Status SecureStore: <Text style={{fontWeight: 'bold', color: '#fff'}}>{diagnosticData?.secureStoreStatus}</Text></Text>
+                            <Text style={styles.diagText}>Credencial Salva: <Text style={{fontWeight: 'bold', color: '#fff'}}>{diagnosticData?.chaveBiometricaSalva}</Text></Text>
+                            <Text style={styles.diagText}>Sessão Cache: <Text style={{fontWeight: 'bold', color: '#fff'}}>{diagnosticData?.ultimoLoginLocal}</Text></Text>
+                        </View>
+
+                        <View style={[styles.masterBtnRow, { marginTop: 15 }]}>
+                            <TouchableOpacity 
+                                onPress={async () => {
+                                    await SecureStore.deleteItemAsync(BIO_KEY).catch(()=>{});
+                                    await AsyncStorage.removeItem('user_session').catch(()=>{});
+                                    Alert.alert('Sucesso', 'Chaves limpas forçadamente.');
+                                    gatherDiagnosticData();
+                                }} 
+                                style={[styles.masterCancelBtn, { backgroundColor: '#EF4444' }]}
+                            >
+                                <Text style={styles.masterCancelText}>LIMPAR TUDO</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity onPress={() => setShowDiagnosticPanel(false)} style={[styles.masterConfirmBtn, { backgroundColor: '#F59E0B' }]}>
+                                <Text style={styles.masterConfirmText}>FECHAR</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
                 </SafeBlurView>
             </Modal>
         </ImageBackground>
@@ -644,7 +776,11 @@ const styles = StyleSheet.create({
     masterCancelBtn: { flex: 1, padding: 15, backgroundColor: '#374151', borderRadius: 10, alignItems: 'center' },
     masterCancelText: { color: '#FFF', fontWeight: 'bold' },
     masterConfirmBtn: { flex: 1, padding: 15, backgroundColor: '#10B981', borderRadius: 10, alignItems: 'center' },
-    masterConfirmText: { color: '#FFF', fontWeight: 'bold' }
+    masterConfirmText: { color: '#FFF', fontWeight: 'bold' },
+    
+    // Diagnostic Styles
+    diagBox: { backgroundColor: 'rgba(0,0,0,0.4)', width: '100%', padding: 15, borderRadius: 10, marginTop: 15, gap: 8 },
+    diagText: { color: '#9CA3AF', fontSize: 12, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }
 });
 
 
