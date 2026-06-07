@@ -78,7 +78,7 @@ import RecipeFormScreen from './src/screens/RecipeFormScreen';
 const Stack = createStackNavigator();
 
 function AppInner() {
-    const { userSession, setUserSession, isLoading: isAuthLoading } = useAuth();
+    const { user, loading: isAuthLoading, logout } = useAuth();
     const [isDbReady, setIsDbReady] = useState(false);
     const [initError, setInitError] = useState(null);
 
@@ -140,12 +140,10 @@ function AppInner() {
                     cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
                 }}
             >
-                {!userSession ? (
+                {!user ? (
                     // STACK DE AUTENTICAÇÃO
                     <>
-                        <Stack.Screen name="Login" options={{ headerShown: false }}>
-                            {(props) => <LoginScreen {...props} onLoginSuccess={(sess) => setUserSession(sess)} />}
-                        </Stack.Screen>
+                        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
                         <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
                         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: 'Recuperar Senha' }} />
                         <Stack.Screen name="Recover" component={RecoverScreen} options={{ title: 'Recuperação' }} />
@@ -158,11 +156,11 @@ function AppInner() {
                         <Stack.Screen name="SessionRouter" options={{ headerShown: false }}>
                             {(props) => {
                                 React.useEffect(() => {
-                                    const role = userSession?.role || 'AGRONOMO';
-                                    if (role === 'CLIENTE') props.navigation.replace('ClientTabs');
-                                    else if (role === 'ADMIN') props.navigation.replace('AdminSelector');
+                                    const roleStr = user?.role || 'AGRONOMO';
+                                    if (roleStr === 'CLIENTE') props.navigation.replace('ClientTabs');
+                                    else if (roleStr === 'ADMIN') props.navigation.replace('AdminSelector');
                                     else props.navigation.replace('Dashboard'); // Agronomo default
-                                }, []);
+                                }, [user]);
                                 return <View style={{ flex: 1, backgroundColor: '#0B121E' }} />;
                             }}
                         </Stack.Screen>
@@ -205,7 +203,7 @@ function AppInner() {
                         <Stack.Screen name="Frota" component={FrotaScreen} />
                         <Stack.Screen name="MaquinaForm" component={MaquinaFormScreen} />
                         <Stack.Screen name="Profile" options={{ title: 'Meu Perfil' }}>
-                            {(props) => <ProfileScreen {...props} onLogout={() => setUserSession(null)} />}
+                            {(props) => <ProfileScreen {...props} onLogout={() => logout()} />}
                         </Stack.Screen>
                         <Stack.Screen name="AdubacaoList" component={AdubacaoListScreen} />
                         <Stack.Screen name="AdubacaoForm" component={AdubacaoFormScreen} />

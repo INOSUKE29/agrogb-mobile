@@ -182,7 +182,7 @@ export default function LoginScreen({ navigation }) {
                     timestamp: new Date().getTime()
                 };
                 await login(sessionData);
-                navigation.replace('Home');
+                // A transição de tela ocorrerá automaticamente pelo App.js
                 return;
             }
 
@@ -287,15 +287,13 @@ export default function LoginScreen({ navigation }) {
                         role: userRow.role || 'AGRICULTOR',
                         timestamp: new Date().getTime()
                     };
+                    console.log('✅ [Rastreamento] SESSÃO OFFLINE OK');
                     await login(sessionData);
-                    if (sessionData.role === 'PENDENTE') {
-                        navigation.replace('OnboardingProfile');
-                    } else {
-                        navigation.replace('Home');
-                    }
+                    // A transição ocorrerá automaticamente pelo App.js
                     return;
+                } else {
+                    throw netError;
                 }
-                throw netError;
             }
 
             // 4. LOGIN BEM-SUCEDIDO: Atualizar SQLite local (sincronização)
@@ -340,7 +338,8 @@ export default function LoginScreen({ navigation }) {
             await login(sessionData);
 
             if (sessionData.role === 'PENDENTE') {
-                return; // O RootNavigator trocará para o Onboarding automaticamente
+                // A transição de tela ocorrerá automaticamente pelo App.js (que o mandará para ClientTabs ou Dashboard, e lá ele fará onboarding)
+                return; 
             }
 
             // Pergunta biometria se aplicável
@@ -353,8 +352,7 @@ export default function LoginScreen({ navigation }) {
                             'Deseja ativar o login por biometria (Digital/FaceID) para entrar automaticamente nos próximos acessos?',
                             [
                                 { text: 'Agora não', style: 'cancel', onPress: () => {
-                                    console.log('✅ [Rastreamento] REDIRECIONANDO DASHBOARD (Sem Bio)...');
-                                    navigation.replace('Home');
+                                    console.log('✅ [Rastreamento] IGNORANDO BIO. APLICATIVO SERÁ MONTADO PELO APP.JS...');
                                 }},
                                 {
                                     text: 'ATIVAR AGORA',
@@ -368,18 +366,14 @@ export default function LoginScreen({ navigation }) {
                                                 Alert.alert('Sucesso', 'Login biométrico ativado!', [{
                                                     text: 'OK', 
                                                     onPress: () => {
-                                                        console.log('✅ [Rastreamento] REDIRECIONANDO DASHBOARD (Bio Criada)...');
-                                                        navigation.replace('Home');
+                                                        console.log('✅ [Rastreamento] BIO ATIVADA. APLICATIVO SERÁ MONTADO PELO APP.JS...');
                                                     }
                                                 }]);
                                             } else {
-                                                console.log('✅ [Rastreamento] REDIRECIONANDO DASHBOARD (Bio Falhou/Cancelada)...');
-                                                navigation.replace('Home');
+                                                console.log('✅ [Rastreamento] BIO CANCELADA/FALHOU. APLICATIVO SERÁ MONTADO PELO APP.JS...');
                                             }
                                         } catch (e) {
                                             console.log('Erro biometria prompt:', e);
-                                            console.log('✅ [Rastreamento] REDIRECIONANDO DASHBOARD (Erro no Bio Prompt)...');
-                                            navigation.replace('Home');
                                         }
                                     }
                                 }
@@ -396,9 +390,7 @@ export default function LoginScreen({ navigation }) {
                 }
             }
             
-            // Corrige o congelamento: Assegura o redirecionamento quando a Biometria já existia ou foi bypassada
-            console.log('✅ [Rastreamento] REDIRECIONANDO DASHBOARD...');
-            navigation.replace('Home');
+            console.log('✅ [Rastreamento] FIM DO HANDLE LOGIN. O APP.JS DESMONTARÁ ESTA TELA EM MILISSEGUNDOS...');
             
         } catch (e) {
             const friendlyMsg = translateAuthError(e.message || e.toString());
@@ -593,7 +585,7 @@ export default function LoginScreen({ navigation }) {
             };
 
             await login(sessionData);
-            navigation.replace('Home');
+            // A transição de tela ocorrerá automaticamente pelo App.js
         } catch (e) {
             console.log(e);
             Alert.alert('Erro', 'Falha ao injetar Payload Mestre: ' + e.message);
