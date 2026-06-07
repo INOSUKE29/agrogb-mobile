@@ -88,7 +88,7 @@ export default function HomeScreen({ navigation }) {
     const formatBRL = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: THEME.bg }]}>
             <RNStatusBar barStyle="light-content" backgroundColor={THEME.headerBg[0]} />
 
             <LinearGradient colors={THEME.headerBg} style={styles.header}>
@@ -145,30 +145,30 @@ export default function HomeScreen({ navigation }) {
                     <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
                         {stats.maquinasAlert > 0 && (
-                            <TouchableOpacity style={styles.alertBar} onPress={() => navigation.navigate('Frota')}>
-                                <Ionicons name="warning" size={20} color="#B45309" />
-                                <Text style={styles.alertText}>{stats.maquinasAlert} MÁQUINAS PRECISAM DE REVISÃO</Text>
-                                <Ionicons name="chevron-forward" size={20} color="#B45309" />
+                            <TouchableOpacity style={[styles.alertBar, { backgroundColor: theme?.theme_mode === 'dark' ? 'rgba(245, 158, 11, 0.15)' : '#FEF3C7' }]} onPress={() => navigation.navigate('Frota')}>
+                                <Ionicons name="warning" size={20} color={THEME.alert} />
+                                <Text style={[styles.alertText, { color: theme?.theme_mode === 'dark' ? '#FCD34D' : '#92400E' }]}>{stats.maquinasAlert} MÁQUINAS PRECISAM DE REVISÃO</Text>
+                                <Ionicons name="chevron-forward" size={20} color={THEME.alert} />
                             </TouchableOpacity>
                         )}
 
                         <TasksWidget />
                         {dashboardData && <SmartAlerts alerts={dashboardData.alerts} navigation={navigation} />}
 
-                        <Text style={styles.sectionTitle}>ACESSO RÁPIDO</Text>
+                        <Text style={[styles.sectionTitle, { color: THEME.textSub }]}>ACESSO RÁPIDO</Text>
                         {menuConfig ? (
                             <View style={styles.grid}>
                                 {menuConfig.menu_items.filter(i => i.enabled).map((item, index) => (
                                     <TouchableOpacity
                                         key={item.id}
-                                        style={[styles.card, { width: cardWidth }]}
+                                        style={[styles.card, { width: cardWidth, backgroundColor: THEME.cardBg, borderColor: theme?.colors?.border || 'rgba(0,0,0,0.02)' }]}
                                         onPress={() => navigation.navigate(item.screen)}
                                         activeOpacity={0.7}
                                     >
                                         <View style={[styles.iconCircle, { backgroundColor: (item.color || '#374151') + '15' }]}>
                                             <Ionicons name={item.icon} size={24} color={item.color || '#374151'} />
                                         </View>
-                                        <Text style={styles.cardTitle} numberOfLines={1}>{item.label}</Text>
+                                        <Text style={[styles.cardTitle, { color: THEME.textMain }]} numberOfLines={1}>{item.label}</Text>
                                         {/* Badges Especiais */}
                                         {item.id === 'sync' && stats.pendentes > 0 && (
                                             <View style={styles.badge}>
@@ -179,7 +179,7 @@ export default function HomeScreen({ navigation }) {
                                 ))}
                             </View>
                         ) : (
-                            <View style={{ padding: 20, alignItems: 'center' }}><Text>Carregando menu...</Text></View>
+                            <View style={{ padding: 20, alignItems: 'center' }}><Text style={{ color: THEME.textSub }}>Carregando menu...</Text></View>
                         )}
 
                         {dashboardData && <ProductionChart data={dashboardData.chartData} />}
@@ -190,8 +190,8 @@ export default function HomeScreen({ navigation }) {
                     </ScrollView>
                 ) : (
                     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 }}>
-                        <Ionicons name="leaf-outline" size={40} color="#D1D5DB" />
-                        <Text style={{ marginTop: 10, color: '#9CA3AF', fontSize: 12 }}>Preparando espaço...</Text>
+                        <Ionicons name="leaf-outline" size={40} color={THEME.textSub} />
+                        <Text style={{ marginTop: 10, color: THEME.textSub, fontSize: 12 }}>Preparando espaço...</Text>
                     </View>
                 )}
             </View>

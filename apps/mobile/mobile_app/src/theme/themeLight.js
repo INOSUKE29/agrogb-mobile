@@ -3,6 +3,7 @@ export const themeLight = {
     colors: {
         bg: '#F4F7F6',             // Gelo neve ultra suave (Fundo Geral)
         headerBg: ['#065F3E', '#F4F7F6'], // Verde Navy escuro fundindo com fundo gelo
+        card: '#FFFFFF',           // Branco Absoluto
         cardBg: '#FFFFFF',         // Branco Absoluto 
         textMain: '#1E293B',       // Slate Escuro (Titulos Fortes)
         textSub: '#64748B',        // Slate Neutro (Textos Secundarios)

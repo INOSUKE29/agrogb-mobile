@@ -1,13 +1,14 @@
 export const themeDark = {
     mode: 'dark',
     colors: {
-        bg: '#0A0F1C',                 // Preto meio azul brilhante (Midnight Blue profundo)
-        headerBg: ['#0A2E20', '#0A0F1C'], // Gradiente Esmeralda para Azul Marinho
-        cardBg: '#131B2F',             // Background Cards Sólido (Ligeiramente mais claro)
-        border: 'rgba(255,255,255,0.08)', // Bordas Suaves Glass Edge
-        textMain: '#FFFFFF',           // Textos Principais
-        textSub: '#94A3B8',            // Textos Neutros Secundarios
-        accent: '#10B981',             // Primary Ação / Gradient Start
+        bg: '#0F172A',                 // Slate Escuro (Premium, não preto puro)
+        headerBg: ['#064E3B', '#0F172A'], // Verde profundo fundindo com slate
+        card: '#1E293B',               // Caixas mais claras que o fundo
+        cardBg: '#1E293B',             // Aliasing
+        border: 'rgba(255,255,255,0.05)', // Bordas Suaves
+        textMain: '#F8FAFC',           // Textos Claros
+        textSub: '#94A3B8',            // Textos Secundários
+        accent: '#10B981',             // Verde Ação
         
         // Status Colors Ouro
         success: '#22C55E',
