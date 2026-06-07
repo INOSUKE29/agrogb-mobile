@@ -107,55 +107,41 @@ export default function HomeScreen({ navigation }) {
                 </View>
 
                 {/* Seção 1: Gestão Operacional */}
-                <Text style={styles.sectionTitle}><View style={styles.sectionLine} /> GESTÃO OPERACIONAL</Text>
-                <View style={styles.grid}>
-                    <TouchableOpacity style={styles.gridCard} onPress={() => navigation.navigate('Plantio')}>
-                        <MaterialCommunityIcons name="leaf" size={32} color="#10B981" />
-                        <Text style={styles.gridCardTitle}>Plantio</Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity style={styles.gridCard} onPress={() => navigation.navigate('Colheita')}>
-                        <MaterialCommunityIcons name="basket" size={32} color="#84CC16" />
-                        <Text style={styles.gridCardTitle}>Colheita</Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity style={styles.gridCard} onPress={() => alert('Em breve')}>
-                        <MaterialCommunityIcons name="telescope" size={32} color="#10B981" />
-                        <Text style={styles.gridCardTitle}>Monitorar</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.gridCard} onPress={() => navigation.navigate('MenuAdubacao')}>
-                        <MaterialCommunityIcons name="flask" size={32} color="#10B981" />
-                        <Text style={styles.gridCardTitle}>Adubação</Text>
-                    </TouchableOpacity>
+                <View style={styles.sectionContainer}>
+                    <View style={styles.sectionTitleRow}>
+                        <View style={styles.sectionTitleDash} />
+                        <Text style={styles.sectionTitle}>GESTÃO OPERACIONAL</Text>
+                    </View>
+                    <View style={styles.grid}>
+                        <BigCard icon="leaf" label="Plantio" color="#10B981" onPress={() => navigation.navigate('Plantio')} />
+                        <BigCard icon="basket" label="Colheita" color="#84CC16" onPress={() => navigation.navigate('Colheita')} />
+                        <BigCard icon="telescope" label="Monitorar" color="#8B5CF6" onPress={() => alert('Em breve')} />
+                        <BigCard icon="flask" label="Adubação" color="#10B981" onPress={() => navigation.navigate('MenuAdubacao')} />
+                    </View>
                 </View>
 
                 {/* Seção 2: Comercial & Financeiro */}
-                <Text style={styles.sectionTitle}><View style={[styles.sectionLine, { backgroundColor: '#3B82F6' }]} /> COMERCIAL E FINANCEIRO</Text>
-                <View style={styles.grid}>
-                    <TouchableOpacity style={styles.gridCard} onPress={() => navigation.navigate('Vendas')}>
-                        <MaterialCommunityIcons name="cart" size={32} color="#3B82F6" />
-                        <Text style={styles.gridCardTitle}>Vendas</Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity style={styles.gridCard} onPress={() => navigation.navigate('Compras')}>
-                        <MaterialCommunityIcons name="shopping" size={32} color="#3B82F6" />
-                        <Text style={styles.gridCardTitle}>Compras</Text>
-                    </TouchableOpacity>
+                <View style={styles.sectionContainer}>
+                    <View style={styles.sectionTitleRow}>
+                        <View style={[styles.sectionTitleDash, { backgroundColor: '#3B82F6' }]} />
+                        <Text style={styles.sectionTitle}>COMERCIAL & FINANCEIRO</Text>
+                    </View>
+                    <View style={styles.grid}>
+                        <BigCard icon="cart" label="Vendas" color="#3B82F6" onPress={() => navigation.navigate('Vendas')} />
+                        <BigCard icon="shopping" label="Compras" color="#F59E0B" onPress={() => navigation.navigate('Compras')} />
+                    </View>
                 </View>
 
                 {/* Seção 3: Sistema */}
-                <Text style={styles.sectionTitle}><View style={styles.sectionLine} /> SISTEMA</Text>
-                <View style={styles.grid}>
-                    <TouchableOpacity style={styles.gridCard} onPress={() => navigation.navigate('Cadastro')}>
-                        <MaterialCommunityIcons name="cube-outline" size={32} color="#94A3B8" />
-                        <Text style={styles.gridCardTitle}>Cadastros</Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity style={styles.gridCard} onPress={() => alert('Em breve')}>
-                        <MaterialCommunityIcons name="account-group" size={32} color="#94A3B8" />
-                        <Text style={styles.gridCardTitle}>Equipe</Text>
-                    </TouchableOpacity>
+                <View style={styles.sectionContainer}>
+                    <View style={styles.sectionTitleRow}>
+                        <View style={[styles.sectionTitleDash, { backgroundColor: '#FCD34D' }]} />
+                        <Text style={styles.sectionTitle}>SISTEMA</Text>
+                    </View>
+                    <View style={styles.grid}>
+                        <BigCard icon="cube-outline" label="Cadastros" color="#64748B" onPress={() => navigation.navigate('Cadastro')} />
+                        <BigCard icon="account-group" label="Equipe" color="#FCD34D" onPress={() => alert('Em breve')} />
+                    </View>
                 </View>
 
                 <View style={{ height: 40 }} />
@@ -165,6 +151,14 @@ export default function HomeScreen({ navigation }) {
         </SafeAreaView>
     );
 }
+
+// O Clássico BigCard (Design Ouro)
+const BigCard = ({ icon, label, color, onPress }) => (
+    <TouchableOpacity style={styles.bigCard} onPress={onPress} activeOpacity={0.8}>
+        <MaterialCommunityIcons name={icon} size={32} color={color} style={{ marginBottom: 12 }} />
+        <Text style={styles.bigCardText}>{label}</Text>
+    </TouchableOpacity>
+);
 
 const styles = StyleSheet.create({
     container: {
@@ -280,42 +274,52 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: 'bold',
     },
+    sectionContainer: {
+        marginBottom: 20,
+    },
+    sectionTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    sectionTitleDash: {
+        width: 4,
+        height: 16,
+        backgroundColor: '#10B981',
+        borderRadius: 2,
+        marginRight: 8,
+    },
     sectionTitle: {
         color: '#F8FAFC',
         fontSize: 13,
-        fontWeight: 'bold',
-        letterSpacing: 1,
-        marginBottom: 15,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    sectionLine: {
-        width: 4,
-        height: 14,
-        backgroundColor: '#10B981',
-        marginRight: 8,
-        borderRadius: 2,
+        fontWeight: '900',
+        letterSpacing: 1.5,
     },
     grid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
-        marginBottom: 20,
+        gap: 12,
     },
-    gridCard: {
+    bigCard: {
         width: '48%',
-        backgroundColor: '#111827',
+        backgroundColor: '#F8FAFC', // BRANCO PREMIUM
         borderRadius: 16,
-        padding: 20,
+        paddingVertical: 20,
+        paddingHorizontal: 15,
         alignItems: 'center',
-        marginBottom: 15,
-        borderWidth: 1,
-        borderColor: '#1F2937',
+        justifyContent: 'center',
+        marginBottom: 5,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
-    gridCardTitle: {
-        color: '#F8FAFC',
-        fontSize: 14,
-        fontWeight: '600',
-        marginTop: 10,
+    bigCardText: {
+        color: '#0F172A',
+        fontSize: 13,
+        fontWeight: '800',
+        textAlign: 'center'
     }
 });
