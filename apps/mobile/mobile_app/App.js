@@ -27,7 +27,6 @@ import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 import VerifyCodeScreen from './src/screens/VerifyCodeScreen';
 
 // Navegadores e Telas V2
-import ClientNavigator from './src/navigation/ClientNavigator';
 import AdminSelectorScreen from './src/screens/admin/AdminSelectorScreen';
 import AgronomistClientsScreen from './src/screens/agronomist/AgronomistClientsScreen';
 import CreateRecommendationScreen from './src/screens/agronomist/CreateRecommendationScreen';
@@ -157,16 +156,14 @@ function AppInner() {
                             {(props) => {
                                 React.useEffect(() => {
                                     const roleStr = user?.role || 'AGRONOMO';
-                                    if (roleStr === 'CLIENTE') props.navigation.replace('ClientTabs');
-                                    else if (roleStr === 'ADMIN') props.navigation.replace('AdminSelector');
-                                    else props.navigation.replace('Dashboard'); // Agronomo default
+                                    if (roleStr === 'ADMIN') props.navigation.replace('AdminSelector');
+                                    else props.navigation.replace('Dashboard'); // Agricultor e Agrônomo vão para o Menu V6
                                 }, [user]);
                                 return <View style={{ flex: 1, backgroundColor: '#0B121E' }} />;
                             }}
                         </Stack.Screen>
                         
                         {/* Telas Principais */}
-                        <Stack.Screen name="ClientTabs" component={ClientNavigator} options={{ headerShown: false }} />
                         <Stack.Screen name="AdminSelector" component={AdminSelectorScreen} options={{ headerShown: false }} />
                         <Stack.Screen name="Dashboard" component={HomeScreen} options={{ headerShown: false }} />
 

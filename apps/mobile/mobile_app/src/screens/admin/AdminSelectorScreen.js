@@ -19,7 +19,7 @@ export default function AdminSelectorScreen({ navigation }) {
                 <Text style={styles.subtitle}>Escolha abaixo qual visão do aplicativo você deseja testar neste momento. Você tem acesso total.</Text>
 
                 {/* Visão Cliente */}
-                <TouchableOpacity activeOpacity={0.9} style={styles.cardWrapper} onPress={() => navigation.navigate('ClientTabs')}>
+                <TouchableOpacity activeOpacity={0.9} style={styles.cardWrapper} onPress={() => navigation.navigate('Dashboard')}>
                     <LinearGradient colors={['#1B5E20', '#166534']} style={styles.card}>
                         <View style={styles.cardHeader}>
                             <MaterialCommunityIcons name="tractor" size={30} color="#FFF" />
