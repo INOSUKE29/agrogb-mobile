@@ -17,14 +17,8 @@ import SyncService from '../services/SyncService';
 
 // Componentes do Dashboard
 import DashboardHeader from '../components/dashboard/DashboardHeader';
-import FinancialSummary from '../components/dashboard/FinancialSummary';
-import KPIGrid from '../components/dashboard/KPIGrid';
-import QuickActions from '../components/dashboard/QuickActions';
-import SmartAlerts from '../components/dashboard/SmartAlerts';
-import RecentActivities from '../components/dashboard/RecentActivities';
 import SkeletonDashboard from '../components/dashboard/SkeletonDashboard';
 import SidebarDrawer from '../components/SidebarDrawer';
-import ProductionChart from '../components/dashboard/ProductionChart';
 import OnboardingTour from '../components/common/OnboardingTour';
 
 // Componentes "Órfãos de Ouro" resgatados
@@ -125,23 +119,60 @@ export default function HomeScreen({ navigation }) {
 
                 {data && (
                     <>
-                        <FinancialSummary 
-                            revenue={data.financial.revenue}
-                            expenses={data.financial.expenses}
-                            netResult={data.financial.netResult}
-                            trend={data.financial.trend}
-                            trendType={data.financial.trendType}
-                        />
+                        <View style={styles.actionPillsRow}>
+                            <TouchableOpacity style={styles.actionPill} onPress={() => navigation.navigate('Vendas')}>
+                                <Ionicons name="add" size={16} color="#10B981" />
+                                <Text style={styles.actionPillText}>Registrar Venda</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.actionPill, styles.actionPillHighlight]} onPress={() => navigation.navigate('Custos')}>
+                                <Ionicons name="add" size={16} color="#FFF" />
+                                <Text style={[styles.actionPillText, { color: '#FFF' }]}>Registrar Custo</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.actionPill} onPress={() => navigation.navigate('Colheita')}>
+                                <Ionicons name="add" size={16} color="#10B981" />
+                                <Text style={styles.actionPillText}>Registrar Colheita</Text>
+                            </TouchableOpacity>
+                        </View>
 
-                        <QuickActions navigation={navigation} />
+                        {/* GESTÃO OPERACIONAL */}
+                        <View style={styles.sectionContainer}>
+                            <View style={styles.sectionTitleRow}>
+                                <View style={styles.sectionTitleDash} />
+                                <Text style={styles.sectionTitle}>GESTÃO OPERACIONAL</Text>
+                            </View>
+                            <View style={styles.bigGridRow}>
+                                <BigCard icon="leaf" label="Plantio" color="#10B981" onPress={() => navigation.navigate('Plantio')} />
+                                <BigCard icon="basket" label="Colheita" color="#84CC16" onPress={() => navigation.navigate('Colheita')} />
+                                <BigCard icon="calendar" label="Monitorar" color="#3B82F6" onPress={() => navigation.navigate('Monitoramento')} />
+                                <BigCard icon="flask" label="Adubação" color="#8B5CF6" onPress={() => navigation.navigate('MenuAdubacao')} />
+                            </View>
+                        </View>
 
-                        <ProductionChart data={data.chartData} />
+                        {/* COMERCIAL & FINANCEIRO */}
+                        <View style={styles.sectionContainer}>
+                            <View style={styles.sectionTitleRow}>
+                                <View style={[styles.sectionTitleDash, { backgroundColor: '#3B82F6' }]} />
+                                <Text style={styles.sectionTitle}>COMERCIAL & FINANCEIRO</Text>
+                            </View>
+                            <View style={styles.bigGridRow}>
+                                <BigCard icon="cart" label="Vendas" color="#3B82F6" onPress={() => navigation.navigate('Vendas')} />
+                                <BigCard icon="cube" label="Estoque" color="#F59E0B" onPress={() => navigation.navigate('Estoque')} />
+                                <BigCard icon="wallet" label="Despesas" color="#EF4444" onPress={() => navigation.navigate('Custos')} />
+                                <BigCard icon="car" label="Compras" color="#14B8A6" onPress={() => navigation.navigate('Compras')} />
+                            </View>
+                        </View>
 
-                        <KPIGrid kpis={data.kpis} />
-
-                        <SmartAlerts alerts={data.alerts} navigation={navigation} />
-
-                        <RecentActivities activities={data.activities} />
+                        {/* SISTEMA & INTELIGÊNCIA */}
+                        <View style={styles.sectionContainer}>
+                            <View style={styles.sectionTitleRow}>
+                                <View style={[styles.sectionTitleDash, { backgroundColor: '#FCD34D' }]} />
+                                <Text style={styles.sectionTitle}>SISTEMA</Text>
+                            </View>
+                            <View style={styles.bigGridRow}>
+                                <BigCard icon="people" label="Cadastros" color="#64748B" onPress={() => navigation.navigate('Cadastro')} />
+                                <BigCard icon="bulb" label="Inteligência" color="#FCD34D" onPress={() => navigation.navigate('Intelligence')} />
+                            </View>
+                        </View>
                     </>
                 )}
             </ScrollView>
@@ -157,6 +188,14 @@ export default function HomeScreen({ navigation }) {
         </View>
     );
 }
+
+// NOVO COMPONENTE: BIG CARD (Estilo do Print Oficial)
+const BigCard = ({ icon, label, color, onPress }) => (
+    <TouchableOpacity style={styles.bigCard} onPress={onPress} activeOpacity={0.8}>
+        <Ionicons name={icon} size={28} color={color} style={{ marginBottom: 10 }} />
+        <Text style={styles.bigCardText}>{label}</Text>
+    </TouchableOpacity>
+);
 
 const styles = StyleSheet.create({
     container: {
@@ -191,5 +230,16 @@ const styles = StyleSheet.create({
     proBannerDesc: {
         color: 'rgba(255,255,255,0.8)',
         fontSize: 11,
-    }
+    },
+    actionPillsRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 25, gap: 10 },
+    actionPill: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', paddingVertical: 12, borderRadius: 20, height: 45 },
+    actionPillHighlight: { backgroundColor: 'rgba(16, 185, 129, 0.4)', borderColor: '#10B981' },
+    actionPillText: { color: '#E2E8F0', fontSize: 11, fontWeight: 'bold', marginLeft: 6, textAlign: 'center' },
+    sectionContainer: { paddingHorizontal: 20, marginBottom: 20 },
+    sectionTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
+    sectionTitleDash: { width: 4, height: 16, backgroundColor: '#10B981', borderRadius: 2, marginRight: 8 },
+    sectionTitle: { color: '#FFF', fontSize: 12, fontWeight: '900', letterSpacing: 1.5 },
+    bigGridRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 },
+    bigCard: { width: '48%', backgroundColor: '#F8FAFC', borderRadius: 16, paddingVertical: 20, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center', marginBottom: 5, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+    bigCardText: { color: '#0F172A', fontSize: 13, fontWeight: '800' }
 });
