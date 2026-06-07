@@ -107,7 +107,7 @@ export default function DashboardLayout() {
                 // Produtor
                 setRealRole('CLIENTE');
                 if (!simulatedRole) {
-                    setSimulatedRole('AGRICULTOR');
+                    setSimulatedRole('CLIENTE');
                     if (location.pathname === '/dashboard') navigate('/dashboard/cliente');
                 }
             } else if (contextRole) {
@@ -132,7 +132,9 @@ export default function DashboardLayout() {
         navigate('/');
     };
 
-    const getNavItems = (role: string) => {
+    type NavItem = { path: string; label: string; icon: React.ElementType; group?: string };
+
+    const getNavItems = (role: string): NavItem[] => {
         if (role === 'AGRONOMO') {
             return [
                 { path: '/dashboard/agronomo', label: 'Dashboard Agrônomo', icon: LayoutDashboard },

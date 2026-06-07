@@ -30,8 +30,8 @@ import ClimaScreen from './screens/Dashboard/ClimaScreen';
 import RelatoriosScreen from './screens/Dashboard/RelatoriosScreen';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
-
 import { ThemeProvider } from './contexts/ThemeProvider';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 function App() {
   return (
@@ -56,6 +56,7 @@ function App() {
           }} 
         />
         <HashRouter>
+          <ErrorBoundary>
           <Routes>
             {/* Rota de Login */}
             <Route path="/" element={<LoginScreen />} />
@@ -106,8 +107,31 @@ function App() {
               <Route path="agenda" element={<TarefasScreen />} />
               <Route path="configuracoes" element={<SettingsScreen />} />
               <Route path="recomendacoes" element={<RecomendacoesScreen />} />
+              
+              {/* Fallback Not Found dentro do Dashboard */}
+              <Route path="*" element={
+                <div className="flex flex-col items-center justify-center p-12 text-[var(--color-muted)] h-full">
+                  <h2 className="text-3xl font-black text-white mb-2">404</h2>
+                  <p>A tela que você tentou acessar não foi encontrada ou a rota está incorreta.</p>
+                  <button onClick={() => window.history.back()} className="mt-6 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-all border border-white/20">
+                    ⬅ Voltar para a tela anterior
+                  </button>
+                </div>
+              } />
             </Route>
+
+            {/* Global Fallback Not Found */}
+            <Route path="*" element={
+                <div className="flex flex-col items-center justify-center p-12 text-[var(--color-muted)] h-screen w-screen bg-[#0D1711]">
+                  <h2 className="text-3xl font-black text-white mb-2">404 - Página Não Encontrada</h2>
+                  <p>A rota acessada não existe na aplicação.</p>
+                  <button onClick={() => window.history.back()} className="mt-6 px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-bold rounded-xl transition-all shadow-lg">
+                    ⬅ Voltar para a tela anterior
+                  </button>
+                </div>
+            } />
           </Routes>
+          </ErrorBoundary>
         </HashRouter>
         </div>
       </AuthProvider>

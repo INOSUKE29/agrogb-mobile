@@ -30,6 +30,11 @@ export default function CadastroBasicoScreen() {
     const [categoria, setCategoria] = useState('INSUMO');
     const [unidade, setUnidade] = useState('KG');
     const [observacao, setObservacao] = useState('');
+    const [fabricante, setFabricante] = useState('');
+    const [modoAplicacao, setModoAplicacao] = useState('');
+    const [composicaoNpk, setComposicaoNpk] = useState('');
+    const [principioAtivo, setPrincipioAtivo] = useState('');
+    const [doseRecomendada, setDoseRecomendada] = useState('');
     const [sugerirGlobal, setSugerirGlobal] = useState(false);
 
     const fetchDados = async () => {
@@ -84,13 +89,19 @@ export default function CadastroBasicoScreen() {
             nome: nome.toUpperCase(),
             categoria: categoria,
             unidade_medida: unidade,
+            fabricante: fabricante.toUpperCase(),
+            modo_aplicacao: modoAplicacao,
+            composicao_npk: composicaoNpk,
+            principio_ativo: principioAtivo.toUpperCase(),
+            dose_recomendada: doseRecomendada,
             observacao: observacao,
             user_id: userId,
-            is_global: false, // Só o ADM aprova para virar true
+            is_global: false,
             status_aprovacao: sugerirGlobal ? 'PENDENTE_GLOBAL' : 'LOCAL'
         };
 
         try {
+            let produtoId = editingId;
             if (editingId) {
                 const { error } = await supabase.from('v2_produtos').update(payload).eq('id', editingId);
                 if (error && (error.code === '42P01' || error.message?.includes('Could not find the table'))) {
@@ -98,11 +109,34 @@ export default function CadastroBasicoScreen() {
                 } else if (error) throw error;
                 toast.success('Item atualizado com sucesso!');
             } else {
-                const { error } = await supabase.from('v2_produtos').insert([payload]);
+                const { data, error } = await supabase.from('v2_produtos').insert([payload]).select();
                 if (error && (error.code === '42P01' || error.message?.includes('Could not find the table'))) {
-                    setItems([...items, { ...payload, id: crypto.randomUUID() }]);
-                } else if (error) throw error;
+                    produtoId = crypto.randomUUID();
+                    setItems([...items, { ...payload, id: produtoId }]);
+                } else if (error) {
+                    throw error;
+                } else if (data && data.length > 0) {
+                    produtoId = data[0].id;
+                }
                 toast.success(sugerirGlobal ? 'Item salvo e enviado para moderação!' : 'Item local cadastrado com sucesso!');
+            }
+            
+            if (sugerirGlobal && produtoId && !editingId) {
+                // Ao sugerir, envia para a fila de aprovação
+                await supabase.from('global_library_submissions').insert([{
+                    user_id: userId,
+                    produto_id: produtoId,
+                    nome: payload.nome,
+                    categoria: payload.categoria,
+                    unidade_medida: payload.unidade_medida,
+                    fabricante: payload.fabricante,
+                    modo_aplicacao: payload.modo_aplicacao,
+                    composicao_npk: payload.composicao_npk,
+                    principio_ativo: payload.principio_ativo,
+                    dose_recomendada: payload.dose_recomendada,
+                    observacao: payload.observacao,
+                    status: 'PENDENTE_GLOBAL'
+                }]);
             }
             
             closeModal();
@@ -137,6 +171,11 @@ export default function CadastroBasicoScreen() {
         setNome(item.nome);
         setCategoria(item.categoria || 'INSUMO');
         setUnidade(item.unidade_medida || 'KG');
+        setFabricante(item.fabricante || '');
+        setModoAplicacao(item.modo_aplicacao || '');
+        setComposicaoNpk(item.composicao_npk || '');
+        setPrincipioAtivo(item.principio_ativo || '');
+        setDoseRecomendada(item.dose_recomendada || '');
         setObservacao(item.observacao || '');
         setSugerirGlobal(item.status_aprovacao === 'PENDENTE_GLOBAL');
         setShowModal(true);
@@ -148,6 +187,11 @@ export default function CadastroBasicoScreen() {
         setNome('');
         setCategoria('INSUMO');
         setUnidade('KG');
+        setFabricante('');
+        setModoAplicacao('');
+        setComposicaoNpk('');
+        setPrincipioAtivo('');
+        setDoseRecomendada('');
         setObservacao('');
         setSugerirGlobal(false);
     };
@@ -377,6 +421,67 @@ export default function CadastroBasicoScreen() {
                                             <option value="TON">TON (Toneladas)</option>
                                             <option value="UN">UN (Unidade)</option>
                                         </select>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
+                                            Fabricante / Marca
+                                        </label>
+                                        <input 
+                                            type="text" value={fabricante} onChange={e => setFabricante(e.target.value)}
+                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                            placeholder="Ex: Yara, Syngenta..."
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
+                                            Princípio Ativo (Defensivos)
+                                        </label>
+                                        <input 
+                                            type="text" value={principioAtivo} onChange={e => setPrincipioAtivo(e.target.value)}
+                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                            placeholder="Ex: Glifosato, Imidacloprido..."
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
+                                            Modo Aplicação
+                                        </label>
+                                        <select 
+                                            value={modoAplicacao} onChange={e => setModoAplicacao(e.target.value)}
+                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
+                                        >
+                                            <option value="">Selecione...</option>
+                                            <option value="FOLIAR">Foliar</option>
+                                            <option value="SOLO">Via Solo</option>
+                                            <option value="FERTIRRIGACAO">Fertirrigação</option>
+                                            <option value="SEMENTE">Trat. Semente</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
+                                            Composição (NPK)
+                                        </label>
+                                        <input 
+                                            type="text" value={composicaoNpk} onChange={e => setComposicaoNpk(e.target.value)}
+                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                            placeholder="Ex: 04-14-08"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
+                                            Dose Recomendada
+                                        </label>
+                                        <input 
+                                            type="text" value={doseRecomendada} onChange={e => setDoseRecomendada(e.target.value)}
+                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                            placeholder="Ex: 2L/ha"
+                                        />
                                     </div>
                                 </div>
 

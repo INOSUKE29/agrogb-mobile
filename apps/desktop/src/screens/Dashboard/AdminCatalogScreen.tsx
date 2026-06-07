@@ -10,9 +10,10 @@ export default function AdminCatalogScreen() {
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [activeTab, setActiveTab] = useState<'CULTURAS' | 'PRODUTOS' | 'FITOSSANITARIO' | 'RESULTADOS' | 'COMBINACOES' | 'FASES'>('CULTURAS');
+    const [activeTab, setActiveTab] = useState<'CULTURAS' | 'PRODUTOS' | 'FITOSSANITARIO' | 'RESULTADOS' | 'COMBINACOES' | 'FASES' | 'APROVACOES'>('CULTURAS');
     
     // Listas Principais
+    const [approvals, setApprovals] = useState<any[]>([]);
     const [crops, setCrops] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
     const [pests, setPests] = useState<any[]>([]);
@@ -92,6 +93,10 @@ export default function AdminCatalogScreen() {
 
                 const { data: crData } = await supabase.from('kb_crops').select('id, name');
                 if (crData) setCrops(crData);
+            }
+            else if (activeTab === 'APROVACOES') {
+                const { data, error } = await supabase.from('global_library_submissions').select('*').eq('status', 'PENDENTE_GLOBAL').order('created_at', { ascending: false });
+                if (!error && data) setApprovals(data);
             }
         } catch (error) {
             console.error('Erro ao buscar biblioteca:', error);
@@ -188,6 +193,32 @@ export default function AdminCatalogScreen() {
             fetchDados();
         } catch (error) {
             toast.error('Erro ao apagar item.');
+        }
+    };
+
+    const handleApprove = async (item: any) => {
+        try {
+            if (item.produto_id) {
+                await supabase.from('v2_produtos').update({ is_global: true, status_aprovacao: 'APROVADO' }).eq('id', item.produto_id);
+            }
+            await supabase.from('global_library_submissions').update({ status: 'APROVADO', review_date: new Date().toISOString() }).eq('id', item.id);
+            toast.success('Produto aprovado para a Biblioteca Global!');
+            fetchDados();
+        } catch (e) {
+            toast.error('Erro ao aprovar produto.');
+        }
+    };
+
+    const handleReject = async (item: any) => {
+        try {
+            if (item.produto_id) {
+                await supabase.from('v2_produtos').update({ status_aprovacao: 'REJEITADO' }).eq('id', item.produto_id);
+            }
+            await supabase.from('global_library_submissions').update({ status: 'REJEITADO', review_date: new Date().toISOString() }).eq('id', item.id);
+            toast.success('Produto rejeitado.');
+            fetchDados();
+        } catch (e) {
+            toast.error('Erro ao rejeitar produto.');
         }
     };
 
@@ -376,6 +407,41 @@ export default function AdminCatalogScreen() {
         );
     };
 
+    const renderApprovals = () => {
+        return (
+            <div className="overflow-x-auto rounded-xl border border-white/5">
+                <table className="w-full text-left border-collapse">
+                    <thead>
+                        <tr className="bg-white/5">
+                            <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase">Item Sugerido</th>
+                            <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase">Categoria</th>
+                            <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase">Fabricante</th>
+                            <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase text-right">Decisão</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {approvals.length === 0 ? (
+                            <tr><td colSpan={4} className="p-8 text-center text-[var(--color-muted)] font-bold">Nenhuma aprovação pendente no momento.</td></tr>
+                        ) : approvals.map(item => (
+                            <tr key={item.id} className="border-b border-white/5 hover:bg-white/5">
+                                <td className="p-4 font-bold text-white flex flex-col">
+                                    <span>{item.nome}</span>
+                                    <span className="text-xs text-[var(--color-muted)] font-normal">{item.observacao || 'Sem observações adicionais'}</span>
+                                </td>
+                                <td className="p-4 text-xs text-[var(--color-muted)]"><span className="px-2 py-1 bg-white/10 rounded">{item.categoria}</span></td>
+                                <td className="p-4 text-xs text-[var(--color-muted)]">{item.fabricante || '-'}</td>
+                                <td className="p-4 text-right space-x-2">
+                                    <button onClick={() => handleApprove(item)} className="p-2 text-green-400 hover:bg-green-500/20 rounded-lg" title="Aprovar e Enviar p/ Global"><ShieldCheck className="w-5 h-5" /></button>
+                                    <button onClick={() => handleReject(item)} className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg" title="Rejeitar"><X className="w-5 h-5" /></button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        );
+    };
+
     return (
         <div className="animate-fade-in pb-12 max-w-7xl mx-auto space-y-8">
             
@@ -409,6 +475,10 @@ export default function AdminCatalogScreen() {
                     <button onClick={() => setActiveTab('PRODUTOS')} className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all ${activeTab === 'PRODUTOS' ? 'bg-blue-500/20 text-blue-400' : 'text-[var(--color-muted)] hover:bg-white/5'}`}>
                         <Package className="w-4 h-4" /> Produtos
                     </button>
+                    <button onClick={() => setActiveTab('APROVACOES')} className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all ${activeTab === 'APROVACOES' ? 'bg-yellow-500/20 text-yellow-400' : 'text-[var(--color-muted)] hover:bg-white/5'}`}>
+                        <ShieldCheck className="w-4 h-4" /> Aprovações Pendentes
+                        {approvals.length > 0 && <span className="ml-2 bg-yellow-500 text-black text-xs px-2 py-0.5 rounded-full">{approvals.length}</span>}
+                    </button>
                     <button onClick={() => setActiveTab('FITOSSANITARIO')} className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all ${activeTab === 'FITOSSANITARIO' ? 'bg-orange-500/20 text-orange-400' : 'text-[var(--color-muted)] hover:bg-white/5'}`}>
                         <Bug className="w-4 h-4" /> Problemas Fito
                     </button>
@@ -441,6 +511,7 @@ export default function AdminCatalogScreen() {
                         {activeTab === 'RESULTADOS' && renderOutcomes()}
                         {activeTab === 'COMBINACOES' && renderCombinations()}
                         {activeTab === 'FASES' && renderPhases()}
+                        {activeTab === 'APROVACOES' && renderApprovals()}
                     </>
                 )}
             </div>

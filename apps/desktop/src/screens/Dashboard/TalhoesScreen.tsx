@@ -95,13 +95,18 @@ export default function TalhoesScreen() {
         if (!form.nome || !form.area_ha) return toast.error('Preencha os campos obrigatórios');
 
         const { data: userData } = await supabase.auth.getUser();
+        const safeArea = parseFloat(String(form.area_ha).replace(',', '.'));
+
+        if (isNaN(safeArea)) {
+            return toast.error('A área informada é inválida.');
+        }
         
         try {
             if (editItem) {
                 // UPDATE
                 const payload = editItem.tableUsed === 'v2_talhoes' 
-                    ? { nome: form.nome.toUpperCase(), area: parseFloat(form.area_ha), tipo_solo: form.observacao.toUpperCase(), updated_at: new Date().toISOString() }
-                    : { nome: form.nome.toUpperCase(), area_ha: parseFloat(form.area_ha), observacao: form.observacao.toUpperCase(), last_updated: new Date().toISOString() };
+                    ? { nome: form.nome.toUpperCase(), area: safeArea, tipo_solo: form.observacao.toUpperCase(), updated_at: new Date().toISOString() }
+                    : { nome: form.nome.toUpperCase(), area_ha: safeArea, observacao: form.observacao.toUpperCase(), last_updated: new Date().toISOString() };
                 
                 const idField = editItem.tableUsed === 'v2_talhoes' ? 'id' : 'uuid';
 
@@ -115,8 +120,9 @@ export default function TalhoesScreen() {
             } else {
                 // INSERT (Try v2 first)
                 const payloadV2 = {
+                    user_id: userData?.user?.id,
                     nome: form.nome.toUpperCase(),
-                    area: parseFloat(form.area_ha),
+                    area: safeArea,
                     tipo_solo: form.observacao.toUpperCase(),
                     updated_at: new Date().toISOString()
                 };
@@ -126,7 +132,7 @@ export default function TalhoesScreen() {
                     // Fallback to v1
                     const payloadV1 = {
                         nome: form.nome.toUpperCase(),
-                        area_ha: parseFloat(form.area_ha),
+                        area_ha: safeArea,
                         observacao: form.observacao.toUpperCase(),
                         last_updated: new Date().toISOString(),
                         is_deleted: false,
@@ -139,9 +145,9 @@ export default function TalhoesScreen() {
             }
             closeModal();
             fetchTalhoes();
-        } catch (err) {
+        } catch (err: any) {
             console.error('Erro ao salvar talhão', err);
-            toast.error('Erro ao salvar talhão.');
+            toast.error(err?.message || 'Erro ao salvar talhão.');
         }
     };
 

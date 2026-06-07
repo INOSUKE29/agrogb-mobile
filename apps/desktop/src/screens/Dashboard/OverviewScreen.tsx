@@ -175,7 +175,7 @@ export default function OverviewScreen() {
                     <Activity className="w-5 h-5 text-[var(--color-primary)]" /> Atalhos Táticos
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button onClick={() => navigate('/admin/users')} className="glass p-4 rounded-xl flex items-center justify-between hover:bg-white/5 transition-all group">
+                    <button onClick={() => navigate('/dashboard/admin/usuarios')} className="glass p-4 rounded-xl flex items-center justify-between hover:bg-white/5 transition-all group">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
                                 <Users className="w-5 h-5" />
@@ -188,7 +188,7 @@ export default function OverviewScreen() {
                         <ArrowRight className="w-4 h-4 text-[var(--color-muted)] group-hover:text-white transition-colors" />
                     </button>
 
-                    <button onClick={() => navigate('/admin/catalog')} className="glass p-4 rounded-xl flex items-center justify-between hover:bg-white/5 transition-all group">
+                    <button onClick={() => navigate('/dashboard/admin/biblioteca')} className="glass p-4 rounded-xl flex items-center justify-between hover:bg-white/5 transition-all group">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-lg bg-green-500/20 text-green-400 flex items-center justify-center">
                                 <Database className="w-5 h-5" />
@@ -201,7 +201,7 @@ export default function OverviewScreen() {
                         <ArrowRight className="w-4 h-4 text-[var(--color-muted)] group-hover:text-white transition-colors" />
                     </button>
 
-                    <button onClick={() => navigate('/admin/financial')} className="glass p-4 rounded-xl flex items-center justify-between hover:bg-white/5 transition-all group">
+                    <button onClick={() => navigate('/dashboard/admin/financeiro')} className="glass p-4 rounded-xl flex items-center justify-between hover:bg-white/5 transition-all group">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
                                 <FolderKanban className="w-5 h-5" />
