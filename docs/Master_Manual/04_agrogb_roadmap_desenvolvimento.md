@@ -24,7 +24,7 @@ Este documento dita a esteira de construção e entrega de valor do AgroGB. Ele 
 | ✅ Calendário Agrícola (Linha do tempo cultura). | ✅ **Sincronização Offline First** (Cache local). |
 | ✅ Sistema de Tarefas e Gestão de Visitas. | Telemetria (Qual botão está sendo mais clicado). |
 | ✅ Histórico de Análise de Solo / Foliar. | ✅ Motor de Permissões Granulares (`roles / permissions`). |
-| Motor de Assinatura Digital de relatórios. | Setup de Testes E2E Automatizados (Cypress/Playwright). |
+| ❌ Motor de Assinatura Digital (Descartado: Foco em Simplicidade). | Setup de Testes E2E Automatizados (Cypress/Playwright). |
 
 ---
 
