@@ -26,17 +26,17 @@ export default function ClienteDashboard() {
         atividadesAndamento: 0
     });
 
-    const [atividadesPendentes, setAtividadesPendentes] = useState<any[]>([]);
+    const [atividadesPendentes, setAtividadesPendentes] = useState<Record<string, string | number | boolean | null>[]>([]);
     
     // Estado do Clima Real
     const [realWeather, setRealWeather] = useState<WeatherData | null>(null);
-    const [chartData, setChartData] = useState<any[]>([]);
+    const [chartData, setChartData] = useState<Record<string, string | number | boolean | null>[]>([]);
 
     const loadWeather = async () => {
         try {
             // Posição Padrão (Sorriso/MT) caso usuário negue localização
-            let lat = -12.73;
-            let lon = -56.32;
+            const lat = -12.73;
+            const lon = -56.32;
 
             // Tenta pegar a localização do navegador se possível
             if (navigator.geolocation) {
@@ -91,7 +91,7 @@ export default function ClienteDashboard() {
                 if (!user) return;
 
                 // 1. Buscar Talhões para contar área e culturas
-                const { data: talhoes, error: e1 } = await supabase
+                const { data: talhoes, error: _e1 } = await supabase
                     .from('talhoes')
                     .select('id, tamanho, cultura_principal')
                     .eq('user_id', user.id);
@@ -107,7 +107,7 @@ export default function ClienteDashboard() {
                 }
 
                 // 2. Buscar Atividades em andamento
-                const { count: atividadesCount, error: e2 } = await supabase
+                const { count: atividadesCount, error: _e2 } = await supabase
                     .from('plantio')
                     .select('*', { count: 'exact', head: true })
                     .eq('user_id', user.id)

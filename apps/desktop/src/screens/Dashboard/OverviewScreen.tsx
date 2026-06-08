@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
-import { subDays, format, isAfter, isBefore, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { subDays, format } from 'date-fns';
 import { 
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, Legend, LineChart, Line
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line
 } from 'recharts';
-import { Users, Sprout, ShieldCheck, DollarSign, Calendar as CalendarIcon, ArrowRight, Activity, FileText, Settings, Database, FolderKanban } from 'lucide-react';
+import { Users, Sprout, ShieldCheck, DollarSign, Calendar as CalendarIcon, ArrowRight, Activity, Database, FolderKanban } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function OverviewScreen() {
@@ -24,9 +22,9 @@ export default function OverviewScreen() {
     const [receitaMes, setReceitaMes] = useState(0);
 
     // Chart Data States
-    const [chartData, setChartData] = useState<any[]>([]);
-    const [pieData, setPieData] = useState<any[]>([]);
-    const [activityData, setActivityData] = useState<any[]>([]);
+    const [chartData, setChartData] = useState<Record<string, string | number | boolean | null>[]>([]);
+    const [_pieData, setPieData] = useState<Record<string, string | number | boolean | null>[]>([]);
+    const [activityData, setActivityData] = useState<Record<string, string | number | boolean | null>[]>([]);
 
     const fetchData = async () => {
         setLoading(true);

@@ -14,7 +14,7 @@ interface Tarefa {
 
 export default function TarefasScreen() {
     const [tarefas, setTarefas] = useState<Tarefa[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [_loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
 
     // Formulário
@@ -40,7 +40,8 @@ export default function TarefasScreen() {
                 throw error;
             }
             setTarefas(data || []);
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const _err = error as Error;
             console.error('Erro ao buscar tarefas:', error);
             // toast.error('Não foi possível carregar as tarefas.');
         } finally {
@@ -84,9 +85,10 @@ export default function TarefasScreen() {
             setDataVencimento('');
             fetchTarefas();
 
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const err = error as Error | { message: string };
             console.error('Erro ao criar tarefa:', error);
-            toast.error(error.message || 'Falha ao criar tarefa.');
+            toast.error(err.message || 'Falha ao criar tarefa.');
         }
     };
 

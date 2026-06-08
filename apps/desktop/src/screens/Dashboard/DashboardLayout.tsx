@@ -19,18 +19,15 @@ import {
     Search,
     UserCircle,
     Activity,
-    ShoppingCart,
     X,
     Package,
     Truck,
-    LayoutList,
     Store,
     CloudRain,
     CheckSquare,
     TrendingDown,
     Tags,
-    Database,
-    ChevronRight
+    Database
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -80,7 +77,7 @@ export default function DashboardLayout() {
 
     const unreadCount = notifications.filter(n => !n.read).length;
 
-    const handleOpenNotification = (n: any) => {
+    const handleOpenNotification = (n: Record<string, string | number | boolean | null>) => {
         setSelectedNotification(n);
         setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, read: true } : item));
         setShowNotifications(false);
@@ -103,7 +100,7 @@ export default function DashboardLayout() {
                     setSimulatedRole('AGRONOMO');
                     if (location.pathname === '/dashboard') navigate('/dashboard/agronomo');
                 }
-            } else if (hasPermission('view_own_data')) {
+            } else if (hasPermission('view_owndata')) {
                 // Produtor
                 setRealRole('CLIENTE');
                 if (!simulatedRole) {
@@ -147,16 +144,17 @@ export default function DashboardLayout() {
                 { path: '/dashboard/cliente', label: 'Dashboard Produtor', icon: LayoutDashboard, group: 'Visão Geral' },
                 { path: '/dashboard/cliente/relatorios', label: 'Relatórios', icon: FileText, group: 'Visão Geral' },
 
-                { path: '/dashboard/cliente/talhoes', label: 'Talhões e Áreas', icon: Map, group: 'Operação Agrícola' },
-                { path: '/dashboard/cliente/plantio', label: 'Ciclo de Plantio', icon: Sprout, group: 'Operação Agrícola' },
-                { path: '/dashboard/cliente/culturas', label: 'Culturas e Safras', icon: Sprout, group: 'Operação Agrícola' },
+                { path: '/dashboard/cliente/areas', label: 'Gestão de Áreas e Plantio', icon: Map, group: 'Produção e Safra' },
+                { path: '/dashboard/cliente/colheita', label: 'Colheitas e Produção', icon: Sprout, group: 'Produção e Safra' },
                 { path: '/dashboard/cliente/monitoramento', label: 'Monitoramento', icon: Activity, group: 'Operação Agrícola' },
                 { path: '/dashboard/cliente/caderno', label: 'Caderno Agrícola', icon: FileText, group: 'Operação Agrícola' },
                 { path: '/dashboard/cliente/recomendacoes', label: 'Recomendações Técnicas', icon: FileText, group: 'Operação Agrícola' },
                 { path: '/dashboard/cliente/clima', label: 'Estação Meteorológica', icon: CloudRain, group: 'Operação Agrícola' },
 
                 { path: '/dashboard/cliente/estoque', label: 'Estoque de Insumos', icon: Package, group: 'Logística e Suprimentos' },
-                { path: '/dashboard/cliente/compras', label: 'Compras e Cotações', icon: Store, group: 'Logística e Suprimentos' },
+                { path: '/dashboard/cliente/fornecedores', label: 'Meus Fornecedores', icon: Store, group: 'Logística e Suprimentos' },
+                { path: '/dashboard/cliente/cotacoes', label: 'Cotações (Pesquisa)', icon: FileText, group: 'Logística e Suprimentos' },
+                { path: '/dashboard/cliente/compras', label: 'Compras (Estoque)', icon: Store, group: 'Logística e Suprimentos' },
                 { path: '/dashboard/cliente/encomendas', label: 'Encomendas e Logística', icon: Package, group: 'Logística e Suprimentos' },
                 { path: '/dashboard/cliente/frota', label: 'Gestão de Frota', icon: Truck, group: 'Logística e Suprimentos' },
                 { path: '/dashboard/cliente/tarefas', label: 'Minhas Tarefas', icon: CheckSquare, group: 'Logística e Suprimentos' },
@@ -314,7 +312,7 @@ export default function DashboardLayout() {
                                 {/* Group Header */}
                                 {isSidebarOpen && group && (
                                     <button 
-                                        onClick={() => toggleGroup(group)}
+                                        onClick={() => toggleGroup(group as string)}
                                         className="w-full flex items-center justify-between px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] rounded-lg"
                                     >
                                         <span>{group}</span>
@@ -324,7 +322,7 @@ export default function DashboardLayout() {
                                 
                                 {/* Group Items */}
                                 <div className={`flex flex-col gap-1 overflow-hidden transition-all duration-300 ${(!isSidebarOpen || openGroups.includes(group)) ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                                    {navItems.filter(i => i.group === group).map((item, index) => {
+                                    {navItems.filter(i => i.group === group).map((item, _index) => {
                                         const Icon = item.icon;
                                         const isActive = location.pathname === item.path;
                                         return (
@@ -348,7 +346,7 @@ export default function DashboardLayout() {
                         ))
                     ) : (
                         // Render Flat Items for Admin/Agronomo
-                        navItems.map((item, index) => {
+                        navItems.map((item, _index) => {
                             const Icon = item.icon;
                             const isActive = location.pathname === item.path;
                             return (

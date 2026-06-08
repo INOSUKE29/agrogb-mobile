@@ -5,22 +5,20 @@ import {
     Calendar, 
     Leaf, 
     Plus, 
-    CheckCircle2, 
-    Clock, 
-    AlertCircle, 
     Trash2,
     RefreshCw
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
+import DraggableModal from '../../components/common/DraggableModal';
 
 export default function PlantioScreen() {
     const [loading, setLoading] = useState(true);
-    const [plantios, setPlantios] = useState<any[]>([]);
+    const [plantios, setPlantios] = useState<Record<string, string | number | boolean | null>[]>([]);
     
     // Selects
-    const [talhoes, setTalhoes] = useState<any[]>([]);
-    const [culturas, setCulturas] = useState<any[]>([]);
+    const [talhoes, setTalhoes] = useState<Record<string, string | number | boolean | null>[]>([]);
+    const [culturas, setCulturas] = useState<Record<string, string | number | boolean | null>[]>([]);
 
     // Form
     const [showModal, setShowModal] = useState(false);
@@ -36,8 +34,13 @@ export default function PlantioScreen() {
         try {
             // Load Talhoes
             const { data: dataTalhoes } = await supabase.from('v2_talhoes').select('*');
-            // Load Culturas/Insumos
-            const { data: dataCulturas } = await supabase.from('v2_estoque_atual').select('*');
+            // Load Culturas
+            const responseCulturas = await supabase.from('v2_culturas').select('*');
+            let dataCulturas = responseCulturas.data;
+            if (responseCulturas.error) {
+                const fallback = await supabase.from('culturas').select('*').eq('is_deleted', 0);
+                dataCulturas = fallback.data;
+            }
             
             setTalhoes(dataTalhoes || []);
             setCulturas(dataCulturas || []);
@@ -84,13 +87,13 @@ export default function PlantioScreen() {
         }
 
         const talhaoSelec = talhoes.find(t => t.id === talhaoId);
-        const culturaSelec = culturas.find(c => c.id === culturaId);
+        const culturaSelec = culturas.find(c => (c.id || c.uuid) === culturaId);
 
         const payload = {
             talhao_id: talhaoId,
             talhao_nome: talhaoSelec?.nome || 'Talhão',
             cultura_id: culturaId,
-            cultura_nome: culturaSelec?.cultura || culturaSelec?.nome || 'Cultura',
+            cultura_nome: culturaSelec?.nome || 'Cultura',
             quantidade_pes: parseInt(quantidade),
             data_plantio: dataPlantio,
             previsao_colheita: previsaoColheita,
@@ -113,8 +116,9 @@ export default function PlantioScreen() {
             setPrevisaoColheita('');
             setObservacao('');
             fetchDados();
-        } catch (error: any) {
-            toast.error('Erro ao salvar: ' + error.message);
+        } catch (error: unknown) {
+            const err = error as Error | { message: string };
+            toast.error('Erro ao salvar: ' + err.message);
         }
     };
 
@@ -229,21 +233,18 @@ export default function PlantioScreen() {
             </div>
 
             {/* MODAL REGISTRO */}
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
-                    <div className="glass border border-[var(--color-border)] rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden relative z-10 flex flex-col">
-                        
-                        <div className="p-6 border-b border-[var(--color-border)] bg-white/[0.02] flex justify-between items-center">
-                            <div>
-                                <h2 className="text-2xl font-black text-white">Registrar Plantio</h2>
-                                <p className="text-emerald-400 text-xs font-bold tracking-widest mt-1">NOVO CICLO EM CAMPO</p>
-                            </div>
-                            <button onClick={() => setShowModal(false)} className="text-[var(--color-muted)] hover:text-white w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">&times;</button>
-                        </div>
-
-                        <div className="p-6 space-y-6">
-                            <form id="plantioForm" onSubmit={handleSalvar} className="space-y-6">
+            <DraggableModal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                title={
+                    <div>
+                        <h2 className="text-2xl font-black text-white">Registrar Plantio</h2>
+                        <p className="text-emerald-400 text-xs font-bold tracking-widest mt-1">NOVO CICLO EM CAMPO</p>
+                    </div>
+                }
+            >
+                <div className="p-2 space-y-6">
+                    <form id="plantioForm" onSubmit={handleSalvar} className="space-y-6">
                                 
                                 <div>
                                     <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
@@ -267,7 +268,7 @@ export default function PlantioScreen() {
                                         className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none"
                                     >
                                         <option value="" disabled>Selecione a cultura / variedade...</option>
-                                        {culturas.map(c => <option key={c.id} value={c.id}>{c.cultura || c.nome}</option>)}
+                                        {culturas.map(c => <option key={c.id || c.uuid} value={c.id || c.uuid}>{c.nome} {c.variedade ? `- ${c.variedade}` : ''}</option>)}
                                     </select>
                                 </div>
 
@@ -326,10 +327,7 @@ export default function PlantioScreen() {
                                 Registrar Plantio
                             </button>
                         </div>
-
-                    </div>
-                </div>
-            )}
+            </DraggableModal>
 
         </div>
     );

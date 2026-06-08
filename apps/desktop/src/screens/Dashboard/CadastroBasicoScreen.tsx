@@ -17,10 +17,11 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
+import DraggableModal from '../../components/common/DraggableModal';
 
 export default function CadastroBasicoScreen() {
     const [loading, setLoading] = useState(true);
-    const [items, setItems] = useState<any[]>([]);
+    const [items, setItems] = useState<Record<string, string | number | boolean | null>[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
 
     // Form
@@ -36,6 +37,7 @@ export default function CadastroBasicoScreen() {
     const [principioAtivo, setPrincipioAtivo] = useState('');
     const [doseRecomendada, setDoseRecomendada] = useState('');
     const [sugerirGlobal, setSugerirGlobal] = useState(false);
+    const [viewingItem, setViewingItem] = useState<any>(null);
 
     const fetchDados = async () => {
         setLoading(true);
@@ -123,7 +125,7 @@ export default function CadastroBasicoScreen() {
             
             if (sugerirGlobal && produtoId && !editingId) {
                 // Ao sugerir, envia para a fila de aprovação
-                await supabase.from('global_library_submissions').insert([{
+                const { error: subErr } = await supabase.from('global_library_submissions').insert([{
                     user_id: userId,
                     produto_id: produtoId,
                     nome: payload.nome,
@@ -137,16 +139,21 @@ export default function CadastroBasicoScreen() {
                     observacao: payload.observacao,
                     status: 'PENDENTE_GLOBAL'
                 }]);
+                if (subErr) {
+                    console.error('Erro na submissão:', subErr);
+                    toast.error('O item foi salvo localmente, mas houve um erro ao enviar para aprovação: ' + subErr.message);
+                }
             }
             
             closeModal();
             fetchDados();
-        } catch (error: any) {
-            toast.error('Erro ao salvar: ' + error.message);
+        } catch (error: unknown) {
+            const err = error as Error | { message: string };
+            toast.error('Erro ao salvar: ' + err.message);
         }
     };
 
-    const handleDelete = async (item: any) => {
+    const handleDelete = async (item: Record<string, string | number | boolean | null>) => {
         if (item.is_global) return toast.error("Você não pode apagar um item da Biblioteca Global.");
         if (!window.confirm("Deseja apagar este cadastro?")) return;
 
@@ -165,7 +172,7 @@ export default function CadastroBasicoScreen() {
         }
     };
 
-    const openEditModal = (item: any) => {
+    const openEditModal = (item: Record<string, string | number | boolean | null>) => {
         if (item.is_global) return toast.error("Itens Globais não podem ser editados, apenas pelo ADM.");
         setEditingId(item.id);
         setNome(item.nome);
@@ -281,9 +288,8 @@ export default function CadastroBasicoScreen() {
                                 <tr className="bg-white/5">
                                     <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Origem</th>
                                     <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Nome do Item</th>
-                                    <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Categoria</th>
+                                    <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider text-center">Cat.</th>
                                     <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Medida</th>
-                                    <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Observações</th>
                                     <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider text-right">Ações</th>
                                 </tr>
                             </thead>
@@ -293,7 +299,7 @@ export default function CadastroBasicoScreen() {
                                     const isPendente = item.status_aprovacao === 'PENDENTE_GLOBAL';
 
                                     return (
-                                        <tr key={item.id} className={`border-b border-white/5 hover:bg-white/5 transition-colors ${isGlobal ? 'bg-blue-500/[0.02]' : ''}`}>
+                                        <tr key={item.id} onDoubleClick={() => setViewingItem(item)} title="Duplo clique para ver detalhes" className={`border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${isGlobal ? 'bg-blue-500/[0.02]' : ''}`}>
                                             <td className="p-4">
                                                 {isGlobal ? (
                                                     <div className="inline-flex items-center gap-1 text-blue-400 bg-blue-500/10 px-2 py-1 rounded-md text-[10px] font-black tracking-widest border border-blue-500/20 tooltip" title="Este item pertence ao Padrão Global do AgroGB. É válido para todos.">
@@ -309,22 +315,26 @@ export default function CadastroBasicoScreen() {
                                                     </div>
                                                 )}
                                             </td>
-                                            <td className="p-4">
-                                                <p className="font-bold text-white">{item.nome}</p>
+                                            <td className="p-4 min-w-[250px] max-w-[350px]">
+                                                <p 
+                                                    className="font-bold text-white truncate cursor-help"
+                                                    title={`RESUMO DO PRODUTO\n------------------\nNome: ${item.nome}\nCategoria: ${item.categoria}\nFabricante: ${item.fabricante || 'Não informado'}\nPrincípio Ativo: ${item.principio_ativo || 'Não informado'}\nDose Recomendada: ${item.dose_recomendada || 'Não informada'}`}
+                                                >
+                                                    {item.nome}
+                                                </p>
                                             </td>
-                                            <td className="p-4">
-                                                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg border ${getColorForCategory(item.categoria)}`}>
+                                            <td className="p-4 text-center">
+                                                <div 
+                                                    className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border cursor-help transition-transform hover:scale-110 ${getColorForCategory(item.categoria)}`}
+                                                    title={`Categoria: ${item.categoria}`}
+                                                >
                                                     {getIconForCategory(item.categoria)}
-                                                    <span className="text-xs font-bold tracking-wider">{item.categoria}</span>
                                                 </div>
                                             </td>
                                             <td className="p-4">
                                                 <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-lg border border-white/10 text-[var(--color-muted)] text-xs font-bold">
                                                     <Scale className="w-3 h-3" /> {item.unidade_medida}
                                                 </div>
-                                            </td>
-                                            <td className="p-4 text-sm text-[var(--color-muted)] max-w-xs truncate">
-                                                {item.observacao || '-'}
                                             </td>
                                             <td className="p-4 text-right">
                                                 {isGlobal ? (
@@ -362,21 +372,18 @@ export default function CadastroBasicoScreen() {
             </div>
 
             {/* MODAL REGISTRO */}
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal}></div>
-                    <div className="glass border border-indigo-500/30 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden relative z-10 flex flex-col">
-                        
-                        <div className="p-6 border-b border-[var(--color-border)] bg-indigo-500/5 flex justify-between items-center">
-                            <div>
-                                <h2 className="text-2xl font-black text-white">{editingId ? 'Editar Item' : 'Novo Item Local'}</h2>
-                                <p className="text-indigo-400 text-xs font-bold tracking-widest mt-1">CATÁLOGO</p>
-                            </div>
-                            <button onClick={closeModal} className="text-[var(--color-muted)] hover:text-white w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">&times;</button>
-                        </div>
-
-                        <div className="p-6 space-y-6">
-                            <form id="cadForm" onSubmit={handleSalvar} className="space-y-6">
+            <DraggableModal
+                isOpen={showModal}
+                onClose={closeModal}
+                title={
+                    <div>
+                        <h2 className="text-2xl font-black text-white">{editingId ? 'Editar Item' : 'Novo Item Local'}</h2>
+                        <p className="text-indigo-400 text-xs font-bold tracking-widest mt-1">CATÁLOGO</p>
+                    </div>
+                }
+            >
+                <div className="p-2 space-y-6">
+                    <form id="cadForm" onSubmit={handleSalvar} className="space-y-6">
                                 
                                 <div>
                                     <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
@@ -461,6 +468,7 @@ export default function CadastroBasicoScreen() {
                                             <option value="SOLO">Via Solo</option>
                                             <option value="FERTIRRIGACAO">Fertirrigação</option>
                                             <option value="SEMENTE">Trat. Semente</option>
+                                            <option value="OUTROS">Outros</option>
                                         </select>
                                     </div>
                                     <div>
@@ -526,9 +534,68 @@ export default function CadastroBasicoScreen() {
                                 Salvar Cadastro
                             </button>
                         </div>
+            </DraggableModal>
 
-                    </div>
-                </div>
+            {/* MODAL DE VISUALIZAÇÃO DE DETALHES */}
+            {viewingItem && (
+                <DraggableModal
+                    isOpen={!!viewingItem}
+                    onClose={() => setViewingItem(null)}
+                    title={<h2 className="text-2xl font-black text-white flex items-center gap-3">Ficha do Produto</h2>}
+                >
+                    <div className="p-2 space-y-6 custom-scrollbar">
+                                <div>
+                                    <p className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-1">Nome do Produto</p>
+                                    <p className="text-3xl font-black text-white">{viewingItem.nome}</p>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                                    <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                                        <p className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-1">Categoria</p>
+                                        <p className="text-lg font-bold text-white">{viewingItem.categoria}</p>
+                                    </div>
+                                    <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                                        <p className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-1">Medida</p>
+                                        <p className="text-lg font-bold text-white">{viewingItem.unidade_medida}</p>
+                                    </div>
+                                    <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                                        <p className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-1">Origem</p>
+                                        <p className="text-lg font-bold text-white">{viewingItem.is_global ? 'Padrão Global' : viewingItem.status_aprovacao === 'PENDENTE_GLOBAL' ? 'Pendente' : 'Local'}</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <p className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-1">Fabricante</p>
+                                        <p className="text-base font-medium text-white">{viewingItem.fabricante || 'Não informado'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-1">Princípio Ativo</p>
+                                        <p className="text-base font-medium text-white">{viewingItem.principio_ativo || 'Não informado'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-1">Modo de Aplicação</p>
+                                        <p className="text-base font-medium text-white">{viewingItem.modo_aplicacao || 'Não informado'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-1">Dose Recomendada</p>
+                                        <p className="text-base font-medium text-white">{viewingItem.dose_recomendada || 'Não informada'}</p>
+                                    </div>
+                                </div>
+
+                                {viewingItem.observacao && (
+                                    <div className="bg-white/5 p-4 rounded-2xl border border-white/5 mt-4">
+                                        <p className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">Observações Adicionais</p>
+                                        <p className="text-base text-white/90 leading-relaxed">{viewingItem.observacao}</p>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="p-6 border-t border-[var(--color-border)] bg-white/[0.02] flex justify-end">
+                                <button onClick={() => setViewingItem(null)} className="px-8 py-3 bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/80 rounded-xl text-white font-black shadow-lg transition-all">
+                                    Fechar
+                                </button>
+                            </div>
+                </DraggableModal>
             )}
 
         </div>

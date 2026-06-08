@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Leaf, Lock, Mail, ArrowRight, ShieldCheck, Terminal, X, Key } from 'lucide-react';
+import { Lock, Mail, ArrowRight, ShieldCheck, Terminal, X, Key } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 
 export default function LoginScreen() {
@@ -63,8 +63,9 @@ export default function LoginScreen() {
                 // Redirect to dashboard
                 navigate('/dashboard');
             }
-        } catch (error: any) {
-            setErrorMsg(error.message || 'Falha ao autenticar.');
+        } catch (error: unknown) {
+            const err = error as Error;
+            setErrorMsg(err.message || 'Falha ao autenticar.');
         } finally {
             setLoading(false);
         }

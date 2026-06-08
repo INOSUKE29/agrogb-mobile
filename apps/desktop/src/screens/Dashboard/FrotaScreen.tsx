@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
-import { Truck, Search, Plus, Filter, Wrench, AlertTriangle, CheckCircle, Clock, Activity, PenTool } from 'lucide-react';
+import { Truck, Search, Plus, Filter, Wrench, AlertTriangle, CheckCircle, Clock, PenTool } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function FrotaScreen() {
-    const [frota, setFrota] = useState<any[]>([]);
+    const [frota, setFrota] = useState<Record<string, string | number | boolean | null>[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [showModal, setShowModal] = useState(false);
@@ -54,7 +54,8 @@ export default function FrotaScreen() {
             }));
 
             setFrota(normalizedData);
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const _err = error as Error;
             console.error('Erro ao buscar frota:', error);
             toast.error('Não foi possível carregar as máquinas. Verifique sua conexão.');
         } finally {
@@ -111,9 +112,10 @@ export default function FrotaScreen() {
             setHorimetro('');
             fetchFrota();
 
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const err = error as Error | { message: string };
             console.error('Erro ao cadastrar:', error);
-            toast.error(error.message || 'Falha ao cadastrar máquina.');
+            toast.error(err.message || 'Falha ao cadastrar máquina.');
         }
     };
 
@@ -129,7 +131,8 @@ export default function FrotaScreen() {
             if (error) throw error;
             toast.success(`Status alterado para ${novoStatus}`);
             fetchFrota();
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const _err = error as Error;
             toast.error('Erro ao atualizar status.');
         }
     };

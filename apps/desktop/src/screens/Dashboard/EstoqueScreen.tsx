@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
-import { Package, Search, Plus, ArrowDownCircle, ArrowUpCircle, Filter, Activity, Box, Tag, Layers, RefreshCw } from 'lucide-react';
+import { Package, Search, ArrowDownCircle, ArrowUpCircle, Filter, Activity, Box, Tag, Layers, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
+import DraggableModal from '../../components/common/DraggableModal';
 
 export default function EstoqueScreen() {
-    const [estoque, setEstoque] = useState<any[]>([]);
+    const [estoque, setEstoque] = useState<Record<string, string | number | boolean | null>[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState<'ENTRADA' | 'SAIDA'>('ENTRADA');
 
     // Formulário do Modal
-    const [produto, setProduto] = useState('');
+    const [produtos, setProdutos] = useState<Record<string, string | number | boolean | null>[]>([]);
+    const [produtoId, setProdutoId] = useState('');
     const [quantidade, setQuantidade] = useState('');
     const [origem, setOrigem] = useState('COMPRA'); // ou VENDA, ADUBAÇÃO, etc
 
@@ -25,10 +27,11 @@ export default function EstoqueScreen() {
                 .order('last_updated', { ascending: false });
 
             // Fetch produtos separately
-            let produtosData: any[] = [];
+            let produtosData: Record<string, string | number | boolean | null>[] = [];
             if (!error) {
-                const prodResponse = await supabase.from('v2_produtos').select('id, nome, categoria, unidade_medida');
+                const prodResponse = await supabase.from('v2_produtos').select('*').order('nome');
                 produtosData = prodResponse.data || [];
+                setProdutos(produtosData);
             }
 
             if (error) {
@@ -56,7 +59,8 @@ export default function EstoqueScreen() {
             });
 
             setEstoque(normalizedData);
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const _err = error as Error;
             console.error('Erro ao buscar estoque:', error);
             toast.error('Não foi possível carregar o estoque. Verifique sua conexão.');
         } finally {
@@ -71,7 +75,7 @@ export default function EstoqueScreen() {
     const handleTransaction = async (e: React.FormEvent) => {
         e.preventDefault();
         const qtdNum = parseFloat(quantidade);
-        if (!produto || isNaN(qtdNum) || qtdNum <= 0) {
+        if (!produtoId || isNaN(qtdNum) || qtdNum <= 0) {
             toast.error('Preencha os campos corretamente.');
             return;
         }
@@ -80,12 +84,20 @@ export default function EstoqueScreen() {
             const { data: userData } = await supabase.auth.getUser();
             const userId = userData.user?.id;
 
-            const currentItem = estoque.find(item => item.produto?.toLowerCase() === produto.toLowerCase());
-            let itemUuid = currentItem?.uuid;
+            // Find if stock already exists for this produto_id
+            // Note: The normalized estoque has uuid as the v2_estoque_atual.id
+            // We need to find the raw v2_estoque_atual record for this produto_id
+            const { data: existingStock, error: stockCheckErr } = await supabase
+                .from('v2_estoque_atual')
+                .select('*')
+                .eq('produto_id', produtoId)
+                .single();
+
+            let itemUuid = existingStock?.id;
             let novaQuantidade = modalType === 'ENTRADA' ? qtdNum : -qtdNum;
 
-            if (currentItem) {
-                novaQuantidade = currentItem.quantidade + novaQuantidade;
+            if (existingStock) {
+                novaQuantidade = Number(existingStock.quantidade) + novaQuantidade;
                 if (novaQuantidade < 0) {
                     toast.error('Saldo em estoque insuficiente para esta saída!');
                     return;
@@ -97,10 +109,7 @@ export default function EstoqueScreen() {
                     .update({ quantidade: novaQuantidade, last_updated: new Date().toISOString() })
                     .eq('id', itemUuid);
                 
-                if (updError) {
-                    // Fallback old table
-                    await supabase.from('estoque').update({ quantidade: novaQuantidade }).eq('uuid', itemUuid);
-                }
+                if (updError) throw updError;
 
             } else {
                 if (modalType === 'SAIDA') {
@@ -108,15 +117,20 @@ export default function EstoqueScreen() {
                     return;
                 }
                 
-                // For a new item, we should create v2_produtos first, but for simplicity, we insert into the old table if v2 fails
+                // Insert into v2_estoque_atual
                 const { data: newStock, error: insError } = await supabase
-                    .from('estoque')
-                    .insert([{ produto: produto, quantidade: novaQuantidade, user_id: userId }])
+                    .from('v2_estoque_atual')
+                    .insert([{ 
+                        produto_id: produtoId, 
+                        quantidade: novaQuantidade, 
+                        user_id: userId,
+                        last_updated: new Date().toISOString()
+                    }])
                     .select()
                     .single();
                 
                 if (insError) throw insError;
-                itemUuid = newStock?.uuid;
+                itemUuid = newStock?.id;
             }
 
             // Registrar na tabela de Movimentações
@@ -133,13 +147,14 @@ export default function EstoqueScreen() {
 
             toast.success(`Movimentação de ${modalType} registrada com sucesso!`);
             setShowModal(false);
-            setProduto('');
+            setProdutoId('');
             setQuantidade('');
             fetchEstoque();
 
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const err = error as Error | { message: string };
             console.error('Erro na transação:', error);
-            toast.error(error.message || 'Falha ao processar movimentação.');
+            toast.error(err.message || 'Falha ao processar movimentação.');
         }
     };
 
@@ -292,34 +307,35 @@ export default function EstoqueScreen() {
             )}
 
             {/* MODAL DE ENTRADA/SAÍDA */}
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowModal(false)}></div>
-                    <div className="glass border border-[var(--color-border)] rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden relative z-10 animate-fade-in flex flex-col max-h-[90vh]">
-                        <div className={`h-2 w-full ${modalType === 'ENTRADA' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                        
-                        <div className="p-6 border-b border-[var(--color-border)] flex justify-between items-center bg-white/[0.02]">
-                            <h2 className="text-2xl font-black text-white flex items-center gap-3">
-                                {modalType === 'ENTRADA' ? <ArrowDownCircle className="text-green-500 w-8 h-8" /> : <ArrowUpCircle className="text-red-500 w-8 h-8" />}
-                                {modalType === 'ENTRADA' ? 'Nova Entrada de Produto' : 'Nova Saída de Produto'}
-                            </h2>
-                            <button onClick={() => setShowModal(false)} className="text-[var(--color-muted)] hover:text-white p-2 bg-white/5 rounded-full transition-colors">
-                                &times;
-                            </button>
-                        </div>
-
-                        <div className="p-6 overflow-y-auto">
+            <DraggableModal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                title={
+                    <h2 className="text-2xl font-black text-white flex items-center gap-3">
+                        {modalType === 'ENTRADA' ? <ArrowDownCircle className="text-green-500 w-8 h-8" /> : <ArrowUpCircle className="text-red-500 w-8 h-8" />}
+                        {modalType === 'ENTRADA' ? 'Nova Entrada de Produto' : 'Nova Saída de Produto'}
+                    </h2>
+                }
+            >
+                <div className={`h-2 w-full absolute top-0 left-0 right-0 ${modalType === 'ENTRADA' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <div className="p-6 overflow-y-auto mt-2 custom-scrollbar">
                             <form id="estoqueForm" onSubmit={handleTransaction} className="space-y-5">
                                 <div>
                                     <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Produto</label>
-                                    <input 
-                                        type="text" 
-                                        required
-                                        value={produto}
-                                        onChange={(e) => setProduto(e.target.value)}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all"
-                                        placeholder="Ex: Ureia, Semente de Soja, Glifosato..."
-                                    />
+                                    <div className="relative">
+                                        <select 
+                                            required
+                                            value={produtoId}
+                                            onChange={(e) => setProdutoId(e.target.value)}
+                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none appearance-none transition-all"
+                                        >
+                                            <option value="" disabled>Selecione do Catálogo...</option>
+                                            {produtos.map(p => <option key={p.id || p.uuid} value={String(p.id || p.uuid)}>{p.nome} ({p.unidade_medida || 'UN'})</option>)}
+                                        </select>
+                                        <div className="text-right mt-1">
+                                            <a href="#/dashboard/cliente/cadastro" className="text-xs text-[var(--color-primary)] hover:underline opacity-80">+ Novo Produto no Catálogo</a>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-5">
                                     <div>
@@ -377,9 +393,7 @@ export default function EstoqueScreen() {
                                 Confirmar {modalType === 'ENTRADA' ? 'Entrada' : 'Saída'}
                             </button>
                         </div>
-                    </div>
-                </div>
-            )}
+            </DraggableModal>
         </div>
     );
 }

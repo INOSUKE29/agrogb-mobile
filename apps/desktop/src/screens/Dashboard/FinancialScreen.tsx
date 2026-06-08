@@ -14,11 +14,12 @@ import {
     Wallet,
     Download
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import * as XLSX from 'xlsx';
 
 export default function FinancialScreen() {
-    const [transacoes, setTransacoes] = useState<any[]>([]);
+    const [transacoes, setTransacoes] = useState<Record<string, string | number | boolean | null>[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterTipo, setFilterTipo] = useState('TODOS');
@@ -56,7 +57,7 @@ export default function FinancialScreen() {
             // Calculate KPIs for current month / total
             let rec = 0;
             let des = 0;
-            records.forEach((r: any) => {
+            records.forEach((r: Record<string, string | number | boolean | null>) => {
                 if (r.status !== 'CANCELADO') {
                     if (r.tipo === 'RECEITA' || r.tipo === 'RECEBER') rec += Number(r.valor) || 0;
                     else if (r.tipo === 'DESPESA' || r.tipo === 'PAGAR') des += Number(r.valor) || 0;
@@ -277,7 +278,7 @@ export default function FinancialScreen() {
                                 <Tooltip 
                                     contentStyle={{ backgroundColor: '#152336', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
                                     itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-                                    formatter={(value: any) => [`R$ ${value}`, '']}
+                                    formatter={(value: Record<string, string | number | boolean | null>) => [`R$ ${value}`, '']}
                                 />
                                 <Area type="monotone" dataKey="receitas" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorRec)" name="Receitas" />
                                 <Area type="monotone" dataKey="despesas" stroke="#EF4444" strokeWidth={3} fillOpacity={1} fill="url(#colorDes)" name="Despesas" />

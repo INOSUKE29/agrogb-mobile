@@ -58,10 +58,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             if (!error && rolesData) {
                 const perms = new Set<string>();
-                rolesData.forEach((ur: any) => {
+                rolesData.forEach((ur: Record<string, unknown>) => {
                     const roleNode = ur.roles;
                     if (roleNode && roleNode.role_permissions) {
-                        roleNode.role_permissions.forEach((rp: any) => {
+                        roleNode.role_permissions.forEach((rp: Record<string, unknown>) => {
                             if (rp.permissions && rp.permissions.name) {
                                 perms.add(rp.permissions.name);
                             }

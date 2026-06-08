@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 
 export default function CategoriasDespesaScreen() {
     const [loading, setLoading] = useState(true);
-    const [categorias, setCategorias] = useState<any[]>([]);
+    const [categorias, setCategorias] = useState<Record<string, string | number | boolean | null>[]>([]);
 
     // Form
     const [showModal, setShowModal] = useState(false);
@@ -82,8 +82,9 @@ export default function CategoriasDespesaScreen() {
             setTipo('DESPESA');
             setDescricao('');
             fetchDados();
-        } catch (error: any) {
-            toast.error('Erro ao salvar: ' + error.message);
+        } catch (error: unknown) {
+            const err = error as Error | { message: string };
+            toast.error('Erro ao salvar: ' + err.message);
         }
     };
 

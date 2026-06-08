@@ -63,7 +63,7 @@ export default function RecomendacoesScreen() {
     // Views
     const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
     const [statusTab, setStatusTab] = useState<'Rascunho' | 'Pendente' | 'Aprovada'>('Pendente');
-    const [receitasList, setReceitasList] = useState<any[]>([]);
+    const [receitasList, setReceitasList] = useState<Record<string, string | number | boolean | null>[]>([]);
 
     const loadReceitas = async () => {
         setLoading(true);

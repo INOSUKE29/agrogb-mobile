@@ -9,6 +9,7 @@ import AgroDashboard from './screens/Dashboard/AgroDashboard';
 import ClienteDashboard from './screens/Dashboard/ClienteDashboard';
 import TalhoesScreen from './screens/Dashboard/TalhoesScreen';
 import PlantioScreen from './screens/Dashboard/PlantioScreen';
+import AreasEPlantioScreen from './screens/Dashboard/AreasEPlantioScreen';
 import CadernoAgricolaScreen from './screens/Dashboard/CadernoAgricolaScreen';
 import RecomendacoesScreen from './screens/Dashboard/RecomendacoesScreen';
 import ReceituarioAgronomicoScreen from './screens/Dashboard/ReceituarioAgronomicoScreen';
@@ -25,6 +26,8 @@ import CategoriasDespesaScreen from './screens/Dashboard/CategoriasDespesaScreen
 import CadastroBasicoScreen from './screens/Dashboard/CadastroBasicoScreen';
 import AdminCatalogScreen from './screens/Dashboard/AdminCatalogScreen';
 import ComprasScreen from './screens/Dashboard/ComprasScreen';
+import CotacoesScreen from './screens/Dashboard/CotacoesScreen';
+import FornecedoresScreen from './screens/Dashboard/FornecedoresScreen';
 import EncomendasScreen from './screens/Dashboard/EncomendasScreen';
 import ClimaScreen from './screens/Dashboard/ClimaScreen';
 import RelatoriosScreen from './screens/Dashboard/RelatoriosScreen';
@@ -82,9 +85,8 @@ function App() {
               {/* PORTAL CLIENTE (PRODUTOR) */}
               <Route path="cliente" element={<ClienteDashboard />} />
               <Route path="cliente/relatorios" element={<RelatoriosScreen />} />
-              <Route path="cliente/talhoes" element={<TalhoesScreen />} />
-              <Route path="cliente/plantio" element={<PlantioScreen />} />
-              <Route path="cliente/culturas" element={<CulturasScreen />} />
+              <Route path="cliente/areas" element={<AreasEPlantioScreen />} />
+              <Route path="cliente/colheita" element={<HarvestScreen />} />
               <Route path="cliente/monitoramento" element={<MonitoramentoScreen />} />
               <Route path="cliente/caderno" element={<CadernoAgricolaScreen />} />
               <Route path="cliente/financeiro" element={<FinancialScreen />} />
@@ -95,6 +97,8 @@ function App() {
               <Route path="cliente/custos" element={<CustosScreen />} />
               <Route path="cliente/categorias" element={<CategoriasDespesaScreen />} />
               <Route path="cliente/cadastro" element={<CadastroBasicoScreen />} />
+              <Route path="cliente/fornecedores" element={<FornecedoresScreen />} />
+              <Route path="cliente/cotacoes" element={<CotacoesScreen />} />
               <Route path="cliente/compras" element={<ComprasScreen />} />
               <Route path="cliente/encomendas" element={<EncomendasScreen />} />
               <Route path="cliente/clima" element={<ClimaScreen />} />

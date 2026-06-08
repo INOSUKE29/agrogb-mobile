@@ -3,15 +3,14 @@ import { supabase } from '../../services/supabase';
 import { ShoppingCart, Store, FileText, Plus, Building2, CheckCircle, XCircle, AlertCircle, TrendingUp, Package, Box } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-export default function ComprasScreen() {
+export default function CotacoesScreen() {
     const [fornecedores, setFornecedores] = useState<Record<string, string | number | boolean | null>[]>([]);
-    const [produtos, setProdutos] = useState<Record<string, string | number | boolean | null>[]>([]);
     const [cotacoes, setCotacoes] = useState<Record<string, string | number | boolean | null>[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Modais
     const [showFornecedorModal, setShowFornecedorModal] = useState(false);
-    const [showCompraModal, setShowCompraModal] = useState(false);
+    const [showCotacaoModal, setShowCotacaoModal] = useState(false);
 
     // Formulário Fornecedor
     const [nomeFantasia, setNomeFantasia] = useState('');
@@ -34,18 +33,14 @@ export default function ComprasScreen() {
 
             if (fornError && fornError.code !== '42P01') throw fornError;
             
-            const { data: prodData } = await supabase.from('v2_produtos').select('*').order('nome', { ascending: true });
-
             const { data: cotData, error: cotError } = await supabase
                 .from('v2_cotacoes')
                 .select('*, fornecedor:fornecedor_id(nome_fantasia)')
-                .eq('status', 'COMPRADA')
                 .order('data_cotacao', { ascending: false });
 
             if (cotError && cotError.code !== '42P01') throw cotError;
 
             setFornecedores(fornData || []);
-            setProdutos(prodData || []);
             setCotacoes(cotData || []);
         } catch (error: unknown) {
             const _err = error as Error;
@@ -89,72 +84,32 @@ export default function ComprasScreen() {
         }
     };
 
-    const handleSaveCompra = async (e: React.FormEvent) => {
+    const handleSaveCotacao = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!fornecedorSelecionado || !itemNome || !quantidade || !valorUnitario) return;
 
         try {
-            setLoading(true);
             const { data: userData } = await supabase.auth.getUser();
-            const userId = userData.user?.id;
-            const qtdNum = parseFloat(quantidade);
-
-            // 1. Salvar no histórico como 'COMPRADA'
-            const { error: compraError } = await supabase
+            const { error } = await supabase
                 .from('v2_cotacoes')
                 .insert([{
-                    user_id: userId,
+                    user_id: userData.user?.id,
                     fornecedor_id: fornecedorSelecionado,
                     item_nome: itemNome,
-                    quantidade: qtdNum,
-                    valor_unitario: parseFloat(valorUnitario),
-                    status: 'COMPRADA'
+                    quantidade: parseFloat(quantidade),
+                    valor_unitario: parseFloat(valorUnitario)
                 }]);
             
-            if (compraError) throw compraError;
+            if (error) throw error;
 
-            // 2. Dar entrada no Estoque
-            const { data: estoqueAtual } = await supabase.from('v2_estoque_atual').select('*');
-            let itemEstoque = (estoqueAtual || []).find(item => item.produto?.toLowerCase() === itemNome.toLowerCase());
-            let itemUuid = itemEstoque?.id || itemEstoque?.uuid;
-
-            if (itemEstoque) {
-                await supabase
-                    .from('v2_estoque_atual')
-                    .update({ quantidade: (itemEstoque.quantidade || 0) + qtdNum, last_updated: new Date().toISOString() })
-                    .eq('id', itemUuid);
-            } else {
-                const { data: newStock, error: insError } = await supabase
-                    .from('estoque')
-                    .insert([{ produto: itemNome, quantidade: qtdNum, user_id: userId }])
-                    .select().single();
-                if (!insError) itemUuid = newStock?.uuid;
-            }
-
-            // 3. Registrar Movimentação
-            if (itemUuid) {
-                await supabase
-                    .from('v2_movimentacoes_estoque')
-                    .insert([{
-                        user_id: userId,
-                        tipo: 'ENTRADA',
-                        quantidade: qtdNum,
-                        origem: 'COMPRA',
-                        data: new Date().toISOString(),
-                        produto_uuid: itemUuid
-                    }]);
-            }
-
-            toast.success('Compra confirmada e Estoque atualizado!');
-            setShowCompraModal(false);
+            toast.success('Cotação registrada!');
+            setShowCotacaoModal(false);
             setItemNome('');
             setQuantidade('');
             setValorUnitario('');
             fetchDados();
         } catch (error) {
-            toast.error('Erro ao registrar compra.');
-        } finally {
-            setLoading(false);
+            toast.error('Erro ao registrar cotação.');
         }
     };
 
@@ -184,7 +139,7 @@ export default function ComprasScreen() {
         }
     };
 
-    const totalCotacoesAbertas = cotacoes.length;
+    const totalCotacoesAbertas = cotacoes.filter(c => c.status !== 'APROVADA' && c.status !== 'REJEITADA').length;
     const valorTotalAprovado = cotacoes.filter(c => c.status === 'APROVADA').reduce((acc, curr) => acc + (curr.valor_total || 0), 0);
 
     return (
@@ -197,13 +152,13 @@ export default function ComprasScreen() {
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-bold mb-4">
-                            <ShoppingCart className="w-4 h-4" /> Compras e Estoque
+                            <ShoppingCart className="w-4 h-4" /> Suprimentos e Orçamentos
                         </div>
                         <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-2">
-                            Compras (Estoque)
+                            Compras
                         </h1>
                         <p className="text-[var(--color-muted)] text-lg max-w-xl">
-                            Ordens de compra reais. Confirme suas compras para gerar entrada automática no estoque.
+                            Pesquisa de mercado e planejamento de compras (sem afetar estoque).
                         </p>
                     </div>
                 </div>
@@ -222,7 +177,7 @@ export default function ComprasScreen() {
                 </div>
                 <div className="glass-card p-6 rounded-3xl flex items-center justify-between group border-b-4 border-amber-500 hover:-translate-y-1 transition-all">
                     <div>
-                        <p className="text-[var(--color-muted)] font-bold text-sm uppercase tracking-wider mb-1">Ordens de Compra</p>
+                        <p className="text-[var(--color-muted)] font-bold text-sm uppercase tracking-wider mb-1">Cotações Abertas</p>
                         <h3 className="text-3xl font-black text-amber-400">{totalCotacoesAbertas}</h3>
                     </div>
                     <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -231,7 +186,7 @@ export default function ComprasScreen() {
                 </div>
                 <div className="glass-card p-6 rounded-3xl flex items-center justify-between group border-b-4 border-green-500 hover:-translate-y-1 transition-all">
                     <div>
-                        <p className="text-[var(--color-muted)] font-bold text-sm uppercase tracking-wider mb-1">Capital Investido</p>
+                        <p className="text-[var(--color-muted)] font-bold text-sm uppercase tracking-wider mb-1">Volume Aprovado</p>
                         <h3 className="text-2xl font-black text-green-400">R$ {valorTotalAprovado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
                     </div>
                     <div className="w-14 h-14 rounded-2xl bg-green-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -245,14 +200,14 @@ export default function ComprasScreen() {
                         <div className="p-6 border-b border-[var(--color-border)] flex items-center justify-between bg-white/[0.02]">
                             <h2 className="text-xl font-black text-white flex items-center gap-3">
                                 <FileText className="w-6 h-6 text-[var(--color-primary)]" />
-                                Painel de Compras
+                                Painel de Cotações
                             </h2>
                             <button 
-                                onClick={() => setShowCompraModal(true)}
+                                onClick={() => setShowCotacaoModal(true)}
                                 className="bg-[var(--color-primary)] hover:opacity-90 px-5 py-2.5 rounded-xl text-white font-bold transition-all flex items-center gap-2 active:scale-95 shadow-lg shadow-[var(--color-primary)]/20"
                             >
                                 <Plus className="w-5 h-5" />
-                                Nova Compra Real
+                                Nova Cotação
                             </button>
                         </div>
 
@@ -266,8 +221,8 @@ export default function ComprasScreen() {
                                     <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
                                         <FileText className="w-10 h-10 opacity-30" />
                                     </div>
-                                    <p className="text-xl text-white font-black mb-2">Nenhuma compra no momento</p>
-                                    <p className="max-w-xs text-center">Inicie uma nova compra oficial para dar entrada automática no seu estoque.</p>
+                                    <p className="text-xl text-white font-black mb-2">Nenhuma cotação no momento</p>
+                                    <p className="max-w-xs text-center">Inicie um orçamento para compra de insumos, sementes ou defensivos.</p>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
@@ -312,7 +267,22 @@ export default function ComprasScreen() {
                                                     <p className="text-xs text-[var(--color-muted)] font-medium mt-1">R$ {c.valor_unitario?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} / un</p>
                                                 </div>
                                                 
-                                                {/* Rejeitar/Aprovar removidos pois já é uma Compra confirmada */}
+                                                {c.status !== 'APROVADA' && c.status !== 'REJEITADA' && (
+                                                    <div className="flex gap-2 w-full mt-auto">
+                                                        <button 
+                                                            onClick={() => atualizarStatusCotacao(c.uuid, 'REJEITADA')}
+                                                            className="flex-1 py-2 rounded-xl text-red-400 bg-red-500/10 hover:bg-red-500/20 font-bold text-sm transition-colors border border-red-500/20"
+                                                        >
+                                                            Rejeitar
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => atualizarStatusCotacao(c.uuid, 'APROVADA')}
+                                                            className="flex-1 py-2 rounded-xl bg-green-500/20 text-green-400 hover:bg-green-500/30 font-black text-sm transition-colors border border-green-500/30"
+                                                        >
+                                                            Aprovar
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -322,20 +292,20 @@ export default function ComprasScreen() {
                     </div>
                 </div>
 
-            {/* MODAL NOVA COMPRA */}
-            {showCompraModal && (
+            {/* MODAL NOVA COTAÇÃO */}
+            {showCotacaoModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowCompraModal(false)}></div>
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowCotacaoModal(false)}></div>
                     <div className="glass border border-[var(--color-border)] rounded-3xl shadow-2xl w-full max-w-md overflow-hidden relative z-10 animate-fade-in flex flex-col">
-                        <div className="h-2 w-full bg-[var(--color-primary)]"></div>
+                        <div className="h-2 w-full bg-blue-500"></div>
                         <div className="p-6 border-b border-[var(--color-border)] bg-white/[0.02] flex justify-between items-center">
                             <h2 className="text-xl font-black text-white flex items-center gap-2">
-                                <ShoppingCart className="text-[var(--color-primary)] w-6 h-6" />
-                                Confirmar Compra e Estoque
+                                <FileText className="text-blue-500 w-6 h-6" />
+                                Abrir Nova Cotação
                             </h2>
-                            <button onClick={() => setShowCompraModal(false)} className="text-[var(--color-muted)] hover:text-white transition-colors">&times;</button>
+                            <button onClick={() => setShowCotacaoModal(false)} className="text-[var(--color-muted)] hover:text-white transition-colors">&times;</button>
                         </div>
-                        <form onSubmit={handleSaveCompra} className="p-6 space-y-4">
+                        <form onSubmit={handleSaveCotacao} className="p-6 space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Fornecedor *</label>
                                 <select 
@@ -348,19 +318,12 @@ export default function ComprasScreen() {
                             </div>
                             
                             <div>
-                                <label className="block text-xs font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Produto Comprado *</label>
-                                <div className="relative">
-                                    <select 
-                                        required value={itemNome} onChange={e => setItemNome(e.target.value)}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none appearance-none transition-all"
-                                    >
-                                        <option value="" disabled>Selecione do Catálogo...</option>
-                                        {produtos.map(p => <option key={p.id || p.uuid} value={p.nome}>{p.nome} ({p.unidade_medida || 'UN'})</option>)}
-                                    </select>
-                                    <div className="text-right mt-1">
-                                        <a href="#/dashboard/cliente/cadastro" className="text-xs text-[var(--color-primary)] hover:underline opacity-80">+ Novo Produto no Catálogo</a>
-                                    </div>
-                                </div>
+                                <label className="block text-xs font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Produto Cotado *</label>
+                                <input 
+                                    type="text" required value={itemNome} onChange={e => setItemNome(e.target.value)}
+                                    className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                    placeholder="Ex: Ureia 46%, Semente Milho..."
+                                />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -390,8 +353,8 @@ export default function ComprasScreen() {
                             </div>
 
                             <div className="flex gap-3 pt-4 border-t border-[var(--color-border)]">
-                                <button type="button" onClick={() => setShowCompraModal(false)} className="flex-1 py-3 text-[var(--color-muted)] hover:bg-white/5 rounded-xl font-bold transition-all">Cancelar</button>
-                                <button type="submit" className="flex-1 py-3 bg-[var(--color-primary)] hover:opacity-90 rounded-xl text-white font-black shadow-lg shadow-[var(--color-primary)]/20 active:scale-95 transition-all">Confirmar e Estoque</button>
+                                <button type="button" onClick={() => setShowCotacaoModal(false)} className="flex-1 py-3 text-[var(--color-muted)] hover:bg-white/5 rounded-xl font-bold transition-all">Cancelar</button>
+                                <button type="submit" className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-white font-black shadow-lg shadow-blue-500/20 active:scale-95 transition-all">Lançar Cotação</button>
                             </div>
                         </form>
                     </div>

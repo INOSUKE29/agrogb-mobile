@@ -4,7 +4,7 @@ import { supabase } from '../../services/supabase';
 
 export default function VisitasScreen() {
     const [loading, setLoading] = useState(true);
-    const [visitas, setVisitas] = useState<any[]>([]);
+    const [visitas, setVisitas] = useState<Record<string, string | number | boolean | null>[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     
     // Formulário de visita
@@ -71,8 +71,9 @@ export default function VisitasScreen() {
             setObservacoes('');
             loadVisitas();
             
-        } catch (error: any) {
-            alert('Erro ao agendar: ' + error.message);
+        } catch (error: unknown) {
+            const err = error as Error | { message: string };
+            alert('Erro ao agendar: ' + err.message);
         } finally {
             setSubmitting(false);
         }

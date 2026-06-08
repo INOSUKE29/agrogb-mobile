@@ -14,8 +14,8 @@ import toast from 'react-hot-toast';
 
 export default function CustosScreen() {
     const [loading, setLoading] = useState(true);
-    const [custos, setCustos] = useState<any[]>([]);
-    const [categorias, setCategorias] = useState<any[]>([]);
+    const [custos, setCustos] = useState<Record<string, string | number | boolean | null>[]>([]);
+    const [categorias, setCategorias] = useState<Record<string, string | number | boolean | null>[]>([]);
 
     // Form
     const [showModal, setShowModal] = useState(false);
@@ -111,8 +111,9 @@ export default function CustosScreen() {
             setValorUnitario('');
             setObservacao('');
             fetchDados();
-        } catch (error: any) {
-            toast.error('Erro ao salvar: ' + error.message);
+        } catch (error: unknown) {
+            const err = error as Error | { message: string };
+            toast.error('Erro ao salvar: ' + err.message);
         }
     };
 

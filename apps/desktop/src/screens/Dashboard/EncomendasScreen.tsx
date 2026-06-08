@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
     Package, 
-    Search, 
     Calendar, 
     CheckCircle2, 
     XCircle,
@@ -18,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 
 export default function EncomendasScreen() {
     const [loading, setLoading] = useState(true);
-    const [encomendas, setEncomendas] = useState<any[]>([]);
+    const [encomendas, setEncomendas] = useState<Record<string, string | number | boolean | null>[]>([]);
     
     // Filtros
     const [filter, setFilter] = useState('TODOS');
@@ -28,8 +27,8 @@ export default function EncomendasScreen() {
     const [editingId, setEditingId] = useState<string | null>(null);
 
     // Relacionamentos para Selects
-    const [clientes, setClientes] = useState<any[]>([]);
-    const [produtos, setProdutos] = useState<any[]>([]);
+    const [clientes, setClientes] = useState<Record<string, string | number | boolean | null>[]>([]);
+    const [produtos, setProdutos] = useState<Record<string, string | number | boolean | null>[]>([]);
 
     // Form states
     const [clienteId, setClienteId] = useState('');
@@ -120,7 +119,7 @@ export default function EncomendasScreen() {
                 const { error } = await supabase.from('v2_encomendas').update(payload).eq('id', editingId);
                 
                 if (error && error.code === '42P01') {
-                    setEncomendas(encomendas.map(e => e.id === editingId ? { ...e, ...payload } : e));
+                    setEncomendas(encomendas.map(e_local => e_local.id === editingId ? { ...e_local, ...payload } : e_local));
                 } else if (error) throw error;
                 
                 toast.success('Encomenda atualizada!');
@@ -151,8 +150,9 @@ export default function EncomendasScreen() {
 
             closeModal();
             fetchDados();
-        } catch (error: any) {
-            toast.error("Erro ao salvar: " + error.message);
+        } catch (error: unknown) {
+            const err = error as Error | { message: string };
+            toast.error("Erro ao salvar: " + err.message);
         }
     };
 
@@ -173,7 +173,7 @@ export default function EncomendasScreen() {
         }
     };
 
-    const handleEfetivarVenda = (item: any) => {
+    const handleEfetivarVenda = (item: Record<string, string | number | boolean | null>) => {
         // Redirecionar para a tela de Vendas com os dados da encomenda
         navigate('/dashboard/cliente/vendas', {
             state: {
@@ -200,7 +200,7 @@ export default function EncomendasScreen() {
         setShowModal(true);
     };
 
-    const openModalEditar = (enc: any) => {
+    const openModalEditar = (enc: Record<string, string | number | boolean | null>) => {
         setEditingId(enc.id);
         setClienteId(enc.cliente_id || '');
         setProdutoId(enc.produto_id || '');

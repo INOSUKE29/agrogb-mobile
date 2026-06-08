@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
-    RefreshCw, Search, Trash2, Globe, Plus, Leaf, Bug, Package, ShieldCheck, X, Activity, Beaker, GitMerge, Percent, Clock
+    RefreshCw, Search, Trash2, Globe, Plus, Leaf, Bug, Package, ShieldCheck, X, Activity, Beaker, GitMerge, Percent, Clock, Edit2
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
+import DraggableModal from '../../components/common/DraggableModal';
 
 export default function AdminCatalogScreen() {
     const { user } = useAuth();
@@ -13,19 +14,22 @@ export default function AdminCatalogScreen() {
     const [activeTab, setActiveTab] = useState<'CULTURAS' | 'PRODUTOS' | 'FITOSSANITARIO' | 'RESULTADOS' | 'COMBINACOES' | 'FASES' | 'APROVACOES'>('CULTURAS');
     
     // Listas Principais
-    const [approvals, setApprovals] = useState<any[]>([]);
-    const [crops, setCrops] = useState<any[]>([]);
-    const [products, setProducts] = useState<any[]>([]);
-    const [pests, setPests] = useState<any[]>([]);
-    const [diseases, setDiseases] = useState<any[]>([]);
-    const [outcomes, setOutcomes] = useState<any[]>([]);
-    const [combinations, setCombinations] = useState<any[]>([]);
-    const [phases, setPhases] = useState<any[]>([]);
+    const [approvals, setApprovals] = useState<Record<string, string | number | boolean | null>[]>([]);
+    const [crops, setCrops] = useState<Record<string, string | number | boolean | null>[]>([]);
+    const [products, setProducts] = useState<Record<string, string | number | boolean | null>[]>([]);
+    const [pests, setPests] = useState<Record<string, string | number | boolean | null>[]>([]);
+    const [diseases, setDiseases] = useState<Record<string, string | number | boolean | null>[]>([]);
+    const [outcomes, setOutcomes] = useState<Record<string, string | number | boolean | null>[]>([]);
+    const [combinations, setCombinations] = useState<Record<string, string | number | boolean | null>[]>([]);
+    const [phases, setPhases] = useState<Record<string, string | number | boolean | null>[]>([]);
+    const [editingApproval, setEditingApproval] = useState<Record<string, string | number | boolean | null> | null>(null);
 
     // Estado do Modal de Criação
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [newItemName, setNewItemName] = useState('');
     const [newItemCategory, setNewItemCategory] = useState('');
+    const [newItemFabricante, setNewItemFabricante] = useState('');
+    const [newItemPrincipio, setNewItemPrincipio] = useState('');
     
     // Campos Específicos para Relacionamentos
     const [selectedCropId, setSelectedCropId] = useState('');
@@ -117,6 +121,8 @@ export default function AdminCatalogScreen() {
         setIsAddModalOpen(false);
         setNewItemName('');
         setNewItemCategory('');
+        setNewItemFabricante('');
+        setNewItemPrincipio('');
         setSelectedCropId('');
         setSelectedProductA('');
         setSelectedProductB('');
@@ -134,10 +140,25 @@ export default function AdminCatalogScreen() {
                 await supabase.from('kb_crops').insert([{ name: newItemName, scope: 'GLOBAL' }]);
                 toast.success('Cultura global adicionada!');
             } 
-            else if (activeTab === 'PRODUTOS') {
+            else if (activeTab === 'PRODUTOS' || activeTab === 'APROVACOES') {
                 if (!newItemName) return toast.error('Nome obrigatório');
-                await supabase.from('kb_products').insert([{ name: newItemName, category: newItemCategory || 'GERAL', scope: 'GLOBAL' }]);
-                toast.success('Produto global adicionado!');
+                
+                const { data: v2Data } = await supabase.from('v2_produtos').insert([{ 
+                    nome: newItemName, 
+                    categoria: newItemCategory || 'INSUMO', 
+                    fabricante: newItemFabricante,
+                    principio_ativo: newItemPrincipio,
+                    is_global: true, 
+                    status_aprovacao: 'APROVADO' 
+                }]).select();
+
+                await supabase.from('kb_products').insert([{ 
+                    name: newItemName, 
+                    category: newItemCategory || 'INSUMO', 
+                    scope: 'GLOBAL' 
+                }]);
+
+                toast.success('Produto global inserido e liberado!');
             } 
             else if (activeTab === 'FITOSSANITARIO') {
                 if (!newItemName) return toast.error('Nome obrigatório');
@@ -199,7 +220,7 @@ export default function AdminCatalogScreen() {
         }
     };
 
-    const handleApprove = async (item: any) => {
+    const handleApprove = async (item: Record<string, string | number | boolean | null>) => {
         try {
             if (item.produto_id) {
                 await supabase.from('v2_produtos').update({ is_global: true, status_aprovacao: 'APROVADO' }).eq('id', item.produto_id);
@@ -207,12 +228,12 @@ export default function AdminCatalogScreen() {
             await supabase.from('global_library_submissions').update({ status: 'APROVADO', review_date: new Date().toISOString() }).eq('id', item.id);
             toast.success('Produto aprovado para a Biblioteca Global!');
             fetchDados();
-        } catch (e) {
+        } catch (_e) {
             toast.error('Erro ao aprovar produto.');
         }
     };
 
-    const handleReject = async (item: any) => {
+    const handleReject = async (item: Record<string, string | number | boolean | null>) => {
         try {
             if (item.produto_id) {
                 await supabase.from('v2_produtos').update({ status_aprovacao: 'REJEITADO' }).eq('id', item.produto_id);
@@ -220,7 +241,7 @@ export default function AdminCatalogScreen() {
             await supabase.from('global_library_submissions').update({ status: 'REJEITADO', review_date: new Date().toISOString() }).eq('id', item.id);
             toast.success('Produto rejeitado.');
             fetchDados();
-        } catch (e) {
+        } catch (_e) {
             toast.error('Erro ao rejeitar produto.');
         }
     };
@@ -434,6 +455,7 @@ export default function AdminCatalogScreen() {
                                 <td className="p-4 text-xs text-[var(--color-muted)]"><span className="px-2 py-1 bg-white/10 rounded">{item.categoria}</span></td>
                                 <td className="p-4 text-xs text-[var(--color-muted)]">{item.fabricante || '-'}</td>
                                 <td className="p-4 text-right space-x-2">
+                                    <button onClick={() => setEditingApproval(item)} className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg" title="Editar antes de aprovar"><Edit2 className="w-5 h-5" /></button>
                                     <button onClick={() => handleApprove(item)} className="p-2 text-green-400 hover:bg-green-500/20 rounded-lg" title="Aprovar e Enviar p/ Global"><ShieldCheck className="w-5 h-5" /></button>
                                     <button onClick={() => handleReject(item)} className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg" title="Rejeitar"><X className="w-5 h-5" /></button>
                                 </td>
@@ -520,34 +542,45 @@ export default function AdminCatalogScreen() {
             </div>
 
             {/* MODAL GLOBAL DE INSERÇÃO */}
-            {isAddModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={resetModal}>
-                    <div className="glass w-full max-w-md rounded-3xl p-8 border border-indigo-500/30 animate-fade-in-up" onClick={e => e.stopPropagation()}>
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-black text-white">Adicionar {activeTab.charAt(0) + activeTab.slice(1).toLowerCase()}</h2>
-                            <button onClick={resetModal} className="text-[var(--color-muted)] hover:text-white"><X className="w-6 h-6"/></button>
-                        </div>
-                        
-                        <div className="space-y-4">
+            <DraggableModal
+                isOpen={isAddModalOpen}
+                onClose={resetModal}
+                title={`Adicionar ${activeTab.charAt(0) + activeTab.slice(1).toLowerCase()}`}
+            >
+                <div className="space-y-4">
                             
                             {/* Campos Padrão (Culturas, Produtos, Fito) */}
-                            {['CULTURAS', 'PRODUTOS', 'FITOSSANITARIO'].includes(activeTab) && (
+                            {['CULTURAS', 'PRODUTOS', 'APROVACOES', 'FITOSSANITARIO'].includes(activeTab) && (
                                 <div>
                                     <label className="text-xs font-bold text-[var(--color-muted)] uppercase mb-1 block">Nome Oficial</label>
-                                    <input type="text" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="Ex: Milho, Calcinit, Mosca Branca" className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-indigo-500 font-bold" />
+                                    <input type="text" value={newItemName} onChange={(e) => setNewItemName(e.target.value.toUpperCase())} placeholder="Ex: Milho, Calcinit, Mosca Branca" className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-indigo-500 font-bold" />
                                 </div>
                             )}
 
-                            {activeTab === 'PRODUTOS' && (
-                                <div>
-                                    <label className="text-xs font-bold text-[var(--color-muted)] uppercase mb-1 block">Categoria do Produto</label>
-                                    <select value={newItemCategory} onChange={(e) => setNewItemCategory(e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-indigo-500">
-                                        <option value="">Selecione...</option>
-                                        <option value="FERTILIZANTE">Fertilizante</option>
-                                        <option value="DEFENSIVO">Defensivo</option>
-                                        <option value="ADJUVANTE">Adjuvante</option>
-                                    </select>
-                                </div>
+                            {['PRODUTOS', 'APROVACOES'].includes(activeTab) && (
+                                <>
+                                    <div>
+                                        <label className="text-xs font-bold text-[var(--color-muted)] uppercase mb-1 block">Categoria do Produto</label>
+                                        <select value={newItemCategory} onChange={(e) => setNewItemCategory(e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-indigo-500">
+                                            <option value="">Selecione...</option>
+                                            <option value="INSUMO">Insumo Geral</option>
+                                            <option value="FERTILIZANTE">Fertilizante</option>
+                                            <option value="DEFENSIVO">Defensivo</option>
+                                            <option value="SEMENTE">Semente / Muda</option>
+                                            <option value="ADJUVANTE">Adjuvante</option>
+                                        </select>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-xs font-bold text-[var(--color-muted)] uppercase mb-1 block">Fabricante</label>
+                                            <input type="text" value={newItemFabricante} onChange={(e) => setNewItemFabricante(e.target.value)} placeholder="Ex: Bayer" className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-indigo-500" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-bold text-[var(--color-muted)] uppercase mb-1 block">Princípio Ativo</label>
+                                            <input type="text" value={newItemPrincipio} onChange={(e) => setNewItemPrincipio(e.target.value)} placeholder="Ex: Glifosato" className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-indigo-500" />
+                                        </div>
+                                    </div>
+                                </>
                             )}
 
                             {activeTab === 'FITOSSANITARIO' && (
@@ -646,9 +679,77 @@ export default function AdminCatalogScreen() {
                                 <Globe className="w-5 h-5"/> Consolidar no Grafo
                             </button>
                         </div>
-                    </div>
-                </div>
-            )}
+            </DraggableModal>
+            <DraggableModal
+                isOpen={!!editingApproval}
+                onClose={() => setEditingApproval(null)}
+                title="Revisar Sugestão"
+            >
+                <div className="space-y-4">
+                            <div>
+                                <label className="text-xs text-[var(--color-muted)] font-bold uppercase">Nome do Produto</label>
+                                <input type="text" value={String(editingApproval.nome || '')} onChange={e => setEditingApproval({...editingApproval, nome: e.target.value.toUpperCase()})} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-2 mt-1 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs text-[var(--color-muted)] font-bold uppercase">Categoria</label>
+                                    <select value={String(editingApproval.categoria || '')} onChange={e => setEditingApproval({...editingApproval, categoria: e.target.value})} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-2 mt-1 focus:ring-2 focus:ring-indigo-500 outline-none appearance-none">
+                                        <option value="INSUMO">Insumo Geral</option>
+                                        <option value="FERTILIZANTE">Fertilizante / Adubo</option>
+                                        <option value="DEFENSIVO">Defensivo Agrícola</option>
+                                        <option value="SEMENTE">Semente / Muda</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-[var(--color-muted)] font-bold uppercase">Fabricante</label>
+                                    <input type="text" value={String(editingApproval.fabricante || '')} onChange={e => setEditingApproval({...editingApproval, fabricante: e.target.value})} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-2 mt-1 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-xs text-[var(--color-muted)] font-bold uppercase">Princípio Ativo / Composição</label>
+                                <input type="text" value={String(editingApproval.principio_ativo || '')} onChange={e => setEditingApproval({...editingApproval, principio_ativo: e.target.value})} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-2 mt-1 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Ex: Glifosato, Cálcio Solúvel..." />
+                            </div>
+                            <div>
+                                <label className="text-xs text-[var(--color-muted)] font-bold uppercase">Observações Extras</label>
+                                <textarea value={String(editingApproval.observacao || '')} onChange={e => setEditingApproval({...editingApproval, observacao: e.target.value})} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-2 mt-1 resize-none focus:ring-2 focus:ring-indigo-500 outline-none" rows={3}></textarea>
+                            </div>
+                            <div className="flex justify-end gap-3 mt-8 border-t border-[var(--color-border)] pt-4">
+                                <button onClick={() => setEditingApproval(null)} className="px-4 py-2 text-[var(--color-muted)] hover:text-white font-bold">Cancelar</button>
+                                <button 
+                                    onClick={async () => {
+                                        try {
+                                            await supabase.from('global_library_submissions').update({
+                                                nome: editingApproval.nome,
+                                                categoria: editingApproval.categoria,
+                                                fabricante: editingApproval.fabricante,
+                                                principio_ativo: editingApproval.principio_ativo,
+                                                observacao: editingApproval.observacao
+                                            }).eq('id', editingApproval.id);
+                                            
+                                            if (editingApproval.produto_id) {
+                                                await supabase.from('v2_produtos').update({
+                                                    nome: editingApproval.nome,
+                                                    categoria: editingApproval.categoria,
+                                                    fabricante: editingApproval.fabricante,
+                                                    principio_ativo: editingApproval.principio_ativo,
+                                                    observacao: editingApproval.observacao
+                                                }).eq('id', editingApproval.produto_id);
+                                            }
+                                            
+                                            toast.success('Sugestão ajustada! Você já pode aprová-la.');
+                                            setEditingApproval(null);
+                                            fetchDados();
+                                        } catch(e) {
+                                            toast.error('Erro ao salvar edição.');
+                                        }
+                                    }}
+                                    className="px-6 py-2 bg-indigo-500 text-white font-bold rounded-xl hover:bg-indigo-600 shadow-lg shadow-indigo-500/20"
+                                >
+                                    Salvar Alterações
+                                </button>
+                            </div>
+                        </div>
+            </DraggableModal>
         </div>
     );
 }

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, CheckCircle2, Clock, XCircle, ArrowRight, User, Calendar, Droplet, Leaf, Eye } from 'lucide-react';
+import { FileText, CheckCircle2, Clock, XCircle, User, Calendar, Droplet, Leaf, Eye } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
 import { jsPDF } from 'jspdf';
 
 export default function ReceituarioAgronomicoScreen() {
-    const [receitas, setReceitas] = useState<any[]>([]);
+    const [receitas, setReceitas] = useState<Record<string, string | number | boolean | null>[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedReceita, setSelectedReceita] = useState<any | null>(null);
     const [isCreating, setIsCreating] = useState(false);

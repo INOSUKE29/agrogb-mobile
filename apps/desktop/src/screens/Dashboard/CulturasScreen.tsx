@@ -12,12 +12,14 @@ import {
     Loader2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import DraggableModal from '../../components/common/DraggableModal';
 
 interface Cultura {
     id: string;
     nome: string;
     variedade: string;
-    area_ha: number;
+    quantidade: number;
+    unidade_medida: string;
     data_plantio: string;
     status: string;
     producao_total_kg: number;
@@ -37,7 +39,8 @@ export default function CulturasScreen() {
     const [form, setForm] = useState({
         nome: '',
         variedade: '',
-        area_ha: '',
+        quantidade: '',
+        unidade_medida: 'HA',
         data_plantio: '',
         status: 'EM CRESCIMENTO'
     });
@@ -69,7 +72,8 @@ export default function CulturasScreen() {
                 id: item.id || item.uuid,
                 nome: item.nome,
                 variedade: item.variedade || '',
-                area_ha: item.area_ha || 0,
+                quantidade: item.quantidade || item.area_ha || 0,
+                unidade_medida: item.unidade_medida || 'HA',
                 data_plantio: item.data_plantio || '',
                 status: item.status || 'EM CRESCIMENTO',
                 producao_total_kg: item.producao_total_kg || 0,
@@ -95,13 +99,14 @@ export default function CulturasScreen() {
             setForm({
                 nome: cultura.nome || '',
                 variedade: cultura.variedade || '',
-                area_ha: String(cultura.area_ha || ''),
+                quantidade: String(cultura.quantidade || ''),
+                unidade_medida: cultura.unidade_medida || 'HA',
                 data_plantio: cultura.data_plantio || '',
                 status: cultura.status || 'EM CRESCIMENTO'
             });
         } else {
             setEditItem(null);
-            setForm({ nome: '', variedade: '', area_ha: '', data_plantio: '', status: 'PREPARO DE SOLO' });
+            setForm({ nome: '', variedade: '', quantidade: '', unidade_medida: 'HA', data_plantio: '', status: 'PREPARO DE SOLO' });
         }
         setIsModalOpen(true);
     };
@@ -113,7 +118,8 @@ export default function CulturasScreen() {
         const payload = {
             nome: form.nome,
             variedade: form.variedade,
-            area_ha: parseFloat(form.area_ha) || 0,
+            quantidade: parseFloat(form.quantidade) || 0,
+            unidade_medida: form.unidade_medida,
             data_plantio: form.data_plantio || null,
             status: form.status
         };
@@ -257,8 +263,8 @@ export default function CulturasScreen() {
                                             <Scale className="w-6 h-6" />
                                         </div>
                                         <div>
-                                            <p className="text-xs text-[var(--color-muted)] font-bold uppercase tracking-wider mb-1">Área Plantada</p>
-                                            <p className="text-xl font-black text-white">{c.area_ha} <span className="text-sm font-bold text-[var(--color-muted)]">ha</span></p>
+                                            <p className="text-xs text-[var(--color-muted)] font-bold uppercase tracking-wider mb-1">QTD / Área Plantada</p>
+                                            <p className="text-xl font-black text-white">{c.quantidade} <span className="text-sm font-bold text-[var(--color-muted)]">{c.unidade_medida}</span></p>
                                         </div>
                                     </div>
 
@@ -285,23 +291,17 @@ export default function CulturasScreen() {
             )}
 
             {/* MODAL */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setIsModalOpen(false)}></div>
-                    <div className="glass border border-[var(--color-border)] w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative z-10 animate-fade-in flex flex-col max-h-[90vh]">
-                        <div className="h-2 w-full bg-green-500"></div>
-                        
-                        <div className="p-6 border-b border-[var(--color-border)] bg-white/[0.02] flex justify-between items-center">
-                            <h2 className="text-2xl font-black text-white flex items-center gap-3">
-                                <Leaf className="w-8 h-8 text-green-500 bg-green-500/10 rounded-lg p-1.5" />
-                                {editItem ? 'Editar Cultura' : 'Cadastrar Cultura'}
-                            </h2>
-                            <button onClick={() => setIsModalOpen(false)} className="text-[var(--color-muted)] hover:text-white p-2 bg-white/5 rounded-full transition-colors">
-                                &times;
-                            </button>
-                        </div>
-                        
-                        <div className="p-6 overflow-y-auto">
+            <DraggableModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                title={
+                    <div className="flex items-center gap-3">
+                        <Leaf className="w-6 h-6 text-green-500 bg-green-500/10 rounded-lg p-1" />
+                        {editItem ? 'Editar Cultura' : 'Cadastrar Cultura'}
+                    </div>
+                }
+            >
+                <div className="p-2 overflow-y-auto">
                             <form id="culturaForm" onSubmit={handleSave} className="space-y-5">
                                 <div>
                                     <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Nome da Cultura *</label>
@@ -328,16 +328,28 @@ export default function CulturasScreen() {
                                 
                                 <div className="grid grid-cols-2 gap-5">
                                     <div>
-                                        <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Área Destinada (ha) *</label>
-                                        <input 
-                                            type="number" 
-                                            step="0.01"
-                                            required
-                                            value={form.area_ha}
-                                            onChange={(e) => setForm({...form, area_ha: e.target.value})}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl focus:ring-2 focus:ring-green-500 p-3 transition-all"
-                                            placeholder="Ex: 100"
-                                        />
+                                        <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Quantidade / Área *</label>
+                                        <div className="flex gap-2">
+                                            <input 
+                                                type="number" 
+                                                step="0.01"
+                                                required
+                                                value={form.quantidade}
+                                                onChange={(e) => setForm({...form, quantidade: e.target.value})}
+                                                className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl focus:ring-2 focus:ring-green-500 p-3 transition-all"
+                                                placeholder="Ex: 100"
+                                            />
+                                            <select
+                                                value={form.unidade_medida}
+                                                onChange={(e) => setForm({...form, unidade_medida: e.target.value})}
+                                                className="bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl focus:ring-2 focus:ring-green-500 px-4 transition-all appearance-none cursor-pointer text-center font-bold"
+                                            >
+                                                <option value="HA">HA</option>
+                                                <option value="PÉS">PÉS</option>
+                                                <option value="M²">M²</option>
+                                                <option value="ESTUFAS">ESTUFAS</option>
+                                            </select>
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Data do Plantio</label>
@@ -385,9 +397,7 @@ export default function CulturasScreen() {
                                 Salvar Cultura
                             </button>
                         </div>
-                    </div>
-                </div>
-            )}
+            </DraggableModal>
         </div>
     );
 }

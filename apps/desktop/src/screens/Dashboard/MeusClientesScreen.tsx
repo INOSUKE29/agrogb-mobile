@@ -4,7 +4,7 @@ import { supabase } from '../../services/supabase';
 
 export default function MeusClientesScreen() {
     const [loading, setLoading] = useState(true);
-    const [clientes, setClientes] = useState<any[]>([]);
+    const [clientes, setClientes] = useState<Record<string, string | number | boolean | null>[]>([]);
     const [selectedClient, setSelectedClient] = useState<any | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     
@@ -63,8 +63,9 @@ export default function MeusClientesScreen() {
             setEmailProdutor('');
             loadClientes();
             
-        } catch (error: any) {
-            alert('Erro ao vincular: ' + error.message);
+        } catch (error: unknown) {
+            const err = error as Error | { message: string };
+            alert('Erro ao vincular: ' + err.message);
         } finally {
             setSubmitting(false);
         }

@@ -19,7 +19,7 @@ interface TimelineItem {
     data: string;
     descricao: string;
     observacao?: string;
-    icon: any;
+    icon: Record<string, string | number | boolean | null>;
     colorClass: string;
     bgClass: string;
 }
@@ -60,7 +60,7 @@ export default function CadernoAgricolaScreen() {
 
             // Processar Colheitas
             if (resColheitas.status === 'fulfilled' && resColheitas.value.data) {
-                resColheitas.value.data.forEach((row: any) => {
+                resColheitas.value.data.forEach((row: Record<string, string | number | boolean | null>) => {
                     allItems.push({
                         id: row.uuid || Math.random().toString(),
                         tipo: 'COLHEITA',
@@ -76,7 +76,7 @@ export default function CadernoAgricolaScreen() {
 
             // Processar Vendas
             if (resVendas.status === 'fulfilled' && resVendas.value.data) {
-                resVendas.value.data.forEach((row: any) => {
+                resVendas.value.data.forEach((row: Record<string, string | number | boolean | null>) => {
                     allItems.push({
                         id: row.uuid || Math.random().toString(),
                         tipo: 'VENDA',
@@ -92,7 +92,7 @@ export default function CadernoAgricolaScreen() {
 
             // Processar Custos
             if (resCustos.status === 'fulfilled' && resCustos.value.data) {
-                resCustos.value.data.forEach((row: any) => {
+                resCustos.value.data.forEach((row: Record<string, string | number | boolean | null>) => {
                     allItems.push({
                         id: row.uuid || Math.random().toString(),
                         tipo: 'CUSTO',
@@ -108,7 +108,7 @@ export default function CadernoAgricolaScreen() {
 
             // Processar Compras
             if (resCompras.status === 'fulfilled' && resCompras.value.data) {
-                resCompras.value.data.forEach((row: any) => {
+                resCompras.value.data.forEach((row: Record<string, string | number | boolean | null>) => {
                     allItems.push({
                         id: row.uuid || Math.random().toString(),
                         tipo: 'COMPRA',
@@ -124,7 +124,7 @@ export default function CadernoAgricolaScreen() {
 
             // Processar Plantio
             if (resPlantio.status === 'fulfilled' && resPlantio.value.data) {
-                resPlantio.value.data.forEach((row: any) => {
+                resPlantio.value.data.forEach((row: Record<string, string | number | boolean | null>) => {
                     allItems.push({
                         id: row.uuid || Math.random().toString(),
                         tipo: 'PLANTIO',
@@ -140,7 +140,7 @@ export default function CadernoAgricolaScreen() {
 
             // Processar Adubação / Aplicações
             if (resAdubacao.status === 'fulfilled' && resAdubacao.value.data) {
-                resAdubacao.value.data.forEach((row: any) => {
+                resAdubacao.value.data.forEach((row: Record<string, string | number | boolean | null>) => {
                     allItems.push({
                         id: row.uuid || Math.random().toString(),
                         tipo: 'ADUBAÇÃO',
@@ -157,8 +157,8 @@ export default function CadernoAgricolaScreen() {
 
             // Processar Anotações do Caderno
             if (resNotas.status === 'fulfilled' && resNotas.value.data) {
-                resNotas.value.data.forEach((row: any) => {
-                    let tipo: any = 'ANOTAÇÃO';
+                resNotas.value.data.forEach((row: Record<string, string | number | boolean | null>) => {
+                    let tipo: Record<string, string | number | boolean | null> = 'ANOTAÇÃO';
                     let icon = FileText;
                     let colorClass = 'text-gray-400';
                     let bgClass = 'bg-gray-500/10';

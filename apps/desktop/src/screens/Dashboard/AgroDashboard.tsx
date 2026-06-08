@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
     Users, 
     CalendarCheck, 
-    FileText, 
-    Map as MapIcon,
+    FileText,
     ArrowRight
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -21,10 +20,10 @@ export default function AgroDashboard() {
         recomendacoesAprovadas: 0
     });
 
-    const [alertas, setAlertas] = useState<any[]>([]);
+    const [alertas, setAlertas] = useState<Record<string, string | number | boolean | null>[]>([]);
 
-    const [atividadesRecentes, setAtividadesRecentes] = useState<any[]>([]);
-    const [pieData, setPieData] = useState<any[]>([]);
+    const [_atividadesRecentes, _setAtividadesRecentes] = useState<Record<string, string | number | boolean | null>[]>([]);
+    const [pieData, setPieData] = useState<Record<string, string | number | boolean | null>[]>([]);
 
     useEffect(() => {
         async function loadData() {

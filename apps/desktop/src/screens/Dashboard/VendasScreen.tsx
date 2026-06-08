@@ -15,11 +15,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function VendasScreen() {
     const [loading, setLoading] = useState(true);
-    const [vendas, setVendas] = useState<any[]>([]);
+    const [vendas, setVendas] = useState<Record<string, string | number | boolean | null>[]>([]);
     
     // Relacionamentos para Selects
-    const [clientes, setClientes] = useState<any[]>([]);
-    const [produtos, setProdutos] = useState<any[]>([]);
+    const [clientes, setClientes] = useState<Record<string, string | number | boolean | null>[]>([]);
+    const [produtos, setProdutos] = useState<Record<string, string | number | boolean | null>[]>([]);
 
     // Form states
     const [showModal, setShowModal] = useState(false);
@@ -82,7 +82,7 @@ export default function VendasScreen() {
                 setQuantidade(location.state.quantidadeRestante?.toString() || '');
                 setVinculoEncomendaId(location.state.encomendaId || null);
 
-                const prod = (prodData || []).find((p: any) => p.id === pId);
+                const prod = (prodData || []).find((p: Record<string, string | number | boolean | null>) => p.id === pId);
                 if (prod && prod.preco_venda) {
                     setValorUnitario(prod.preco_venda.toString());
                 }
@@ -156,8 +156,9 @@ export default function VendasScreen() {
             }
 
             closeModal();
-        } catch (error: any) {
-            toast.error("Erro ao salvar: " + error.message);
+        } catch (error: unknown) {
+            const err = error as Error | { message: string };
+            toast.error("Erro ao salvar: " + err.message);
         }
     };
 

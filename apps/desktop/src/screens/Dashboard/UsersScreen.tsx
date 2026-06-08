@@ -4,7 +4,7 @@ import { format, parseISO, isToday, isThisMonth } from 'date-fns';
 import {
     Users as UsersIcon, ShieldAlert, CheckCircle, Shield,
     Loader2, Plus, X, Eye, EyeOff, UserCheck, UserX, Leaf, User,
-    Search, Filter, ChevronDown, ChevronUp, History, Activity, AlertCircle, Calendar, Star, Hash
+    Search, Filter, ChevronDown, ChevronUp, History, Activity, AlertCircle, Calendar, Hash
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
@@ -57,7 +57,7 @@ export default function UsersScreen() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterRole, setFilterRole] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
-    const [filterPlan, setFilterPlan] = useState('');
+    const [filterPlan, _setFilterPlan] = useState('');
     
     // Ordenação
     const [sortField, setSortField] = useState<'name' | 'created_at' | 'last_access' | 'role' | 'status'>('created_at');
@@ -97,7 +97,7 @@ export default function UsersScreen() {
             })) || [];
 
             setProfiles(enrichedData);
-        } catch (e: any) {
+        } catch (e: Record<string, string | number | boolean | null>) {
             console.error('Erro ao buscar usuários:', e);
             toast.error('Erro ao carregar lista de usuários.');
         } finally {
@@ -155,8 +155,8 @@ export default function UsersScreen() {
 
         // Ordenação
         result.sort((a, b) => {
-            let valA: any = a.created_at;
-            let valB: any = b.created_at;
+            let valA: Record<string, string | number | boolean | null> = a.created_at;
+            let valB: Record<string, string | number | boolean | null> = b.created_at;
 
             if (sortField === 'name') { valA = a.full_name || ''; valB = b.full_name || ''; }
             if (sortField === 'last_access') { valA = a.last_access || ''; valB = b.last_access || ''; }
@@ -238,7 +238,7 @@ export default function UsersScreen() {
             setTimeout(() => fetchUsers(), 1500);
             toast.success(`Usuário ${formName || formEmail} criado!`);
 
-        } catch (e: any) {
+        } catch (e: Record<string, string | number | boolean | null>) {
             let errorMsg = e.message || 'Erro ao criar usuário.';
             if (errorMsg.includes('Password should contain at least one character of each')) {
                 errorMsg = 'A senha do Supabase exige: Pelo menos 1 letra minúscula, 1 maiúscula, 1 número e 1 caractere especial (!@#$...).';
@@ -274,7 +274,7 @@ export default function UsersScreen() {
                 setSelectedUser({ ...selectedUser, role: newRole });
                 fetchAuditLogs(id);
             }
-        } catch (e: any) {
+        } catch (e: Record<string, string | number | boolean | null>) {
             toast.error('Erro ao alterar nível: ' + e.message);
         }
     };
@@ -303,7 +303,7 @@ export default function UsersScreen() {
                 setSelectedUser({ ...selectedUser, is_active: !isCurrentlyActive, status: newStatus });
                 fetchAuditLogs(id);
             }
-        } catch (e: any) {
+        } catch (e: Record<string, string | number | boolean | null>) {
             toast.error('Erro: ' + e.message);
         }
     };
@@ -479,7 +479,8 @@ export default function UsersScreen() {
                                             </td>
                                             <td className="p-5">
                                                 {(() => {
-                                                    const isActive = row.status === 'ATIVO' || row.status === 'active' || row.status === 'true' || row.status === true;
+                                                    const stat = String(row.status || '').toLowerCase();
+                                                    const isActive = stat === 'ativo' || stat === 'active' || stat === 'true';
                                                     const statusText = isActive ? 'ATIVO' : 'BLOQUEADO';
                                                     return (
                                                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black border tracking-wider ${isActive ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-red-500/15 text-red-400 border-red-500/30'}`}>

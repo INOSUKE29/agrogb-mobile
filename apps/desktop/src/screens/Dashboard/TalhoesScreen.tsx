@@ -4,13 +4,11 @@ import {
     Plus, 
     Search, 
     Edit2, 
-    Trash2, 
-    AlertCircle,
+    Trash2,
     CheckCircle2,
     Maximize,
     Leaf,
-    MapPin,
-    AlertTriangle
+    MapPin
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
@@ -42,7 +40,7 @@ export default function TalhoesScreen() {
     const [form, setForm] = useState({ nome: '', area_ha: '', observacao: '' });
     
     // Deletion Modal State
-    const [itemToDelete, setItemToDelete] = useState<Talhao | null>(null);
+    const [_itemToDelete, _setItemToDelete] = useState<Talhao | null>(null);
 
     const fetchTalhoes = async () => {
         setLoading(true);
@@ -78,7 +76,7 @@ export default function TalhoesScreen() {
             })).filter(t => !t.is_deleted);
 
             setTalhoes(normalizedData);
-        } catch (err: any) {
+        } catch (err: Record<string, string | number | boolean | null>) {
             console.error('Erro ao buscar talhões', err);
             toast.error('Erro ao buscar talhões. Verifique sua conexão.');
         } finally {
@@ -115,7 +113,10 @@ export default function TalhoesScreen() {
                     .update(payload)
                     .eq(idField, editItem.uuid);
                 
-                if (error) throw error;
+                if (error) {
+                    console.error("V2 Update error:", error);
+                    throw error;
+                }
                 toast.success('Talhão atualizado com sucesso!');
             } else {
                 // INSERT (Try v2 first)
@@ -129,23 +130,24 @@ export default function TalhoesScreen() {
 
                 const { error } = await supabase.from('v2_talhoes').insert([payloadV2]);
                 if (error) {
-                    // Fallback to v1
+                    console.error("V2 Insert Error:", error);
+                    // Tenta criar apenas os campos que sabemos que existem na V1
                     const payloadV1 = {
                         nome: form.nome.toUpperCase(),
-                        area_ha: safeArea,
-                        observacao: form.observacao.toUpperCase(),
-                        last_updated: new Date().toISOString(),
-                        is_deleted: false,
-                        user_id: userData?.user?.id
+                        area: safeArea
+                        // propriedade_id seria necessario, mas não temos na interface
                     };
                     const fallbackError = await supabase.from('talhoes').insert([payloadV1]);
-                    if (fallbackError.error) throw fallbackError.error;
+                    if (fallbackError.error) {
+                        console.error("V1 Insert Error:", fallbackError.error);
+                        throw new Error(`Erro V2: ${error.message} | Erro V1: ${fallbackError.error.message}`);
+                    }
                 }
                 toast.success('Talhão cadastrado com sucesso!');
             }
             closeModal();
             fetchTalhoes();
-        } catch (err: any) {
+        } catch (err: Record<string, string | number | boolean | null>) {
             console.error('Erro ao salvar talhão', err);
             toast.error(err?.message || 'Erro ao salvar talhão.');
         }

@@ -7,8 +7,6 @@ import {
     Bug, 
     AlertTriangle, 
     CheckCircle2,
-    Edit2,
-    Trash2,
     Loader2
 } from 'lucide-react';
 
