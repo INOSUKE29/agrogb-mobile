@@ -17,20 +17,20 @@ const { width } = Dimensions.get('window');
 // --- CONFIGURAÇÃO DE CATEGORIAS (UX) ---
 const CATEGORIES = {
     // Novas categorias estruturadas e profissionais de mercado
-    FERTILIZANTES: { label: 'Fertilizantes', icon: 'leaf-outline', color: '#16A34A', bg: '#DCFCE7', fields: ['composicao'] },
-    DEFENSIVOS: { label: 'Defensivos Agrícolas', icon: 'flask-outline', color: '#DC2626', bg: '#FEE2E2', fields: ['principio', 'classe'] },
-    BIOLOGICOS: { label: 'Insumos Biológicos', icon: 'bug-outline', color: '#8B5CF6', bg: '#F5F3FF', fields: ['principio'] },
-    ADJUVANTES: { label: 'Adjuvantes', icon: 'color-filter-outline', color: '#EC4899', bg: '#FDF2F8' },
-    CORRETIVOS: { label: 'Corretivos de Solo', icon: 'grid-outline', color: '#F59E0B', bg: '#FEF3C7', fields: ['composicao'] },
-    NUTRI_FOLIAR: { label: 'Nutrição Foliar', icon: 'water-outline', color: '#06B6D4', bg: '#ECFEFF', fields: ['composicao'] },
-    SEMENTES: { label: 'Sementes / Mudas', icon: 'rose-outline', color: '#10B981', bg: '#ECFDF5' },
+    FERTILIZANTES: { label: 'Fertilizantes', icon: 'leaf-outline', color: '#16A34A', bg: '#DCFCE7', fields: ['composicao', 'nutrientes', 'fabricante', 'dose', 'bula'] },
+    DEFENSIVOS: { label: 'Defensivos Agrícolas', icon: 'flask-outline', color: '#DC2626', bg: '#FEE2E2', fields: ['principio', 'classe', 'fabricante', 'dose', 'bula'] },
+    BIOLOGICOS: { label: 'Insumos Biológicos', icon: 'bug-outline', color: '#8B5CF6', bg: '#F5F3FF', fields: ['principio', 'fabricante', 'dose', 'bula'] },
+    ADJUVANTES: { label: 'Adjuvantes', icon: 'color-filter-outline', color: '#EC4899', bg: '#FDF2F8', fields: ['fabricante', 'dose'] },
+    CORRETIVOS: { label: 'Corretivos de Solo', icon: 'grid-outline', color: '#F59E0B', bg: '#FEF3C7', fields: ['composicao', 'nutrientes', 'fabricante'] },
+    NUTRI_FOLIAR: { label: 'Nutrição Foliar', icon: 'water-outline', color: '#06B6D4', bg: '#ECFEFF', fields: ['composicao', 'nutrientes', 'fabricante', 'dose', 'bula'] },
+    SEMENTES: { label: 'Sementes / Mudas', icon: 'rose-outline', color: '#10B981', bg: '#ECFDF5', fields: ['fabricante'] },
 
     // Legado e estruturais
-    DEFENSIVO: { label: 'Defensivo Agrícola', icon: 'flask-outline', color: '#DC2626', bg: '#FEE2E2', fields: ['principio', 'classe'] },
-    FERTILIZANTE: { label: 'Fertilizante / Adubo', icon: 'leaf-outline', color: '#16A34A', bg: '#DCFCE7', fields: ['composicao'] },
-    NUTRIENTE: { label: 'Nutriente / Corretivo', icon: 'water-outline', color: '#CA8A04', bg: '#FEF9C3', fields: ['composicao'] },
+    DEFENSIVO: { label: 'Defensivo Agrícola', icon: 'flask-outline', color: '#DC2626', bg: '#FEE2E2', fields: ['principio', 'classe', 'fabricante', 'dose', 'bula'] },
+    FERTILIZANTE: { label: 'Fertilizante / Adubo', icon: 'leaf-outline', color: '#16A34A', bg: '#DCFCE7', fields: ['composicao', 'nutrientes', 'fabricante', 'dose'] },
+    NUTRIENTE: { label: 'Nutriente / Corretivo', icon: 'water-outline', color: '#CA8A04', bg: '#FEF9C3', fields: ['composicao', 'nutrientes'] },
     EMBALAGEM: { label: 'Embalagem / Caixa', icon: 'cube-outline', color: '#4B5563', bg: '#F3F4F6' },
-    INSUMO: { label: 'Insumo Geral', icon: 'construct-outline', color: '#6366F1', bg: '#E0E7FF' },
+    INSUMO: { label: 'Insumo Geral', icon: 'construct-outline', color: '#6366F1', bg: '#E0E7FF', fields: ['fabricante'] },
     CULTURA: { label: 'Cultura (Plantio)', icon: 'nutrition-outline', color: '#15803D', bg: '#DCFCE7' },
     PRODUTO: { label: 'Produto (Venda)', icon: 'cart-outline', color: '#2563EB', bg: '#DBEAFE', preCheck: ['vendavel'] },
     AREA: { label: 'Área / Talhão', icon: 'map-outline', color: '#059669', bg: '#D1FAE5' }
@@ -75,6 +75,12 @@ export default function CadastroScreen({ navigation }) {
     const [composicao, setComposicao] = useState('');
     const [precoVenda, setPrecoVenda] = useState('');
 
+    // V8.0 Catálogo Rico
+    const [fabricante, setFabricante] = useState('');
+    const [nutrientes, setNutrientes] = useState('');
+    const [dosePadrao, setDosePadrao] = useState('');
+    const [bulaTexto, setBulaTexto] = useState('');
+
     // Form Receita
     const [recipeModalVisible, setRecipeModalVisible] = useState(false);
     const [currentRecipe, setCurrentRecipe] = useState([]);
@@ -101,7 +107,12 @@ export default function CadastroScreen({ navigation }) {
                 principio_ativo: principioAtivo.toUpperCase(),
                 classe_toxicologica: classeToxicologica.toUpperCase(),
                 composicao: composicao.toUpperCase(),
-                preco_venda: parseFloat(precoVenda) || 0
+                preco_venda: parseFloat(precoVenda) || 0,
+                fabricante: fabricante.toUpperCase(),
+                nutrientes: nutrientes.toUpperCase(),
+                dose_padrao: dosePadrao.toUpperCase(),
+                bula_texto: bulaTexto,
+                bula_url: ''
             };
 
             if (editingItem) {
@@ -121,6 +132,7 @@ export default function CadastroScreen({ navigation }) {
         setEditingItem(null); setNome(''); setObservacao(''); setFator('1');
         setEstocavel(true); setVendavel(false); setUnidade('KG'); setTipo('INSUMO');
         setPrincipioAtivo(''); setClasseToxicologica(''); setComposicao(''); setPrecoVenda('');
+        setFabricante(''); setNutrientes(''); setDosePadrao(''); setBulaTexto('');
     };
 
     const handleEdit = (item) => {
@@ -129,6 +141,8 @@ export default function CadastroScreen({ navigation }) {
         setEstocavel(item.estocavel === 1); setVendavel(item.vendavel === 1);
         setPrincipioAtivo(item.principio_ativo || ''); setClasseToxicologica(item.classe_toxicologica || '');
         setComposicao(item.composicao || ''); setPrecoVenda(item.preco_venda ? item.preco_venda.toString() : '');
+        setFabricante(item.fabricante || ''); setNutrientes(item.nutrientes || ''); 
+        setDosePadrao(item.dose_padrao || ''); setBulaTexto(item.bula_texto || '');
         setModalVisible(true);
     };
 
@@ -273,7 +287,25 @@ export default function CadastroScreen({ navigation }) {
                             {CATEGORIES[tipo]?.fields?.includes('composicao') && (
                                 <Card style={styles.extraCard}>
                                     <Text style={styles.extraTitle}>COMPOSIÇÃO QUÍMICA</Text>
-                                    <AgroInput label="DETALHES" value={composicao} onChangeText={setComposicao} multiline />
+                                    <AgroInput label="DETALHES DA COMPOSIÇÃO" value={composicao} onChangeText={setComposicao} multiline />
+                                </Card>
+                            )}
+                            
+                            {(CATEGORIES[tipo]?.fields?.some(f => ['fabricante', 'nutrientes', 'dose', 'bula'].includes(f))) && (
+                                <Card style={styles.extraCard}>
+                                    <Text style={styles.extraTitle}>FICHA TÉCNICA AVANÇADA</Text>
+                                    {CATEGORIES[tipo]?.fields?.includes('fabricante') && (
+                                        <AgroInput label="FABRICANTE / MARCA" value={fabricante} onChangeText={setFabricante} />
+                                    )}
+                                    {CATEGORIES[tipo]?.fields?.includes('nutrientes') && (
+                                        <AgroInput label="NUTRIENTES PRINCIPAIS (Ex: NPK 10-10-10)" value={nutrientes} onChangeText={setNutrientes} />
+                                    )}
+                                    {CATEGORIES[tipo]?.fields?.includes('dose') && (
+                                        <AgroInput label="DOSE PADRÃO RECOMENDADA (Ex: 2L/ha)" value={dosePadrao} onChangeText={setDosePadrao} />
+                                    )}
+                                    {CATEGORIES[tipo]?.fields?.includes('bula') && (
+                                        <AgroInput label="RESUMO DA BULA / INDICAÇÕES" value={bulaTexto} onChangeText={setBulaTexto} multiline style={{ height: 80 }} />
+                                    )}
                                 </Card>
                             )}
 
@@ -362,7 +394,12 @@ export default function CadastroScreen({ navigation }) {
                         <Text style={styles.modalTitleCenter}>PADRÕES DE MERCADO</Text>
                         <FlatList 
                             data={MARKET_STANDARDS} 
-                            keyExtractor={i => i.label} 
+                            keyExtractor={i =
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
+                    > i.label} 
                             renderItem={({ item }) => (
                                 <TouchableOpacity style={styles.stdRow} onPress={() => { setUnidade(item.unit); setFator(item.weight); setAssistantVisible(false); }}>
                                     <Text style={styles.stdName}>{item.label}</Text>

@@ -127,7 +127,12 @@ export default function UsuariosScreen({ navigation }) {
             ) : (
                 <FlatList
                     data={items}
-                    keyExtractor={item => item.id.toString()}
+                    keyExtractor={item =
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
+                    > item.id.toString()}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.list}
                     renderItem={({ item }) => (

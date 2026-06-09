@@ -124,12 +124,13 @@ export default function LoginScreen({ navigation }) {
             return;
         }
 
-        // 2. Se não houver sessão, verificar se a biometria está ativada para auto-login
+        // 2. Se não houver sessão, checar se a biometria está configurada,
+        // MAS não forçaremos o auto-login imediato para evitar o loop de "Sessão Zumbi" após logout.
+        // O usuário precisará clicar explicitamente em "Entrar com Biometria".
         try {
             const bioCreds = await SecureStore.getItemAsync(BIO_KEY);
             if (bioCreds && isBiometricSupported) {
-                // Pequeno delay para garantir que a UI carregou
-                setTimeout(() => handleBiometricLogin(true), 500);
+                console.log('Chave biométrica detectada. O usuário pode usá-la se quiser, mas sem auto-login invasivo.');
             }
         } catch (e) {
             console.log('Erro ao checar auto-bio:', e);
@@ -451,8 +452,9 @@ export default function LoginScreen({ navigation }) {
                     handleLogin(true); // true = bypassBiometricPrompt
                 }, 100);
             } else {
-                // Usuário cancelou ou falhou
+                // Usuário cancelou ou falhou, limpar loading para que ele não fique num loop de Sessão Zumbi.
                 setLoading(false);
+                setLoadingState('');
             }
         } catch (e) {
             console.log('Erro de catch global da bio:', e);

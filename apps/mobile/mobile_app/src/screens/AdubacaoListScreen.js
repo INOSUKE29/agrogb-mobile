@@ -127,7 +127,12 @@ export default function AdubacaoListScreen({ navigation }) {
 
             <FlatList
                 data={planos}
-                keyExtractor={(item) => item.uuid}
+                keyExtractor={(item) =
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
+                    > item.uuid}
                 renderItem={renderItem}
                 contentContainerStyle={styles.listContent}
                 refreshControl={<RefreshControl refreshing={loading} onRefresh={loadPlanos} colors={[theme?.colors?.primary]} />}

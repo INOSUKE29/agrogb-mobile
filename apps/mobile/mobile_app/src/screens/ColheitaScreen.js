@@ -458,8 +458,17 @@ export default function ColheitaScreen({ navigation }) {
                         </View>
                         <TextInput style={styles.searchBar} placeholderTextColor="#9CA3AF" placeholder="Buscar produto..." value={searchText} onChangeText={t => up(t, setSearchText)} />
                         <FlatList
-                            data={productsDB.filter(p => p.nome.includes(searchText.toUpperCase()))}
+                            data={productsDB.filter(p =
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
+                    > p.nome.includes(searchText.toUpperCase()))}
                             keyExtractor={i => i.uuid || i.id.toString()}
+                            initialNumToRender={10}
+                            maxToRenderPerBatch={10}
+                            windowSize={5}
+                            removeClippedSubviews={true}
                             renderItem={({ item }) => (
                                 <TouchableOpacity style={styles.itemRow} onPress={() => handleProdutoSelect(item)}>
                                     <Text style={styles.itemText}>{item.nome}</Text>
@@ -483,7 +492,16 @@ export default function ColheitaScreen({ navigation }) {
                         </View>
                         <FlatList
                             data={areasDB}
-                            keyExtractor={i => i.uuid || i.id.toString()}
+                            keyExtractor={i =
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
+                    > i.uuid || i.id.toString()}
+                            initialNumToRender={10}
+                            maxToRenderPerBatch={10}
+                            windowSize={5}
+                            removeClippedSubviews={true}
                             renderItem={({ item }) => (
                                 <TouchableOpacity style={styles.itemRow} onPress={() => handleAreaSelect(item)}>
                                     <Text style={styles.itemText}>{item.nome}</Text>

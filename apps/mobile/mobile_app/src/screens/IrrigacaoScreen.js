@@ -101,7 +101,12 @@ export default function IrrigacaoScreen({ navigation }) {
             <FlatList
                 data={history}
                 renderItem={renderItem}
-                keyExtractor={item => item.uuid}
+                keyExtractor={item =
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
+                    > item.uuid}
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={<Text style={styles.empty}>Nenhum registro de irrigação.</Text>}
                 ListHeaderComponent={<Text style={styles.sectionTitle}>HISTÓRICO RECENTE</Text>}
@@ -164,7 +169,12 @@ export default function IrrigacaoScreen({ navigation }) {
                         <Text style={styles.modalTitle}>SELECIONAR TALHÃO</Text>
                         <FlatList
                             data={talhoes}
-                            keyExtractor={i => i.uuid}
+                            keyExtractor={i =
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
+                    > i.uuid}
                             renderItem={({ item }) => (
                                 <TouchableOpacity 
                                     style={styles.talhaoRow} 

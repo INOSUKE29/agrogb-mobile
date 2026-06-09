@@ -102,3 +102,30 @@ ALTER TABLE caderno_campo ADD COLUMN IF NOT EXISTS maquina_id UUID;
 ALTER TABLE caderno_campo ADD COLUMN IF NOT EXISTS temperatura_celsius NUMERIC;
 ALTER TABLE caderno_campo ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 ALTER TABLE caderno_campo ADD COLUMN IF NOT EXISTS is_deleted INTEGER DEFAULT 0;
+
+-- 8. TABELA DE CADASTRO DE PRODUTOS / INSUMOS (CATÁLOGO RICO)
+CREATE TABLE IF NOT EXISTS produtos_cadastro (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    uuid TEXT UNIQUE,
+    nome TEXT NOT NULL,
+    unidade TEXT,
+    tipo TEXT,
+    observacao TEXT,
+    estocavel INTEGER DEFAULT 1,
+    vendavel INTEGER DEFAULT 1,
+    fator_conversao NUMERIC DEFAULT 1,
+    principio_ativo TEXT,
+    classe_toxicologica TEXT,
+    composicao TEXT,
+    preco_venda NUMERIC DEFAULT 0,
+    fabricante TEXT,
+    nutrientes TEXT,
+    dose_padrao TEXT,
+    bula_texto TEXT,
+    bula_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    sync_status INTEGER DEFAULT 0,
+    is_deleted INTEGER DEFAULT 0,
+    curation_status TEXT DEFAULT 'PENDENTE'
+);

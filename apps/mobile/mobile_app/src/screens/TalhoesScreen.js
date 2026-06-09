@@ -18,6 +18,8 @@ import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
 import AgroOptionsModal from '../components/common/AgroOptionsModal';
 
+const SCREEN_VERSION = 'v2.0.0';
+
 export default function TalhoesScreen({ navigation }) {
     const { theme } = useTheme();
     const [talhoes, setTalhoes] = useState([]);
@@ -53,12 +55,12 @@ export default function TalhoesScreen({ navigation }) {
             if (editItem) {
                 await executeQuery(
                     'UPDATE talhoes SET nome = ?, area_ha = ?, observacao = ?, last_updated = ? WHERE uuid = ?',
-                    [form.nome.toUpperCase(), parseFloat(form.area_ha) || 0, form.observacao.toUpperCase(), new Date().toISOString(), editItem.uuid]
+                    [(form.nome || '').toUpperCase(), parseFloat(form.area_ha) || 0, (form.observacao || '').toUpperCase(), new Date().toISOString(), editItem.uuid]
                 );
             } else {
                 await executeQuery(
                     'INSERT INTO talhoes (uuid, nome, area_ha, observacao, last_updated) VALUES (?, ?, ?, ?, ?)',
-                    [uuidv4(), form.nome.toUpperCase(), parseFloat(form.area_ha) || 0, form.observacao.toUpperCase(), new Date().toISOString()]
+                    [uuidv4(), (form.nome || '').toUpperCase(), parseFloat(form.area_ha) || 0, (form.observacao || '').toUpperCase(), new Date().toISOString()]
                 );
             }
             setModalVisible(false);
@@ -91,13 +93,14 @@ export default function TalhoesScreen({ navigation }) {
             onLongPress={() => setSelectedItemActions(item)}
         >
             <View style={styles.itemHeader}>
-                <View style={styles.iconContainer}>
-                    <Ionicons name="map-outline" size={24} color="#059669" />
+                <View style={[styles.iconContainer, { backgroundColor: theme?.colors?.surface || 'rgba(255,255,255,0.05)' }]}>
+                    <Ionicons name="leaf" size={20} color={theme?.colors?.primary || '#10B981'} />
                 </View>
                 <View style={{ flex: 1 }}>
-                    <Text style={styles.itemName}>{item.nome}</Text>
-                    <Text style={styles.itemSub}>{item.area_ha} ha • {item.status || 'ATIVO'}</Text>
+                    <Text style={[styles.itemName, { color: theme?.colors?.textMain || '#F8FAFC' }]}>{item.nome}</Text>
+                    <Text style={[styles.itemSub, { color: theme?.colors?.textSub || '#94A3B8' }]}>{item.area_ha} hectares</Text>
                 </View>
+                <Ionicons name="chevron-forward" size={20} color={theme?.colors?.textSub || '#9CA3AF'} />
             </View>
         </Card>
     );
@@ -119,9 +122,18 @@ export default function TalhoesScreen({ navigation }) {
             <FlatList
                 data={talhoes}
                 renderItem={renderItem}
-                keyExtractor={item => item.uuid}
+                keyExtractor={item =
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
+                    > item.uuid}
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={<Text style={styles.empty}>Nenhum talhão cadastrado.</Text>}
+                initialNumToRender={8}
+                maxToRenderPerBatch={10}
+                windowSize={5}
+                removeClippedSubviews={true}
             />
 
             <TouchableOpacity style={[styles.fab, { backgroundColor: theme?.colors?.primary || '#10B981' }]} onPress={() => { setEditItem(null); setForm({ nome: '', area_ha: '', observacao: '' }); setModalVisible(true); }}>
@@ -130,8 +142,8 @@ export default function TalhoesScreen({ navigation }) {
 
             <Modal visible={modalVisible} animationType="slide" transparent>
                 <View style={styles.overlay}>
-                    <View style={styles.modal}>
-                        <Text style={styles.modalTitle}>{editItem ? 'EDITAR TALHÃO' : 'NOVO TALHÃO'}</Text>
+                    <View style={[styles.modal, { backgroundColor: theme?.colors?.cardBg || '#1E293B' }]}>
+                        <Text style={[styles.modalTitle, { color: theme?.colors?.textMain || '#F8FAFC' }]}>{editItem ? 'EDITAR TALHÃO' : 'NOVO TALHÃO'}</Text>
                         <AgroInput label="NOME DO TALHÃO" value={form.nome} onChangeText={t => setForm({...form, nome: t})} />
                         <AgroInput label="ÁREA (HA)" value={form.area_ha} keyboardType="numeric" onChangeText={t => setForm({...form, area_ha: t})} />
                         <AgroInput label="OBSERVAÇÕES" value={form.observacao} multiline numberOfLines={3} onChangeText={t => setForm({...form, observacao: t})} />

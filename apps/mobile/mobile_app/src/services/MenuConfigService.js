@@ -9,7 +9,7 @@ const DEFAULT_CONFIG = {
         { id: "vendas", label: "Vendas", icon: "cash-outline", screen: "Vendas", color: "#10B981", enabled: true },
         { id: "estoque", label: "Estoque", icon: "cube-outline", screen: "Estoque", color: "#3B82F6", enabled: true },
         { id: "monitoramento", label: "Monitorar", icon: "camera-outline", screen: "Monitoramento", color: "#EC4899", enabled: true },
-        { id: "adubacao", label: "Adubação", icon: "flask-outline", screen: "AdubacaoList", color: "#7C3AED", enabled: true },
+        { id: "manejo_lavoura", label: "Manejo", icon: "earth-outline", screen: "ManejoLavoura", color: "#064E3B", enabled: true },
         { id: "compras", label: "Compras", icon: "cart-outline", screen: "Compras", color: "#F59E0B", enabled: true },
         { id: "plantio", label: "Plantio", icon: "nutrition-outline", screen: "Plantio", color: "#8B5CF6", enabled: true },
         { id: "custos", label: "Custos", icon: "calculator-outline", screen: "Custos", color: "#F97316", enabled: true },

@@ -17,7 +17,7 @@ import Card from "../components/common/Card";
 import AgroButton from "../components/common/AgroButton";
 import { performSync } from "../services/SyncService";
 
-export default function PlanoAdubacaoScreen({ navigation }) {
+export default function PlanoAdubacaoScreen({ navigation, isTabbed }) {
   const { theme } = useTheme();
   const activeColors = theme?.colors || {};
   
@@ -209,37 +209,44 @@ export default function PlanoAdubacaoScreen({ navigation }) {
     <View style={[styles.container, { backgroundColor: activeColors.bg || '#F8FAFC' }]}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       
-      <LinearGradient 
-        colors={[activeColors.primary || '#064E3B', activeColors.primaryDeep || '#022C22']} 
-        style={styles.header}
-      >
-        <View style={styles.navRow}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
-            <Ionicons name="arrow-back" size={22} color="#FFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>PLANO DE ADUBAÇÃO</Text>
-          <TouchableOpacity onPress={onRefresh} style={styles.iconBtn}>
-            <Ionicons name="refresh" size={20} color="#FFF" />
-          </TouchableOpacity>
-        </View>
+      {!isTabbed && (
+        <LinearGradient 
+          colors={[activeColors.primary || '#064E3B', activeColors.primaryDeep || '#022C22']} 
+          style={styles.header}
+        >
+          <View style={styles.navRow}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
+              <Ionicons name="arrow-back" size={22} color="#FFF" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>PLANO DE ADUBAÇÃO</Text>
+            <TouchableOpacity onPress={onRefresh} style={styles.iconBtn}>
+              <Ionicons name="refresh" size={20} color="#FFF" />
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.resumoRow}>
-          <View style={styles.resumoBox}>
-            <Text style={styles.resumoLabel}>TOTAL NPK (KG)</Text>
-            <Text style={styles.resumoValue}>{resumo.n.toFixed(0)} | {resumo.p.toFixed(0)} | {resumo.k.toFixed(0)}</Text>
+          <View style={styles.resumoRow}>
+            <View style={styles.resumoBox}>
+              <Text style={styles.resumoLabel}>TOTAL NPK (KG)</Text>
+              <Text style={styles.resumoValue}>{resumo.n.toFixed(0)} | {resumo.p.toFixed(0)} | {resumo.k.toFixed(0)}</Text>
+            </View>
+            <View style={styles.resumoDivider} />
+            <View style={styles.resumoBox}>
+              <Text style={styles.resumoLabel}>CUSTO TOTAL</Text>
+              <Text style={styles.resumoValue}>R$ {resumo.custo.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</Text>
+            </View>
           </View>
-          <View style={styles.resumoDivider} />
-          <View style={styles.resumoBox}>
-            <Text style={styles.resumoLabel}>CUSTO TOTAL</Text>
-            <Text style={styles.resumoValue}>R$ {resumo.custo.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</Text>
-          </View>
-        </View>
-      </LinearGradient>
+        </LinearGradient>
+      )}
 
       <FlatList
         data={etapas}
         renderItem={renderItem}
-        keyExtractor={item => item.uuid}
+        keyExtractor={item =
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
+                    > item.uuid}
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={activeColors.primary || "#10B981"} />}
         ListEmptyComponent={

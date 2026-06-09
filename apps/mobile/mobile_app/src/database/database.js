@@ -550,17 +550,29 @@ const createTables = async () => {
             console.error('⚠️ Erro ao verificar/inserir ADMIN:', adminError);
         }
 
-        // MIGRATION: Migrações Individuais Seguras para 'usuarios'
-        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN email TEXT'); } catch(e) {}
-        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN uuid TEXT'); } catch(e) {}
+        // MIGRATION: Migrações Individuais Seguras para 'usuarios' via PRAGMA
+        try {
+            const tableInfo = await executeQuery('PRAGMA table_info(usuarios)');
+            const columns = [];
+            for (let i = 0; i < tableInfo.rows.length; i++) {
+                columns.push(tableInfo.rows.item(i).name);
+            }
+            if (!columns.includes('email')) await executeQuery('ALTER TABLE usuarios ADD COLUMN email TEXT');
+            if (!columns.includes('uuid')) await executeQuery('ALTER TABLE usuarios ADD COLUMN uuid TEXT');
+            if (!columns.includes('nome_completo')) {
+                await executeQuery('ALTER TABLE usuarios ADD COLUMN nome_completo TEXT');
+                console.log('✅ Migração: Coluna nome_completo adicionada com sucesso.');
+            }
+            if (!columns.includes('telefone')) await executeQuery('ALTER TABLE usuarios ADD COLUMN telefone TEXT');
+            if (!columns.includes('endereco')) await executeQuery('ALTER TABLE usuarios ADD COLUMN endereco TEXT');
+            if (!columns.includes('avatar')) await executeQuery('ALTER TABLE usuarios ADD COLUMN avatar TEXT');
+            if (!columns.includes('provider')) await executeQuery('ALTER TABLE usuarios ADD COLUMN provider TEXT DEFAULT "local"');
+            if (!columns.includes('avatar_url')) await executeQuery('ALTER TABLE usuarios ADD COLUMN avatar_url TEXT');
+            if (!columns.includes('role')) await executeQuery('ALTER TABLE usuarios ADD COLUMN role TEXT DEFAULT "CLIENTE"');
+        } catch (e) {
+            console.error('⚠️ Erro crítico na migração da tabela usuarios:', e);
+        }
         try { await executeQuery('CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_uuid ON usuarios(uuid)'); } catch(e) {}
-        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN nome_completo TEXT'); } catch(e) {}
-        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN telefone TEXT'); } catch(e) {}
-        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN endereco TEXT'); } catch(e) {}
-        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN avatar TEXT'); } catch(e) {}
-        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN provider TEXT DEFAULT "local"'); } catch(e) {}
-        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN avatar_url TEXT'); } catch(e) {}
-        try { await executeQuery('ALTER TABLE usuarios ADD COLUMN role TEXT DEFAULT "CLIENTE"'); } catch(e) {}
 
         // MIGRATION: Cadastro (v4.0)
         try { await executeQuery('ALTER TABLE cadastro ADD COLUMN estocavel INTEGER DEFAULT 1'); } catch(e) {}
@@ -732,6 +744,21 @@ const createTables = async () => {
                 try { await executeQuery(`ALTER TABLE cadastro ADD COLUMN ${col}`); } catch (e) { }
             }
             console.log('✅ Colunas V7.0 (Cadastro Agrícola & IA) verificadas.');
+        } catch (e) { }
+
+        // MIGRATION: Cadastro V8.0 (Catálogo Rico - Master Plan)
+        try {
+            const newColsV8 = [
+                'fabricante TEXT',
+                'nutrientes TEXT',
+                'dose_padrao TEXT',
+                'bula_texto TEXT',
+                'bula_url TEXT'
+            ];
+            for (const col of newColsV8) {
+                try { await executeQuery(`ALTER TABLE cadastro ADD COLUMN ${col}`); } catch (e) { }
+            }
+            console.log('✅ Colunas V8.0 (Catálogo Rico) verificadas.');
         } catch (e) { }
 
         // MIGRATION: V7.0 - Tabelas de Mídia e Auditoria
@@ -1330,14 +1357,16 @@ export const insertCadastro = async (d) => {
     await executeQuery(`INSERT INTO cadastro (
         uuid, nome, unidade, tipo, observacao, estocavel, vendavel, fator_conversao, 
         principio_ativo, classe_toxicologica, composicao, preco_venda,
+        fabricante, nutrientes, dose_padrao, bula_texto, bula_url,
         last_updated, sync_status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
             d.uuid, up(d.nome), up(d.unidade), up(d.tipo), up(d.observacao),
             d.estocavel !== undefined ? d.estocavel : 1,
             d.vendavel !== undefined ? d.vendavel : 1,
             d.fator_conversao || 1,
             up(d.principio_ativo), up(d.classe_toxicologica), up(d.composicao), d.preco_venda || 0,
+            up(d.fabricante), up(d.nutrientes), up(d.dose_padrao), d.bula_texto, d.bula_url,
             new Date().toISOString(), 0
         ]);
 };
@@ -1346,11 +1375,13 @@ export const updateCadastro = async (d) => {
     await executeQuery(`UPDATE cadastro SET 
         nome = ?, unidade = ?, tipo = ?, observacao = ?, estocavel = ?, vendavel = ?, fator_conversao = ?, 
         principio_ativo = ?, classe_toxicologica = ?, composicao = ?, preco_venda = ?,
+        fabricante = ?, nutrientes = ?, dose_padrao = ?, bula_texto = ?, bula_url = ?,
         last_updated = ?, sync_status = 0 
         WHERE uuid = ?`,
         [
             up(d.nome), up(d.unidade), up(d.tipo), up(d.observacao), d.estocavel, d.vendavel, d.fator_conversao,
             up(d.principio_ativo), up(d.classe_toxicologica), up(d.composicao), d.preco_venda,
+            up(d.fabricante), up(d.nutrientes), up(d.dose_padrao), d.bula_texto, d.bula_url,
             new Date().toISOString(), d.uuid
         ]);
 };

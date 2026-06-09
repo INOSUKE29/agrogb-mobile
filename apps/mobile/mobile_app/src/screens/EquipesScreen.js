@@ -12,6 +12,8 @@ import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
 import AgroOptionsModal from '../components/common/AgroOptionsModal';
 
+const SCREEN_VERSION = 'v2.0.0';
+
 export default function EquipesScreen({ navigation }) {
     const { theme } = useTheme();
     const activeColors = theme?.colors || {};
@@ -96,10 +98,10 @@ export default function EquipesScreen({ navigation }) {
         >
             <View style={styles.itemHeader}>
                 <View style={[styles.avatar, { backgroundColor: activeColors.primary || '#10B981' }]}>
-                    <Text style={styles.avatarText}>{item.nome.substring(0, 2)}</Text>
+                    <Text style={styles.avatarText}>{(item.nome || '  ').substring(0, 2).toUpperCase()}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                    <Text style={[styles.itemName, { color: textColor }]}>{item.nome}</Text>
+                    <Text style={[styles.itemName, { color: textColor }]}>{item.nome || 'SEM NOME'}</Text>
                     <View style={styles.badgeRow}>
                         <View style={[styles.badge, { backgroundColor: item.cargo === 'GERENTE' ? (isDark ? 'rgba(16, 185, 129, 0.15)' : '#F0FDF4') : (isDark ? 'rgba(255,255,255,0.06)' : '#F3F4F6') }]}>
                             <Text style={[styles.badgeText, { color: item.cargo === 'GERENTE' ? (activeColors.primary || '#10B981') : textMutedColor }]}>{item.cargo}</Text>
@@ -129,9 +131,18 @@ export default function EquipesScreen({ navigation }) {
             <FlatList
                 data={equipe}
                 renderItem={renderItem}
-                keyExtractor={item => item.uuid}
+                keyExtractor={item =
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
+                    > item.uuid}
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={<Text style={[styles.empty, { color: textMutedColor }]}>Nenhum colaborador cadastrado.</Text>}
+                initialNumToRender={8}
+                maxToRenderPerBatch={10}
+                windowSize={5}
+                removeClippedSubviews={true}
             />
 
             <TouchableOpacity style={[styles.fab, { backgroundColor: activeColors.primary || '#10B981' }]} onPress={() => { resetForm(); setModalVisible(true); }}>

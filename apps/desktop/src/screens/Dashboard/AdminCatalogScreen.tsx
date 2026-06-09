@@ -45,7 +45,7 @@ export default function AdminCatalogScreen() {
         setLoading(true);
         try {
             // SEMPRE busca aprovações pendentes para exibir o contador corretamente na aba
-            const { data: approvalsData } = await supabase.from('global_library_submissions').select('*').eq('status', 'PENDENTE_GLOBAL').order('created_at', { ascending: false });
+            const { data: approvalsData } = await supabase.from('produtos_cadastro').select('*').eq('curation_status', 'PENDENTE').order('created_at', { ascending: false });
             if (approvalsData) setApprovals(approvalsData);
 
             if (activeTab === 'CULTURAS') {
@@ -222,11 +222,16 @@ export default function AdminCatalogScreen() {
 
     const handleApprove = async (item: Record<string, string | number | boolean | null>) => {
         try {
-            if (item.produto_id) {
-                await supabase.from('v2_produtos').update({ is_global: true, status_aprovacao: 'APROVADO' }).eq('id', item.produto_id);
-            }
-            await supabase.from('global_library_submissions').update({ status: 'APROVADO', review_date: new Date().toISOString() }).eq('id', item.id);
-            toast.success('Produto aprovado para a Biblioteca Global!');
+            await supabase.from('produtos_cadastro').update({ curation_status: 'APROVADO' }).eq('id', item.id);
+            
+            // Opcional: inserir também no kb_products se for uma biblioteca separada
+            await supabase.from('kb_products').insert([{ 
+                name: item.nome, 
+                category: item.tipo || 'INSUMO', 
+                scope: 'GLOBAL' 
+            }]);
+
+            toast.success('Produto aprovado e inserido na Biblioteca Global!');
             fetchDados();
         } catch (_e) {
             toast.error('Erro ao aprovar produto.');
@@ -235,10 +240,7 @@ export default function AdminCatalogScreen() {
 
     const handleReject = async (item: Record<string, string | number | boolean | null>) => {
         try {
-            if (item.produto_id) {
-                await supabase.from('v2_produtos').update({ status_aprovacao: 'REJEITADO' }).eq('id', item.produto_id);
-            }
-            await supabase.from('global_library_submissions').update({ status: 'REJEITADO', review_date: new Date().toISOString() }).eq('id', item.id);
+            await supabase.from('produtos_cadastro').update({ curation_status: 'REJEITADO' }).eq('id', item.id);
             toast.success('Produto rejeitado.');
             fetchDados();
         } catch (_e) {
@@ -437,27 +439,49 @@ export default function AdminCatalogScreen() {
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="bg-white/5">
-                            <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase">Item Sugerido</th>
-                            <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase">Categoria</th>
-                            <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase">Fabricante</th>
-                            <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase text-right">Decisão</th>
+                            <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase">Produto / Insumo</th>
+                            <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase">Detalhes da Bula</th>
+                            <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase text-right">Ação</th>
                         </tr>
                     </thead>
                     <tbody>
                         {approvals.length === 0 ? (
-                            <tr><td colSpan={4} className="p-8 text-center text-[var(--color-muted)] font-bold">Nenhuma aprovação pendente no momento.</td></tr>
+                            <tr><td colSpan={3} className="p-8 text-center text-[var(--color-muted)] font-bold">Nenhuma aprovação pendente no momento.</td></tr>
                         ) : approvals.map(item => (
-                            <tr key={item.id} className="border-b border-white/5 hover:bg-white/5">
-                                <td className="p-4 font-bold text-white flex flex-col">
-                                    <span>{item.nome}</span>
-                                    <span className="text-xs text-[var(--color-muted)] font-normal">{item.observacao || 'Sem observações adicionais'}</span>
+                            <tr key={String(item.id)} className="border-b border-white/5 hover:bg-white/5 align-top">
+                                <td className="p-4">
+                                    <div className="font-bold text-white text-lg">{item.nome}</div>
+                                    <div className="flex gap-2 mt-2">
+                                        <span className="px-2 py-1 bg-white/10 text-[var(--color-muted)] text-xs rounded">{item.tipo || 'INDEFINIDO'}</span>
+                                        {item.fabricante && <span className="px-2 py-1 bg-indigo-500/20 text-indigo-400 text-xs rounded font-bold">🏭 {item.fabricante}</span>}
+                                    </div>
+                                    <div className="mt-2 text-xs text-[var(--color-muted)]">
+                                        <strong>Princípio:</strong> {item.principio_ativo || '-'} <br/>
+                                        <strong>Classe:</strong> {item.classe_toxicologica || '-'}
+                                    </div>
                                 </td>
-                                <td className="p-4 text-xs text-[var(--color-muted)]"><span className="px-2 py-1 bg-white/10 rounded">{item.categoria}</span></td>
-                                <td className="p-4 text-xs text-[var(--color-muted)]">{item.fabricante || '-'}</td>
-                                <td className="p-4 text-right space-x-2">
-                                    <button onClick={() => setEditingApproval(item)} className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg" title="Editar antes de aprovar"><Edit2 className="w-5 h-5" /></button>
-                                    <button onClick={() => handleApprove(item)} className="p-2 text-green-400 hover:bg-green-500/20 rounded-lg" title="Aprovar e Enviar p/ Global"><ShieldCheck className="w-5 h-5" /></button>
-                                    <button onClick={() => handleReject(item)} className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg" title="Rejeitar"><X className="w-5 h-5" /></button>
+                                <td className="p-4 text-sm text-[var(--color-muted)]">
+                                    <div className="mb-1"><strong>Nutrientes:</strong> {item.nutrientes || '-'}</div>
+                                    <div className="mb-1"><strong>Dose Padrão:</strong> <span className="text-emerald-400 font-bold">{item.dose_padrao || '-'}</span></div>
+                                    <div className="mt-2 p-2 bg-white/5 rounded border border-white/5 text-xs italic">
+                                        {item.bula_texto ? item.bula_texto : 'Sem indicações de bula adicionadas.'}
+                                    </div>
+                                    {item.bula_url && (
+                                        <a href={String(item.bula_url)} target="_blank" rel="noreferrer" className="text-blue-400 text-xs hover:underline mt-1 block">🔗 Ver PDF da Bula</a>
+                                    )}
+                                </td>
+                                <td className="p-4 text-right">
+                                    <div className="flex flex-col gap-2 items-end">
+                                        <button onClick={() => handleApprove(item)} className="px-4 py-2 bg-green-500/20 text-green-400 hover:bg-green-500/30 rounded-lg font-bold flex items-center gap-2 w-full justify-center border border-green-500/30 transition-colors">
+                                            <ShieldCheck className="w-4 h-4" /> Aprovar
+                                        </button>
+                                        <button onClick={() => setEditingApproval(item)} className="px-4 py-2 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-lg font-bold flex items-center gap-2 w-full justify-center border border-blue-500/30 transition-colors">
+                                            <Edit2 className="w-4 h-4" /> Editar Bula
+                                        </button>
+                                        <button onClick={() => handleReject(item)} className="px-4 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg font-bold flex items-center gap-2 w-full justify-center border border-red-500/30 transition-colors">
+                                            <X className="w-4 h-4" /> Rejeitar
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}

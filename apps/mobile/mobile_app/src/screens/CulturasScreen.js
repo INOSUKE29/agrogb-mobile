@@ -230,7 +230,12 @@ export default function CulturasScreen({ navigation }) {
             ) : (
                 <FlatList
                     data={filteredPlantings}
-                    keyExtractor={item => item.uuid}
+                    keyExtractor={item =
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
+                    > item.uuid}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.list}
                     renderItem={({ item }) => (

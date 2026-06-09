@@ -10,7 +10,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { RecommendationService } from '../services/RecommendationService';
 import Card from '../components/common/Card';
 
-export default function RecommendationsListScreen({ navigation }) {
+export default function RecommendationsListScreen({ navigation, isTabbed }) {
     const { theme } = useTheme();
     const { user, role } = useAuth();
     const [recommendations, setRecommendations] = useState([]);
@@ -113,13 +113,15 @@ export default function RecommendationsListScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
-            <LinearGradient colors={['#064E3B', '#10B981']} style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Ionicons name="arrow-back" size={24} color="#FFF" />
-                </TouchableOpacity>
-                <Text style={styles.title}>RECEITAS & PRESCRIÇÕES</Text>
-                <Text style={styles.subtitle}>Gerencie receitas de gotejo e aplicação foliar.</Text>
-            </LinearGradient>
+            {!isTabbed && (
+                <LinearGradient colors={['#064E3B', '#10B981']} style={styles.header}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.title}>RECEITAS & PRESCRIÇÕES</Text>
+                    <Text style={styles.subtitle}>Gerencie receitas de gotejo e aplicação foliar.</Text>
+                </LinearGradient>
+            )}
 
             {loading && recommendations.length === 0 ? (
                 <View style={styles.loadingContainer}>

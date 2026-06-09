@@ -16,10 +16,22 @@ export function AuthProvider({ children }) {
         try {
             const session = await AsyncStorage.getItem('user_session');
             if (session) {
-                setUser(JSON.parse(session));
+                try {
+                    const parsedSession = JSON.parse(session);
+                    if (parsedSession && parsedSession.id) {
+                        setUser(parsedSession);
+                    } else {
+                        // Sessão vazia ou zumbi detectada.
+                        await logout();
+                    }
+                } catch (parseError) {
+                    // Corrupção do arquivo JSON no AsyncStorage
+                    console.error('Sessão corrompida detectada, limpando...', parseError);
+                    await logout();
+                }
             }
         } catch (e) {
-            console.error(e);
+            console.error('Erro ao acessar o AsyncStorage', e);
         } finally {
             setLoading(false);
         }

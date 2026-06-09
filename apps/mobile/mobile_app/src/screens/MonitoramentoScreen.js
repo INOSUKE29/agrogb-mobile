@@ -347,7 +347,12 @@ export default function MonitoramentoScreen({ navigation }) {
             <FlatList
                 contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
                 data={history}
-                keyExtractor={i => i.uuid}
+                keyExtractor={i =
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
+                    > i.uuid}
                 renderItem={({ item }) => {
                     const hasPdf = !!item.pdf_uri;
                     const dateVal = new Date(item.data);
@@ -436,7 +441,12 @@ export default function MonitoramentoScreen({ navigation }) {
             </View>
             <FlatList
                 data={kbItems}
-                keyExtractor={i => i.uuid || i.id?.toString()}
+                keyExtractor={i =
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
+                    > i.uuid || i.id?.toString()}
                 renderItem={({ item }) => {
                     const isDoenca = item.tipo === 'DOENCA';
                     const tagBg = isDark

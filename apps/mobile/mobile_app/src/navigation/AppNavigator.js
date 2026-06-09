@@ -60,6 +60,9 @@ import FertilizationScreen from '../screens/FertilizationScreen';
 import RecipeFormScreen from '../screens/RecipeFormScreen';
 import ApplicationFormScreen from '../screens/ApplicationFormScreen';
 
+// Mega Central: Manejo da Lavoura
+import ManejoLavouraScreen from '../screens/manejo/ManejoLavouraScreen';
+
 const Stack = createStackNavigator();
 
 export default function AppNavigator() {
@@ -137,6 +140,9 @@ export default function AppNavigator() {
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
             <Stack.Screen name="FinancialAccounts" component={FinancialAccountsScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Descarte" component={DescarteScreen} options={{ headerShown: false }} />
+            
+            {/* Central de Operações */}
+            <Stack.Screen name="ManejoLavoura" component={ManejoLavouraScreen} options={{ headerShown: false }} />
         </Stack.Navigator>
     );
 }

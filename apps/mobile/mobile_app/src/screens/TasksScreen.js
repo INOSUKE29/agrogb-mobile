@@ -128,7 +128,12 @@ export default function TasksScreen({ navigation }) {
 
             <FlatList
                 data={tasks}
-                keyExtractor={item => item.id}
+                keyExtractor={item =
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
+                    > item.id}
                 contentContainerStyle={styles.list}
                 renderItem={renderTaskCard}
                 ListEmptyComponent={<Text style={styles.emptyText}>Nenhuma tarefa encontrada.</Text>}

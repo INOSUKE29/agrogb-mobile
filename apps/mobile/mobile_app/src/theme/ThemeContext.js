@@ -9,7 +9,7 @@ const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
     const systemColorScheme = useColorScheme();
-    const [themeConfig, setThemeConfig] = useState('system');
+    const [themeConfig, setThemeConfig] = useState('dark'); // FONT: Forçando Dark Slate por padrão
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -39,7 +39,7 @@ export const ThemeProvider = ({ children }) => {
     };
 
     const effectiveMode = themeConfig === 'system' 
-        ? (systemColorScheme || 'light') 
+        ? 'dark' // Fallback forçado para dark
         : themeConfig;
         
     const activeTheme = effectiveMode === 'dark' ? themeDark : themeLight;
@@ -78,12 +78,12 @@ export const useTheme = () => {
     const context = useContext(ThemeContext);
     if (!context) {
         return {
-            theme: legacyTheme,
-            effectiveTheme: 'light',
-            colors: { ...legacyTheme.colors, ...themeLight.colors },
+            theme: { ...legacyTheme, colors: { ...legacyTheme.colors, ...themeDark.colors } },
+            effectiveTheme: 'dark',
+            colors: { ...legacyTheme.colors, ...themeDark.colors },
             setTheme: () => { },
-            isDark: false,
-            isDarkMode: false
+            isDark: true,
+            isDarkMode: true
         };
     }
     return context;

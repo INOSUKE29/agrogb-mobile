@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Dimensions, StatusBar, SafeAreaView } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Dimensions, StatusBar, SafeAreaView, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
+import { getCadastro } from '../database/database';
 
 // Design System
 import Card from '../components/common/Card';
@@ -15,31 +16,103 @@ export default function IntelligenceScreen({ navigation }) {
     const { theme } = useTheme();
     const activeColors = theme?.colors || {};
     const isDark = theme?.theme_mode === 'dark';
+    const borderCol = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
 
-    const [activeTab, setActiveTab] = useState('DASHBOARD'); // 'DASHBOARD' | 'CONSULTOR'
+    const [activeTab, setActiveTab] = useState('AUDITORIA'); // 'DASHBOARD' | 'AUDITORIA' | 'CONSULTOR'
     const [loading, setLoading] = useState(false);
+    
+    // IA Auditoria States
+    const [catalogProducts, setCatalogProducts] = useState([]);
+    const [auditAlerts, setAuditAlerts] = useState([]);
 
     // Soil Analysis Input States for IA Consultant
     const [soilPH, setSoilPH] = useState('5.2');
-    const [soilP, setSoilP] = useState('12'); // Fósforo (mg/dm³)
-    const [soilK, setSoilK] = useState('0.18'); // Potássio (cmolc/dm³)
-    const [plantPhase, setPlantPhase] = useState('FRUTIFICAÇÃO'); // 'VEGETATIVA' | 'FLORAÇÃO' | 'FRUTIFICAÇÃO'
-    
-    // IA Output Recommendations
+    const [soilP, setSoilP] = useState('12'); 
+    const [soilK, setSoilK] = useState('0.18'); 
+    const [plantPhase, setPlantPhase] = useState('FRUTIFICAÇÃO'); 
     const [recommendation, setRecommendation] = useState(null);
 
-    // Mock dashboard metrics based on real database analytics concept
+    // Mock dashboard metrics
     const biMetrics = {
-        totalProduction: 1240, // kg
-        revenue: 18200, // R$
-        bestField: 'Talhão 4',
-        efficiency: '87%',
+        totalProduction: 1240, revenue: 18200, bestField: 'Talhão 4', efficiency: '87%',
         fields: [
             { id: '1', name: 'Talhão 1', area: 0.5, production: 320, efficiency: '78%' },
             { id: '2', name: 'Talhão 2', area: 0.3, production: 180, efficiency: '65%' },
             { id: '3', name: 'Talhão 3', area: 0.4, production: 240, efficiency: '82%' },
             { id: '4', name: 'Talhão 4', area: 0.2, production: 500, efficiency: '95%' }
         ]
+    };
+
+    useEffect(() => {
+        loadCatalogAndRunAudit();
+    }, []);
+
+    const loadCatalogAndRunAudit = async () => {
+        setLoading(true);
+        try {
+            const dbItems = await getCadastro();
+            const richItems = dbItems.filter(item => item.bula_texto || item.dose_padrao || item.nutrientes);
+            setCatalogProducts(richItems);
+
+            // MOCK: Aplicações recentes no campo para cruzamento com a Bula real do DB
+            const mockRecentApplications = [
+                { id: 1, talhao: 'Talhão 1', appliedDose: 3.5, unit: 'L/ha', productName: richItems[0]?.nome || 'Produto Genérico A' },
+                { id: 2, talhao: 'Talhão 2', appliedDose: 1.0, unit: 'Kg/ha', productName: richItems[1]?.nome || 'Produto Genérico B' }
+            ];
+
+            const alerts = [];
+            
+            if (richItems.length > 0) {
+                // Motor de Análise Preditiva
+                mockRecentApplications.forEach(app => {
+                    const catalogMatch = richItems.find(r => r.nome === app.productName);
+                    if (catalogMatch && catalogMatch.dose_padrao) {
+                        // Extrai número da dose padrão (Ex: "2L/ha" -> 2)
+                        const standardDose = parseFloat(catalogMatch.dose_padrao.replace(/[^\d.]/g, ''));
+                        if (!isNaN(standardDose)) {
+                            if (app.appliedDose > standardDose * 1.2) {
+                                alerts.push({
+                                    id: `alert_${app.id}`,
+                                    type: 'CRÍTICO',
+                                    color: '#EF4444',
+                                    title: `Superdosagem Detectada no ${app.talhao}`,
+                                    message: `A dose aplicada de ${app.appliedDose}${app.unit} do produto ${catalogMatch.nome} excede a recomendação da bula oficial (${catalogMatch.dose_padrao}).`,
+                                    bulaInfo: catalogMatch.bula_texto || 'Consulte o agrônomo.',
+                                    fabricante: catalogMatch.fabricante || 'Desconhecido'
+                                });
+                            } else if (app.appliedDose < standardDose * 0.8) {
+                                alerts.push({
+                                    id: `alert_${app.id}`,
+                                    type: 'ALERTA',
+                                    color: '#F59E0B',
+                                    title: `Subdosagem no ${app.talhao}`,
+                                    message: `A dose de ${app.appliedDose}${app.unit} de ${catalogMatch.nome} está abaixo da bula (${catalogMatch.dose_padrao}). Isso pode causar resistência de pragas.`,
+                                    bulaInfo: catalogMatch.bula_texto || 'Sem mais indicações na bula.',
+                                    fabricante: catalogMatch.fabricante || 'Desconhecido'
+                                });
+                            } else {
+                                alerts.push({
+                                    id: `alert_${app.id}`,
+                                    type: 'OK',
+                                    color: '#10B981',
+                                    title: `Manejo Excelente no ${app.talhao}`,
+                                    message: `A aplicação de ${catalogMatch.nome} seguiu exatamente a recomendação da bula (${catalogMatch.dose_padrao}).`,
+                                    bulaInfo: 'Em conformidade com as Boas Práticas Agrícolas.',
+                                    fabricante: catalogMatch.fabricante || '-'
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+            
+            setAuditAlerts(alerts);
+            
+        } catch (e) {
+            console.error("Erro ao rodar auditoria IA:", e);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const runAgronomicConsultant = () => {
@@ -49,148 +122,87 @@ export default function IntelligenceScreen({ navigation }) {
             const p = parseFloat(soilP) || 20;
             const k = parseFloat(soilK) || 0.3;
 
-            let result = {
-                title: 'Solo Equilibrado',
-                status: 'ESTÁVEL',
-                color: '#10B981',
-                rec: 'Nenhuma ação corretiva crítica necessária no solo. Continue com o manejo padrão de fertirrigação.',
-                suggestedProduct: 'Nenhum',
-                dose: 'Apenas manutenção habitual'
-            };
+            let result = { title: 'Solo Equilibrado', status: 'ESTÁVEL', color: '#10B981', rec: 'Nenhuma ação corretiva crítica necessária no solo. Continue com o manejo padrão.', suggestedProduct: 'Nenhum', dose: '-' };
 
             if (ph < 5.5) {
-                result = {
-                    title: 'Acidez Excessiva do Solo (pH Baixo)',
-                    status: 'CRÍTICO',
-                    color: '#EF4444',
-                    rec: 'O solo apresenta acidez prejudicial. Recomenda-se a aplicação de calcário para neutralizar o alumínio tóxico e elevar a saturação de bases.',
-                    suggestedProduct: 'Calcário Dolomítico (PRNT 80%)',
-                    dose: '2.5 Ton/ha (Incorporado a 20cm)'
-                };
+                result = { title: 'Acidez Excessiva (pH Baixo)', status: 'CRÍTICO', color: '#EF4444', rec: 'O solo apresenta acidez prejudicial. Recomenda-se a aplicação de calcário para elevar a saturação de bases.', suggestedProduct: 'Calcário Dolomítico', dose: '2.5 Ton/ha' };
             } else if (plantPhase === 'FRUTIFICAÇÃO' && k < 0.25) {
-                result = {
-                    title: 'Deficiência Crítica de Potássio na Frutificação',
-                    status: 'ALERTA',
-                    color: '#F59E0B',
-                    rec: 'A fase de frutificação possui altíssima demanda de Potássio. O valor de K no solo está abaixo do ideal para o enchimento de frutos.',
-                    suggestedProduct: 'Power Brix (Adubação Foliar) ou Cloreto de Potássio',
-                    dose: '2 L/ha (Power Brix) via pulverização'
-                };
-            } else if (p < 15) {
-                result = {
-                    title: 'Baixo Nível de Fósforo (P)',
-                    status: 'ALERTA',
-                    color: '#F59E0B',
-                    rec: 'Deficiência de Fósforo detectada. O fósforo é essencial para o desenvolvimento radicular inicial e vigor do plantio.',
-                    suggestedProduct: 'MAP (Monoamônio Fosfato) ou Superfosfato Simples',
-                    dose: '150 kg/ha via solo'
-                };
+                result = { title: 'Deficiência Crítica de Potássio', status: 'ALERTA', color: '#F59E0B', rec: 'A fase de frutificação possui altíssima demanda de Potássio. O valor atual não suportará o enchimento dos frutos.', suggestedProduct: 'Cloreto de Potássio', dose: '2 L/ha' };
             }
-
+            
             setRecommendation(result);
             setLoading(false);
         }, 800);
     };
 
-    // Auto-calculate on initial load
-    useEffect(() => {
-        runAgronomicConsultant();
-    }, []);
-
     const textColor = activeColors.text || '#1E293B';
     const textMutedColor = activeColors.textMuted || '#64748B';
     const cardBg = activeColors.card || '#FFFFFF';
-    const borderCol = activeColors.border || 'rgba(0,0,0,0.1)';
 
     const renderHeader = () => (
-        <LinearGradient 
-            colors={isDark ? ['#111827', '#0F172A'] : [activeColors.primary || '#10B981', activeColors.primaryDeep || '#064E3B']} 
-            style={styles.header}
-        >
+        <LinearGradient colors={isDark ? ['#111827', '#0F172A'] : [activeColors.primary || '#10B981', activeColors.primaryDeep || '#064E3B']} style={styles.header}>
             <View style={styles.headerTop}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
                     <Ionicons name="arrow-back" size={22} color="#FFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>INTELIGÊNCIA AGTECH</Text>
-                <View style={{ width: 38 }} />
+                <Text style={styles.headerTitle}>CÉREBRO AGROGB IA</Text>
+                <TouchableOpacity onPress={loadCatalogAndRunAudit} style={styles.iconBtn}>
+                    <Ionicons name="refresh" size={22} color="#FFF" />
+                </TouchableOpacity>
             </View>
 
             <View style={styles.tabBar}>
-                <TouchableOpacity 
-                    style={[styles.tabItem, activeTab === 'DASHBOARD' && styles.tabItemActive]} 
-                    onPress={() => setActiveTab('DASHBOARD')}
-                >
-                    <Text style={[styles.tabText, activeTab === 'DASHBOARD' && styles.tabTextActive]}>📊 DASHBOARD BI</Text>
+                <TouchableOpacity style={[styles.tabItem, activeTab === 'AUDITORIA' && styles.tabItemActive]} onPress={() => setActiveTab('AUDITORIA')}>
+                    <Text style={[styles.tabText, activeTab === 'AUDITORIA' && styles.tabTextActive]}>🛡️ AUDITORIA BULA</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                    style={[styles.tabItem, activeTab === 'CONSULTOR' && styles.tabItemActive]} 
-                    onPress={() => setActiveTab('CONSULTOR')}
-                >
-                    <Text style={[styles.tabText, activeTab === 'CONSULTOR' && styles.tabTextActive]}>🧠 CONSULTOR IA</Text>
+                <TouchableOpacity style={[styles.tabItem, activeTab === 'CONSULTOR' && styles.tabItemActive]} onPress={() => setActiveTab('CONSULTOR')}>
+                    <Text style={[styles.tabText, activeTab === 'CONSULTOR' && styles.tabTextActive]}>🧠 SOLO</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.tabItem, activeTab === 'DASHBOARD' && styles.tabItemActive]} onPress={() => setActiveTab('DASHBOARD')}>
+                    <Text style={[styles.tabText, activeTab === 'DASHBOARD' && styles.tabTextActive]}>📊 KPI</Text>
                 </TouchableOpacity>
             </View>
         </LinearGradient>
     );
 
-    const renderDashboard = () => (
+    const renderAuditoria = () => (
         <ScrollView style={{ flex: 1, padding: 20 }} contentContainerStyle={{ paddingBottom: 50 }}>
-            {/* KPI Cards Grid */}
-            <View style={styles.kpiGrid}>
-                <View style={[styles.kpiCard, { backgroundColor: cardBg }]}>
-                    <Ionicons name="leaf-outline" size={20} color="#10B981" />
-                    <Text style={[styles.kpiLabel, { color: textMutedColor }]}>Produção do Mês</Text>
-                    <Text style={[styles.kpiValue, { color: textColor }]}>{biMetrics.totalProduction} kg</Text>
-                </View>
-                <View style={[styles.kpiCard, { backgroundColor: cardBg }]}>
-                    <Ionicons name="cash-outline" size={20} color="#3B82F6" />
-                    <Text style={[styles.kpiLabel, { color: textMutedColor }]}>Receita Líquida</Text>
-                    <Text style={[styles.kpiValue, { color: textColor }]}>R$ {biMetrics.revenue.toLocaleString()}</Text>
-                </View>
-            </View>
-
-            <View style={styles.kpiGrid}>
-                <View style={[styles.kpiCard, { backgroundColor: cardBg }]}>
-                    <Ionicons name="trophy-outline" size={20} color="#F59E0B" />
-                    <Text style={[styles.kpiLabel, { color: textMutedColor }]}>Mais Produtivo</Text>
-                    <Text style={[styles.kpiValue, { color: textColor }]}>{biMetrics.bestField}</Text>
-                </View>
-                <View style={[styles.kpiCard, { backgroundColor: cardBg }]}>
-                    <Ionicons name="speedometer-outline" size={20} color="#8B5CF6" />
-                    <Text style={[styles.kpiLabel, { color: textMutedColor }]}>Eficiência Geral</Text>
-                    <Text style={[styles.kpiValue, { color: textColor }]}>{biMetrics.efficiency}</Text>
-                </View>
-            </View>
-
-            {/* Simulated PowerBI Charts */}
-            <Card style={{ marginTop: 15, marginBottom: 20 }}>
-                <Text style={{ fontSize: 10, fontWeight: '900', color: textMutedColor, letterSpacing: 1, marginBottom: 15 }}>PRODUTIVIDADE COMPARATIVA POR TALHÃO</Text>
-                {biMetrics.fields.map(field => {
-                    const prodPerHa = Math.round(field.production / field.area);
-                    const percent = Math.min(100, (field.production / 500) * 100);
-                    return (
-                        <View key={field.id} style={{ marginBottom: 15 }}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <Text style={{ fontSize: 13, fontWeight: '700', color: textColor }}>{field.name}</Text>
-                                <Text style={{ fontSize: 12, fontWeight: '800', color: activeColors.primary || '#10B981' }}>{prodPerHa.toLocaleString()} kg/ha</Text>
-                            </View>
-                            <View style={{ height: 10, backgroundColor: '#E5E7EB', borderRadius: 5, overflow: 'hidden' }}>
-                                <View style={{ width: `${percent}%`, height: '100%', backgroundColor: activeColors.primary || '#10B981', borderRadius: 5 }} />
-                            </View>
-                        </View>
-                    );
-                })}
-            </Card>
-
-            {/* Dynamic Insights Alert Banner */}
-            <Card style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', borderColor: 'rgba(239, 68, 68, 0.2)', borderWidth: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                    <Ionicons name="alert-circle" size={20} color="#EF4444" />
-                    <Text style={{ fontSize: 13, fontWeight: '900', color: '#EF4444' }}>DIVERGÊNCIA OPERACIONAL</Text>
-                </View>
-                <Text style={{ fontSize: 13, color: '#374151', lineHeight: 18 }}>
-                    Talhão 2 registrou uma queda repentina de 18% em relação à colheita anterior. Recomendamos executar diagnóstico agronômico de solo imediato.
+            <View style={{ marginBottom: 20 }}>
+                <Text style={{ fontSize: 13, fontWeight: '800', color: textColor, marginBottom: 5 }}>Auditoria Inteligente de Manejo</Text>
+                <Text style={{ fontSize: 11, color: textMutedColor, lineHeight: 16 }}>
+                    A Inteligência Artificial cruza os dados do seu campo com as Bulas e Fichas Técnicas recém cadastradas no seu Catálogo Rico.
                 </Text>
-            </Card>
+            </View>
+
+            {loading ? (
+                <ActivityIndicator size="large" color={activeColors.primary} style={{ marginTop: 50 }} />
+            ) : auditAlerts.length === 0 ? (
+                <Card style={{ alignItems: 'center', padding: 30, borderStyle: 'dashed', backgroundColor: 'transparent' }}>
+                    <Ionicons name="document-text-outline" size={40} color={textMutedColor} />
+                    <Text style={{ marginTop: 10, fontSize: 13, fontWeight: '800', color: textColor, textAlign: 'center' }}>Nenhum Dado Rico Encontrado</Text>
+                    <Text style={{ marginTop: 5, fontSize: 11, color: textMutedColor, textAlign: 'center' }}>
+                        Cadastre produtos no "Estoque" informando a Ficha Técnica (Dose e Bula) para que a IA possa auditar seus manejos.
+                    </Text>
+                    <AgroButton title="Ir para Catálogo" variant="secondary" style={{ marginTop: 15 }} onPress={() => navigation.navigate('Cadastro')} />
+                </Card>
+            ) : (
+                auditAlerts.map(alert => (
+                    <Card key={alert.id} style={{ borderColor: alert.color, borderLeftWidth: 4, marginBottom: 15 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                            <Ionicons name={alert.type === 'OK' ? "checkmark-circle" : "alert-circle"} size={20} color={alert.color} />
+                            <Text style={{ fontSize: 11, fontWeight: '900', color: alert.color }}>{alert.type}</Text>
+                        </View>
+                        <Text style={{ fontSize: 15, fontWeight: '900', color: textColor, marginBottom: 8 }}>{alert.title}</Text>
+                        <Text style={{ fontSize: 13, color: textColor, lineHeight: 18, marginBottom: 12 }}>{alert.message}</Text>
+                        
+                        <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9FAFB', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: borderCol }}>
+                            <Text style={{ fontSize: 9, fontWeight: '900', color: textMutedColor, letterSpacing: 1, marginBottom: 4 }}>PARECER DA BULA OFICIAL</Text>
+                            <Text style={{ fontSize: 12, color: textMutedColor, fontStyle: 'italic' }}>"{alert.bulaInfo}"</Text>
+                            <Text style={{ fontSize: 10, fontWeight: 'bold', color: activeColors.primary, marginTop: 8 }}>Fonte: {alert.fabricante}</Text>
+                        </View>
+                    </Card>
+                ))
+            )}
         </ScrollView>
     );
 
@@ -202,61 +214,52 @@ export default function IntelligenceScreen({ navigation }) {
                 <Text style={{ fontSize: 11, fontWeight: '800', color: textMutedColor, marginBottom: 8 }}>Fase Fenológica da Cultura *</Text>
                 <View style={styles.phaseSelector}>
                     {['VEGETATIVA', 'FLORAÇÃO', 'FRUTIFICAÇÃO'].map(phase => (
-                        <TouchableOpacity 
-                            key={phase} 
-                            style={[styles.phaseBtn, plantPhase === phase && { backgroundColor: activeColors.primary || '#10B981' }]}
-                            onPress={() => setPlantPhase(phase)}
-                        >
+                        <TouchableOpacity key={phase} style={[styles.phaseBtn, plantPhase === phase && { backgroundColor: activeColors.primary || '#10B981' }]} onPress={() => setPlantPhase(phase)}>
                             <Text style={[styles.phaseBtnText, plantPhase === phase && { color: '#FFF' }]}>{phase}</Text>
                         </TouchableOpacity>
                     ))}
                 </View>
 
                 <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
-                    <View style={{ flex: 1 }}>
-                        <AgroInput label="pH do Solo" value={soilPH} onChangeText={setSoilPH} keyboardType="decimal-pad" placeholder="5.5" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <AgroInput label="Fósforo (mg/dm³)" value={soilP} onChangeText={setSoilP} keyboardType="decimal-pad" placeholder="15" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <AgroInput label="Potássio (cmolc/dm³)" value={soilK} onChangeText={setSoilK} keyboardType="decimal-pad" placeholder="0.2" />
-                    </View>
+                    <View style={{ flex: 1 }}><AgroInput label="pH do Solo" value={soilPH} onChangeText={setSoilPH} keyboardType="decimal-pad" /></View>
+                    <View style={{ flex: 1 }}><AgroInput label="Fósforo (P)" value={soilP} onChangeText={setSoilP} keyboardType="decimal-pad" /></View>
+                    <View style={{ flex: 1 }}><AgroInput label="Potássio (K)" value={soilK} onChangeText={setSoilK} keyboardType="decimal-pad" /></View>
                 </View>
 
-                <AgroButton 
-                    title="CALCULAR RECOMENDAÇÃO TÉCNICA" 
-                    icon="sparkles" 
-                    onPress={runAgronomicConsultant} 
-                    loading={loading}
-                    style={{ marginTop: 15 }}
-                />
+                <AgroButton title="GERAR DIAGNÓSTICO" icon="sparkles" onPress={runAgronomicConsultant} loading={loading} style={{ marginTop: 15 }} />
             </Card>
 
-            {/* Recommendation Result Card */}
             {recommendation && (
                 <Card style={{ borderColor: recommendation.color, borderLeftWidth: 5 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                         <Text style={{ fontSize: 11, fontWeight: '900', color: recommendation.color }}>{recommendation.status}</Text>
                         <MaterialCommunityIcons name="robot" size={20} color={recommendation.color} />
                     </View>
-                    <Text style={[styles.recTitle, { color: textColor }]}>{recommendation.title}</Text>
+                    <Text style={{ fontSize: 15, fontWeight: '900', color: textColor, marginBottom: 12 }}>{recommendation.title}</Text>
+                    <Text style={{ fontSize: 9, fontWeight: '900', letterSpacing: 1, color: textMutedColor, marginBottom: 4 }}>RECOMENDAÇÃO TÉCNICA</Text>
+                    <Text style={{ fontSize: 13, lineHeight: 18, color: textColor, marginBottom: 15 }}>{recommendation.rec}</Text>
                     
-                    <Text style={[styles.recLabel, { color: textMutedColor }]}>RECOMENDAÇÃO TÉCNICA</Text>
-                    <Text style={[styles.recDesc, { color: textColor }]}>{recommendation.rec}</Text>
-                    
-                    <View style={styles.recItemBox}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9FAFB', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: borderCol }}>
                         <View>
                             <Text style={{ fontSize: 9, fontWeight: '900', color: textMutedColor }}>PRODUTO INDICADO</Text>
-                            <Text style={{ fontSize: 13, fontWeight: '800', color: textColor }}>{recommendation.suggestedProduct}</Text>
+                            <Text style={{ fontSize: 12, fontWeight: '800', color: textColor }}>{recommendation.suggestedProduct}</Text>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
                             <Text style={{ fontSize: 9, fontWeight: '900', color: textMutedColor }}>DOSE INDICADA</Text>
-                            <Text style={{ fontSize: 13, fontWeight: '800', color: activeColors.primary || '#10B981' }}>{recommendation.dose}</Text>
+                            <Text style={{ fontSize: 12, fontWeight: '800', color: activeColors.primary || '#10B981' }}>{recommendation.dose}</Text>
                         </View>
                     </View>
                 </Card>
             )}
+        </ScrollView>
+    );
+
+    const renderDashboard = () => (
+        <ScrollView style={{ flex: 1, padding: 20 }} contentContainerStyle={{ paddingBottom: 50 }}>
+            <View style={styles.kpiGrid}>
+                <View style={[styles.kpiCard, { backgroundColor: cardBg }]}><Ionicons name="leaf-outline" size={20} color="#10B981" /><Text style={[styles.kpiLabel, { color: textMutedColor }]}>Produção (Mês)</Text><Text style={[styles.kpiValue, { color: textColor }]}>{biMetrics.totalProduction} kg</Text></View>
+                <View style={[styles.kpiCard, { backgroundColor: cardBg }]}><Ionicons name="cash-outline" size={20} color="#3B82F6" /><Text style={[styles.kpiLabel, { color: textMutedColor }]}>Receita Líquida</Text><Text style={[styles.kpiValue, { color: textColor }]}>R$ {biMetrics.revenue}</Text></View>
+            </View>
         </ScrollView>
     );
 
@@ -265,7 +268,9 @@ export default function IntelligenceScreen({ navigation }) {
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
             <SafeAreaView style={{ flex: 1 }}>
                 {renderHeader()}
-                {activeTab === 'DASHBOARD' ? renderDashboard() : renderConsultor()}
+                {activeTab === 'AUDITORIA' && renderAuditoria()}
+                {activeTab === 'CONSULTOR' && renderConsultor()}
+                {activeTab === 'DASHBOARD' && renderDashboard()}
             </SafeAreaView>
         </View>
     );
@@ -275,33 +280,18 @@ const styles = StyleSheet.create({
     container: { flex: 1 },
     header: { paddingTop: 50, paddingBottom: 20, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
     headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    headerTitle: { color: '#FFF', fontSize: 16, fontWeight: '900', letterSpacing: 1 },
-    iconBtn: {
-        width: 38,
-        height: 38,
-        borderRadius: 12,
-        backgroundColor: 'rgba(255, 255, 255, 0.15)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
+    headerTitle: { color: '#FFF', fontSize: 15, fontWeight: '900', letterSpacing: 1 },
+    iconBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255, 255, 255, 0.15)', justifyContent: 'center', alignItems: 'center' },
     tabBar: { flexDirection: 'row', marginTop: 20, backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: 15, padding: 5 },
     tabItem: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 10 },
     tabItemActive: { backgroundColor: '#FFF' },
-    tabText: { fontSize: 10, fontWeight: '900', color: 'rgba(255,255,255,0.7)', letterSpacing: 0.5 },
+    tabText: { fontSize: 9, fontWeight: '900', color: 'rgba(255,255,255,0.7)', letterSpacing: 0.5 },
     tabTextActive: { color: '#065F46' },
-
-    // Dashboard CSS
     kpiGrid: { flexDirection: 'row', gap: 12, marginBottom: 12 },
-    kpiCard: { flex: 1, padding: 15, borderRadius: 16, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3 },
+    kpiCard: { flex: 1, padding: 15, borderRadius: 16, elevation: 1 },
     kpiLabel: { fontSize: 9, fontWeight: '900', letterSpacing: 0.5, marginTop: 10, marginBottom: 4 },
     kpiValue: { fontSize: 16, fontWeight: '900' },
-
-    // Consultor CSS
     phaseSelector: { flexDirection: 'row', gap: 8, marginBottom: 10 },
     phaseBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-    phaseBtnText: { fontSize: 10, fontWeight: '900', color: '#9CA3AF' },
-    recTitle: { fontSize: 15, fontWeight: '900', marginBottom: 12 },
-    recLabel: { fontSize: 9, fontWeight: '900', letterSpacing: 1, marginBottom: 4 },
-    recDesc: { fontSize: 13, lineHeight: 18, marginBottom: 15 },
-    recItemBox: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: 'rgba(255,255,255,0.05)', padding: 12, borderRadius: 12, marginTop: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }
+    phaseBtnText: { fontSize: 9, fontWeight: '900', color: '#9CA3AF' }
 });

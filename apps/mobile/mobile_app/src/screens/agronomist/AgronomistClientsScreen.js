@@ -187,7 +187,12 @@ export default function AgronomistClientsScreen({ navigation }) {
             ) : (
                 <FlatList
                     data={activeTab === 'ativos' ? filteredClients : pending}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item) =
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
+                    > item.id}
                     renderItem={activeTab === 'ativos' ? renderClient : renderPending}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}

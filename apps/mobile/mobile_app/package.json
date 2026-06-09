@@ -99,6 +99,9 @@
   },
   "private": true,
   "lint-staged": {
-    "*.js": "eslint"
+    "*.js": [
+      "eslint --fix",
+      "jest --findRelatedTests --passWithNoTests"
+    ]
   }
 }

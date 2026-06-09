@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { executeQuery } from '../database/database';
 import { getSupabase } from './supabase';
 
@@ -30,11 +31,14 @@ export const AuthService = {
     },
 
     /**
-     * Encerra a sessão atual
+     * Encerra a sessão atual (Opção Nuclear: Destrói todos os caches)
      */
     logout: async () => {
         try {
             await AsyncStorage.removeItem('user_session');
+            await SecureStore.deleteItemAsync('agrogb_biometric_credentials').catch(() => {});
+            await SecureStore.deleteItemAsync('@user_session').catch(() => {});
+            
             const supabase = getSupabase();
             if (supabase) {
                 await supabase.auth.signOut();

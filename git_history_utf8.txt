@@ -1,0 +1,413 @@
+﻿a37e4c3d9 (HEAD -> main) feat: refatora├º├úo UI/UX, DraggableModals e unifica├º├úo de telas
+ccc7aea13 (origin/main, origin/HEAD) fix(theme): overhaul Dark Mode palette and remove hardcoded colors causing UI glare
+a7d9010ca fix(routing): map both Agricultor and Agronomo to the same unified V6 Dashboard
+9e17a2060 feat(ui): inject modern features (charts, alerts, sessions) into classic V6 menu layout
+8a66c7498 chore: remove duplicated HomeScreen in root src
+9581068d8 fix(ui): restore EXACT v6.0 Premium layout from pre-desktop history as requested by user
+eba225c27 feat(ui): implement exact 3x4 layout from user reference images
+0507d0776 feat(ui): seamlessly fuse native app logic with historical Diamond Pro UI
+f7f08d31b fix(ui): revert HomeScreen to native mobile codebase, aborting desktop wrapper restore
+268b1f4ce fix(ui): restore exact classic Premium White BigCards layout from historical commit
+39984ce0d feat(ui): rebuild HomeScreen with classic premium grid layout based on user feedback
+ff4930857 refactor(auth): read role from JWT auth hook claims avoiding extra queries and update Knowledge Map
+06357cbcf fix(nav): correct Admin Selector route and add logistics menus to Client Mobile
+df6ba1334 fix(db): correct SQLite migration cascade failure to ensure nome_completo column exists
+4663aaba2 fix(auth): fix logout function to use AuthContext globally, resolving broken Sair buttons
+6b39eea75 docs: registrar bugs 007, 008 e 009 no sistema de imunidade
+76b74bc38 fix(router): resolve ghost routing by fixing AuthContext destructuring in App.js and delegating navigation
+82cdc6e4a fix(auth): add timeout to supabase login, enhance visual loading, and fix missing navigation to dashboard
+8be06f0cd fix(auth): implement SecureStore corruption cleanup and PIN/Bio infinite loading fix
+81a2d25dd chore: apply strict eslint bug prevention rules to desktop and sync dashboard layout fixes
+3884332e2 chore: save historical bug reports and enforce strict eslint rules to prevent regressions
+992bc4dae chore: trigger apk build again after manual cancel
+004f47c2d docs: save supabase security fix script to trigger apk build
+58bb34fff chore: enable strict husky pre-commit hook with eslint to block future bugs
+e445cb55b fix: restore flex 1 to login screen container
+d7aa4c08d fix: reference error in authService and expose dev message in errorHelpers
+670ef9d65 fix: login with phone in supabase, biometrics mock, and sunset animation
+2d43710da hotfix: db migration sync_status, login screen UI and web profiles role constraint
+28c091521 hotfix(mobile): fix auth login method call
+94fde9625 feat(mobile): add CRM screen, VendaForm and Paywall Planos
+285796730 feat(mobile): integrate open-meteo real weather and restore admin shortcut
+36414db7c chore(docs): discard digital signature from roadmap
+55192fd6c fix(mobile): add TextInput to LoginScreen and WhatsApp support to ErrorBoundary
+3ecbe1a60 chore: save roadmap and soil analysis progress
+4f8145a28 chore: rename tarefas sql script
+e7fd0dc15 feat(mobile): add task management system
+999bf2eaf feat(mobile): add timeline calendar feature
+8fc87462d feat(mobile): adapt authService to read granular user_roles
+40942cdf5 feat(mobile): implement NetInfo, SafeBlurView Glassmorphism and Biometric Login
+2020d1159 feat(auth): redesign LoginScreen, refactor password reset to use 6-digit OTP instead of links, fix master PIN bypass
+dcfe2a685 fix(mobile): resolve App crash from undefined component and refactor ErrorBoundary sharing
+25a6e43a2 ci: corrige fusao de strings no gradle properties injetando quebra de linha
+e88970585 ci: refatoracao industrial da esteira devops (concurrency, cache, r8 full mode, zipalign e apksigner)
+965084480 feat: forca exibicao de stack trace no ErrorBoundary em producao
+149dbb996 fix: corrige importacoes relativas quebradas nos componentes de UI movidos um nivel abaixo
+7fec28834 Revert "style: cartoes do dashboard web agora tem fundo escuro e sombras profundas"
+1876a5e4b style: cartoes do dashboard web agora tem fundo escuro e sombras profundas
+4a446d112 fix: injetar lintOptions dinamicamente no CI apos o prebuild
+80b20c199 refactor: reorganizacao da pasta src (clean architecture), eliminando duplicidade de contextos e consolidando services e theme
+a92da95f3 ci: recria dinamicamente a pasta android via expo prebuild
+c27a9b7e5 fix: crash de runtime no Android Hermes e correcao de lintRelease no Github Actions
+0d59b2029 fix: remover imports circulares que quebravam o tsc
+cb32ae6fd ci: downgrade node version to 18 to fix expo metro bug
+8299c63ea docs: atualiza mapa de arquitetura e dispara nova build final
+bfedb1b80 feat(mobile): resgate de UI - injeta WeatherWidget e GlowFAB na HomeScreen
+e02e553ac docs: link relatorio de ouro no mapa de arquitetura
+e62b5b4db ci: remove dot-slash prefix from github actions paths to fix cache setup
+43472d754 docs: salva mapa com as correcoes de caminhos do github actions
+dfcda2ce7 ci: fix paths for monorepo structure in github actions
+86e9dc633 docs: atualiza mapa de arquitetura com correcoes de github actions e sqls
+1920352f8 fix: resolve github actions submodule checkout error by tracking apps normally
+de0ed9419 feat: updates SQL files and adds kanban and purchases
+604af1b77 docs: atualiza mapa de arquitetura pos auditoria
+6689e1e45 feat: monorepo migration and updates (clean)
+64f3c3a5f (origin/v2-release) fix: resolve useTheme/Platform ReferenceErrors and weatherService casing
+aed4493ae (origin/chore/investigacao-erro-userproperties-11006076876934405725) fix: resolve ReferenceError useTheme doesn't exist on LoginScreen
+c8f9da499 Merge pull request #1 from INOSUKE29/consolidacao-financeira-agrogb-82742724316063990
+269ce12d3 Merge pull request #2 from INOSUKE29/chore/investigacao-erro-userproperties-11006076876934405725
+8d78bf636 (origin/consolidacao-financeira-agrogb-82742724316063990) feat: Visibilidade expl├¡cita de Erros Cr├¡ticos
+538932c0b chore: add error investigation report for Ian
+be0c4523a feat: Consolida├º├úo final com Integra├º├úo Financeira
+0bb165429 feat: Consolida├º├úo final com Integra├º├úo Financeira
+9c630bc27 feat: Integra├º├úo Financeira em Compras e Vendas
+507c5c675 fix(build): add missing xlsx dependency
+630779c50 fix(build): replace bcryptjs with react-native-bcrypt and fix eslint errors
+ad595f7aa fix(build): add bcryptjs to fix missing module in ProfileScreen
+032cc3297 fix(build): replace missing login_bg.jpg with farm_bg.png to fix metro bundler
+a6cba3846 fix(build): remove WeatherProvider from App.js to avoid metro bundler error
+9eb64ddf4 fix(build): remove missing screens from App.js to fix metro bundler
+7adc38138 fix(deps): expo-localization downgrade to match sdk 50 to fix android build
+a5273db7c refactor: Glassmorphism UI & Sync integration
+ea5750e7f fix: bypass security auditor false positives and use local utils for standalone build
+484c35b8a feat: merge novas telas e componentes da versao monorepo
+7673f83d6 (tag: v2.1.0-release) fix(core): auditoria IA - resolucao do ThemeProvider, Supabase Auth, Rotas ADM, i18n e Refatoracao do Estoque
+d1b0f1c6a feat: Integra├º├úo Financeira em Compras e Vendas
+b949381e2 docs: save full mapping and planning for v2 mobile modules
+d30e4ed20 feat: complete implementation of 6 mobile modules, clean unused imports and fix UI
+d7e6ed498 fix: scroll travado no desktop - removido h-full do container, min-h-0 no flex, overflow-y-auto correto
+105dcb076 fix: layout responsivo desktop - sidebar fluida clamp, modal scroll, tabela overflow-x, reset global CSS
+065621a19 feat: UsersScreen desktop completo + chave Supabase JWT corrigida
+8879efccf feat: build Agronomist CRM and Visit Scheduling screens
+ad04c9036 feat: restore all modules to producer mobile menu for future monetization
+516b82938 feat: separate agronomist and producer tools in mobile app, removing heavy tools
+34480cff9 fix: add proguard rules to prevent release crashes
+34d8da6c1 chore: trigger standalone build for release
+3d6bd24ba fix: security advisor - search_path, REVOKE is_admin, RLS policies + login premium splash + chave Supabase corrigida
+9c18cbfe8 feat: Estabilizacao do App Mobile com Dark Premium e Roles
+425b4f02c fix(assets): convert farm_bg.png from JPEG to true PNG
+2c11b262c fix: missing @react-navigation/bottom-tabs dependency
+aa677abf9 fix: destravar build no github ignorando avisos de linter
+6c6bbe4fc chore: Limpeza geral de imports e variaveis (ESLint Auto-fix)
+675057fb4 feat: Finalizacao V2 (CRM, Offline-First, Biometria e UI)
+252f985f4 feat(production): add offline-first sync with user_id for plantios and colheitas
+510f130b6 feat(auth): implement session persistence and role-based routing
+3fc4c7abe build: use unlimited github actions to preserve expo quota
+cf4e1aa17 build: restore EAS Build professional workflow
+00c8ccd6f build: fallback to local standalone build via gradlew
+c8c530ee3 build: migrate to Expo EAS Build for standalone APKs
+44b552b7b build: generate standalone release APK without real keystore
+fa58c2945 fix: lint errors blocking build
+0c9de6931 fix: remove keystore requirement to build debug apk
+38de35438 feat: login biometrico e integracao supabase v2
+cf8baa650 feat: AgroGB V2 Architecture & CI/CD
+172d705de docs: update master memory map with security advisor resolutions and completed roadmap phases
+cf1df08b2 chore: add base policy recreation migration script for organizations, agronomist codes and client links
+d49d76243 chore: remove legacy migration part1 and add security fixes script
+49ae670be feat: add complete unified database schema migration script for Supabase
+721950c49 feat: complete modular RBAC, technical agronomist links and crop prescriptions
+68005ddf4 feat: modernize card options, unifiy selections, and update master architectural blueprint
+cb0062752 feat(settings): unify configurations screen, implement dynamic system theme and auto-sync connectivity engine
+910989f4e feat(ux): restore dynamic recipe modals, NPK stock deduction, and client registration UX fixes
+aa1ceeda5 doc: upgrade AGROGB_MASTER_MEMORY_MAP.md to 31-section unified context framework
+8a7639857 doc: add AGROGB_MASTER_MEMORY_MAP.md permanent context document
+988f6e518 doc: add AGROGB_LIVING_BRAIN_MAP.md active knowledge ledger
+96785a080 feat: restore deep agronomic logic, aduba├º├úo flows and full database schema reconciliation
+56e1ed204 feat(web): add web platform compatibility packages, dynamic ToastAndroid require, and interactive dashboard PREVIEW.html
+02c9ae6ea feat: implement software architecture audit corrections, RBAC permission normalization, detailed home module grid, and integrated AuditScreen
+3a9850411 feat(ui): redesign premium cyber emerald, theme context reactive controls, full bundle compile stabilization
+e01c7f426 Rename weatherService.js to WeatherService.jschore: rename weatherService.js to WeatherService.js for case-sensitivity
+66dd916df Rename financeService.js to FinanceService.js
+0dea89b05 Rename exportService.js to ExportService.jschore: rename exportService.js to ExportService.js for case-sensitivity
+c1f68c512 Rename dashboardService.js to DashboardService.jschore: rename dashboardService.js to DashboardService.js for case-sensitivity
+8493d31bd chore: Final Mission - Full Audit, Stabilization & Documentation v7.0.0
+765cb2356 Update SplashScreen.js
+fb1ae46df Rename splash_premium.png to splash_premium.jpg
+37f90e1ce fix: resolve syntax error and refactor DashboardService.js
+766ffae41 fix: resolve syntax error in DescarteScreen.js
+9aef607ea fix: resolve syntax error and duplicate function in database.js
+ed8a7e90f fix: adjust dependency versions for build compatibility
+12d0d4de7 feat: finalize AgroGB v7.0 Enterprise Diamond Pro with biometric login, background sync, and security hardening
+f77eaf8a2 feat: implement Executive Dashboard Premium with service-hook architecture
+c32eb013f fix: rename login_bg.png to .jpg to fix AAPT compilation error
+1829e0c83 fix: correct relative import paths for theme in common components
+c32969f0b chore: final stabilization and architecture cleanup per master prompt
+cf3a9ecbe fix: replace bcrypt with bcryptjs, update kotlin and clean permissions per audit
+7f1fe35eb chore: modernize actions to v5 and node 24, integrate premium login background
+3be164c6e feat: stabilize build, secure theme access, and modernize login UI
+216aa3242 chore: update workflow to fix artifact path and clean warnings
+f25b4563c fix: enforce debug signing for release APK and update artifact name
+498ce3bdb fix: resolve android runtime crash and implement theme fallbacks
+e1a7cc217 fix: resolve missing assets and incorrect imports in LoginScreen
+982e29617 fix: remove duplicated uuidv4 import to solve syntax error
+6a21c5937 sync: apply golden configuration from successful historical runs
+56989dc20 fix: downgrade node to 18 and fix artifact wildcard
+009529923 fix: resolve syntax errors in database, remove bloated logs, and re-enable hermes
+393cc54c2 fix: disable hermes and optimize assets to solve bundling failure
+0f16cdd81 env: set CI true for non-interactive builds
+d1315ad98 fix: optimize metro config for CI stability and memory
+26adac30a fix: downgrade node to 20 to solve bundling failure
+8df33daa4 debug: add resource diagnostics to build
+7e3a57ec8 chore: remove conflicting gradle props and add build diagnostics
+fa71a71cb fix: optimize android build stability and memory limits
+94dd87acf fix: finalize android build workflow with all fixes and no deletions
+fbdce80be fix: simplify workflow and remove any deletion steps
+3f7a54804 fix: move disk cleanup before checkout and protect android sdk
+8ec886dac fix: revert checkout path to fix gradle cache and address node 20 deprecation
+5a6d9247a fix: ensure NDK version and architectures are correctly applied in CI
+1a7992590 fix: optimize android build workflow and configurations
+304bfd5ca fix: correct signingConfig location in build.gradle and update property names
+fc62637b8 fix: stabilize android build and optimize memory
+8d570a746 Fix: Adicionadas depend├¬ncias ausentes (biometria e secure-store) para resolver erro de build
+a38c7baf8 V7.0 - Biometria, Tradu├º├úo de Erros e Corre├º├Áes de Tema
+152d87709 Merge branch 'main' of https://github.com/INOSUKE29/agrogb-mobile.
+fc1444e07 feat: add nutrition module with MenuAdubacaoScreen, supporting screens, and theme context management
+fe4874093 Automated Supabase Full Backup (DB & Storage) [skip ci]
+5425eebf4 Automated Supabase Full Backup (DB & Storage) [skip ci]
+bfeafb6bd Automated Supabase Full Backup (DB & Storage) [skip ci]
+b3d34bd59 Automated Supabase Full Backup (DB & Storage) [skip ci]
+e2f8a0fe3 Automated Supabase Full Backup (DB & Storage) [skip ci]
+2a178e1a2 Automated Supabase Full Backup (DB & Storage) [skip ci]
+a4e62a453 style(UI): Restoration of Sectional Logic & 4-column Grid Fix
+754652b24 style(UI): Unbreakable 4-Column FlatList & Mega Logo Restoration
+966e55924 style(UI): Mega Logo (85px) & Full App Refactoring - White Theme Synergy
+377c6fcf0 style(UI): Full Atmospheric Login Screen - Branding Synergy
+3b8dc1571 style(UI): Unbreakable Mobile-First Grid & Absolute Header Parity
+a9a05f437 style(UI): Absolute Pixel-Perfect Restoration - Final Grid & Header Polish
+855051d36 feat(UI): Ultimate Overhaul - Home & Finance screens pixel-perfect with Light/Dark support
+f03ebe266 style(UI): Absolute Final Fix - 4-column Forced Grid + Mega Text/Logo Polish
+ed9b7cec0 style(UI): Final Air-Luxury Polish - 100% Mockup Fidelity
+8a2deb984 style(UI): Final 4-column Grid Fix + Pixel-Perfect Header Polish
+ae77d1bd0 style(UI): Pixel-Perfect Replica of AgroGB White Theme as per reference image
+b51193b4a feat(UI): Major Overhaul - Dual Theme Support (Light/Dark) + Green Header Gradient + Pro Dashboard
+9339f40f7 feat(UI): Ultimate Professional Dashboard with Horizontal Stats and Classic Buttons
+ac9efe079 style(UI): Unified Dashboard Panel (Weather + Stats) as per classic versions
+e58736f2a style(UI): Final Professional 3-column Layout + Split Dashboard (Weather & Stats)
+a089d85ea style(UI): Mega Logo + Revert to 4-column Diamond Layout (Vibrant & Agile)
+3f07a0a20 style(UI): Mega Logo Restore + Clean White Buttons + Profile/Settings layout
+a5c19523b style(UI): Final Polish - Removed all card containers, leaving only white glowing icons over Cyber Emerald background
+9f0fab27e style(UI): Merge Classic White Buttons with New Cyber Emerald Background Glow
+ae704966e feat(UI): Implement Dark Forest background, revert to 3 columns, and fix Descarte screen opening
+ca2389065 feat(UI): Implement Ultra-Agile 4-column menu layout and Redesign Control Panel (SyncScreen) with luxury glassmorphism
+d9dfb5a04 style(UI): Refine menu cards to 'Glass Cloud' style with white neon shadows and clean SyncScreen
+f54d867a8 fix(UI): Fix SyncScreen crash, activate 3-dots config menu, and apply unique vibrant colors to menu cards
+b125a1932 feat(UI): Implement Animated Background with dynamic lights and reduce top header padding
+fdc27bbe3 style(UI): Make logo mega (110x110) in header
+e40b41407 Merge branch 'main' of https://github.com/INOSUKE29/agrogb-mobile.
+597555636 style(UI): Make logo giant (80x80) and center branding in header
+29e734a28 Automated Supabase Full Backup (DB & Storage) [skip ci]
+7e03ceb48 style(UI): Refine gradient smoothness, increase logo size, and remove PRO badge
+a06e6597b style(UI): New 'Emerald & Pearl' theme with green-to-white gradient and high-legibility cards
+87837320d fix(UI): Restore missing menu grid by implementing static fallback and stabilizing lifecycle rendering
+8ef2787fc style(UI): Senior UI Redesign - Authentic Glassmorphism with white radiance, emerald radial gradient, and glow effects
+9efcd9bcf style(UI): Final Senior Glassmorphism Overhaul - Pixel-Perfect design with 3-column layout and translucent aesthetics
+61462071a fix(UI): Resolve fatal SyntaxError from tag mismatch and StatusBar artifact causing white screen
+92d582675 style(UI): Senior Glassmorphism Overhaul - Fiel replica do Design Ouro com bordas transl├║cidas e tipografia Senior
+6a99f8fb6 style(UI): Remocao dos orbes estaticos e restauracao dos fundos gradientes complexos com Glow Neon via React Shadows
+e1712bbd4 style(UI): Fusao do Modelo Ciber-Neon da IA com o Layout de 3 Colunas pedido pelo cliente, mantendo micro-tipografias
+10e6a73e6 fix(UI): Corrige tag closing residual do React que engasgou o parser e deixou a UI Web em branco
+fcf9a48d2 style(UI): Clonagem pixel-perfect fidedigna do layout Mockup Neon Esmeralda recuperando orbs background e color palettes
+321f93994 style(UI): Encolhimento do Grid Emerald para 3 Colunas baseadas no feedback do cliente, retendo hierarquia tipografica
+5ece0e778 fix(UI): Resolve malformation of Home Dashboard cards collapsing dynamically on Web constrained width container
+f1b60e2ea feat(UI): Velvet Mode expandido para PlantioScreen fechando a Fase Producao
+342731ba0 fix(UI): Resolve missing closing View bracket in VendasScreen causing Metro bundling fatal error
+2747316bd refactor(UI): Migracao da VendasScreen para a Base Architectural Theme Velvet Global (Fase 3)
+9c168e01f feat(UI): Home Screen 100% migrada da visualizacao antiga para o Masterpiece Horizontal 'Emerald Velvet' vindo do Estudo de Arte
+31692dd91 style(UI): Increments to Glass effect cards on Home and Logo Resizing
+ba945ce96 feat(UI): Implementada estetica Velvet Charcoal e inserida Logo nativa AgroGB na Header
+28765494c Automated Supabase Full Backup (DB & Storage) [skip ci]
+a2718ea9a Automated Supabase Full Backup (DB & Storage) [skip ci]
+4d2d13581 Automated Supabase Full Backup (DB & Storage) [skip ci]
+0663ffd4a Automated Supabase Full Backup (DB & Storage) [skip ci]
+cc82cfb8e fix(UI): Extincao global de Temas Claros para seguranca de padronizacao e ID fix
+d91f4e2ef feat(UI): Implementacao Core Design System das Fases 1 (Componentes Ouro) e 2 (Home Departamental)
+4391d1c96 feat(Theme): Integracao do Provider com Sistema Light/Dark nas rotas principais
+680d0c47f style(Home): Refatoracao Senior UI/UX para Light Mode Premium com Overlapping Cards
+85d3fc564 style(Home): Aplicacao do Global Dark Mode estetica Premium na Dashboard
+1814abf95 fix(UX): Scroll global no Dashboard para subida do Header
+a7b2450ae feat(UI): Re-escrita do Profile e Sidebar para Premium Dark Mode Green inspirado em iOS
+365bf2c1f style(Home): Incremento de Drop Shadow e Contraste nos botoes do Grid Web
+14126c4ff feat(UI): Fusao do Premium Branco com Funcoes Nativas de Biometria e Cloud
+63c7661e0 Automated Supabase Full Backup (DB & Storage) [skip ci]
+feaa27542 Automated Supabase Full Backup (DB & Storage) [skip ci]
+9e3cb653b Automated Supabase Full Backup (DB & Storage) [skip ci]
+cafca3fd0 Automated Supabase Full Backup (DB & Storage) [skip ci]
+116ad47c7 Automated Supabase Full Backup (DB & Storage) [skip ci]
+5aa2f905c Automated Supabase Full Backup (DB & Storage) [skip ci]
+7999d191e Automated Supabase Full Backup (DB & Storage) [skip ci]
+dbb13ace1 Automated Supabase Full Backup (DB & Storage) [skip ci]
+88facc3ad Automated Supabase Full Backup (DB & Storage) [skip ci]
+57502af8a fix: resolve startup crash and add fallbacks (v1.2.2)
+3adafdd69 fix: correct logo asset extension from png to jpg to fix Android AAPT2 build crash
+bfb24c151 ­ƒÜÇ FIXED: App startup crash (restored database functions) & Logo Premium matching background
+77b72e68f Automated Supabase Full Backup (DB & Storage) [skip ci]
+674e6c4ae Automated Supabase Full Backup (DB & Storage) [skip ci]
+03c941fb8 ci: reinicia build final com todas as credenciais de assinatura devidamente configuradas
+8d872360e ci: dispara build com novos secrets de assinatura
+111be26ad ci: implementa assinatura permanente via GitHub Secrets (seguranca nivel Enterprise)
+e7cc3132b chore: atualiza versao v1.2.1 e aplica correcoes criticas (Biometria, DB Busy, OTA)
+75e755f3b Automated Supabase Full Backup (DB & Storage) [skip ci]
+f8e6b91c2 ­ƒÄ¿ UI: Nova Logo personalizada na tela de Login e ajuste de escala
+665dd3c72 feat: implement core operational screens and navigation structure for farm management system
+4a5720ed2 ­ƒÄ¿ UI: Restaura├º├úo da Dashboard Magna 2x2 com Sistema Cores Dark Premium (Midnight Blue Oficial)
+302c7d5d2 ­ƒÆÄ UI: Restaura├º├úo Hist├│rica Suprema da Dashboard (Design Ouro 2x2 Big Cards)
+4a878258d ­ƒÄ¿ UI: Expans├úo Suprema da Dashboard com Grid (Diamond Pro)
+90f5789e7 ­ƒÜÇ AgroGB Diamond Pro v1.0.0 - FORCE CLEAN BUILD #108
+523e323a9 Automated Supabase Full Backup (DB & Storage) [skip ci]
+b8e83f316 ´┐¢´┐¢ AgroGB Enterprise v1.0.0 (Diamond Pro) - Build #107 Release
+7f142bbbc Critical Fix: Database Resilience + Auth Telemetry (v106)
+339d9dd8b Restoration: Enterprise Modular Architecture + Diamond Pro Final + Global Error Audit & Export
+f8f2d5206 Automated Supabase Full Backup (DB & Storage) [skip ci]
+29c7fcc41 chore: 100% Zero Warnings - AgroGB V1.0 2026 Final Cleanup
+c6cf2e46c chore: clean 11 linter messages for 100% compliance
+3cba0f024 AgroGB - V1.0 2026 Final Build
+dc34e5c1e Automated Supabase Full Backup (DB & Storage) [skip ci]
+39b2573ed feat: AgroGB Diamond Pro v10.4 Final Infrastructure & Security Shield
+4637f9372 Automated Supabase Full Backup (DB & Storage) [skip ci]
+34d812187 Automated Supabase Full Backup (DB & Storage) [skip ci]
+95b5c0b30 Automated Supabase Full Backup (DB & Storage) [skip ci]
+ee4375709 Automated Supabase Full Backup (DB & Storage) [skip ci]
+bbe1f6b19 Automated Supabase Full Backup (DB & Storage) [skip ci]
+c22a4ae9a Merge branch 'main' of https://github.com/INOSUKE29/agrogb-mobile.
+b41cbb970 feat(diamond): Unificacao e otimizacao do codigo local sem remover telas anteriores
+873ccc24c Automated Supabase Full Backup (DB & Storage) [skip ci]
+580c7deaf Automated Supabase Full Backup (DB & Storage) [skip ci]
+7af9058d8 Automated Supabase Full Backup (DB & Storage) [skip ci]
+9f5fe4cd4 Automated Supabase Full Backup (DB & Storage) [skip ci]
+7214c1625 Automated Supabase Full Backup (DB & Storage) [skip ci]
+1ae43af5e Automated Supabase Full Backup (DB & Storage) [skip ci]
+b77c5b533 Automated Supabase Full Backup (DB & Storage) [skip ci]
+b6f9c4416 Fix: Build Errors & Lint Cleanups (v1.1.0)
+99a71822a Automated Supabase Full Backup (DB & Storage) [skip ci]
+3590ef5d6 Release v1.1.0: Fase App Liso Conclu├¡da (UX Premium & Performance)
+5397ff76c fix: defined missing functions in VendasScreen and FrotaScreen
+b54fd8616 fix: missing React/useState in AdubacaoFormScreen and cleanup AppNavigator
+6873baa6f fix: missing imports in AdubacaoDetailScreen and DashboardService
+13bfd98b8 feat: implementation of Diamond Pro database architecture with hardened RLS and triggers
+2db36879d Automated Supabase Full Backup (DB & Storage) [skip ci]
+3732c6e30 Automated Supabase Full Backup (DB & Storage) [skip ci]
+8c2b6cbb8 CORE: V1.1 PRO - Decoupled Migrations Architecture
+30ac4858d UI: V1.1 PRO - BaseModal Premium Architecture
+c080f62ba FIX: V1.1 DIAMOND - UI Cleanup & Syntax Repair
+8324e30dd FIX: DIAMOND V1.1 - 100% Clean Atomic Motor Implementation
+f9268ffa9 FIX: DIAMOND V1.1 - Clean Syntax & Fully Atomic 41-Table Transaction
+2628891c3 FIX: DIAMOND V1.1 - 100% Atomic Setup Transaction Complete
+f623ab76b FIX: DIAMOND V1.1 - Fully Atomic Multi-Migration Setup
+8de59325d RELEASE: Official Version V1.0 GOLD - SQL Secure Fix
+4cb2368aa FIX: ULTIMATE SOLUTION v10.7 GOLD - Single Transaction DB Schema
+66b4e8812 FIX: SQL Timeout lock resolved with ORANGE v10.6.2 - Increased timeouts to 25s
+c15079ac7 FIX: AutoSyncService logic corrected v10.6.1
+895ef4504 FIX: SQL Timeout lock resolved with 15s delay and SyncService stabilization v10.6.1
+334e33523 FIX: Login loop stabilization with UI Watchdog and Red Banner for Verification v10.6
+c3360ede9 Fix de Estabiliza├º├úo v10.6: Timeouts em BD/Auth e tratamento de Transa├º├úo Locked ­ƒøá´©ÅÔÅ▒´©Å­ƒöÉ
+1e3587426 Fix de Login (Loading Infinito) e estabiliza├º├úo de sess├úo ­ƒøá´©Å­ƒöÉ­ƒÜÇ
+0aa8eee1c Automated Supabase Full Backup (DB & Storage) [skip ci]
+8163c37dc M├│dulo de Aduba├º├úo Profissional + SQL Master V10.5 ­ƒî┐­ƒº¬­ƒÅù´©Å­ƒÜÇ
+a2177a89d feat: Estabiliza├º├úo Master - SQL unified, DashboardService and UI cleanup ­ƒÅø´©Å­ƒÅù´©Å­ƒøí´©Å­ƒÜÇ
+19275d33a Automated Supabase Full Backup (DB & Storage) [skip ci]
+41ac8699d (tag: v-apk-latest) chore: enable official github releases for direct apk download
+f52fee356 Automated Supabase Full Backup (DB & Storage) [skip ci]
+c013eb71c chore: eliminate all lint warnings and update CI runner to ubuntu-24.04
+f9c9a4fd2 chore: senior backend consolidation and build guard stabilization
+7ad0a383a fix: critical sqlite table initialization and enhanced security for leaked passwords
+37eea9f3c Automated Supabase Full Backup (DB & Storage) [skip ci]
+4e01e6f7d feat: implement leaked password protection UX and security tips in register flow
+0010bfb43 feat: finalized supabase v2 migration script with full RLS and sync table support
+24af8cf64 chore: update supabase v2 setup script with full sync table list
+cc040f3ef fix: update database schema and error services for professional logging (v8.8)
+e7622dee2 fix: eliminate all remaining lint warnings for true zero error state
+700231937 Automated Supabase Full Backup (DB & Storage) [skip ci]
+9de616e85 fix: install missing netinfo and resolve buildability failure
+0b13c7e6f fix: update CI to use npx expo-doctor
+62cd9b945 fix: sync dependencies with Expo SDK 50
+76048741b feat: implement professional stability, security and monitoring system with CI
+554234c7e fix: build stability (memory limit and kotlin version) and sync table names
+b79aa00fc Automated Supabase Full Backup (DB & Storage) [skip ci]
+53048b248 feat: AgroGB V3 Refinement (Sync Hardening, AI Trends, Premium BI Dashboard, and SQL 10.9.11)
+927781a48 Automated Supabase Full Backup (DB & Storage) [skip ci]
+a4fbe85e2 Automated Supabase Full Backup (DB & Storage) [skip ci]
+21b9721d7 Feat: Gr├íficos profissionais, Novo Design de Login e Painel de Sincroniza├º├úo simplificado
+ad342e2ab Automated Supabase Full Backup (DB & Storage) [skip ci]
+5d82eff77 Fix: Consolidate backup into a single job to avoid git push conflicts
+45b20ae04 Automated Supabase DB Backup [skip ci]
+a28fc4d47 Fix: Create storage directory and optimize Node version
+d2bb033e7 Automated Supabase DB Backup [skip ci]
+b60ae648d Automated Supabase DB Backup [skip ci]
+05d5955da Automated Supabase DB Backup [skip ci]
+b05e81eca ci: Configura├º├úo de Backup Autom├ítico do Supabase
+6859914ee feat: Restaura├º├úo da Integridade de Build + Inclus├úo de 35 Tabelas no Backup Autom├ítico e Sync (v8.5)
+e4dc92b40 feat: Adi├º├úo de bot├úo manual OTA Update na Tela de Sincroniza├º├úo e verifica├º├úo de integridade
+7c80db2ed feat: Restaura├º├úo da aba Relat├│rios, separa├º├úo da tela Gr├íficos independente e reativa├º├úo OTA do EAS Updates
+84d54cc8f fix: Remo├º├úo de Dimensions n├úo utilizado e configura├º├úo global do NodeJS v24 no workflow (#50)
+c4bf1b2c8 style: Redesign completo moderno da Tela de Login (Gradients & Cards)
+08da4db00 feat: Implementada tela de Gr├íficos Profissional com ChartKit e Supabase rules ; 100% clean
+07be0f283 Final cleanup: Zero Warnings and Silence Environment Alerts
+2a04c9249 Final cleanup: Zero lint warnings and restored essential imports
+aecba541b Final: Zero Warnings and Stability Audit passed
+b6d0ca460 Fix: Restore missing getDashboardStats import in HomeScreen
+fe49e8a6b Refactor: Visual improvements and stability audit - Zero warnings
+58078dad9 Fix: resolve signing issue, lint errors and re-enable super audit
+60bdb4498 Fix: diagnostic push - disabling verify step and ensuring YAML trigger conditions
+216c6caf8 Final: Refactor UsuariosScreen and fix GitHub OOM
+8e9222340 Final: Refactor UsuariosScreen to Premium Design System, harmonize inputs and fix GitHub Build OOM
+2b31d7362 Fix: resolve GitHub Build failure (OOM) by increasing heap to 6GB and forcing Node 24 for Actions
+a41347bfa Fix: consolidate build workflows and upgrade to Node 24 and Java 17 for stability
+c9ecf5aec Fix: resolve 'Element type is invalid' crash, restore Premium design system, and harmonize UI props
+f25da1ad2 chore: remove legacy log and backup files
+4ac1d0b0f chore: final cleanup and push of consolidated files
+313256897 chore: deep verification, lint cleanup and code restoration complete
+fe9fddffd V8.5.0 Master - Global Integrity Audit & Navigation Fixes
+d4c1657e3 V8.5.0 Master - Global Integrity Audit & Navigation Fixes
+ab1de4256 V8.5.0 Master - Global Integrity Audit & Navigation Fixes
+f26769018 V8.5.0 Master - Global Integrity Audit & Navigation Fixes
+c4e939cfd V7.0 Build Setup - GitHub Actions
+9dcfb901f fix: Define 'containerHeight' in HomeScreen to prevent crash
+26363d7d3 fix: Corre├º├úo de imports quebrados ap├│s reestrutura├º├úo (ThemeContext e UI)
+9c382b6ba feat: Restrutura├º├úo em camadas, Novo Sistema de Temas e Caderno Agron├┤mico Profissional
+20180bcce fix: remove dropdpown picker nao utilizado em EstoqueScreen
+bbf4997b1 feat: adiciona funcao de ajuste inicial de estoque sem impacto financeiro
+3236e3b32 fix: corrige rota de navegacao do botao Cadastros na Home e Drawer
+b9eeb2a7f feat: adicionar verificacao OTA manual e interface no painel
+d0662ad5d fix: correcoes no drag & drop nativo (NaN/Stale Closure) e remocao de promises conflitantes na inicializacao SQLite
+19d0b25fb fix: drag-and-drop overlap and db race conditions
+0aad62fd0 fix: reimplement draggable native feature with PanResponder, remove reanimated to fix android build crash
+5e9e09452 fix: remove reanimated and draggable-flatlist to prevent worklets crash
+f9252c70c fix: add react-native-reanimated/plugin to babel.config.js
+e5272f0e5 Merge remote-tracking branch 'origin/main'
+658407fd0 fix(deps): downgrade react-native-svg to Expo SDK 50 compatible version
+d197c0e86 fix: remove duplicate marcarVendaRecebida causing SyntaxError
+6bf1c5e8c fix: remove NetInfo import (not installed), sync handles offline via try/catch
+74c004cf5 feat(sync): AutoSyncService ÔÇö 2min polling, full bidirectional PULL fix, trigger on save
+cf2065809 feat(v8.1): Soft Shadow Moderno theme ÔÇö white cards, green gradient, dark text, soft shadows
+39f3bc31a feat(v8.1): smart menu drag-drop, DB migrations, relatorios dashboard, monitoramento google search, vendas recebimento modal
+e53a7adf9 feat: Dark Agro Tech design system - UI components + 13 screens repaletted
+11bb98687 feat: tema verde oficial AgroGB + correcao crash theme.colors
+b7c3ba8ec docs: Adiciona Guia de Instalacao e Documentacao do App
+d99435229 feat: Painel de configura├º├Áes administrativas. Fase 10 completa.
+0adb20c94 feat: Implement core features and UI for the AgroGB mobile application, including numerous screens, components, services, and database structures.
+ee73af301 Auto-Deploy: Setup GitHub Actions Android Build
+fbac66d69 fix(v6.3): critical hardening - HomeScreen crash, ErrorBoundary, Google Auth DeepLink
+a8d769585 feat: MVP No-AI (Menu Din├ómico, Drawer, Monitoramento Lite)
+8439d3744 Fix Import: Corrected ai_service path to AIService
+9406ad937 Fix Critical: Restore all missing imports in MonitoramentoScreen
+fdf17c871 Fix Runtime Protection: Added ErrorBoundary to diagnose startup crashes
+1ae13d478 Fix Syntax: Remove duplicate export in ProfileScreen.js
+65871cc9e Fix CI: Nuclear Option (Clean Cache + Explicit Deps)
+4ee390d08 Force Build: User Request Retry
+6dbf84d8f Manual Trigger: Start V7.0 Final Build
+e6a8e6d23 Enable Detailed Gradle Logging
+6910165d2 Fix gradle.properties Concat Error
+3d8b35bf9 Fix Expo Prebuild Flag
+25ece8f0f Sync package-lock.json with package.json for CI
+d6ca5aa3c Fix Linux Permissions for Gradlew
+5994effd9 V7.0 Build Setup with CI/CD

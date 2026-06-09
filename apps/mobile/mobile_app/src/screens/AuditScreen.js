@@ -156,7 +156,12 @@ export default function AuditScreen({ navigation }) {
             ) : (
                 <FlatList
                     data={activeTab === 'audit' ? auditLogs : errorLogs}
-                    keyExtractor={item => item.id.toString()}
+                    keyExtractor={item =
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
+                    > item.id.toString()}
                     renderItem={activeTab === 'audit' ? renderAuditItem : renderErrorItem}
                     contentContainerStyle={styles.listContent}
                     ListEmptyComponent={

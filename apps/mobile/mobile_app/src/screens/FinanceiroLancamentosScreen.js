@@ -157,7 +157,12 @@ export default function FinanceiroLancamentosScreen({ navigation }) {
             <FlatList
                 data={transacoes}
                 renderItem={renderItem}
-                keyExtractor={item => item.uuid}
+                keyExtractor={item =
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
+                    > item.uuid}
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={<Text style={styles.empty}>Nenhum lançamento encontrado.</Text>}
             />

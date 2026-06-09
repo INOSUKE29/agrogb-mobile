@@ -80,7 +80,12 @@ export default function AnalisesSoloScreen({ navigation }) {
             ) : (
                 <FlatList
                     data={analises}
-                    keyExtractor={item => item.id}
+                    keyExtractor={item =
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
+                    > item.id}
                     contentContainerStyle={styles.list}
                     renderItem={renderCard}
                     ListEmptyComponent={

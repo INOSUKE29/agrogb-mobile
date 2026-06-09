@@ -10,7 +10,7 @@ import Card from '../components/common/Card';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
 
-export default function FertirrigacaoScreen({ navigation }) {
+export default function FertirrigacaoScreen({ navigation, isTabbed }) {
     const { theme } = useTheme();
     const [talhoes, setTalhoes] = useState([]);
     const [history, setHistory] = useState([]);
@@ -67,16 +67,18 @@ export default function FertirrigacaoScreen({ navigation }) {
 
     return (
         <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
-            <LinearGradient colors={['#0EA5E9', '#0284C7']} style={styles.header}>
-                <View style={styles.headerTop}>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <Ionicons name="arrow-back" size={24} color="#FFF" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>FERTIRRIGAÇÃO</Text>
-                    <View style={{ width: 24 }} />
-                </View>
-                <Text style={styles.headerSub}>Nutrição de precisão via rede de água</Text>
-            </LinearGradient>
+            {!isTabbed && (
+                <LinearGradient colors={['#0EA5E9', '#0284C7']} style={styles.header}>
+                    <View style={styles.headerTop}>
+                        <TouchableOpacity onPress={() => navigation.goBack()}>
+                            <Ionicons name="arrow-back" size={24} color="#FFF" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>FERTIRRIGAÇÃO</Text>
+                        <View style={{ width: 24 }} />
+                    </View>
+                    <Text style={styles.headerSub}>Nutrição de precisão via rede de água</Text>
+                </LinearGradient>
+            )}
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
                 <Card style={styles.formCard}>
@@ -141,7 +143,12 @@ export default function FertirrigacaoScreen({ navigation }) {
                         <Text style={styles.modalTitle}>SELECIONAR ÁREA</Text>
                         <FlatList
                             data={talhoes}
-                            keyExtractor={i => i.uuid}
+                            keyExtractor={i =
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={true}
+                    > i.uuid}
                             renderItem={({ item }) => (
                                 <TouchableOpacity 
                                     style={styles.talhaoItem} 

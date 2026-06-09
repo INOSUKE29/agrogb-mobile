@@ -10,7 +10,7 @@ import Card from '../components/common/Card';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
 
-export default function AplicacoesScreen({ navigation }) {
+export default function AplicacoesScreen({ navigation, isTabbed }) {
     const { theme } = useTheme();
     const activeColors = theme?.colors || {};
     
@@ -22,11 +22,15 @@ export default function AplicacoesScreen({ navigation }) {
         talhao_uuid: '',
         talhao_nome: '',
         produto_nome: '',
+        produto_uuid: '',
         praga_alvo: '',
         dose_ha: '',
         volume_calda_l: '',
         carencia_dias: '7'
     });
+    
+    const [modalProduto, setModalProduto] = useState(false);
+    const [produtosCatalogo, setProdutosCatalogo] = useState([]);
 
     useFocusEffect(useCallback(() => {
         loadData();
@@ -49,6 +53,12 @@ export default function AplicacoesScreen({ navigation }) {
             const rowsH = [];
             for (let i = 0; i < resH.rows.length; i++) rowsH.push(resH.rows.item(i));
             setHistory(rowsH);
+
+            // Buscar produtos do catálogo aprovado
+            const resP = await executeQuery("SELECT id, nome_comercial as nome FROM cadastro WHERE is_deleted = 0");
+            const rowsP = [];
+            for (let i = 0; i < resP.rows.length; i++) rowsP.push(resP.rows.item(i));
+            setProdutosCatalogo(rowsP);
         } catch (e) { console.error(e); }
     };
 
@@ -84,18 +94,20 @@ export default function AplicacoesScreen({ navigation }) {
     return (
         <View style={[styles.container, { backgroundColor: activeColors.bg || '#F3F4F6' }]}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            <LinearGradient colors={[activeColors.warning || '#F59E0B', activeColors.warningDeep || '#D97706']} style={styles.header}>
-                <SafeAreaView>
-                    <View style={styles.headerTop}>
-                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
-                            <Ionicons name="arrow-back" size={22} color="#FFF" />
-                        </TouchableOpacity>
-                        <Text style={styles.headerTitle}>APLICAÇÃO DE DEFENSIVOS</Text>
-                        <View style={{ width: 38 }} />
-                    </View>
-                    <Text style={styles.headerSub}>Controle fitossanitário e carência de colheita</Text>
-                </SafeAreaView>
-            </LinearGradient>
+            {!isTabbed && (
+                <LinearGradient colors={[activeColors.warning || '#F59E0B', activeColors.warningDeep || '#D97706']} style={styles.header}>
+                    <SafeAreaView>
+                        <View style={styles.headerTop}>
+                            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
+                                <Ionicons name="arrow-back" size={22} color="#FFF" />
+                            </TouchableOpacity>
+                            <Text style={styles.headerTitle}>APLICAÇÃO DE DEFENSIVOS</Text>
+                            <View style={{ width: 38 }} />
+                        </View>
+                        <Text style={styles.headerSub}>Controle fitossanitário e carência de colheita</Text>
+                    </SafeAreaView>
+                </LinearGradient>
+            )}
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
                 <Card style={styles.formCard}>
@@ -111,7 +123,16 @@ export default function AplicacoesScreen({ navigation }) {
                         <Ionicons name="location-outline" size={20} color={textMutedColor} />
                     </TouchableOpacity>
 
-                    <AgroInput label="PRODUTO / DEFENSIVO" value={form.produto_nome} onChangeText={t => setForm({...form, produto_nome: t})} />
+                    <TouchableOpacity 
+                        style={[styles.selectBtn, { backgroundColor: cardBg, borderColor: borderCol, borderWidth: isDark ? 1 : 1 }]} 
+                        onPress={() => setModalProduto(true)}
+                    >
+                        <Text style={[styles.selectText, { color: form.produto_nome ? textColor : textMutedColor }]}>
+                            {form.produto_nome || "SELECIONAR PRODUTO (CATÁLOGO)..."}
+                        </Text>
+                        <Ionicons name="flask-outline" size={20} color={textMutedColor} />
+                    </TouchableOpacity>
+
                     <AgroInput label="PRAGA ALVO / MOTIVO" value={form.praga_alvo} onChangeText={t => setForm({...form, praga_alvo: t})} />
 
                     <View style={styles.row}>
@@ -153,6 +174,10 @@ export default function AplicacoesScreen({ navigation }) {
                         <FlatList
                             data={talhoes}
                             keyExtractor={i => i.uuid}
+                            initialNumToRender={8}
+                            maxToRenderPerBatch={10}
+                            windowSize={5}
+                            removeClippedSubviews={true}
                             renderItem={({ item }) => (
                                 <TouchableOpacity 
                                     style={[styles.talhaoItem, { borderBottomColor: borderCol }]} 
@@ -164,6 +189,29 @@ export default function AplicacoesScreen({ navigation }) {
                             )}
                         />
                         <AgroButton title="FECHAR" variant="secondary" onPress={() => setModalTalhao(false)} />
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal visible={modalProduto} animationType="fade" transparent>
+                <View style={styles.overlay}>
+                    <View style={[styles.modal, { backgroundColor: cardBg }]}>
+                        <Text style={[styles.modalTitle, { color: textColor }]}>CATÁLOGO DE PRODUTOS</Text>
+                        <FlatList
+                            data={produtosCatalogo}
+                            keyExtractor={i => i.id.toString()}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity 
+                                    style={[styles.talhaoItem, { borderBottomColor: borderCol }]} 
+                                    onPress={() => { setForm({...form, produto_nome: item.nome}); setModalProduto(false); }}
+                                >
+                                    <Text style={[styles.talhaoText, { color: textColor }]}>{item.nome}</Text>
+                                    <Ionicons name="checkmark-circle-outline" size={16} color={textMutedColor} />
+                                </TouchableOpacity>
+                            )}
+                            ListEmptyComponent={<Text style={{textAlign:'center', padding: 20, color: textMutedColor}}>Nenhum produto cadastrado na Biblioteca.</Text>}
+                        />
+                        <AgroButton title="FECHAR" variant="secondary" onPress={() => setModalProduto(false)} />
                     </View>
                 </View>
             </Modal>
