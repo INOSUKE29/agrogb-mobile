@@ -131,12 +131,11 @@ export default function EquipesScreen({ navigation }) {
             <FlatList
                 data={equipe}
                 renderItem={renderItem}
-                keyExtractor={item =
+                keyExtractor={item => item.uuid}
                     initialNumToRender={8}
                     maxToRenderPerBatch={10}
                     windowSize={5}
                     removeClippedSubviews={true}
-                    > item.uuid}
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={<Text style={[styles.empty, { color: textMutedColor }]}>Nenhum colaborador cadastrado.</Text>}
                 initialNumToRender={8}

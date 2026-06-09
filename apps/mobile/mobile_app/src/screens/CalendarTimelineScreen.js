@@ -90,12 +90,11 @@ export default function CalendarTimelineScreen({ navigation }) {
 
             <FlatList
                 data={timelineData}
-                keyExtractor={(item) =
+                keyExtractor={(item) => item.id}
                     initialNumToRender={8}
                     maxToRenderPerBatch={10}
                     windowSize={5}
                     removeClippedSubviews={true}
-                    > item.id}
                 contentContainerStyle={styles.listContent}
                 renderItem={({ item, index }) => (
                     <AgroTimelineCard event={item} isLast={index === timelineData.length - 1} />
@@ -116,12 +115,11 @@ export default function CalendarTimelineScreen({ navigation }) {
                         
                         <FlatList
                             data={talhoes}
-                            keyExtractor={t =
+                            keyExtractor={t => t.id}
                     initialNumToRender={8}
                     maxToRenderPerBatch={10}
                     windowSize={5}
                     removeClippedSubviews={true}
-                    > t.id}
                             renderItem={({ item }) => (
                                 <View style={styles.talhaoGroup}>
                                     <Text style={styles.talhaoName}>{item.nome}</Text>

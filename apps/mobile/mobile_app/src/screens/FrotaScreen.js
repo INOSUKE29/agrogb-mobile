@@ -147,12 +147,11 @@ export default function FrotaScreen({ navigation }) {
             {loading ? <ActivityIndicator size="large" color={theme?.colors?.primary} style={{ marginTop: 50 }} /> :
                 <FlatList
                     data={items}
-                    keyExtractor={item =
+                    keyExtractor={item => item.uuid}
                     initialNumToRender={8}
                     maxToRenderPerBatch={10}
                     windowSize={5}
                     removeClippedSubviews={true}
-                    > item.uuid}
                     renderItem={({ item }) => {
                         const isCar = ['CARRO', 'CAMINHAO', 'UTILITARIO'].includes(item.tipo);
                         const unit = isCar ? 'KM' : 'H';

@@ -134,12 +134,11 @@ export default function FinancialAccountsScreen({ navigation }) {
             ) : (
                 <FlatList
                     data={accounts}
-                    keyExtractor={item =
+                    keyExtractor={item => item.id}
                     initialNumToRender={8}
                     maxToRenderPerBatch={10}
                     windowSize={5}
                     removeClippedSubviews={true}
-                    > item.id}
                     renderItem={renderItem}
                     contentContainerStyle={styles.list}
                     showsVerticalScrollIndicator={false}

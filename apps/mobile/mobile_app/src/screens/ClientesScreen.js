@@ -177,12 +177,11 @@ export default function ClientesScreen({ navigation }) {
             ) : (
                 <FlatList
                     data={items}
-                    keyExtractor={item =
+                    keyExtractor={item => item.id.toString()}
                     initialNumToRender={8}
                     maxToRenderPerBatch={10}
                     windowSize={5}
                     removeClippedSubviews={true}
-                    > item.id.toString()}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.list}
                     renderItem={({ item }) => (

@@ -63,12 +63,11 @@ export default function VisitsScreen({ navigation }) {
 
             <FlatList
                 data={filteredVisits}
-                keyExtractor={item =
+                keyExtractor={item => item.id}
                     initialNumToRender={8}
                     maxToRenderPerBatch={10}
                     windowSize={5}
                     removeClippedSubviews={true}
-                    > item.id}
                 renderItem={renderVisit}
                 contentContainerStyle={styles.listContent}
                 ListEmptyComponent={<Text style={styles.emptyText}>Nenhuma visita encontrada.</Text>}

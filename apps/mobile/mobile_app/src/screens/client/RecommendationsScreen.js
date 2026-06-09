@@ -86,12 +86,11 @@ export default function RecommendationsScreen() {
             ) : (
                 <FlatList
                     data={recommendations}
-                    keyExtractor={(item) =
+                    keyExtractor={(item) => item.id}
                     initialNumToRender={8}
                     maxToRenderPerBatch={10}
                     windowSize={5}
                     removeClippedSubviews={true}
-                    > item.id}
                     renderItem={renderItem}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}

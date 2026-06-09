@@ -143,12 +143,11 @@ export default function FertirrigacaoScreen({ navigation, isTabbed }) {
                         <Text style={styles.modalTitle}>SELECIONAR ÁREA</Text>
                         <FlatList
                             data={talhoes}
-                            keyExtractor={i =
+                            keyExtractor={i => i.uuid}
                     initialNumToRender={8}
                     maxToRenderPerBatch={10}
                     windowSize={5}
                     removeClippedSubviews={true}
-                    > i.uuid}
                             renderItem={({ item }) => (
                                 <TouchableOpacity 
                                     style={styles.talhaoItem} 

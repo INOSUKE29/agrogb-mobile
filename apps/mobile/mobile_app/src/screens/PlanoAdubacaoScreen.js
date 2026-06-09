@@ -241,12 +241,11 @@ export default function PlanoAdubacaoScreen({ navigation, isTabbed }) {
       <FlatList
         data={etapas}
         renderItem={renderItem}
-        keyExtractor={item =
+        keyExtractor={item => item.uuid}
                     initialNumToRender={8}
                     maxToRenderPerBatch={10}
                     windowSize={5}
                     removeClippedSubviews={true}
-                    > item.uuid}
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={activeColors.primary || "#10B981"} />}
         ListEmptyComponent={

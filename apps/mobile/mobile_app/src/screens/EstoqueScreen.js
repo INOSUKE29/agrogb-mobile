@@ -182,12 +182,11 @@ export default function EstoqueScreen({ navigation }) {
             ) : (
                 <FlatList
                     data={filteredItems}
-                    keyExtractor={item =
+                    keyExtractor={item => item.produto}
                     initialNumToRender={8}
                     maxToRenderPerBatch={10}
                     windowSize={5}
                     removeClippedSubviews={true}
-                    > item.produto}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.list}
                     initialNumToRender={8}

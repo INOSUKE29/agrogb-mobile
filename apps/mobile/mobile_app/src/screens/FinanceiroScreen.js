@@ -198,12 +198,11 @@ export default function FinanceiroScreen({ navigation }) {
             ) : (
                 <FlatList
                     data={filteredTransacoes}
-                    keyExtractor={item =
+                    keyExtractor={item => item.uuid}
                     initialNumToRender={8}
                     maxToRenderPerBatch={10}
                     windowSize={5}
                     removeClippedSubviews={true}
-                    > item.uuid}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.list}
                     initialNumToRender={8}

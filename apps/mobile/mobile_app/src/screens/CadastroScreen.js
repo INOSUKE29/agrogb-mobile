@@ -394,12 +394,11 @@ export default function CadastroScreen({ navigation }) {
                         <Text style={styles.modalTitleCenter}>PADRÕES DE MERCADO</Text>
                         <FlatList 
                             data={MARKET_STANDARDS} 
-                            keyExtractor={i =
+                            keyExtractor={i => i.label}
                     initialNumToRender={8}
                     maxToRenderPerBatch={10}
                     windowSize={5}
-                    removeClippedSubviews={true}
-                    > i.label} 
+                    removeClippedSubviews={true} 
                             renderItem={({ item }) => (
                                 <TouchableOpacity style={styles.stdRow} onPress={() => { setUnidade(item.unit); setFator(item.weight); setAssistantVisible(false); }}>
                                     <Text style={styles.stdName}>{item.label}</Text>
