@@ -24,6 +24,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#10B981"
       },
+      "allowBackup": false,
       "package": "com.agrogb.mobile",
       "permissions": [
         "android.permission.INTERNET",

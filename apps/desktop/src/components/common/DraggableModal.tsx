@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface DraggableModalProps {
@@ -7,7 +8,8 @@ interface DraggableModalProps {
     title: string | ReactNode;
     children: ReactNode;
     className?: string; // Custom classes for the modal body
-    maxWidth?: string;  // e.g. 'max-w-md', 'max-w-2xl', 'max-w-4xl'
+    width?: string;     // Default '600px', pass '800px' for larger
+    footer?: ReactNode; // Fixed footer
 }
 
 export default function DraggableModal({
@@ -16,7 +18,8 @@ export default function DraggableModal({
     title,
     children,
     className = '',
-    maxWidth = 'max-w-2xl'
+    width = '600px',
+    footer
 }: DraggableModalProps) {
     const modalRef = useRef<HTMLDivElement>(null);
     const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -68,17 +71,19 @@ export default function DraggableModal({
 
     if (!isOpen) return null;
 
-    return (
+    const modalContent = (
         // Overlay (blocks clicks underneath)
         <div 
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in pointer-events-auto"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in pointer-events-auto"
             onClick={onClose}
         >
             {/* Draggable Container */}
             <div
                 ref={modalRef}
-                className={`bg-white dark:bg-[#121212] border border-[var(--color-border)] rounded-2xl shadow-2xl w-full ${maxWidth} flex flex-col`}
+                className={`bg-[var(--color-background)] dark:bg-[#121212] border border-[var(--color-border)] rounded-2xl shadow-2xl flex flex-col`}
                 style={{
+                    width: width,
+                    maxWidth: '95vw',
                     transform: `translate(${position.x}px, ${position.y}px)`,
                     maxHeight: '90vh', // Prevent from going out of screen height
                     transition: isDragging ? 'none' : 'transform 0.1s ease-out'
@@ -102,10 +107,24 @@ export default function DraggableModal({
                 </div>
 
                 {/* Body (Scrollable) */}
-                <div className={`p-6 overflow-y-auto custom-scrollbar ${className}`}>
+                <div className={`p-6 overflow-y-auto custom-scrollbar flex-1 ${className}`}>
                     {children}
                 </div>
+
+                {/* Footer (Fixed) */}
+                {footer && (
+                    <div className="p-5 border-t border-[var(--color-border)] bg-white/[0.02] shrink-0 rounded-b-2xl">
+                        {footer}
+                    </div>
+                )}
             </div>
         </div>
     );
+
+    // Use portal to render outside the current DOM hierarchy (avoids overflow-hidden clipping)
+    if (typeof document !== 'undefined') {
+        return createPortal(modalContent, document.body);
+    }
+    
+    return null;
 }

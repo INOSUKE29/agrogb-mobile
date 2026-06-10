@@ -18,6 +18,13 @@ export const themeDark = {
 
         shadow: 'rgba(0,0,0,0.6)', 
         
+        // --- CORREÇÃO DE AUDITORIA DE RENDERIZAÇÃO ---
+        // Força a sobrescrita das propriedades legadas para evitar que textos 
+        // fiquem invisíveis (preto no preto) nas telas que não foram refatoradas
+        text: '#F8FAFC',
+        textDark: '#FFFFFF',
+        textMuted: '#94A3B8',
+        
         // Legacy Support for backward compatibility on non-refactored screens
         primary: '#16A34A',
         background: '#141A1E',

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Store, Search, Plus, MapPin, Phone, Mail, MoreVertical, Building2, ExternalLink, Edit2, Trash2, CreditCard, Landmark } from 'lucide-react';
 import { supabase } from '../../services/supabase';
+import DraggableModal from '../../components/common/DraggableModal';
 
 export default function FornecedoresScreen() {
     const [loading, setLoading] = useState(true);
@@ -345,132 +346,130 @@ export default function FornecedoresScreen() {
             )}
 
             {/* MODAL NOVO FORNECEDOR */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-                    <div className="glass p-8 rounded-3xl w-full max-w-md relative border border-[var(--color-border)] shadow-2xl">
-                        <button 
-                            onClick={() => setIsModalOpen(false)}
-                            className="absolute top-4 right-4 text-[var(--color-muted)] hover:text-white"
-                        >
-                            ✕
-                        </button>
-                        
-                        <div className="w-12 h-12 bg-[var(--color-primary)]/20 rounded-xl flex items-center justify-center mb-6 border border-[var(--color-primary)]/30">
+            <DraggableModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                width="800px"
+                title={
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-[var(--color-primary)]/20 rounded-xl flex items-center justify-center border border-[var(--color-primary)]/30">
                             <Building2 className="w-6 h-6 text-[var(--color-primary)]" />
                         </div>
-                        
-                        <h2 className="text-2xl font-bold text-white mb-2">{editingId ? 'Editar Fornecedor' : 'Novo Fornecedor'}</h2>
-                        <p className="text-[var(--color-muted)] text-sm mb-6">
-                            {editingId ? 'Atualize as informações da empresa parceira.' : 'Cadastre as informações da empresa parceira para centralizar cotações e compras.'}
-                        </p>
-
-                        <form onSubmit={handleSaveFornecedor} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-bold text-[var(--color-muted)] mb-1">Nome Fantasia / Razão Social *</label>
-                                <input 
-                                    type="text"
-                                    required
-                                    value={nomeFantasia}
-                                    onChange={(e) => setNomeFantasia(e.target.value)}
-                                    className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--color-primary)] transition-colors"
-                                    placeholder="Ex: Agro Insumos S.A"
-                                />
-                            </div>
-                            
-                            <div>
-                                <label className="block text-sm font-bold text-[var(--color-muted)] mb-1">Telefone / WhatsApp</label>
-                                <input 
-                                    type="text"
-                                    value={telefone}
-                                    onChange={(e) => setTelefone(e.target.value)}
-                                    className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--color-primary)] transition-colors"
-                                    placeholder="(00) 00000-0000"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-bold text-[var(--color-muted)] mb-1">E-mail de Contato</label>
-                                <input 
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--color-primary)] transition-colors"
-                                    placeholder="vendas@fornecedor.com"
-                                />
-                            </div>
-
-                            <div className="border-t border-[var(--color-border)] pt-4 mt-2">
-                                        <h3 className="text-sm font-bold text-[var(--color-primary)] mb-4 flex items-center gap-2">
-                                            <Landmark className="w-4 h-4" /> Opções de Pagamento
-                                        </h3>
-                                        
-                                        <div className="space-y-4">
-                                            <div>
-                                                <label className="block text-sm font-bold text-[var(--color-muted)] mb-1">Chave PIX</label>
-                                                <input 
-                                                    type="text"
-                                                    value={chavePix}
-                                                    onChange={(e) => setChavePix(e.target.value)}
-                                                    className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--color-primary)] transition-colors"
-                                                    placeholder="CPF/CNPJ, Email, Celular ou Aleatória"
-                                                />
-                                            </div>
-
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                                <div className="sm:col-span-1">
-                                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-1">Banco</label>
-                                                    <input 
-                                                        type="text"
-                                                        value={banco}
-                                                        onChange={(e) => setBanco(e.target.value)}
-                                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--color-primary)] transition-colors"
-                                                        placeholder="Ex: Nubank"
-                                                    />
-                                                </div>
-                                                <div className="sm:col-span-1">
-                                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-1">Agência</label>
-                                                    <input 
-                                                        type="text"
-                                                        value={agencia}
-                                                        onChange={(e) => setAgencia(e.target.value)}
-                                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--color-primary)] transition-colors"
-                                                        placeholder="0001"
-                                                    />
-                                                </div>
-                                                <div className="sm:col-span-1">
-                                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-1">Conta</label>
-                                                    <input 
-                                                        type="text"
-                                                        value={contaBancaria}
-                                                        onChange={(e) => setContaBancaria(e.target.value)}
-                                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--color-primary)] transition-colors"
-                                                        placeholder="12345-6"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-4 flex gap-3">
-                                <button 
-                                    type="button"
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 py-3 rounded-xl border border-[var(--color-border)] text-white font-bold hover:bg-white/5 transition-colors"
-                                >
-                                    Cancelar
-                                </button>
-                                <button 
-                                    type="submit"
-                                    disabled={submitting}
-                                    className="flex-1 py-3 rounded-xl bg-[var(--color-primary)] hover:opacity-90 text-white font-bold shadow-lg shadow-[var(--color-primary)]/20 transition-all disabled:opacity-50"
-                                >
-                                    {submitting ? 'Salvando...' : editingId ? 'Salvar Alterações' : 'Cadastrar Fornecedor'}
-                                </button>
-                            </div>
-                        </form>
+                        <div>
+                            <h2 className="text-2xl font-bold text-white">{editingId ? 'Editar Fornecedor' : 'Novo Fornecedor'}</h2>
+                            <p className="text-[var(--color-muted)] text-sm">
+                                {editingId ? 'Atualize as informações da empresa parceira.' : 'Cadastre as informações da empresa parceira.'}
+                            </p>
+                        </div>
                     </div>
-                </div>
-            )}
+                }
+                footer={
+                    <div className="flex gap-3 w-full">
+                        <button 
+                            type="button"
+                            onClick={() => setIsModalOpen(false)}
+                            className="flex-1 py-4 rounded-xl border border-[var(--color-border)] text-[var(--color-muted)] font-bold hover:bg-white/5 transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            type="submit" form="fornecedorForm"
+                            disabled={submitting}
+                            className="flex-[2] py-4 rounded-xl bg-[var(--color-primary)] hover:opacity-90 text-white font-bold shadow-lg shadow-[var(--color-primary)]/20 transition-all disabled:opacity-50"
+                        >
+                            {submitting ? 'Salvando...' : editingId ? 'Salvar Alterações' : 'Cadastrar Fornecedor'}
+                        </button>
+                    </div>
+                }
+            >
+                <form id="fornecedorForm" onSubmit={handleSaveFornecedor} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-bold text-[var(--color-muted)] mb-1">Nome Fantasia / Razão Social *</label>
+                        <input 
+                            type="text"
+                            required
+                            value={nomeFantasia}
+                            onChange={(e) => setNomeFantasia(e.target.value)}
+                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--color-primary)] transition-colors"
+                            placeholder="Ex: Agro Insumos S.A"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-bold text-[var(--color-muted)] mb-1">Telefone / WhatsApp</label>
+                        <input 
+                            type="text"
+                            value={telefone}
+                            onChange={(e) => setTelefone(e.target.value)}
+                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--color-primary)] transition-colors"
+                            placeholder="(00) 00000-0000"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-[var(--color-muted)] mb-1">E-mail de Contato</label>
+                        <input 
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--color-primary)] transition-colors"
+                            placeholder="vendas@fornecedor.com"
+                        />
+                    </div>
+
+                    <div className="border-t border-[var(--color-border)] pt-4 mt-2">
+                        <h3 className="text-sm font-bold text-[var(--color-primary)] mb-4 flex items-center gap-2">
+                            <Landmark className="w-4 h-4" /> Opções de Pagamento
+                        </h3>
+                        
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-bold text-[var(--color-muted)] mb-1">Chave PIX</label>
+                                <input 
+                                    type="text"
+                                    value={chavePix}
+                                    onChange={(e) => setChavePix(e.target.value)}
+                                    className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--color-primary)] transition-colors"
+                                    placeholder="CPF/CNPJ, Email, Celular ou Aleatória"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="sm:col-span-1">
+                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-1">Banco</label>
+                                    <input 
+                                        type="text"
+                                        value={banco}
+                                        onChange={(e) => setBanco(e.target.value)}
+                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--color-primary)] transition-colors"
+                                        placeholder="Ex: Nubank"
+                                    />
+                                </div>
+                                <div className="sm:col-span-1">
+                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-1">Agência</label>
+                                    <input 
+                                        type="text"
+                                        value={agencia}
+                                        onChange={(e) => setAgencia(e.target.value)}
+                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--color-primary)] transition-colors"
+                                        placeholder="0001"
+                                    />
+                                </div>
+                                <div className="sm:col-span-1">
+                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-1">Conta</label>
+                                    <input 
+                                        type="text"
+                                        value={contaBancaria}
+                                        onChange={(e) => setContaBancaria(e.target.value)}
+                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--color-primary)] transition-colors"
+                                        placeholder="12345-6"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </DraggableModal>
         </div>
     );
 }

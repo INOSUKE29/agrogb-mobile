@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
+import DraggableModal from '../../components/common/DraggableModal';
 
 export default function CustosScreen() {
     const [loading, setLoading] = useState(true);
@@ -238,92 +239,86 @@ export default function CustosScreen() {
             </div>
 
             {/* MODAL REGISTRO */}
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
-                    <div className="glass border border-red-500/30 rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden relative z-10 flex flex-col">
-                        
-                        <div className="p-6 border-b border-[var(--color-border)] bg-red-500/5 flex justify-between items-center">
-                            <div>
-                                <h2 className="text-2xl font-black text-white">Lançar Despesa</h2>
-                                <p className="text-red-400 text-xs font-bold tracking-widest mt-1">APROPRIAÇÃO DE CUSTO</p>
-                            </div>
-                            <button onClick={() => setShowModal(false)} className="text-[var(--color-muted)] hover:text-white w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">&times;</button>
-                        </div>
-
-                        <div className="p-6 space-y-6">
-                            <form id="custoForm" onSubmit={handleSalvar} className="space-y-6">
-                                
-                                <div>
-                                    <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
-                                        <List className="w-4 h-4 text-red-400" /> Categoria da Despesa *
-                                    </label>
-                                    <select 
-                                        required value={categoriaId} onChange={e => setCategoriaId(e.target.value)}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-red-500 outline-none"
-                                    >
-                                        <option value="" disabled>Selecione uma Categoria...</option>
-                                        {categorias.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-                                    </select>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
-                                            QTD *
-                                        </label>
-                                        <input 
-                                            required type="number" min="0.1" step="0.1" value={quantidade} onChange={e => setQuantidade(e.target.value)}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-red-500 outline-none"
-                                            placeholder="Ex: 1"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
-                                            Valor Unit. (R$) *
-                                        </label>
-                                        <input 
-                                            required type="number" min="0" step="0.01" value={valorUnitario} onChange={e => setValorUnitario(e.target.value)}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-red-500 outline-none"
-                                            placeholder="0,00"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* TOTAL PREVIEW */}
-                                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center">
-                                    <p className="text-red-400 text-[10px] font-black tracking-widest uppercase mb-1">TOTAL DO LANÇAMENTO</p>
-                                    <p className="text-white text-2xl font-black">
-                                        R$ {((parseFloat(quantidade) || 0) * (parseFloat(valorUnitario) || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
-                                        <FileText className="w-4 h-4 text-slate-400" /> Notas / Observação
-                                    </label>
-                                    <textarea 
-                                        rows={2} value={observacao} onChange={e => setObservacao(e.target.value.toUpperCase())}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 outline-none resize-none"
-                                        placeholder="Detalhes da despesa..."
-                                    />
-                                </div>
-                            </form>
-                        </div>
-
-                        <div className="p-6 border-t border-[var(--color-border)] bg-white/[0.02] flex gap-3">
-                            <button onClick={() => setShowModal(false)} className="flex-1 py-4 text-[var(--color-muted)] font-bold hover:bg-white/5 rounded-xl transition-all">Cancelar</button>
-                            <button 
-                                type="submit" form="custoForm"
-                                className="flex-1 py-4 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500 rounded-xl text-white font-black shadow-lg shadow-red-500/20 transition-all"
-                            >
-                                Salvar Registro
-                            </button>
-                        </div>
-
+            <DraggableModal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                width="800px"
+                title={
+                    <div>
+                        <h2 className="text-2xl font-black text-white">Lançar Despesa</h2>
+                        <p className="text-red-400 text-xs font-bold tracking-widest mt-1">APROPRIAÇÃO DE CUSTO</p>
                     </div>
-                </div>
-            )}
+                }
+                footer={
+                    <div className="flex gap-3">
+                        <button onClick={() => setShowModal(false)} type="button" className="flex-1 py-4 text-[var(--color-muted)] font-bold hover:bg-white/5 rounded-xl transition-all">Cancelar</button>
+                        <button 
+                            type="submit" form="custoForm"
+                            className="flex-[2] py-4 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500 rounded-xl text-white font-black shadow-lg shadow-red-500/20 transition-all"
+                        >
+                            Salvar Registro
+                        </button>
+                    </div>
+                }
+            >
+                <form id="custoForm" onSubmit={handleSalvar} className="space-y-6">
+                    
+                    <div>
+                        <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
+                            <List className="w-4 h-4 text-red-400" /> Categoria da Despesa *
+                        </label>
+                        <select 
+                            required value={categoriaId} onChange={e => setCategoriaId(e.target.value)}
+                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-red-500 outline-none"
+                        >
+                            <option value="" disabled className="bg-[#121212] text-[var(--color-muted)]">Selecione uma Categoria...</option>
+                            {categorias.map(c => <option key={c.id} value={c.id} className="bg-[#121212] text-white">{c.nome}</option>)}
+                        </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
+                                QTD *
+                            </label>
+                            <input 
+                                required type="number" min="0.1" step="0.1" value={quantidade} onChange={e => setQuantidade(e.target.value)}
+                                className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-red-500 outline-none"
+                                placeholder="Ex: 1"
+                            />
+                        </div>
+                        <div>
+                            <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
+                                Valor Unit. (R$) *
+                            </label>
+                            <input 
+                                required type="number" min="0" step="0.01" value={valorUnitario} onChange={e => setValorUnitario(e.target.value)}
+                                className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-red-500 outline-none"
+                                placeholder="0,00"
+                            />
+                        </div>
+                    </div>
+
+                    {/* TOTAL PREVIEW */}
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center">
+                        <p className="text-red-400 text-[10px] font-black tracking-widest uppercase mb-1">TOTAL DO LANÇAMENTO</p>
+                        <p className="text-white text-2xl font-black">
+                            R$ {((parseFloat(quantidade) || 0) * (parseFloat(valorUnitario) || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </p>
+                    </div>
+
+                    <div>
+                        <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
+                            <FileText className="w-4 h-4 text-slate-400" /> Notas / Observação
+                        </label>
+                        <textarea 
+                            rows={2} value={observacao} onChange={e => setObservacao(e.target.value.toUpperCase())}
+                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 outline-none resize-none"
+                            placeholder="Detalhes da despesa..."
+                        />
+                    </div>
+                </form>
+            </DraggableModal>
 
         </div>
     );

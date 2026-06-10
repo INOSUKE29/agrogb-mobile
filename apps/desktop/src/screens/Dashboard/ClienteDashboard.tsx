@@ -7,9 +7,16 @@ import {
     ArrowRight,
     Droplet,
     ThermometerSun,
-    Wind
+    Wind,
+    AlertTriangle,
+    TrendingUp,
+    DollarSign
 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { 
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
+    BarChart, Bar, Legend,
+    PieChart, Pie, Cell
+} from 'recharts';
 import { supabase } from '../../services/supabase';
 import { useNavigate } from 'react-router-dom';
 import { fetchRealWeather } from '../../services/weather';
@@ -28,9 +35,16 @@ export default function ClienteDashboard() {
 
     const [atividadesPendentes, setAtividadesPendentes] = useState<Record<string, string | number | boolean | null>[]>([]);
     
+    // Novas métricas financeiras e alertas
+    const [financialData, setFinancialData] = useState<any[]>([]);
+    const [expensesData, setExpensesData] = useState<any[]>([]);
+    const [stockAlerts, setStockAlerts] = useState<any[]>([]);
+    
     // Estado do Clima Real
     const [realWeather, setRealWeather] = useState<WeatherData | null>(null);
     const [chartData, setChartData] = useState<Record<string, string | number | boolean | null>[]>([]);
+    
+    const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6'];
 
     const loadWeather = async () => {
         try {
@@ -122,6 +136,41 @@ export default function ClienteDashboard() {
 
                 // Zera atividades pendentes para iniciar limpo
                 setAtividadesPendentes([]);
+
+                // 3. Mock/Fetch Dados Financeiros e de Estoque
+                try {
+                    // Tenta buscar da tabela real
+                    const { data: estData } = await supabase.from('v2_estoque_atual').select('*').limit(10);
+                    if (estData && estData.length > 0) {
+                        setStockAlerts(estData.filter((e: any) => e.quantidade < 50));
+                    } else {
+                        // Mock
+                        setStockAlerts([
+                            { id: 1, nome: 'Ureia Agrícola', quantidade: 15, unidade: 'Sacos' },
+                            { id: 2, nome: 'Glifosato', quantidade: 5, unidade: 'Litros' }
+                        ]);
+                    }
+
+                    // Mock Dados Financeiros
+                    setFinancialData([
+                        { name: 'Jan', Receitas: 4000, Custos: 2400 },
+                        { name: 'Fev', Receitas: 3000, Custos: 1398 },
+                        { name: 'Mar', Receitas: 2000, Custos: 9800 },
+                        { name: 'Abr', Receitas: 2780, Custos: 3908 },
+                        { name: 'Mai', Receitas: 1890, Custos: 4800 },
+                        { name: 'Jun', Receitas: 2390, Custos: 3800 },
+                    ]);
+
+                    setExpensesData([
+                        { name: 'Insumos', value: 4500 },
+                        { name: 'Mão de Obra', value: 3000 },
+                        { name: 'Combustível', value: 2000 },
+                        { name: 'Manutenção', value: 1500 },
+                    ]);
+                } catch(e) {
+                    console.log('Using fallback financial data');
+                }
+
             } catch (error) {
                 console.error("Erro ao carregar Dashboard do Produtor:", error);
             } finally {
@@ -251,6 +300,91 @@ export default function ClienteDashboard() {
 
             </div>
 
+            {/* ALERTAS DE ESTOQUE */}
+            {stockAlerts.length > 0 && (
+                <div className="mb-8 p-4 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex flex-col sm:flex-row gap-4 items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <AlertTriangle className="w-6 h-6 text-orange-500 shrink-0" />
+                        <div>
+                            <h4 className="text-orange-500 font-bold">Atenção ao Estoque</h4>
+                            <p className="text-sm text-orange-400/80">Você possui {stockAlerts.length} item(s) com nível crítico.</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={() => navigate('/dashboard/cliente/estoque')}
+                        className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-sm transition-colors"
+                    >
+                        Ver Estoque
+                    </button>
+                </div>
+            )}
+
+            {/* DASHBOARDS FINANCEIROS */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div className="glass p-6 rounded-2xl bg-white/5 border border-white/10 shadow-lg">
+                    <div className="flex items-center gap-3 mb-6">
+                        <TrendingUp className="w-5 h-5 text-emerald-400" />
+                        <h3 className="text-lg font-bold text-white">Fluxo de Caixa (6 Meses)</h3>
+                    </div>
+                    <div className="h-72 w-full">
+                        {loading ? (
+                            <div className="w-full h-full flex items-center justify-center text-[var(--color-muted)]">Carregando...</div>
+                        ) : (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={financialData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                    <XAxis dataKey="name" stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `R$${val/1000}k`} />
+                                    <RechartsTooltip 
+                                        contentStyle={{ backgroundColor: '#152336', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                                        itemStyle={{ fontWeight: 'bold' }}
+                                    />
+                                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                                    <Bar dataKey="Receitas" fill="#10B981" radius={[4, 4, 0, 0]} barSize={20} />
+                                    <Bar dataKey="Custos" fill="#EF4444" radius={[4, 4, 0, 0]} barSize={20} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
+                    </div>
+                </div>
+
+                <div className="glass p-6 rounded-2xl bg-white/5 border border-white/10 shadow-lg">
+                    <div className="flex items-center gap-3 mb-6">
+                        <DollarSign className="w-5 h-5 text-blue-400" />
+                        <h3 className="text-lg font-bold text-white">Despesas por Categoria</h3>
+                    </div>
+                    <div className="h-72 w-full">
+                        {loading ? (
+                            <div className="w-full h-full flex items-center justify-center text-[var(--color-muted)]">Carregando...</div>
+                        ) : (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={expensesData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={90}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                    >
+                                        {expensesData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <RechartsTooltip 
+                                        contentStyle={{ backgroundColor: '#152336', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                                        itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                                        formatter={(value: any) => `R$ ${value}`}
+                                    />
+                                    <Legend layout="vertical" verticalAlign="middle" align="right" />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        )}
+                    </div>
+                </div>
+            </div>
+
             {/* SEÇÕES INFERIORES */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
@@ -325,7 +459,7 @@ export default function ClienteDashboard() {
                                     <XAxis dataKey="time" stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
                                     <YAxis yAxisId="left" stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}°C`} />
                                     <YAxis yAxisId="right" orientation="right" stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
-                                    <Tooltip 
+                                    <RechartsTooltip 
                                         contentStyle={{ backgroundColor: '#152336', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
                                         itemStyle={{ color: '#fff', fontWeight: 'bold' }}
                                     />

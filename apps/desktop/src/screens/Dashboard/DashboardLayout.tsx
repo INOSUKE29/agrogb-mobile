@@ -144,26 +144,13 @@ export default function DashboardLayout() {
                 { path: '/dashboard/cliente', label: 'Dashboard Produtor', icon: LayoutDashboard, group: 'Visão Geral' },
                 { path: '/dashboard/cliente/relatorios', label: 'Relatórios', icon: FileText, group: 'Visão Geral' },
 
-                { path: '/dashboard/cliente/areas', label: 'Gestão de Áreas e Plantio', icon: Map, group: 'Produção e Safra' },
-                { path: '/dashboard/cliente/colheita', label: 'Colheitas e Produção', icon: Sprout, group: 'Produção e Safra' },
-                { path: '/dashboard/cliente/monitoramento', label: 'Monitoramento', icon: Activity, group: 'Operação Agrícola' },
-                { path: '/dashboard/cliente/caderno', label: 'Caderno Agrícola', icon: FileText, group: 'Operação Agrícola' },
-                { path: '/dashboard/cliente/recomendacoes', label: 'Recomendações Técnicas', icon: FileText, group: 'Operação Agrícola' },
-                { path: '/dashboard/cliente/clima', label: 'Estação Meteorológica', icon: CloudRain, group: 'Operação Agrícola' },
+                { path: '/dashboard/cliente/manejo', label: 'Manejo da Lavoura', icon: ListTodo, group: 'Centro Operacional' },
 
-                { path: '/dashboard/cliente/estoque', label: 'Estoque de Insumos', icon: Package, group: 'Logística e Suprimentos' },
-                { path: '/dashboard/cliente/fornecedores', label: 'Meus Fornecedores', icon: Store, group: 'Logística e Suprimentos' },
-                { path: '/dashboard/cliente/cotacoes', label: 'Cotações (Pesquisa)', icon: FileText, group: 'Logística e Suprimentos' },
-                { path: '/dashboard/cliente/compras', label: 'Compras (Estoque)', icon: Store, group: 'Logística e Suprimentos' },
-                { path: '/dashboard/cliente/encomendas', label: 'Encomendas e Logística', icon: Package, group: 'Logística e Suprimentos' },
-                { path: '/dashboard/cliente/frota', label: 'Gestão de Frota', icon: Truck, group: 'Logística e Suprimentos' },
-                { path: '/dashboard/cliente/tarefas', label: 'Minhas Tarefas', icon: CheckSquare, group: 'Logística e Suprimentos' },
-
-                { path: '/dashboard/cliente/financeiro', label: 'Painel Financeiro', icon: DollarSign, group: 'Financeiro e Comercial' },
-                { path: '/dashboard/cliente/custos', label: 'Controle de Custos', icon: TrendingDown, group: 'Financeiro e Comercial' },
-                { path: '/dashboard/cliente/vendas', label: 'Vendas', icon: DollarSign, group: 'Financeiro e Comercial' },
-                { path: '/dashboard/cliente/categorias', label: 'Categorias', icon: Tags, group: 'Financeiro e Comercial' },
-                { path: '/dashboard/cliente/cadastro', label: 'Catálogo Geral', icon: Database, group: 'Financeiro e Comercial' },
+                { path: '/dashboard/cliente/areas', label: 'Gestão de Áreas e Plantio', icon: Map, group: 'Módulos Auxiliares' },
+                { path: '/dashboard/cliente/colheita', label: 'Colheitas e Frota', icon: Sprout, group: 'Módulos Auxiliares' },
+                
+                { path: '/dashboard/cliente/logistica', label: 'Logística e Suprimentos', icon: Package, group: 'Administrativo' },
+                { path: '/dashboard/cliente/financeiro', label: 'Financeiro e Comercial', icon: DollarSign, group: 'Administrativo' },
             ];
         } else {
             return [

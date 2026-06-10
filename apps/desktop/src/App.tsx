@@ -7,8 +7,6 @@ import FinancialScreen from './screens/Dashboard/FinancialScreen';
 import UsersScreen from './screens/Dashboard/UsersScreen';
 import AgroDashboard from './screens/Dashboard/AgroDashboard';
 import ClienteDashboard from './screens/Dashboard/ClienteDashboard';
-import TalhoesScreen from './screens/Dashboard/TalhoesScreen';
-import PlantioScreen from './screens/Dashboard/PlantioScreen';
 import AreasEPlantioScreen from './screens/Dashboard/AreasEPlantioScreen';
 import CadernoAgricolaScreen from './screens/Dashboard/CadernoAgricolaScreen';
 import RecomendacoesScreen from './screens/Dashboard/RecomendacoesScreen';
@@ -16,7 +14,6 @@ import ReceituarioAgronomicoScreen from './screens/Dashboard/ReceituarioAgronomi
 import MeusClientesScreen from './screens/Dashboard/MeusClientesScreen';
 import SettingsScreen from './screens/Dashboard/SettingsScreen';
 import VendasScreen from './screens/Dashboard/VendasScreen';
-import CulturasScreen from './screens/Dashboard/CulturasScreen';
 import MonitoramentoScreen from './screens/Dashboard/MonitoramentoScreen';
 import EstoqueScreen from './screens/Dashboard/EstoqueScreen';
 import FrotaScreen from './screens/Dashboard/FrotaScreen';
@@ -31,6 +28,8 @@ import FornecedoresScreen from './screens/Dashboard/FornecedoresScreen';
 import EncomendasScreen from './screens/Dashboard/EncomendasScreen';
 import ClimaScreen from './screens/Dashboard/ClimaScreen';
 import RelatoriosScreen from './screens/Dashboard/RelatoriosScreen';
+import ManejoDashboard from './screens/Dashboard/Manejo/ManejoDashboard';
+import ProgramasScreen from './screens/Dashboard/Manejo/ProgramasScreen';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeProvider';
@@ -103,9 +102,12 @@ function App() {
               <Route path="cliente/encomendas" element={<EncomendasScreen />} />
               <Route path="cliente/clima" element={<ClimaScreen />} />
               <Route path="cliente/recomendacoes" element={<ReceituarioAgronomicoScreen />} />
+              
+              {/* Rotas de Manejo */}
+              <Route path="cliente/manejo" element={<ManejoDashboard />} />
+              <Route path="cliente/manejo/programas" element={<ProgramasScreen />} />
 
               {/* Antigas Rotas de Fallback (para não quebrar a compilação) */}
-              <Route path="colheita" element={<HarvestScreen />} />
               <Route path="financeiro" element={<FinancialScreen />} />
               <Route path="usuarios" element={<UsersScreen />} />
               <Route path="agenda" element={<TarefasScreen />} />

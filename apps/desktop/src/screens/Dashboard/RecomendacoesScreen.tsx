@@ -11,9 +11,11 @@ import {
     CheckCircle2,
     Clock,
     FileEdit,
-    ArrowLeft
+    ArrowLeft,
+    Save
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
+import { useLocation } from 'react-router-dom';
 
 const COMMON_PRODUCTS = [
     'NITRATO DE CÁLCIO', 'MAP (FOSFATO MONOAMÔNICO)', 'SULFATO DE MAGNÉSIO', 
@@ -42,6 +44,8 @@ interface ReceitaItem {
 }
 
 export default function RecomendacoesScreen() {
+    const location = useLocation();
+    const isAgronomo = location.pathname.includes('agronomo');
     const [loading, setLoading] = useState(false);
     
     // Data sources
@@ -68,13 +72,24 @@ export default function RecomendacoesScreen() {
     const loadReceitas = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('receitas_adubacao')
-                .select('*')
-                .eq('status', statusTab)
-                .order('created_at', { ascending: false });
-            
-            if (data) setReceitasList(data);
+            if (isAgronomo) {
+                const { data, error } = await supabase
+                    .from('receitas_adubacao')
+                    .select('*')
+                    .eq('status', statusTab)
+                    .order('created_at', { ascending: false });
+                
+                if (data) setReceitasList(data);
+            } else {
+                // Produtor: carregar apenas as locais (localStorage)
+                const localData = localStorage.getItem('receitas_produtor');
+                if (localData) {
+                    const parsed = JSON.parse(localData);
+                    setReceitasList(parsed.filter((r: any) => r.status === statusTab));
+                } else {
+                    setReceitasList([]);
+                }
+            }
         } catch (error) {
             console.error(error);
         } finally {
@@ -133,7 +148,10 @@ export default function RecomendacoesScreen() {
     };
 
     const generateHTMLContent = () => {
-        const clientName = clientes.find(c => c.id === selectedClient)?.nome || 'Não informado';
+        const clientName = isAgronomo 
+            ? (clientes.find(c => c.id === selectedClient)?.nome || 'Não informado')
+            : 'Própria Fazenda (Uso Interno)';
+            
         const plantingName = plantios.find(p => p.uuid === selectedPlanting);
         const plantingLabel = plantingName ? `${plantingName.cultura} (${plantingName.tipo_plantio})` : 'Não informado';
 
@@ -229,29 +247,47 @@ export default function RecomendacoesScreen() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedClient) return alert('Selecione o produtor destinatário.');
+        if (isAgronomo && !selectedClient) return alert('Selecione o produtor destinatário.');
         
         const invalidRow = recipeRows.find(r => !r.product.trim() || !r.dosage.trim());
         if (invalidRow) return alert('Verifique se todos os itens possuem Produto e Dose preenchidos.');
 
         setSubmitting(true);
         try {
-            // Aqui enviariamos para a tabela de 'recommendations' via Supabase
-            const { error } = await supabase.from('receitas_adubacao').insert({
-                nome: `Receita ${selectedClient.substring(0, 4)}`,
-                tipo: activeTab === 'FOLIAR' ? 'Foliar' : 'Fertirrigação',
-                status: 'Pendente', // Pending approval from client
-                instrucoes: notes
-            });
+            if (isAgronomo) {
+                // Agrônomo: Salva na biblioteca global / Supabase
+                const { error } = await supabase.from('receitas_adubacao').insert({
+                    nome: `Receita ${selectedClient.substring(0, 4)}`,
+                    tipo: activeTab === 'FOLIAR' ? 'Foliar' : 'Fertirrigação',
+                    status: 'Pendente', // Pending approval from client
+                    instrucoes: notes
+                });
+                
+                if (error) throw error;
+                alert('Prescrição salva com sucesso no banco de dados!');
+            } else {
+                // Produtor: Salva localmente (apenas para uso próprio)
+                const novaReceitaLocal = {
+                    id: crypto.randomUUID(),
+                    nome: `Receita Própria (${new Date().toLocaleDateString()})`,
+                    tipo: activeTab === 'FOLIAR' ? 'Foliar' : 'Fertirrigação',
+                    status: 'Pendente',
+                    instrucoes: notes,
+                    created_at: new Date().toISOString()
+                };
+
+                const existing = JSON.parse(localStorage.getItem('receitas_produtor') || '[]');
+                existing.push(novaReceitaLocal);
+                localStorage.setItem('receitas_produtor', JSON.stringify(existing));
+                
+                alert('Receita salva localmente com sucesso!');
+            }
             
-            if (error) throw error;
-            
-            alert('Prescrição salva com sucesso no banco de dados!');
             setViewMode('list');
             setStatusTab('Pendente');
         } catch (err) {
             console.error(err);
-            alert('Erro ao salvar no Supabase.');
+            alert('Erro ao salvar.');
         } finally {
             setSubmitting(false);
         }
@@ -274,10 +310,10 @@ export default function RecomendacoesScreen() {
                     
                     <button 
                         onClick={() => setViewMode('form')}
-                        className="flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl shadow-lg shadow-green-500/20 transition-all"
+                        className={`flex items-center justify-center gap-2 px-6 py-3 font-bold rounded-xl shadow-lg transition-all text-white ${isAgronomo ? 'bg-green-600 hover:bg-green-500 shadow-green-500/20' : 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20'}`}
                     >
                         <Plus className="w-5 h-5" />
-                        Nova Recomendação
+                        {isAgronomo ? 'Nova Recomendação' : 'Nova Receita Interna'}
                     </button>
                 </div>
 
@@ -355,11 +391,13 @@ export default function RecomendacoesScreen() {
                         <ArrowLeft className="w-4 h-4" /> Voltar para lista
                     </button>
                     <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-                        <FileText className="w-8 h-8 text-green-500" />
-                        Emissão de Receituário
+                        <FileText className={`w-8 h-8 ${isAgronomo ? 'text-green-500' : 'text-blue-500'}`} />
+                        {isAgronomo ? 'Emissão de Receituário' : 'Criação de Receita Interna'}
                     </h1>
                     <p className="text-[var(--color-muted)] font-medium mt-1">
-                        Elabore prescrições técnicas e receitas de adubação para seus clientes.
+                        {isAgronomo 
+                            ? 'Elabore prescrições técnicas e receitas de adubação para seus clientes.' 
+                            : 'Crie suas próprias caldas e misturas para uso na fazenda (Salvo Localmente).'}
                     </p>
                 </div>
                 
@@ -375,10 +413,10 @@ export default function RecomendacoesScreen() {
                     <button 
                         onClick={handleSubmit}
                         disabled={submitting}
-                        className="flex items-center justify-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl shadow-lg shadow-green-500/20 transition-all disabled:opacity-50"
+                        className={`flex items-center justify-center gap-2 px-6 py-2.5 text-white font-bold rounded-xl shadow-lg transition-all disabled:opacity-50 ${isAgronomo ? 'bg-green-600 hover:bg-green-500 shadow-green-500/20' : 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20'}`}
                     >
-                        <Send className="w-5 h-5" />
-                        {submitting ? 'Enviando...' : 'Salvar no Supabase'}
+                        {isAgronomo ? <Send className="w-5 h-5" /> : <Save className="w-5 h-5" />}
+                        {submitting ? 'Salvando...' : (isAgronomo ? 'Salvar no Supabase' : 'Salvar Localmente')}
                     </button>
                 </div>
             </div>
@@ -392,24 +430,26 @@ export default function RecomendacoesScreen() {
                     </h2>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-bold text-white mb-2 flex items-center gap-2">
-                                <Users className="w-4 h-4 text-green-500" /> Produtor Destinatário *
-                            </label>
-                            <select 
-                                required
-                                value={selectedClient}
-                                onChange={(e) => setSelectedClient(e.target.value)}
-                                className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-base rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent block p-3 transition-all"
-                            >
-                                <option value="" disabled>Selecione o Cliente</option>
-                                {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-                            </select>
-                        </div>
+                        {isAgronomo && (
+                            <div>
+                                <label className="block text-sm font-bold text-white mb-2 flex items-center gap-2">
+                                    <Users className="w-4 h-4 text-green-500" /> Produtor Destinatário *
+                                </label>
+                                <select 
+                                    required
+                                    value={selectedClient}
+                                    onChange={(e) => setSelectedClient(e.target.value)}
+                                    className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-base rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent block p-3 transition-all"
+                                >
+                                    <option value="" disabled>Selecione o Cliente</option>
+                                    {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                                </select>
+                            </div>
+                        )}
 
-                        <div>
+                        <div className={!isAgronomo ? "md:col-span-2" : ""}>
                             <label className="block text-sm font-bold text-white mb-2 flex items-center gap-2">
-                                <Leaf className="w-4 h-4 text-green-500" /> Talhão / Cultura (Opcional)
+                                <Leaf className={`w-4 h-4 ${isAgronomo ? 'text-green-500' : 'text-blue-500'}`} /> Talhão / Cultura (Opcional)
                             </label>
                             <select 
                                 value={selectedPlanting}

@@ -134,10 +134,8 @@ export default function LoginScreen({ navigation }) {
             }
         } catch (e) {
             console.log('Erro ao checar auto-bio:', e);
-            if (e.message && e.message.includes('Could not decrypt')) {
-                console.log('Corrupção detectada no initApp. Limpando chaves antigas...');
-                await SecureStore.deleteItemAsync(BIO_KEY).catch(() => {});
-            }
+            // CORREÇÃO AUDITORIA BIOMETRIA: Nunca deletar a chave no initApp apenas porque o SecureStore demorou ou falhou.
+            // O erro 'Could not decrypt' no Android muitas vezes é temporário se a tela estiver bloqueada ou em transição.
         }
 
         // Inicializar Admin se banco estiver vazio
@@ -363,7 +361,9 @@ export default function LoginScreen({ navigation }) {
                                                 promptMessage: 'Confirme sua biometria para ativar',
                                             });
                                             if (auth.success) {
-                                                await SecureStore.setItemAsync(BIO_KEY, JSON.stringify({ usuario: userTrim, senha: passTrim }));
+                                                await SecureStore.setItemAsync(BIO_KEY, JSON.stringify({ usuario: userTrim, senha: passTrim }), {
+                                                    keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY
+                                                });
                                                 Alert.alert('Sucesso', 'Login biométrico ativado!', [{
                                                     text: 'OK', 
                                                     onPress: () => {
@@ -416,10 +416,8 @@ export default function LoginScreen({ navigation }) {
             } catch (secErr) {
                 console.log('Erro crítico no SecureStore:', secErr.message);
                 if (secErr.message && secErr.message.includes('Could not decrypt')) {
-                    // CORREÇÃO 1 e 2: Limpar credenciais corrompidas
-                    await SecureStore.deleteItemAsync(BIO_KEY).catch(() => {});
-                    // CORREÇÃO 3: Fallback message
-                    showAlert('🔑', 'Chave de Segurança Alterada', 'Credenciais biométricas inválidas ou corrompidas. Por favor, faça login com sua senha novamente para reativar a biometria.');
+                    // CORREÇÃO AUDITORIA BIOMETRIA: Apenas alertamos o usuário, sem deletar agressivamente.
+                    showAlert('🔑', 'Chave de Segurança', 'Falha ao ler biometria (pode estar temporariamente inacessível).');
                     setLoading(false);
                     return;
                 }

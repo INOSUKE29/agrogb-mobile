@@ -9,14 +9,16 @@ import {
     Save,
     History,
     Calendar,
-    Activity
+    Activity,
+    Truck
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import DraggableModal from '../../components/common/DraggableModal';
+import FrotaScreen from './FrotaScreen';
 
 export default function HarvestScreen() {
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'COLHEITA' | 'CONGELAMENTO' | 'DESCARTE' | 'HISTORICO'>('COLHEITA');
+    const [activeTab, setActiveTab] = useState<'COLHEITA' | 'CONGELAMENTO' | 'DESCARTE' | 'HISTORICO' | 'FROTA'>('COLHEITA');
     
     // Data Sources
     const [talhoes, setTalhoes] = useState<Record<string, any>[]>([]);
@@ -92,10 +94,13 @@ export default function HarvestScreen() {
     const handleProdutoSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const prodName = e.target.value;
         setProduto(prodName);
-        // Mobile factor logic (mocking 1 for desktop unless configured)
-        setFatorAtual(1); 
+        
+        const selectedProd = culturas.find(c => c.nome === prodName);
+        const factor = selectedProd?.fator_conversao || 1;
+        setFatorAtual(factor);
+
         if (qtdCaixas) {
-            setQuantidade((parseFloat(qtdCaixas) * 1).toFixed(2));
+            setQuantidade((parseFloat(qtdCaixas) * factor).toFixed(2));
         }
     };
 
@@ -103,29 +108,36 @@ export default function HarvestScreen() {
         if (!produto || !quantidade || parseFloat(quantidade) <= 0) {
             return toast.error('Selecione o produto e informe uma quantidade válida.');
         }
+        const selectedProd = culturas.find(c => c.nome === produto);
+        
         setHarvestItems([...harvestItems, {
             id: Date.now().toString(),
+            produto_id: selectedProd?.id || selectedProd?.uuid,
             produto: produto.toUpperCase(),
             quantidade: parseFloat(quantidade),
             qtdCaixas: parseFloat(qtdCaixas) || 0,
             fator: fatorAtual
         }]);
         setProduto(''); setQuantidade(''); setQtdCaixas('');
+        setFatorAtual(1);
     };
 
     const removeHarvestItem = (id: string) => {
         setHarvestItems(harvestItems.filter(i => i.id !== id));
     };
 
-    const updateStock = async (prod: string, qty: number, isAddition = true) => {
+    const updateStock = async (prod: string, qty: number, isAddition = true, allowNegative = false) => {
         try {
             const { data: check } = await supabase.from('estoque').select('*').eq('produto', prod).single();
             if (check) {
                 const current = check.quantidade || 0;
-                const newQty = isAddition ? (current + qty) : Math.max(0, current - qty);
+                let newQty = isAddition ? (current + qty) : (current - qty);
+                if (!allowNegative) newQty = Math.max(0, newQty);
+                
                 await supabase.from('estoque').update({ quantidade: newQty, last_updated: new Date().toISOString() }).eq('produto', prod);
-            } else if (isAddition) {
-                await supabase.from('estoque').insert([{ produto: prod, quantidade: qty, last_updated: new Date().toISOString() }]);
+            } else if (isAddition || allowNegative) {
+                const initialQty = isAddition ? qty : -qty;
+                await supabase.from('estoque').insert([{ produto: prod, quantidade: initialQty, last_updated: new Date().toISOString() }]);
             }
         } catch (e) {
             console.error('Falha estoque:', e);
@@ -147,6 +159,7 @@ export default function HarvestScreen() {
     const processSaveColheita = async (sendToStock: boolean) => {
         try {
             for (const item of harvestItems) {
+                // 1. Registro da Colheita
                 await supabase.from('colheitas').insert([{
                     cultura: talhao.toUpperCase(),
                     produto: item.produto,
@@ -155,9 +168,29 @@ export default function HarvestScreen() {
                     observacao: observacao.toUpperCase(),
                     data: new Date().toISOString().split('T')[0]
                 }]);
-                if (sendToStock) await updateStock(item.produto, item.quantidade, true);
+                
+                // 2. Atualiza Estoque de Produto Fresco
+                if (sendToStock) {
+                    await updateStock(item.produto, item.quantidade, true, false);
+                }
+
+                // 3. Abate Ficha Técnica (Embalagens)
+                if (item.produto_id && item.qtdCaixas > 0) {
+                    const { data: fichas } = await supabase.from('v2_fichas_tecnicas').select('quantidade, unidade, insumo_id').eq('produto_final_id', item.produto_id);
+                    
+                    if (fichas && fichas.length > 0) {
+                        for (const ficha of fichas) {
+                            // Fetch insumo name
+                            const { data: insumo } = await supabase.from('v2_produtos').select('nome').eq('id', ficha.insumo_id).single();
+                            if (insumo && insumo.nome) {
+                                const qtyToDeduct = parseFloat(ficha.quantidade) * item.qtdCaixas;
+                                await updateStock(insumo.nome.toUpperCase(), qtyToDeduct, false, true); // Permitir negativo p/ alertas de falta de caixa
+                            }
+                        }
+                    }
+                }
             }
-            toast.success('Colheita registrada com sucesso!');
+            toast.success('Colheita registrada com abatimento de embalagens!');
             setHarvestItems([]); setObservacao(''); setTalhao(''); fetchDados();
             setActiveTab('HISTORICO');
         } catch (e) {
@@ -260,6 +293,9 @@ export default function HarvestScreen() {
                 </button>
                 <button onClick={() => setActiveTab('HISTORICO')} className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-bold transition-all whitespace-nowrap ${activeTab === 'HISTORICO' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-white/5 text-[var(--color-muted)] hover:bg-white/10'}`}>
                     <History className="w-4 h-4" /> Histórico Geral
+                </button>
+                <button onClick={() => setActiveTab('FROTA')} className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-bold transition-all whitespace-nowrap ${activeTab === 'FROTA' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'bg-white/5 text-[var(--color-muted)] hover:bg-white/10'}`}>
+                    <Truck className="w-4 h-4" /> Gestão de Frota
                 </button>
             </div>
 
@@ -439,6 +475,13 @@ export default function HarvestScreen() {
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+                    )}
+
+                    {/* FROTA TAB */}
+                    {activeTab === 'FROTA' && (
+                        <div className="animate-fade-in-up">
+                            <FrotaScreen />
                         </div>
                     )}
 

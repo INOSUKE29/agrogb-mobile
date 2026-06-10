@@ -12,6 +12,7 @@ import {
 import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
+import DraggableModal from '../../components/common/DraggableModal';
 
 export default function VendasScreen() {
     const [loading, setLoading] = useState(true);
@@ -286,113 +287,108 @@ export default function VendasScreen() {
             </div>
 
             {/* MODAL NOVA VENDA */}
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal}></div>
-                    <div className="glass border border-[var(--color-border)] rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden relative z-10 flex flex-col max-h-[90vh]">
-                        
-                        <div className="p-6 border-b border-[var(--color-border)] bg-white/[0.02] flex justify-between items-center">
-                            <div>
-                                <h2 className="text-2xl font-black text-white">Nova Venda</h2>
-                                <p className="text-emerald-400 text-xs font-bold tracking-widest mt-1">SAÍDA DE ESTOQUE & FATURAMENTO</p>
-                            </div>
-                            <button onClick={closeModal} className="text-[var(--color-muted)] hover:text-white w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">&times;</button>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                            <form id="vendaForm" onSubmit={handleSalvar} className="space-y-6">
-                                
-                                <div>
-                                    <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
-                                        <User className="w-4 h-4 text-emerald-400" /> Cliente / Parceiro
-                                    </label>
-                                    <select 
-                                        value={clienteId} onChange={e => setClienteId(e.target.value)}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none"
-                                    >
-                                        <option value="">BALCÃO (Sem Cliente)</option>
-                                        {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
-                                        <Package className="w-4 h-4 text-emerald-400" /> Produto Vendido *
-                                    </label>
-                                    <select 
-                                        required value={produtoId} onChange={e => {
-                                            const newId = e.target.value;
-                                            setProdutoId(newId);
-                                            const prod = produtos.find(p => p.id === newId);
-                                            if (prod && prod.preco_venda) {
-                                                setValorUnitario(prod.preco_venda.toString());
-                                            }
-                                        }}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none"
-                                    >
-                                        <option value="" disabled>Selecionar Produto...</option>
-                                        {produtos.map(p => <option key={p.id} value={p.id}>{p.cultura || p.nome}</option>)}
-                                    </select>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
-                                            Quantidade *
-                                        </label>
-                                        <input 
-                                            required type="number" min="0.1" step="0.1" value={quantidade} onChange={e => setQuantidade(e.target.value)}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none"
-                                            placeholder="0.00"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
-                                            Valor Unit. (R$) *
-                                        </label>
-                                        <input 
-                                            required type="number" min="0" step="0.01" value={valorUnitario} onChange={e => setValorUnitario(e.target.value)}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none"
-                                            placeholder="0,00"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
-                                        Observação
-                                    </label>
-                                    <input 
-                                        type="text" value={observacao} onChange={e => setObservacao(e.target.value)}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none"
-                                        placeholder="Detalhes da venda..."
-                                    />
-                                </div>
-
-                                {(quantidade && valorUnitario) ? (
-                                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex justify-between items-center mt-2">
-                                        <span className="text-emerald-400 text-xs font-black tracking-widest uppercase">TOTAL DA VENDA</span>
-                                        <span className="text-emerald-400 text-2xl font-black">
-                                            R$ {(parseFloat(quantidade) * parseFloat(valorUnitario)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                        </span>
-                                    </div>
-                                ) : null}
-
-                            </form>
-                        </div>
-
-                        <div className="p-6 border-t border-[var(--color-border)] bg-white/[0.02]">
-                            <button 
-                                type="submit" form="vendaForm"
-                                className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 rounded-xl text-white font-black text-lg shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                            >
-                                <DollarSign className="w-5 h-5" /> REGISTRAR VENDA
-                            </button>
-                        </div>
-
+            <DraggableModal
+                isOpen={showModal}
+                onClose={closeModal}
+                width="800px"
+                title={
+                    <div>
+                        <h2 className="text-2xl font-black text-white">Nova Venda</h2>
+                        <p className="text-emerald-400 text-xs font-bold tracking-widest mt-1">SAÍDA DE ESTOQUE & FATURAMENTO</p>
                     </div>
-                </div>
-            )}
+                }
+                footer={
+                    <div className="flex gap-3">
+                        <button onClick={closeModal} type="button" className="flex-1 py-3 text-[var(--color-muted)] font-bold hover:bg-white/5 rounded-xl transition-all">Cancelar</button>
+                        <button 
+                            type="submit" form="vendaForm"
+                            className="flex-[2] py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 rounded-xl text-white font-black text-lg shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                        >
+                            <DollarSign className="w-5 h-5" /> REGISTRAR VENDA
+                        </button>
+                    </div>
+                }
+            >
+                <form id="vendaForm" onSubmit={handleSalvar} className="space-y-6">
+                    
+                    <div>
+                        <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
+                            <User className="w-4 h-4 text-emerald-400" /> Cliente / Parceiro
+                        </label>
+                        <select 
+                            value={clienteId} onChange={e => setClienteId(e.target.value)}
+                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none"
+                        >
+                            <option value="" className="bg-[#121212] text-white">BALCÃO (Sem Cliente)</option>
+                            {clientes.map(c => <option key={c.id} value={c.id} className="bg-[#121212] text-white">{c.nome}</option>)}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
+                            <Package className="w-4 h-4 text-emerald-400" /> Produto Vendido *
+                        </label>
+                        <select 
+                            required value={produtoId} onChange={e => {
+                                const newId = e.target.value;
+                                setProdutoId(newId);
+                                const prod = produtos.find(p => p.id === newId);
+                                if (prod && prod.preco_venda) {
+                                    setValorUnitario(prod.preco_venda.toString());
+                                }
+                            }}
+                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none"
+                        >
+                            <option value="" disabled className="bg-[#121212] text-[var(--color-muted)]">Selecionar Produto...</option>
+                            {produtos.map(p => <option key={p.id} value={p.id} className="bg-[#121212] text-white">{p.cultura || p.nome}</option>)}
+                        </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
+                                Quantidade *
+                            </label>
+                            <input 
+                                required type="number" min="0.1" step="0.1" value={quantidade} onChange={e => setQuantidade(e.target.value)}
+                                className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none"
+                                placeholder="0.00"
+                            />
+                        </div>
+                        <div>
+                            <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
+                                Valor Unit. (R$) *
+                            </label>
+                            <input 
+                                required type="number" min="0" step="0.01" value={valorUnitario} onChange={e => setValorUnitario(e.target.value)}
+                                className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none"
+                                placeholder="0,00"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
+                            Observação
+                        </label>
+                        <input 
+                            type="text" value={observacao} onChange={e => setObservacao(e.target.value)}
+                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none"
+                            placeholder="Detalhes da venda..."
+                        />
+                    </div>
+
+                    {(quantidade && valorUnitario) ? (
+                        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex justify-between items-center mt-2">
+                            <span className="text-emerald-400 text-xs font-black tracking-widest uppercase">TOTAL DA VENDA</span>
+                            <span className="text-emerald-400 text-2xl font-black">
+                                R$ {(parseFloat(quantidade) * parseFloat(valorUnitario)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                        </div>
+                    ) : null}
+
+                </form>
+            </DraggableModal>
 
         </div>
     );

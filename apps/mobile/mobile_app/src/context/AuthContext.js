@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService } from '../services/authService';
+import { getSupabase } from '../services/supabase';
 
 const AuthContext = createContext({});
 
@@ -19,9 +20,32 @@ export function AuthProvider({ children }) {
                 try {
                     const parsedSession = JSON.parse(session);
                     if (parsedSession && parsedSession.id) {
+                        // --- INÍCIO: CORREÇÃO AUDITORIA SESSÃO ZUMBI ---
+                        try {
+                            const supabase = getSupabase();
+                            if (supabase && parsedSession.token) {
+                                const { error } = await supabase.auth.getUser(parsedSession.token);
+                                
+                                if (error) {
+                                    // Erros 401/403 ou tokens inválidos forçam o logout
+                                    if (error.status === 401 || error.message.includes('Auth session') || error.message.includes('JWT') || error.message.includes('expired')) {
+                                        console.warn('[AGROGB BOOT] Token Supabase expirado/inválido. Expulsando sessão Zumbi.');
+                                        await logout();
+                                        setLoading(false);
+                                        return;
+                                    }
+                                    console.log('[AGROGB BOOT] Supabase inacessível (Offline Mode).', error.message);
+                                }
+                            }
+                        } catch (netErr) {
+                            console.log('[AGROGB BOOT] Sem internet para validar JWT. Iniciando offline-first.');
+                        }
+                        // --- FIM: CORREÇÃO AUDITORIA SESSÃO ZUMBI ---
+                        
+                        console.log('[AGROGB BOOT] Sessão validada e ativa.');
                         setUser(parsedSession);
                     } else {
-                        // Sessão vazia ou zumbi detectada.
+                        console.warn('[AGROGB BOOT] Sessão incompleta. Limpando...');
                         await logout();
                     }
                 } catch (parseError) {

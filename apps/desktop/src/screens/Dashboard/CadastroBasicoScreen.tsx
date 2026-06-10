@@ -37,7 +37,11 @@ export default function CadastroBasicoScreen() {
     const [principioAtivo, setPrincipioAtivo] = useState('');
     const [doseRecomendada, setDoseRecomendada] = useState('');
     const [sugerirGlobal, setSugerirGlobal] = useState(false);
+    const [fatorConversao, setFatorConversao] = useState('1');
+    const [fichas, setFichas] = useState<{insumo_id: string, quantidade: string}[]>([]);
     const [viewingItem, setViewingItem] = useState<any>(null);
+    const [quickCreateIdx, setQuickCreateIdx] = useState<number | null>(null);
+    const [pausedState, setPausedState] = useState<any>(null);
 
     const fetchDados = async () => {
         setLoading(true);
@@ -71,6 +75,107 @@ export default function CadastroBasicoScreen() {
         }
     };
 
+    const handleQuickCreate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!quickCreateNome) return;
+        
+        try {
+            const { data: userData } = await supabase.auth.getUser();
+            const userId = userData.user?.id || 'mock-user-id';
+            const payload = {
+                nome: quickCreateNome.toUpperCase(),
+                categoria: 'EMBALAGEM',
+                unidade_medida: quickCreateUnid,
+                observacao: quickCreateObs,
+                user_id: userId,
+                is_global: false,
+                fator_conversao: 1,
+                status_aprovacao: quickCreateSugerir ? 'PENDENTE_GLOBAL' : 'LOCAL'
+            };
+            const { data, error } = await supabase.from('v2_produtos').insert([payload]).select().single();
+            if (error) throw error;
+            
+            if (quickCreateSugerir && data) {
+                const { error: subErr } = await supabase.from('global_library_submissions').insert([{
+                    user_id: userId,
+                    produto_id: data.id,
+                    nome: payload.nome,
+                    categoria: payload.categoria,
+                    unidade_medida: payload.unidade_medida,
+                    observacao: payload.observacao,
+                    status: 'PENDENTE_GLOBAL'
+                }]);
+                if (subErr) console.error('Erro na submissão global rápida:', subErr);
+            }
+
+            toast.success(editingId ? 'Item atualizado!' : 'Item salvo!');
+            await fetchDados();
+            
+            if (pausedState && data) {
+                // Restaura o estado salvo
+                setNome(pausedState.nome);
+                setCategoria(pausedState.categoria);
+                setUnidade(pausedState.unidade);
+                setFabricante(pausedState.fabricante);
+                setModoAplicacao(pausedState.modoAplicacao);
+                setComposicaoNpk(pausedState.composicaoNpk);
+                setPrincipioAtivo(pausedState.principioAtivo);
+                setDoseRecomendada(pausedState.doseRecomendada);
+                setObservacao(pausedState.observacao);
+                setSugerirGlobal(pausedState.sugerirGlobal);
+                setFatorConversao(pausedState.fatorConversao);
+                setEditingId(pausedState.editingId);
+                
+                // Atualiza a ficha com o item recém criado
+                const restoredFichas = [...pausedState.fichas];
+                if (quickCreateIdx !== null) {
+                    restoredFichas[quickCreateIdx].insumo_id = data.id;
+                }
+                setFichas(restoredFichas);
+                
+                setPausedState(null);
+                setQuickCreateIdx(null);
+                
+                toast.success('Retornando ao cadastro principal...');
+                setSaving(false);
+                return; // NÃO fecha o modal!
+            }
+            
+            closeModal();
+        } finally {
+            if (!pausedState) setSaving(false);
+        }
+    };
+
+    const handlePauseAndCreate = (idx: number) => {
+        setPausedState({
+            nome, categoria, unidade, fabricante, modoAplicacao, composicaoNpk,
+            principioAtivo, doseRecomendada, observacao, sugerirGlobal, fatorConversao,
+            fichas, editingId
+        });
+        
+        setQuickCreateIdx(idx);
+        
+        // Limpa o formulário para virar um form de INSUMO/EMBALAGEM
+        setNome('');
+        setCategoria('EMBALAGEM');
+        setUnidade('UN');
+        setFabricante('');
+        setModoAplicacao('');
+        setComposicaoNpk('');
+        setPrincipioAtivo('');
+        setDoseRecomendada('');
+        setObservacao('');
+        setSugerirGlobal(false);
+        setFatorConversao('1');
+        setFichas([]);
+        setEditingId(null);
+    };
+
+    const handleEdit = (item: any) => {
+        // ... Logic
+    };
+
     useEffect(() => {
         fetchDados();
     }, []);
@@ -91,14 +196,15 @@ export default function CadastroBasicoScreen() {
             nome: nome.toUpperCase(),
             categoria: categoria,
             unidade_medida: unidade,
-            fabricante: fabricante.toUpperCase(),
-            modo_aplicacao: modoAplicacao,
-            composicao_npk: composicaoNpk,
-            principio_ativo: principioAtivo.toUpperCase(),
-            dose_recomendada: doseRecomendada,
+            fabricante: (categoria === 'DEFENSIVO' || categoria === 'FERTILIZANTE') ? fabricante.toUpperCase() : '',
+            modo_aplicacao: (categoria === 'DEFENSIVO' || categoria === 'FERTILIZANTE') ? modoAplicacao : '',
+            composicao_npk: categoria === 'FERTILIZANTE' ? composicaoNpk : '',
+            principio_ativo: categoria === 'DEFENSIVO' ? principioAtivo.toUpperCase() : '',
+            dose_recomendada: (categoria === 'DEFENSIVO' || categoria === 'FERTILIZANTE') ? doseRecomendada : '',
             observacao: observacao,
             user_id: userId,
             is_global: false,
+            fator_conversao: parseFloat(fatorConversao) || 1,
             status_aprovacao: sugerirGlobal ? 'PENDENTE_GLOBAL' : 'LOCAL'
         };
 
@@ -141,8 +247,23 @@ export default function CadastroBasicoScreen() {
                 }]);
                 if (subErr) {
                     console.error('Erro na submissão:', subErr);
-                    toast.error('O item foi salvo localmente, mas houve um erro ao enviar para aprovação: ' + subErr.message);
+                    toast.error('O item foi salvo localmente, mas houve erro no global.');
                 }
+            }
+
+            if (produtoId && categoria === 'PRODUTO_FINAL' && fichas.length > 0) {
+                await supabase.from('v2_fichas_tecnicas').delete().eq('produto_final_id', produtoId);
+                const payloadFichas = fichas.filter(f => f.insumo_id && f.quantidade).map(f => ({
+                    produto_final_id: produtoId,
+                    insumo_id: f.insumo_id,
+                    quantidade: parseFloat(f.quantidade),
+                    unidade: items.find(i => i.id === f.insumo_id)?.unidade_medida || 'UN'
+                }));
+                if (payloadFichas.length > 0) {
+                    await supabase.from('v2_fichas_tecnicas').insert(payloadFichas);
+                }
+            } else if (produtoId && categoria !== 'PRODUTO_FINAL') {
+                await supabase.from('v2_fichas_tecnicas').delete().eq('produto_final_id', produtoId);
             }
             
             closeModal();
@@ -184,7 +305,17 @@ export default function CadastroBasicoScreen() {
         setPrincipioAtivo(item.principio_ativo || '');
         setDoseRecomendada(item.dose_recomendada || '');
         setObservacao(item.observacao || '');
+        setFatorConversao(item.fator_conversao?.toString() || '1');
         setSugerirGlobal(item.status_aprovacao === 'PENDENTE_GLOBAL');
+        
+        if (item.categoria === 'PRODUTO_FINAL') {
+            supabase.from('v2_fichas_tecnicas').select('*').eq('produto_final_id', item.id).then(({data}) => {
+                if (data) setFichas(data.map((d: any) => ({ insumo_id: d.insumo_id, quantidade: d.quantidade.toString() })));
+            });
+        } else {
+            setFichas([]);
+        }
+        
         setShowModal(true);
     };
 
@@ -201,6 +332,10 @@ export default function CadastroBasicoScreen() {
         setDoseRecomendada('');
         setObservacao('');
         setSugerirGlobal(false);
+        setFatorConversao('1');
+        setFichas([]);
+        setPausedState(null);
+        setQuickCreateIdx(null);
     };
 
     const filteredItems = items.filter(item => 
@@ -374,15 +509,61 @@ export default function CadastroBasicoScreen() {
             {/* MODAL REGISTRO */}
             <DraggableModal
                 isOpen={showModal}
-                onClose={closeModal}
+                onClose={() => {
+                    if (pausedState) {
+                        toast.error("Termine de salvar o item atual ou cancele para voltar.");
+                    } else {
+                        closeModal();
+                    }
+                }}
+                width="800px"
                 title={
                     <div>
-                        <h2 className="text-2xl font-black text-white">{editingId ? 'Editar Item' : 'Novo Item Local'}</h2>
-                        <p className="text-indigo-400 text-xs font-bold tracking-widest mt-1">CATÁLOGO</p>
+                        <h2 className="text-2xl font-black text-white">
+                            {pausedState ? 'Criando Insumo/Embalagem...' : (editingId ? 'Editar Item' : 'Novo Item Local')}
+                        </h2>
+                        <p className="text-indigo-400 text-xs font-bold tracking-widest mt-1">
+                            {pausedState ? 'CADASTRO SECUNDÁRIO' : 'CATÁLOGO'}
+                        </p>
+                    </div>
+                }
+                footer={
+                    <div className="flex gap-3">
+                        {pausedState ? (
+                            <button onClick={() => {
+                                // Restaura o estado anterior (cancela o nested)
+                                setNome(pausedState.nome);
+                                setCategoria(pausedState.categoria);
+                                setUnidade(pausedState.unidade);
+                                setFabricante(pausedState.fabricante);
+                                setModoAplicacao(pausedState.modoAplicacao);
+                                setComposicaoNpk(pausedState.composicaoNpk);
+                                setPrincipioAtivo(pausedState.principioAtivo);
+                                setDoseRecomendada(pausedState.doseRecomendada);
+                                setObservacao(pausedState.observacao);
+                                setSugerirGlobal(pausedState.sugerirGlobal);
+                                setFatorConversao(pausedState.fatorConversao);
+                                setFichas(pausedState.fichas);
+                                setEditingId(pausedState.editingId);
+                                setPausedState(null);
+                                setQuickCreateIdx(null);
+                            }} type="button" className="flex-1 py-3 bg-red-500/10 text-red-400 font-bold hover:bg-red-500/20 rounded-xl transition-all">
+                                Cancelar e Voltar
+                            </button>
+                        ) : (
+                            <button onClick={closeModal} type="button" className="flex-1 py-3 text-[var(--color-muted)] font-bold hover:bg-white/5 rounded-xl transition-all">Cancelar</button>
+                        )}
+                        <button 
+                            type="submit" form="cadForm"
+                            disabled={saving}
+                            className="flex-1 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 rounded-xl text-white font-black shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50"
+                        >
+                            {saving ? 'Salvando...' : (pausedState ? 'Salvar e Voltar' : 'Salvar Cadastro')}
+                        </button>
                     </div>
                 }
             >
-                <div className="p-2 space-y-6">
+                <div className="space-y-6">
                     <form id="cadForm" onSubmit={handleSalvar} className="space-y-6">
                                 
                                 <div>
@@ -431,67 +612,149 @@ export default function CadastroBasicoScreen() {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
-                                            Fabricante / Marca
-                                        </label>
-                                        <input 
-                                            type="text" value={fabricante} onChange={e => setFabricante(e.target.value)}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none"
-                                            placeholder="Ex: Yara, Syngenta..."
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
-                                            Princípio Ativo (Defensivos)
-                                        </label>
-                                        <input 
-                                            type="text" value={principioAtivo} onChange={e => setPrincipioAtivo(e.target.value)}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none"
-                                            placeholder="Ex: Glifosato, Imidacloprido..."
-                                        />
-                                    </div>
-                                </div>
+                                {(categoria === 'DEFENSIVO' || categoria === 'FERTILIZANTE') && (
+                                    <>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
+                                                    Fabricante / Marca
+                                                </label>
+                                                <input 
+                                                    type="text" value={fabricante} onChange={e => setFabricante(e.target.value)}
+                                                    className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                    placeholder="Ex: Yara, Syngenta..."
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
+                                                    Princípio Ativo (Defensivos)
+                                                </label>
+                                                <input 
+                                                    type="text" value={principioAtivo} onChange={e => setPrincipioAtivo(e.target.value)}
+                                                    className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                    placeholder="Ex: Glifosato, Imidacloprido..."
+                                                />
+                                            </div>
+                                        </div>
 
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
-                                            Modo Aplicação
-                                        </label>
-                                        <select 
-                                            value={modoAplicacao} onChange={e => setModoAplicacao(e.target.value)}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
-                                        >
-                                            <option value="">Selecione...</option>
-                                            <option value="FOLIAR">Foliar</option>
-                                            <option value="SOLO">Via Solo</option>
-                                            <option value="FERTIRRIGACAO">Fertirrigação</option>
-                                            <option value="SEMENTE">Trat. Semente</option>
-                                            <option value="OUTROS">Outros</option>
-                                        </select>
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <div>
+                                                <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
+                                                    Modo Aplicação
+                                                </label>
+                                                <select 
+                                                    value={modoAplicacao} onChange={e => setModoAplicacao(e.target.value)}
+                                                    className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
+                                                >
+                                                    <option value="">Selecione...</option>
+                                                    <option value="FOLIAR">Foliar</option>
+                                                    <option value="SOLO">Via Solo</option>
+                                                    <option value="FERTIRRIGACAO">Fertirrigação</option>
+                                                    <option value="SEMENTE">Trat. Semente</option>
+                                                    <option value="OUTROS">Outros</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
+                                                    Composição (NPK)
+                                                </label>
+                                                <input 
+                                                    type="text" value={composicaoNpk} onChange={e => setComposicaoNpk(e.target.value)}
+                                                    className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                    placeholder="Ex: 04-14-08"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
+                                                    Dose Recomendada
+                                                </label>
+                                                <input 
+                                                    type="text" value={doseRecomendada} onChange={e => setDoseRecomendada(e.target.value)}
+                                                    className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                    placeholder="Ex: 2L/ha"
+                                                />
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {categoria === 'PRODUTO_FINAL' && (
+                                    <div className="space-y-6">
+                                        <div className="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl">
+                                            <label className="flex items-center gap-2 text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">
+                                                Fator de Conversão (Peso Bruto por {unidade}) *
+                                            </label>
+                                            <div className="flex gap-4 items-center">
+                                                <input 
+                                                    required type="number" step="0.01" value={fatorConversao} onChange={e => setFatorConversao(e.target.value)}
+                                                    className="w-1/3 bg-[var(--color-background)] border border-indigo-500/30 text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                    placeholder="Ex: 1.2"
+                                                />
+                                                <span className="text-sm text-[var(--color-muted)]">
+                                                    Ex: Se 1 Caixa tem 1.2 KG de fruta, digite 1.2. O sistema usará isso para somar os KG colhidos.
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="border border-[var(--color-border)] rounded-xl p-4 bg-white/[0.02]">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Ficha Técnica (Composição de Embalagens)</h3>
+                                                <button type="button" onClick={() => setFichas([...fichas, {insumo_id: '', quantidade: '1'}])} className="text-xs bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-bold transition-colors">
+                                                    + Adicionar Embalagem
+                                                </button>
+                                            </div>
+                                            <p className="text-xs text-[var(--color-muted)] mb-4 leading-relaxed">
+                                                Adicione as embalagens e insumos usados para formar 1 {unidade} deste produto. Na hora da colheita, o sistema descontará essas quantidades automaticamente do estoque.
+                                            </p>
+                                            
+                                            <div className="space-y-3">
+                                                {fichas.map((ficha, idx) => (
+                                                    <div key={idx} className="flex gap-3 items-center bg-[var(--color-background)] p-2 rounded-lg border border-[var(--color-border)]">
+                                                        <select 
+                                                            value={ficha.insumo_id}
+                                                            onChange={e => {
+                                                                const newF = [...fichas];
+                                                                newF[idx].insumo_id = e.target.value;
+                                                                setFichas(newF);
+                                                            }}
+                                                            className="flex-1 bg-transparent text-white text-sm outline-none"
+                                                        >
+                                                            <option value="" className="bg-[#121212] text-white">Selecione o Insumo/Embalagem...</option>
+                                                            {items.filter(i => i.categoria === 'EMBALAGEM' || i.categoria === 'INSUMO').map(i => (
+                                                                <option key={i.id} value={i.id} className="bg-[#121212] text-white">{i.nome}</option>
+                                                            ))}
+                                                        </select>
+                                                        <button 
+                                                            type="button" onClick={() => handlePauseAndCreate(idx)} 
+                                                            className="p-2 text-indigo-400 hover:bg-indigo-500/20 rounded-lg transition-colors tooltip"
+                                                            title="Cadastrar Novo Insumo/Embalagem"
+                                                        >
+                                                            <Plus className="w-4 h-4" />
+                                                        </button>
+                                                        <input 
+                                                            type="number" step="0.01" value={ficha.quantidade}
+                                                            onChange={e => {
+                                                                const newF = [...fichas];
+                                                                newF[idx].quantidade = e.target.value;
+                                                                setFichas(newF);
+                                                            }}
+                                                            className="w-24 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-indigo-500"
+                                                            placeholder="Qtd"
+                                                        />
+                                                        <button type="button" onClick={() => setFichas(fichas.filter((_, i) => i !== idx))} className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors">
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                                {fichas.length === 0 && (
+                                                    <div className="text-center py-4 border border-dashed border-white/10 rounded-lg text-[var(--color-muted)] text-sm">
+                                                        Nenhuma embalagem configurada. Apenas o produto será registrado.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
-                                            Composição (NPK)
-                                        </label>
-                                        <input 
-                                            type="text" value={composicaoNpk} onChange={e => setComposicaoNpk(e.target.value)}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none"
-                                            placeholder="Ex: 04-14-08"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
-                                            Dose Recomendada
-                                        </label>
-                                        <input 
-                                            type="text" value={doseRecomendada} onChange={e => setDoseRecomendada(e.target.value)}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none"
-                                            placeholder="Ex: 2L/ha"
-                                        />
-                                    </div>
-                                </div>
+                                )}
 
                                 <div>
                                     <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
@@ -523,17 +786,7 @@ export default function CadastroBasicoScreen() {
                                 </div>
 
                             </form>
-                        </div>
-
-                        <div className="p-6 border-t border-[var(--color-border)] bg-white/[0.02] flex gap-3">
-                            <button onClick={closeModal} className="flex-1 py-4 text-[var(--color-muted)] font-bold hover:bg-white/5 rounded-xl transition-all">Cancelar</button>
-                            <button 
-                                type="submit" form="cadForm"
-                                className="flex-1 py-4 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 rounded-xl text-white font-black shadow-lg shadow-indigo-500/20 transition-all"
-                            >
-                                Salvar Cadastro
-                            </button>
-                        </div>
+                </div>
             </DraggableModal>
 
             {/* MODAL DE VISUALIZAÇÃO DE DETALHES */}
@@ -541,6 +794,7 @@ export default function CadastroBasicoScreen() {
                 <DraggableModal
                     isOpen={!!viewingItem}
                     onClose={() => setViewingItem(null)}
+                    width="800px"
                     title={<h2 className="text-2xl font-black text-white flex items-center gap-3">Ficha do Produto</h2>}
                 >
                     <div className="p-2 space-y-6 custom-scrollbar">

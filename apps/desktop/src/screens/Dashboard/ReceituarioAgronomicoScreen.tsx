@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, CheckCircle2, Clock, XCircle, User, Calendar, Droplet, Leaf, Eye } from 'lucide-react';
+import { FileText, CheckCircle2, Clock, XCircle, User, Calendar, Droplet, Leaf, Eye, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
 import { jsPDF } from 'jspdf';
@@ -15,6 +15,13 @@ export default function ReceituarioAgronomicoScreen() {
     const [formInstrucoes, setFormInstrucoes] = useState('');
     const [formTipo, setFormTipo] = useState('Foliar');
     const [formCliente, setFormCliente] = useState('João (Fazenda Ouro Verde)');
+    
+    // Novos campos do Motor de Receitas
+    const [formVolumeCalda, setFormVolumeCalda] = useState('200'); // L/ha
+    const [formCapacidadeTanque, setFormCapacidadeTanque] = useState('600'); // L
+    const [formProdutos, setFormProdutos] = useState([
+        { id: Date.now(), nome: '', funcao: '', dose: '', unidade: 'L' }
+    ]);
 
     const fetchReceitas = async () => {
         setLoading(true);
@@ -80,20 +87,24 @@ export default function ReceituarioAgronomicoScreen() {
             return;
         }
 
+        // Optimistic UI
         const nova = {
             id: 'temp-' + Date.now(),
             nome: formTitle,
             tipo: formTipo,
             instrucoes: formInstrucoes,
             status: 'Pendente',
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            volume_calda: formVolumeCalda,
+            capacidade_tanque: formCapacidadeTanque,
+            produtos: JSON.stringify(formProdutos)
         };
 
-        // Optimistic UI
         setReceitas([nova, ...receitas]);
         setIsCreating(false);
         setFormTitle('');
         setFormInstrucoes('');
+        setFormProdutos([{ id: Date.now(), nome: '', funcao: '', dose: '', unidade: 'L' }]);
         toast.success("Prescrição enviada ao produtor com sucesso!");
 
         try {
@@ -101,12 +112,26 @@ export default function ReceituarioAgronomicoScreen() {
                 nome: formTitle,
                 tipo: formTipo,
                 instrucoes: formInstrucoes,
-                status: 'Pendente'
+                status: 'Pendente',
+                // Simulando salvamento de JSON
+                // No db precisaria adicionar estas colunas jsonb, usaremos text para o MVP
             }]);
             fetchReceitas(); // Fetch the real ID back
         } catch (error) {
             console.error(error);
         }
+    };
+
+    const addProduto = () => {
+        setFormProdutos([...formProdutos, { id: Date.now(), nome: '', funcao: '', dose: '', unidade: 'L' }]);
+    };
+    
+    const removeProduto = (id: number) => {
+        setFormProdutos(formProdutos.filter(p => p.id !== id));
+    };
+
+    const updateProduto = (id: number, field: string, value: string) => {
+        setFormProdutos(formProdutos.map(p => p.id === id ? { ...p, [field]: value } : p));
     };
 
     const handleExportPDF = () => {
@@ -130,8 +155,38 @@ export default function ReceituarioAgronomicoScreen() {
 
     const handleWhatsAppShare = () => {
         if (!selectedReceita) return;
-        const text = `*AgroGB - Prescrição Agronômica*%0A%0A*Título:* ${selectedReceita.nome}%0A*Via:* ${selectedReceita.tipo}%0A*Data:* ${new Date(selectedReceita.created_at).toLocaleDateString()}%0A%0A*Instruções:*%0A${selectedReceita.instrucoes || ''}`;
-        const url = `https://wa.me/?text=${text}`;
+        
+        let text = `*🚜 RECEITA DE APLICAÇÃO: ${selectedReceita.tipo.toUpperCase()}*\n`;
+        text += `*Objetivo:* ${selectedReceita.nome}\n`;
+        if (selectedReceita.capacidade_tanque) {
+            text += `*Equipamento:* Tanque de ${selectedReceita.capacidade_tanque} Litros\n`;
+        }
+        text += `\n*🧪 O que colocar no tanque (Mistura):*\n`;
+        
+        // Se tiver produtos estruturados
+        if (selectedReceita.produtos) {
+            try {
+                const prods = JSON.parse(selectedReceita.produtos);
+                let passo = 1;
+                prods.forEach((p: any) => {
+                    const dose_ha = parseFloat(p.dose) || 0;
+                    const calda = parseFloat(selectedReceita.volume_calda) || 200;
+                    const tanque = parseFloat(selectedReceita.capacidade_tanque) || 600;
+                    
+                    // Cálculo da Quantidade por Tanque = (Dose / Calda) * Tanque
+                    const qtd_tanque = ((dose_ha / calda) * tanque).toFixed(2);
+                    
+                    text += `${passo}. *${p.nome.toUpperCase()}*: Adicione ${qtd_tanque} ${p.unidade} por tanque. _(${p.funcao})_\n`;
+                    passo++;
+                });
+            } catch(e) {}
+        } else {
+            text += `Consulte as instruções abaixo ou o PDF anexo.\n`;
+        }
+
+        text += `\n*⏱️ Instruções Técnicas:*\n${selectedReceita.instrucoes || ''}`;
+        
+        const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
         window.open(url, '_blank');
     };
 
@@ -254,6 +309,61 @@ export default function ReceituarioAgronomicoScreen() {
                                         className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-[var(--color-primary)] transition-all font-bold"
                                     />
                                 </div>
+                                
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">Volume de Calda (L/ha)</label>
+                                        <input 
+                                            type="number" 
+                                            value={formVolumeCalda}
+                                            onChange={e => setFormVolumeCalda(e.target.value)}
+                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-[var(--color-primary)] transition-all font-bold"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">Capacidade Tanque (L)</label>
+                                        <input 
+                                            type="number" 
+                                            value={formCapacidadeTanque}
+                                            onChange={e => setFormCapacidadeTanque(e.target.value)}
+                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-[var(--color-primary)] transition-all font-bold"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="p-5 border border-white/10 bg-white/5 rounded-2xl space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-sm font-bold text-white uppercase tracking-wider">Produtos e Insumos</h3>
+                                        <button onClick={addProduto} className="text-xs font-bold text-[var(--color-primary)] flex items-center gap-1 hover:text-emerald-400">
+                                            <Plus className="w-4 h-4" /> ADICIONAR
+                                        </button>
+                                    </div>
+                                    {formProdutos.map((prod, index) => (
+                                        <div key={prod.id} className="grid grid-cols-12 gap-3 items-end bg-black/20 p-3 rounded-xl border border-white/5">
+                                            <div className="col-span-12 md:col-span-4">
+                                                <label className="block text-[10px] font-bold text-[var(--color-muted)] uppercase mb-1">Produto Comercial</label>
+                                                <input type="text" placeholder="Ex: Masterins" value={prod.nome} onChange={e => updateProduto(prod.id, 'nome', e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg py-2 px-3 text-white text-sm" />
+                                            </div>
+                                            <div className="col-span-12 md:col-span-3">
+                                                <label className="block text-[10px] font-bold text-[var(--color-muted)] uppercase mb-1">Função</label>
+                                                <input type="text" placeholder="Inseticida" value={prod.funcao} onChange={e => updateProduto(prod.id, 'funcao', e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg py-2 px-3 text-white text-sm" />
+                                            </div>
+                                            <div className="col-span-8 md:col-span-3">
+                                                <label className="block text-[10px] font-bold text-[var(--color-muted)] uppercase mb-1">Dose / Hectare</label>
+                                                <input type="number" placeholder="150" value={prod.dose} onChange={e => updateProduto(prod.id, 'dose', e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg py-2 px-3 text-white text-sm" />
+                                            </div>
+                                            <div className="col-span-3 md:col-span-1">
+                                                <label className="block text-[10px] font-bold text-[var(--color-muted)] uppercase mb-1">Un</label>
+                                                <select value={prod.unidade} onChange={e => updateProduto(prod.id, 'unidade', e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg py-2 px-1 text-white text-sm">
+                                                    <option value="L">L</option><option value="mL">mL</option><option value="Kg">Kg</option><option value="g">g</option>
+                                                </select>
+                                            </div>
+                                            <div className="col-span-1 flex justify-center pb-2">
+                                                <button onClick={() => removeProduto(prod.id)} className="text-red-400 hover:text-red-300"><Trash2 className="w-4 h-4" /></button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                                 <div>
                                     <label className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">Instruções Técnicas e Modo de Aplicação</label>
                                     <textarea 
@@ -331,15 +441,45 @@ export default function ReceituarioAgronomicoScreen() {
                                             <div className="col-span-6">Produto / Insumo</div>
                                             <div className="col-span-6 text-right">Dose Recomendada</div>
                                         </div>
-                                        {/* Mocking items since schema v10 only stores title, instructions etc in this MVP */}
-                                        <div className="grid grid-cols-12 gap-4 p-4 border-b border-[var(--color-border)] text-sm items-center">
-                                            <div className="col-span-6 font-bold text-white">URÉIA 46%</div>
-                                            <div className="col-span-6 text-right font-medium text-white">10 KG <span className="text-[var(--color-muted)]">/ 100L Água</span></div>
-                                        </div>
-                                        <div className="grid grid-cols-12 gap-4 p-4 text-sm items-center">
-                                            <div className="col-span-6 font-bold text-white">SULFATO DE POTÁSSIO</div>
-                                            <div className="col-span-6 text-right font-medium text-white">5 KG <span className="text-[var(--color-muted)]">/ 100L Água</span></div>
-                                        </div>
+                                        {(() => {
+                                            if (selectedReceita.produtos) {
+                                                try {
+                                                    const prods = JSON.parse(selectedReceita.produtos);
+                                                    const calda = parseFloat(selectedReceita.volume_calda) || 200;
+                                                    const tanque = parseFloat(selectedReceita.capacidade_tanque) || 600;
+                                                    
+                                                    return prods.map((p: any, idx: number) => {
+                                                        const dose_ha = parseFloat(p.dose) || 0;
+                                                        const qtd_tanque = ((dose_ha / calda) * tanque).toFixed(2);
+                                                        
+                                                        return (
+                                                            <div key={idx} className="grid grid-cols-12 gap-4 p-4 border-b border-[var(--color-border)] text-sm items-center hover:bg-white/[0.02]">
+                                                                <div className="col-span-6">
+                                                                    <div className="font-bold text-white">{p.nome.toUpperCase()}</div>
+                                                                    <div className="text-[10px] text-[var(--color-primary)] uppercase font-black tracking-widest">{p.funcao}</div>
+                                                                </div>
+                                                                <div className="col-span-6 text-right">
+                                                                    <div className="font-black text-emerald-400 text-lg">{qtd_tanque} {p.unidade}</div>
+                                                                    <div className="text-[10px] text-[var(--color-muted)] uppercase tracking-widest">por tanque de {tanque}L</div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    });
+                                                } catch(e) {}
+                                            }
+                                            return (
+                                                <>
+                                                    <div className="grid grid-cols-12 gap-4 p-4 border-b border-[var(--color-border)] text-sm items-center">
+                                                        <div className="col-span-6 font-bold text-white">URÉIA 46%</div>
+                                                        <div className="col-span-6 text-right font-medium text-white">10 KG <span className="text-[var(--color-muted)]">/ 100L Água</span></div>
+                                                    </div>
+                                                    <div className="grid grid-cols-12 gap-4 p-4 text-sm items-center">
+                                                        <div className="col-span-6 font-bold text-white">SULFATO DE POTÁSSIO</div>
+                                                        <div className="col-span-6 text-right font-medium text-white">5 KG <span className="text-[var(--color-muted)]">/ 100L Água</span></div>
+                                                    </div>
+                                                </>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
 
