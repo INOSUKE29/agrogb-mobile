@@ -1,5 +1,6 @@
 import { executeQuery, genericUpsert } from '../database/database';
 import { syncTable } from './supabase';
+import { ManejoService } from './ManejoService';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -105,6 +106,55 @@ export const RecommendationService = {
                 `UPDATE recommendations SET status = ?, sync_status = 0, last_updated = ? WHERE uuid = ?`,
                 [status, new Date().toISOString(), uuid]
             );
+
+            // AUTO-EXECUÇÃO DO MANEJO
+            if (status === 'APPLIED') {
+                try {
+                    const resRec = await executeQuery('SELECT * FROM recommendations WHERE uuid = ?', [uuid]);
+                    if (resRec.rows.length > 0) {
+                        const rec = resRec.rows.item(0);
+                        let recipeData = [];
+                        try { recipeData = typeof rec.recipe_data === 'string' ? JSON.parse(rec.recipe_data) : rec.recipe_data; } catch(e){}
+                        
+                        // Pegar a area_hectares do talhao
+                        let areaHectares = 1;
+                        if (rec.field_id) {
+                            const resT = await executeQuery('SELECT area_hectares FROM talhoes WHERE uuid = ?', [rec.field_id]);
+                            if (resT.rows.length > 0) {
+                                areaHectares = parseFloat(resT.rows.item(0).area_hectares) || 1;
+                            }
+                        }
+
+                        // Para cada item da receita, lançar o Manejo
+                        for (const item of recipeData) {
+                            const produtoNome = item.product || '';
+                            const dose = parseFloat(item.dosage) || 0;
+                            
+                            let precoUnitario = 0;
+                            const resCat = await executeQuery('SELECT preco_unitario FROM cadastro WHERE nome_comercial = ? AND is_deleted = 0 LIMIT 1', [produtoNome.toUpperCase()]);
+                            if (resCat.rows.length > 0) {
+                                precoUnitario = parseFloat(resCat.rows.item(0).preco_unitario) || 0;
+                            }
+
+                            const manejoObj = {
+                                talhao_uuid: rec.field_id,
+                                produto_nome: produtoNome,
+                                praga_alvo: `PRESCRIÇÃO ${rec.recipe_type}`,
+                                dose_ha: dose,
+                                volume_calda_l: 0,
+                                carencia_dias: 7, 
+                                area_hectares: areaHectares,
+                                preco_unitario: precoUnitario,
+                                data: new Date().toISOString().split('T')[0]
+                            };
+
+                            await ManejoService.registrarManejo(manejoObj);
+                        }
+                    }
+                } catch (execErr) {
+                    console.log('Erro na auto-execução da prescrição:', execErr);
+                }
+            }
 
             // Tenta sincronizar com o Supabase imediatamente
             try {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Dimensions, StatusBar, SafeAreaView } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
-import { insertCompra, getComprasRecentes, updateCompra, deleteCompra, executeQuery } from '../database/database';
+import { insertCompra, getComprasRecentes, updateCompra, deleteCompra, executeQuery, atualizarEstoque, inserirAlerta } from '../database/database';
+import { SyncWorker } from '../services/SyncWorker';
 import SmartAutocomplete from '../components/common/SmartAutocomplete';
 import { ProductLibraryService, FornecedorLibraryService } from '../services/LibraryServices';
 import { Ionicons } from '@expo/vector-icons';
@@ -97,12 +98,36 @@ export default function ComprasScreen({ navigation }) {
                 await insertCompra(dados);
                 
                 // Automação: Gerar Conta a Pagar
+                const finUuid = uuidv4();
                 await executeQuery(
-                    'INSERT INTO financeiro_transacoes (uuid, tipo, descricao, valor, vencimento, entidade_nome, categoria, origem_uuid, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    [uuidv4(), 'PAGAR', `COMPRA: ${dados.item}`, dados.valor, dados.data, (fornecedor.nome || 'DIVERSOS').toUpperCase(), 'COMPRAS', dados.uuid, new Date().toISOString()]
+                    'INSERT INTO financeiro_transacoes (uuid, tipo, descricao, valor, vencimento, entidade_nome, categoria, origem_uuid, last_updated, sync_status, is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)',
+                    [finUuid, 'PAGAR', `COMPRA: ${dados.item}`, dados.valor, dados.data, (fornecedor.nome || 'DIVERSOS').toUpperCase(), 'COMPRAS', dados.uuid, new Date().toISOString()]
                 );
                 
-                Alert.alert('Sucesso', 'Entrada registrada e gerada no Contas a Pagar.');
+                SyncWorker.enqueue('financeiro_transacoes', 'INSERT', finUuid, {
+                    uuid: finUuid,
+                    tipo: 'PAGAR',
+                    descricao: `COMPRA: ${dados.item}`,
+                    valor: dados.valor,
+                    vencimento: dados.data,
+                    entidade_nome: (fornecedor.nome || 'DIVERSOS').toUpperCase(),
+                    categoria: 'COMPRAS',
+                    origem_uuid: dados.uuid,
+                    last_updated: new Date().toISOString(),
+                    is_deleted: 0
+                });
+
+                // Baixa não-bloqueante (Alta) no estoque
+                await atualizarEstoque(dados.item, dados.quantidade, dados.data);
+
+                // Checar se produto está no catálogo
+                const resCat = await executeQuery('SELECT uuid FROM cadastro WHERE nome = ?', [dados.item]);
+                if (resCat.rows.length === 0) {
+                    await inserirAlerta('CADASTRO_FALTANTE', `O insumo "${dados.item}" foi comprado, mas sua ficha técnica não existe no Catálogo. É necessário cadastrá-lo.`);
+                    Alert.alert('✅ Compra Registrada', `A entrada foi lançada no Estoque e no Contas a Pagar. O produto "${dados.item}" não foi encontrado no seu catálogo de insumos. Lembre-se de atualizá-lo depois.`);
+                } else {
+                    Alert.alert('✅ Sucesso', 'Entrada registrada e gerada no Contas a Pagar.');
+                }
             }
             setItem(''); setQuantidade(''); setValor(''); setObservacao(''); setDetalhes(''); setCultura(''); setAnexoUri(null); setFornecedor({ uuid: '', nome: '' });
             loadHistory();

@@ -178,12 +178,11 @@ export default function CustosScreen({ navigation }) {
                             />
 
                             <FlatList
-                                data={items.filter(i =
-                    initialNumToRender={8}
-                    maxToRenderPerBatch={10}
-                    windowSize={5}
-                    removeClippedSubviews={true}
-                    > i.name.toUpperCase().includes(searchText.toUpperCase()))}
+                                data={items.filter(i => i.name.toUpperCase().includes(searchText.toUpperCase()))}
+                                initialNumToRender={8}
+                                maxToRenderPerBatch={10}
+                                windowSize={5}
+                                removeClippedSubviews={true}
                                 keyExtractor={i => i.id.toString()}
                                 renderItem={({ item }) => (
                                     <TouchableOpacity style={styles.itemRow} onPress={() => { setCategoria(item); setModalVisible(false); }}>

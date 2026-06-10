@@ -74,6 +74,7 @@ export default function CadastroScreen({ navigation }) {
     const [classeToxicologica, setClasseToxicologica] = useState('');
     const [composicao, setComposicao] = useState('');
     const [precoVenda, setPrecoVenda] = useState('');
+    const [precoUnitario, setPrecoUnitario] = useState('');
 
     // V8.0 Catálogo Rico
     const [fabricante, setFabricante] = useState('');
@@ -108,6 +109,7 @@ export default function CadastroScreen({ navigation }) {
                 classe_toxicologica: classeToxicologica.toUpperCase(),
                 composicao: composicao.toUpperCase(),
                 preco_venda: parseFloat(precoVenda) || 0,
+                preco_unitario: parseFloat(precoUnitario) || 0,
                 fabricante: fabricante.toUpperCase(),
                 nutrientes: nutrientes.toUpperCase(),
                 dose_padrao: dosePadrao.toUpperCase(),
@@ -131,7 +133,7 @@ export default function CadastroScreen({ navigation }) {
     const resetForm = () => {
         setEditingItem(null); setNome(''); setObservacao(''); setFator('1');
         setEstocavel(true); setVendavel(false); setUnidade('KG'); setTipo('INSUMO');
-        setPrincipioAtivo(''); setClasseToxicologica(''); setComposicao(''); setPrecoVenda('');
+        setPrincipioAtivo(''); setClasseToxicologica(''); setComposicao(''); setPrecoVenda(''); setPrecoUnitario('');
         setFabricante(''); setNutrientes(''); setDosePadrao(''); setBulaTexto('');
     };
 
@@ -141,6 +143,7 @@ export default function CadastroScreen({ navigation }) {
         setEstocavel(item.estocavel === 1); setVendavel(item.vendavel === 1);
         setPrincipioAtivo(item.principio_ativo || ''); setClasseToxicologica(item.classe_toxicologica || '');
         setComposicao(item.composicao || ''); setPrecoVenda(item.preco_venda ? item.preco_venda.toString() : '');
+        setPrecoUnitario(item.preco_unitario ? item.preco_unitario.toString() : '');
         setFabricante(item.fabricante || ''); setNutrientes(item.nutrientes || ''); 
         setDosePadrao(item.dose_padrao || ''); setBulaTexto(item.bula_texto || '');
         setModalVisible(true);
@@ -309,12 +312,13 @@ export default function CadastroScreen({ navigation }) {
                                 </Card>
                             )}
 
-                            {(tipo === 'PRODUTO' || vendavel) && (
-                                <Card style={styles.extraCard}>
-                                    <Text style={styles.extraTitle}>FINANCEIRO</Text>
-                                    <AgroInput label="PREÇO DE VENDA (R$)" value={precoVenda} onChangeText={setPrecoVenda} keyboardType="numeric" />
-                                </Card>
-                            )}
+                            <Card style={styles.extraCard}>
+                                <Text style={styles.extraTitle}>FINANCEIRO E CUSTOS</Text>
+                                <AgroInput label={`CUSTO UNITÁRIO / PREÇO DE COMPRA (R$/${unidade})`} value={precoUnitario} onChangeText={setPrecoUnitario} keyboardType="numeric" placeholder="Ex: 50.00" />
+                                {(tipo === 'PRODUTO' || vendavel) && (
+                                    <AgroInput label="PREÇO DE VENDA (R$)" value={precoVenda} onChangeText={setPrecoVenda} keyboardType="numeric" placeholder="Ex: 120.00" />
+                                )}
+                            </Card>
 
                             <View style={styles.factorSection}>
                                 <Text style={styles.inputLabel}>PESO DA EMBALAGEM / FATOR</Text>

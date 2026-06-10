@@ -9,6 +9,7 @@ import { getCadastro } from '../database/database';
 import Card from '../components/common/Card';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
+import SyncStatusWidget from '../components/common/SyncStatusWidget';
 
 const { width } = Dimensions.get('window');
 
@@ -272,6 +273,7 @@ export default function IntelligenceScreen({ navigation }) {
                 {activeTab === 'CONSULTOR' && renderConsultor()}
                 {activeTab === 'DASHBOARD' && renderDashboard()}
             </SafeAreaView>
+            <SyncStatusWidget />
         </View>
     );
 }

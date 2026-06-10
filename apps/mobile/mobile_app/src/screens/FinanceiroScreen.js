@@ -233,8 +233,12 @@ export default function FinanceiroScreen({ navigation }) {
                                     
                                     <View style={styles.cardBody}>
                                         <View style={styles.infoCol}>
-                                            <Text style={styles.infoLabel}>{item.tipo === 'RECEBER' ? 'CLIENTE' : 'FORNECEDOR'}</Text>
-                                            <Text style={styles.infoValue} numberOfLines={1}>{item.entidade_nome || '--'}</Text>
+                                            <Text style={styles.infoLabel}>
+                                                {item.talhao_nome ? 'CUSTEIO / TALHÃO' : (item.tipo === 'RECEBER' ? 'CLIENTE' : 'FORNECEDOR')}
+                                            </Text>
+                                            <Text style={[styles.infoValue, item.talhao_nome && { color: '#F59E0B' }]} numberOfLines={1}>
+                                                {item.talhao_nome || item.entidade_nome || '--'}
+                                            </Text>
                                         </View>
                                         <View style={[styles.infoCol, { alignItems: 'flex-end' }]}>
                                             <Text style={styles.infoLabel}>VALOR</Text>

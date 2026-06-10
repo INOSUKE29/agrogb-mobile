@@ -36,8 +36,8 @@ export default function HomeScreen({ navigation }) {
         vendasHoje: 0,
         plantioAtivo: 0,
         maquinasAlert: 0,
-        maquinasAlert: 0,
-        pendentes: 0
+        pendentes: 0,
+        alertasPendentes: 0
     });
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [isReady, setIsReady] = useState(false); // Gatilho de Skeleton View
@@ -93,14 +93,27 @@ export default function HomeScreen({ navigation }) {
 
             <LinearGradient colors={THEME.headerBg} style={styles.header}>
                 <View style={[styles.headerTop, { alignItems: 'flex-start', flexDirection: 'column', width: '100%' }]}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15, width: '100%' }}>
-                        <TouchableOpacity onPress={() => setDrawerVisible(true)} style={styles.profileBtn}>
-                            <Ionicons name="menu" size={30} color="#FFF" />
-                        </TouchableOpacity>
-                        <View>
-                            <Text style={styles.brand}>AgroGB</Text>
-                            <Text style={styles.salutation}>Painel Gerencial</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
+                            <TouchableOpacity onPress={() => setDrawerVisible(true)} style={styles.profileBtn}>
+                                <Ionicons name="menu" size={30} color="#FFF" />
+                            </TouchableOpacity>
+                            <View>
+                                <Text style={styles.brand}>AgroGB</Text>
+                                <Text style={styles.salutation}>Painel Gerencial</Text>
+                            </View>
                         </View>
+                        <TouchableOpacity 
+                            onPress={() => navigation.navigate('Pendencias')} 
+                            style={styles.bellBtn}
+                        >
+                            <Ionicons name={stats.alertasPendentes > 0 ? "notifications" : "notifications-outline"} size={26} color="#FFF" />
+                            {stats.alertasPendentes > 0 && (
+                                <View style={styles.bellBadge}>
+                                    <Text style={styles.bellBadgeText}>{stats.alertasPendentes}</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
                     </View>
                     <View style={{ marginTop: 20, width: '100%' }}>
                         <WeatherWidget />
@@ -209,6 +222,9 @@ const styles = StyleSheet.create({
     brandPro: { fontSize: 10, backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden', color: '#A7F3D0' },
     salutation: { fontSize: 12, color: '#000000', fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, marginTop: 2 },
     profileBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12 },
+    bellBtn: { padding: 6, position: 'relative' },
+    bellBadge: { position: 'absolute', top: 2, right: 4, backgroundColor: '#EF4444', minWidth: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+    bellBadgeText: { color: '#FFF', fontSize: 9, fontWeight: 'bold' },
 
     kpiRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)', padding: 15, borderRadius: 16 },
     kpiItem: { flex: 1, alignItems: 'center' },

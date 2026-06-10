@@ -1,10 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, FlatList, StatusBar, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme/ThemeContext';
 import { executeQuery } from '../database/database';
-import { v4 as uuidv4 } from 'uuid';
+import { ManejoService } from '../services/ManejoService';
 import { useFocusEffect } from '@react-navigation/native';
 import Card from '../components/common/Card';
 import AgroButton from '../components/common/AgroButton';
@@ -26,7 +25,9 @@ export default function AplicacoesScreen({ navigation, isTabbed }) {
         praga_alvo: '',
         dose_ha: '',
         volume_calda_l: '',
-        carencia_dias: '7'
+        carencia_dias: '7',
+        area_hectares: 0,
+        preco_unitario: 0
     });
     
     const [modalProduto, setModalProduto] = useState(false);
@@ -38,7 +39,7 @@ export default function AplicacoesScreen({ navigation, isTabbed }) {
 
     const loadData = async () => {
         try {
-            const resT = await executeQuery('SELECT uuid, nome FROM talhoes WHERE is_deleted = 0');
+            const resT = await executeQuery('SELECT uuid, nome, area_hectares FROM talhoes WHERE is_deleted = 0');
             const rowsT = [];
             for (let i = 0; i < resT.rows.length; i++) rowsT.push(resT.rows.item(i));
             setTalhoes(rowsT);
@@ -55,7 +56,7 @@ export default function AplicacoesScreen({ navigation, isTabbed }) {
             setHistory(rowsH);
 
             // Buscar produtos do catálogo aprovado
-            const resP = await executeQuery("SELECT id, nome_comercial as nome FROM cadastro WHERE is_deleted = 0");
+            const resP = await executeQuery("SELECT uuid, nome_comercial as nome, preco_unitario FROM cadastro WHERE is_deleted = 0");
             const rowsP = [];
             for (let i = 0; i < resP.rows.length; i++) rowsP.push(resP.rows.item(i));
             setProdutosCatalogo(rowsP);
@@ -65,23 +66,14 @@ export default function AplicacoesScreen({ navigation, isTabbed }) {
     const handleSave = async () => {
         if (!form.talhao_uuid || !form.produto_nome) return Alert.alert('Aviso', 'Preencha o talhão e o produto.');
         try {
-            const now = new Date();
-            const dataStr = now.toISOString().split('T')[0];
-            
-            // Calcular data de liberação
-            const carencia = parseInt(form.carencia_dias) || 0;
-            const dataLib = new Date(now);
-            dataLib.setDate(now.getDate() + carencia);
-            const dataLibStr = dataLib.toISOString().split('T')[0];
-
-            await executeQuery(
-                'INSERT INTO aplicacoes (uuid, talhao_uuid, produto_nome, praga_alvo, dose_ha, volume_calda_l, data, carencia_dias, data_liberacao, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                [uuidv4(), form.talhao_uuid, form.produto_nome.toUpperCase(), form.praga_alvo.toUpperCase(), parseFloat(form.dose_ha) || 0, parseFloat(form.volume_calda_l) || 0, dataStr, carencia, dataLibStr, now.toISOString()]
-            );
-            
-            Alert.alert('Sucesso', `Aplicação registrada. Liberado para colheita em: ${dataLibStr.split('-').reverse().join('/')}`);
-            setForm({ talhao_uuid: '', talhao_nome: '', produto_nome: '', praga_alvo: '', dose_ha: '', volume_calda_l: '', carencia_dias: '7' });
-            loadData();
+            const res = await ManejoService.registrarManejo(form);
+            if (res.success) {
+                Alert.alert('Sucesso', `Aplicação registrada. Liberado para colheita em: ${res.dataLibStr.split('-').reverse().join('/')}`);
+                setForm({ talhao_uuid: '', talhao_nome: '', produto_nome: '', praga_alvo: '', dose_ha: '', volume_calda_l: '', carencia_dias: '7', area_hectares: 0, preco_unitario: 0 });
+                loadData();
+            } else {
+                Alert.alert('Erro', res.error || 'Falha ao salvar aplicação.');
+            }
         } catch (e) { Alert.alert('Erro', 'Falha ao salvar aplicação.'); }
     };
 
@@ -180,8 +172,12 @@ export default function AplicacoesScreen({ navigation, isTabbed }) {
                             removeClippedSubviews={true}
                             renderItem={({ item }) => (
                                 <TouchableOpacity 
-                                    style={[styles.talhaoItem, { borderBottomColor: borderCol }]} 
-                                    onPress={() => { setForm({...form, talhao_uuid: item.uuid, talhao_nome: item.nome}); setModalTalhao(false); }}
+                                    key={item.uuid} 
+                                    style={styles.modalItem} 
+                                    onPress={() => {
+                                        setForm({ ...form, talhao_uuid: item.uuid, talhao_nome: item.nome, area_hectares: item.area_hectares || 1 });
+                                        setModalTalhao(false);
+                                    }}
                                 >
                                     <Text style={[styles.talhaoText, { color: textColor }]}>{item.nome}</Text>
                                     <Ionicons name="chevron-forward" size={16} color={textMutedColor} />
@@ -199,11 +195,15 @@ export default function AplicacoesScreen({ navigation, isTabbed }) {
                         <Text style={[styles.modalTitle, { color: textColor }]}>CATÁLOGO DE PRODUTOS</Text>
                         <FlatList
                             data={produtosCatalogo}
-                            keyExtractor={i => i.id.toString()}
+                            keyExtractor={i => i.uuid.toString()}
                             renderItem={({ item }) => (
                                 <TouchableOpacity 
-                                    style={[styles.talhaoItem, { borderBottomColor: borderCol }]} 
-                                    onPress={() => { setForm({...form, produto_nome: item.nome}); setModalProduto(false); }}
+                                    key={item.uuid} 
+                                    style={styles.modalItem} 
+                                    onPress={() => {
+                                        setForm({ ...form, produto_nome: item.nome, produto_uuid: item.uuid, preco_unitario: item.preco_unitario || 0 });
+                                        setModalProduto(false);
+                                    }}
                                 >
                                     <Text style={[styles.talhaoText, { color: textColor }]}>{item.nome}</Text>
                                     <Ionicons name="checkmark-circle-outline" size={16} color={textMutedColor} />

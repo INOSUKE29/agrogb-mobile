@@ -73,6 +73,7 @@ import FinancialAccountsScreen from './src/screens/FinancialAccountsScreen';
 import FertilizationScreen from './src/screens/FertilizationScreen';
 import PlanoAdubacaoScreen from './src/screens/PlanoAdubacaoScreen';
 import RecipeFormScreen from './src/screens/RecipeFormScreen';
+import PendenciasScreen from './src/screens/PendenciasScreen';
 
 const Stack = createStackNavigator();
 
@@ -214,6 +215,7 @@ function AppInner() {
                         <Stack.Screen name="Fertilization" component={FertilizationScreen} />
                         <Stack.Screen name="PlanoAdubacao" component={PlanoAdubacaoScreen} />
                         <Stack.Screen name="RecipeForm" component={RecipeFormScreen} />
+                        <Stack.Screen name="Pendencias" component={PendenciasScreen} />
                     </>
                 )}
             </Stack.Navigator>

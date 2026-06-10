@@ -1,11 +1,11 @@
-
 import { supabase } from './supabaseClient';
 import { executeQuery } from '../database/database';
 import NetInfo from '@react-native-community/netinfo';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
- * SyncWorker V2
- * Processa a fila de sincronização (v2_sync_queue) de forma atômica e resiliente.
+ * SyncWorker V3 (Motor Titânio)
+ * Processa a fila de sincronização (sync_outbox) de forma atômica e resiliente.
  */
 export const SyncWorker = {
     
@@ -22,11 +22,11 @@ export const SyncWorker = {
             if (!netState.isConnected) return;
 
             SyncWorker.isSyncing = true;
-            if (__DEV__) console.log('🔄 [SyncWorker] Iniciando processamento da fila...');
+            if (__DEV__) console.log('🔄 [SyncWorker V3] Iniciando processamento da fila de transações...');
 
-            // 1. Pega itens pendentes na fila
+            // 1. Pega itens pendentes na fila (PENDENTE ou FALHA)
             const res = await executeQuery(
-                `SELECT * FROM v2_sync_queue WHERE status = 'pending' OR status = 'failed' ORDER BY created_at ASC LIMIT 50`
+                `SELECT * FROM sync_outbox WHERE status = 'PENDENTE' OR status = 'FALHA' ORDER BY criado_em ASC LIMIT 50`
             );
 
             if (res.rows.length === 0) {
@@ -39,9 +39,9 @@ export const SyncWorker = {
                 await SyncWorker.processItem(item);
             }
 
-            if (__DEV__) console.log('✅ [SyncWorker] Ciclo de sincronização concluído.');
+            if (__DEV__) console.log('✅ [SyncWorker V3] Ciclo de sincronização concluído com sucesso.');
         } catch (error) {
-            console.error('❌ [SyncWorker] Erro crítico no worker:', error);
+            console.error('❌ [SyncWorker V3] Erro crítico no worker:', error);
         } finally {
             SyncWorker.isSyncing = false;
         }
@@ -51,54 +51,58 @@ export const SyncWorker = {
      * Processa um único item da fila
      */
     processItem: async (item) => {
-        const { id, table_name, operation, record_id, payload } = item;
-        const data = JSON.parse(payload);
+        const { uuid, tabela, acao, registro_uuid, payload_json } = item;
+        let data = {};
+        
+        try {
+            if (payload_json) data = JSON.parse(payload_json);
+        } catch (e) {
+            console.error('❌ Erro de parse no payload:', payload_json);
+        }
 
         try {
             // Marca como processando localmente
-            await executeQuery(`UPDATE v2_sync_queue SET status = 'processing' WHERE id = ?`, [id]);
+            await executeQuery(`UPDATE sync_outbox SET status = 'PROCESSANDO' WHERE uuid = ?`, [uuid]);
 
             let response;
-            if (operation === 'INSERT' || operation === 'UPDATE') {
-                response = await supabase.from(table_name).upsert(data, { onConflict: 'id' });
-            } else if (operation === 'DELETE') {
-                response = await supabase.from(table_name).delete().eq('id', record_id);
+            if (acao === 'INSERT' || acao === 'UPDATE') {
+                response = await supabase.from(tabela).upsert(data, { onConflict: 'uuid' });
+            } else if (acao === 'DELETE') {
+                response = await supabase.from(tabela).delete().eq('uuid', registro_uuid);
             }
 
-            if (response.error) throw response.error;
+            if (response && response.error) throw response.error;
 
-            // Sucesso: Remove da fila e atualiza status no banco v2
-            await executeQuery(`DELETE FROM v2_sync_queue WHERE id = ?`, [id]);
-            await executeQuery(`UPDATE ${table_name} SET sync_status = 'synced', updated_at = ? WHERE id = ?`, 
-                [new Date().toISOString(), record_id]);
+            // Sucesso: Remove da fila e atualiza status local na tabela de origem (opcional)
+            await executeQuery(`DELETE FROM sync_outbox WHERE uuid = ?`, [uuid]);
+            
+            // Tentativa otimista de marcar sync_status = 1 na tabela original
+            try {
+                await executeQuery(`UPDATE ${tabela} SET sync_status = 1 WHERE uuid = ?`, [registro_uuid]);
+            } catch (ignore) { }
 
         } catch (error) {
-            if (__DEV__) console.error(`⚠️ [SyncWorker] Falha em ${table_name}:${record_id}:`, error.message);
+            if (__DEV__) console.error(`⚠️ [SyncWorker V3] Falha em ${tabela}:${registro_uuid}:`, error.message);
             
             // Incrementa tentativas e marca como falha para reprocessar depois
             await executeQuery(
-                `UPDATE v2_sync_queue SET status = 'failed', retry_count = retry_count + 1 WHERE id = ?`,
-                [id]
-            );
-
-            // Log de erro profissional
-            await executeQuery(
-                `INSERT INTO v2_sync_logs (id, operation, table_name, status, message) VALUES (?, ?, ?, ?, ?)`,
-                [Math.random().toString(36).substr(2, 9), operation, table_name, 'error', error.message]
+                `UPDATE sync_outbox SET status = 'FALHA', tentativas = tentativas + 1 WHERE uuid = ?`,
+                [uuid]
             );
         }
     },
 
     /**
-     * Enfileira uma nova operação (Deve ser usado pelos Repositories)
+     * Enfileira uma nova operação (Deve ser usado pelo database.js central)
      */
-    enqueue: async (tableName, operation, recordId, data) => {
-        const id = Math.random().toString(36).substr(2, 9);
-        const payload = JSON.stringify(data);
+    enqueue: async (tabela, acao, registro_uuid, data) => {
+        const id = uuidv4();
+        const payload = data ? JSON.stringify(data) : null;
+        const now = new Date().toISOString();
         
         await executeQuery(
-            `INSERT INTO v2_sync_queue (id, table_name, operation, record_id, payload, status) VALUES (?, ?, ?, ?, ?, ?)`,
-            [id, tableName, operation, recordId, payload, 'pending']
+            `INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [id, tabela, registro_uuid, acao, payload, 'PENDENTE', now]
         );
         
         // Tenta rodar o worker imediatamente se houver conexão

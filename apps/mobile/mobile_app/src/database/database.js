@@ -758,7 +758,25 @@ const createTables = async () => {
             for (const col of newColsV8) {
                 try { await executeQuery(`ALTER TABLE cadastro ADD COLUMN ${col}`); } catch (e) { }
             }
-            console.log('✅ Colunas V8.0 (Catálogo Rico) verificadas.');
+        } catch (e) { }
+
+        // MIGRATION: Financeiro e Custeio V9.0 (Master Plan Fase 4)
+        try {
+            const newColsCadastroV9 = [
+                'preco_unitario REAL DEFAULT 0'
+            ];
+            for (const col of newColsCadastroV9) {
+                try { await executeQuery(`ALTER TABLE cadastro ADD COLUMN ${col}`); } catch (e) { }
+            }
+
+            const newColsFinanceiroV9 = [
+                'talhao_uuid TEXT',
+                'operacao_uuid TEXT'
+            ];
+            for (const col of newColsFinanceiroV9) {
+                try { await executeQuery(`ALTER TABLE financeiro_transacoes ADD COLUMN ${col}`); } catch (e) { }
+            }
+            console.log('✅ Colunas V9.0 (Módulo Financeiro & Custeio) verificadas.');
         } catch (e) { }
 
         // MIGRATION: V7.0 - Tabelas de Mídia e Auditoria
@@ -776,11 +794,6 @@ const createTables = async () => {
             )`);
 
             await executeQuery(`CREATE TABLE IF NOT EXISTS auditoria_cadastro (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                produto_uuid TEXT NOT NULL,
-                campo_alterado TEXT NOT NULL,
-                valor_antigo TEXT,
-                valor_novo TEXT,
                 alterado_por TEXT NOT NULL,
                 data_alteracao TEXT NOT NULL
             )`);
@@ -1447,20 +1460,27 @@ export const atualizarEstoque = async (produto, quantidadeDelta, dataReferencia 
         if (result.rows.length > 0) {
             const current = result.rows.item(0);
             let novaQuantidade = current.quantidade + quantidadeDelta;
+            let ficouNegativo = false;
 
             // REGRA DE NEGATIVO: Se for ficar negativo, zera.
             if (novaQuantidade < 0) {
                 console.warn(`⚠️ Estoque insuficiente de ${produto}. Ajustando de ${current.quantidade} para 0.`);
                 novaQuantidade = 0;
+                ficouNegativo = true;
             }
 
             await executeQuery('UPDATE estoque SET quantidade = ?, last_updated = ? WHERE produto = ?', [novaQuantidade, timestamp, prodUp]);
+            return { novaQuantidade, ficouNegativo };
         } else {
             // Se não existe e delta é negativo, começa com 0 (não cria negativo)
             const inicial = quantidadeDelta < 0 ? 0 : quantidadeDelta;
             await executeQuery('INSERT INTO estoque (produto, quantidade, last_updated) VALUES (?, ?, ?)', [prodUp, inicial, timestamp]);
+            return { novaQuantidade: inicial, ficouNegativo: quantidadeDelta < 0 };
         }
-    } catch (e) { console.error('Erro Estoque:', e); }
+    } catch (e) { 
+        console.error('Erro Estoque:', e); 
+        return { novaQuantidade: 0, ficouNegativo: false };
+    }
 };
 
 export const getEstoque = async () => {
@@ -1649,10 +1669,14 @@ export const getDashboardStats = async () => {
         // 6. Pendentes Sync
         const pendentes = (await getDadosPendentes()).total;
 
-        return { colheitaHoje, vendasHoje, plantioAtivo, maquinasAlert, saldo, pendentes };
+        // 7. Alertas/Pendências do Sistema (Estoque negativo, etc)
+        const resAlertas = await executeQuery(`SELECT COUNT(*) as total FROM alertas_pendencias WHERE status = 'PENDENTE' AND is_deleted = 0`);
+        const alertasPendentes = resAlertas.rows.item(0).total || 0;
+
+        return { colheitaHoje, vendasHoje, plantioAtivo, maquinasAlert, saldo, pendentes, alertasPendentes };
     } catch (e) {
         console.error('Dashboard Stats Error:', e);
-        return { colheitaHoje: 0, vendasHoje: 0, plantioAtivo: 0, maquinasAlert: 0, saldo: 0, pendentes: 0 };
+        return { colheitaHoje: 0, vendasHoje: 0, plantioAtivo: 0, maquinasAlert: 0, saldo: 0, pendentes: 0, alertasPendentes: 0 };
     }
 };
 
@@ -1766,7 +1790,13 @@ export const getDashboardCropStats = async () => {
 // ==========================================
 
 export const getFinanceiroTransacoes = async () => {
-    const res = await executeQuery('SELECT * FROM financeiro_transacoes WHERE is_deleted = 0 ORDER BY vencimento ASC');
+    const res = await executeQuery(`
+        SELECT f.*, t.nome as talhao_nome 
+        FROM financeiro_transacoes f
+        LEFT JOIN talhoes t ON f.talhao_uuid = t.uuid
+        WHERE f.is_deleted = 0 
+        ORDER BY f.vencimento ASC
+    `);
     return res.rows._array;
 };
 
@@ -1820,5 +1850,48 @@ export const genericUpsert = async (tableName, item) => {
         await executeQuery(sql, values);
     } catch (e) {
         console.error(`Upsert Error [${tableName}]:`, e.message);
+    }
+};
+
+// --- GESTÃO DE ALERTAS E PENDÊNCIAS ---
+
+export const inserirAlerta = async (tipo, mensagem) => {
+    try {
+        const uuid = uuidv4();
+        const data = new Date().toISOString();
+        await executeQuery(
+            `INSERT INTO alertas_pendencias (uuid, tipo, mensagem, status, data_criacao, last_updated) VALUES (?, ?, ?, 'PENDENTE', ?, ?)`,
+            [uuid, tipo, mensagem, data, data]
+        );
+        return uuid;
+    } catch (e) {
+        console.error('Erro ao inserir alerta:', e);
+    }
+};
+
+export const getAlertasAtivos = async () => {
+    try {
+        const res = await executeQuery(
+            `SELECT * FROM alertas_pendencias WHERE status = 'PENDENTE' AND is_deleted = 0 ORDER BY data_criacao DESC`
+        );
+        const alertas = [];
+        for (let i = 0; i < res.rows.length; i++) {
+            alertas.push(res.rows.item(i));
+        }
+        return alertas;
+    } catch (e) {
+        console.error('Erro ao buscar alertas:', e);
+        return [];
+    }
+};
+
+export const resolverAlerta = async (uuid) => {
+    try {
+        await executeQuery(
+            `UPDATE alertas_pendencias SET status = 'RESOLVIDO', last_updated = ?, sync_status = 0 WHERE uuid = ?`,
+            [new Date().toISOString(), uuid]
+        );
+    } catch (e) {
+        console.error('Erro ao resolver alerta:', e);
     }
 };

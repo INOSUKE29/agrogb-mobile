@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, StatusBar, SafeAreaView } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
-import { insertVenda, getVendasRecentes, deleteVenda, updateVenda, executeQuery } from '../database/database';
+import { insertVenda, getVendasRecentes, deleteVenda, updateVenda, executeQuery, atualizarEstoque, inserirAlerta } from '../database/database';
+import { SyncWorker } from '../services/SyncWorker';
 import SmartAutocomplete from '../components/common/SmartAutocomplete';
 import { ClientLibraryService, ProductLibraryService } from '../services/LibraryServices';
 import { Ionicons } from '@expo/vector-icons';
@@ -81,12 +82,34 @@ export default function VendasScreen({ navigation }) {
             } else {
                 await insertVenda(dados);
                 
+                const finUuid = uuidv4();
                 await executeQuery(
-                    'INSERT INTO financeiro_transacoes (uuid, tipo, descricao, valor, vencimento, entidade_nome, categoria, origem_uuid, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    [uuidv4(), 'RECEBER', `VENDA: ${dados.produto}`, dados.valor * dados.quantidade, dados.data, dados.cliente, 'VENDAS', dados.uuid, new Date().toISOString()]
+                    'INSERT INTO financeiro_transacoes (uuid, tipo, descricao, valor, vencimento, entidade_nome, categoria, origem_uuid, last_updated, sync_status, is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)',
+                    [finUuid, 'RECEBER', `VENDA: ${dados.produto}`, dados.valor * dados.quantidade, dados.data, dados.cliente, 'VENDAS', dados.uuid, new Date().toISOString()]
                 );
 
-                Alert.alert('Sucesso', 'Venda registrada e gerada no Contas a Receber!');
+                SyncWorker.enqueue('financeiro_transacoes', 'INSERT', finUuid, {
+                    uuid: finUuid,
+                    tipo: 'RECEBER',
+                    descricao: `VENDA: ${dados.produto}`,
+                    valor: dados.valor * dados.quantidade,
+                    vencimento: dados.data,
+                    entidade_nome: dados.cliente,
+                    categoria: 'VENDAS',
+                    origem_uuid: dados.uuid,
+                    last_updated: new Date().toISOString(),
+                    is_deleted: 0
+                });
+
+                // Baixa não-bloqueante no estoque de produção
+                const resEstoque = await atualizarEstoque(dados.produto, -dados.quantidade, dados.data);
+                
+                if (resEstoque?.ficouNegativo) {
+                    await inserirAlerta('ESTOQUE_NEGATIVO', `O saldo de "${dados.produto}" ficou negativo após a venda de ${dados.quantidade} unidades para ${dados.cliente}. Lembre-se de registrar a colheita.`);
+                    Alert.alert('⚠️ Estoque Insuficiente', `Venda registrada e Contas a Receber gerado! No entanto, o saldo do produto "${dados.produto}" ficou negativo. Lembre-se de dar entrada na colheita.`);
+                } else {
+                    Alert.alert('✅ Sucesso', 'Venda registrada, estoque atualizado e gerado no Contas a Receber!');
+                }
             }
 
             setProduto('');
