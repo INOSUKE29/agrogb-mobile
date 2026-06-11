@@ -7,7 +7,6 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { FertilizationService } from '../services/FertilizationService';
 import ScreenHeader from '../components/ui/ScreenHeader';
-import { Picker } from '@react-native-picker/picker';
 import { useTheme } from '../theme/ThemeContext';
 import SmartAutocomplete from '../components/common/SmartAutocomplete';
 import { CropLibraryService, ProductLibraryService } from '../services/LibraryServices';
@@ -37,6 +36,22 @@ export default function RecipeFormScreen() {
     const itemName = itemVal?.nome || '';
     const [itemQty, setItemQty] = useState('');
     const [itemUnit, setItemUnit] = useState('ml');
+
+    const tiposReceita = [
+        { uuid: 'foliar', nome: 'Foliar' },
+        { uuid: 'gotejo', nome: 'Gotejo' }
+    ];
+
+    const tipoService = {
+        search: async (text) => {
+            const t = text ? text.toUpperCase() : '';
+            return tiposReceita.filter(u => u.nome.toUpperCase().includes(t));
+        },
+        getRecents: async () => [],
+        getFavorites: async () => [],
+        addRecent: async () => {},
+        toggleFavorite: async () => []
+    };
 
     useEffect(() => {
         if (recipeId) {
@@ -132,18 +147,15 @@ export default function RecipeFormScreen() {
                             onChangeText={setName}
                         />
 
-                        <Text style={[styles.label, { color: textMutedColor }]}>Tipo</Text>
-                        <View style={[styles.pickerContainer, { backgroundColor: inputBg, borderColor: inputBorder }]}>
-                            <Picker
-                                selectedValue={type}
-                                onValueChange={(itemValue) => setType(itemValue)}
-                                style={[styles.picker, { color: textColor }]}
-                                dropdownIconColor={textColor}
-                            >
-                                <Picker.Item label="Foliar" value="foliar" />
-                                <Picker.Item label="Gotejo" value="gotejo" />
-                            </Picker>
-                        </View>
+                        <SmartAutocomplete
+                            label="Tipo"
+                            value={tiposReceita.find(t => t.uuid === type)}
+                            onSelect={(val) => { if (val) setType(val.uuid); }}
+                            service={tipoService}
+                            title="SELECIONAR TIPO"
+                            placeholder="Tipo da receita..."
+                            icon="water-outline"
+                        />
 
                         <SmartAutocomplete
                             label="Cultura *"
@@ -246,15 +258,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginBottom: 20,
         borderWidth: 1,
-    },
-    pickerContainer: {
-        borderRadius: 12,
-        marginBottom: 20,
-        overflow: 'hidden',
-        borderWidth: 1,
-    },
-    picker: {
-        height: 55,
     },
     itemRow: {
         flexDirection: 'row',

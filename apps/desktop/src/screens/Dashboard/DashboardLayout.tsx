@@ -18,6 +18,7 @@ import {
     ChevronDown,
     Search,
     UserCircle,
+    ArrowLeft,
     Activity,
     X,
     Package,
@@ -33,6 +34,7 @@ import {
     Database
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import DashboardTour from '../../components/DashboardTour';
 
 export default function DashboardLayout() {
     const navigate = useNavigate();
@@ -270,9 +272,12 @@ export default function DashboardLayout() {
     return (
         <div style={{ display: 'flex', height: '100vh', width: '100%', overflow: 'hidden', background: 'var(--color-background)' }}>
             
+            {/* TOUR COMPONENT */}
+            <DashboardTour role={simulatedRole} />
+
             {/* SIDEBAR - Navigation Rail / Drawer (8-point system) */}
             <aside
-                className={`transition-all duration-300 bg-gradient-to-b from-[#0A101D] to-[#000000] border-r border-[rgba(255,255,255,0.05)] flex flex-col z-20 shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.5)] ${isSidebarOpen ? 'w-64' : 'w-20'}`}
+                className={`tour-step-sidebar transition-all duration-300 bg-gradient-to-b from-[#0A101D] to-[#000000] border-r border-[rgba(255,255,255,0.05)] flex flex-col z-20 shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.5)] ${isSidebarOpen ? 'w-64' : 'w-20'}`}
             >
                 
                 {/* Logo Area */}
@@ -378,11 +383,8 @@ export default function DashboardLayout() {
             {/* MAIN CONTENT AREA */}
             <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, overflow: 'hidden' }}>
                 
-                {/* Header - Premium V8 */}
-                <header
-                    className="bg-gradient-to-r from-[#0D8C39] to-[#18B34A] rounded-b-3xl flex items-start justify-between z-10 shrink-0 shadow-lg relative mx-2 mt-0 pt-6"
-                    style={{ height: '160px', paddingLeft: 'clamp(16px, 2vw, 32px)', paddingRight: 'clamp(16px, 2vw, 32px)' }}
-                >
+                {/* Header - Minimalista */}
+                <header className="flex items-center justify-between z-10 shrink-0 py-4 px-4 sm:px-8 border-b border-[rgba(255,255,255,0.05)] bg-[var(--color-background)]">
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => setIsSidebarOpen(true)}
@@ -390,11 +392,19 @@ export default function DashboardLayout() {
                         >
                             <Menu className="w-5 h-5" />
                         </button>
-                        <div>
-                            <h2 className="text-3xl font-black text-white hidden md:block tracking-tight drop-shadow-sm">
-                                {navItems.find(i => i.path === location.pathname)?.label || 'Painel Administrativo'}
+                        <div className="hidden md:flex items-center gap-3">
+                            {location.pathname !== '/dashboard/cliente' && location.pathname !== '/dashboard' && (
+                                <button 
+                                    onClick={() => navigate(-1)}
+                                    className="p-2 rounded-lg text-[var(--color-muted)] hover:text-white hover:bg-white/10 transition-colors flex items-center justify-center"
+                                    title="Voltar para tela anterior"
+                                >
+                                    <ArrowLeft className="w-5 h-5" />
+                                </button>
+                            )}
+                            <h2 className="text-xl font-black text-white tracking-tight border-l border-[rgba(255,255,255,0.1)] pl-3">
+                                {navItems.find(i => i.path === location.pathname)?.label || 'Painel'}
                             </h2>
-                            <p className="text-white/80 text-sm hidden md:block mt-1 font-medium">AgroGB Premium Management</p>
                         </div>
                     </div>
 

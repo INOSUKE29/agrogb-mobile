@@ -192,29 +192,28 @@ export default function SettingsScreen({ navigation }) {
     };
 
     const handleToggleBiometry = async () => {
-        if (!biometryInfo.available) {
-            Alert.alert('Indisponível', 'Este dispositivo não suporta biometria.');
+        const hasHardware = await LocalAuthentication.hasHardwareAsync();
+        if (!hasHardware) {
+            Alert.alert('Indisponível', 'Este dispositivo não suporta ou não possui sensor biométrico.');
+            return;
+        }
+
+        const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+        if (!isEnrolled) {
+            Alert.alert('Configuração Necessária', 'Acesse as configurações do seu aparelho e cadastre uma impressão ou Face ID.');
             return;
         }
 
         if (biometryInfo.enrolled) {
             await StorageHelper.remove('@asked_biometrics');
-            await SecureStore.deleteItemAsync(BIO_KEY);
+            await SecureStore.deleteItemAsync(BIO_KEY).catch(()=>{});
             showToast('Biometria desativada');
             loadData();
         } else {
-            const result = await LocalAuthentication.authenticateAsync({
-                promptMessage: 'Confirme para ativar a biometria',
-                fallbackLabel: 'Usar Senha'
-            });
-            
-            if (result.success) {
-                await StorageHelper.save('@asked_biometrics', 'true');
-                showToast('Biometria ativada!');
-                loadData();
-            } else {
-                showToast('Falha na autenticação biométrica');
-            }
+            Alert.alert(
+                'Segurança',
+                'Para ativar a biometria, saia da sua conta e faça login novamente usando seu e-mail e senha. O sistema pedirá para você vinculá-la.'
+            );
         }
     };
 
@@ -372,7 +371,7 @@ export default function SettingsScreen({ navigation }) {
 
     // --- COMPONENTES VISUAIS PREMIUM ---
 
-    const SettingsItem = ({ icon, label, value, onPress, type = 'chevron', danger, isLast, iconColor = '#10B981' }) => (
+    const SettingsItem = ({ icon, label, value, onPress, type = 'chevron', danger, isLast, iconColor = '#10B981', status }) => (
         <View>
             <TouchableOpacity 
                 onPress={onPress} 
@@ -383,7 +382,12 @@ export default function SettingsScreen({ navigation }) {
                     <View style={[styles.iconBox, { backgroundColor: danger ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.05)' }]}>
                         <Ionicons name={icon} size={18} color={danger ? '#EF4444' : iconColor} />
                     </View>
-                    <Text style={[styles.itemLabel, danger && { color: '#EF4444' }]}>{label}</Text>
+                    <View style={{ flexDirection: 'column' }}>
+                        <Text style={[styles.itemLabel, danger && { color: '#EF4444' }]}>{label}</Text>
+                        {status === 'ok' && <Text style={{ color: '#10B981', fontSize: 10, fontWeight: 'bold' }}>✓ Funcionando</Text>}
+                        {status === 'partial' && <Text style={{ color: '#F59E0B', fontSize: 10, fontWeight: 'bold' }}>⚠ Parcial</Text>}
+                        {status === 'not-implemented' && <Text style={{ color: '#EF4444', fontSize: 10, fontWeight: 'bold' }}>✗ Não implementado</Text>}
+                    </View>
                 </View>
                 
                 <View style={styles.itemRight}>
@@ -475,44 +479,47 @@ export default function SettingsScreen({ navigation }) {
 
                 {/* 👤 BLOCO 1: PERFIL & AJUSTES operacionais */}
                 <SettingsGroup icon="person-outline" title="Ajustes da Fazenda & Preferências">
-                    <SettingsItem icon="business-outline" label="Dados da Fazenda" value={user.empresa} onPress={handleOpenFazendaModal} />
+                    <SettingsItem icon="business-outline" label="Dados da Fazenda" value={user.empresa} onPress={handleOpenFazendaModal} status="ok" />
                     <SettingsItem 
                         icon={theme?.theme_mode === 'dark' ? "moon-outline" : theme?.theme_mode === 'system' ? "phone-portrait-outline" : "sunny-outline"} 
                         label="Tema" 
                         value={theme?.theme_mode === 'dark' ? 'Escuro' : theme?.theme_mode === 'system' ? 'Automático' : 'Claro'} 
                         onPress={cycleTheme} 
                         iconColor={theme?.theme_mode === 'dark' ? "#38BDF8" : theme?.theme_mode === 'system' ? "#A78BFA" : "#EAB308"} 
+                        status="ok"
                     />
-                    <SettingsItem icon="globe-outline" label="Idioma" value={idioma} onPress={() => setActiveModal('idioma')} iconColor="#3B82F6" />
-                    <SettingsItem icon="layers-outline" label="Unidade Padrão" value={unidade} onPress={() => setActiveModal('unidade')} iconColor="#10B981" />
-                    <SettingsItem icon="calendar-outline" label="Safra Ativa" value={safra} isLast onPress={() => setActiveModal('safra')} iconColor="#F59E0B" />
+                    <SettingsItem icon="globe-outline" label="Idioma" value={idioma} onPress={() => setActiveModal('idioma')} iconColor="#3B82F6" status="partial" />
+                    <SettingsItem icon="layers-outline" label="Unidade Padrão" value={unidade} onPress={() => setActiveModal('unidade')} iconColor="#10B981" status="partial" />
+                    <SettingsItem icon="calendar-outline" label="Safra Ativa" value={safra} isLast onPress={() => setActiveModal('safra')} iconColor="#F59E0B" status="partial" />
                 </SettingsGroup>
 
                 {/* ⚡ BLOCO 2: CONECTIVIDADE & SINCRONISMO ONLINE */}
                 <SettingsGroup icon="sync-outline" title="Conectividade & Sincronismo Online">
-                    <SettingsItem icon="infinite-outline" label="Auto-Sync em Tempo Real" type="switch" value={autoSync} onPress={handleToggleAutoSync} />
+                    <SettingsItem icon="infinite-outline" label="Auto-Sync em Tempo Real" type="switch" value={autoSync} onPress={handleToggleAutoSync} status="ok" />
                     <SettingsItem 
                         icon="wifi-outline" 
                         label="Status da Nuvem" 
                         value={isOnline ? `Online (${pingMs ? pingMs + 'ms' : 'OK'})` : 'Desconectado'} 
                         iconColor={isOnline ? '#10B981' : '#EF4444'}
+                        status="ok"
                     />
-                    <SettingsItem icon="cloud-done-outline" label="Sincronizar Agora" value="Enviar/Puxar" isLast onPress={runManualSync} />
+                    <SettingsItem icon="cloud-done-outline" label="Sincronizar Agora" value="Enviar/Puxar" isLast onPress={runManualSync} status="ok" />
                 </SettingsGroup>
 
                 {/* 🛠️ BLOCO 3: FERRAMENTAS, SEGURANÇA & SAÚDE */}
                 <SettingsGroup icon="construct-outline" title="Ferramentas & Segurança">
-                    <SettingsItem icon="finger-print-outline" label="Login por Biometria" type="switch" value={biometryInfo.enrolled} onPress={handleToggleBiometry} />
-                    <SettingsItem icon="lock-closed-outline" label="Alterar Senha" onPress={() => setActiveModal('senha')} iconColor="#A78BFA" />
-                    <SettingsItem icon="shield-checkmark-outline" label="Nível de Segurança" value={security.label} iconColor={security.color} />
-                    <SettingsItem icon="pie-chart-outline" label="Uso de Armazenamento" value={storageSize} iconColor="#06B6D4" />
-                    <SettingsItem icon="flash-outline" label="Otimizar Banco SQLite" value="Compactar" onPress={optimizeDatabase} iconColor="#EAB308" />
-                    <SettingsItem icon="trash-bin-outline" label="Lixeira Inteligente" value={`${lixeiraCount} registros`} onPress={() => setActiveModal('lixeira')} iconColor="#EF4444" />
+                    <SettingsItem icon="finger-print-outline" label="Login por Biometria" type="switch" value={biometryInfo.enrolled} onPress={handleToggleBiometry} status="ok" />
+                    <SettingsItem icon="lock-closed-outline" label="Alterar Senha" onPress={() => setActiveModal('senha')} iconColor="#A78BFA" status="ok" />
+                    <SettingsItem icon="shield-checkmark-outline" label="Nível de Segurança" value={security.label} iconColor={security.color} status="ok" />
+                    <SettingsItem icon="pie-chart-outline" label="Uso de Armazenamento" value={storageSize} iconColor="#06B6D4" status="ok" />
+                    <SettingsItem icon="flash-outline" label="Otimizar Banco SQLite" value="Compactar" onPress={optimizeDatabase} iconColor="#EAB308" status="ok" />
+                    <SettingsItem icon="trash-bin-outline" label="Lixeira Inteligente" value={`${lixeiraCount} registros`} onPress={() => setActiveModal('lixeira')} iconColor="#EF4444" status="partial" />
                     <SettingsItem 
                         icon="bug-outline" 
                         label="Exportar Logs de Erros" 
                         iconColor="#F59E0B"
                         isLast
+                        status="partial"
                         onPress={async () => {
                             setLoading(true);
                             const res = await LoggingService.exportLogs();

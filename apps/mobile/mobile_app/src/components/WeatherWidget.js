@@ -3,10 +3,12 @@ import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { useWeather } from '../context/WeatherContext';
 import { BlurView } from 'expo-blur';
+import { useNavigation } from '@react-navigation/native';
 
 export default function WeatherWidget() {
     const { weather, loading, error, permissionDenied, refreshWeather } = useWeather();
     const [currentTime, setCurrentTime] = useState('');
+    const navigation = useNavigation();
 
     useEffect(() => {
         const updateTime = () => {
@@ -66,7 +68,7 @@ export default function WeatherWidget() {
     };
 
     return (
-        <TouchableOpacity onPress={() => refreshWeather(true)} activeOpacity={0.8} style={styles.touchableWrapper}>
+        <TouchableOpacity onPress={() => navigation.navigate('Clima')} activeOpacity={0.8} style={styles.touchableWrapper}>
             <BlurView intensity={60} tint="dark" style={styles.container}>
                 <View style={styles.leftCol}>
                     <View style={styles.iconCircle}>

@@ -59,6 +59,7 @@ import DescarteScreen from '../screens/DescarteScreen';
 import FertilizationScreen from '../screens/FertilizationScreen';
 import RecipeFormScreen from '../screens/RecipeFormScreen';
 import ApplicationFormScreen from '../screens/ApplicationFormScreen';
+import ClimaScreen from '../screens/ClimaScreen';
 
 // Mega Central: Manejo da Lavoura
 import ManejoLavouraScreen from '../screens/manejo/ManejoLavouraScreen';
@@ -143,6 +144,7 @@ export default function AppNavigator() {
             
             {/* Central de Operações */}
             <Stack.Screen name="ManejoLavoura" component={ManejoLavouraScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Clima" component={ClimaScreen} options={{ headerShown: false }} />
         </Stack.Navigator>
     );
 }

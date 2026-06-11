@@ -37,67 +37,41 @@ export default function MeusClientesScreen() {
         loadClientes();
     }, []);
 
-    const handleVincular = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setSubmitting(true);
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            // Agora usamos a tabela mestre 'clientes'
-            // O formulário pede apenas o email. Se houver um usuário no auth com este email e role 'cliente',
-            // nós atualizaríamos o agronomo_id dele. Mas por limitação do RLS para o Agrônomo atualizar de forma global,
-            // em produção, isso poderia chamar uma Edge Function ou ser feito via ADM. 
-            // Para o MVP (Simulação local), criamos um cliente fake ou atualizamos:
-            
-            const { error } = await supabase.from('clientes').insert({
-                agronomo_id: user.id,
-                email: emailProdutor,
-                nome: emailProdutor.split('@')[0] || 'Produtor',
-            });
-
-            if (error) throw error;
-            
-            alert('Produtor vinculado com sucesso!');
-            setIsModalOpen(false);
-            setEmailProdutor('');
-            loadClientes();
-            
-        } catch (error: unknown) {
-            const err = error as Error | { message: string };
-            alert('Erro ao vincular: ' + err.message);
-        } finally {
-            setSubmitting(false);
-        }
+    const handleWhatsAppInvite = () => {
+        const codigo = user?.id ? `AGR-${user.id.substring(0, 4).toUpperCase()}` : 'AGR-0000';
+        const msg = `Olá! Sou seu Consultor Agronômico. Baixe o aplicativo AgroGB para acompanhar minhas recomendações para sua fazenda. Use meu código ${codigo} no seu cadastro. Link: https://agrogb.app`;
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+        window.open(whatsappUrl, '_blank');
+        setIsModalOpen(false);
     };
 
     return (
         <div className="animate-fade-in pb-12">
             {/* CABEÇALHO */}
             {!selectedClient ? (
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 border-b border-[var(--color-border)] pb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 border-b border-[rgba(255,255,255,0.05)] pb-6">
                     <div>
                         <h1 className="text-3xl font-black text-white tracking-tight">Meus Clientes</h1>
                         <p className="text-[var(--color-muted)] font-medium mt-1">
-                            Gerencie sua carteira de produtores e acesse o perfil técnico de cada fazenda.
+                            Central de CRM Agronômico: Gerencie e acesse a ficha técnica de seus produtores.
                         </p>
                     </div>
                     <button 
                         onClick={() => setIsModalOpen(true)}
-                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg shadow-green-500/20 transition-all flex items-center gap-2"
+                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 px-5 rounded-xl transition-all flex items-center gap-2"
                     >
                         <Plus className="w-5 h-5" />
-                        <span>Vincular Produtor</span>
+                        <span>Novo Produtor</span>
                     </button>
                 </div>
             ) : (
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 border-b border-[var(--color-border)] pb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 border-b border-[rgba(255,255,255,0.05)] pb-6">
                     <div>
                         <button 
                             onClick={() => setSelectedClient(null)}
                             className="text-[var(--color-muted)] hover:text-white mb-2 flex items-center gap-2 transition-colors font-bold text-sm"
                         >
-                            ← Voltar para a lista
+                            ← Voltar para Carteira
                         </button>
                         <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
                             {selectedClient.nome || selectedClient.email}
@@ -108,10 +82,10 @@ export default function MeusClientesScreen() {
                         </p>
                     </div>
                     <div className="flex gap-3">
-                        <button className="bg-white/5 hover:bg-white/10 text-white font-bold py-2.5 px-5 rounded-xl border border-white/10 transition-all flex items-center gap-2">
+                        <button className="bg-transparent hover:bg-white/5 text-white font-bold py-2.5 px-5 rounded-xl border border-[rgba(255,255,255,0.1)] transition-all flex items-center gap-2">
                             <Phone className="w-4 h-4" /> Ligar
                         </button>
-                        <button className="bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg shadow-green-500/20 transition-all">
+                        <button className="bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 px-5 rounded-xl transition-all">
                             Nova Recomendação
                         </button>
                     </div>
@@ -122,120 +96,134 @@ export default function MeusClientesScreen() {
             {!selectedClient ? (
                 <>
                     {/* BARRA DE PESQUISA */}
-                    <div className="glass p-4 rounded-2xl mb-8 flex items-center gap-4">
+                    <div className="premium-card p-4 rounded-xl mb-6 flex items-center gap-4">
                         <Search className="w-5 h-5 text-[var(--color-muted)]" />
                         <input 
                             type="text" 
-                            placeholder="Buscar produtor por nome, fazenda ou email..." 
-                            className="bg-transparent border-none text-white outline-none w-full placeholder-[var(--color-muted)]"
+                            placeholder="Buscar por nome, e-mail ou documento..." 
+                            className="bg-transparent border-none text-white outline-none w-full placeholder-[var(--color-muted)] font-medium"
                         />
                     </div>
 
-                    {/* LISTA DE CLIENTES */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* TABELA DE CLIENTES (ERP) */}
+                    <div className="premium-card rounded-2xl overflow-hidden">
                         {loading ? (
-                            <div className="col-span-full text-center py-12 text-[var(--color-muted)]">Carregando carteira de clientes...</div>
+                            <div className="text-center py-12 text-[var(--color-muted)]">Carregando carteira...</div>
                         ) : clientes.length === 0 ? (
-                            <div className="col-span-full flex flex-col items-center justify-center py-24 glass rounded-3xl">
-                                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
-                                    <Users className="w-10 h-10 text-[var(--color-muted)]" />
-                                </div>
-                                <h2 className="text-2xl font-bold text-white mb-2">Nenhum cliente vinculado</h2>
-                                <p className="text-[var(--color-muted)] mb-8 text-center max-w-md">
-                                    Você ainda não possui produtores na sua carteira. Vincule um novo produtor para começar a enviar recomendações.
+                            <div className="flex flex-col items-center justify-center py-20">
+                                <Users className="w-12 h-12 text-[var(--color-muted)] mb-4 opacity-50" />
+                                <h2 className="text-xl font-bold text-white mb-2">Carteira Vazia</h2>
+                                <p className="text-[var(--color-muted)] text-sm mb-6 text-center max-w-sm">
+                                    Nenhum produtor vinculado. Inicie vinculando um e-mail para ter acesso ao caderno agrícola.
                                 </p>
                                 <button 
                                     onClick={() => setIsModalOpen(true)}
-                                    className="bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-6 rounded-xl border border-white/10 transition-all"
+                                    className="bg-transparent hover:bg-white/5 text-white font-bold py-2.5 px-6 rounded-xl border border-[rgba(255,255,255,0.1)] transition-all"
                                 >
-                                    Vincular meu primeiro produtor
+                                    Adicionar Cliente
                                 </button>
                             </div>
                         ) : (
-                            clientes.map((link, idx) => (
-                                <div key={idx} className="glass p-6 rounded-2xl group hover:-translate-y-1 transition-all cursor-pointer">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className="flex gap-4 items-center">
-                                            <div className="w-12 h-12 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center text-green-400 font-bold text-xl">
-                                                {(link.nome || link.email || 'C').charAt(0).toUpperCase()}
-                                            </div>
-                                            <div>
-                                                <h3 className="text-white font-bold text-lg">{link.nome || link.email}</h3>
-                                                <span className="text-xs font-semibold text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full">Ativo</span>
-                                            </div>
-                                        </div>
-                                        <button className="text-[var(--color-muted)] hover:text-white transition-colors">
-                                            <MoreVertical className="w-5 h-5" />
-                                        </button>
-                                    </div>
-                                    
-                                    <div className="space-y-3 mt-6">
-                                        <div className="flex items-center gap-3 text-sm text-[var(--color-muted)]">
-                                            <Mail className="w-4 h-4 shrink-0" />
-                                            <span className="truncate">{link.email || 'Email não cadastrado'}</span>
-                                        </div>
-                                        <div className="flex items-center gap-3 text-sm text-[var(--color-muted)]">
-                                            <MapPin className="w-4 h-4 shrink-0" />
-                                            <span className="truncate">{link.telefone || 'Telefone não informado'}</span>
-                                        </div>
-                                    </div>
-
-                                    <button 
-                                        onClick={() => setSelectedClient(link)}
-                                        className="w-full mt-6 py-2.5 rounded-xl border border-[var(--color-border)] text-white hover:bg-white/5 transition-all text-sm font-bold"
-                                    >
-                                        Ver Perfil Técnico
-                                    </button>
-                                </div>
-                            ))
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-[rgba(255,255,255,0.05)] bg-[rgba(0,0,0,0.2)]">
+                                            <th className="p-4 text-xs font-black text-[var(--color-muted)] uppercase tracking-wider">Produtor / Razão Social</th>
+                                            <th className="p-4 text-xs font-black text-[var(--color-muted)] uppercase tracking-wider hidden md:table-cell">Contato</th>
+                                            <th className="p-4 text-xs font-black text-[var(--color-muted)] uppercase tracking-wider">Status</th>
+                                            <th className="p-4 text-xs font-black text-[var(--color-muted)] uppercase tracking-wider text-right">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[rgba(255,255,255,0.02)]">
+                                        {clientes.map((link, idx) => (
+                                            <tr key={idx} className="hover:bg-[rgba(255,255,255,0.02)] transition-colors group">
+                                                <td className="p-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-lg bg-[#0a192f] border border-[rgba(255,255,255,0.05)] flex items-center justify-center text-green-400 font-bold text-lg">
+                                                            {(link.nome || link.email || 'C').charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-bold text-white">{link.nome || link.email}</div>
+                                                            <div className="text-xs text-[var(--color-muted)] mt-0.5">{link.email || 'Sem e-mail'}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="p-4 hidden md:table-cell">
+                                                    <div className="flex items-center gap-2 text-sm text-[var(--color-muted)]">
+                                                        <Phone className="w-4 h-4 opacity-50" />
+                                                        {link.telefone || '(00) 00000-0000'}
+                                                    </div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className="inline-flex items-center gap-1.5 bg-green-500/10 text-green-400 px-3 py-1 rounded-full text-xs font-bold border border-green-500/20">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                                                        Ativo
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-right">
+                                                    <button 
+                                                        onClick={() => setSelectedClient(link)}
+                                                        className="bg-transparent hover:bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-white font-bold py-2 px-4 rounded-lg text-sm transition-all"
+                                                    >
+                                                        Abrir Ficha
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         )}
                     </div>
                 </>
             ) : (
                 <div className="animate-fade-in-up">
-                    <h3 className="text-xl font-bold text-white mb-6">Módulos da Propriedade</h3>
+                    <div className="flex items-center gap-3 mb-6">
+                        <ShieldAlert className="w-5 h-5 text-green-400" />
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Painel Operacional 360º (Leitura)</h3>
+                    </div>
                     
                     {/* SUPER GRADE (Dashboard do Agrônomo para o Cliente) */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                         {[
-                            { nome: 'Resumo', icon: '📊', color: 'bg-blue-500/20 text-blue-400' },
-                            { nome: 'Propriedades', icon: '🗺️', color: 'bg-green-500/20 text-green-400' },
-                            { nome: 'Talhões', icon: '📍', color: 'bg-emerald-500/20 text-emerald-400' },
-                            { nome: 'Culturas', icon: '🌱', color: 'bg-lime-500/20 text-lime-400' },
-                            { nome: 'Solo', icon: '🟤', color: 'bg-amber-500/20 text-amber-400' },
-                            { nome: 'Foliar', icon: '🍃', color: 'bg-teal-500/20 text-teal-400' },
-                            { nome: 'Aplicações', icon: '🚜', color: 'bg-orange-500/20 text-orange-400' },
-                            { nome: 'Estoque', icon: '📦', color: 'bg-indigo-500/20 text-indigo-400' },
-                            { nome: 'Recomendações', icon: '📝', color: 'bg-purple-500/20 text-purple-400' },
-                            { nome: 'Visitas', icon: '📅', color: 'bg-rose-500/20 text-rose-400' }
+                            { nome: 'Visão Geral', icon: '📊', border: 'border-blue-500/30' },
+                            { nome: 'Geometria', icon: '🗺️', border: 'border-green-500/30' },
+                            { nome: 'Talhões', icon: '📍', border: 'border-emerald-500/30' },
+                            { nome: 'Culturas', icon: '🌱', border: 'border-lime-500/30' },
+                            { nome: 'Solo / Análise', icon: '🟤', border: 'border-amber-500/30' },
+                            { nome: 'Nutrição Foliar', icon: '🍃', border: 'border-teal-500/30' },
+                            { nome: 'Aplicações', icon: '🚜', border: 'border-orange-500/30' },
+                            { nome: 'Estoque Local', icon: '📦', border: 'border-indigo-500/30' },
+                            { nome: 'Receituário', icon: '📝', border: 'border-purple-500/30' },
+                            { nome: 'Laudos/Visitas', icon: '📅', border: 'border-rose-500/30' }
                         ].map((modulo, idx) => (
-                            <div key={idx} className="glass p-6 rounded-2xl flex flex-col items-center justify-center text-center gap-4 hover:-translate-y-1 hover:bg-white/5 transition-all cursor-pointer border border-transparent hover:border-white/10 group">
-                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl ${modulo.color} group-hover:scale-110 transition-transform`}>
+                            <div key={idx} className={`premium-card p-5 rounded-2xl flex flex-col items-center justify-center text-center gap-3 hover:-translate-y-1 hover:bg-[rgba(255,255,255,0.02)] transition-all cursor-pointer border-t-2 ${modulo.border} group`}>
+                                <div className={`text-2xl group-hover:scale-110 transition-transform`}>
                                     {modulo.icon}
                                 </div>
-                                <span className="text-white font-bold text-sm">{modulo.nome}</span>
+                                <span className="text-white font-bold text-xs tracking-wide">{modulo.nome}</span>
                             </div>
                         ))}
                     </div>
 
-                    <div className="mt-12 glass p-8 rounded-3xl text-center">
-                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/5 mb-4">
-                            <ShieldAlert className="w-8 h-8 text-[var(--color-muted)]" />
+                    <div className="mt-8 border-t border-[rgba(255,255,255,0.05)] pt-6 flex items-start gap-4">
+                        <div className="bg-[#0a192f] p-3 rounded-lg border border-[rgba(255,255,255,0.05)] shrink-0">
+                            <ShieldAlert className="w-5 h-5 text-[var(--color-muted)]" />
                         </div>
-                        <h3 className="text-xl font-bold text-white mb-2">Visão do Agrônomo (Leitura)</h3>
-                        <p className="text-[var(--color-muted)] max-w-lg mx-auto">
-                            Você está visualizando os dados da fazenda em modo leitura. 
-                            O produtor gerencia as operações financeiras e de estoque localmente. 
-                            Você pode interagir enviando Recomendações e registrando Visitas.
-                        </p>
+                        <div>
+                            <p className="text-[var(--color-muted)] text-sm">
+                                <strong className="text-white">Modo de Acesso Técnico:</strong> Você está visualizando os dados restritos desta propriedade em modo leitura. Operações financeiras de custo e lançamentos de estoque são feitos exclusivamente pelo produtor. 
+                                Utilize o painel acima para auditar talhões e embasar suas Recomendações e Laudos.
+                            </p>
+                        </div>
                     </div>
                 </div>
             )}
 
             {/* MODAL VINCULAR CLIENTE */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-                    <div className="glass p-8 rounded-3xl w-full max-w-md relative border border-white/10 shadow-2xl">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+                    <div className="premium-card p-8 rounded-2xl w-full max-w-md relative border border-[rgba(255,255,255,0.05)] shadow-2xl">
                         <button 
                             onClick={() => setIsModalOpen(false)}
                             className="absolute top-4 right-4 text-[var(--color-muted)] hover:text-white"
@@ -243,52 +231,36 @@ export default function MeusClientesScreen() {
                             ✕
                         </button>
                         
-                        <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center mb-6">
+                        <div className="w-12 h-12 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-center mb-6">
                             <Users className="w-6 h-6 text-green-400" />
                         </div>
                         
-                        <h2 className="text-2xl font-bold text-white mb-2">Vincular Produtor</h2>
+                        <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Convite WhatsApp</h2>
                         <p className="text-[var(--color-muted)] text-sm mb-6">
-                            Informe o e-mail do produtor. Ele receberá um convite ou será vinculado automaticamente caso já possua conta.
+                            Envie o seu código exclusivo diretamente para o WhatsApp do produtor. Quando ele se cadastrar, o vínculo será automático.
                         </p>
 
-                        <form onSubmit={handleVincular} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-bold text-[var(--color-muted)] mb-1">E-mail do Produtor *</label>
-                                <input 
-                                    type="email"
-                                    required
-                                    value={emailProdutor}
-                                    onChange={(e) => setEmailProdutor(e.target.value)}
-                                    className="w-full bg-black/20 border border-[var(--color-border)] rounded-xl px-4 py-3 text-white outline-none focus:border-green-500 transition-colors"
-                                    placeholder="produtor@fazenda.com"
-                                />
+                        <div className="bg-[#0a192f] border border-[rgba(255,255,255,0.1)] rounded-xl p-6 text-center mb-6">
+                            <p className="text-xs font-black text-[var(--color-muted)] uppercase tracking-widest mb-2">Seu Código de Consultor</p>
+                            <div className="text-3xl font-black text-white tracking-widest bg-[rgba(255,255,255,0.02)] py-3 rounded-lg border border-[rgba(255,255,255,0.05)]">
+                                AGR-7492
                             </div>
+                        </div>
 
-                            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 flex gap-3 mt-4">
-                                <ShieldAlert className="w-5 h-5 text-yellow-500 shrink-0" />
-                                <p className="text-xs text-yellow-200">
-                                    O produtor precisará aceitar o vínculo pelo aplicativo dele para você ter acesso aos talhões e estoque.
-                                </p>
-                            </div>
+                        <button 
+                            onClick={handleWhatsAppInvite}
+                            className="w-full py-4 rounded-xl bg-[#25D366] hover:bg-[#128C7E] text-white font-black shadow-lg shadow-[#25D366]/20 transition-all flex items-center justify-center gap-3 text-lg mb-4"
+                        >
+                            <Phone className="w-5 h-5" />
+                            Convidar via WhatsApp
+                        </button>
 
-                            <div className="pt-4 flex gap-3">
-                                <button 
-                                    type="button"
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 py-3 rounded-xl border border-[var(--color-border)] text-white font-bold hover:bg-white/5 transition-colors"
-                                >
-                                    Cancelar
-                                </button>
-                                <button 
-                                    type="submit"
-                                    disabled={submitting}
-                                    className="flex-1 py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold shadow-lg shadow-green-500/20 transition-all disabled:opacity-50"
-                                >
-                                    {submitting ? 'Vinculando...' : 'Confirmar Vínculo'}
-                                </button>
-                            </div>
-                        </form>
+                        <button 
+                            onClick={() => setIsModalOpen(false)}
+                            className="w-full py-3 rounded-xl bg-transparent border border-[rgba(255,255,255,0.1)] text-white font-bold hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+                        >
+                            Cancelar
+                        </button>
                     </div>
                 </div>
             )}

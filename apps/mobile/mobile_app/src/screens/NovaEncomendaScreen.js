@@ -7,7 +7,6 @@ import { useNavigation } from '@react-navigation/native';
 import { executeQuery } from '../database/database';
 import { v4 as uuidv4 } from 'uuid';
 import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import SmartAutocomplete from '../components/common/SmartAutocomplete';
@@ -37,6 +36,28 @@ export default function NovaEncomendaScreen({ route }) {
     const [oldQuantidadeRestante, setOldQuantidadeRestante] = useState(0);
 
     const [activeField, setActiveField] = useState(null);
+
+    const unidadesData = [
+        { uuid: 'CAIXA', nome: 'CAIXA (CX)' },
+        { uuid: 'KG', nome: 'QUILO (KG)' },
+        { uuid: 'LITRO', nome: 'LITRO (LT)' },
+        { uuid: 'METRO', nome: 'METROS (M)' },
+        { uuid: 'UNIDADE', nome: 'UNIDADE (UN)' },
+        { uuid: 'SACO', nome: 'SACO (SC)' },
+        { uuid: 'GRAMAS', nome: 'GRAMAS (G)' },
+        { uuid: 'TONELADA', nome: 'TONELADA (TON)' }
+    ];
+
+    const unidadeService = {
+        search: async (text) => {
+            const t = text ? text.toUpperCase() : '';
+            return unidadesData.filter(u => u.nome.includes(t) || u.uuid.includes(t));
+        },
+        getRecents: async () => [],
+        getFavorites: async () => [],
+        addRecent: async () => {},
+        toggleFavorite: async () => []
+    };
 
     useEffect(() => {
         loadData().then(({ clientes: listCli, produtos: listProd }) => {
@@ -202,28 +223,17 @@ export default function NovaEncomendaScreen({ route }) {
                         {/* UNIDADE E QUANTIDADE */}
                         <View style={styles.row}>
                             <View style={styles.col}>
-                                <View style={styles.labelRow}>
-                                    <Ionicons name="scale-outline" size={16} color="#A78BFA" />
-                                    <Text style={styles.label}>Unidade</Text>
-                                </View>
-                                <View style={[styles.inputContainer, activeField === 'unidade' && styles.inputContainerActive]}>
-                                    <Picker
-                                        selectedValue={unidade}
-                                        onValueChange={(val) => setUnidade(val)}
-                                        style={styles.picker}
-                                        onFocus={() => setActiveField('unidade')}
-                                        onBlur={() => setActiveField(null)}
-                                    >
-                                        <Picker.Item label="CAIXA (CX)" value="CAIXA" color="#FFF" />
-                                        <Picker.Item label="QUILO (KG)" value="KG" color="#FFF"/>
-                                        <Picker.Item label="LITRO (LT)" value="LITRO" color="#FFF"/>
-                                        <Picker.Item label="METROS (M)" value="METRO" color="#FFF"/>
-                                        <Picker.Item label="UNIDADE (UN)" value="UNIDADE" color="#FFF"/>
-                                        <Picker.Item label="SACO (SC)" value="SACO" color="#FFF"/>
-                                        <Picker.Item label="GRAMAS (G)" value="GRAMAS" color="#FFF"/>
-                                        <Picker.Item label="TONELADA (TON)" value="TONELADA" color="#FFF"/>
-                                    </Picker>
-                                </View>
+                                <SmartAutocomplete
+                                    label="Unidade *"
+                                    value={unidadesData.find(u => u.uuid === unidade)}
+                                    onSelect={(val) => {
+                                        if (val) setUnidade(val.uuid);
+                                    }}
+                                    service={unidadeService}
+                                    title="SELECIONAR UNIDADE"
+                                    placeholder="Selecione..."
+                                    icon="scale-outline"
+                                />
                             </View>
                             <View style={styles.col}>
                                 <View style={styles.labelRow}>
@@ -381,22 +391,6 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 10,
         elevation: 5,
-    },
-    
-    picker: {
-        height: 56,
-        width: '100%',
-        color: '#FFF',
-        backgroundColor: 'transparent',
-        // Resets standard web select styles:
-        ...Platform.select({
-            web: { 
-                borderWidth: 0, 
-                outlineStyle: 'none',
-                paddingHorizontal: 16,
-                cursor: 'pointer'
-            }
-        })
     },
     
     textInputFull: {

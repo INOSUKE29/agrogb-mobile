@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform, Modal, TextInput } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -113,9 +113,21 @@ export default function AdubacaoFormScreen({ route, navigation }) {
                 unidade: selectedStockItem.unidade || 'KG'
             }
         ]);
-        setItemSelectorVisible(false);
         setSelectedStockItem(null);
         setItemQty('');
+    };
+
+    const stockDummyService = {
+        search: async (text) => {
+            const txt = text ? text.toUpperCase() : '';
+            return stockItems
+                .filter(item => item.produto && item.produto.toUpperCase().includes(txt))
+                .map(i => ({...i, nome: i.produto, uuid: i.produto}));
+        },
+        getRecents: async () => [],
+        getFavorites: async () => [],
+        toggleFavorite: async () => [],
+        addRecent: async () => {}
     };
 
     const handleRemoveInsumo = (tempId) => {
@@ -248,14 +260,39 @@ export default function AdubacaoFormScreen({ route, navigation }) {
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
                         <Text style={styles.sectionLabel}>RECEITA / INSUMOS DEDUTÍVEIS</Text>
-                        <TouchableOpacity 
-                            style={styles.btnAddInsumo} 
-                            onPress={() => setItemSelectorVisible(true)}
-                        >
-                            <Ionicons name="add-circle" size={24} color={theme?.colors?.primary || '#10B981'} />
-                            <Text style={[styles.btnAddText, { color: theme?.colors?.primary || '#10B981' }]}>ADD INSUMO</Text>
-                        </TouchableOpacity>
                     </View>
+
+                    <SmartAutocomplete
+                        label="INSERIR NOVO INSUMO"
+                        value={selectedStockItem}
+                        onSelect={(item) => {
+                            setSelectedStockItem(item);
+                            setItemQty('');
+                        }}
+                        service={stockDummyService}
+                        title="ESTOQUE DISPONÍVEL"
+                        placeholder="Toque para buscar insumo..."
+                        icon="flask-outline"
+                    />
+
+                    {selectedStockItem && (
+                        <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', padding: 15, borderRadius: 15, marginBottom: 15, borderWidth: 1, borderColor: theme?.colors?.primary + '50' }}>
+                            <Text style={{ color: '#FFF', fontSize: 13, fontWeight: '700', marginBottom: 10 }}>
+                                Selecionado: {selectedStockItem.produto} ({selectedStockItem.quantidade} {selectedStockItem.unidade} disp.)
+                            </Text>
+                            <AgroInput
+                                label={`DOSE / QUANTIDADE (${selectedStockItem.unidade || 'KG'})`}
+                                value={itemQty}
+                                onChangeText={setItemQty}
+                                keyboardType="numeric"
+                                placeholder="0.00"
+                            />
+                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+                                <AgroButton title="VINCULAR" onPress={handleAddInsumo} style={{ flex: 1, height: 44 }} />
+                                <AgroButton title="CANCELAR" variant="secondary" onPress={() => setSelectedStockItem(null)} style={{ flex: 1, height: 44 }} />
+                            </View>
+                        </View>
+                    )}
 
                     <LinearGradient colors={['#1F2937', '#111827']} style={styles.recipeCard}>
                         {itensAdicao.length === 0 ? (
@@ -331,57 +368,7 @@ export default function AdubacaoFormScreen({ route, navigation }) {
                 <View style={{ height: 100 }} />
             </ScrollView>
 
-            {/* MODAL SELETOR DE ESTOQUE */}
-            <Modal visible={itemSelectorVisible} transparent animationType="slide">
-                <View style={styles.modalOverlay}>
-                    <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setItemSelectorVisible(false)} />
-                    
-                    <View style={styles.modalSheet}>
-                        <Text style={styles.modalTitle}>CATÁLOGO DO ESTOQUE</Text>
-
-                        <ScrollView style={{ maxHeight: 220 }} showsVerticalScrollIndicator={false}>
-                            {stockItems.length === 0 ? (
-                                <Text style={styles.modalEmpty}>Seu estoque está vazio ou sem cadastros ativos.</Text>
-                            ) : stockItems.map(item => {
-                                const active = selectedStockItem?.produto === item.produto;
-                                return (
-                                    <TouchableOpacity 
-                                        key={item.produto} 
-                                        style={[styles.stockCard, active && styles.stockCardActive]}
-                                        onPress={() => setSelectedStockItem(item)}
-                                    >
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={[styles.stockCardName, active && { color: theme?.colors?.primary || '#10B981' }]}>{item.produto}</Text>
-                                            <Text style={styles.stockCardQty}>Disponível: {item.quantidade} {item.unidade || 'KG'}</Text>
-                                        </View>
-                                        {active && <Ionicons name="checkmark-circle" size={22} color={theme?.colors?.primary || '#10B981'} />}
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </ScrollView>
-
-                        {selectedStockItem && (
-                            <View style={styles.qtyBox}>
-                                <Text style={styles.qtyLabel}>DOSE / QUANTIDADE ({selectedStockItem.unidade || 'KG'})</Text>
-                                <View style={styles.qtyInputContainer}>
-                                    <TextInput 
-                                        style={styles.qtyInput}
-                                        value={itemQty}
-                                        onChangeText={setItemQty}
-                                        keyboardType="numeric"
-                                        placeholder="0.00"
-                                        placeholderTextColor="#9CA3AF"
-                                        autoFocus
-                                    />
-                                </View>
-                                <TouchableOpacity style={styles.btnConfirmAdd} onPress={handleAddInsumo}>
-                                    <Text style={styles.btnConfirmAddText}>VINCULAR A RECEITA</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                    </View>
-                </View>
-            </Modal>
+            {/* O MODAL CUSTOMIZADO FOI SUBSTITUÍDO PELO SMARTAUTOCOMPLETE */}
         </KeyboardAvoidingView>
     );
 }

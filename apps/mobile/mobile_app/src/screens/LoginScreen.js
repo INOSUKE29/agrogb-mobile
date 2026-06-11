@@ -407,34 +407,42 @@ export default function LoginScreen({ navigation }) {
     const handleBiometricLogin = async (isAutoLogin = false) => {
         try {
             setLoading(true);
-            setLoadingState('Autenticando...');
+            setLoadingState('Analisando hardware...');
+            
             const hasHardware = await LocalAuthentication.hasHardwareAsync();
-            if (!hasHardware) throw new Error('Biometria não suportada');
+            if (!hasHardware) {
+                showAlert('📱', 'Aviso de Hardware', 'Seu aparelho não possui biometria.');
+                return;
+            }
 
-            // Aqui é onde ocorria o Erro #007 Fatal
+            const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+            if (!isEnrolled) {
+                showAlert('⚙️', 'Biometria Ausente', 'Acesse as configurações do seu aparelho e cadastre uma impressão ou Face ID.');
+                return;
+            }
+
+            setLoadingState('Lendo Cofre...');
             let rawCreds = null;
             try {
                 rawCreds = await SecureStore.getItemAsync(BIO_KEY);
             } catch (secErr) {
                 console.log('Erro crítico no SecureStore:', secErr.message);
                 if (secErr.message && secErr.message.includes('Could not decrypt')) {
-                    // CORREÇÃO AUDITORIA BIOMETRIA: Apenas alertamos o usuário, sem deletar agressivamente.
                     showAlert('🔑', 'Chave de Segurança', 'Falha ao ler biometria (pode estar temporariamente inacessível).');
-                    setLoading(false);
                     return;
                 }
                 throw secErr;
             }
 
             if (!rawCreds) {
-                setLoading(false);
-                if (!isAutoLogin) showAlert('ℹ️', 'Atenção', 'Nenhuma biometria cadastrada. Faça login normal primeiro.');
+                if (!isAutoLogin) showAlert('ℹ️', 'Atenção', 'Nenhuma biometria vinculada. Faça login com e-mail/telefone e senha primeiro para salvá-la.');
                 return;
             }
 
+            setLoadingState('Autenticando...');
             const auth = await LocalAuthentication.authenticateAsync({
                 promptMessage: 'Acesso AgroGB',
-                fallbackLabel: 'Usar Senha',
+                fallbackLabel: 'Usar Senha/PIN',
                 disableDeviceFallback: false
             });
 
@@ -452,14 +460,14 @@ export default function LoginScreen({ navigation }) {
                     handleLogin(true); // true = bypassBiometricPrompt
                 }, 100);
             } else {
-                // Usuário cancelou ou falhou, limpar loading para que ele não fique num loop de Sessão Zumbi.
+                // Usuário cancelou ou falhou, limpar loading
                 setLoading(false);
                 setLoadingState('');
             }
         } catch (e) {
             console.log('Erro de catch global da bio:', e);
             if (!isAutoLogin) {
-                Alert.alert('Erro', 'Falha ao processar biometria: ' + (e.message || 'Desconhecido'));
+                showAlert('❌', 'Erro', 'Falha ao processar biometria: ' + (e.message || 'Desconhecido'));
             }
         } finally {
             setLoading(false);

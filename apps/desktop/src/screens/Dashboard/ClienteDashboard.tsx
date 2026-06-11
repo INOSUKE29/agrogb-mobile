@@ -189,98 +189,39 @@ export default function ClienteDashboard() {
     }, []);
 
     return (
-        <div className="animate-fade-in pb-12 px-4 sm:px-6 lg:px-8 mt-6">
+        <div className="animate-fade-in pb-12 px-4 sm:px-6 lg:px-8 mt-6 max-w-[1600px] mx-auto">
             
-            {/* CABEÇALHO BOAS-VINDAS */}
-            <div className="premium-card p-6 flex flex-col sm:flex-row sm:items-center justify-between mb-6">
-                <div>
-                    <h2 className="text-2xl font-black text-white tracking-tight">Olá, Bruno! 👋</h2>
-                    <p className="text-[var(--color-muted)] text-sm font-medium mt-1">Bem-vindo ao seu painel.</p>
+            {/* CABEÇALHO BOAS-VINDAS E CLIMA */}
+            <div className="premium-card p-6 flex flex-col lg:flex-row lg:items-center justify-between mb-6 shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-[#19B34A]/5 rounded-full blur-3xl -mr-20 -mt-20"></div>
+                <div className="relative z-10">
+                    <h2 className="text-3xl font-black text-white tracking-tight">Olá, Bruno! 👋</h2>
+                    <p className="text-[var(--color-muted)] text-sm font-medium mt-1">Bem-vindo ao ERP Operacional AgroGB. Aqui está o resumo da sua fazenda.</p>
                 </div>
-                <div className="mt-4 sm:mt-0 flex items-center gap-3 bg-[rgba(0,0,0,0.2)] rounded-full px-4 py-2 border border-[rgba(255,255,255,0.05)]">
-                    <ThermometerSun className="w-5 h-5 text-yellow-500" />
-                    <div>
-                        <p className="text-white font-bold text-sm leading-none">{realWeather ? `${Math.round(realWeather.current.temperature)}°C` : '24°C'}</p>
-                        <p className="text-[var(--color-muted)] text-[10px] uppercase tracking-wider">Ribeirão Verde - GO</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* KPI CARDS (3 superiores) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                
-                {/* Colheita */}
-                <div className="premium-card-kpi p-5 relative overflow-hidden group">
-                    <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider">Colheita (Hoje)</h3>
-                        <div className="icon-circle w-8 h-8">
-                            <Sprout className="w-4 h-4 text-[#19B34A]" />
-                        </div>
-                    </div>
-                    <div className="flex items-end gap-3 mt-4">
-                        <span className="text-2xl lg:text-3xl font-black text-white">1.250 kg</span>
-                    </div>
-                    <p className="text-[#19B34A] text-xs font-bold mt-2 flex items-center gap-1">
-                        <TrendingUp className="w-3 h-3" /> +12% vs ontem
-                    </p>
-                </div>
-
-                {/* Vendas */}
-                <div className="premium-card-kpi p-5 relative overflow-hidden group">
-                    <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider">Vendas (Hoje)</h3>
-                        <div className="icon-circle w-8 h-8">
-                            <Store className="w-4 h-4 text-[#19B34A]" />
-                        </div>
-                    </div>
-                    <div className="flex items-end gap-3 mt-4">
-                        <span className="text-2xl lg:text-3xl font-black text-white">R$ 8.450,00</span>
-                    </div>
-                    <p className="text-[#19B34A] text-xs font-bold mt-2 flex items-center gap-1">
-                        <TrendingUp className="w-3 h-3" /> +8% vs ontem
-                    </p>
-                </div>
-
-                {/* Resultado */}
-                <div className="premium-card-kpi p-5 relative overflow-hidden group">
-                    <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider">Resultado (Mês)</h3>
-                        <div className="icon-circle w-8 h-8">
-                            <TrendingUp className="w-4 h-4 text-[#19B34A]" />
-                        </div>
-                    </div>
-                    <div className="flex items-end gap-3 mt-4">
-                        <span className="text-2xl lg:text-3xl font-black text-white">R$ 24.680,00</span>
-                    </div>
-                    <p className="text-[#19B34A] text-xs font-bold mt-2 flex items-center gap-1">
-                        <TrendingUp className="w-3 h-3" /> +15% vs mês ant.
-                    </p>
-                </div>
-            </div>
-
-            {/* ALERTAS INTELIGENTES */}
-            <div className="mb-8">
-                <h3 className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-widest mb-3">Alertas Inteligentes</h3>
-                <div className="bg-[#0f172a] border border-blue-500/30 rounded-[16px] p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_4px_20px_rgba(59,130,246,0.1)]">
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-                            <Droplet className="w-5 h-5 text-white" />
-                        </div>
+                <div className="mt-4 lg:mt-0 relative z-10 flex items-center gap-6 bg-[#0B1522] rounded-2xl px-6 py-3 border border-[rgba(255,255,255,0.05)] shadow-inner">
+                    <div className="flex items-center gap-3 border-r border-[rgba(255,255,255,0.1)] pr-6">
+                        <ThermometerSun className="w-6 h-6 text-yellow-500" />
                         <div>
-                            <h4 className="text-blue-400 font-bold text-sm uppercase tracking-wider">Irrigação Diária</h4>
-                            <p className="text-white text-sm font-medium">Nenhum turno de irrigação registrado hoje.</p>
+                            <p className="text-[var(--color-muted)] text-[10px] uppercase tracking-wider font-bold">Temperatura</p>
+                            <p className="text-white font-black text-lg leading-none">{realWeather ? `${Math.round(realWeather.current.temperature)}°C` : '24°C'}</p>
                         </div>
                     </div>
-                    <button className="text-blue-400 hover:text-blue-300 font-bold text-sm flex items-center gap-1 group">
-                        Ver detalhes <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <Droplet className="w-6 h-6 text-blue-500" />
+                        <div>
+                            <p className="text-[var(--color-muted)] text-[10px] uppercase tracking-wider font-bold">Umidade</p>
+                            <p className="text-white font-black text-lg leading-none">{realWeather ? `${Math.round(realWeather.current.humidity)}%` : '65%'}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* MENU ACESSO RÁPIDO - V8 (Grid 4 colunas) */}
-            <div className="mb-12">
-                <h3 className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-widest mb-3">Acesso Rápido</h3>
-                <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-5 gap-3 sm:gap-4">
+            {/* ACESSO RÁPIDO (Estilo Mobile, Adaptado para Desktop) */}
+            <div className="mb-8">
+                <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-widest">Acesso Rápido</h3>
+                </div>
+                <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(25, 179, 74, 0.3) transparent' }}>
                     {[
                         { name: 'Caderno', icon: FileText, color: 'text-[#19B34A]', path: '/dashboard/cliente/caderno' },
                         { name: 'Colheita', icon: Sprout, color: 'text-[#19B34A]', path: '/dashboard/cliente/colheita' },
@@ -293,56 +234,252 @@ export default function ClienteDashboard() {
                         { name: 'Custos', icon: DollarSign, color: 'text-red-500', path: '/dashboard/cliente/financeiro' },
                         { name: 'Descarte', icon: AlertTriangle, color: 'text-red-500', path: '/dashboard/cliente/descarte' },
                         { name: 'Frota', icon: Car, color: 'text-gray-400', path: '/dashboard/cliente/frota' },
-                        { name: 'Relatórios', icon: FileText, color: 'text-gray-300', path: '/dashboard/cliente/relatorios' },
-                        { name: 'Cadastros', icon: Store, color: 'text-gray-400', path: '/dashboard/cliente/cadastros' },
-                        { name: 'Clientes', icon: Store, color: 'text-gray-400', path: '/dashboard/cliente/clientes' },
-                        { name: 'Áreas', icon: MapIcon, color: 'text-gray-400', path: '/dashboard/cliente/areas' },
                         { name: 'Sync', icon: CloudRain, color: 'text-blue-400', path: '/dashboard/cliente/sync' },
                     ].map((item, i) => (
                         <button 
                             key={i}
                             onClick={() => navigate(item.path)}
-                            className="premium-card h-24 sm:h-28 flex flex-col items-center justify-center gap-2 hover:translate-y-[-2px] hover:shadow-lg transition-all group"
+                            className="premium-card min-w-[100px] h-[100px] flex-shrink-0 flex flex-col items-center justify-center gap-2 hover:translate-y-[-2px] hover:shadow-lg hover:border-[#19B34A]/30 transition-all group"
                         >
-                            <div className="icon-circle w-10 h-10 sm:w-12 sm:h-12 group-hover:scale-110">
-                                <item.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${item.color}`} />
+                            <div className="icon-circle w-10 h-10 group-hover:scale-110">
+                                <item.icon className={`w-5 h-5 ${item.color}`} />
                             </div>
-                            <span className="text-[10px] sm:text-xs font-bold text-white tracking-wider truncate w-full px-1">{item.name}</span>
+                            <span className="text-[10px] font-bold text-white tracking-wider truncate w-full px-1">{item.name}</span>
                         </button>
                     ))}
                 </div>
             </div>
 
-            {/* Gráficos V8 Integrados */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="premium-card p-6">
-                    <h3 className="text-sm font-bold text-white mb-6 uppercase tracking-wider">Produção - Últimos 7 Dias (kg)</h3>
-                    <div className="h-64 w-full relative">
-                        <div className="absolute inset-0 bg-[#19B34A]/5 rounded-xl blur-2xl z-0"></div>
+            {/* LINHA 1: KPIs (Grid 4 colunas) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+                
+                {/* Faturamento */}
+                <div className="premium-card p-6 relative overflow-hidden group">
+                    <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider">Faturamento (Mês)</h3>
+                        <div className="w-10 h-10 rounded-xl bg-[#19B34A]/10 flex items-center justify-center border border-[#19B34A]/20">
+                            <DollarSign className="w-5 h-5 text-[#19B34A]" />
+                        </div>
+                    </div>
+                    <span className="text-3xl font-black text-white">R$ 124.500</span>
+                    <p className="text-[#19B34A] text-xs font-bold mt-3 flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3" /> +15.3% vs mês anterior
+                    </p>
+                </div>
+
+                {/* Custo */}
+                <div className="premium-card p-6 relative overflow-hidden group">
+                    <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider">Custo Operacional</h3>
+                        <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
+                            <TrendingUp className="w-5 h-5 text-orange-500 rotate-180" />
+                        </div>
+                    </div>
+                    <span className="text-3xl font-black text-white">R$ 85.200</span>
+                    <p className="text-orange-500 text-xs font-bold mt-3 flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3 rotate-180" /> +5.2% vs mês anterior
+                    </p>
+                </div>
+
+                {/* Colheita */}
+                <div className="premium-card p-6 relative overflow-hidden group">
+                    <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider">Colheita Realizada</h3>
+                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                            <Sprout className="w-5 h-5 text-blue-500" />
+                        </div>
+                    </div>
+                    <span className="text-3xl font-black text-white">14.500 sc</span>
+                    <p className="text-blue-500 text-xs font-bold mt-3 flex items-center gap-1">
+                        Soja (Talhão A, B, C)
+                    </p>
+                </div>
+
+                {/* Alertas */}
+                <div className="premium-card p-6 relative overflow-hidden group border-b-4 border-red-500">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                    <div className="flex justify-between items-start mb-4 relative z-10">
+                        <h3 className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider">Alertas Ativos</h3>
+                        <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center shadow-[0_0_15px_rgba(239,68,68,0.5)]">
+                            <AlertTriangle className="w-5 h-5 text-white" />
+                        </div>
+                    </div>
+                    <span className="text-3xl font-black text-white relative z-10">3 Críticos</span>
+                    <p className="text-red-400 text-xs font-bold mt-3 flex items-center gap-1 relative z-10">
+                        Manutenção e Estoque
+                    </p>
+                </div>
+            </div>
+
+            {/* LINHA 2: O Coração do ERP (60/40 Split) */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+                
+                {/* Gráfico Financeiro (Ocupa 2 Colunas) */}
+                <div className="xl:col-span-2 premium-card p-6 flex flex-col shadow-xl">
+                    <div className="flex justify-between items-center mb-8">
+                        <div>
+                            <h3 className="text-lg font-black text-white">Fluxo de Caixa Consolidado</h3>
+                            <p className="text-sm text-[var(--color-muted)]">Receitas x Despesas nos últimos 6 meses</p>
+                        </div>
+                        <button onClick={() => navigate('/dashboard/cliente/financeiro')} className="text-xs font-bold text-[#19B34A] hover:text-white bg-[#19B34A]/10 hover:bg-[#19B34A] px-4 py-2 rounded-lg transition-colors border border-[#19B34A]/20">
+                            Acessar Financeiro completo
+                        </button>
+                    </div>
+                    <div className="flex-1 min-h-[300px] w-full relative">
                         {loading ? (
                             <div className="w-full h-full flex items-center justify-center text-[var(--color-muted)]">Carregando...</div>
                         ) : (
-                            <ResponsiveContainer width="100%" height="100%" className="relative z-10">
-                                <AreaChart data={financialData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={financialData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                    <XAxis dataKey="name" stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `R$${val/1000}k`} />
+                                    <RechartsTooltip 
+                                        contentStyle={{ backgroundColor: '#152336', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                                        itemStyle={{ fontWeight: 'bold' }}
+                                    />
+                                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                                    <Bar dataKey="Receitas" fill="#19B34A" radius={[4, 4, 0, 0]} barSize={30} />
+                                    <Bar dataKey="Custos" fill="#EF4444" radius={[4, 4, 0, 0]} barSize={30} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
+                    </div>
+                </div>
+
+                {/* Atividades e Tarefas (Ocupa 1 Coluna) */}
+                <div className="xl:col-span-1 premium-card p-6 flex flex-col shadow-xl">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-black text-white">Operações no Campo</h3>
+                        <div className="p-2 bg-[#19B34A]/10 rounded-lg">
+                            <ListTodo className="w-5 h-5 text-[#19B34A]" />
+                        </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent' }}>
+                        {loading ? (
+                            <div className="text-[var(--color-muted)] flex justify-center py-8">Buscando operações...</div>
+                        ) : atividadesPendentes.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-full text-[var(--color-muted)] py-12">
+                                <Calendar className="w-12 h-12 mb-3 opacity-20" />
+                                <p className="text-sm">Nenhuma atividade programada para hoje.</p>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col gap-3">
+                                {atividadesPendentes.map(ativ => (
+                                    <div key={ativ.id} className="flex flex-col p-4 rounded-xl bg-[#0B1522] border border-[rgba(255,255,255,0.05)] hover:border-[#19B34A]/30 transition-colors">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="bg-[#19B34A]/20 text-[#19B34A] text-[10px] font-bold px-2 py-1 rounded uppercase">{ativ.tipo}</span>
+                                            <span className="text-[var(--color-muted)] text-xs font-bold">{ativ.data}</span>
+                                        </div>
+                                        <h4 className="text-white font-bold text-sm mb-1">{ativ.talhao}</h4>
+                                        <div className="flex justify-between items-center mt-2 pt-2 border-t border-[rgba(255,255,255,0.05)]">
+                                            <span className="text-[var(--color-muted)] text-xs flex items-center gap-1"><Truck className="w-3 h-3"/> {ativ.responsavel}</span>
+                                            <button className="text-[#19B34A] hover:text-white transition-colors"><ArrowRight className="w-4 h-4" /></button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <button 
+                        onClick={() => navigate('/dashboard/cliente/caderno')}
+                        className="w-full mt-4 py-3 bg-[#19B34A] hover:bg-[#159a3f] rounded-xl text-white font-black text-sm shadow-[0_4px_15px_rgba(25,179,74,0.3)] transition-all flex items-center justify-center gap-2"
+                    >
+                        Nova Atividade <ArrowRight className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+
+            {/* LINHA 3: Operação e Logística (50/50 Split) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* Alertas de Estoque */}
+                <div className="premium-card p-6 flex flex-col shadow-xl">
+                    <div className="flex items-center gap-3 mb-6">
+                        <Package className="w-5 h-5 text-orange-500" />
+                        <h3 className="text-lg font-black text-white">Estoque Nível Crítico</h3>
+                    </div>
+                    
+                    {stockAlerts.length === 0 ? (
+                        <div className="flex-1 flex flex-col items-center justify-center py-12 text-[var(--color-muted)]">
+                            <Package className="w-12 h-12 mb-3 opacity-20" />
+                            <p>Estoque saudável no momento.</p>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-[rgba(255,255,255,0.1)] text-[var(--color-muted)] text-xs uppercase tracking-wider">
+                                        <th className="pb-3 font-bold">Produto</th>
+                                        <th className="pb-3 font-bold text-center">Quantidade</th>
+                                        <th className="pb-3 font-bold text-center">Status</th>
+                                        <th className="pb-3 font-bold text-right">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {stockAlerts.map(item => (
+                                        <tr key={item.id} className="border-b border-[rgba(255,255,255,0.05)] hover:bg-white/5 transition-colors">
+                                            <td className="py-4 text-sm font-bold text-white">{item.nome}</td>
+                                            <td className="py-4 text-sm text-center text-white">{item.quantidade} <span className="text-[var(--color-muted)]">{item.unidade}</span></td>
+                                            <td className="py-4 text-center">
+                                                <span className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 text-[10px] font-bold px-2 py-1 rounded-full uppercase">
+                                                    <AlertTriangle className="w-3 h-3" /> Crítico
+                                                </span>
+                                            </td>
+                                            <td className="py-4 text-right">
+                                                <button onClick={() => navigate('/dashboard/cliente/compras')} className="text-orange-500 hover:text-orange-400 text-xs font-bold underline underline-offset-2">Solicitar</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+
+                {/* Previsão do Clima */}
+                <div className="premium-card p-6 flex flex-col shadow-xl">
+                    <div className="flex justify-between items-center mb-6">
+                        <div className="flex items-center gap-3">
+                            <CloudRain className="w-5 h-5 text-blue-400" />
+                            <h3 className="text-lg font-black text-white">Previsão e Condições</h3>
+                        </div>
+                        <span className="text-xs text-[var(--color-muted)] font-bold">Próximas 12h</span>
+                    </div>
+                    <div className="h-[250px] w-full">
+                        {loading ? (
+                            <div className="w-full h-full flex items-center justify-center text-[var(--color-muted)]">Carregando gráfico...</div>
+                        ) : (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={chartData}>
                                     <defs>
-                                        <linearGradient id="colorProd" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#19B34A" stopOpacity={0.3}/>
-                                            <stop offset="95%" stopColor="#19B34A" stopOpacity={0}/>
+                                        <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#F97316" stopOpacity={0.3}/>
+                                            <stop offset="95%" stopColor="#F97316" stopOpacity={0}/>
+                                        </linearGradient>
+                                        <linearGradient id="colorChuva" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
+                                            <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                    <XAxis dataKey="name" stroke="#9CA3AF" fontSize={10} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="#9CA3AF" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `${val/1000}k`} />
+                                    <XAxis dataKey="time" stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis yAxisId="left" stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}°C`} />
+                                    <YAxis yAxisId="right" orientation="right" stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
                                     <RechartsTooltip 
                                         contentStyle={{ backgroundColor: '#152336', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                                        itemStyle={{ color: '#fff', fontWeight: 'bold' }}
                                     />
-                                    <Area type="monotone" dataKey="Receitas" stroke="#19B34A" strokeWidth={3} fillOpacity={1} fill="url(#colorProd)" activeDot={{ r: 6, fill: '#fff', stroke: '#19B34A' }} />
+                                    <Area yAxisId="left" type="monotone" dataKey="temp" stroke="#F97316" strokeWidth={3} fillOpacity={1} fill="url(#colorTemp)" name="Temperatura (°C)" />
+                                    <Area yAxisId="right" type="monotone" dataKey="chuva" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorChuva)" name="Prob. Chuva (%)" />
                                 </AreaChart>
                             </ResponsiveContainer>
                         )}
                     </div>
                 </div>
+
             </div>
+
         </div>
     );
 }

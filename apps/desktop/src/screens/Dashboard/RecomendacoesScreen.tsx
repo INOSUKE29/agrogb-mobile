@@ -338,40 +338,65 @@ export default function RecomendacoesScreen() {
                 </div>
 
                 {/* LISTA */}
-                <div className="grid grid-cols-1 gap-4">
+                <div className="premium-card rounded-2xl overflow-hidden mt-4">
                     {loading ? (
-                        <div className="text-center py-12 text-[var(--color-muted)]">Carregando...</div>
+                        <div className="text-center py-12 text-[var(--color-muted)] font-bold">Carregando prescrições...</div>
                     ) : receitasList.length === 0 ? (
-                        <div className="text-center py-24 glass rounded-3xl">
+                        <div className="text-center py-24">
                             <FileText className="w-12 h-12 mx-auto text-[var(--color-muted)] mb-4 opacity-30" />
                             <h3 className="text-xl font-bold text-white mb-2">Nenhuma recomendação {statusTab.toLowerCase()}</h3>
-                            <p className="text-[var(--color-muted)]">Crie uma nova receita para ela aparecer aqui.</p>
+                            <p className="text-[var(--color-muted)]">Crie uma nova prescrição técnica para ela aparecer nesta tabela.</p>
                         </div>
                     ) : (
-                        receitasList.map(rec => (
-                            <div key={rec.id} className="glass p-6 rounded-2xl flex items-center justify-between hover:bg-white/5 transition-all">
-                                <div className="flex items-center gap-4">
-                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-                                        statusTab === 'Aprovada' ? 'bg-green-500/20 text-green-400' :
-                                        statusTab === 'Pendente' ? 'bg-yellow-500/20 text-yellow-400' :
-                                        'bg-white/10 text-[var(--color-muted)]'
-                                    }`}>
-                                        <FileText className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <h4 className="text-white font-bold text-lg">{rec.nome || 'Recomendação sem título'}</h4>
-                                        <p className="text-[var(--color-muted)] text-sm">
-                                            Via {rec.tipo} • Criada em {new Date(rec.created_at).toLocaleDateString()}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex gap-3">
-                                    <button className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-bold rounded-lg border border-[var(--color-border)] transition-all text-sm">
-                                        Ver Detalhes
-                                    </button>
-                                </div>
-                            </div>
-                        ))
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-[rgba(255,255,255,0.05)] bg-[rgba(0,0,0,0.2)]">
+                                        <th className="p-4 text-xs font-black text-[var(--color-muted)] uppercase tracking-wider w-16">Tipo</th>
+                                        <th className="p-4 text-xs font-black text-[var(--color-muted)] uppercase tracking-wider">Identificação</th>
+                                        <th className="p-4 text-xs font-black text-[var(--color-muted)] uppercase tracking-wider hidden md:table-cell">Data de Emissão</th>
+                                        <th className="p-4 text-xs font-black text-[var(--color-muted)] uppercase tracking-wider">Status</th>
+                                        <th className="p-4 text-xs font-black text-[var(--color-muted)] uppercase tracking-wider text-right">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[rgba(255,255,255,0.02)]">
+                                    {receitasList.map(rec => (
+                                        <tr key={rec.id} className="hover:bg-[rgba(255,255,255,0.02)] transition-colors group">
+                                            <td className="p-4">
+                                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${
+                                                    rec.tipo === 'Foliar' ? 'bg-teal-500/10 border-teal-500/20 text-teal-400' :
+                                                    'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                                                }`}>
+                                                    {rec.tipo === 'Foliar' ? <Leaf className="w-5 h-5" /> : <Droplet className="w-5 h-5" />}
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <h4 className="text-white font-bold text-base">{rec.nome || 'Receituário Sem Título'}</h4>
+                                                <p className="text-[var(--color-muted)] text-xs mt-1">Aplicação: {rec.tipo}</p>
+                                            </td>
+                                            <td className="p-4 hidden md:table-cell text-[var(--color-muted)] text-sm">
+                                                {new Date(rec.created_at as string).toLocaleDateString()}
+                                            </td>
+                                            <td className="p-4">
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
+                                                    statusTab === 'Aprovada' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                                                    statusTab === 'Pendente' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
+                                                    'bg-white/5 text-[var(--color-muted)] border-white/10'
+                                                }`}>
+                                                    {statusTab === 'Pendente' && <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></span>}
+                                                    {statusTab === 'Aprovada' ? 'APLICADA' : statusTab.toUpperCase()}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-right">
+                                                <button className="bg-transparent hover:bg-[rgba(255,255,255,0.05)] text-white font-bold py-2 px-4 rounded-lg border border-[rgba(255,255,255,0.1)] transition-all text-sm">
+                                                    Abrir Prescrição
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     )}
                 </div>
             </div>
@@ -424,22 +449,23 @@ export default function RecomendacoesScreen() {
             <form onSubmit={handleSubmit} className="flex flex-col gap-8">
                 
                 {/* 1. SELEÇÃO DE CLIENTE E TALHÃO */}
-                <div className="glass p-6 rounded-2xl flex flex-col gap-6">
-                    <h2 className="text-sm font-black text-[var(--color-muted)] uppercase tracking-widest border-b border-[var(--color-border)] pb-2 mb-2">
-                        1. Identificação
+                <div className="premium-card p-6 rounded-2xl flex flex-col gap-6">
+                    <h2 className="text-xs font-black text-[var(--color-muted)] uppercase tracking-widest border-b border-[rgba(255,255,255,0.05)] pb-3 mb-2 flex items-center gap-2">
+                        <span className="w-6 h-6 rounded bg-[rgba(255,255,255,0.05)] text-white flex items-center justify-center">1</span> 
+                        Identificação e Destino
                     </h2>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {isAgronomo && (
                             <div>
-                                <label className="block text-sm font-bold text-white mb-2 flex items-center gap-2">
-                                    <Users className="w-4 h-4 text-green-500" /> Produtor Destinatário *
+                                <label className="block text-xs font-black uppercase text-[var(--color-muted)] tracking-wider mb-2">
+                                    Produtor Destinatário *
                                 </label>
                                 <select 
                                     required
                                     value={selectedClient}
                                     onChange={(e) => setSelectedClient(e.target.value)}
-                                    className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-base rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent block p-3 transition-all"
+                                    className="w-full bg-[#0a192f] border border-[rgba(255,255,255,0.1)] text-white text-base rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent block p-3.5 transition-all font-medium"
                                 >
                                     <option value="" disabled>Selecione o Cliente</option>
                                     {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
@@ -448,16 +474,16 @@ export default function RecomendacoesScreen() {
                         )}
 
                         <div className={!isAgronomo ? "md:col-span-2" : ""}>
-                            <label className="block text-sm font-bold text-white mb-2 flex items-center gap-2">
-                                <Leaf className={`w-4 h-4 ${isAgronomo ? 'text-green-500' : 'text-blue-500'}`} /> Talhão / Cultura (Opcional)
+                            <label className="block text-xs font-black uppercase text-[var(--color-muted)] tracking-wider mb-2">
+                                Talhão / Cultura Alvo
                             </label>
                             <select 
                                 value={selectedPlanting}
                                 onChange={(e) => setSelectedPlanting(e.target.value)}
                                 disabled={!selectedClient}
-                                className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-base rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent block p-3 transition-all disabled:opacity-50"
+                                className="w-full bg-[#0a192f] border border-[rgba(255,255,255,0.1)] text-white text-base rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent block p-3.5 transition-all disabled:opacity-50 font-medium"
                             >
-                                <option value="">Geral (Sem vínculo a talhão)</option>
+                                <option value="">Geral (Nenhum talhão específico)</option>
                                 {plantios.map(p => <option key={p.uuid} value={p.uuid}>{p.cultura} ({p.tipo_plantio})</option>)}
                             </select>
                         </div>
@@ -465,19 +491,20 @@ export default function RecomendacoesScreen() {
                 </div>
 
                 {/* 2. MÉTODO DE APLICAÇÃO */}
-                <div className="glass p-6 rounded-2xl flex flex-col gap-4">
-                    <h2 className="text-sm font-black text-[var(--color-muted)] uppercase tracking-widest border-b border-[var(--color-border)] pb-2 mb-2">
-                        2. Método de Aplicação
+                <div className="premium-card p-6 rounded-2xl flex flex-col gap-6">
+                    <h2 className="text-xs font-black text-[var(--color-muted)] uppercase tracking-widest border-b border-[rgba(255,255,255,0.05)] pb-3 mb-2 flex items-center gap-2">
+                        <span className="w-6 h-6 rounded bg-[rgba(255,255,255,0.05)] text-white flex items-center justify-center">2</span> 
+                        Método de Aplicação
                     </h2>
                     
                     <div className="flex flex-row gap-4">
                         <button
                             type="button"
                             onClick={() => setActiveTab('GOTEJO')}
-                            className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-xl border-2 font-bold transition-all ${
+                            className={`flex-1 flex items-center justify-center gap-3 py-5 rounded-xl border-2 font-bold transition-all ${
                                 activeTab === 'GOTEJO' 
                                     ? 'border-green-500 bg-green-500/10 text-green-400' 
-                                    : 'border-[var(--color-border)] bg-transparent text-[var(--color-muted)] hover:border-white/20'
+                                    : 'border-[rgba(255,255,255,0.05)] bg-[#0a192f] text-[var(--color-muted)] hover:border-[rgba(255,255,255,0.1)]'
                             }`}
                         >
                             <Droplet className="w-5 h-5" />
@@ -487,10 +514,10 @@ export default function RecomendacoesScreen() {
                         <button
                             type="button"
                             onClick={() => setActiveTab('FOLIAR')}
-                            className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-xl border-2 font-bold transition-all ${
+                            className={`flex-1 flex items-center justify-center gap-3 py-5 rounded-xl border-2 font-bold transition-all ${
                                 activeTab === 'FOLIAR' 
                                     ? 'border-green-500 bg-green-500/10 text-green-400' 
-                                    : 'border-[var(--color-border)] bg-transparent text-[var(--color-muted)] hover:border-white/20'
+                                    : 'border-[rgba(255,255,255,0.05)] bg-[#0a192f] text-[var(--color-muted)] hover:border-[rgba(255,255,255,0.1)]'
                             }`}
                         >
                             <Leaf className="w-5 h-5" />
@@ -500,42 +527,45 @@ export default function RecomendacoesScreen() {
                 </div>
 
                 {/* 3. PRODUTOS E DOSAGEM */}
-                <div className="glass p-6 rounded-2xl flex flex-col gap-4">
-                    <div className="flex justify-between items-center border-b border-[var(--color-border)] pb-4 mb-2">
-                        <h2 className="text-sm font-black text-[var(--color-muted)] uppercase tracking-widest">
-                            3. Formulação e Dosagem
+                <div className="premium-card p-6 rounded-2xl flex flex-col gap-4">
+                    <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.05)] pb-4 mb-2">
+                        <h2 className="text-xs font-black text-[var(--color-muted)] uppercase tracking-widest flex items-center gap-2">
+                            <span className="w-6 h-6 rounded bg-[rgba(255,255,255,0.05)] text-white flex items-center justify-center">3</span> 
+                            Formulação da Receita
                         </h2>
                         <button 
                             type="button"
                             onClick={handleAddRow}
-                            className="flex items-center gap-2 text-sm font-bold text-green-400 hover:text-green-300 transition-colors"
+                            className="flex items-center gap-2 text-xs font-black bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20 px-4 py-2 rounded-lg transition-all uppercase"
                         >
-                            <Plus className="w-4 h-4" /> ADICIONAR INSUMO
+                            <Plus className="w-4 h-4" /> Add Linha de Insumo
                         </button>
                     </div>
 
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-3">
                         {recipeRows.map((row, index) => (
-                            <div key={row.id} className="flex flex-col md:flex-row gap-4 items-start md:items-center bg-white/5 p-4 rounded-xl border border-[var(--color-border)]">
+                            <div key={row.id} className="flex flex-col md:flex-row gap-3 items-start md:items-center bg-[#0a192f] p-3 rounded-xl border border-[rgba(255,255,255,0.05)]">
                                 
-                                <div className="w-full md:w-1/2">
-                                    <label className="block text-xs font-bold text-[var(--color-muted)] mb-1">Insumo #{index + 1}</label>
-                                    <input 
-                                        type="text"
-                                        required
-                                        placeholder="Nome do produto (ex: Uréia)"
-                                        value={row.product}
-                                        onChange={(e) => handleRowChange(row.id, 'product', e.target.value)}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-sm rounded-lg focus:ring-2 focus:ring-green-500 block p-2.5 transition-all"
-                                        list="produtos-list"
-                                    />
-                                    <datalist id="produtos-list">
-                                        {COMMON_PRODUCTS.map(p => <option key={p} value={p} />)}
-                                    </datalist>
+                                <div className="w-full md:w-5/12 flex items-center gap-3">
+                                    <div className="w-6 h-6 rounded-full bg-[rgba(255,255,255,0.05)] flex items-center justify-center text-[var(--color-muted)] text-xs font-bold shrink-0">
+                                        {index + 1}
+                                    </div>
+                                    <div className="w-full">
+                                        <label className="block text-[10px] font-black text-[var(--color-muted)] uppercase tracking-widest mb-1">Insumo</label>
+                                        <input 
+                                            type="text"
+                                            required
+                                            placeholder="Ex: Nitrato de Cálcio"
+                                            value={row.product}
+                                            onChange={(e) => handleRowChange(row.id, 'product', e.target.value)}
+                                            className="w-full bg-transparent border-b border-[rgba(255,255,255,0.1)] text-white text-sm focus:border-green-500 outline-none pb-1 font-bold"
+                                            list="produtos-list"
+                                        />
+                                    </div>
                                 </div>
 
-                                <div className="w-full md:w-1/4">
-                                    <label className="block text-xs font-bold text-[var(--color-muted)] mb-1">Dose Recomendada</label>
+                                <div className="w-full md:w-3/12">
+                                    <label className="block text-[10px] font-black text-[var(--color-muted)] uppercase tracking-widest mb-1">Volume/Dose</label>
                                     <div className="flex">
                                         <input 
                                             type="number"
@@ -544,12 +574,12 @@ export default function RecomendacoesScreen() {
                                             placeholder="Ex: 10"
                                             value={row.dosage}
                                             onChange={(e) => handleRowChange(row.id, 'dosage', e.target.value)}
-                                            className="w-1/2 bg-[var(--color-background)] border border-[var(--color-border)] text-white text-sm rounded-l-lg focus:ring-2 focus:ring-green-500 block p-2.5 transition-all"
+                                            className="w-1/2 bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.1)] text-white text-sm rounded-l-lg focus:ring-2 focus:ring-green-500 block p-2 transition-all font-mono"
                                         />
                                         <select
                                             value={row.unit}
                                             onChange={(e) => handleRowChange(row.id, 'unit', e.target.value)}
-                                            className="w-1/2 bg-[var(--color-border)] border-y border-r border-[var(--color-border)] text-white text-sm rounded-r-lg focus:ring-2 focus:ring-green-500 block p-2.5 transition-all"
+                                            className="w-1/2 bg-[rgba(255,255,255,0.05)] border-y border-r border-[rgba(255,255,255,0.1)] text-white text-sm font-bold rounded-r-lg focus:ring-2 focus:ring-green-500 block p-2 transition-all"
                                         >
                                             <option value="KG">KG</option>
                                             <option value="GR">GR</option>
@@ -559,12 +589,8 @@ export default function RecomendacoesScreen() {
                                     </div>
                                 </div>
 
-                                <div className="hidden md:flex items-center text-[var(--color-muted)] font-black px-1 mt-4">
-                                    /
-                                </div>
-
-                                <div className="w-full md:w-1/4">
-                                    <label className="block text-xs font-bold text-green-400 mb-1">Para cada (Base)</label>
+                                <div className="w-full md:w-3/12">
+                                    <label className="block text-[10px] font-black text-green-500 uppercase tracking-widest mb-1">Calibrador Base</label>
                                     <div className="flex">
                                         <input 
                                             type="number"
@@ -573,30 +599,32 @@ export default function RecomendacoesScreen() {
                                             placeholder="Ex: 100"
                                             value={row.baseQty}
                                             onChange={(e) => handleRowChange(row.id, 'baseQty', e.target.value)}
-                                            className="w-1/2 bg-green-500/10 border border-green-500/30 text-white text-sm rounded-l-lg focus:ring-2 focus:ring-green-500 block p-2.5 transition-all"
+                                            className="w-1/2 bg-green-500/5 border border-green-500/20 text-white text-sm rounded-l-lg focus:ring-2 focus:ring-green-500 block p-2 transition-all font-mono"
                                         />
                                         <select
                                             value={row.baseUnit}
                                             onChange={(e) => handleRowChange(row.id, 'baseUnit', e.target.value)}
-                                            className="w-1/2 bg-green-500/20 border-y border-r border-green-500/30 text-white text-sm font-bold rounded-r-lg focus:ring-2 focus:ring-green-500 block p-2.5 transition-all"
+                                            className="w-1/2 bg-green-500/10 border-y border-r border-green-500/20 text-green-400 text-sm font-bold rounded-r-lg focus:ring-2 focus:ring-green-500 block p-2 transition-all"
                                         >
-                                            <option value="L">L (Água)</option>
-                                            <option value="HA">Hectare</option>
-                                            <option value="PLANTAS">Pés</option>
+                                            <option value="L">Lts de Água</option>
+                                            <option value="HA">Hectare (ha)</option>
+                                            <option value="PLANTAS">Plantas (Pés)</option>
                                         </select>
                                     </div>
                                 </div>
 
-                                <div className="w-full md:w-auto md:ml-auto mt-2 md:mt-0 flex justify-end">
-                                    {recipeRows.length > 1 && (
+                                <div className="w-full md:w-1/12 mt-4 md:mt-0 flex justify-end">
+                                    {recipeRows.length > 1 ? (
                                         <button 
                                             type="button"
                                             onClick={() => handleRemoveRow(row.id)}
-                                            className="p-2.5 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/20"
-                                            title="Remover linha"
+                                            className="p-2 text-red-400/50 hover:text-red-400 hover:bg-red-500/10 rounded transition-all"
+                                            title="Excluir"
                                         >
                                             <Trash2 className="w-5 h-5" />
                                         </button>
+                                    ) : (
+                                        <div className="w-9"></div>
                                     )}
                                 </div>
 
@@ -606,17 +634,18 @@ export default function RecomendacoesScreen() {
                 </div>
 
                 {/* 4. OBSERVAÇÕES */}
-                <div className="glass p-6 rounded-2xl flex flex-col gap-4">
-                    <h2 className="text-sm font-black text-[var(--color-muted)] uppercase tracking-widest border-b border-[var(--color-border)] pb-2 mb-2">
-                        4. Observações Técnicas (Opcional)
+                <div className="premium-card p-6 rounded-2xl flex flex-col gap-4">
+                    <h2 className="text-xs font-black text-[var(--color-muted)] uppercase tracking-widest border-b border-[rgba(255,255,255,0.05)] pb-3 mb-2 flex items-center gap-2">
+                        <span className="w-6 h-6 rounded bg-[rgba(255,255,255,0.05)] text-white flex items-center justify-center">4</span> 
+                        Parâmetros Adicionais & Observações
                     </h2>
                     
                     <textarea 
-                        rows={4}
-                        placeholder="Recomendações extras, avisos sobre diluição, condições climáticas, etc."
+                        rows={3}
+                        placeholder="Observações sobre mistura, tanque, PH da água ou horários de aplicação..."
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
-                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-base rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent block p-4 transition-all resize-none"
+                        className="w-full bg-[#0a192f] border border-[rgba(255,255,255,0.1)] text-white text-sm rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent block p-4 transition-all resize-none"
                     />
                 </div>
 
