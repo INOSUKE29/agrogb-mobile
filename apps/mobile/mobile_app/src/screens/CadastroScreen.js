@@ -385,6 +385,12 @@ export default function CadastroScreen({ navigation }) {
                                     </TouchableOpacity>
                                 )
                             })}
+                            <TouchableOpacity style={styles.gridItem} onPress={() => { setCategoryModalVisible(false); Alert.alert('Solicitar', 'Sua solicitação de categoria foi enviada para análise!'); }}>
+                                <View style={[styles.gridIcon, { backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB', borderStyle: 'dashed' }]}>
+                                    <Ionicons name="add" size={24} color="#9CA3AF" />
+                                </View>
+                                <Text style={[styles.gridLabel, { color: '#9CA3AF' }]}>Solicitar Categoria</Text>
+                            </TouchableOpacity>
                         </View>
                         <AgroButton title="CANCELAR" variant="secondary" onPress={() => setCategoryModalVisible(false)} />
                     </Card>
@@ -631,10 +637,10 @@ const styles = StyleSheet.create({
     overlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 25 },
     gridModal: { padding: 25 },
     modalTitleCenter: { fontSize: 16, fontWeight: '900', color: '#1F2937', textAlign: 'center', marginBottom: 25, letterSpacing: 1 },
-    catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 25 },
-    gridItem: { width: (width - 100) / 2, backgroundColor: '#F9FAFB', padding: 15, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: '#F3F4F6' },
-    gridIcon: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-    gridLabel: { fontSize: 11, fontWeight: '800', color: '#4B5563', textAlign: 'center' },
+    catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 25, justifyContent: 'center' },
+    gridItem: { width: (width - 110) / 3, backgroundColor: '#F9FAFB', padding: 10, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#F3F4F6' },
+    gridIcon: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+    gridLabel: { fontSize: 10, fontWeight: '800', color: '#4B5563', textAlign: 'center' },
     stdModal: { padding: 25, maxHeight: '80%' },
     stdRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
     stdName: { fontSize: 14, fontWeight: '700', color: '#374151' },

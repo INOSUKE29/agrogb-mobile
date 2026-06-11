@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { CloudRain, Sun, Wind, Droplets, ThermometerSun, AlertTriangle, CloudLightning, MapPin } from 'lucide-react';
+import { CloudRain, Sun, Wind, Droplets, ThermometerSun, AlertTriangle, CloudLightning, MapPin, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // Dados Fictícios de Previsão para o Gráfico
@@ -13,6 +14,7 @@ const forecastData = [
 ];
 
 export default function ClimaScreen() {
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -28,6 +30,9 @@ export default function ClimaScreen() {
             {/* CABEÇALHO */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
+                    <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[var(--color-muted)] hover:text-white transition-colors mb-4 font-bold text-sm uppercase tracking-wider">
+                        <ArrowLeft className="w-4 h-4" /> Voltar
+                    </button>
                     <h1 className="text-3xl font-black text-white flex items-center gap-3">
                         <CloudRain className="w-8 h-8 text-blue-400" />
                         Estação Meteorológica

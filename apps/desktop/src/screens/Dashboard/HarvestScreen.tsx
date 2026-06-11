@@ -270,13 +270,10 @@ export default function HarvestScreen() {
             {/* HEADER */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-[var(--color-border)] pb-6 pt-4">
                 <div>
-                    <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-                        <Sprout className="w-8 h-8 text-green-500" />
-                        Apontamentos (Colheita)
+                    <h1 className="text-3xl font-black text-white">
+                        Registrar Colheita
                     </h1>
-                    <p className="text-[var(--color-muted)] font-medium mt-1">
-                        Gerencie as colheitas, congelamentos e descartes da produção.
-                    </p>
+                    <p className="text-[var(--color-muted)] mt-1">Anote o que foi colhido no campo hoje.</p>
                 </div>
             </div>
 
@@ -360,9 +357,13 @@ export default function HarvestScreen() {
                                 </div>
                             )}
 
-                            <div>
-                                <h3 className="text-sm font-black text-[var(--color-muted)] uppercase tracking-wider mb-4 border-b border-white/5 pb-2">3. Observações Finais</h3>
-                                <textarea value={observacao} onChange={e => setObservacao(e.target.value)} placeholder="Detalhes técnicos da colheita..." className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white outline-none focus:border-green-500 resize-none h-24" />
+                            {/* SESSÃO 3: OBSERVAÇÕES */}
+                            <div className="p-8 border-b border-[var(--color-border)]">
+                                <h3 className="text-sm font-black text-white uppercase tracking-wider mb-4">Observações Finais</h3>
+                                <textarea
+                                    value={observacao}
+                                    onChange={e => setObservacao(e.target.value)}
+                                    placeholder="Algum detalhe extra? (Ex: Choveu à tarde, caixa molhada...)" className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white outline-none focus:border-green-500 resize-none h-24" />
                             </div>
 
                             <button onClick={salvarColheita} className="w-full py-4 bg-green-600 hover:bg-green-500 text-white font-black rounded-xl flex justify-center items-center gap-2 shadow-lg transition-all">
@@ -408,10 +409,11 @@ export default function HarvestScreen() {
                     {/* DESCARTE TAB */}
                     {activeTab === 'DESCARTE' && (
                         <div className="space-y-6 animate-fade-in-up">
-                            <h3 className="text-lg font-black text-white border-b border-white/5 pb-2">Lançar Perda / Descarte</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <h3 className="text-sm font-black text-white uppercase tracking-wider mb-4">De onde você colheu?</h3>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-xs font-bold text-[var(--color-muted)] mb-1 uppercase">Produto *</label>
+                                    <label className="block text-xs font-bold text-[var(--color-muted)] uppercase mb-2">Qual Talhão? *</label>
                                     <select value={descProduto} onChange={e => setDescProduto(e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white font-bold outline-none focus:border-red-500">
                                         <option value="">Selecione...</option>
                                         {culturas.map(c => <option key={c.id || c.uuid} value={c.nome}>{c.nome}</option>)}

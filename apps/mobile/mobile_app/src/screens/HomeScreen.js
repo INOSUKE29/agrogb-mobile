@@ -20,8 +20,8 @@ export default function HomeScreen({ navigation }) {
     const { theme } = useTheme();
     const { data: dashboardData } = useDashboardData();
     const THEME = {
-        bg: theme?.colors?.bg ?? '#F3F4F6',
-        headerBg: [theme?.colors?.primary ?? '#10B981', theme?.colors?.primaryDeep ?? '#047857'],
+        bg: theme?.colors?.bg ?? '#091829',
+        headerBg: theme?.colors?.headerBg ?? ['#0D8C39', '#18B34A'],
         cardBg: theme?.colors?.card ?? '#FFFFFF',
         textMain: theme?.colors?.text ?? '#1F2937',
         textSub: theme?.colors?.textMuted ?? '#6B7280',
@@ -76,9 +76,9 @@ export default function HomeScreen({ navigation }) {
     // Se a config diz X colunas, mas a tela for pequena, reduzimos.
     const screenWidth = Dimensions.get('window').width;
     const getNumColumns = () => {
-        if (!menuConfig) return 3; // Default loading
-        const desired = menuConfig.menu_columns || 3;
-        if (screenWidth < 380 && desired > 2) return 2; // Fallback para telas pequenas
+        if (!menuConfig) return 4; 
+        const desired = menuConfig.menu_columns || 4;
+        if (screenWidth < 380 && desired > 3) return 3; 
         return desired;
     };
 
@@ -99,8 +99,8 @@ export default function HomeScreen({ navigation }) {
                                 <Ionicons name="menu" size={30} color="#FFF" />
                             </TouchableOpacity>
                             <View>
-                                <Text style={styles.brand}>AgroGB</Text>
-                                <Text style={styles.salutation}>Painel Gerencial</Text>
+                                <Text style={styles.salutation}>Olá, Bruno 👋</Text>
+                                <Text style={styles.subSalutation}>Bem-vindo ao seu painel.</Text>
                             </View>
                         </View>
                         <TouchableOpacity 
@@ -126,7 +126,7 @@ export default function HomeScreen({ navigation }) {
                         <View style={styles.kpiItem}>
                             <Text style={styles.kpiLabel}>COLHEITA (HOJE)</Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                                <Ionicons name="leaf" size={14} color="#34D399" />
+                                <Text style={styles.kpiEmoji}>🌱</Text>
                                 <Text style={styles.kpiValue}>{stats.colheitaHoje} <Text style={styles.unit}>kg</Text></Text>
                             </View>
                         </View>
@@ -136,7 +136,7 @@ export default function HomeScreen({ navigation }) {
                         <View style={styles.kpiItem}>
                             <Text style={styles.kpiLabel}>VENDAS (HOJE)</Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                                <Ionicons name="cash" size={14} color="#34D399" />
+                                <Text style={styles.kpiEmoji}>💵</Text>
                                 <Text style={styles.kpiValue}>{stats.vendasHoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</Text>
                             </View>
                         </View>
@@ -145,9 +145,12 @@ export default function HomeScreen({ navigation }) {
 
                         <View style={styles.kpiItem}>
                             <Text style={styles.kpiLabel}>RESULTADO (MÊS)</Text>
-                            <Text style={[styles.kpiValue, { color: stats.saldo >= 0 ? '#34D399' : '#F87171' }]}>
-                                {formatBRL(stats.saldo)}
-                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                                <Text style={styles.kpiEmoji}>📈</Text>
+                                <Text style={[styles.kpiValue, { color: stats.saldo >= 0 ? '#34D399' : '#F87171' }]}>
+                                    {formatBRL(stats.saldo)}
+                                </Text>
+                            </View>
                         </View>
                     </View>
                 )}
@@ -174,14 +177,14 @@ export default function HomeScreen({ navigation }) {
                                 {menuConfig.menu_items.filter(i => i.enabled).map((item, index) => (
                                     <TouchableOpacity
                                         key={item.id}
-                                        style={[styles.card, { width: cardWidth, backgroundColor: THEME.cardBg, borderColor: theme?.colors?.border || 'rgba(0,0,0,0.02)' }]}
+                                        style={[styles.card, { width: cardWidth, height: 110, backgroundColor: theme?.colors?.cardMenu || '#152235' }]}
                                         onPress={() => navigation.navigate(item.screen)}
                                         activeOpacity={0.7}
                                     >
-                                        <View style={[styles.iconCircle, { backgroundColor: (item.color || '#374151') + '15' }]}>
-                                            <Ionicons name={item.icon} size={24} color={item.color || '#374151'} />
+                                        <View style={styles.iconCirclePremium}>
+                                            <Ionicons name={item.icon} size={28} color={item.color || '#10B981'} />
                                         </View>
-                                        <Text style={[styles.cardTitle, { color: THEME.textMain }]} numberOfLines={1}>{item.label}</Text>
+                                        <Text style={[styles.cardTitle, { color: '#FFF' }]} numberOfLines={1}>{item.label}</Text>
                                         {/* Badges Especiais */}
                                         {item.id === 'sync' && stats.pendentes > 0 && (
                                             <View style={styles.badge}>
@@ -220,16 +223,18 @@ const styles = StyleSheet.create({
     headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
     brand: { fontSize: 22, fontWeight: '900', color: '#FFF', letterSpacing: 0.5 },
     brandPro: { fontSize: 10, backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden', color: '#A7F3D0' },
-    salutation: { fontSize: 12, color: '#000000', fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, marginTop: 2 },
+    salutation: { fontSize: 18, color: '#FFFFFF', fontWeight: 'bold' },
+    subSalutation: { fontSize: 12, color: '#D1FAE5' },
     profileBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12 },
     bellBtn: { padding: 6, position: 'relative' },
     bellBadge: { position: 'absolute', top: 2, right: 4, backgroundColor: '#EF4444', minWidth: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
     bellBadgeText: { color: '#FFF', fontSize: 9, fontWeight: 'bold' },
 
-    kpiRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)', padding: 15, borderRadius: 16 },
+    kpiRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#142233', padding: 15, borderRadius: 16, shadowColor: '#10B981', shadowOpacity: 0.1, shadowRadius: 10, elevation: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
     kpiItem: { flex: 1, alignItems: 'center' },
     kpiLabel: { fontSize: 9, color: '#9CA3AF', fontWeight: '900', marginBottom: 4, letterSpacing: 0.5 },
     kpiValue: { fontSize: 14, color: '#FFF', fontWeight: 'bold' },
+    kpiEmoji: { fontSize: 14 },
     unit: { fontSize: 10, color: '#6B7280' },
     vr: { width: 1, height: 25, backgroundColor: 'rgba(255,255,255,0.1)' },
 
@@ -239,11 +244,11 @@ const styles = StyleSheet.create({
     alertBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', padding: 12, borderRadius: 12, marginBottom: 20, gap: 10, borderLeftWidth: 4, borderLeftColor: '#F59E0B' },
     alertText: { flex: 1, fontSize: 11, fontWeight: 'bold', color: '#92400E' },
 
-    sectionTitle: { fontSize: 12, fontWeight: '900', color: '#6B7280', marginBottom: 15, letterSpacing: 1 },
+    sectionTitle: { fontSize: 12, fontWeight: '900', color: '#9CA3AF', marginBottom: 15, letterSpacing: 1 },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-    card: { backgroundColor: '#FFF', borderRadius: 16, padding: 15, alignItems: 'center', justifyContent: 'center', elevation: 2, borderWidth: 1, borderColor: 'rgba(0,0,0,0.02)' },
-    iconCircle: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-    cardTitle: { fontSize: 10, fontWeight: 'bold', color: '#374151', textAlign: 'center' },
+    card: { borderRadius: 18, padding: 10, alignItems: 'center', justifyContent: 'center', elevation: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+    iconCirclePremium: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.95)', shadowColor: 'rgba(255,255,255,0.20)', shadowOffset: {width: 0, height: 2}, shadowOpacity: 1, shadowRadius: 5, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+    cardTitle: { fontSize: 11, fontWeight: 'bold', textAlign: 'center' },
 
     badge: { position: 'absolute', top: 5, right: 5, backgroundColor: '#EF4444', minWidth: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
     badgeText: { color: '#FFF', fontSize: 9, fontWeight: 'bold' },

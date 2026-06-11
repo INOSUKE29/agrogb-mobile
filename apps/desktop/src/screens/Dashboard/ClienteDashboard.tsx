@@ -10,7 +10,15 @@ import {
     Wind,
     AlertTriangle,
     TrendingUp,
-    DollarSign
+    DollarSign,
+    Package,
+    ShoppingCart,
+    Store,
+    Truck,
+    Car,
+    ListTodo,
+    CloudRain,
+    Sprout
 } from 'lucide-react';
 import { 
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -181,298 +189,160 @@ export default function ClienteDashboard() {
     }, []);
 
     return (
-        <div className="animate-fade-in pb-12">
+        <div className="animate-fade-in pb-12 px-4 sm:px-6 lg:px-8 mt-6">
             
-            {/* CABEÇALHO HERO */}
-            <div className="relative rounded-3xl overflow-hidden mb-8 border border-[var(--color-border)] shadow-xl group">
-                <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105">
-                    <img src="/hero_agrogb.png" alt="Futuristic Agro Dashboard" className="w-full h-full object-cover opacity-80 dark:opacity-60 mix-blend-overlay" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-background)] via-[var(--color-background)]/80 to-transparent" />
+            {/* CABEÇALHO BOAS-VINDAS */}
+            <div className="premium-card p-6 flex flex-col sm:flex-row sm:items-center justify-between mb-6">
+                <div>
+                    <h2 className="text-2xl font-black text-white tracking-tight">Olá, Bruno! 👋</h2>
+                    <p className="text-[var(--color-muted)] text-sm font-medium mt-1">Bem-vindo ao seu painel.</p>
                 </div>
-                <div className="relative z-10 p-8 sm:p-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-                    <div className="max-w-xl">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-bold mb-4 backdrop-blur-md">
-                            <MapIcon className="w-4 h-4" /> Visão Produtor
-                        </div>
-                        <h1 className="text-4xl sm:text-5xl font-black text-[var(--color-foreground)] tracking-tight drop-shadow-sm">
-                            Dashboard da Propriedade
-                        </h1>
-                        <p className="text-[var(--color-muted)] font-medium mt-3 text-lg drop-shadow-sm">
-                            Acompanhamento em tempo real das condições climáticas, ocupação de talhões e andamento da safra atual.
-                        </p>
-                    </div>
-                    
-                    {/* Clima Resumo Header (Glassmorphism) */}
-                    <div className="bg-[var(--color-card)]/80 backdrop-blur-xl flex flex-wrap items-center gap-6 px-8 py-4 rounded-2xl border border-[var(--color-border)] shadow-2xl">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-orange-500/10 rounded-lg">
-                                <ThermometerSun className="w-6 h-6 text-orange-500" />
-                            </div>
-                            <div>
-                                <p className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Temp</p>
-                                <p className="text-[var(--color-foreground)] font-black text-xl">
-                                    {realWeather ? `${Math.round(realWeather.current.temperature)}°C` : '...'}
-                                </p>
-                            </div>
-                        </div>
-                        <div className="hidden sm:block w-px h-10 bg-[var(--color-border)]"></div>
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-500/10 rounded-lg">
-                                <Droplet className="w-6 h-6 text-blue-500" />
-                            </div>
-                            <div>
-                                <p className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Umidade</p>
-                                <p className="text-[var(--color-foreground)] font-black text-xl">
-                                    {realWeather ? `${Math.round(realWeather.current.humidity)}%` : '...'}
-                                </p>
-                            </div>
-                        </div>
-                        <div className="hidden sm:block w-px h-10 bg-[var(--color-border)]"></div>
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-teal-500/10 rounded-lg">
-                                <Wind className="w-6 h-6 text-teal-500" />
-                            </div>
-                            <div>
-                                <p className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Vento</p>
-                                <p className="text-[var(--color-foreground)] font-black text-xl">
-                                    {realWeather ? `${Math.round(realWeather.current.wind_speed)} km/h` : '...'}
-                                </p>
-                            </div>
-                        </div>
+                <div className="mt-4 sm:mt-0 flex items-center gap-3 bg-[rgba(0,0,0,0.2)] rounded-full px-4 py-2 border border-[rgba(255,255,255,0.05)]">
+                    <ThermometerSun className="w-5 h-5 text-yellow-500" />
+                    <div>
+                        <p className="text-white font-bold text-sm leading-none">{realWeather ? `${Math.round(realWeather.current.temperature)}°C` : '24°C'}</p>
+                        <p className="text-[var(--color-muted)] text-[10px] uppercase tracking-wider">Ribeirão Verde - GO</p>
                     </div>
                 </div>
             </div>
 
-            {/* KPI CARDS */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+            {/* KPI CARDS (3 superiores) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
                 
-                <div className="glass p-6 rounded-2xl relative overflow-hidden group bg-white/5 border border-white/10 shadow-lg hover:shadow-emerald-500/10 transition-all">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
-                    <div className="flex flex-col relative z-10">
-                        <div className="flex items-center gap-3 mb-2">
-                            <MapIcon className="w-5 h-5 text-emerald-400" />
-                            <h3 className="text-[var(--color-muted)] font-bold text-sm">Talhões</h3>
+                {/* Colheita */}
+                <div className="premium-card-kpi p-5 relative overflow-hidden group">
+                    <div className="flex justify-between items-start mb-2">
+                        <h3 className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider">Colheita (Hoje)</h3>
+                        <div className="icon-circle w-8 h-8">
+                            <Sprout className="w-4 h-4 text-[#19B34A]" />
                         </div>
-                        <span className="text-2xl lg:text-3xl font-black text-white break-words">
-                            {loading ? '...' : kpis.talhoesAtivos}
-                        </span>
                     </div>
+                    <div className="flex items-end gap-3 mt-4">
+                        <span className="text-2xl lg:text-3xl font-black text-white">1.250 kg</span>
+                    </div>
+                    <p className="text-[#19B34A] text-xs font-bold mt-2 flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3" /> +12% vs ontem
+                    </p>
                 </div>
 
-                <div className="glass p-6 rounded-2xl relative overflow-hidden group bg-white/5 border border-white/10 shadow-lg hover:shadow-emerald-500/10 transition-all">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
-                    <div className="flex flex-col relative z-10">
-                        <div className="flex items-center gap-3 mb-2">
-                            <Maximize className="w-5 h-5 text-emerald-400" />
-                            <h3 className="text-[var(--color-muted)] font-bold text-sm">Área Total (ha)</h3>
+                {/* Vendas */}
+                <div className="premium-card-kpi p-5 relative overflow-hidden group">
+                    <div className="flex justify-between items-start mb-2">
+                        <h3 className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider">Vendas (Hoje)</h3>
+                        <div className="icon-circle w-8 h-8">
+                            <Store className="w-4 h-4 text-[#19B34A]" />
                         </div>
-                        <span className="text-2xl lg:text-3xl font-black text-white break-words">
-                            {loading ? '...' : kpis.areaTotal.toFixed(1)}
-                        </span>
                     </div>
+                    <div className="flex items-end gap-3 mt-4">
+                        <span className="text-2xl lg:text-3xl font-black text-white">R$ 8.450,00</span>
+                    </div>
+                    <p className="text-[#19B34A] text-xs font-bold mt-2 flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3" /> +8% vs ontem
+                    </p>
                 </div>
 
-                <div className="glass p-6 rounded-2xl relative overflow-hidden group bg-white/5 border border-white/10 shadow-lg hover:shadow-emerald-500/10 transition-all">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
-                    <div className="flex flex-col relative z-10">
-                        <div className="flex items-center gap-3 mb-2">
-                            <Calendar className="w-5 h-5 text-emerald-400" />
-                            <h3 className="text-[var(--color-muted)] font-bold text-sm">Culturas</h3>
+                {/* Resultado */}
+                <div className="premium-card-kpi p-5 relative overflow-hidden group">
+                    <div className="flex justify-between items-start mb-2">
+                        <h3 className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider">Resultado (Mês)</h3>
+                        <div className="icon-circle w-8 h-8">
+                            <TrendingUp className="w-4 h-4 text-[#19B34A]" />
                         </div>
-                        <span className="text-2xl lg:text-3xl font-black text-white break-words">
-                            {loading ? '...' : kpis.culturas}
-                        </span>
                     </div>
-                </div>
-
-                <div className="glass p-6 rounded-2xl relative overflow-hidden group border-b-4 border-emerald-500 bg-white/5 shadow-lg hover:shadow-emerald-500/20 transition-all">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
-                    <div className="flex flex-col relative z-10">
-                        <div className="flex items-center gap-3 mb-2">
-                            <FileText className="w-5 h-5 text-emerald-500" />
-                            <h3 className="text-[var(--color-muted)] font-bold text-sm">Ativ. em Andamento</h3>
-                        </div>
-                        <span className="text-2xl lg:text-3xl font-black text-white break-words">
-                            {loading ? '...' : kpis.atividadesAndamento}
-                        </span>
+                    <div className="flex items-end gap-3 mt-4">
+                        <span className="text-2xl lg:text-3xl font-black text-white">R$ 24.680,00</span>
                     </div>
+                    <p className="text-[#19B34A] text-xs font-bold mt-2 flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3" /> +15% vs mês ant.
+                    </p>
                 </div>
-
             </div>
 
-            {/* ALERTAS DE ESTOQUE */}
-            {stockAlerts.length > 0 && (
-                <div className="mb-8 p-4 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex flex-col sm:flex-row gap-4 items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <AlertTriangle className="w-6 h-6 text-orange-500 shrink-0" />
+            {/* ALERTAS INTELIGENTES */}
+            <div className="mb-8">
+                <h3 className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-widest mb-3">Alertas Inteligentes</h3>
+                <div className="bg-[#0f172a] border border-blue-500/30 rounded-[16px] p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_4px_20px_rgba(59,130,246,0.1)]">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+                            <Droplet className="w-5 h-5 text-white" />
+                        </div>
                         <div>
-                            <h4 className="text-orange-500 font-bold">Atenção ao Estoque</h4>
-                            <p className="text-sm text-orange-400/80">Você possui {stockAlerts.length} item(s) com nível crítico.</p>
+                            <h4 className="text-blue-400 font-bold text-sm uppercase tracking-wider">Irrigação Diária</h4>
+                            <p className="text-white text-sm font-medium">Nenhum turno de irrigação registrado hoje.</p>
                         </div>
                     </div>
-                    <button 
-                        onClick={() => navigate('/dashboard/cliente/estoque')}
-                        className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-sm transition-colors"
-                    >
-                        Ver Estoque
+                    <button className="text-blue-400 hover:text-blue-300 font-bold text-sm flex items-center gap-1 group">
+                        Ver detalhes <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </button>
-                </div>
-            )}
-
-            {/* DASHBOARDS FINANCEIROS */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <div className="glass p-6 rounded-2xl bg-white/5 border border-white/10 shadow-lg">
-                    <div className="flex items-center gap-3 mb-6">
-                        <TrendingUp className="w-5 h-5 text-emerald-400" />
-                        <h3 className="text-lg font-bold text-white">Fluxo de Caixa (6 Meses)</h3>
-                    </div>
-                    <div className="h-72 w-full">
-                        {loading ? (
-                            <div className="w-full h-full flex items-center justify-center text-[var(--color-muted)]">Carregando...</div>
-                        ) : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={financialData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                    <XAxis dataKey="name" stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `R$${val/1000}k`} />
-                                    <RechartsTooltip 
-                                        contentStyle={{ backgroundColor: '#152336', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                                        itemStyle={{ fontWeight: 'bold' }}
-                                    />
-                                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                                    <Bar dataKey="Receitas" fill="#10B981" radius={[4, 4, 0, 0]} barSize={20} />
-                                    <Bar dataKey="Custos" fill="#EF4444" radius={[4, 4, 0, 0]} barSize={20} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        )}
-                    </div>
-                </div>
-
-                <div className="glass p-6 rounded-2xl bg-white/5 border border-white/10 shadow-lg">
-                    <div className="flex items-center gap-3 mb-6">
-                        <DollarSign className="w-5 h-5 text-blue-400" />
-                        <h3 className="text-lg font-bold text-white">Despesas por Categoria</h3>
-                    </div>
-                    <div className="h-72 w-full">
-                        {loading ? (
-                            <div className="w-full h-full flex items-center justify-center text-[var(--color-muted)]">Carregando...</div>
-                        ) : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={expensesData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={90}
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                    >
-                                        {expensesData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <RechartsTooltip 
-                                        contentStyle={{ backgroundColor: '#152336', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                                        itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-                                        formatter={(value: any) => `R$ ${value}`}
-                                    />
-                                    <Legend layout="vertical" verticalAlign="middle" align="right" />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        )}
-                    </div>
                 </div>
             </div>
 
-            {/* SEÇÕES INFERIORES */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
-                {/* Próximas Atividades */}
-                <div className="glass p-6 rounded-2xl flex flex-col bg-white/5 border border-white/10 shadow-lg">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-lg font-bold text-white">Atividades Recentes</h3>
+            {/* MENU ACESSO RÁPIDO - V8 (Grid 4 colunas) */}
+            <div className="mb-12">
+                <h3 className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-widest mb-3">Acesso Rápido</h3>
+                <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-5 gap-3 sm:gap-4">
+                    {[
+                        { name: 'Caderno', icon: FileText, color: 'text-[#19B34A]', path: '/dashboard/cliente/caderno' },
+                        { name: 'Colheita', icon: Sprout, color: 'text-[#19B34A]', path: '/dashboard/cliente/colheita' },
+                        { name: 'Vendas', icon: Store, color: 'text-[#19B34A]', path: '/dashboard/cliente/vendas' },
+                        { name: 'Estoque', icon: Package, color: 'text-gray-400', path: '/dashboard/cliente/estoque' },
+                        { name: 'Monitorar', icon: MapIcon, color: 'text-blue-500', path: '/dashboard/cliente/areas' },
+                        { name: 'Manejo', icon: ListTodo, color: 'text-[#19B34A]', path: '/dashboard/cliente/manejo' },
+                        { name: 'Compras', icon: ShoppingCart, color: 'text-orange-500', path: '/dashboard/cliente/compras' },
+                        { name: 'Plantio', icon: Sprout, color: 'text-[#19B34A]', path: '/dashboard/cliente/plantio' },
+                        { name: 'Custos', icon: DollarSign, color: 'text-red-500', path: '/dashboard/cliente/financeiro' },
+                        { name: 'Descarte', icon: AlertTriangle, color: 'text-red-500', path: '/dashboard/cliente/descarte' },
+                        { name: 'Frota', icon: Car, color: 'text-gray-400', path: '/dashboard/cliente/frota' },
+                        { name: 'Relatórios', icon: FileText, color: 'text-gray-300', path: '/dashboard/cliente/relatorios' },
+                        { name: 'Cadastros', icon: Store, color: 'text-gray-400', path: '/dashboard/cliente/cadastros' },
+                        { name: 'Clientes', icon: Store, color: 'text-gray-400', path: '/dashboard/cliente/clientes' },
+                        { name: 'Áreas', icon: MapIcon, color: 'text-gray-400', path: '/dashboard/cliente/areas' },
+                        { name: 'Sync', icon: CloudRain, color: 'text-blue-400', path: '/dashboard/cliente/sync' },
+                    ].map((item, i) => (
                         <button 
-                            onClick={() => navigate('/dashboard/cliente/caderno')}
-                            className="text-sm text-emerald-400 hover:text-emerald-300 font-bold transition-colors"
+                            key={i}
+                            onClick={() => navigate(item.path)}
+                            className="premium-card h-24 sm:h-28 flex flex-col items-center justify-center gap-2 hover:translate-y-[-2px] hover:shadow-lg transition-all group"
                         >
-                            Ver Caderno
-                        </button>
-                    </div>
-                    <div className="flex flex-col gap-4 flex-1">
-                        {loading ? (
-                            <div className="text-[var(--color-muted)]">Carregando...</div>
-                        ) : atividadesPendentes.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center flex-1 py-8 text-[var(--color-muted)]">
-                                <Calendar className="w-12 h-12 mb-3 opacity-20" />
-                                <p>Nenhuma atividade encontrada no sistema.</p>
+                            <div className="icon-circle w-10 h-10 sm:w-12 sm:h-12 group-hover:scale-110">
+                                <item.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${item.color}`} />
                             </div>
-                        ) : (
-                            atividadesPendentes.map(ativ => (
-                                <div key={ativ.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${ativ.bg}`}>
-                                            <Calendar className={`w-5 h-5 ${ativ.cor}`} />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-white font-bold text-sm">{ativ.tipo}</h4>
-                                            <p className="text-[var(--color-muted)] text-xs mt-1">{ativ.talhao}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center">
-                                        <span className="text-white text-sm font-bold">{ativ.data}</span>
-                                        <span className="text-[var(--color-muted)] text-xs">{ativ.responsavel}</span>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                    <button 
-                        onClick={() => navigate('/dashboard/cliente/caderno')}
-                        className="w-full mt-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 rounded-xl text-white font-black text-lg shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                    >
-                        Nova Atividade
-                        <ArrowRight className="w-5 h-5" />
-                    </button>
+                            <span className="text-[10px] sm:text-xs font-bold text-white tracking-wider truncate w-full px-1">{item.name}</span>
+                        </button>
+                    ))}
                 </div>
+            </div>
 
-                {/* Previsão do Clima */}
-                <div className="glass p-6 rounded-2xl bg-white/5 border border-white/10 shadow-lg">
-                    <h3 className="text-lg font-bold text-white mb-6">Previsão Diária (Chuva vs Temperatura)</h3>
-                    <div className="h-72 w-full">
+            {/* Gráficos V8 Integrados */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="premium-card p-6">
+                    <h3 className="text-sm font-bold text-white mb-6 uppercase tracking-wider">Produção - Últimos 7 Dias (kg)</h3>
+                    <div className="h-64 w-full relative">
+                        <div className="absolute inset-0 bg-[#19B34A]/5 rounded-xl blur-2xl z-0"></div>
                         {loading ? (
-                            <div className="w-full h-full flex items-center justify-center text-[var(--color-muted)]">Carregando gráfico...</div>
+                            <div className="w-full h-full flex items-center justify-center text-[var(--color-muted)]">Carregando...</div>
                         ) : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={chartData}>
+                            <ResponsiveContainer width="100%" height="100%" className="relative z-10">
+                                <AreaChart data={financialData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                     <defs>
-                                        <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#F97316" stopOpacity={0.3}/>
-                                            <stop offset="95%" stopColor="#F97316" stopOpacity={0}/>
-                                        </linearGradient>
-                                        <linearGradient id="colorChuva" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
-                                            <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                                        <linearGradient id="colorProd" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#19B34A" stopOpacity={0.3}/>
+                                            <stop offset="95%" stopColor="#19B34A" stopOpacity={0}/>
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                    <XAxis dataKey="time" stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis yAxisId="left" stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}°C`} />
-                                    <YAxis yAxisId="right" orientation="right" stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
+                                    <XAxis dataKey="name" stroke="#9CA3AF" fontSize={10} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#9CA3AF" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `${val/1000}k`} />
                                     <RechartsTooltip 
                                         contentStyle={{ backgroundColor: '#152336', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                                        itemStyle={{ color: '#fff', fontWeight: 'bold' }}
                                     />
-                                    <Area yAxisId="left" type="monotone" dataKey="temp" stroke="#F97316" strokeWidth={3} fillOpacity={1} fill="url(#colorTemp)" name="Temperatura" />
-                                    <Area yAxisId="right" type="monotone" dataKey="chuva" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#colorChuva)" name="Prob. Chuva" />
+                                    <Area type="monotone" dataKey="Receitas" stroke="#19B34A" strokeWidth={3} fillOpacity={1} fill="url(#colorProd)" activeDot={{ r: 6, fill: '#fff', stroke: '#19B34A' }} />
                                 </AreaChart>
                             </ResponsiveContainer>
                         )}
                     </div>
                 </div>
-
             </div>
-
         </div>
     );
 }

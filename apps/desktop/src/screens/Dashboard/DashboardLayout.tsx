@@ -23,10 +23,13 @@ import {
     Package,
     Truck,
     Store,
+    ListTodo,
     CloudRain,
     CheckSquare,
     TrendingDown,
     Tags,
+    ShoppingCart,
+    Car,
     Database
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -141,16 +144,20 @@ export default function DashboardLayout() {
             ];
         } else if (role === 'CLIENTE') {
             return [
-                { path: '/dashboard/cliente', label: 'Dashboard Produtor', icon: LayoutDashboard, group: 'Visão Geral' },
+                { path: '/dashboard/cliente', label: 'Início', icon: LayoutDashboard, group: 'Visão Geral' },
                 { path: '/dashboard/cliente/relatorios', label: 'Relatórios', icon: FileText, group: 'Visão Geral' },
 
-                { path: '/dashboard/cliente/manejo', label: 'Manejo da Lavoura', icon: ListTodo, group: 'Centro Operacional' },
-
-                { path: '/dashboard/cliente/areas', label: 'Gestão de Áreas e Plantio', icon: Map, group: 'Módulos Auxiliares' },
-                { path: '/dashboard/cliente/colheita', label: 'Colheitas e Frota', icon: Sprout, group: 'Módulos Auxiliares' },
+                { path: '/dashboard/cliente/manejo', label: 'Manejo da Lavoura', icon: ListTodo, group: 'Operacional' },
+                { path: '/dashboard/cliente/areas', label: 'Meus Talhões', icon: Map, group: 'Operacional' },
+                { path: '/dashboard/cliente/colheita', label: 'Produção e Colheita', icon: Sprout, group: 'Operacional' },
                 
-                { path: '/dashboard/cliente/logistica', label: 'Logística e Suprimentos', icon: Package, group: 'Administrativo' },
-                { path: '/dashboard/cliente/financeiro', label: 'Financeiro e Comercial', icon: DollarSign, group: 'Administrativo' },
+                { path: '/dashboard/cliente/vendas', label: 'Vendas', icon: Store, group: 'Comercial e Financeiro' },
+                { path: '/dashboard/cliente/compras', label: 'Compras', icon: ShoppingCart, group: 'Comercial e Financeiro' },
+                { path: '/dashboard/cliente/financeiro', label: 'Financeiro', icon: DollarSign, group: 'Comercial e Financeiro' },
+
+                { path: '/dashboard/cliente/estoque', label: 'Estoque', icon: Package, group: 'Logística e Suprimentos' },
+                { path: '/dashboard/cliente/encomendas', label: 'Encomendas', icon: Truck, group: 'Logística e Suprimentos' },
+                { path: '/dashboard/cliente/frota', label: 'Gestão de Frota', icon: Car, group: 'Logística e Suprimentos' },
             ];
         } else {
             return [
@@ -265,7 +272,7 @@ export default function DashboardLayout() {
             
             {/* SIDEBAR - Navigation Rail / Drawer (8-point system) */}
             <aside
-                className={`transition-all duration-300 bg-[var(--color-card)]/90 backdrop-blur-xl border-r border-[var(--color-border)] flex flex-col z-20 shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.05)] ${isSidebarOpen ? 'w-64' : 'w-20'}`}
+                className={`transition-all duration-300 bg-gradient-to-b from-[#0A101D] to-[#000000] border-r border-[rgba(255,255,255,0.05)] flex flex-col z-20 shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.5)] ${isSidebarOpen ? 'w-64' : 'w-20'}`}
             >
                 
                 {/* Logo Area */}
@@ -279,10 +286,10 @@ export default function DashboardLayout() {
                     </div>
                     {isSidebarOpen && (
                         <div className="flex flex-col ml-3 animate-slide-in-right overflow-hidden">
-                            <span className="font-black text-xl text-[var(--color-foreground)] tracking-tight whitespace-nowrap leading-tight">
+                            <span className="font-black text-xl text-white tracking-tight whitespace-nowrap leading-tight">
                                 AgroGB
                             </span>
-                            <span className={`text-xs font-bold ${getAccentColorClass()}`}>
+                            <span className="text-xs font-bold text-[#19B34A]">
                                 PORTAL {simulatedRole}
                             </span>
                         </div>
@@ -316,15 +323,15 @@ export default function DashboardLayout() {
                                             <Link
                                                 key={item.path}
                                                 to={item.path}
-                                                className={`flex items-center px-3 min-h-[44px] rounded-xl transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-1 focus:ring-offset-[var(--color-background)] ${
+                                                className={`flex items-center px-3 min-h-[44px] rounded-xl transition-all duration-200 group focus:outline-none ${
                                                     isActive 
-                                                        ? `${getBgLightClass()} ${getAccentColorClass()} border border-current/20 shadow-sm font-semibold` 
-                                                        : 'text-[var(--color-muted)] hover:bg-[var(--color-foreground)]/5 hover:text-[var(--color-foreground)] hover:translate-x-1 border border-transparent active:scale-95'
+                                                        ? 'bg-[#19B34A]/10 text-[#19B34A] border border-[#19B34A]/20 shadow-sm font-semibold' 
+                                                        : 'text-gray-400 hover:bg-white/5 hover:text-white hover:translate-x-1 border border-transparent'
                                                 }`}
                                                 title={!isSidebarOpen ? item.label : undefined}
                                             >
-                                                <Icon className={`w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? getAccentColorClass() : ''} ${!isSidebarOpen ? 'mx-auto' : ''}`} />
-                                                {isSidebarOpen && <span className={`ml-3 text-sm whitespace-nowrap ${isActive ? 'text-[var(--color-foreground)]' : ''}`}>{item.label}</span>}
+                                                <Icon className={`w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-[#19B34A]' : 'text-white'} ${!isSidebarOpen ? 'mx-auto' : ''}`} />
+                                                {isSidebarOpen && <span className={`ml-3 text-sm whitespace-nowrap ${isActive ? 'text-white' : ''}`}>{item.label}</span>}
                                             </Link>
                                         );
                                     })}
@@ -340,15 +347,15 @@ export default function DashboardLayout() {
                                 <Link
                                     key={item.path}
                                     to={item.path}
-                                    className={`flex items-center px-3 min-h-[44px] rounded-xl transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-1 focus:ring-offset-[var(--color-background)] ${
+                                    className={`flex items-center px-3 min-h-[44px] rounded-xl transition-all duration-200 group focus:outline-none ${
                                         isActive 
-                                            ? `${getBgLightClass()} ${getAccentColorClass()} border border-current/20 shadow-sm font-semibold` 
-                                            : 'text-[var(--color-muted)] hover:bg-[var(--color-foreground)]/5 hover:text-[var(--color-foreground)] hover:translate-x-1 border border-transparent active:scale-95'
+                                            ? 'bg-[#19B34A]/10 text-[#19B34A] border border-[#19B34A]/20 shadow-sm font-semibold' 
+                                            : 'text-gray-400 hover:bg-white/5 hover:text-white hover:translate-x-1 border border-transparent'
                                     }`}
                                     title={!isSidebarOpen ? item.label : undefined}
                                 >
-                                    <Icon className={`w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? getAccentColorClass() : ''} ${!isSidebarOpen ? 'mx-auto' : ''}`} />
-                                    {isSidebarOpen && <span className={`ml-3 text-sm whitespace-nowrap ${isActive ? 'text-[var(--color-foreground)]' : ''}`}>{item.label}</span>}
+                                    <Icon className={`w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-[#19B34A]' : 'text-white'} ${!isSidebarOpen ? 'mx-auto' : ''}`} />
+                                    {isSidebarOpen && <span className={`ml-3 text-sm whitespace-nowrap ${isActive ? 'text-white' : ''}`}>{item.label}</span>}
                                 </Link>
                             );
                         })
@@ -371,21 +378,24 @@ export default function DashboardLayout() {
             {/* MAIN CONTENT AREA */}
             <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, overflow: 'hidden' }}>
                 
-                {/* Header - Glassmorphism Navbar */}
+                {/* Header - Premium V8 */}
                 <header
-                    className="bg-white/80 dark:bg-[#0A101D]/70 backdrop-blur-xl border-b border-gray-200 dark:border-white/5 flex items-center justify-between z-10 shrink-0 shadow-[0_4px_24px_rgba(0,0,0,0.2)]"
-                    style={{ height: 'clamp(52px, 5vh, 72px)', padding: '0 clamp(16px, 2vw, 32px)' }}
+                    className="bg-gradient-to-r from-[#0D8C39] to-[#18B34A] rounded-b-3xl flex items-start justify-between z-10 shrink-0 shadow-lg relative mx-2 mt-0 pt-6"
+                    style={{ height: '160px', paddingLeft: 'clamp(16px, 2vw, 32px)', paddingRight: 'clamp(16px, 2vw, 32px)' }}
                 >
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => setIsSidebarOpen(true)}
-                            className="lg:hidden p-2 rounded-lg text-[var(--color-muted)] hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                            className="lg:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
                         >
                             <Menu className="w-5 h-5" />
                         </button>
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white hidden md:block">
-                            {navItems.find(i => i.path === location.pathname)?.label || 'Painel Administrativo'}
-                        </h2>
+                        <div>
+                            <h2 className="text-3xl font-black text-white hidden md:block tracking-tight drop-shadow-sm">
+                                {navItems.find(i => i.path === location.pathname)?.label || 'Painel Administrativo'}
+                            </h2>
+                            <p className="text-white/80 text-sm hidden md:block mt-1 font-medium">AgroGB Premium Management</p>
+                        </div>
                     </div>
 
                     {/* BUSCA GLOBAL */}
@@ -546,10 +556,10 @@ export default function DashboardLayout() {
                         className={getBgColorClass()}
                     />
 
-                    {/* Conteúdo da página — cresce livremente, scroll ativa quando passar da tela */}
+                    {/* Conteúdo da página */}
                     <div 
-                        className="bg-white/[0.02] border border-gray-200 dark:border-white/5 shadow-2xl backdrop-blur-xl transition-all duration-500"
-                        style={{ maxWidth: '1400px', margin: '0 auto', position: 'relative', zIndex: 1, padding: 'clamp(1rem, 3vw, 2.5rem)', paddingBottom: '3rem', borderRadius: 'clamp(1.5rem, 3vw, 2.5rem)' }}
+                        className="transition-all duration-500 w-full h-full"
+                        style={{ maxWidth: '1600px', margin: '0 auto', position: 'relative', zIndex: 1, padding: '1rem 2rem 3rem 2rem' }}
                     >
                         <Outlet />
                     </div>

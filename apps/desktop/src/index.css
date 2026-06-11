@@ -23,23 +23,43 @@
 }
 
 :root {
-  /* LIGHT THEME VARIABLES (Redução de brilho / Soft Light) */
-  --color-background: var(--color-slate-100); /* F1F5F9 - Remove o brilho excessivo do fundo */
-  --color-foreground: var(--color-slate-900);
-  --color-card: var(--color-slate-50); /* F8FAFC - Off-white ao invés de branco puro #FFFFFF */
-  --color-card-foreground: var(--color-slate-900);
-  --color-border: rgba(15, 23, 42, 0.08); /* Borda mais sutil */
-  --color-muted: #64748B;
+  /* AGROGB BLACK PREMIUM V8 THEME VARIABLES */
+  
+  /* Gradiente principal de fundo: #06111C -> #102235 */
+  --color-background-top: #06111C;
+  --color-background-bottom: #102235;
+  --color-background: #0B1826; /* Cor de fallback intermediária */
+  
+  --color-foreground: #FFFFFF;
+  
+  /* Fundo de cards padrão (#162336) */
+  --color-card: #162336;
+  --color-card-dark: #142233; /* Para KPIs */
+  --color-card-foreground: #FFFFFF;
+  
+  /* Borda extremamente discreta para cards */
+  --color-border: rgba(255, 255, 255, 0.08);
+  
+  /* Placeholder/Muted text */
+  --color-muted: #9CA3AF;
+  
+  /* Gradiente Verde Principal */
+  --color-primary-start: #0D8C39;
+  --color-primary-end: #18B34A;
+  
+  /* Gradiente Verde do Botão */
+  --color-btn-start: #19B34A;
+  --color-btn-end: #2BD76D;
 }
 
 .dark {
-  /* DARK THEME VARIABLES (Contraste Suavizado) */
-  --color-background: #0B1120; /* Fundo escuro levemente mais quente que o #050914 original */
-  --color-foreground: var(--color-slate-50);
-  --color-card: #141E33; /* Elevação visível sem brilhar na escuridão */
-  --color-card-foreground: var(--color-slate-50);
+  /* Manter as mesmas variáveis caso a classe dark seja injetada por outros componentes */
+  --color-background: #0B1826;
+  --color-foreground: #FFFFFF;
+  --color-card: #162336;
+  --color-card-foreground: #FFFFFF;
   --color-border: rgba(255, 255, 255, 0.08);
-  --color-muted: #94A3B8;
+  --color-muted: #9CA3AF;
 }
 
 /* ── Reset global ─────────────────────────────────────────────────── */
@@ -58,7 +78,7 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background-color: var(--color-background);
+  background: linear-gradient(to bottom, var(--color-background-top), var(--color-background-bottom)) fixed;
   color: var(--color-foreground);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-size: clamp(13px, 1vw, 15px);
@@ -106,6 +126,57 @@ h1, h2, h3, h4, h5, h6 {
   .modal-responsive {
     max-height: calc(100vh - 2rem);
     overflow-y: auto;
+  }
+  
+  /* ==== AGROGB BLACK PREMIUM V8 UTILITIES ==== */
+  
+  .premium-card {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+    border-radius: 18px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+  }
+  
+  .premium-card-kpi {
+    background: var(--color-card-dark);
+    border: 1px solid var(--color-border);
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(16, 185, 129, 0.05); /* Glow verde extremamente suave */
+    transition: all 0.3s ease;
+  }
+  
+  .premium-card:hover, .premium-card-kpi:hover {
+    box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15); /* Hover Glow verde */
+  }
+
+  .icon-circle {
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.20);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+  }
+  
+  .btn-premium {
+    background: linear-gradient(135deg, var(--color-btn-start), var(--color-btn-end));
+    color: white;
+    font-weight: bold;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(43, 215, 109, 0.3);
+    transition: all 0.2s ease;
+  }
+  
+  .btn-premium:hover {
+    box-shadow: 0 6px 20px rgba(43, 215, 109, 0.5);
+    transform: translateY(-1px);
+  }
+  
+  .btn-premium:active {
+    transform: scale(0.98);
   }
 }
 

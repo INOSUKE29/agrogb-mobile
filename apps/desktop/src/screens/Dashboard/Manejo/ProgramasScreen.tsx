@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Plus, Save, Leaf, Droplet, Clock, ListTodo, Map } from 'lucide-react';
+import { Calendar, Plus, Save, Leaf, Droplet, Clock, ListTodo, Map, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function ProgramasScreen() {
@@ -41,6 +41,9 @@ export default function ProgramasScreen() {
             {/* HERO CABEÇALHO */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-[var(--color-border)] pb-6 pt-4">
                 <div>
+                    <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[var(--color-muted)] hover:text-white transition-colors mb-4 font-bold text-sm uppercase tracking-wider">
+                        <ArrowLeft className="w-4 h-4" /> Voltar
+                    </button>
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-bold mb-4">
                         <ListTodo className="w-4 h-4" /> Centro Operacional
                     </div>

@@ -1,16 +1,33 @@
 export const themeDark = {
     mode: 'dark',
     colors: {
-        bg: '#0F172A',                 // Slate Escuro (Premium, não preto puro)
-        headerBg: ['#064E3B', '#0F172A'], // Verde profundo fundindo com slate
-        card: '#1E293B',               // Caixas mais claras que o fundo
-        cardBg: '#1E293B',             // Aliasing
-        border: 'rgba(255,255,255,0.05)', // Bordas Suaves
-        textMain: '#F8FAFC',           // Textos Claros
-        textSub: '#94A3B8',            // Textos Secundários
-        accent: '#10B981',             // Verde Ação
+        // --- FUNDOS PRINCIPAIS ---
+        bg: '#091829',                 // Fundo intermediário (substituto seguro do linear gradient principal)
+        bgGradient: ['#06111C', '#091829', '#102235'], // Degradê vertical exigido
         
-        // Status Colors Ouro
+        // --- CABEÇALHO ---
+        headerBg: ['#0D8C39', '#18B34A'], // Gradiente Premium Verde
+        
+        // --- CARDS E COMPONENTES ---
+        card: '#162336',               // Base para cards
+        cardKPI: '#142233',            // Cards Superiores
+        cardMenu: '#152235',           // Menu Acesso Rápido
+        cardBg: '#162336',             // Aliasing
+        
+        border: 'rgba(255,255,255,0.08)', // Borda branca extremamente discreta
+        
+        // --- TEXTOS ---
+        textMain: '#FFFFFF',           // Textos Claros Premium
+        textSub: '#A7B0B5',            // Textos Secundários
+        text: '#FFFFFF',               // Sobrescrita legacy
+        textDark: '#FFFFFF',           // Sobrescrita legacy
+        textMuted: '#94A3B8',          // Sobrescrita legacy
+        
+        // --- AÇÕES ---
+        accent: '#19B34A',             // Verde Ação
+        buttonGradient: ['#19B34A', '#2BD76D'],
+        
+        // --- STATUS ---
         success: '#22C55E',
         warning: '#F59E0B',
         error: '#EF4444',
@@ -18,18 +35,11 @@ export const themeDark = {
 
         shadow: 'rgba(0,0,0,0.6)', 
         
-        // --- CORREÇÃO DE AUDITORIA DE RENDERIZAÇÃO ---
-        // Força a sobrescrita das propriedades legadas para evitar que textos 
-        // fiquem invisíveis (preto no preto) nas telas que não foram refatoradas
-        text: '#F8FAFC',
-        textDark: '#FFFFFF',
-        textMuted: '#94A3B8',
-        
-        // Legacy Support for backward compatibility on non-refactored screens
-        primary: '#16A34A',
-        background: '#141A1E',
-        surface: 'rgba(255,255,255,0.035)',
+        // Legacy Support for backward compatibility
+        primary: '#18B34A',
+        background: '#091829',
+        surface: '#162336',
         textPrimary: '#FFFFFF',
-        textSecondary: '#A7B0B5'
+        textSecondary: '#94A3B8'
     }
 };

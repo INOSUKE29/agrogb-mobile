@@ -12,6 +12,8 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../theme/ThemeContext';
 import FriendlyModal from '../components/common/FriendlyModal';
 import SafeBlurView from '../components/ui/SafeBlurView';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
 const LOGO = require('../../assets/icon.png');
@@ -612,7 +614,9 @@ export default function LoginScreen({ navigation }) {
                     <Text style={styles.tagline}>Gestão Inteligente Rural</Text>
                 </Animated.View>
 
-                <Animated.View style={[styles.formCard, { backgroundColor: 'rgba(255,255,255,0.1)', opacity: formOpacity }]}>
+                <Animated.View style={{ opacity: formOpacity }}>
+                    <BlurView intensity={20} tint="dark" style={styles.formCard}>
+
                     <AgroInput
                         label="Telefone ou E-mail"
                         placeholder="Ex: 62999999999"
@@ -635,7 +639,15 @@ export default function LoginScreen({ navigation }) {
                         onPress={() => handleLogin()} 
                         disabled={loading}
                     >
-                        <Text style={styles.loginBtnText}>{loading ? (loadingState || 'AUTENTICANDO...') : 'ENTRAR NO SISTEMA'}</Text>
+                        <LinearGradient
+                            colors={['#19B34A', '#2BD76D']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.loginBtnGradient}
+                        >
+                            <Text style={styles.loginBtnText}>{loading ? (loadingState || 'AUTENTICANDO...') : 'ENTRAR NO SISTEMA'}</Text>
+                            {!loading && <Ionicons name="arrow-forward" size={20} color="#FFF" style={{ marginLeft: 8 }} />}
+                        </LinearGradient>
                     </TouchableOpacity>
 
                     {isBiometricSupported && (
@@ -654,6 +666,7 @@ export default function LoginScreen({ navigation }) {
                             <Text style={styles.linkTextBold}>Recuperar Senha 🗝️</Text>
                         </TouchableOpacity>
                     </View>
+                    </BlurView>
                 </Animated.View>
 
                 <View style={styles.footer}>
@@ -765,22 +778,26 @@ const styles = StyleSheet.create({
     formCard: { 
         borderRadius: 35, 
         padding: 30, 
-        elevation: 10, 
-        shadowColor: '#000', 
-        shadowOpacity: 0.1, 
-        shadowRadius: 15,
+        overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.2)'
+        borderColor: 'rgba(255,255,255,0.10)',
+        backgroundColor: 'rgba(18,30,45,0.65)'
     },
     loginBtn: { 
-        padding: 20, 
         borderRadius: 18, 
-        alignItems: 'center', 
         marginTop: 10,
         shadowColor: '#10B981',
         shadowOpacity: 0.3,
         shadowRadius: 10,
-        elevation: 5
+        elevation: 5,
+        overflow: 'hidden'
+    },
+    loginBtnGradient: {
+        padding: 20,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 18,
     },
     loginBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold', letterSpacing: 1 },
     bioBtn: { 

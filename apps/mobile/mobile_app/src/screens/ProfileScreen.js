@@ -174,7 +174,7 @@ export default function ProfileScreen({ navigation }) {
             </LinearGradient>
 
             <ScrollView style={styles.body} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-                <Card style={styles.infoCard}>
+                <Card style={[styles.infoCard, isDark && { backgroundColor: '#1C1C1E', borderWidth: 0 }]}>
                     <View style={styles.sectionHeader}>
                         <Text style={styles.sectionTitle}>DADOS DA CONTA</Text>
                         <Ionicons name="person-outline" size={16} color={theme?.colors?.primary} />
@@ -189,10 +189,10 @@ export default function ProfileScreen({ navigation }) {
                         </View>
                     ) : (
                         <View>
-                            <InfoRow label="NOME" value={user.nome} icon="chevron-forward-outline" />
-                            <InfoRow label="E-MAIL" value={user.email || 'Não informado'} icon="mail-outline" />
-                            <InfoRow label="TELEFONE" value={user.telefone || 'Não informado'} icon="call-outline" />
-                            <InfoRow label="LOCAL" value={user.endereco || 'Não informado'} icon="location-outline" />
+                            <InfoRow label="NOME" value={user.nome} icon="chevron-forward-outline" isDark={isDark} />
+                            <InfoRow label="E-MAIL" value={user.email || 'Não informado'} icon="mail-outline" isDark={isDark} />
+                            <InfoRow label="TELEFONE" value={user.telefone || 'Não informado'} icon="call-outline" isDark={isDark} />
+                            <InfoRow label="LOCAL" value={user.endereco || 'Não informado'} icon="location-outline" isDark={isDark} />
                         </View>
                     )}
                 </Card>
@@ -208,13 +208,13 @@ export default function ProfileScreen({ navigation }) {
                     </Card>
                 )}
 
-                <Card style={styles.infoCard}>
+                <Card style={[styles.infoCard, isDark && { backgroundColor: '#1C1C1E', borderWidth: 0 }]}>
                     <View style={styles.sectionHeader}>
                         <Text style={styles.sectionTitle}>SISTEMA</Text>
                         <Ionicons name="settings-outline" size={16} color={theme?.colors?.primary} />
                     </View>
-                    <InfoRow label="USUÁRIO" value={user.usuario} icon="at-outline" />
-                    <InfoRow label="PROVEDOR" value={user.provider === 'google' ? 'Google Account' : 'Database Local'} icon="cloud-outline" />
+                    <InfoRow label="USUÁRIO" value={user.usuario} icon="at-outline" isDark={isDark} />
+                    <InfoRow label="PROVEDOR" value={user.provider === 'google' ? 'Google Account' : 'Database Local'} icon="cloud-outline" isDark={isDark} />
                 </Card>
 
                 {isEditing && (
@@ -238,13 +238,13 @@ export default function ProfileScreen({ navigation }) {
     );
 }
 
-const InfoRow = ({ label, value, icon }) => (
-    <View style={styles.infoRow}>
+const InfoRow = ({ label, value, icon, isDark }) => (
+    <View style={[styles.infoRow, isDark && { borderBottomColor: '#38383A' }]}>
         <View style={styles.infoContent}>
             <Text style={styles.infoLabel}>{label}</Text>
-            <Text style={styles.infoValue}>{value}</Text>
+            <Text style={[styles.infoValue, isDark && { color: '#FFF' }]}>{value}</Text>
         </View>
-        <Ionicons name={icon} size={16} color="#D1D5DB" />
+        <Ionicons name={icon} size={16} color={isDark ? '#6B7280' : '#D1D5DB'} />
     </View>
 );
 
@@ -252,8 +252,8 @@ const styles = StyleSheet.create({
     container: { flex: 1 },
     header: { paddingTop: 50, paddingBottom: 40, paddingHorizontal: 20, alignItems: 'center', borderBottomLeftRadius: 35, borderBottomRightRadius: 35 },
     headerTop: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 10 },
-    avatarWrapper: { width: 100, height: 100, marginBottom: 15 },
-    avatarBorder: { width: 100, height: 100, borderRadius: 50, borderWidth: 4, borderColor: 'rgba(255,255,255,0.3)', padding: 2, backgroundColor: 'rgba(255,255,255,0.1)' },
+    avatarWrapper: { width: 120, height: 120, marginBottom: 15 },
+    avatarBorder: { width: 120, height: 120, borderRadius: 60, borderWidth: 4, borderColor: '#10B981', padding: 3, backgroundColor: 'rgba(16, 185, 129, 0.1)' },
     avatarImg: { width: '100%', height: '100%', borderRadius: 50 },
     avatarPlaceholder: { width: '100%', height: '100%', borderRadius: 50, justifyContent: 'center', alignItems: 'center' },
     avatarChar: { fontSize: 40, fontWeight: '900' },
@@ -262,15 +262,15 @@ const styles = StyleSheet.create({
     levelBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, marginTop: 8, gap: 5 },
     levelText: { color: '#FFF', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
     body: { flex: 1, padding: 20, marginTop: -20 },
-    infoCard: { marginBottom: 15 },
+    infoCard: { marginBottom: 15, borderRadius: 12 },
     sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
     sectionTitle: { fontSize: 10, fontWeight: '900', color: '#9CA3AF', letterSpacing: 1 },
-    infoRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+    infoRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
     infoContent: { flex: 1 },
     infoLabel: { fontSize: 10, fontWeight: '800', color: '#9CA3AF', textTransform: 'uppercase', marginBottom: 2 },
-    infoValue: { fontSize: 15, fontWeight: '700', color: '#1F2937' },
+    infoValue: { fontSize: 15, fontWeight: '600', color: '#1F2937' },
     footer: { marginTop: 20, alignItems: 'center' },
-    logoutBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 15, backgroundColor: '#FEF2F2', borderRadius: 15, width: '100%', justifyContent: 'center', borderWidth: 1, borderColor: '#FECACA' },
-    logoutText: { color: '#EF4444', fontWeight: '900', fontSize: 14 },
-    version: { fontSize: 10, color: '#D1D5DB', fontWeight: 'bold', marginTop: 20 }
+    logoutBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 15, backgroundColor: 'transparent', borderRadius: 15, width: '100%', justifyContent: 'center', borderWidth: 1, borderColor: '#EF4444' },
+    logoutText: { color: '#EF4444', fontWeight: '900', fontSize: 14, letterSpacing: 0.5 },
+    version: { fontSize: 10, color: '#6B7280', fontWeight: 'bold', marginTop: 20 }
 });

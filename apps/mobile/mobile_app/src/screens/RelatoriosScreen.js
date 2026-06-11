@@ -106,28 +106,28 @@ export default function RelatoriosScreen({ navigation }) {
                                 value={`${data.prod.toLocaleString('pt-BR')} KG`} 
                                 icon="leaf" 
                                 color={theme?.colors?.primary}
-                                style={styles.metricItem}
+                                style={[styles.metricItem, { backgroundColor: '#142233', borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)' }]}
                             />
                             <MetricCard 
                                 title="VENDAS" 
                                 value={`R$ ${data.vendas.toLocaleString('pt-BR')}`} 
                                 icon="cash" 
                                 color="#3B82F6"
-                                style={styles.metricItem}
+                                style={[styles.metricItem, { backgroundColor: '#142233', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)' }]}
                             />
                             <MetricCard 
                                 title="CUSTOS" 
                                 value={`R$ ${data.custos.toLocaleString('pt-BR')}`} 
                                 icon="trending-down" 
                                 color="#EF4444"
-                                style={styles.metricItem}
+                                style={[styles.metricItem, { backgroundColor: '#142233', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' }]}
                             />
                             <MetricCard 
                                 title="PERDAS" 
                                 value={`${data.perdas.toLocaleString('pt-BR')} KG`} 
                                 icon="alert-circle" 
                                 color="#7C3AED"
-                                style={styles.metricItem}
+                                style={[styles.metricItem, { backgroundColor: '#142233', borderWidth: 1, borderColor: 'rgba(124,58,237,0.3)' }]}
                             />
                         </View>
 
@@ -157,7 +157,7 @@ export default function RelatoriosScreen({ navigation }) {
 
                         <View style={styles.section}>
                             <Text style={styles.sectionLabel}>GERAR RELATÓRIOS OFICIAIS (PDF)</Text>
-                            <Card style={styles.pdfCard}>
+                            <Card style={[styles.pdfCard, { backgroundColor: '#142233', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }]}>
                                 <View style={styles.presetRow}>
                                     {[{label: 'Hoje', d: 0}, {label: '7 Dias', d: 7}, {label: '30 Dias', d: 30}].map(p => (
                                         <TouchableOpacity key={p.label} style={styles.presetBtn} onPress={() => handlePreset(p.d)}>
@@ -169,11 +169,11 @@ export default function RelatoriosScreen({ navigation }) {
                                 <View style={styles.dateGrid}>
                                     <View style={{ flex: 1 }}>
                                         <Text style={styles.inputLabel}>INÍCIO</Text>
-                                        <TextInput style={styles.dateInput} value={startDate} onChangeText={setStartDate} placeholder="AAAA-MM-DD" />
+                                        <TextInput style={styles.dateInput} value={startDate} onChangeText={setStartDate} placeholder="AAAA-MM-DD" placeholderTextColor="rgba(255,255,255,0.3)" />
                                     </View>
                                     <View style={{ flex: 1 }}>
                                         <Text style={styles.inputLabel}>FIM</Text>
-                                        <TextInput style={styles.dateInput} value={endDate} onChangeText={setEndDate} placeholder="AAAA-MM-DD" />
+                                        <TextInput style={styles.dateInput} value={endDate} onChangeText={setEndDate} placeholder="AAAA-MM-DD" placeholderTextColor="rgba(255,255,255,0.3)" />
                                     </View>
                                 </View>
 

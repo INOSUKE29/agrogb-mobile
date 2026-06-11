@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Alert, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Alert, ActivityIndicator } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
-import { insertMaquina, getMaquinas, updateMaquinaRevisao, deleteMaquina, insertManutencaoFrota } from '../database/database';
+import { getMaquinas, updateMaquinaRevisao, deleteMaquina, insertManutencaoFrota } from '../database/database';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
@@ -20,17 +20,10 @@ export default function FrotaScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
 
     // Modals
-    const [modalVisible, setModalVisible] = useState(false);
     const [serviceModalVisible, setServiceModalVisible] = useState(false);
     const [updateModalVisible, setUpdateModalVisible] = useState(false);
 
     // Form States
-    const [nome, setNome] = useState('');
-    const [placa, setPlaca] = useState('');
-    const [tipo, setTipo] = useState('TRATOR');
-    const [horimetro, setHorimetro] = useState('');
-    const [revisao, setRevisao] = useState('');
-
     const [selectedId, setSelectedId] = useState(null);
     const [servicoDesc, setServicoDesc] = useState('');
     const [servicoValor, setServicoValor] = useState('');
@@ -52,21 +45,7 @@ export default function FrotaScreen({ navigation }) {
         }
     };
 
-    const handleSave = async () => {
-        if (!nome.trim()) return Alert.alert('Ops!', 'Nome é obrigatório.');
-        try {
-            await insertMaquina({
-                uuid: uuidv4(),
-                nome,
-                tipo,
-                placa,
-                horimetro_atual: parseFloat(horimetro || 0),
-                intervalo_revisao: parseFloat(revisao || 0)
-            });
-            setModalVisible(false); cleanForms(); loadData();
-            Alert.alert('Sucesso', 'Veículo cadastrado!');
-        } catch (e) { Alert.alert('Erro', 'Falha ao salvar veículo.'); }
-    };
+
 
     const handleUpdateKM = async () => {
         if (!novoHorimetro.trim()) return;
@@ -100,9 +79,7 @@ export default function FrotaScreen({ navigation }) {
         ]);
     };
 
-    const cleanForms = () => {
-        setNome(''); setPlaca(''); setTipo('TRATOR'); setHorimetro(''); setRevisao('');
-    };
+
 
     const getStatusColor = (h, r) => {
         const diff = r - h;
@@ -121,7 +98,7 @@ export default function FrotaScreen({ navigation }) {
                         <Ionicons name="arrow-back" size={24} color="#FFF" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>GESTÃO DE FROTA</Text>
-                    <TouchableOpacity onPress={() => setModalVisible(true)}>
+                    <TouchableOpacity onPress={() => navigation.navigate('MaquinaForm')}>
                         <Ionicons name="add-circle" size={28} color="#FFF" />
                     </TouchableOpacity>
                 </View>
@@ -220,41 +197,7 @@ export default function FrotaScreen({ navigation }) {
                 />
             }
 
-            {/* MODAL NOVOS */}
-            <Modal visible={modalVisible} transparent animationType="slide">
-                <View style={styles.overlay}>
-                    <Card style={[styles.modalContent, isDark && { backgroundColor: '#1F2937' }]}>
-                        <Text style={[styles.modalTitle, isDark && { color: '#FFF' }]}>NOVO VEÍCULO</Text>
-                        
-                        <AgroInput label="Nome" value={nome} onChangeText={t => up(t, setNome)} placeholder="EX: TRATOR CASE" />
-                        
-                        <Text style={styles.label}>TIPO</Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-                            {['TRATOR', 'CARRO', 'CAMINHAO', 'OUTRO'].map(t => (
-                                <TouchableOpacity key={t} onPress={() => setTipo(t)} style={[styles.chip, isDark && { backgroundColor: 'rgba(255,255,255,0.1)' }, tipo === t && { backgroundColor: theme?.colors?.primary }]}>
-                                    <Text style={[styles.chipText, isDark && { color: '#9CA3AF' }, tipo === t && { color: '#FFF' }]}>{t}</Text>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
 
-                        <AgroInput label="Placa" value={placa} onChangeText={t => up(t, setPlaca)} placeholder="OPCIONAL" />
-
-                        <View style={styles.row}>
-                            <View style={{ flex: 1, marginRight: 10 }}>
-                                <AgroInput label="Atual (KM/H)" keyboardType="numeric" value={horimetro} onChangeText={setHorimetro} />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <AgroInput label="Próx. Revisão" keyboardType="numeric" value={revisao} onChangeText={setRevisao} placeholder="10000" />
-                            </View>
-                        </View>
-
-                        <View style={styles.modalActions}>
-                            <AgroButton title="CANCELAR" variant="secondary" onPress={() => setModalVisible(false)} style={{ flex: 1 }} />
-                            <AgroButton title="SALVAR" onPress={handleSave} style={{ flex: 1 }} />
-                        </View>
-                    </Card>
-                </View>
-            </Modal>
 
             {/* MODAL UPDATE KM */}
             <Modal visible={updateModalVisible} transparent animationType="fade">

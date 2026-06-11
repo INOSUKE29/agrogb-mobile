@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { executeQuery } from '../database/database';
 import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { LinearGradient } from 'expo-linear-gradient';
 import { PermissionService } from '../services/PermissionService';
 
 const { width, height } = Dimensions.get('window');
@@ -92,9 +93,9 @@ export default function SidebarDrawer({ visible, onClose }) {
         return (
             <TouchableOpacity style={styles.menuItem} onPress={() => handleNavigation(screen)}>
                 <View style={{ width: 30, alignItems: 'center' }}>
-                    <Ionicons name={icon} size={22} color={theme?.colors?.text ?? "#374151"} />
+                    <Ionicons name={icon} size={22} color="#FFFFFF" />
                 </View>
-                <Text style={[styles.menuText, { color: theme?.colors?.text ?? "#374151" }]}>{label}</Text>
+                <Text style={styles.menuText}>{label}</Text>
                 {badge && <View style={[styles.badge, { backgroundColor: theme?.colors?.error ?? "#EF4444" }]}><Text style={styles.badgeText}>{badge}</Text></View>}
             </TouchableOpacity>
         );
@@ -109,16 +110,17 @@ export default function SidebarDrawer({ visible, onClose }) {
                 <TouchableOpacity style={styles.backdrop} onPress={onClose} activeOpacity={1} />
 
                 {/* Drawer Content */}
-                <Animated.View style={[styles.drawer, { transform: [{ translateX: slideAnim }], backgroundColor: theme?.colors?.card ?? '#FFF' }]}>
+                <Animated.View style={[styles.drawer, { transform: [{ translateX: slideAnim }] }]}>
+                    <LinearGradient colors={['#06111C', '#0A1522']} style={StyleSheet.absoluteFillObject} />
 
                     {/* Header: User Info */}
-                    <View style={[styles.header, { backgroundColor: theme?.colors?.primary ?? '#059669' }]}>
+                    <View style={styles.header}>
 
                         <View style={styles.avatar}>
                             {profile.avatar ? (
                                 <Image source={{ uri: profile.avatar }} style={{ width: 50, height: 50, borderRadius: 25 }} />
                             ) : (
-                                <Ionicons name="person" size={30} color="#FFF" />
+                                <Ionicons name="person" size={30} color="#0D8C39" />
                             )}
                         </View>
                         <View>
@@ -178,9 +180,9 @@ export default function SidebarDrawer({ visible, onClose }) {
                     <View style={styles.footer}>
                         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
                             <Ionicons name="log-out-outline" size={24} color="#EF4444" />
-                            <Text style={styles.logoutText}>Sair</Text>
+                            <Text style={styles.logoutText}>SAIR DO SISTEMA</Text>
                         </TouchableOpacity>
-                        <Text style={styles.version}>v7.0.0 (MVP)</Text>
+                        <Text style={styles.version}>v8.0.0 (Premium)</Text>
                     </View>
 
                 </Animated.View>
@@ -190,47 +192,49 @@ export default function SidebarDrawer({ visible, onClose }) {
 }
 
 const styles = StyleSheet.create({
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
     backdrop: { ...StyleSheet.absoluteFillObject },
     drawer: {
         width: DRAWER_WIDTH,
         height: '100%',
-        backgroundColor: '#FFF',
         position: 'absolute',
         left: 0,
         zIndex: 2,
         shadowColor: "#000",
-        shadowOffset: { width: 2, height: 0 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5
+        shadowOffset: { width: 5, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: 10,
+        elevation: 10
     },
     header: {
-        backgroundColor: '#059669',
         paddingTop: 50,
         paddingBottom: 20,
         paddingHorizontal: 20,
         flexDirection: 'row',
-        alignItems: 'center'
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.05)'
     },
     avatar: {
         width: 50,
         height: 50,
         borderRadius: 25,
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: '#FFFFFF',
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 15
+        marginRight: 15,
+        borderWidth: 2,
+        borderColor: '#18B34A'
     },
     userName: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-    userEmail: { color: 'rgba(255,255,255,0.8)', fontSize: 12 },
+    userEmail: { color: 'rgba(255,255,255,0.6)', fontSize: 12 },
     body: { flex: 1, paddingVertical: 10 },
-    sectionTitle: { fontSize: 12, fontWeight: 'bold', color: '#9CA3AF', marginLeft: 20, marginTop: 15, marginBottom: 5 },
-    menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 20 },
-    menuText: { fontSize: 15, color: '#374151', marginLeft: 15, fontWeight: '500' },
-    divider: { height: 1, backgroundColor: '#E5E7EB', marginVertical: 10, marginHorizontal: 20 },
-    footer: { padding: 20, borderTopWidth: 1, borderTopColor: '#E5E7EB', backgroundColor: '#F9FAFB' },
-    logoutBtn: { flexDirection: 'row', alignItems: 'center' },
-    logoutText: { color: '#EF4444', fontSize: 16, fontWeight: 'bold', marginLeft: 15 },
-    version: { marginTop: 10, fontSize: 10, color: '#9CA3AF', textAlign: 'center' }
+    sectionTitle: { fontSize: 11, fontWeight: '900', color: '#18B34A', marginLeft: 20, marginTop: 25, marginBottom: 10, letterSpacing: 1 },
+    menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20 },
+    menuText: { fontSize: 14, color: '#FFFFFF', marginLeft: 15, fontWeight: '500' },
+    divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginVertical: 10, marginHorizontal: 20 },
+    footer: { padding: 25, backgroundColor: 'transparent' },
+    logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#EF4444' },
+    logoutText: { color: '#EF4444', fontSize: 14, fontWeight: 'bold', marginLeft: 10, letterSpacing: 1 },
+    version: { marginTop: 15, fontSize: 10, color: 'rgba(255,255,255,0.3)', textAlign: 'center' }
 });

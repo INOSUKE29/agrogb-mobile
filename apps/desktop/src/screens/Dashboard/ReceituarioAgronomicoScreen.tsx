@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, CheckCircle2, Clock, XCircle, User, Calendar, Droplet, Leaf, Eye, Plus, Trash2 } from 'lucide-react';
+import { FileText, CheckCircle2, Clock, XCircle, User, Calendar, Droplet, Leaf, Eye, Plus, Trash2, ArrowLeft } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
 import { jsPDF } from 'jspdf';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function ReceituarioAgronomicoScreen() {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const isCliente = location.pathname.includes('/cliente');
     const [receitas, setReceitas] = useState<Record<string, string | number | boolean | null>[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedReceita, setSelectedReceita] = useState<any | null>(null);
@@ -176,7 +180,7 @@ export default function ReceituarioAgronomicoScreen() {
                     // Cálculo da Quantidade por Tanque = (Dose / Calda) * Tanque
                     const qtd_tanque = ((dose_ha / calda) * tanque).toFixed(2);
                     
-                    text += `${passo}. *${p.nome.toUpperCase()}*: Adicione ${qtd_tanque} ${p.unidade} por tanque. _(${p.funcao})_\n`;
+                    text += `${passo}. *${(p.nome || '').toUpperCase()}*: Adicione ${qtd_tanque} ${p.unidade} por tanque. _(${p.funcao})_\n`;
                     passo++;
                 });
             } catch(e) {}
@@ -208,11 +212,14 @@ export default function ReceituarioAgronomicoScreen() {
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-sm font-bold mb-4">
                             <FileText className="w-4 h-4" /> Ecossistema Agro
                         </div>
-                        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-2">
-                            Prescrições Agronômicas
+                        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-2 flex items-center gap-4">
+                            <button onClick={() => navigate(-1)} className="text-[var(--color-muted)] hover:text-white transition-colors">
+                                <ArrowLeft className="w-8 h-8" />
+                            </button>
+                            {isCliente ? 'Minhas Receitas' : 'Prescrições Agronômicas'}
                         </h1>
                         <p className="text-[var(--color-muted)] text-lg max-w-xl">
-                            Acesse, revise e aprove as recomendações de aplicação. Agrônomos podem emitir novas receitas técnicas.
+                            {isCliente ? 'Acesse suas receitas ou anote suas próprias misturas de tanque.' : 'Acesse, revise e aprove as recomendações de aplicação. Agrônomos podem emitir novas receitas técnicas.'}
                         </p>
                     </div>
                     <div>
@@ -221,7 +228,7 @@ export default function ReceituarioAgronomicoScreen() {
                             className="px-6 py-4 rounded-2xl font-black text-white shadow-lg shadow-[var(--color-primary)]/20 flex items-center justify-center gap-3 transition-all hover:scale-95 active:scale-90"
                             style={{ background: 'linear-gradient(135deg, var(--color-primary), #047857)' }}
                         >
-                            <FileText className="w-5 h-5" /> Nova Prescrição
+                            <FileText className="w-5 h-5" /> {isCliente ? 'Criar Minha Mistura' : 'Nova Prescrição'}
                         </button>
                     </div>
                 </div>
@@ -267,7 +274,87 @@ export default function ReceituarioAgronomicoScreen() {
 
                 {/* DETALHES */}
                 <div className="lg:col-span-2">
-                    {isCreating ? (
+                    {isCreating && isCliente ? (
+                        <div className="bg-[#fdfbf7] text-gray-800 p-8 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-[#e0dcd3] relative font-serif animate-fade-in-up min-h-[600px]">
+                            {/* Paper lines effect */}
+                            <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: 'linear-gradient(transparent 95%, #a5b4fc 95%)', backgroundSize: '100% 2.5rem' }}></div>
+                            
+                            <h2 className="text-3xl font-bold text-gray-900 mb-6 text-center border-b-2 border-gray-300 pb-4 relative z-10">Meu Caderno de Receitas</h2>
+                            
+                            <div className="space-y-6 relative z-10 mt-8">
+                                <div>
+                                    <label className="block text-lg font-bold mb-2 text-gray-700">Qual o objetivo dessa mistura?</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Ex: Combater Ferrugem no lote B"
+                                        value={formTitle}
+                                        onChange={e => setFormTitle(e.target.value)}
+                                        className="w-full bg-transparent border-b-2 border-gray-400 py-2 text-xl focus:outline-none focus:border-green-600 font-medium placeholder-gray-400"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-lg font-bold mb-2 text-gray-700">Água por Hectare (Litros)</label>
+                                        <input 
+                                            type="number" 
+                                            value={formVolumeCalda}
+                                            onChange={e => setFormVolumeCalda(e.target.value)}
+                                            className="w-full bg-transparent border-b-2 border-gray-400 py-2 text-xl focus:outline-none focus:border-green-600 font-medium"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-lg font-bold mb-2 text-gray-700">Tamanho do Tanque (Litros)</label>
+                                        <input 
+                                            type="number" 
+                                            value={formCapacidadeTanque}
+                                            onChange={e => setFormCapacidadeTanque(e.target.value)}
+                                            className="w-full bg-transparent border-b-2 border-gray-400 py-2 text-xl focus:outline-none focus:border-green-600 font-medium"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="mt-8 pt-4">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <label className="block text-lg font-bold text-gray-700">O que vai no tanque?</label>
+                                        <button onClick={addProduto} className="text-green-700 font-bold hover:underline flex items-center gap-1"><Plus className="w-4 h-4"/> Adicionar Produto</button>
+                                    </div>
+                                    
+                                    {formProdutos.map(prod => (
+                                        <div key={prod.id} className="flex gap-4 items-end mb-4">
+                                            <div className="flex-1">
+                                                <input type="text" placeholder="Nome do Produto" value={prod.nome} onChange={e => updateProduto(prod.id, 'nome', e.target.value)} className="w-full bg-transparent border-b-2 border-gray-400 py-2 text-lg focus:outline-none focus:border-green-600" />
+                                            </div>
+                                            <div className="w-32">
+                                                <input type="number" placeholder="Dose/ha" value={prod.dose} onChange={e => updateProduto(prod.id, 'dose', e.target.value)} className="w-full bg-transparent border-b-2 border-gray-400 py-2 text-lg focus:outline-none focus:border-green-600" />
+                                            </div>
+                                            <div className="w-20">
+                                                <select value={prod.unidade} onChange={e => updateProduto(prod.id, 'unidade', e.target.value)} className="w-full bg-transparent border-b-2 border-gray-400 py-2 text-lg focus:outline-none focus:border-green-600">
+                                                    <option value="L">L</option><option value="mL">mL</option><option value="Kg">Kg</option><option value="g">g</option>
+                                                </select>
+                                            </div>
+                                            <button onClick={() => removeProduto(prod.id)} className="text-red-500 mb-2 hover:scale-110 transition-transform"><Trash2 className="w-5 h-5"/></button>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <div className="mt-8 pt-4">
+                                    <label className="block text-lg font-bold mb-2 text-gray-700">Anotações extras</label>
+                                    <textarea 
+                                        rows={3}
+                                        value={formInstrucoes}
+                                        onChange={e => setFormInstrucoes(e.target.value)}
+                                        placeholder="Ex: Aplicar no fim de tarde..."
+                                        className="w-full bg-transparent border-b-2 border-gray-400 py-2 text-xl focus:outline-none focus:border-green-600 font-medium resize-none"
+                                    ></textarea>
+                                </div>
+                                
+                                <div className="flex justify-end gap-4 mt-8 pt-8">
+                                    <button onClick={() => setIsCreating(false)} className="px-6 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded-lg transition-colors">Cancelar</button>
+                                    <button onClick={handleCreatePrescricao} className="px-8 py-3 bg-green-700 hover:bg-green-600 text-white font-black rounded-lg shadow-md transition-colors">Salvar Minha Receita</button>
+                                </div>
+                            </div>
+                        </div>
+                    ) : isCreating ? (
                         <div className="glass h-full rounded-3xl flex flex-col border border-[var(--color-border)] animate-fade-in-up">
                             <div className="p-8 border-b border-[var(--color-border)]">
                                 <h2 className="text-3xl font-black text-white">Emitir Receituário</h2>
@@ -277,14 +364,20 @@ export default function ReceituarioAgronomicoScreen() {
                                 <div className="grid grid-cols-2 gap-6">
                                     <div>
                                         <label className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">Produtor / Fazenda</label>
-                                        <select 
-                                            value={formCliente}
-                                            onChange={e => setFormCliente(e.target.value)}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-[var(--color-primary)] transition-all font-bold"
-                                        >
-                                            <option>João (Fazenda Ouro Verde)</option>
-                                            <option>Maria (Sítio das Flores)</option>
-                                        </select>
+                                        {isCliente ? (
+                                            <div className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white/50 cursor-not-allowed font-bold">
+                                                Minha Fazenda (Autoprescrição)
+                                            </div>
+                                        ) : (
+                                            <select 
+                                                value={formCliente}
+                                                onChange={e => setFormCliente(e.target.value)}
+                                                className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-[var(--color-primary)] transition-all font-bold"
+                                            >
+                                                <option>João (Fazenda Ouro Verde)</option>
+                                                <option>Maria (Sítio das Flores)</option>
+                                            </select>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">Via de Aplicação</label>
@@ -455,7 +548,7 @@ export default function ReceituarioAgronomicoScreen() {
                                                         return (
                                                             <div key={idx} className="grid grid-cols-12 gap-4 p-4 border-b border-[var(--color-border)] text-sm items-center hover:bg-white/[0.02]">
                                                                 <div className="col-span-6">
-                                                                    <div className="font-bold text-white">{p.nome.toUpperCase()}</div>
+                                                                    <div className="font-bold text-white">{(p.nome || '').toUpperCase()}</div>
                                                                     <div className="text-[10px] text-[var(--color-primary)] uppercase font-black tracking-widest">{p.funcao}</div>
                                                                 </div>
                                                                 <div className="col-span-6 text-right">

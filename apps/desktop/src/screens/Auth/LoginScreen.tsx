@@ -114,16 +114,15 @@ export default function LoginScreen() {
     };
 
     return (
-        <div className={`flex flex-row-reverse min-h-screen relative overflow-hidden transition-colors duration-1000 ${isDevMode ? 'bg-black' : 'bg-slate-50 dark:bg-[var(--color-background)]'}`}>
+        <div className={`flex flex-row-reverse min-h-screen relative overflow-hidden transition-colors duration-1000 ${isDevMode ? 'bg-black' : 'bg-[#06111C]'}`}>
             
             {/* BACKGROUND GLOBAL */}
             {!isDevMode ? (
                 <>
-                    <div className="absolute inset-0 bg-gradient-to-br from-slate-200 via-slate-50 to-emerald-100 dark:from-[#0A101D] dark:via-[#0d1b2a] dark:to-[#042f1f] z-0 transition-opacity duration-1000" />
+                    <img src="/hero_agrogb.png" alt="Agro Background" className="absolute inset-0 w-full h-full object-cover opacity-45 z-0 blur-[2px]" />
+                    <div className="absolute inset-0 bg-[#06111C]/60 z-0" />
                     <div className="absolute inset-0 opacity-10 z-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
                     <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-green-500/10 rounded-full blur-[120px] animate-pulse z-0" style={{ animationDuration: '7s' }} />
-                    <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] animate-pulse z-0" style={{ animationDuration: '10s' }} />
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-4xl max-h-4xl bg-emerald-900/10 rounded-full blur-[150px] z-0" />
                 </>
             ) : (
                 <>
@@ -149,9 +148,9 @@ export default function LoginScreen() {
                         Plataforma de alta performance para agrônomos e gestores de produção agrícola.
                     </p>
                     
-                    <div className="mt-12 flex items-center gap-3 px-6 py-3 rounded-full border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 backdrop-blur-md shadow-xl shadow-slate-200/50 dark:shadow-none">
-                        <ShieldCheck className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-                        <span className="text-sm font-semibold text-slate-700 dark:text-white/90 tracking-wide uppercase">Ambiente Seguro e Criptografado</span>
+                    <div className="mt-12 flex items-center gap-3 px-6 py-3 rounded-full border border-white/10 bg-[rgba(18,30,45,0.4)] backdrop-blur-md">
+                        <ShieldCheck className="w-5 h-5 text-[#19B34A]" />
+                        <span className="text-sm font-semibold text-white/90 tracking-wide uppercase">Ambiente Seguro e Criptografado</span>
                     </div>
                 </div>
             </div>
@@ -174,11 +173,11 @@ export default function LoginScreen() {
                             </div>
                             
                             <div className="hidden lg:flex flex-col items-center mb-10">
-                                <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Bem-vindo(a)</h2>
+                                <h2 className="text-3xl font-black text-white tracking-tight">Bem-vindo(a)</h2>
                                 <p className="text-[var(--color-muted)] text-base font-medium mt-2">Acesse sua conta para continuar</p>
                             </div>
 
-                            <form onSubmit={handleLogin} className="bg-white dark:bg-[#0A101D]/60 dark:backdrop-blur-2xl p-8 rounded-3xl shadow-2xl shadow-slate-200/50 dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-100 dark:border-white/5 flex flex-col gap-5 animate-fade-in relative z-10">
+                            <form onSubmit={handleLogin} className="p-8 rounded-3xl flex flex-col gap-6 animate-fade-in relative z-10" style={{ background: 'rgba(18,30,45,0.65)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.10)' }}>
                                 
                                 {errorMsg && (
                                     <div className="p-4 bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/20 rounded-xl flex items-center gap-3">
@@ -188,15 +187,15 @@ export default function LoginScreen() {
                                 )}
 
                                 <div className="flex flex-col gap-2">
-                                    <label className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider pl-1">E-mail Profissional</label>
+                                    <label className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider pl-1">E-mail ou Telefone</label>
                                     <div className="relative">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-muted)]/70" />
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white" />
                                         <input 
                                             type="email" 
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
-                                            placeholder="agronomo@fazenda.com"
-                                            className="w-full bg-slate-50 dark:bg-[var(--color-background)]/50 border border-slate-200 dark:border-[var(--color-border)] rounded-xl py-3 pl-12 pr-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[var(--color-muted)]/50 focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] transition-all"
+                                            placeholder="Ex: 62999999999"
+                                            className="w-full bg-[rgba(10,15,25,0.4)] border border-[rgba(255,255,255,0.08)] rounded-[16px] h-[60px] pl-12 pr-4 text-white placeholder-gray-400 focus:outline-none focus:border-[#19B34A] focus:ring-1 focus:ring-[#19B34A] transition-all"
                                             required
                                         />
                                     </div>
@@ -205,31 +204,52 @@ export default function LoginScreen() {
                                 <div className="flex flex-col gap-2">
                                     <label className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider pl-1">Senha de Acesso</label>
                                     <div className="relative">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-muted)]/70" />
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white" />
                                         <input 
                                             type="password" 
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                             placeholder="••••••••"
-                                            className="w-full bg-slate-50 dark:bg-[var(--color-background)]/50 border border-slate-200 dark:border-[var(--color-border)] rounded-xl py-3 pl-12 pr-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[var(--color-muted)]/50 focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] transition-all"
+                                            className="w-full bg-[rgba(10,15,25,0.4)] border border-[rgba(255,255,255,0.08)] rounded-[16px] h-[60px] pl-12 pr-4 text-white placeholder-gray-400 focus:outline-none focus:border-[#19B34A] focus:ring-1 focus:ring-[#19B34A] transition-all"
                                             required
                                         />
                                     </div>
                                 </div>
 
+                                <div className="flex items-center justify-between px-1">
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <div className="w-5 h-5 rounded bg-[#19B34A] flex items-center justify-center">
+                                            <ShieldCheck className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-sm font-medium text-white group-hover:text-[#19B34A] transition-colors">Lembrar de mim</span>
+                                    </label>
+                                    <a href="#" className="text-sm font-medium text-[#19B34A] hover:text-[#2BD76D] transition-colors">Esqueci minha senha</a>
+                                </div>
+
                                 <button 
                                     type="submit" 
                                     disabled={loading}
-                                    className="mt-4 w-full bg-[var(--color-primary)] hover:bg-emerald-600 dark:hover:bg-[var(--color-primary)]/90 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-[var(--color-primary)]/30 dark:shadow-[var(--color-primary)]/20 transition-all flex items-center justify-center gap-2 group disabled:opacity-70"
+                                    className="mt-2 w-full btn-premium py-4 px-4 flex items-center justify-center gap-2 disabled:opacity-70 group"
                                 >
                                     {loading ? (
                                         <span className="animate-pulse">Autenticando...</span>
                                     ) : (
                                         <>
-                                            <span>Entrar no Sistema</span>
+                                            <span className="uppercase tracking-widest text-sm">Entrar no Sistema</span>
                                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                         </>
                                     )}
+                                </button>
+                                
+                                <div className="flex items-center gap-4 my-2 opacity-50">
+                                    <div className="h-px bg-white flex-1"></div>
+                                    <span className="text-white text-xs">ou</span>
+                                    <div className="h-px bg-white flex-1"></div>
+                                </div>
+                                
+                                <button type="button" className="w-full bg-transparent border border-[#19B34A] hover:bg-[#19B34A]/10 text-white font-bold py-4 px-4 rounded-[16px] transition-all flex items-center justify-center gap-3">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/3596/3596091.png" alt="Biometria" className="w-6 h-6 filter invert" style={{opacity: 0.8}} />
+                                    <span>Entrar com Biometria</span>
                                 </button>
                             </form>
                         </>
