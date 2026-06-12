@@ -9,6 +9,9 @@ import { useTheme } from '../theme/ThemeContext';
 
 // Design System
 import AgroButton from '../components/common/AgroButton';
+import SmartAutocomplete from '../components/common/SmartAutocomplete';
+import AreaLibraryService from '../services/AreaLibraryService';
+import ProductLibraryService from '../services/ProductLibraryService';
 import AgroInput from '../components/common/AgroInput';
 
 export default function ColheitaScreen({ navigation }) {
@@ -44,9 +47,6 @@ export default function ColheitaScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
 
     // Modal Trigger Targets
-    const [modalTarget, setModalTarget] = useState(''); 
-    const [productModalVisible, setProductModalVisible] = useState(false);
-    const [areaModalVisible, setAreaModalVisible] = useState(false);
     const [quickAddModal, setQuickAddModal] = useState(false);
     const [newItemName, setNewItemName] = useState('');
     const [newItemFator, setNewItemFator] = useState('1');
@@ -87,25 +87,6 @@ export default function ColheitaScreen({ navigation }) {
         } else {
             setQuantidade('');
         }
-    };
-
-    const handleProdutoSelect = (item) => {
-        if (modalTarget === 'HARVEST_PROD') {
-            setProduto(item.nome);
-            setFatorAtual(item.fator_conversao || 1);
-            if (qtdCaixas) setQuantidade((parseFloat(qtdCaixas) * (item.fator_conversao || 1)).toFixed(2));
-        } else if (modalTarget === 'CONG_PROD') {
-            setCongProduto(item.nome);
-        } else if (modalTarget === 'DESC_PROD') {
-            setDescProduto(item.nome);
-        }
-        setProductModalVisible(false);
-    };
-
-    const handleAreaSelect = (item) => {
-        if (modalTarget === 'HARVEST_AREA') setTalhao(item.nome);
-        else if (modalTarget === 'CONG_AREA') setCongTalhao(item.nome);
-        setAreaModalVisible(false);
     };
 
     const addHarvestItem = () => {
@@ -247,18 +228,6 @@ export default function ColheitaScreen({ navigation }) {
         ]);
     };
 
-    const quickSave = async () => {
-        if (!newItemName.trim()) return Alert.alert('Aviso', 'Escreva o nome do produto rápido!');
-        try {
-            await insertCadastros({
-                uuid: uuidv4(), nome: newItemName.toUpperCase(), tipo: 'PRODUTO', fator_conversao: parseFloat(newItemFator) || 1,
-                unidade: 'CX', estocavel: 1, vendavel: 1, observacao: 'QUICK ADD'
-            });
-            setQuickAddModal(false); loadData();
-            handleProdutoSelect({ nome: newItemName.toUpperCase(), fator_conversao: parseFloat(newItemFator) || 1 });
-        } catch (e) { Alert.alert('Erro', 'Falha ao criar o produto rápido.'); }
-    };
-
     if (loading) {
         return (
             <View style={[styles.container, styles.center, { backgroundColor: activeColors.bg || '#0B121E' }]}>
@@ -314,25 +283,37 @@ export default function ColheitaScreen({ navigation }) {
                 {activeTab === 'COLHEITA' && (
                     <LinearGradient colors={['#1F2937', '#111827']} style={styles.formGradient}>
                         <Text style={styles.sectionTitle}>1. ONDE? (LOCALIZAÇÃO)</Text>
-                        <AgroInput 
-                            label="Local / Área *"
+                        <SmartAutocomplete
+                            label="Localização / Talhão *"
                             value={talhao}
-                            placeholder="SELECIONAR TALHÃO..."
+                            onSelect={item => setTalhao(item ? item.nome : '')}
+                            service={AreaLibraryService}
+                            title="SELECIONAR TALHÃO"
+                            placeholder="Buscar talhão..."
                             icon="map"
-                            style={{ marginBottom: 15 }}
-                            editable={false}
-                            onPressIn={() => { setModalTarget('HARVEST_AREA'); setAreaModalVisible(true); }}
+                            quickAddFields={[
+                                { key: 'nome', label: 'NOME DO TALHÃO', placeholder: 'Ex: Talhão A1' },
+                                { key: 'tamanho', label: 'TAMANHO (HECTARES)', placeholder: 'Ex: 10' }
+                            ]}
                         />
 
                         <Text style={styles.sectionTitle}>2. O QUE? (PRODUTO E QUANTIDADE)</Text>
-                        <AgroInput 
+                        <SmartAutocomplete
                             label="Variedade / Produto *"
                             value={produto}
-                            placeholder="SELECIONAR PRODUTO..."
+                            onSelect={item => {
+                                setProduto(item ? item.nome : '');
+                                setFatorAtual(item?.fator_conversao || 1);
+                                if (qtdCaixas) setQuantidade((parseFloat(qtdCaixas) * (item?.fator_conversao || 1)).toFixed(2));
+                            }}
+                            service={ProductLibraryService}
+                            title="SELECIONAR PRODUTO"
+                            placeholder="Buscar produto..."
                             icon="leaf"
-                            style={{ marginBottom: 10 }}
-                            editable={false}
-                            onPressIn={() => { setModalTarget('HARVEST_PROD'); setProductModalVisible(true); }}
+                            quickAddFields={[
+                                { key: 'nome', label: 'NOME DO PRODUTO', placeholder: 'Ex: Milho Safrinha' },
+                                { key: 'categoria', label: 'CATEGORIA', placeholder: 'Ex: Grãos' }
+                            ]}
                         />
 
                         <View style={styles.row}>
@@ -400,8 +381,24 @@ export default function ColheitaScreen({ navigation }) {
                 {activeTab === 'CONGELAMENTO' && (
                     <LinearGradient colors={['#1F2937', '#111827']} style={styles.formGradient}>
                         <Text style={styles.sectionTitle}>CONGELAR PRODUTOS FRESCOS</Text>
-                        <AgroInput label="Localização / Talhão *" value={congTalhao} placeholder="SELECIONAR TALHÃO..." icon="map" style={{ marginBottom: 15 }} editable={false} onPressIn={() => { setModalTarget('CONG_AREA'); setAreaModalVisible(true); }} />
-                        <AgroInput label="Produto / Cultura *" value={congProduto} placeholder="SELECIONAR PRODUTO..." icon="leaf" style={{ marginBottom: 15 }} editable={false} onPressIn={() => { setModalTarget('CONG_PROD'); setProductModalVisible(true); }} />
+                        <SmartAutocomplete
+                            label="Localização / Talhão *"
+                            value={congTalhao}
+                            onSelect={item => setCongTalhao(item ? item.nome : '')}
+                            service={AreaLibraryService}
+                            title="SELECIONAR TALHÃO"
+                            placeholder="Buscar talhão..."
+                            icon="map"
+                        />
+                        <SmartAutocomplete
+                            label="Produto / Cultura *"
+                            value={congProduto}
+                            onSelect={item => setCongProduto(item ? item.nome : '')}
+                            service={ProductLibraryService}
+                            title="SELECIONAR PRODUTO"
+                            placeholder="Buscar produto..."
+                            icon="leaf"
+                        />
                         <AgroInput label="Quantidade a Congelar (Kg) *" value={congQtd} onChangeText={setCongQtd} placeholder="0.00" keyboardType="decimal-pad" style={{ marginBottom: 15 }} />
                         <AgroInput label="Observações" value={congObs} onChangeText={t => up(t, setCongObs)} placeholder="Ex: Carga câmara fria 2" icon="document-text" style={{ marginBottom: 20 }} />
                         <AgroButton title="REGISTRAR CONGELAMENTO" onPress={salvarCongelamento} />
@@ -411,7 +408,15 @@ export default function ColheitaScreen({ navigation }) {
                 {activeTab === 'DESCARTE' && (
                     <LinearGradient colors={['#1F2937', '#111827']} style={styles.formGradient}>
                         <Text style={styles.sectionTitle}>LANÇAR PERDA / DESCARTE DE PRODUTO</Text>
-                        <AgroInput label="Produto / Cultura *" value={descProduto} placeholder="SELECIONAR PRODUTO..." icon="leaf" style={{ marginBottom: 15 }} editable={false} onPressIn={() => { setModalTarget('DESC_PROD'); setProductModalVisible(true); }} />
+                        <SmartAutocomplete
+                            label="Produto / Cultura *"
+                            value={descProduto}
+                            onSelect={item => setDescProduto(item ? item.nome : '')}
+                            service={ProductLibraryService}
+                            title="SELECIONAR PRODUTO"
+                            placeholder="Buscar produto..."
+                            icon="leaf"
+                        />
                         <AgroInput label="Quantidade Descartada (Kg) *" value={descQtd} onChangeText={setDescQtd} placeholder="0.00" keyboardType="decimal-pad" style={{ marginBottom: 15 }} />
                         <AgroInput label="Motivo do Descarte *" value={descMotivo} onChangeText={t => up(t, setDescMotivo)} placeholder="Ex: Fruto passado, pragas..." icon="alert-circle-outline" style={{ marginBottom: 15 }} />
                         <AgroInput label="Observações" value={descObs} onChangeText={t => up(t, setDescObs)} placeholder="Detalhes adicionais" icon="document-text" style={{ marginBottom: 20 }} />
@@ -441,86 +446,7 @@ export default function ColheitaScreen({ navigation }) {
                 ))}
             </ScrollView>
 
-            {/* MODAL DE PRODUTOS DARK */}
-            <Modal visible={productModalVisible} animationType="slide" transparent>
-                <View style={styles.overlay}>
-                    <View style={styles.modalBg}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>SELECIONAR PRODUTO</Text>
-                            <View style={{ flexDirection: 'row', gap: 15 }}>
-                                <TouchableOpacity onPress={() => { setProductModalVisible(false); setQuickAddModal(true); }}>
-                                    <Ionicons name="add-circle" size={26} color="#10B981" />
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={() => setProductModalVisible(false)}>
-                                    <Ionicons name="close-circle" size={26} color="#4B5563" />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                        <TextInput style={styles.searchBar} placeholderTextColor="#9CA3AF" placeholder="Buscar produto..." value={searchText} onChangeText={t => up(t, setSearchText)} />
-                        <FlatList
-                            data={productsDB.filter(p => p.nome.includes(searchText.toUpperCase()))}
-                            keyExtractor={i => i.uuid || i.id.toString()}
-                            initialNumToRender={10}
-                            maxToRenderPerBatch={10}
-                            windowSize={5}
-                            removeClippedSubviews={true}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity style={styles.itemRow} onPress={() => handleProdutoSelect(item)}>
-                                    <Text style={styles.itemText}>{item.nome}</Text>
-                                    <Text style={styles.itemSub}>Fator: {item.fator_conversao || 1} Kg</Text>
-                                </TouchableOpacity>
-                            )}
-                        />
-                    </View>
-                </View>
-            </Modal>
-
-            {/* MODAL DE AREAS DARK */}
-            <Modal visible={areaModalVisible} animationType="slide" transparent>
-                <View style={styles.overlay}>
-                    <View style={styles.modalBg}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>SELECIONAR LOCAL</Text>
-                            <TouchableOpacity onPress={() => setAreaModalVisible(false)}>
-                                <Ionicons name="close-circle" size={26} color="#4B5563" />
-                            </TouchableOpacity>
-                        </View>
-                        <FlatList
-                            data={areasDB}
-                            keyExtractor={i => i.uuid || i.id.toString()}
-                            initialNumToRender={10}
-                            maxToRenderPerBatch={10}
-                            windowSize={5}
-                            removeClippedSubviews={true}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity style={styles.itemRow} onPress={() => handleAreaSelect(item)}>
-                                    <Text style={styles.itemText}>{item.nome}</Text>
-                                    <Text style={styles.itemSub}>{item.observacao}</Text>
-                                </TouchableOpacity>
-                            )}
-                        />
-                    </View>
-                </View>
-            </Modal>
-
-            {/* MODAL NOVO PRODUTO RÁPIDO DARK */}
-            <Modal visible={quickAddModal} animationType="fade" transparent>
-                <View style={styles.overlayCenter}>
-                    <View style={styles.miniModal}>
-                        <Text style={[styles.modalTitle, {marginBottom: 20}]}>NOVO PRODUTO RÁPIDO</Text>
-                        <AgroInput label="Nome" value={newItemName} onChangeText={t => up(t, setNewItemName)} placeholder="EX: MORANGO" />
-                        <AgroInput label="Kg por Caixa" value={newItemFator} onChangeText={setNewItemFator} keyboardType="decimal-pad" placeholder="1.0" />
-                        <View style={styles.row}>
-                            <TouchableOpacity style={[styles.miniBtn, { backgroundColor: '#374151' }]} onPress={() => setQuickAddModal(false)}>
-                                <Text style={styles.btnText}>CANCELAR</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.miniBtn} onPress={quickSave}>
-                                <Text style={styles.btnText}>SALVAR</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+            {/* MODAIS LEGADOS REMOVIDOS - INTEGRADO AO SMARTAUTOCOMPLETE */}
 
         </View>
     );

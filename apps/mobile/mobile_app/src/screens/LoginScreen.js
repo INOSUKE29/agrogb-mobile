@@ -385,10 +385,9 @@ export default function LoginScreen({ navigation }) {
                         return; // Aguarda resposta do Alert
                     }
                 } catch (storeError) {
-                    // Trata corrupção no momento da verificação pós-login
+                    // CORREÇÃO: Não apagar a chave em caso de erro no momento da verificação para evitar sessão zumbi.
                     if (storeError.message && storeError.message.includes('Could not decrypt')) {
-                        await SecureStore.deleteItemAsync(BIO_KEY).catch(() => {});
-                        console.log('Chave corrompida removida durante o login. O usuário precisará reativar na próxima sessão.');
+                        console.log('Erro de descriptografia detectado, mas a chave NÃO foi apagada para evitar perda prematura.');
                     }
                 }
             }
