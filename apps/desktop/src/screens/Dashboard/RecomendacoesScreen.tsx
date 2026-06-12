@@ -16,7 +16,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useLocation } from 'react-router-dom';
-import { AgronomistService, LinkedClient } from '../../../../../packages/services/src/agronomistService';
+import { AgronomistService } from '../../../../../packages/services/src/agronomistService';
+import type { LinkedClient } from '../../../../../packages/services/src/agronomistService';
 
 const COMMON_PRODUCTS = [
     'NITRATO DE CÁLCIO', 'MAP (FOSFATO MONOAMÔNICO)', 'SULFATO DE MAGNÉSIO', 
