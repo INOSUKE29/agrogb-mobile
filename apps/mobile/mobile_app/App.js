@@ -52,6 +52,7 @@ import CustosScreen from './src/screens/CustosScreen';
 import RelatoriosScreen from './src/screens/RelatoriosScreen';
 import MonitoramentoScreen from './src/screens/MonitoramentoScreen';
 import CadastroScreen from './src/screens/CadastroScreen';
+import OnboardingProfileScreen from './src/screens/OnboardingProfileScreen';
 import ClientesScreen from './src/screens/ClientesScreen';
 import CulturasScreen from './src/screens/CulturasScreen';
 import UsuariosScreen from './src/screens/UsuariosScreen';
@@ -212,7 +213,8 @@ function AppInner() {
                                             console.log('Biometry check failed', e);
                                         }
                                         
-                                        if (roleStr === 'ADMIN') props.navigation.replace('AdminSelector');
+                                        if (roleStr === 'PENDENTE' || !user?.role) props.navigation.replace('OnboardingProfile');
+                                        else if (roleStr === 'ADMIN') props.navigation.replace('AdminSelector');
                                         else props.navigation.replace('Dashboard');
                                     };
                                     
@@ -252,6 +254,7 @@ function AppInner() {
                         <Stack.Screen name="Compras" component={ComprasScreen} />
                         <Stack.Screen name="Plantio" component={PlantioScreen} />
                         <Stack.Screen name="Custos" component={CustosScreen} />
+                        <Stack.Screen name="OnboardingProfile" component={OnboardingProfileScreen} options={{ headerShown: false }} />
                         <Stack.Screen name="Cadastro" component={CadastroScreen} />
                         <Stack.Screen name="Clientes" component={ClientesScreen} />
                         <Stack.Screen name="Culturas" component={CulturasScreen} />

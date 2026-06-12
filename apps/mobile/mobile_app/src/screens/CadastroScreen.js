@@ -209,23 +209,22 @@ export default function CadastroScreen({ navigation }) {
                         );
                     }}
                     renderItem={({ item }) => (
-                        <Card 
-                            style={styles.itemCard} 
-                            noPadding 
+                        <TouchableOpacity 
+                            style={[styles.compactListItem, { borderBottomColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]} 
                             onPress={() => handleEdit(item)}
                             onLongPress={() => setSelectedItemActions(item)}
                         >
-                            <View style={styles.cardInner}>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={styles.cardName}>{item.nome}</Text>
-                                    <View style={styles.tagRow}>
-                                        <View style={styles.unitBadge}><Text style={styles.unitText}>{item.unidade}</Text></View>
-                                        {item.estocavel === 1 && <View style={[styles.tag, { backgroundColor: '#F0FDF4' }]}><Text style={[styles.tagText, { color: '#10B981' }]}>ESTOQUE</Text></View>}
-                                        {item.vendavel === 1 && <View style={[styles.tag, { backgroundColor: '#EFF6FF' }]}><Text style={[styles.tagText, { color: '#3B82F6' }]}>VENDÁVEL</Text></View>}
-                                    </View>
+                            <View style={styles.compactListInner}>
+                                <View style={{ flex: 1, paddingRight: 10 }}>
+                                    <Text style={[styles.compactItemName, { color: isDark ? '#E2E8F0' : '#1F2937' }]} numberOfLines={1}>{item.nome}</Text>
+                                </View>
+                                <View style={styles.compactTagRow}>
+                                    <View style={styles.compactUnitBadge}><Text style={styles.compactUnitText}>{item.unidade}</Text></View>
+                                    {item.estocavel === 1 && <View style={[styles.compactTag, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.1)' : '#F0FDF4' }]}><Text style={[styles.compactTagText, { color: '#10B981' }]}>EST.</Text></View>}
+                                    {item.vendavel === 1 && <View style={[styles.compactTag, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.1)' : '#EFF6FF' }]}><Text style={[styles.compactTagText, { color: '#3B82F6' }]}>VEND.</Text></View>}
                                 </View>
                             </View>
-                        </Card>
+                        </TouchableOpacity>
                     )}
                     ListEmptyComponent={<Text style={styles.empty}>Nenhum item cadastrado no catálogo.</Text>}
                 />}
@@ -597,14 +596,14 @@ const styles = StyleSheet.create({
     sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, marginTop: 20 },
     sectionIcon: { width: 24, height: 24, borderRadius: 6, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
     sectionTitle: { fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
-    itemCard: { marginBottom: 10 },
-    cardInner: { padding: 15, flexDirection: 'row', alignItems: 'center' },
-    cardName: { fontSize: 15, fontWeight: '800', color: '#1F2937' },
-    tagRow: { flexDirection: 'row', gap: 8, marginTop: 6 },
-    unitBadge: { backgroundColor: '#F3F4F6', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-    unitText: { fontSize: 9, fontWeight: '900', color: '#6B7280' },
-    tag: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-    tagText: { fontSize: 9, fontWeight: '900' },
+    compactListItem: { paddingVertical: 12, paddingHorizontal: 5, borderBottomWidth: 1 },
+    compactListInner: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    compactItemName: { fontSize: 13, fontWeight: '700' },
+    compactTagRow: { flexDirection: 'row', gap: 4 },
+    compactUnitBadge: { backgroundColor: 'rgba(107, 114, 128, 0.15)', paddingHorizontal: 4, paddingVertical: 2, borderRadius: 4 },
+    compactUnitText: { fontSize: 8, fontWeight: '900', color: '#6B7280' },
+    compactTag: { paddingHorizontal: 4, paddingVertical: 2, borderRadius: 4 },
+    compactTagText: { fontSize: 8, fontWeight: '900' },
     deleteBtn: { padding: 10 },
     empty: { textAlign: 'center', marginTop: 50, color: '#9CA3AF', fontWeight: 'bold' },
     fab: { position: 'absolute', bottom: 30, right: 30, width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', elevation: 10 },
