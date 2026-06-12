@@ -31,6 +31,9 @@ ALTER TABLE public.plantings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.recommendations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.agronomist_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.agronomist_client_links ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.technical_visits ENABLE ROW LEVEL SECURITY;
 
 -- =============================================================================
 -- 1) PROFILES (possui organization_id)
@@ -314,5 +317,75 @@ USING (
     FROM public.profiles p
     WHERE p.id = audit_logs.user_id
       AND p.organization_id = (((select auth.jwt())->> 'organization_id'))::uuid
+  )
+);
+
+-- =============================================================================
+-- 8) AGRONOMIST CODES & LINKS (Vínculo e Convite)
+-- =============================================================================
+CREATE POLICY "Agronomist Codes - Leitura Global (Validação de código)"
+ON public.agronomist_codes
+FOR SELECT
+USING (true);
+
+CREATE POLICY "Agronomist Codes - Escrita (Somente o próprio agrônomo)"
+ON public.agronomist_codes
+FOR ALL
+USING (
+  ((select auth.jwt())->> 'user_role') IN ('ADMIN', 'AGRONOMO')
+  AND agronomist_id = (select auth.uid())
+)
+WITH CHECK (
+  ((select auth.jwt())->> 'user_role') IN ('ADMIN', 'AGRONOMO')
+  AND agronomist_id = (select auth.uid())
+);
+
+CREATE POLICY "Client Links - Visibilidade mútua"
+ON public.agronomist_client_links
+FOR SELECT
+USING (
+  client_id = (select auth.uid()) OR agronomist_id = (select auth.uid())
+);
+
+CREATE POLICY "Client Links - Escrita (Pelo cliente via função ou próprio agrônomo)"
+ON public.agronomist_client_links
+FOR ALL
+USING (
+  client_id = (select auth.uid()) OR agronomist_id = (select auth.uid())
+)
+WITH CHECK (
+  client_id = (select auth.uid()) OR agronomist_id = (select auth.uid())
+);
+
+-- =============================================================================
+-- 9) TECHNICAL VISITS (Tenant isolation + envolvidos)
+-- =============================================================================
+CREATE POLICY "Technical Visits - Leitura (ADMIN/AGRONOMO/AGRICULTOR/CLIENTE + tenant)"
+ON public.technical_visits
+FOR SELECT
+USING (
+  ((select auth.jwt())->> 'user_role') IN ('ADMIN','AGRONOMO','AGRICULTOR','CLIENTE')
+  AND (
+    organization_id = (((select auth.jwt())->> 'organization_id'))::uuid
+    OR client_id = (select auth.uid())
+    OR agronomist_id = (select auth.uid())
+  )
+);
+
+CREATE POLICY "Technical Visits - Escrita (AGRONOMO ou ADMIN + tenant)"
+ON public.technical_visits
+FOR ALL
+USING (
+  ((select auth.jwt())->> 'user_role') IN ('ADMIN','AGRONOMO')
+  AND (
+    organization_id = (((select auth.jwt())->> 'organization_id'))::uuid
+    OR agronomist_id = (select auth.uid())
+  )
+)
+WITH CHECK (
+  ((select auth.jwt())->> 'user_role') IN ('ADMIN','AGRONOMO')
+  AND (
+    organization_id = (((select auth.jwt())->> 'organization_id'))::uuid
+    OR agronomist_id = (select auth.uid())
   )
 );

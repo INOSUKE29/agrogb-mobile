@@ -12,6 +12,7 @@ import CadernoAgricolaScreen from './screens/Dashboard/CadernoAgricolaScreen';
 import RecomendacoesScreen from './screens/Dashboard/RecomendacoesScreen';
 import ReceituarioAgronomicoScreen from './screens/Dashboard/ReceituarioAgronomicoScreen';
 import MeusClientesScreen from './screens/Dashboard/MeusClientesScreen';
+import VisitasTecnicasScreen from './screens/Dashboard/VisitasTecnicasScreen';
 import SettingsScreen from './screens/Dashboard/SettingsScreen';
 import VendasScreen from './screens/Dashboard/VendasScreen';
 import MonitoramentoScreen from './screens/Dashboard/MonitoramentoScreen';
@@ -28,6 +29,7 @@ import FornecedoresScreen from './screens/Dashboard/FornecedoresScreen';
 import EncomendasScreen from './screens/Dashboard/EncomendasScreen';
 import ClimaScreen from './screens/Dashboard/ClimaScreen';
 import RelatoriosScreen from './screens/Dashboard/RelatoriosScreen';
+import MeuConsultorScreen from './screens/Dashboard/MeuConsultorScreen';
 import ManejoDashboard from './screens/Dashboard/Manejo/ManejoDashboard';
 import ProgramasScreen from './screens/Dashboard/Manejo/ProgramasScreen';
 import { Toaster } from 'react-hot-toast';
@@ -79,7 +81,7 @@ function App() {
               <Route path="agronomo" element={<AgroDashboard />} />
               <Route path="agronomo/clientes" element={<MeusClientesScreen />} />
               <Route path="agronomo/recomendacoes" element={<RecomendacoesScreen />} />
-              <Route path="agronomo/visitas" element={<div className="text-white p-8">Em breve: Visitas Técnicas</div>} />
+              <Route path="agronomo/visitas" element={<VisitasTecnicasScreen />} />
 
               {/* PORTAL CLIENTE (PRODUTOR) */}
               <Route path="cliente" element={<ClienteDashboard />} />
@@ -102,6 +104,7 @@ function App() {
               <Route path="cliente/encomendas" element={<EncomendasScreen />} />
               <Route path="cliente/clima" element={<ClimaScreen />} />
               <Route path="cliente/recomendacoes" element={<ReceituarioAgronomicoScreen />} />
+              <Route path="cliente/consultor" element={<MeuConsultorScreen />} />
               
               {/* Rotas de Manejo */}
               <Route path="cliente/manejo" element={<ManejoDashboard />} />

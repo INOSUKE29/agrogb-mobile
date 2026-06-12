@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useLocation } from 'react-router-dom';
+import { AgronomistService, LinkedClient } from '../../../../../packages/services/src/agronomistService';
 
 const COMMON_PRODUCTS = [
     'NITRATO DE CÁLCIO', 'MAP (FOSFATO MONOAMÔNICO)', 'SULFATO DE MAGNÉSIO', 
@@ -26,6 +27,7 @@ const COMMON_PRODUCTS = [
 interface Cliente {
     id: string;
     nome: string;
+    email: string;
 }
 
 interface Plantio {
@@ -69,6 +71,8 @@ export default function RecomendacoesScreen() {
     const [statusTab, setStatusTab] = useState<'Rascunho' | 'Pendente' | 'Aprovada'>('Pendente');
     const [receitasList, setReceitasList] = useState<Record<string, string | number | boolean | null>[]>([]);
 
+    const agronomistService = new AgronomistService(supabase);
+
     const loadReceitas = async () => {
         setLoading(true);
         try {
@@ -98,14 +102,23 @@ export default function RecomendacoesScreen() {
     };
 
     const fetchMocks = async () => {
-        // Simulando busca de clientes vinculados
-        setClientes([
-            { id: 'cli-1', nome: 'João Batista (Fazenda Boa Esperança)' },
-            { id: 'cli-2', nome: 'Carlos Mendes (Sítio São José)' }
-        ]);
-
-        // Se conectarmos de verdade, seria algo como:
-        // const { data } = await supabase.from('agronomist_client_links').select('client_name, client_id');
+        try {
+            // Se for agrônomo, busca os clientes vinculados do Motor Real
+            if (isAgronomo) {
+                const links = await agronomistService.getLinkedClients();
+                setClientes(links.map(c => ({
+                    id: c.client_id,
+                    nome: c.nome_completo || 'Sem Nome',
+                    email: c.email || ''
+                })));
+            } else {
+                setClientes([
+                    { id: 'cli-proprio', nome: 'Própria Fazenda', email: '' }
+                ]);
+            }
+        } catch (error) {
+            console.error('Erro ao buscar clientes vinculados:', error);
+        }
     };
 
     useEffect(() => {
@@ -117,16 +130,33 @@ export default function RecomendacoesScreen() {
     }, [viewMode, statusTab]);
 
     useEffect(() => {
-        if (selectedClient) {
-            // Buscar plantios (simulado)
-            setPlantios([
-                { uuid: 'p-1', cultura: 'SOJA', tipo_plantio: 'SEQUEIRO' },
-                { uuid: 'p-2', cultura: 'MILHO', tipo_plantio: 'IRRIGADO' }
-            ]);
-        } else {
-            setPlantios([]);
+        async function fetchPlantios() {
+            if (selectedClient) {
+                if (isAgronomo) {
+                    try {
+                        const data = await agronomistService.getClientPlantings(selectedClient);
+                        setPlantios(data.map(p => ({
+                            uuid: p.id || p.uuid,
+                            cultura: p.cultura || 'Desconhecida',
+                            tipo_plantio: p.sistema_plantio || p.tipo_plantio || 'N/A'
+                        })));
+                    } catch (err) {
+                        console.error('Erro ao buscar plantios do cliente:', err);
+                        setPlantios([]);
+                    }
+                } else {
+                    // Mocks provisórios caso seja produtor offline
+                    setPlantios([
+                        { uuid: 'p-1', cultura: 'SOJA', tipo_plantio: 'SEQUEIRO' },
+                        { uuid: 'p-2', cultura: 'MILHO', tipo_plantio: 'IRRIGADO' }
+                    ]);
+                }
+            } else {
+                setPlantios([]);
+            }
         }
-    }, [selectedClient]);
+        fetchPlantios();
+    }, [selectedClient, isAgronomo]);
 
     const handleAddRow = () => {
         const newId = crypto.randomUUID();
@@ -468,7 +498,7 @@ export default function RecomendacoesScreen() {
                                     className="w-full bg-[#0a192f] border border-[rgba(255,255,255,0.1)] text-white text-base rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent block p-3.5 transition-all font-medium"
                                 >
                                     <option value="" disabled>Selecione o Cliente</option>
-                                    {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                                    {clientes.map(c => <option key={c.id} value={c.id}>{c.nome} ({c.email})</option>)}
                                 </select>
                             </div>
                         )}

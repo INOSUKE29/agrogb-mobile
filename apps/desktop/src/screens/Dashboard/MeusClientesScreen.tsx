@@ -1,33 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Search, Plus, MapPin, Phone, Mail, MoreVertical, ShieldAlert } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { supabase } from '../../services/supabase';
+import { AgronomistService, LinkedClient } from '../../../../../packages/services/src/agronomistService';
 
 export default function MeusClientesScreen() {
     const [loading, setLoading] = useState(true);
-    const [clientes, setClientes] = useState<Record<string, string | number | boolean | null>[]>([]);
+    const [clientes, setClientes] = useState<LinkedClient[]>([]);
     const [selectedClient, setSelectedClient] = useState<any | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [inviteCode, setInviteCode] = useState<string>('');
     
-    // Formulário de vínculo
-    const [emailProdutor, setEmailProdutor] = useState('');
-    const [submitting, setSubmitting] = useState(false);
+    // Motor
+    const agronomistService = new AgronomistService(supabase);
 
     const loadClientes = async () => {
         setLoading(true);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+            // Gera ou busca código de convite do agrônomo
+            const code = await agronomistService.generateOrGetInviteCode();
+            setInviteCode(code);
 
-            const { data, error } = await supabase
-                .from('clientes')
-                .select('*')
-                .eq('agronomo_id', user.id);
-            
-            if (data) {
-                setClientes(data);
-            }
+            // Busca clientes vinculados (status = ACTIVE)
+            const links = await agronomistService.getLinkedClients();
+            setClientes(links);
         } catch (error) {
             console.error("Erro ao carregar clientes", error);
+            toast.error("Falha ao carregar carteira de clientes.");
         } finally {
             setLoading(false);
         }
@@ -38,8 +37,8 @@ export default function MeusClientesScreen() {
     }, []);
 
     const handleWhatsAppInvite = () => {
-        const codigo = user?.id ? `AGR-${user.id.substring(0, 4).toUpperCase()}` : 'AGR-0000';
-        const msg = `Olá! Sou seu Consultor Agronômico. Baixe o aplicativo AgroGB para acompanhar minhas recomendações para sua fazenda. Use meu código ${codigo} no seu cadastro. Link: https://agrogb.app`;
+        const codigoFormatado = inviteCode || 'AGR-0000';
+        const msg = `Olá! Sou seu Consultor Agronômico. Baixe o aplicativo AgroGB para acompanhar minhas recomendações para sua fazenda. Use meu código ${codigoFormatado} no seu cadastro. Link: https://agrogb.app`;
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
         window.open(whatsappUrl, '_blank');
         setIsModalOpen(false);
@@ -143,7 +142,7 @@ export default function MeusClientesScreen() {
                                                             {(link.nome || link.email || 'C').charAt(0).toUpperCase()}
                                                         </div>
                                                         <div>
-                                                            <div className="font-bold text-white">{link.nome || link.email}</div>
+                                                            <div className="font-bold text-white">{link.nome_completo || link.email}</div>
                                                             <div className="text-xs text-[var(--color-muted)] mt-0.5">{link.email || 'Sem e-mail'}</div>
                                                         </div>
                                                     </div>
@@ -151,7 +150,7 @@ export default function MeusClientesScreen() {
                                                 <td className="p-4 hidden md:table-cell">
                                                     <div className="flex items-center gap-2 text-sm text-[var(--color-muted)]">
                                                         <Phone className="w-4 h-4 opacity-50" />
-                                                        {link.telefone || '(00) 00000-0000'}
+                                                        {(link as any).telefone || '(00) 00000-0000'}
                                                     </div>
                                                 </td>
                                                 <td className="p-4">
@@ -243,7 +242,7 @@ export default function MeusClientesScreen() {
                         <div className="bg-[#0a192f] border border-[rgba(255,255,255,0.1)] rounded-xl p-6 text-center mb-6">
                             <p className="text-xs font-black text-[var(--color-muted)] uppercase tracking-widest mb-2">Seu Código de Consultor</p>
                             <div className="text-3xl font-black text-white tracking-widest bg-[rgba(255,255,255,0.02)] py-3 rounded-lg border border-[rgba(255,255,255,0.05)]">
-                                AGR-7492
+                                {inviteCode || '...'}
                             </div>
                         </div>
 

@@ -220,7 +220,10 @@ export default function AgroDashboard() {
                                             </span>
                                         </td>
                                         <td className="p-3 text-right">
-                                            <button className="text-xs font-bold bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded transition-colors border border-white/10">
+                                            <button 
+                                                onClick={() => navigate('/dashboard/agronomo/recomendacoes')}
+                                                className="text-xs font-bold bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded transition-colors border border-white/10"
+                                            >
                                                 Intervir
                                             </button>
                                         </td>

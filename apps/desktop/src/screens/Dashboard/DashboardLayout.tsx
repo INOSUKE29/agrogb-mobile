@@ -34,7 +34,6 @@ import {
     Database
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import DashboardTour from '../../components/DashboardTour';
 
 export default function DashboardLayout() {
     const navigate = useNavigate();
@@ -148,6 +147,7 @@ export default function DashboardLayout() {
             return [
                 { path: '/dashboard/cliente', label: 'Início', icon: LayoutDashboard, group: 'Visão Geral' },
                 { path: '/dashboard/cliente/relatorios', label: 'Relatórios', icon: FileText, group: 'Visão Geral' },
+                { path: '/dashboard/cliente/consultor', label: 'Meu Consultor', icon: Users, group: 'Visão Geral' },
 
                 { path: '/dashboard/cliente/manejo', label: 'Manejo da Lavoura', icon: ListTodo, group: 'Operacional' },
                 { path: '/dashboard/cliente/areas', label: 'Meus Talhões', icon: Map, group: 'Operacional' },
@@ -272,9 +272,6 @@ export default function DashboardLayout() {
     return (
         <div style={{ display: 'flex', height: '100vh', width: '100%', overflow: 'hidden', background: 'var(--color-background)' }}>
             
-            {/* TOUR COMPONENT */}
-            <DashboardTour role={simulatedRole} />
-
             {/* SIDEBAR - Navigation Rail / Drawer (8-point system) */}
             <aside
                 className={`tour-step-sidebar transition-all duration-300 bg-gradient-to-b from-[#0A101D] to-[#000000] border-r border-[rgba(255,255,255,0.05)] flex flex-col z-20 shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.5)] ${isSidebarOpen ? 'w-64' : 'w-20'}`}

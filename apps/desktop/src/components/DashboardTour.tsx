@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import Joyride, { Step, STATUS } from 'react-joyride';
+import JoyridePkg, { STATUS } from 'react-joyride';
+
+const Joyride = (JoyridePkg as any).default || (JoyridePkg as any).Joyride || JoyridePkg;
 
 interface DashboardTourProps {
     role: 'AGRONOMO' | 'CLIENTE' | 'ADMIN' | null;
@@ -7,7 +9,7 @@ interface DashboardTourProps {
 
 export default function DashboardTour({ role }: DashboardTourProps) {
     const [run, setRun] = useState(false);
-    const [steps, setSteps] = useState<Step[]>([]);
+    const [steps, setSteps] = useState<any[]>([]);
 
     useEffect(() => {
         if (!role) return;
