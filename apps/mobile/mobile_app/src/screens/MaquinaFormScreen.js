@@ -1,9 +1,10 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, TextInput, SafeAreaView, StatusBar, Platform } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertMaquina, updateMaquinaRevisao } from '../database/database';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 
 import { showToast } from '../components/ui/Toast';
 
@@ -91,7 +92,7 @@ export default function MaquinaFormScreen({ navigation, route }) {
                         <View style={[styles.orb, { bottom: 100, left: -60, backgroundColor: '#3B82F6', opacity: 0.1 }]} />
 
                         {/* PAINEL DE VIDRO (GLASSMORPHISM CARD) */}
-                        <View intensity={30} tint="dark" style={styles.glassCard}>
+                        <BlurView intensity={30} tint="dark" style={styles.glassCard}>
                             
                             {/* NOME / IDENTIFICAÃ‡ÃƒO */}
                             <Text style={styles.label}>NOME / IDENTIFICAÃ‡ÃƒO *</Text>
@@ -194,7 +195,7 @@ export default function MaquinaFormScreen({ navigation, route }) {
                                 </LinearGradient>
                             </TouchableOpacity>
 
-                        </View>
+                        </BlurView>
                     </ScrollView>
                 </SafeAreaView>
             </View>

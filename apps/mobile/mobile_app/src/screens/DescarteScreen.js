@@ -6,10 +6,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 
-// Design System
 import Card from '../components/common/Card';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
+import SmartAutocomplete from '../components/common/SmartAutocomplete';
+import { ProductLibraryService } from '../services/LibraryServices';
 
 const { width } = Dimensions.get('window');
 
@@ -27,7 +28,7 @@ export default function DescarteScreen({ navigation }) {
 
         const dados = {
             uuid: uuidv4(),
-            produto: produto.toUpperCase(),
+            produto: produto,
             quantidade_kg: parseFloat(quantidade) || 0,
             motivo: (motivo || 'NÃO INFORMADO').toUpperCase(),
             data: new Date().toISOString().split('T')[0]
@@ -67,13 +68,17 @@ export default function DescarteScreen({ navigation }) {
                         </Text>
                     </View>
 
-                    <AgroInput 
-                        label="PRODUTO DESCARTADO *" 
-                        value={produto} 
-                        onChangeText={t => setProduto(t.toUpperCase())} 
-                        autoCapitalize="characters" 
-                        placeholder="EX: MORANGO ESPECIAL - QUEBRA"
+                    <SmartAutocomplete
+                        label="PRODUTO DESCARTADO *"
+                        value={produto}
+                        onSelect={val => setProduto(val ? val.nome : '')}
+                        service={ProductLibraryService}
+                        title="SELECIONAR PRODUTO"
+                        placeholder="EX: MORANGO ESPECIAL"
                         icon="cube-outline"
+                        quickAddFields={[
+                            { key: 'nome', label: 'NOME DO PRODUTO', placeholder: 'Ex: Morango Refugo' }
+                        ]}
                     />
 
                     <AgroInput 

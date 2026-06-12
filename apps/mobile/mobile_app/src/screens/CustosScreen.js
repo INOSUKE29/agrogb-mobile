@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { insertCost, getCostCategories, getCosts } from '../database/database';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,11 +17,9 @@ export default function CustosScreen({ navigation }) {
     const [valorUnitario, setValorUnitario] = useState('');
     const [observacao, setObservacao] = useState('');
 
-    // Selection Modal State
-    const [modalVisible, setModalVisible] = useState(false);
+    // Selection State
     const [items, setItems] = useState([]);
     const [history, setHistory] = useState([]);
-    const [searchText, setSearchText] = useState('');
     const [loading, setLoading] = useState(false);
 
     useEffect(() => { loadData(); }, []);
@@ -105,17 +103,23 @@ export default function CustosScreen({ navigation }) {
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
                 <LinearGradient colors={['#1F2937', '#111827']} style={styles.formCard}>
-                    <Text style={styles.sectionTitle}>LANÇAR DESPESA</Text>
-                    
-                    <AgroInput 
-                        label="Categoria da Despesa *"
-                        value={categoria ? categoria.name : ''}
-                        placeholder="SELECIONAR CATEGORIA..."
-                        icon="list"
-                        style={{ marginBottom: 10 }}
-                        editable={false}
-                        onPressIn={() => setModalVisible(true)}
-                    />
+                    <Text style={styles.sectionTitle}>CATEGORIA DA DESPESA *</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+                        {items.map((cat) => {
+                            const isActive = categoria && categoria.id === cat.id;
+                            return (
+                                <TouchableOpacity 
+                                    key={cat.id} 
+                                    style={[styles.chip, isActive && styles.chipActive]} 
+                                    onPress={() => setCategoria(cat)}
+                                >
+                                    <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                                        {cat.name.toUpperCase()}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
 
                     <View style={styles.row}>
                         <View style={{ flex: 1, marginRight: 10 }}>
@@ -159,41 +163,7 @@ export default function CustosScreen({ navigation }) {
                     />
                 </LinearGradient>
 
-                {/* MODALS */}
-                <Modal visible={modalVisible} animationType="slide" transparent>
-                    <View style={styles.overlay}>
-                        <View style={styles.modalBg}>
-                            <View style={styles.modalHeader}>
-                                <Text style={styles.modalTitle}>ESCOLHA A CATEGORIA</Text>
-                                <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
-                                    <Ionicons name="close" size={24} color="#9CA3AF" />
-                                </TouchableOpacity>
-                            </View>
-
-                            <TextInput
-                                style={styles.searchBar}
-                                placeholder="Buscar categoria..."
-                                value={searchText}
-                                onChangeText={t => up(t, setSearchText)}
-                            />
-
-                            <FlatList
-                                data={items.filter(i => i.name.toUpperCase().includes(searchText.toUpperCase()))}
-                                initialNumToRender={8}
-                                maxToRenderPerBatch={10}
-                                windowSize={5}
-                                removeClippedSubviews={true}
-                                keyExtractor={i => i.id.toString()}
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity style={styles.itemRow} onPress={() => { setCategoria(item); setModalVisible(false); }}>
-                                        <Text style={styles.itemText}>{item.name}</Text>
-                                        <Text style={styles.itemSub}>{item.type ? item.type.toUpperCase() : 'GERAL'}</Text>
-                                    </TouchableOpacity>
-                                )}
-                            />
-                        </View>
-                    </View>
-                </Modal>
+                {/* MODAL REMOVIDO EM PROL DOS CHIPS INLINE */}
             </ScrollView>
         </View>
     );
@@ -212,13 +182,28 @@ const styles = StyleSheet.create({
     totalBox: { backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: 15, borderRadius: 16, marginBottom: 15, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' },
     totalLabel: { fontSize: 9, fontWeight: '900', color: '#EF4444', letterSpacing: 1 },
     totalValue: { fontSize: 24, fontWeight: '900', color: '#FFF', marginTop: 5 },
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' },
-    modalBg: { backgroundColor: '#1F2937', borderTopLeftRadius: 30, borderTopRightRadius: 30, height: '80%', padding: 25 },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
-    modalTitle: { fontSize: 16, fontWeight: '900', color: '#FFF' },
-    closeBtn: { backgroundColor: 'rgba(255,255,255,0.05)', padding: 8, borderRadius: 20 },
-    searchBar: { backgroundColor: '#111827', padding: 15, borderRadius: 12, marginBottom: 15, fontSize: 14, color: '#FFF', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-    itemRow: { paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
-    itemText: { fontSize: 15, fontWeight: '800', color: '#FFF' },
-    itemSub: { fontSize: 11, color: '#9CA3AF', marginTop: 2, fontWeight: 'bold' }
+    chipScroll: { marginBottom: 20, flexDirection: 'row' },
+    chip: { 
+        paddingHorizontal: 16, 
+        paddingVertical: 10, 
+        borderRadius: 20, 
+        backgroundColor: 'rgba(255,255,255,0.05)', 
+        borderWidth: 1, 
+        borderColor: 'rgba(255,255,255,0.1)',
+        marginRight: 10,
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
+    chipActive: { 
+        backgroundColor: 'rgba(52, 211, 153, 0.1)', 
+        borderColor: '#10B981' 
+    },
+    chipText: { 
+        fontSize: 12, 
+        fontWeight: '800', 
+        color: '#9CA3AF' 
+    },
+    chipTextActive: { 
+        color: '#10B981' 
+    }
 });

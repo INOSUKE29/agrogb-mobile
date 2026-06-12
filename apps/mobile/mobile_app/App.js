@@ -9,6 +9,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
 import * as Updates from 'expo-updates';
+import * as LocalAuthentication from 'expo-local-authentication';
+import * as SecureStore from 'expo-secure-store';
 
 import { initDB } from './src/database/database';
 import AutoSyncService from './src/services/AutoSyncService';
@@ -81,6 +83,7 @@ function AppInner() {
     const { user, loading: isAuthLoading, logout } = useAuth();
     const [isDbReady, setIsDbReady] = useState(false);
     const [initError, setInitError] = useState(null);
+    const [timeoutError, setTimeoutError] = useState(false);
 
     useEffect(() => {
         async function checkUpdates() {
@@ -111,7 +114,34 @@ function AppInner() {
         };
     }, []);
 
+    useEffect(() => {
+        let timer;
+        if (isAuthLoading || !isDbReady) {
+            timer = setTimeout(() => {
+                setTimeoutError(true);
+            }, 15000);
+        } else {
+            setTimeoutError(false);
+        }
+        return () => clearTimeout(timer);
+    }, [isAuthLoading, isDbReady]);
+
     if (isAuthLoading || !isDbReady) {
+        if (timeoutError) {
+            return (
+                <View style={{ flex: 1, backgroundColor: '#0B121E', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+                    <Text style={{ color: '#EF4444', fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Tempo Limite Excedido</Text>
+                    <Text style={{ color: '#9CA3AF', textAlign: 'center', marginBottom: 20 }}>O sistema está demorando muito para inicializar as dependências ou o banco de dados.</Text>
+                    <TouchableOpacity 
+                        onPress={() => Updates.reloadAsync()} 
+                        style={{ backgroundColor: '#10B981', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8 }}
+                    >
+                        <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Tentar Novamente (Recarregar)</Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        }
+
         return (
             <View style={{ flex: 1, backgroundColor: '#0B121E', justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" color="#10B981" />
@@ -157,10 +187,43 @@ function AppInner() {
                             {(props) => {
                                 React.useEffect(() => {
                                     const roleStr = user?.role || 'AGRONOMO';
-                                    if (roleStr === 'ADMIN') props.navigation.replace('AdminSelector');
-                                    else props.navigation.replace('Dashboard'); // Agricultor e Agrônomo vão para o Menu V6
+                                    
+                                    const verifyBiometry = async () => {
+                                        try {
+                                            const bioCreds = await SecureStore.getItemAsync('agrogb_biometric_credentials');
+                                            if (bioCreds) {
+                                                const hasHardware = await LocalAuthentication.hasHardwareAsync();
+                                                const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+                                                
+                                                if (hasHardware && isEnrolled) {
+                                                    const auth = await LocalAuthentication.authenticateAsync({
+                                                        promptMessage: 'Acesso Restrito - Confirme sua Identidade',
+                                                        cancelLabel: 'Cancelar',
+                                                        disableDeviceFallback: false,
+                                                    });
+                                                    
+                                                    if (!auth.success) {
+                                                        logout();
+                                                        return;
+                                                    }
+                                                }
+                                            }
+                                        } catch (e) {
+                                            console.log('Biometry check failed', e);
+                                        }
+                                        
+                                        if (roleStr === 'ADMIN') props.navigation.replace('AdminSelector');
+                                        else props.navigation.replace('Dashboard');
+                                    };
+                                    
+                                    verifyBiometry();
                                 }, [user]);
-                                return <View style={{ flex: 1, backgroundColor: '#0B121E' }} />;
+                                return (
+                                    <View style={{ flex: 1, backgroundColor: '#0B121E', justifyContent: 'center', alignItems: 'center' }}>
+                                        <ActivityIndicator size="large" color="#10B981" />
+                                        <Text style={{ color: '#64748B', marginTop: 10 }}>Autenticando Acesso...</Text>
+                                    </View>
+                                );
                             }}
                         </Stack.Screen>
                         
