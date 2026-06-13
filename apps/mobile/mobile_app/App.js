@@ -77,7 +77,12 @@ import FertilizationScreen from './src/screens/FertilizationScreen';
 import PlanoAdubacaoScreen from './src/screens/PlanoAdubacaoScreen';
 import RecipeFormScreen from './src/screens/RecipeFormScreen';
 import PendenciasScreen from './src/screens/PendenciasScreen';
-
+import ClimaScreen from './src/screens/ClimaScreen';
+import AuditScreen from './src/screens/AuditScreen';
+import FinanceiroDashboardScreen from './src/screens/FinanceiroDashboardScreen';
+import BIRelatoriosAvancadosScreen from './src/screens/BIRelatoriosAvancadosScreen';
+import TasksScreen from './src/screens/TasksScreen';
+import TaskFormScreen from './src/screens/TaskFormScreen';
 const Stack = createStackNavigator();
 
 function AppInner() {
@@ -282,6 +287,12 @@ function AppInner() {
                         <Stack.Screen name="PlanoAdubacao" component={PlanoAdubacaoScreen} />
                         <Stack.Screen name="RecipeForm" component={RecipeFormScreen} />
                         <Stack.Screen name="Pendencias" component={PendenciasScreen} />
+                        <Stack.Screen name="Clima" component={ClimaScreen} />
+                        <Stack.Screen name="AuditScreen" component={AuditScreen} />
+                        <Stack.Screen name="FinanceiroDashboard" component={FinanceiroDashboardScreen} />
+                        <Stack.Screen name="BIRelatoriosAvancados" component={BIRelatoriosAvancadosScreen} />
+                        <Stack.Screen name="Tasks" component={TasksScreen} />
+                        <Stack.Screen name="TaskForm" component={TaskFormScreen} />
                     </>
                 )}
             </Stack.Navigator>
