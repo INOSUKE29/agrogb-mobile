@@ -11,14 +11,17 @@ INSERT INTO storage.buckets (id, name, public)
   ON CONFLICT (id) DO NOTHING;
 
 -- Set up access controls for avatars.
+DROP POLICY IF EXISTS "Avatar images are publicly accessible." ON storage.objects;
 CREATE POLICY "Avatar images are publicly accessible." 
   ON storage.objects FOR SELECT 
   USING (bucket_id = 'avatars');
 
+DROP POLICY IF EXISTS "Anyone can upload an avatar." ON storage.objects;
 CREATE POLICY "Anyone can upload an avatar." 
   ON storage.objects FOR INSERT 
   WITH CHECK (bucket_id = 'avatars');
 
+DROP POLICY IF EXISTS "Users can update their own avatars." ON storage.objects;
 CREATE POLICY "Users can update their own avatars."
   ON storage.objects FOR UPDATE
   USING (bucket_id = 'avatars' AND owner = auth.uid());
@@ -31,10 +34,12 @@ INSERT INTO storage.buckets (id, name, public)
   ON CONFLICT (id) DO NOTHING;
 
 -- O RLS para documentos é blindado, apenas usuários autenticados da organização podem ler.
+DROP POLICY IF EXISTS "Documents viewable by auth users" ON storage.objects;
 CREATE POLICY "Documents viewable by auth users" 
   ON storage.objects FOR SELECT 
   USING (bucket_id = 'documents' AND auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Documents uploadable by auth users" ON storage.objects;
 CREATE POLICY "Documents uploadable by auth users" 
   ON storage.objects FOR INSERT 
   WITH CHECK (bucket_id = 'documents' AND auth.role() = 'authenticated');

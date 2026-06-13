@@ -5,7 +5,7 @@
 -- ------------------------------------------------------------------------------
 -- 0) FUNÇÃO DE TRIGGER (corrigido: garantir que existe antes do trigger)
 -- ------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.trigger_set_timestamp()
+CREATE OR REPLACE FUNCTION public.trigger_set_last_updated()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -46,7 +46,7 @@ ALTER TABLE public.technical_visits ENABLE ROW LEVEL SECURITY;
 DROP TRIGGER IF EXISTS set_timestamp_technical_visits ON public.technical_visits;
 CREATE TRIGGER set_timestamp_technical_visits
     BEFORE UPDATE ON public.technical_visits
-    FOR EACH ROW EXECUTE FUNCTION public.trigger_set_timestamp();
+    FOR EACH ROW EXECUTE FUNCTION public.trigger_set_last_updated();
 
 
 -- 2. FUNÇÃO RPC PARA ACEITE DE CONVITE (LADO SERVIDOR BLINDADO)

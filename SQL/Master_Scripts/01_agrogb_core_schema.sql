@@ -10,7 +10,7 @@ CREATE SCHEMA IF NOT EXISTS extensions;
 CREATE EXTENSION IF NOT EXISTS postgis SCHEMA extensions;
 
 -- 2. FUNCAO AUXILIAR PARA ATUALIZAR TIMESTAMP UPDATED_AT
-CREATE OR REPLACE FUNCTION public.trigger_set_timestamp()
+CREATE OR REPLACE FUNCTION public.trigger_set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
   NEW.updated_at = NOW();
@@ -33,7 +33,7 @@ ALTER TABLE public.organizations ENABLE ROW LEVEL SECURITY;
 DROP TRIGGER IF EXISTS set_timestamp_organizations ON public.organizations;
 CREATE TRIGGER set_timestamp_organizations
     BEFORE UPDATE ON public.organizations
-    FOR EACH ROW EXECUTE FUNCTION public.trigger_set_timestamp();
+    FOR EACH ROW EXECUTE FUNCTION public.trigger_set_updated_at();
 
 -- 4. PERFIS DE USUARIOS (Profiles Unificados)
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -56,7 +56,7 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 DROP TRIGGER IF EXISTS set_timestamp_profiles ON public.profiles;
 CREATE TRIGGER set_timestamp_profiles
     BEFORE UPDATE ON public.profiles
-    FOR EACH ROW EXECUTE FUNCTION public.trigger_set_timestamp();
+    FOR EACH ROW EXECUTE FUNCTION public.trigger_set_updated_at();
 
 -- 5. ATUALIZAR REFERENCIA CIRCULAR DA ORGANIZACAO
 -- Como owner_user_id depende do profile, e o profile depende da organizacao, 

@@ -15,7 +15,7 @@ LEFT JOIN public.fields fi ON f.id = fi.farm_id
 GROUP BY f.organization_id;
 
 -- Index único necessário para atualizar a view de forma concorrente sem travar leituras (REFRESH MATERIALIZED VIEW CONCURRENTLY)
-CREATE UNIQUE INDEX idx_mv_dashboard_org ON public.mv_dashboard_agromarketing (organization_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_dashboard_org ON public.mv_dashboard_agromarketing (organization_id);
 
 -- Para manter atualizada, podemos plugar um pg_cron para rodar a cada X horas,
 -- ou disparar o REFRESH após as inserções de eventos da fila do Mobile.

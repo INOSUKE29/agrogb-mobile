@@ -9,6 +9,8 @@ import { useTheme } from '../theme/ThemeContext';
 import MetricCard from '../components/common/MetricCard';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
+import SmartEntitySelector from '../components/common/SmartEntitySelector';
+import { CostCenterLibraryService } from '../services/LibraryServices';
 
 export default function CustosScreen({ navigation }) {
     const { theme } = useTheme();
@@ -103,23 +105,14 @@ export default function CustosScreen({ navigation }) {
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
                 <LinearGradient colors={['#1F2937', '#111827']} style={styles.formCard}>
-                    <Text style={styles.sectionTitle}>CATEGORIA DA DESPESA *</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-                        {items.map((cat) => {
-                            const isActive = categoria && categoria.id === cat.id;
-                            return (
-                                <TouchableOpacity 
-                                    key={cat.id} 
-                                    style={[styles.chip, isActive && styles.chipActive]} 
-                                    onPress={() => setCategoria(cat)}
-                                >
-                                    <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
-                                        {cat.name.toUpperCase()}
-                                    </Text>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </ScrollView>
+                    <SmartEntitySelector
+                        label="CATEGORIA DA DESPESA *"
+                        value={categoria?.name || ''}
+                        onSelect={val => setCategoria(val)}
+                        service={CostCenterLibraryService}
+                        placeholder="BUSCAR CATEGORIA..."
+                        icon="pricetag-outline"
+                    />
 
                     <View style={styles.row}>
                         <View style={{ flex: 1, marginRight: 10 }}>
