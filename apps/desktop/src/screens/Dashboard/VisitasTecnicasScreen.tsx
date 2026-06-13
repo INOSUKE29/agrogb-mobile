@@ -11,7 +11,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../services/supabase';
-import { AgronomistService, TechnicalVisit, LinkedClient } from '../../../../../packages/services/src/agronomistService';
+import { AgronomistService } from '../../../../../packages/services/src/agronomistService';
+import type { TechnicalVisit, LinkedClient } from '../../../../../packages/services/src/agronomistService';
 
 export default function VisitasTecnicasScreen() {
     const [showModal, setShowModal] = useState(false);

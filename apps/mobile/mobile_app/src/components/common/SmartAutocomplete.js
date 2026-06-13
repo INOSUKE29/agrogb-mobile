@@ -13,7 +13,8 @@ export default function SmartAutocomplete({
     title = 'SELECIONAR',
     placeholder = 'Toque para selecionar...',
     filterType = null,
-    quickAddFields = [], // Array of { key, label, placeholder, defaultValue }
+    createRoute = null, // Route for full registration screen
+    createParams = {}, // Extra params for the route
     style = {},
     icon = 'search-outline'
 }) {
@@ -84,7 +85,7 @@ export default function SmartAutocomplete({
                             <Ionicons name="close-circle" size={20} color="#EF4444" />
                         </TouchableOpacity>
                     ) : (
-                        quickAddFields.length > 0 && (
+                        createRoute && (
                             <TouchableOpacity 
                                 style={[styles.quickAddShortcut, { backgroundColor: theme?.colors?.primary + '15' }]} 
                                 onPress={() => setModalVisible(true)}
@@ -105,7 +106,8 @@ export default function SmartAutocomplete({
                 title={title}
                 placeholder={placeholder}
                 filterType={filterType}
-                quickAddFields={quickAddFields}
+                createRoute={createRoute}
+                createParams={createParams}
             />
         </View>
     );

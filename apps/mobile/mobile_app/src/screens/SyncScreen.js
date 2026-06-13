@@ -1,6 +1,6 @@
+import ScreenLayout from '../components/layout/ScreenLayout';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, Dimensions, ActivityIndicator, SafeAreaView, StatusBar } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -101,36 +101,15 @@ export default function SyncScreen({ navigation }) {
         if (adminOnly && !isAdmin) return null;
         return (
             <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.optionContainer}>
-                <LinearGradient 
-                    colors={danger ? ['rgba(239, 68, 68, 0.1)', 'rgba(239, 68, 68, 0.05)'] : ['#1F2937', '#111827']} 
-                    style={[styles.cardInner, danger && { borderColor: 'rgba(239, 68, 68, 0.3)', borderWidth: 1 }]}
-                >
-                    <View style={[styles.iconContainer, { backgroundColor: danger ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.05)' }]}>
-                        {isSyncing ? (
-                            <ActivityIndicator size="small" color="#3B82F6" />
-                        ) : (
-                            <Ionicons name={icon} size={22} color={danger ? '#EF4444' : (activeColors.primary || '#10B981')} />
-                        )}
-                    </View>
-                    <View style={styles.cardInfo}>
-                        <Text style={[styles.cardTitle, danger && { color: '#EF4444' }, isSyncing && { color: '#3B82F6' }]}>
-                            {label}
-                        </Text>
-                        <Text style={styles.cardDesc}>{description}</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={18} color={danger ? 'rgba(239, 68, 68, 0.5)' : '#4B5563'} />
-                </LinearGradient>
+                
             </TouchableOpacity>
         );
     };
 
     return (
-        <View style={[styles.container, { backgroundColor: activeColors.bg || '#0B121E' }]}>
-            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-
-            {/* CABEÇALHO GLASSMORPHISM */}
-            <LinearGradient colors={['#111827', '#0F172A']} style={styles.header}>
-                <SafeAreaView>
+        <ScreenLayout title="Sincronização" onBack={() => navigation.goBack()} scrollable noPadding={false} headerContent={<>
+                
+                
                     <View style={styles.headerTop}>
                         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                             <Ionicons name="arrow-back" size={24} color="#FFF" />
@@ -143,10 +122,15 @@ export default function SyncScreen({ navigation }) {
                             <Ionicons name="information-circle-outline" size={24} color="#FFF" />
                         </TouchableOpacity>
                     </View>
-                </SafeAreaView>
-            </LinearGradient>
+                
+            
+            </>}>
+            
 
-            <ScrollView style={styles.body} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+            {/* CABEÇALHO GLASSMORPHISM */}
+            
+
+            
                 <Text style={styles.sectionTitle}>SISTEMA & PREFERÊNCIAS</Text>
                 <SettingItem icon="business-outline" label="Propriedade" description="Dados fiscais e identidade" onPress={() => setActiveModal('prop')} />
                 <SettingItem icon="color-palette-outline" label="Personalização" description="Cores e temas visuais" onPress={() => setActiveModal('theme')} />
@@ -183,7 +167,7 @@ export default function SyncScreen({ navigation }) {
                         }} />
                     </>
                 )}
-            </ScrollView>
+            
 
             {/* MODAL 1: PROPRIEDADE (DARK) */}
             <Modal visible={activeModal === 'prop'} animationType="slide" transparent>
@@ -394,7 +378,7 @@ export default function SyncScreen({ navigation }) {
                     </View>
                 </View>
             </Modal>
-        </View>
+        </ScreenLayout>
     );
 }
 

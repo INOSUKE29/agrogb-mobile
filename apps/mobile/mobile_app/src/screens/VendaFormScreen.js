@@ -3,7 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIn
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { executeQuery } from '../database/database';
-import AgroInput from '../components/common/AgroInput';
+import AgroInput from '../components/ui/AgroInput';
+import SmartEntitySelector from '../components/common/SmartEntitySelector';
+import { ClientLibraryService, ProductLibraryService } from '../services/LibraryServices';
 
 export default function VendaFormScreen({ navigation }) {
     const { colors } = useTheme();
@@ -70,21 +72,25 @@ export default function VendaFormScreen({ navigation }) {
             <ScrollView contentContainerStyle={styles.formContainer}>
                 <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Dados do Cliente</Text>
                 
-                <AgroInput
+                <SmartEntitySelector
                     label="Comprador / Cooperativa / Frigorífico"
-                    placeholder="Ex: Cooperativa Agroindustrial"
                     value={cliente}
-                    onChangeText={setCliente}
+                    onSelect={setCliente}
+                    service={ClientLibraryService}
+                    placeholder="Selecione ou adicione novo..."
+                    createRoute="ClienteFormScreen"
                     icon="business-outline"
                 />
 
                 <Text style={[styles.sectionTitle, { color: colors.textPrimary, marginTop: 20 }]}>Dados do Produto</Text>
                 
-                <AgroInput
+                <SmartEntitySelector
                     label="O que você está vendendo?"
-                    placeholder="Ex: Soja (Sacas 60kg) ou Gado Nelore (Arroba)"
                     value={produto}
-                    onChangeText={setProduto}
+                    onSelect={setProduto}
+                    service={ProductLibraryService}
+                    placeholder="Selecione o produto (ex: Soja, Milho)..."
+                    createRoute="ProdutoFormScreen"
                     icon="leaf-outline"
                 />
 

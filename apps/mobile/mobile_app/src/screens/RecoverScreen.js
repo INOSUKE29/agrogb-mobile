@@ -1,7 +1,7 @@
+import ScreenLayout from '../components/layout/ScreenLayout';
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, StatusBar } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 
 export default function RecoverScreen({ navigation }) {
     const [code, setCode] = useState("");
@@ -11,9 +11,9 @@ export default function RecoverScreen({ navigation }) {
     };
 
     return (
-        <View style={styles.container}>
+        <ScreenLayout title="Recuperar Conta" onBack={() => navigation.goBack()} scrollable noPadding>
             <StatusBar barStyle="light-content" backgroundColor="#0B3D2E" />
-            <LinearGradient colors={['#0B3D2E', '#114B36']} style={StyleSheet.absoluteFill} />
+            
 
             <View style={styles.content}>
                 <View style={styles.header}>
@@ -46,7 +46,7 @@ export default function RecoverScreen({ navigation }) {
                     </TouchableOpacity>
                 </View>
             </View>
-        </View>
+        </ScreenLayout>
     );
 }
 

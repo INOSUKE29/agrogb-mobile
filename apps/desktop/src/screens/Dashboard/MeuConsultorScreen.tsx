@@ -9,7 +9,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../services/supabase';
-import { AgronomistService, LinkedAgronomist } from '../../../../../packages/services/src/agronomistService';
+import { AgronomistService } from '../../../../../packages/services/src/agronomistService';
+import type { LinkedAgronomist } from '../../../../../packages/services/src/agronomistService';
 
 export default function MeuConsultorScreen() {
     const [loading, setLoading] = useState(false);

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Users, Search, Plus, MapPin, Phone, Mail, MoreVertical, ShieldAlert } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../services/supabase';
-import { AgronomistService, LinkedClient } from '../../../../../packages/services/src/agronomistService';
+import { AgronomistService } from '../../../../../packages/services/src/agronomistService';
+import type { LinkedClient } from '../../../../../packages/services/src/agronomistService';
 
 export default function MeusClientesScreen() {
     const [loading, setLoading] = useState(true);

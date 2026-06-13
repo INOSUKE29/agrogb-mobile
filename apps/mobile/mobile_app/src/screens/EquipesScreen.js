@@ -138,10 +138,7 @@ export default function EquipesScreen({ navigation }) {
                     removeClippedSubviews={true}
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={<Text style={[styles.empty, { color: textMutedColor }]}>Nenhum colaborador cadastrado.</Text>}
-                initialNumToRender={8}
-                maxToRenderPerBatch={10}
-                windowSize={5}
-                removeClippedSubviews={true}
+
             />
 
             <TouchableOpacity style={[styles.fab, { backgroundColor: activeColors.primary || '#10B981' }]} onPress={() => { resetForm(); setModalVisible(true); }}>

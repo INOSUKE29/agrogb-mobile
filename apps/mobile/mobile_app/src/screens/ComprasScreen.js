@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Dimensions
 import { v4 as uuidv4 } from 'uuid';
 import { insertCompra, getComprasRecentes, updateCompra, deleteCompra, executeQuery, atualizarEstoque, inserirAlerta } from '../database/database';
 import { SyncWorker } from '../services/SyncWorker';
-import SmartAutocomplete from '../components/common/SmartAutocomplete';
+import SmartEntitySelector from '../components/common/SmartEntitySelector';
 import { ProductLibraryService, FornecedorLibraryService } from '../services/LibraryServices';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -194,23 +194,17 @@ export default function ComprasScreen({ navigation }) {
                             </Text>
                         </TouchableOpacity>
 
-                                                <SmartAutocomplete
-                            label="PRODUTO / INSUMO COMPRADO *"
+                        <SmartEntitySelector
+                            label="PRODUTO / INSUMO"
                             value={item}
-                            onSelect={val => setItem(val ? val.nome : '')}
+                            onSelect={setItem}
                             service={ProductLibraryService}
-                            filterType="INSUMO"
-                            title="SELECIONAR MATERIAL"
-                            placeholder="SELECIONAR MATERIAL..."
-                            icon="cube-outline"
-                            quickAddFields={[
-                                { key: 'nome', label: 'NOME DO INSUMO', placeholder: 'Ex: Adubo Especial' },
-                                { key: 'tipo', label: 'TIPO', placeholder: 'Ex: INSUMO', defaultValue: 'INSUMO' },
-                                { key: 'unidade', label: 'UNIDADE', placeholder: 'Ex: KG', defaultValue: 'KG' }
-                            ]}
+                            placeholder="PESQUISAR CATÁLOGO..."
+                            icon="leaf-outline"
+                            createRoute="ProdutoFormScreen"
                         />
 
-                        <SmartAutocomplete
+                        <SmartEntitySelector
                             label="FORNECEDOR (DE QUEM?)"
                             value={fornecedor.nome ? fornecedor : null}
                             onSelect={val => setFornecedor(val ? { uuid: val.uuid, nome: val.nome } : { uuid: '', nome: '' })}
@@ -218,11 +212,7 @@ export default function ComprasScreen({ navigation }) {
                             title="SELECIONAR FORNECEDOR"
                             placeholder="SELECIONAR FORNECEDOR..."
                             icon="business-outline"
-                            quickAddFields={[
-                                { key: 'nome', label: 'NOME DO FORNECEDOR', placeholder: 'Ex: AgroComercial' },
-                                { key: 'contato', label: 'CONTATO', placeholder: 'Ex: Geraldo Silva' },
-                                { key: 'telefone', label: 'TELEFONE', placeholder: 'Ex: (11) 99999-9999' }
-                            ]}
+                            createRoute="FornecedorFormScreen"
                         />
 
                         <View style={styles.row}>

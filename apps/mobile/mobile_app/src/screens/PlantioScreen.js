@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert 
 import { v4 as uuidv4 } from 'uuid';
 import { useFocusEffect } from '@react-navigation/native';
 import { insertPlantio, executeQuery } from '../database/database';
-import SmartAutocomplete from '../components/common/SmartAutocomplete';
+import SmartEntitySelector from '../components/common/SmartEntitySelector';
 import { TalhaoLibraryService, CropLibraryService } from '../services/LibraryServices';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -91,21 +91,17 @@ export default function PlantioScreen({ navigation }) {
             <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
                 <View style={styles.content}>
                     <LinearGradient colors={['#1F2937', '#111827']} style={styles.formCard}>
-                                                <SmartAutocomplete
+                        <SmartEntitySelector
                             label="ÁREA DE PLANTIO (ONDE?) *"
                             value={talhao}
                             onSelect={val => setTalhao(val ? val.nome : '')}
                             service={TalhaoLibraryService}
-                            title="SELECIONAR ÁREA/TALHÃO"
                             placeholder="SELECIONAR ÁREA..."
                             icon="map-outline"
-                            quickAddFields={[
-                                { key: 'nome', label: 'NOME DO TALHÃO', placeholder: 'Ex: Talhão Leste 1' },
-                                { key: 'area_ha', label: 'ÁREA (HA)', placeholder: 'Ex: 10.5', keyboardType: 'decimal-pad' }
-                            ]}
+                            createRoute="TalhoesScreen"
                         />
 
-                        <SmartAutocomplete
+                        <SmartEntitySelector
                             label="CULTURA (O QUE?) *"
                             value={variedade}
                             onSelect={val => {
@@ -113,12 +109,9 @@ export default function PlantioScreen({ navigation }) {
                                 if (val?.unidade) setSelectedUnit(val.unidade);
                             }}
                             service={CropLibraryService}
-                            title="SELECIONAR CULTURA"
                             placeholder="SELECIONAR CULTURA..."
                             icon="leaf-outline"
-                            quickAddFields={[
-                                { key: 'nome', label: 'NOME DA CULTURA', placeholder: 'Ex: Café Robusta' }
-                            ]}
+                            createRoute="CulturasScreen"
                         />
 
                         <View style={styles.row}>

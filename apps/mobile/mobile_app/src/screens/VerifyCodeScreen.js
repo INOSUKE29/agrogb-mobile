@@ -1,6 +1,6 @@
+import ScreenLayout from '../components/layout/ScreenLayout';
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import InputField from '../components/ui/InputField';
 import { AuthService } from '../services/authService';
@@ -28,8 +28,8 @@ export default function VerifyCodeScreen({ route, navigation }) {
     };
 
     return (
-        <View style={styles.container}>
-            <LinearGradient colors={['#064e3b', '#022c22']} style={StyleSheet.absoluteFill} />
+        <ScreenLayout title="Verificar Código" onBack={() => navigation.goBack()} scrollable noPadding>
+            
 
             <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                 <Ionicons name="arrow-back" size={24} color="#FFF" />
@@ -67,7 +67,7 @@ export default function VerifyCodeScreen({ route, navigation }) {
                     </TouchableOpacity>
                 </View>
             </View>
-        </View>
+        </ScreenLayout>
     );
 }
 

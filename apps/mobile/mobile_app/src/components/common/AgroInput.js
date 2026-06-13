@@ -15,6 +15,7 @@ export default function AgroInput({
     maxLength,
     style,
     icon,
+    editable = true,
 }) {
     const { theme } = useTheme();
     const [isFocused, setIsFocused] = useState(false);
@@ -22,20 +23,33 @@ export default function AgroInput({
 
     // Cores Dinâmicas baseadas no Tema Ativo
     const activeColors = theme?.colors || {};
-    const inputBg = activeColors.inputBg || '#FFFFFF';
+    const isDark = theme?.dark || false;
+    
+    // Fallbacks para Dark Premium ou Claro
+    const inputBg = !editable 
+        ? (isDark ? 'rgba(255,255,255,0.02)' : '#F9FAFB')
+        : (activeColors.inputBg || (isDark ? 'rgba(0,0,0,0.2)' : '#FFFFFF'));
+        
+    const placeholderColor = isDark ? '#6B7280' : '#9CA3AF';
+    const textColor = activeColors.inputText || (isDark ? '#F3F4F6' : '#1F2937');
+    const labelColor = activeColors.textMuted || (isDark ? '#9CA3AF' : '#6B7280');
     
     const borderColor = error
         ? (activeColors.error || '#EF4444')
         : isFocused
             ? (activeColors.primary || '#10B981')
-            : (activeColors.inputBorder || '#E2E8F0');
+            : (activeColors.inputBorder || (isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0'));
 
     const actualSecureTextEntry = secureTextEntry && !isPasswordVisible;
+
+    // Métricas padronizadas compartilhadas com AgroButton
+    const standardHeight = theme?.metrics?.buttonHeight || 55;
+    const standardRadius = theme?.metrics?.radius || 12;
 
     return (
         <View style={[styles.container, style]}>
             {label && (
-                <Text style={[styles.label, { color: activeColors.textMuted || '#6B7280' }]}>
+                <Text style={[styles.label, { color: labelColor }]}>
                     {label.toUpperCase()}
                 </Text>
             )}
@@ -44,35 +58,39 @@ export default function AgroInput({
                 styles.inputContainer, 
                 { 
                     borderColor: borderColor, 
-                    backgroundColor: inputBg 
+                    backgroundColor: inputBg,
+                    height: standardHeight,
+                    borderRadius: standardRadius,
+                    borderWidth: isFocused ? 1.5 : 1, // Destaque extra no foco
                 }
             ]}>
                 {icon && (
                     <Ionicons 
                         name={icon} 
                         size={20} 
-                        color={isFocused ? (activeColors.primary || '#10B981') : '#9CA3AF'} 
+                        color={isFocused ? (activeColors.primary || '#10B981') : placeholderColor} 
                         style={styles.icon} 
                     />
                 )}
                 
                 <TextInput
-                    style={[styles.input, { color: activeColors.inputText || '#1F2937' }]}
+                    style={[styles.input, { color: textColor }]}
                     value={value}
                     onChangeText={onChangeText}
                     placeholder={placeholder}
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={placeholderColor}
                     secureTextEntry={actualSecureTextEntry}
                     keyboardType={keyboardType}
                     autoCapitalize={autoCapitalize}
                     maxLength={maxLength}
+                    editable={editable}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
                 />
 
                 {secureTextEntry && (
                     <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)} style={styles.eyeIcon}>
-                        <Ionicons name={isPasswordVisible ? "eye-off" : "eye"} size={20} color="#9CA3AF" />
+                        <Ionicons name={isPasswordVisible ? "eye-off" : "eye"} size={20} color={placeholderColor} />
                     </TouchableOpacity>
                 )}
             </View>
@@ -88,7 +106,7 @@ export default function AgroInput({
 
 const styles = StyleSheet.create({
     container: {
-        marginBottom: 20,
+        marginBottom: 16, // Espaçamento padronizado
         width: '100%',
     },
     label: {
@@ -100,9 +118,6 @@ const styles = StyleSheet.create({
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        height: 55,
-        borderWidth: 1,
-        borderRadius: 12,
         paddingHorizontal: 15,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
@@ -116,6 +131,7 @@ const styles = StyleSheet.create({
     input: {
         flex: 1,
         fontSize: 15,
+        height: '100%',
     },
     eyeIcon: {
         padding: 5,

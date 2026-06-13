@@ -189,10 +189,7 @@ export default function EstoqueScreen({ navigation }) {
                     removeClippedSubviews={true}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.list}
-                    initialNumToRender={8}
-                    maxToRenderPerBatch={10}
-                    windowSize={5}
-                    removeClippedSubviews={true}
+
                     renderItem={({ item }) => {
                         const dyn = getDynamicStatus(item.quantidade);
                         return (

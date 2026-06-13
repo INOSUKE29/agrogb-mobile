@@ -2,6 +2,21 @@
 -- AGROGB - MASTER SCRIPT 13: TECHNICAL VISITS E RPC DE CONVITE
 -- ==============================================================================
 
+-- ------------------------------------------------------------------------------
+-- 0) FUNÇÃO DE TRIGGER (corrigido: garantir que existe antes do trigger)
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.trigger_set_timestamp()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  -- Atualiza apenas o campo de auditoria de "última modificação"
+  NEW.last_updated := timezone('utc'::text, now());
+  RETURN NEW;
+END;
+$$;
+
+
 -- 1. TABELA DE VISITAS TÉCNICAS (PADRÃO ENTITIES V2)
 CREATE TABLE IF NOT EXISTS public.technical_visits (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

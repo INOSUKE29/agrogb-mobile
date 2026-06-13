@@ -32,6 +32,9 @@ ALTER TABLE IF EXISTS public.farms ADD COLUMN IF NOT EXISTS organization_id UUID
 ALTER TABLE IF EXISTS public.fields ADD COLUMN IF NOT EXISTS sync_status INT NOT NULL DEFAULT 1;
 ALTER TABLE IF EXISTS public.fields ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
 
+ALTER TABLE IF EXISTS public.agronomist_client_links ADD COLUMN IF NOT EXISTS sync_status INT NOT NULL DEFAULT 1;
+ALTER TABLE IF EXISTS public.recommendations ADD COLUMN IF NOT EXISTS sync_status INT NOT NULL DEFAULT 1;
+
 ALTER TABLE IF EXISTS public.fields
 ADD COLUMN IF NOT EXISTS boundary geometry(MultiPolygon, 4326);
 

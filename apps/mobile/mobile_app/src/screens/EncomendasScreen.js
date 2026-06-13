@@ -5,7 +5,6 @@ import {
     StyleSheet,
     TouchableOpacity,
     StatusBar,
-    SafeAreaView,
     Platform,
     ScrollView,
     ActivityIndicator,
@@ -230,18 +229,10 @@ export default function EncomendasScreen() {
 
     // ── MAIN RENDER ──────────────────────────────────────────────────────────
     return (
-        <View style={styles.webContainer}>
-            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            <LinearGradient colors={['#020617', '#0A0F1C', '#030712']} style={StyleSheet.absoluteFill} />
-
-            {/* AMBIENT ORBS */}
-            <View style={[styles.ambientOrb, { top: -60, right: -40, backgroundColor: '#D4AF37', opacity: 0.08 }]} />
-            <View style={[styles.ambientOrb, { bottom: 40, left: -60, backgroundColor: '#10B981', opacity: 0.1 }]} />
-
-            <SafeAreaView style={{ flex: 1, width: '100%', maxWidth: 520, alignSelf: 'center' }}>
+        <ScreenLayout title="Encomendas" onBack={() => navigation.goBack()} scrollable noPadding={true}>
                 {renderList()}
-            </SafeAreaView>
-        </View>
+            
+        </ScreenLayout>
     );
 }
 

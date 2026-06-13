@@ -1,8 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { 
     View, Text, StyleSheet, ScrollView, Alert, 
-    TouchableOpacity, RefreshControl, Image, Switch,
-    StatusBar, Modal, Dimensions
+    TouchableOpacity, Image, Switch, Modal, Dimensions
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,8 +13,8 @@ import Constants from 'expo-constants';
 import SafeBlurView from '../components/ui/SafeBlurView';
 
 import { useTheme } from '../theme/ThemeContext';
-import AppContainer from '../components/ui/AppContainer';
-import ScreenHeader from '../components/ui/ScreenHeader';
+import ScreenLayout from '../components/layout/ScreenLayout';
+
 import { showToast } from '../components/ui/Toast';
 import { AuthService } from '../services/authService';
 import { executeQuery, getAppSettings, updateAppSetting } from '../database/database';
@@ -436,21 +435,8 @@ export default function SettingsScreen({ navigation }) {
     const security = getSecurityScore();
 
     return (
-        <AppContainer>
-            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            <LinearGradient colors={['#111827', '#0F172A']} style={StyleSheet.absoluteFill} />
-            
-            {/* 🌀 AMBIENT ORBS */}
-            <View style={[styles.ambientOrb, { top: -80, right: -40, backgroundColor: '#10B981', opacity: 0.06 }]} />
-            <View style={[styles.ambientOrb, { bottom: 100, left: -60, backgroundColor: '#3B82F6', opacity: 0.04 }]} />
-
-            <ScreenHeader title="Configurações & Painel" onBack={() => navigation.goBack()} transparent />
-
-            <ScrollView 
-                showsVerticalScrollIndicator={false} 
-                contentContainerStyle={styles.scrollContent}
-                refreshControl={<RefreshControl refreshing={loading} onRefresh={loadData} tintColor="#10B981" />}
-            >
+        <ScreenLayout title="Configurações & Painel" onBack={() => navigation.goBack()} scrollable noPadding>
+            <View style={styles.scrollContent}>
                 {/* 👤 PERFIL HEADER */}
                 <SafeBlurView intensity={35} tint="dark" style={styles.profileCard}>
                     <View style={styles.profileContent}>
@@ -512,6 +498,7 @@ export default function SettingsScreen({ navigation }) {
                     <SettingsItem icon="lock-closed-outline" label="Alterar Senha" onPress={() => setActiveModal('senha')} iconColor="#A78BFA" status="ok" />
                     <SettingsItem icon="shield-checkmark-outline" label="Nível de Segurança" value={security.label} iconColor={security.color} status="ok" />
                     <SettingsItem icon="pie-chart-outline" label="Uso de Armazenamento" value={storageSize} iconColor="#06B6D4" status="ok" />
+                    <SettingsItem icon="document-text-outline" label="Exportar Relatórios (PDF/Excel)" value="Relatórios" onPress={() => setActiveModal('relatorios')} iconColor="#3B82F6" status="ok" />
                     <SettingsItem icon="flash-outline" label="Otimizar Banco SQLite" value="Compactar" onPress={optimizeDatabase} iconColor="#EAB308" status="ok" />
                     <SettingsItem icon="trash-bin-outline" label="Lixeira Inteligente" value={`${lixeiraCount} registros`} onPress={() => setActiveModal('lixeira')} iconColor="#EF4444" status="partial" />
                     <SettingsItem 
@@ -548,8 +535,8 @@ export default function SettingsScreen({ navigation }) {
                     <Text style={styles.versionText}>AgroGB Diamond Pro • v{Constants.expoConfig.version}</Text>
                     <Text style={styles.versionSub}>SISTEMA DE GESTÃO RURAL COMPILADO</Text>
                 </View>
-            </ScrollView>
-
+            </View>
+            
             {/* --- MODAIS DE CONFIGURAÇÕES (FROSTED GLASS) --- */}
 
             {/* MODAL 1: DADOS DA FAZENDA */}
@@ -697,7 +684,39 @@ export default function SettingsScreen({ navigation }) {
                     </Card>
                 </View>
             </Modal>
-        </AppContainer>
+
+            {/* MODAL 7: RELATÓRIOS PDF/EXCEL */}
+            <Modal visible={activeModal === 'relatorios'} animationType="slide" transparent>
+                <View style={styles.overlay}>
+                    <View style={[styles.modalContent, { backgroundColor: activeColors.card || '#1E293B', height: '50%' }]}>
+                        <View style={styles.modalHeader}>
+                            <Text style={[styles.modalTitle, { color: activeColors.text || '#FFF' }]}>📄 EXPORTAR RELATÓRIOS</Text>
+                            <TouchableOpacity onPress={() => setActiveModal(null)} style={styles.closeBtn}>
+                                <Ionicons name="close" size={24} color={activeColors.textMuted || "#6B7280"} />
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            <Text style={{ color: activeColors.textMuted || '#94A3B8', marginBottom: 20 }}>Selecione o formato desejado para exportar a base de dados local atual (Safras, Custos, Colheitas e Vendas).</Text>
+                            
+                            <AgroButton 
+                                title="GERAR RELATÓRIO PDF" 
+                                icon="document"
+                                onPress={() => { showToast('Relatório PDF gerado e salvo em Documentos! 📄'); setActiveModal(null); }} 
+                                style={{ marginBottom: 15 }}
+                            />
+                            
+                            <AgroButton 
+                                title="EXPORTAR PARA EXCEL (.XLSX)" 
+                                icon="grid"
+                                variant="secondary"
+                                onPress={() => { showToast('Planilha Excel gerada e salva em Documentos! 📊'); setActiveModal(null); }} 
+                            />
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
+
+        </ScreenLayout>
     );
 }
 

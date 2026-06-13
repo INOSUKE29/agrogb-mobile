@@ -129,10 +129,7 @@ export default function TalhoesScreen({ navigation }) {
                     removeClippedSubviews={true}
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={<Text style={styles.empty}>Nenhum talhão cadastrado.</Text>}
-                initialNumToRender={8}
-                maxToRenderPerBatch={10}
-                windowSize={5}
-                removeClippedSubviews={true}
+
             />
 
             <TouchableOpacity style={[styles.fab, { backgroundColor: theme?.colors?.primary || '#10B981' }]} onPress={() => { setEditItem(null); setForm({ nome: '', area_ha: '', observacao: '' }); setModalVisible(true); }}>

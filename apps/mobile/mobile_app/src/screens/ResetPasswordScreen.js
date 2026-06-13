@@ -1,6 +1,6 @@
+import ScreenLayout from '../components/layout/ScreenLayout';
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import InputField from '../components/ui/InputField';
 import { AuthService } from '../services/authService';
 
@@ -36,8 +36,8 @@ export default function ResetPasswordScreen({ route, navigation }) {
     };
 
     return (
-        <View style={styles.container}>
-            <LinearGradient colors={['#064e3b', '#022c22']} style={StyleSheet.absoluteFill} />
+        <ScreenLayout title="Redefinir Senha" onBack={() => navigation.goBack()} scrollable noPadding>
+            
 
             <View style={styles.content}>
                 <Text style={styles.title}>Nova Senha</Text>
@@ -77,7 +77,7 @@ export default function ResetPasswordScreen({ route, navigation }) {
                     </TouchableOpacity>
                 </View>
             </View>
-        </View>
+        </ScreenLayout>
     );
 }
 

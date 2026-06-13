@@ -16,7 +16,6 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
 import { BlurView } from 'expo-blur';
-import Card from './Card';
 
 export default function LibraryPickerModal({
     visible,
@@ -26,7 +25,8 @@ export default function LibraryPickerModal({
     title = 'SELECIONAR',
     placeholder = 'Digite para pesquisar...',
     filterType = null,
-    quickAddFields = [] // Array of { key, label, placeholder, keyboardType, defaultValue }
+    createRoute = null, // Nome da rota para cadastro completo, ex: 'ProdutoFormScreen'
+    createParams = {}, // Parâmetros adicionais para a rota
 }) {
     const { theme } = useTheme();
     const isDark = theme?.dark || false;
@@ -38,22 +38,12 @@ export default function LibraryPickerModal({
     const [favorites, setFavorites] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    // Quick Add panel state
-    const [showQuickAdd, setShowQuickAdd] = useState(false);
-    const [quickAddForm, setQuickAddForm] = useState({});
-    const [quickAddSaving, setQuickAddSaving] = useState(false);
+    // Removidos os estados de QuickAdd (Auditoria v2.0 exige tela completa)
 
     useEffect(() => {
         if (visible) {
             loadRecentsAndFavorites();
             handleSearch('');
-            setShowQuickAdd(false);
-            // Pre-fill quick add form with defaults
-            const initialForm = {};
-            quickAddFields.forEach(f => {
-                initialForm[f.key] = f.defaultValue || '';
-            });
-            setQuickAddForm(initialForm);
         }
     }, [visible]);
 
@@ -107,27 +97,16 @@ export default function LibraryPickerModal({
         }
     };
 
-    const handleQuickAdd = async () => {
-        // Validate first field (usually 'nome') as required
-        const nameField = quickAddFields[0]?.key || 'nome';
-        const mainValue = quickAddForm[nameField]?.trim();
-        if (!mainValue) {
-            alert(`O campo "${quickAddFields[0]?.label || 'Nome'}" é obrigatório!`);
-            return;
-        }
-
-        setQuickAddSaving(true);
-        try {
-            // Dynamically call quickAdd passing form values
-            const args = quickAddFields.map(f => quickAddForm[f.key] || f.defaultValue || '');
-            const newRecord = await service.quickAdd(...args);
-            
-            // Auto select newly created record
-            await handleSelectItem(newRecord);
-        } catch (e) {
-            alert('Erro ao realizar cadastro rápido: ' + e.message);
-        } finally {
-            setQuickAddSaving(false);
+    // A integração com a Navegação Completa será passada via props ou callback
+    const handleCreateNew = () => {
+        if (createRoute && service && service.navigation) {
+            onClose(); // Fecha o modal
+            // Navega para a tela completa passando o termo pesquisado
+            service.navigation.navigate(createRoute, { 
+                ...createParams,
+                initialSearch: searchQuery, 
+                returnToScreen: service.route.name // Usa o nome da rota atual para voltar
+            });
         }
     };
 
@@ -202,64 +181,23 @@ export default function LibraryPickerModal({
                             )}
                         </View>
                         
-                        {/* Quick Add Button */}
-                        {quickAddFields.length > 0 && (
+                        {/* Navigation Switch to Full Registration */}
+                        {createRoute && (
                             <TouchableOpacity 
-                                style={[styles.quickAddSwitch, { backgroundColor: showQuickAdd ? theme?.colors?.primary + '20' : (isDark ? 'rgba(255,255,255,0.08)' : '#FFF'), borderColor: showQuickAdd ? theme?.colors?.primary : (isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB') }]}
-                                onPress={() => setShowQuickAdd(!showQuickAdd)}
+                                style={[styles.quickAddSwitch, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFF', borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB' }]}
+                                onPress={handleCreateNew}
                             >
                                 <Ionicons 
-                                    name={showQuickAdd ? "remove" : "add"} 
+                                    name="add" 
                                     size={18} 
-                                    color={showQuickAdd ? theme?.colors?.primary : (isDark ? '#FFF' : '#10B981')} 
+                                    color={isDark ? '#FFF' : '#10B981'} 
                                 />
-                                <Text style={[styles.quickAddText, { color: showQuickAdd ? theme?.colors?.primary : (isDark ? '#FFF' : '#10B981') }]}>
-                                    {showQuickAdd ? 'FECHAR' : 'NOVO'}
+                                <Text style={[styles.quickAddText, { color: isDark ? '#FFF' : '#10B981' }]}>
+                                    NOVO
                                 </Text>
                             </TouchableOpacity>
                         )}
                     </View>
-
-                    {/* QUICK ADD PANEL */}
-                    {showQuickAdd && (
-                        <Card style={[styles.quickAddPanel, { backgroundColor: isDark ? 'rgba(0,0,0,0.3)' : '#F9FAFB', borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#E5E7EB' }]}>
-                            <View style={styles.quickAddHeader}>
-                                <Ionicons name="flash-sharp" size={16} color={theme?.colors?.primary || '#10B981'} />
-                                <Text style={[styles.quickAddTitle, { color: isDark ? '#FFF' : '#1F2937' }]}>CADASTRO EXPRESSO</Text>
-                            </View>
-                            
-                            <ScrollView style={{ maxHeight: 160 }} showsVerticalScrollIndicator={false}>
-                                {quickAddFields.map((f, idx) => (
-                                    <View key={f.key} style={styles.fieldBox}>
-                                        <Text style={styles.fieldLabel}>{f.label}</Text>
-                                        <View style={[styles.fieldInputWrapper, { backgroundColor: isDark ? 'rgba(0,0,0,0.4)' : '#FFF', borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB' }]}>
-                                            <TextInput
-                                                style={[styles.fieldInput, { color: isDark ? '#FFF' : '#1F2937' }]}
-                                                value={quickAddForm[f.key] || ''}
-                                                onChangeText={(t) => setQuickAddForm({ ...quickAddForm, [f.key]: t })}
-                                                placeholder={f.placeholder}
-                                                placeholderTextColor="#6B7280"
-                                                keyboardType={f.keyboardType || 'default'}
-                                                autoFocus={idx === 0}
-                                            />
-                                        </View>
-                                    </View>
-                                ))}
-                            </ScrollView>
-
-                            <TouchableOpacity 
-                                style={[styles.quickAddBtn, { backgroundColor: theme?.colors?.primary || '#10B981' }]} 
-                                onPress={handleQuickAdd}
-                                disabled={quickAddSaving}
-                            >
-                                {quickAddSaving ? (
-                                    <ActivityIndicator size="small" color="#FFF" />
-                                ) : (
-                                    <Text style={styles.quickAddBtnText}>CADASTRAR E SELECIONAR</Text>
-                                )}
-                            </TouchableOpacity>
-                        </Card>
-                    )}
 
                     {/* MAIN SCROLL - SUGGESTIONS OR RECENTS/FAVORITES */}
                     {loading ? (
@@ -276,8 +214,12 @@ export default function LibraryPickerModal({
                             ListEmptyComponent={
                                 <View style={styles.emptyState}>
                                     <MaterialCommunityIcons name="cloud-search-outline" size={48} color={isDark ? '#374151' : '#9CA3AF'} />
-                                    <Text style={[styles.emptyStateTitle, { color: isDark ? '#4B5563' : '#6B7280' }]}>Nenhum registro encontrado</Text>
-                                    <Text style={styles.emptyStateSub}>Altere a busca ou clique em "+ NOVO" ao lado para cadastrar rápido.</Text>
+                                    <Text style={[styles.emptyStateTitle, { color: isDark ? '#4B5563' : '#6B7280' }]}>Não encontrado localmente</Text>
+                                    <Text style={styles.emptyStateSub}>Se o item não apareceu na pesquisa da fazenda, faça uma Busca Global ou cadastre um novo preenchendo os dados completos.</Text>
+                                    
+                                    <TouchableOpacity style={[styles.quickAddBtn, { backgroundColor: theme?.colors?.primary || '#10B981', marginTop: 20, width: '100%' }]} onPress={() => handleSearch(searchQuery + ' --global')}>
+                                        <Text style={styles.quickAddBtnText}>BUSCAR NA BASE GLOBAL</Text>
+                                    </TouchableOpacity>
                                 </View>
                             }
                         />
@@ -449,14 +391,6 @@ const styles = StyleSheet.create({
     },
     quickAddText: { fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
     
-    // Quick Add Panel
-    quickAddPanel: { padding: 18, marginBottom: 18, borderRadius: 20, borderWidth: 1 },
-    quickAddHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 15 },
-    quickAddTitle: { fontSize: 10, fontWeight: '900', letterSpacing: 1 },
-    fieldBox: { marginBottom: 12 },
-    fieldLabel: { fontSize: 9, fontWeight: '900', color: '#9CA3AF', marginBottom: 6, letterSpacing: 0.5 },
-    fieldInputWrapper: { height: 44, borderRadius: 12, borderWidth: 1, justifyContent: 'center', paddingHorizontal: 12 },
-    fieldInput: { fontSize: 13, fontWeight: '700' },
     quickAddBtn: { height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginTop: 15 },
     quickAddBtnText: { color: '#FFF', fontSize: 11, fontWeight: '900', letterSpacing: 1 },
 
