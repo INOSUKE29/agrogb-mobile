@@ -3,7 +3,7 @@ import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Dimensions, Statu
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
-import { getCadastro } from '../database/database';
+import { getCadastro, getDashboardStats } from '../database/database';
 
 // Design System
 import Card from '../components/common/Card';
@@ -33,16 +33,10 @@ export default function IntelligenceScreen({ navigation }) {
     const [plantPhase, setPlantPhase] = useState('FRUTIFICAÇÃO'); 
     const [recommendation, setRecommendation] = useState(null);
 
-    // Mock dashboard metrics
-    const biMetrics = {
-        totalProduction: 1240, revenue: 18200, bestField: 'Talhão 4', efficiency: '87%',
-        fields: [
-            { id: '1', name: 'Talhão 1', area: 0.5, production: 320, efficiency: '78%' },
-            { id: '2', name: 'Talhão 2', area: 0.3, production: 180, efficiency: '65%' },
-            { id: '3', name: 'Talhão 3', area: 0.4, production: 240, efficiency: '82%' },
-            { id: '4', name: 'Talhão 4', area: 0.2, production: 500, efficiency: '95%' }
-        ]
-    };
+    // Real dashboard metrics state
+    const [biMetricsReal, setBiMetricsReal] = useState({
+        totalProduction: 0, revenue: 0, saldo: 0
+    });
 
     useEffect(() => {
         loadCatalogAndRunAudit();
@@ -54,6 +48,13 @@ export default function IntelligenceScreen({ navigation }) {
             const dbItems = await getCadastro();
             const richItems = dbItems.filter(item => item.bula_texto || item.dose_padrao || item.nutrientes);
             setCatalogProducts(richItems);
+
+            const dbStats = await getDashboardStats();
+            setBiMetricsReal({
+                totalProduction: dbStats.colheitaHoje,
+                revenue: dbStats.vendasHoje,
+                saldo: dbStats.saldo
+            });
 
             // MOCK: Aplicações recentes no campo para cruzamento com a Bula real do DB
             const mockRecentApplications = [
@@ -258,8 +259,9 @@ export default function IntelligenceScreen({ navigation }) {
     const renderDashboard = () => (
         <ScrollView style={{ flex: 1, padding: 20 }} contentContainerStyle={{ paddingBottom: 50 }}>
             <View style={styles.kpiGrid}>
-                <View style={[styles.kpiCard, { backgroundColor: cardBg }]}><Ionicons name="leaf-outline" size={20} color="#10B981" /><Text style={[styles.kpiLabel, { color: textMutedColor }]}>Produção (Mês)</Text><Text style={[styles.kpiValue, { color: textColor }]}>{biMetrics.totalProduction} kg</Text></View>
-                <View style={[styles.kpiCard, { backgroundColor: cardBg }]}><Ionicons name="cash-outline" size={20} color="#3B82F6" /><Text style={[styles.kpiLabel, { color: textMutedColor }]}>Receita Líquida</Text><Text style={[styles.kpiValue, { color: textColor }]}>R$ {biMetrics.revenue}</Text></View>
+                <View style={[styles.kpiCard, { backgroundColor: cardBg }]}><Ionicons name="leaf-outline" size={20} color="#10B981" /><Text style={[styles.kpiLabel, { color: textMutedColor }]}>Produção (Hoje)</Text><Text style={[styles.kpiValue, { color: textColor }]}>{biMetricsReal.totalProduction} kg</Text></View>
+                <View style={[styles.kpiCard, { backgroundColor: cardBg }]}><Ionicons name="cash-outline" size={20} color="#3B82F6" /><Text style={[styles.kpiLabel, { color: textMutedColor }]}>Receita (Hoje)</Text><Text style={[styles.kpiValue, { color: textColor }]}>R$ {biMetricsReal.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</Text></View>
+                <View style={[styles.kpiCard, { backgroundColor: cardBg, width: '100%' }]}><Ionicons name="trending-up-outline" size={20} color={biMetricsReal.saldo >= 0 ? "#10B981" : "#EF4444"} /><Text style={[styles.kpiLabel, { color: textMutedColor }]}>Resultado (Margem)</Text><Text style={[styles.kpiValue, { color: biMetricsReal.saldo >= 0 ? "#10B981" : "#EF4444" }]}>R$ {biMetricsReal.saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</Text></View>
             </View>
         </ScrollView>
     );

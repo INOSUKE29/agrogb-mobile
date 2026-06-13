@@ -205,10 +205,15 @@ export default function HomeScreen({ navigation }) {
                         </View>
                     </ScrollView>
                 ) : (
-                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 }}>
-                        <Ionicons name="leaf-outline" size={40} color={THEME.textSub} />
-                        <Text style={{ marginTop: 10, color: THEME.textSub, fontSize: 12 }}>Preparando espaço...</Text>
-                    </View>
+                    <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
+                            <View style={[styles.skeletonBlock, { width: '30%', height: 60 }]} />
+                            <View style={[styles.skeletonBlock, { width: '30%', height: 60 }]} />
+                            <View style={[styles.skeletonBlock, { width: '30%', height: 60 }]} />
+                        </View>
+                        <View style={[styles.skeletonBlock, { width: '100%', height: 180, marginBottom: 20 }]} />
+                        <View style={[styles.skeletonBlock, { width: '45%', height: 110, marginBottom: 10 }]} />
+                    </ScrollView>
                 )}
             </View>
 
@@ -252,6 +257,8 @@ const styles = StyleSheet.create({
 
     badge: { position: 'absolute', top: 5, right: 5, backgroundColor: '#EF4444', minWidth: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
     badgeText: { color: '#FFF', fontSize: 9, fontWeight: 'bold' },
+
+    skeletonBlock: { backgroundColor: 'rgba(150,150,150,0.15)', borderRadius: 12 },
 
     footer: { marginTop: 40, alignItems: 'center' },
     version: { color: '#D1D5DB', fontSize: 10, fontWeight: 'bold' }

@@ -257,3 +257,15 @@ Todas as principais telas comerciais, técnicas e financeiras foram atualizadas.
 - **O Resgate do Código (Git Rule):** Foi diagnosticado que commits anteriores negligenciaram arquivos do projeto Desktop que estavam na área de staging. Todo o repositório (`apps/desktop` e `SQL`) foi sincronizado à branch `main`, restabelecendo a regra inviolável "Subir todas as alterações juntas".
 - **Integração Universal (Fim dos Modais Defasados):** Módulos antigos como `ColheitaScreen.js` que usavam `<Picker>` nativo ou `Modais` gigantes de seleção foram refatorados. Toda a seleção de chaves estrangeiras agora obriga o uso de `SmartAutocomplete` (SmartEntitySelector) ou componentes em `Chips`, alinhando à fluidez do V8.
 - **Fim das Sessões Zumbi (Biometria Blindada):** A temida "Limpeza Nuclear Prematura" no `LoginScreen.js` foi extirpada. O app Mobile não deletará mais as chaves criptografadas (`SecureStore.deleteItemAsync`) quando o descriptografador do sistema operacional falhar transitoriamente, resolvendo o bug onde usuários logados eram "ejetados" à força do app.
+
+## 15. Blindagem de Triggers e Multi-Tenant V2 (Sessão 2026-06-13)
+
+> [!IMPORTANT]
+> **Supabase Security Advisor (Alerta Vermelho)**
+> Nunca aceite recomendações genéricas de "Enable RLS and Clean Up" geradas automaticamente pelo painel do Supabase sem auditar. O Supabase IA desconhece o nosso Multi-Tenant e tenta criar políticas permissivas `USING (auth.role() = 'authenticated')` ou rodar `DROP CASCADE` que quebram o nosso motor de sincronização. Toda regra de segurança deve ser filtrada e armazenada nos nossos scripts `25` e `26`.
+
+### Regras de Ouro Reforçadas (Arquitetura de Banco)
+1. **O Conflito do `updated_at` vs `last_updated`:** A tabela `profiles` exige a coluna `updated_at`, mas as tabelas operacionais sincronizadas (`technical_visits`, `farms`, etc.) exigem a coluna `last_updated` para o WatermelonDB.
+   - **Regra:** NUNCA criar uma função genérica chamada `trigger_set_timestamp()`. Ela causará sobreposição e travará atualizações. Use SEMPRE as funções dedicadas do Script 24: `trigger_set_updated_at()` ou `trigger_set_last_updated()`.
+2. **Multi-Tenant Derivado (Tabelas V2):** Tabelas isoladas por usuário (que possuem `user_id`, como `v2_fazendas`, `v2_plantios`) NÃO DEVEM ser bloqueadas apenas por `user_id`. Para respeitarem o ecossistema Desktop (Multi-Tenant), a política RLS deve ler a `organization_id` do usuário dono e comparar com a `organization_id` do JWT de quem está lendo.
+   - **Exemplo de Isolamento Correto (Script 25):** `EXISTS (SELECT 1 FROM profiles p WHERE p.id = tabela.user_id AND p.organization_id = auth.jwt()->>'organization_id')`.

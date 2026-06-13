@@ -20,9 +20,9 @@ import { AuthService } from '../services/authService';
 import { executeQuery, getAppSettings, updateAppSetting } from '../database/database';
 import { getSupabase } from '../services/supabase';
 import { pushLocalChanges, pullServerChanges } from '../services/SyncService';
-import { LoggingService } from '../modules/system/services/LoggingService';
 import { StorageHelper } from '../services/storageHelper';
 import { useAuth } from '../context/AuthContext';
+import { ExportService } from '../services/ExportService';
 
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
@@ -322,6 +322,35 @@ export default function SettingsScreen({ navigation }) {
         }
     };
 
+    const handleExport = async (type) => {
+        setLoading(true);
+        try {
+            const data = await executeQuery('SELECT * FROM vendas WHERE is_deleted = 0 ORDER BY data DESC LIMIT 100');
+            const relData = data.rows._array.map(v => ({
+                Data: v.data,
+                Cliente: v.cliente_nome || 'Consumidor',
+                Valor: `R$ ${v.valor.toFixed(2)}`,
+                Status: v.status || 'FINALIZADO'
+            }));
+
+            if (relData.length === 0) {
+                Alert.alert('Aviso', 'Nenhuma venda encontrada para gerar relatório.');
+                return;
+            }
+
+            if (type === 'pdf') {
+                await ExportService.exportToPDF('Relatório de Vendas AgroGB', relData, 'RelatorioVendas_AgroGB');
+            } else if (type === 'excel') {
+                await ExportService.exportToExcel(relData, 'RelatorioVendas_AgroGB');
+            }
+            setActiveModal(null);
+        } catch (e) {
+            Alert.alert('Erro', 'Falha ao exportar relatório.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const emptyLixeira = async () => {
         setLoading(true);
         try {
@@ -502,21 +531,12 @@ export default function SettingsScreen({ navigation }) {
                     <SettingsItem icon="flash-outline" label="Otimizar Banco SQLite" value="Compactar" onPress={optimizeDatabase} iconColor="#EAB308" status="ok" />
                     <SettingsItem icon="trash-bin-outline" label="Lixeira Inteligente" value={`${lixeiraCount} registros`} onPress={() => setActiveModal('lixeira')} iconColor="#EF4444" status="partial" />
                     <SettingsItem 
-                        icon="bug-outline" 
-                        label="Exportar Logs de Erros" 
+                        icon="list-outline" 
+                        label="Log de Auditoria e Erros" 
                         iconColor="#F59E0B"
                         isLast
-                        status="partial"
-                        onPress={async () => {
-                            setLoading(true);
-                            const res = await LoggingService.exportLogs();
-                            setLoading(false);
-                            if (res.success) {
-                                showToast('Logs exportados com sucesso!');
-                            } else {
-                                Alert.alert('Aviso', res.message);
-                            }
-                        }} 
+                        status="ok"
+                        onPress={() => navigation.navigate('AuditScreen')} 
                     />
                 </SettingsGroup>
 
@@ -701,15 +721,15 @@ export default function SettingsScreen({ navigation }) {
                             <AgroButton 
                                 title="GERAR RELATÓRIO PDF" 
                                 icon="document"
-                                onPress={() => { showToast('Relatório PDF gerado e salvo em Documentos! 📄'); setActiveModal(null); }} 
+                                onPress={() => handleExport('pdf')} 
                                 style={{ marginBottom: 15 }}
                             />
                             
                             <AgroButton 
                                 title="EXPORTAR PARA EXCEL (.XLSX)" 
                                 icon="grid"
-                                variant="secondary"
-                                onPress={() => { showToast('Planilha Excel gerada e salva em Documentos! 📊'); setActiveModal(null); }} 
+                                onPress={() => handleExport('excel')} 
+                                style={{ backgroundColor: '#10B981', marginBottom: 15 }}
                             />
                         </ScrollView>
                     </View>

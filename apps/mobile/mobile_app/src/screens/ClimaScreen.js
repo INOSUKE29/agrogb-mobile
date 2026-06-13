@@ -107,12 +107,29 @@ export default function ClimaScreen() {
                             </LinearGradient>
                         </>
                     ) : (
-                        <View style={{ padding: 20, alignItems: 'center', marginTop: 50 }}>
-                            <Ionicons name="calendar-outline" size={48} color={textMuted} />
-                            <Text style={{ color: textMuted, marginTop: 15, fontSize: 16, fontWeight: 'bold' }}>Em breve: Previsão Estendida</Text>
-                            <Text style={{ color: textMuted, marginTop: 5, textAlign: 'center', paddingHorizontal: 40 }}>
-                                A visão semanal com planejamento meteorológico será liberada na próxima atualização.
-                            </Text>
+                        <View style={{ paddingVertical: 10 }}>
+                            {weather?.forecast?.map((day, index) => {
+                                const dateObj = new Date(day.date + 'T12:00:00Z');
+                                const dayName = dateObj.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase();
+                                const dateStr = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                                
+                                return (
+                                    <View key={index} style={[styles.forecastRow, { borderBottomColor: borderColor }]}>
+                                        <View style={{ width: 60 }}>
+                                            <Text style={styles.forecastDay}>{dayName}</Text>
+                                            <Text style={styles.forecastDate}>{dateStr}</Text>
+                                        </View>
+                                        <View style={styles.forecastIconCol}>
+                                            <Ionicons name={getIcon(day.icon)} size={28} color="#FBBF24" />
+                                            <Text style={styles.forecastPop}>{day.pop}%</Text>
+                                        </View>
+                                        <View style={styles.forecastTempCol}>
+                                            <Text style={styles.forecastTempMax}>{day.tempMax}°</Text>
+                                            <Text style={styles.forecastTempMin}>{day.tempMin}°</Text>
+                                        </View>
+                                    </View>
+                                );
+                            })}
                         </View>
                     )}
                     
@@ -213,14 +230,53 @@ const styles = StyleSheet.create({
     },
     aiTitle: {
         color: '#C4B5FD',
+        fontWeight: 'bold',
         fontSize: 14,
-        fontWeight: '900',
-        letterSpacing: 1,
-        marginLeft: 8,
     },
     aiDesc: {
-        color: '#E5E7EB',
+        color: '#E2E8F0',
+        fontSize: 13,
+        lineHeight: 20,
+    },
+    forecastRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+    },
+    forecastDay: {
+        color: '#FFF',
+        fontWeight: 'bold',
         fontSize: 14,
-        lineHeight: 22,
+    },
+    forecastDate: {
+        color: '#9CA3AF',
+        fontSize: 12,
+        marginTop: 2,
+    },
+    forecastIconCol: {
+        alignItems: 'center',
+        width: 80,
+    },
+    forecastPop: {
+        color: '#60A5FA',
+        fontSize: 11,
+        fontWeight: 'bold',
+        marginTop: 4,
+    },
+    forecastTempCol: {
+        alignItems: 'flex-end',
+        width: 60,
+    },
+    forecastTempMax: {
+        color: '#FFF',
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    forecastTempMin: {
+        color: '#9CA3AF',
+        fontSize: 14,
+        marginTop: 2,
     }
 });
