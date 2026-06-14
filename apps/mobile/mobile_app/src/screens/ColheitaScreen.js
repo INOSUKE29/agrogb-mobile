@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, FlatList, ActivityIndicator, SafeAreaView, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, SafeAreaView, StatusBar } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
-import { insertColheita, getCadastro, executeQuery, insertDescarte, getColheitasRecentes, deleteColheita, insertCadastro as insertCadastros } from '../database/database';
+import { insertColheita, getCadastro, executeQuery, insertDescarte, getColheitasRecentes, deleteColheita } from '../database/database';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
@@ -10,8 +10,7 @@ import { useTheme } from '../theme/ThemeContext';
 // Design System
 import AgroButton from '../components/common/AgroButton';
 import SmartAutocomplete from '../components/common/SmartAutocomplete';
-import AreaLibraryService from '../services/AreaLibraryService';
-import ProductLibraryService from '../services/ProductLibraryService';
+import { TalhaoLibraryService as AreaLibraryService, ProductLibraryService } from '../services/LibraryServices';
 import AgroInput from '../components/common/AgroInput';
 
 export default function ColheitaScreen({ navigation }) {
