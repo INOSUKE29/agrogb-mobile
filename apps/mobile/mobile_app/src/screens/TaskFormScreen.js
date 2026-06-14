@@ -5,7 +5,7 @@ import { executeQuery } from '../database/database';
 import AgroInput from '../components/common/AgroInput';
 import SafeBlurView from '../components/ui/SafeBlurView';
 import { useAuth } from '../context/AuthContext';
-import uuid from 'react-native-uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 const RURAL_BG = require('../../assets/farm_bg.png');
 
@@ -44,7 +44,7 @@ export default function TaskFormScreen({ navigation }) {
         }
 
         try {
-            const taskId = uuid.v4();
+            const taskId = uuidv4();
             const criadorId = user?.id || null;
             
             await executeQuery(`

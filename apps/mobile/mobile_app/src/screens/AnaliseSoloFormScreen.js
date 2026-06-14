@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { executeQuery } from '../database/database';
 import AgroInput from '../components/common/AgroInput';
 import SafeBlurView from '../components/ui/SafeBlurView';
-import uuid from 'react-native-uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 const RURAL_BG = require('../../assets/farm_bg.png');
 
@@ -47,7 +47,7 @@ export default function AnaliseSoloFormScreen({ navigation }) {
         }
 
         try {
-            const analiseId = uuid.v4();
+            const analiseId = uuidv4();
             
             await executeQuery(`
                 INSERT INTO v2_analise_solo 
