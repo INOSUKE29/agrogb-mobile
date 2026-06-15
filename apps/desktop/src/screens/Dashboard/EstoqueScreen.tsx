@@ -3,10 +3,13 @@ import { supabase } from '../../services/supabase';
 import { Package, Search, ArrowDownCircle, ArrowUpCircle, Filter, Activity, Box, Tag, Layers, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import DraggableModal from '../../components/common/DraggableModal';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function EstoqueScreen() {
+    const { clientOverrideId } = useAuth();
     const [estoque, setEstoque] = useState<Record<string, string | number | boolean | null>[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<boolean>(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState<'ENTRADA' | 'SAIDA'>('ENTRADA');
@@ -20,6 +23,7 @@ export default function EstoqueScreen() {
     const fetchEstoque = async () => {
         try {
             setLoading(true);
+            setError(false);
             // v2_estoque_atual query without explicit join to avoid PGRST200
             const { data, error } = await supabase
                 .from('v2_estoque_atual')
@@ -60,9 +64,9 @@ export default function EstoqueScreen() {
 
             setEstoque(normalizedData);
         } catch (error: unknown) {
-            const _err = error as Error;
             console.error('Erro ao buscar estoque:', error);
-            toast.error('Não foi possível carregar o estoque. Verifique sua conexão.');
+            setError(true);
+            toast.error('Não foi possível carregar o estoque. Verifique sua conexão.', { id: 'fetch-estoque' });
         } finally {
             setLoading(false);
         }
@@ -76,7 +80,7 @@ export default function EstoqueScreen() {
         e.preventDefault();
         const qtdNum = parseFloat(quantidade);
         if (!produtoId || isNaN(qtdNum) || qtdNum <= 0) {
-            toast.error('Preencha os campos corretamente.');
+            toast.error('Preencha os campos corretamente.', { id: 'form-error' });
             return;
         }
 
@@ -99,7 +103,7 @@ export default function EstoqueScreen() {
             if (existingStock) {
                 novaQuantidade = Number(existingStock.quantidade) + novaQuantidade;
                 if (novaQuantidade < 0) {
-                    toast.error('Saldo em estoque insuficiente para esta saída!');
+                    toast.error('Saldo em estoque insuficiente para esta saída!', { id: 'stock-error' });
                     return;
                 }
                 
@@ -113,7 +117,7 @@ export default function EstoqueScreen() {
 
             } else {
                 if (modalType === 'SAIDA') {
-                    toast.error('Produto não encontrado no estoque para realizar a saída!');
+                    toast.error('Produto não encontrado no estoque para realizar a saída!', { id: 'stock-error' });
                     return;
                 }
                 
@@ -145,7 +149,7 @@ export default function EstoqueScreen() {
                     produto_uuid: itemUuid
                 }]);
 
-            toast.success(`Movimentação de ${modalType} registrada com sucesso!`);
+            toast.success(`Movimentação de ${modalType} registrada com sucesso!`, { id: 'success' });
             setShowModal(false);
             setProdutoId('');
             setQuantidade('');
@@ -154,7 +158,7 @@ export default function EstoqueScreen() {
         } catch (error: unknown) {
             const err = error as Error | { message: string };
             console.error('Erro na transação:', error);
-            toast.error(err.message || 'Falha ao processar movimentação.');
+            toast.error(err.message || 'Falha ao processar movimentação.', { id: 'error' });
         }
     };
 
@@ -163,7 +167,7 @@ export default function EstoqueScreen() {
     );
 
     const totalItens = estoque.length;
-    const valorEstimado = estoque.reduce((acc, item) => acc + (item.quantidade * 50), 0); // Mock value
+    const valorEstimado = estoque.reduce((acc, item) => acc + (Number(item.quantidade) * 50), 0); // Mock value
 
     return (
         <div className="space-y-8 animate-fade-in pb-12">
@@ -184,22 +188,24 @@ export default function EstoqueScreen() {
                             Controle de produtos, fertilizantes, defensivos e movimentações com rastreabilidade completa.
                         </p>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                        <button 
-                            onClick={() => { setModalType('SAIDA'); setShowModal(true); }}
-                            className="px-6 py-3 rounded-xl flex items-center justify-center gap-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 font-bold transition-all"
-                        >
-                            <ArrowUpCircle className="w-5 h-5" />
-                            Nova Saída
-                        </button>
-                        <button 
-                            onClick={() => { setModalType('ENTRADA'); setShowModal(true); }}
-                            className="px-6 py-3 rounded-xl flex items-center justify-center gap-2 bg-green-500 hover:bg-green-400 text-white font-bold shadow-lg shadow-green-500/20 transition-all"
-                        >
-                            <ArrowDownCircle className="w-5 h-5" />
-                            Nova Entrada
-                        </button>
-                    </div>
+                    {!clientOverrideId && (
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <button 
+                                onClick={() => { setModalType('SAIDA'); setShowModal(true); }}
+                                className="px-6 py-3 rounded-xl flex items-center justify-center gap-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 font-bold transition-all"
+                            >
+                                <ArrowUpCircle className="w-5 h-5" />
+                                Nova Saída
+                            </button>
+                            <button 
+                                onClick={() => { setModalType('ENTRADA'); setShowModal(true); }}
+                                className="px-6 py-3 rounded-xl flex items-center justify-center gap-2 bg-green-500 hover:bg-green-400 text-white font-bold shadow-lg shadow-green-500/20 transition-all"
+                            >
+                                <ArrowDownCircle className="w-5 h-5" />
+                                Nova Entrada
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -260,6 +266,15 @@ export default function EstoqueScreen() {
                     <div className="w-10 h-10 border-4 border-[var(--color-primary)]/30 border-t-[var(--color-primary)] rounded-full animate-spin mb-4"></div>
                     <p className="font-medium text-lg">Sincronizando inventário...</p>
                 </div>
+            ) : error ? (
+                <div className="glass-card p-16 text-center text-[var(--color-muted)] flex flex-col items-center">
+                    <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+                        <span className="text-4xl">⚠️</span>
+                    </div>
+                    <h3 className="text-2xl font-black text-white mb-2">Erro ao carregar estoque</h3>
+                    <p className="text-lg max-w-md mx-auto mb-6">Não foi possível conectar com o banco de dados. Verifique sua conexão e tente novamente.</p>
+                    <button onClick={fetchEstoque} className="px-6 py-3 bg-[var(--color-primary)] text-white rounded-xl font-bold">Tentar Novamente</button>
+                </div>
             ) : filteredEstoque.length === 0 ? (
                 <div className="glass-card p-16 text-center text-[var(--color-muted)] flex flex-col items-center">
                     <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
@@ -278,13 +293,13 @@ export default function EstoqueScreen() {
                                 <div className="p-3 bg-gradient-to-br from-[var(--color-primary)]/20 to-[var(--color-primary)]/5 rounded-2xl text-[var(--color-primary)] border border-[var(--color-primary)]/10 shadow-inner">
                                     <Package className="w-6 h-6" />
                                 </div>
-                                <span className={`text-xs font-black tracking-wider px-3 py-1 rounded-full ${item.quantidade > 0 ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                                    {item.quantidade > 0 ? 'EM ESTOQUE' : 'FALTA'}
+                                <span className={`text-xs font-black tracking-wider px-3 py-1 rounded-full ${Number(item.quantidade) > 0 ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                                    {Number(item.quantidade) > 0 ? 'EM ESTOQUE' : 'FALTA'}
                                 </span>
                             </div>
                             
                             <div className="relative z-10">
-                                <h3 className="text-2xl font-black text-white mb-1 truncate" title={item.produto}>{item.produto}</h3>
+                                <h3 className="text-2xl font-black text-white mb-1 truncate" title={String(item.produto)}>{item.produto}</h3>
                                 <p className="text-sm font-medium text-[var(--color-primary)] mb-6">{item.categoria}</p>
                             </div>
                             
@@ -292,13 +307,13 @@ export default function EstoqueScreen() {
                                 <div>
                                     <p className="text-xs text-[var(--color-muted)] font-bold uppercase tracking-wider mb-1">Saldo Atual</p>
                                     <div className="flex items-baseline gap-1">
-                                        <p className="text-4xl font-black text-white">{item.quantidade.toLocaleString('pt-BR')}</p>
+                                        <p className="text-4xl font-black text-white">{Number(item.quantidade).toLocaleString('pt-BR')}</p>
                                         <span className="text-sm font-bold text-[var(--color-muted)]">{item.unidade}</span>
                                     </div>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-xs text-[var(--color-muted)] font-bold uppercase tracking-wider mb-1">Atualizado</p>
-                                    <p className="text-sm font-medium text-white">{new Date(item.last_updated).toLocaleDateString()}</p>
+                                    <p className="text-sm font-medium text-white">{new Date(item.last_updated as string).toLocaleDateString()}</p>
                                 </div>
                             </div>
                         </div>

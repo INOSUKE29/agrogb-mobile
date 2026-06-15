@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    View, Text, StyleSheet, Clipboard, Share, Alert, 
-    TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Linking 
-} from 'react-native';
+import { StyleSheet, View, Text, StyleSheet, Clipboard, Share, Alert, 
+    TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';

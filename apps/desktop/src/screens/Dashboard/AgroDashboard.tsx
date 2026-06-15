@@ -38,50 +38,131 @@ export default function AgroDashboard() {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) return;
                 
-                // 1. Clientes
+                // 1. Clientes (Real)
                 const { count: countClientes } = await supabase
                     .from('agronomist_client_links')
                     .select('*', { count: 'exact', head: true })
-                    .eq('agronomist_id', user.id);
+                    .eq('agronomist_id', user.id)
+                    .eq('status', 'ACTIVE');
 
-                // 2. Recomendações Pendentes e Aprovadas (Mock para layout, já que não temos o vinculo exato ainda na query simples)
+                // 2. Visitas da Semana (Real)
+                const startOfWeek = new Date();
+                startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+                
+                const { count: countVisitas } = await supabase
+                    .from('technical_visits')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('agronomist_id', user.id)
+                    .gte('visit_date', startOfWeek.toISOString())
+                    .lte('visit_date', endOfWeek.toISOString());
+
+                // 3. Recomendações (Real)
+                const { count: countRecPendentes } = await supabase
+                    .from('recommendations')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('agronomist_id', user.id)
+                    .eq('status', 'PENDING');
+
+                const { count: countRecAprovadas } = await supabase
+                    .from('recommendations')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('agronomist_id', user.id)
+                    .eq('status', 'APPROVED');
+
                 setKpis({
-                    clientesAtivos: countClientes || 12,
-                    visitasSemana: 8,
-                    recomendacoesPendentes: 3,
-                    recomendacoesAprovadas: 45
+                    clientesAtivos: countClientes || 0,
+                    visitasSemana: countVisitas || 0,
+                    recomendacoesPendentes: countRecPendentes || 0,
+                    recomendacoesAprovadas: countRecAprovadas || 0
                 });
 
-                // Mock Data: Fazendas em Alerta (Monitor de Clientes)
-                setAlertasFazendas([
-                    { id: 1, cliente: 'Fazenda Boa Esperança', produtor: 'João Silva', problema: 'Falta de Chuva (15 dias)', tipo: 'clima', criticidade: 'alta' },
-                    { id: 2, cliente: 'Sítio do Sol', produtor: 'Marcos Almeida', problema: 'Alerta de Ferrugem Asiática', tipo: 'praga', criticidade: 'critica' },
-                    { id: 3, cliente: 'Fazenda Rio Verde', produtor: 'Ana Costa', problema: 'Atraso na adubação', tipo: 'operacional', criticidade: 'media' },
-                    { id: 4, cliente: 'Fazenda São Jorge', produtor: 'Pedro Santos', problema: 'Receituário vencendo', tipo: 'doc', criticidade: 'media' }
-                ]);
+                // 4. Fazendas em Alerta (Monitor) - Real (Em branco até existir módulo de alertas no IoT)
+                setAlertasFazendas([]);
 
-                // Mock Data: Agenda do Dia
-                setAgendaDia([
-                    { id: 1, hora: '08:00', tarefa: 'Visita Técnica - Plantio Soja', local: 'Sítio do Sol', status: 'concluido' },
-                    { id: 2, hora: '10:30', tarefa: 'Coleta de Solo (Talhão 3)', local: 'Fazenda Boa Esperança', status: 'em_andamento' },
-                    { id: 3, hora: '14:00', tarefa: 'Revisão de Receituário', local: 'Escritório', status: 'pendente' },
-                    { id: 4, hora: '16:00', tarefa: 'Visita Diagnóstico - Milho', local: 'Fazenda Rio Verde', status: 'pendente' }
-                ]);
+                // 5. Agenda do Dia (Real)
+                const today = new Date().toISOString().split('T')[0];
+                const { data: agendaReal } = await supabase
+                    .from('tarefas')
+                    .select('*')
+                    .eq('responsavel_id', user.id)
+                    .eq('data_vencimento', today)
+                    .order('data_vencimento', { ascending: true });
+                
+                if (agendaReal) {
+                    setAgendaDia(agendaReal.map(t => ({
+                        id: t.id,
+                        hora: t.data_vencimento ? new Date(t.data_vencimento).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : '--:--',
+                        tarefa: t.titulo,
+                        local: t.local || 'Não especificado',
+                        status: t.status === 'CONCLUIDA' ? 'concluido' : t.status === 'EM_ANDAMENTO' ? 'em_andamento' : 'pendente'
+                    })));
+                } else {
+                    setAgendaDia([]);
+                }
 
-                // Mock Data: Últimas Recomendações
-                setUltimasRecomendacoes([
-                    { id: 101, cliente: 'Fazenda São Jorge', cultura: 'Soja', data: '11/06/2026', status: 'Aprovada' },
-                    { id: 102, cliente: 'Sítio do Sol', cultura: 'Milho', data: '10/06/2026', status: 'Pendente' },
-                    { id: 103, cliente: 'Fazenda Boa Esperança', cultura: 'Feijão', data: '09/06/2026', status: 'Aplicada' },
-                ]);
+                // 6. Últimas Recomendações (Real)
+                const { data: ultimasRec } = await supabase
+                    .from('recommendations')
+                    .select(`
+                        id,
+                        status,
+                        created_at,
+                        profiles!recommendations_client_id_fkey ( nome )
+                    `)
+                    .eq('agronomist_id', user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
 
-                // Gráfico
-                setPieData([
-                    { name: 'Soja', value: 45, color: '#10B981' },
-                    { name: 'Milho', value: 30, color: '#F59E0B' },
-                    { name: 'Algodão', value: 15, color: '#3B82F6' },
-                    { name: 'Feijão', value: 10, color: '#8B5CF6' }
-                ]);
+                if (ultimasRec) {
+                    setUltimasRecomendacoes(ultimasRec.map((r: any) => ({
+                        id: r.id,
+                        cliente: r.profiles?.nome || 'Cliente Desconhecido',
+                        cultura: 'Geral', // Será ajustado quando houver link com cultura
+                        data: new Date(r.created_at).toLocaleDateString('pt-BR'),
+                        status: r.status === 'APPROVED' ? 'Aprovada' : r.status === 'PENDING' ? 'Pendente' : r.status
+                    })));
+                } else {
+                    setUltimasRecomendacoes([]);
+                }
+
+                // 7. Gráfico de Culturas Assistidas (Real)
+                // Busca os vínculos para pegar os client_ids
+                const { data: links } = await supabase
+                    .from('agronomist_client_links')
+                    .select('client_id')
+                    .eq('agronomist_id', user.id)
+                    .eq('status', 'ACTIVE');
+                
+                if (links && links.length > 0) {
+                    const clientIds = links.map(l => l.client_id);
+                    const { data: culturasData } = await supabase
+                        .from('v2_culturas')
+                        .select('nome, quantidade')
+                        .in('user_id', clientIds);
+                    
+                    if (culturasData && culturasData.length > 0) {
+                        const agg: Record<string, number> = {};
+                        culturasData.forEach(c => {
+                            const name = c.nome.toUpperCase();
+                            agg[name] = (agg[name] || 0) + (c.quantidade || 1);
+                        });
+                        
+                        const colors = ['#10B981', '#F59E0B', '#3B82F6', '#8B5CF6', '#EC4899', '#14B8A6'];
+                        const pie = Object.keys(agg).map((key, idx) => ({
+                            name: key,
+                            value: agg[key],
+                            color: colors[idx % colors.length]
+                        })).sort((a, b) => b.value - a.value);
+                        
+                        setPieData(pie);
+                    } else {
+                        setPieData([]);
+                    }
+                } else {
+                    setPieData([]);
+                }
 
             } catch (error) {
                 console.error("Erro ao carregar Dashboard do Agrônomo:", error);
@@ -126,7 +207,7 @@ export default function AgroDashboard() {
                         <span className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider mb-2">Clientes Ativos</span>
                         <span className="text-3xl font-black text-white">{loading ? '...' : kpis.clientesAtivos}</span>
                         <span className="text-xs text-green-400 font-bold mt-2 flex items-center gap-1">
-                            ↑ 2 novos este mês
+                            Clientes vinculados
                         </span>
                     </div>
                     <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 group-hover:scale-110 transition-transform">
@@ -139,7 +220,7 @@ export default function AgroDashboard() {
                         <span className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider mb-2">Visitas (Semana)</span>
                         <span className="text-3xl font-black text-white">{loading ? '...' : kpis.visitasSemana}</span>
                         <span className="text-xs text-blue-400 font-bold mt-2">
-                            3 confirmadas hoje
+                            Agendadas para esta semana
                         </span>
                     </div>
                     <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 group-hover:scale-110 transition-transform">
@@ -152,7 +233,7 @@ export default function AgroDashboard() {
                         <span className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider mb-2">Prescrições Pendentes</span>
                         <span className="text-3xl font-black text-red-400">{loading ? '...' : kpis.recomendacoesPendentes}</span>
                         <span className="text-xs text-red-400/80 font-bold mt-2">
-                            Aguardando aprovação
+                            Aguardando revisão
                         </span>
                     </div>
                     <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20 group-hover:scale-110 transition-transform animate-pulse">
@@ -165,7 +246,7 @@ export default function AgroDashboard() {
                         <span className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider mb-2">Prescrições Emitidas</span>
                         <span className="text-3xl font-black text-white">{loading ? '...' : kpis.recomendacoesAprovadas}</span>
                         <span className="text-xs text-green-400 font-bold mt-2">
-                            Últimos 30 dias
+                            Prescrições validadas
                         </span>
                     </div>
                     <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/20 group-hover:scale-110 transition-transform">
@@ -201,6 +282,8 @@ export default function AgroDashboard() {
                             <tbody>
                                 {loading ? (
                                     <tr><td colSpan={4} className="p-4 text-center text-[var(--color-muted)]">Carregando...</td></tr>
+                                ) : alertasFazendas.length === 0 ? (
+                                    <tr><td colSpan={4} className="p-8 text-center text-[var(--color-muted)] font-bold">Nenhum alerta crítico ativo no momento.</td></tr>
                                 ) : alertasFazendas.map((alerta) => (
                                     <tr key={alerta.id} className="border-b border-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.02)] transition-colors group">
                                         <td className="p-3">
@@ -247,6 +330,8 @@ export default function AgroDashboard() {
                         <div className="relative border-l-2 border-[rgba(255,255,255,0.1)] ml-3 pl-6 flex flex-col gap-6">
                             {loading ? (
                                 <p className="text-[var(--color-muted)]">Carregando agenda...</p>
+                            ) : agendaDia.length === 0 ? (
+                                <p className="text-[var(--color-muted)] font-bold text-sm py-4">Sua agenda para hoje está livre.</p>
                             ) : agendaDia.map((item, idx) => (
                                 <div key={item.id} className="relative">
                                     {/* Bolinha da Timeline */}
@@ -291,7 +376,9 @@ export default function AgroDashboard() {
                     </div>
                     <div className="flex-1 p-5 flex flex-col gap-3">
                         {loading ? <p className="text-[var(--color-muted)]">Carregando...</p> : 
-                            ultimasRecomendacoes.map(rec => (
+                            ultimasRecomendacoes.length === 0 ? (
+                                <p className="text-[var(--color-muted)] font-bold py-4">Nenhuma recomendação recente.</p>
+                            ) : ultimasRecomendacoes.map(rec => (
                                 <div key={rec.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">

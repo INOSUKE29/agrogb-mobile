@@ -83,6 +83,7 @@ C:\Users\Bruno\Documents\AgroGB\
 - [AgroGB Knowledge Map](./AGROGB_KNOWLEDGE_MAP.md) - Regras de negócio.
 - [Plano de Melhoria de Produtividade](./AGROGB_PRODUCTIVITY_ENHANCEMENT_PLAN.md) - Plano de desenvolvimento UI/UX futuro.
 - **[Relatório de Ouro do AgroGB](file:///C:/Users/Bruno/.gemini/antigravity/brain/0dea86f6-86d7-4607-ae4c-0a0711bd4641/artifacts/RELATORIO_DE_OURO.md)** - Dossiê técnico definitivo contendo os melhores componentes, motores e integrações já desenvolvidos na história do projeto.
+- **[Histórico de Erros e Sistema de Vacinas (ADS)](file:///C:/Users/Bruno/.gemini/antigravity/brain/0dea86f6-86d7-4607-ae4c-0a0711bd4641/artifacts/HISTORICO_ERROS_E_VACINAS.md)** - O grande livro de registro de falhas e vacinas arquiteturais do projeto.
 - **[Walkthrough de Integração de UI](file:///C:/Users/Bruno/.gemini/antigravity/brain/0dea86f6-86d7-4607-ae4c-0a0711bd4641/artifacts/walkthrough.md)** - Registro das últimas injeções de componentes na Tela Inicial.
 
 ## Dinâmica de Trabalho com IA (Antigravity + Jules)

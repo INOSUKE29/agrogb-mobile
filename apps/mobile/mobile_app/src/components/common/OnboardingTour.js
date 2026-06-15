@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
-import {
-    View,
+import { StyleSheet, View,
     Text,
     StyleSheet,
     Modal,
@@ -9,8 +8,7 @@ import {
     TouchableOpacity,
     StatusBar,
     SafeAreaView,
-    Platform
-} from 'react-native';
+    Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';

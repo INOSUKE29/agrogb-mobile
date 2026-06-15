@@ -1,14 +1,12 @@
 // AgroOptionsModal.js - Glassmorphic Bottom Sheet for Item Actions (Edit / Delete)
 import React from 'react';
-import { 
-    View, 
+import { StyleSheet, View, 
     Text, 
     StyleSheet, 
     Modal, 
     TouchableOpacity, 
     Platform,
-    Dimensions
-} from 'react-native';
+    Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
 import { BlurView } from 'expo-blur';

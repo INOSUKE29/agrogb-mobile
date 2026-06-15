@@ -36,7 +36,7 @@ export default function WeatherWidget() {
 
     if (permissionDenied && !weather) {
         return (
-            <TouchableOpacity onPress={() => refreshWeather(true)}>
+            <TouchableOpacity onPress={() => navigation.navigate('Clima')}>
                 <BlurView intensity={50} tint="dark" style={styles.container}>
                     <Ionicons name="location-outline" size={20} color="#FFF" />
                     <Text style={styles.text}>Ativar Clima da Fazenda</Text>
@@ -47,7 +47,7 @@ export default function WeatherWidget() {
 
     if (error && !weather) {
         return (
-            <TouchableOpacity onPress={() => refreshWeather(true)}>
+            <TouchableOpacity onPress={() => navigation.navigate('Clima')}>
                 <BlurView intensity={50} tint="dark" style={styles.container}>
                     <Ionicons name="cloud-offline-outline" size={20} color="#FFF" />
                     <Text style={styles.text}>Serviço de Clima Inativo</Text>

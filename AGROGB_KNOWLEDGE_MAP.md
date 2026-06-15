@@ -269,3 +269,27 @@ Todas as principais telas comerciais, técnicas e financeiras foram atualizadas.
    - **Regra:** NUNCA criar uma função genérica chamada `trigger_set_timestamp()`. Ela causará sobreposição e travará atualizações. Use SEMPRE as funções dedicadas do Script 24: `trigger_set_updated_at()` ou `trigger_set_last_updated()`.
 2. **Multi-Tenant Derivado (Tabelas V2):** Tabelas isoladas por usuário (que possuem `user_id`, como `v2_fazendas`, `v2_plantios`) NÃO DEVEM ser bloqueadas apenas por `user_id`. Para respeitarem o ecossistema Desktop (Multi-Tenant), a política RLS deve ler a `organization_id` do usuário dono e comparar com a `organization_id` do JWT de quem está lendo.
    - **Exemplo de Isolamento Correto (Script 25):** `EXISTS (SELECT 1 FROM profiles p WHERE p.id = tabela.user_id AND p.organization_id = auth.jwt()->>'organization_id')`.
+
+## 16. Ouro Colhido: Padrão Ouro Desktop (Portal Agrônomo & Electron)
+
+### Catálogo de Erros e Antídotos (Desktop)
+
+1. **A Tela Branca do Vite (White Screen of Death)**
+   - **O Erro:** Ao rodar o Vite, tela branca ou crash silencioso por imports ausentes do `lucide-react` (ex: ícone renomeado) ou falta de `export default` em componentes injetados pelo React Router.
+   - **O Antídoto:** O `npx vite build` é o supremo juiz. Sempre compile o código antes de entregar a tela. O `<ErrorBoundary>` global deve sempre envolver as rotas para cuspir o erro na tela (ao invés de tela branca).
+
+2. **O Sumiço dos Produtos (State Pai-Filho)**
+   - **O Erro:** Em formulários Wizard (Múltiplas Etapas), o state interno (useState) morria no unmount, e inserts no Supabase só salvavam o pai (Receita) e esqueciam os filhos (Insumos).
+   - **O Antídoto:** "Lift State Up". O Wizard carrega os dados nos componentes-filho via Propriedades. O DB Insert acontece numa função final unificada aguardando os IDs retornados para injetar nas Foreign Keys das tabelas-filhas.
+
+3. **O Falso-Vazio e o RLS do Agrônomo**
+   - **O Erro:** O Agrônomo visualizava listas vazias de Fazendas ou Clientes, mesmo com dados no sistema.
+   - **O Antídoto:** Políticas RLS "Bypass". Ao invés de checar apena `auth.uid() = id_do_produtor`, todas as tabelas compartilhadas ganharam a exceção: `OR (auth.jwt() ->> 'role' = 'AGRONOMO')` lendo o passaporte seguro injetado pelo Hook do Supabase.
+
+4. **Letras Invisíveis (Dark Mode do SO vs Selects)**
+   - **O Erro:** Menus do tipo `<select>` exibiam fundo branco com texto branco em versões do Chromium/Electron no Windows usando Tailwind Dark Mode.
+   - **O Antídoto:** "A Regra de Ouro do Select": Sempre aplicar `className="bg-[#112240] text-white"` diretamente nas tags `<option>`.
+
+5. **A Síndrome do "404" ao Apertar F5 (React Router vs Electron)**
+   - **O Erro:** O uso de `<BrowserRouter>` quebrava totalmente ao recarregar a tela num ambiente Desktop local (File Protocol `file:///`), resultando em tela branca ou erro Cannot GET.
+   - **O Antídoto:** Substituição global para `<HashRouter>`. Todas as URLs da sidebar (`DashboardLayout`) foram rigorosamente mapeadas nos `Routes` do `App.tsx` para garantir paridade 1:1.

@@ -6,15 +6,15 @@
 
 export const D = {
     // Fundos
-    bg: '#0B1220',   // Fundo principal dark
-    bgCard: '#1F2937',   // Cards
-    bgInput: '#111827',   // Inputs e campos
-    bgSec: '#111827',   // Fundo secundário
+    bg: '#0F172A',   // Fundo principal dark
+    bgCard: '#1E293B',   // Cards
+    bgInput: '#FFFFFF',   // Inputs e campos
+    bgSec: '#1E293B',   // Fundo secundário
 
     // Cores primárias
-    green: '#22C55E',   // Verde neon principal
-    greenDark: '#16A34A',   // Verde escuro (hover/pressed)
-    greenGlow: '#4ADE80',   // Verde glow
+    green: '#10B981',   // Verde neon principal
+    greenDark: '#059669',   // Verde escuro (hover/pressed)
+    greenGlow: '#34D399',   // Verde glow
     blue: '#3B82F6',   // Azul tecnologia
     blueGlow: '#60A5FA',   // Azul glow
 
@@ -24,14 +24,16 @@ export const D = {
 
     // Bordas
     border: '#334155',
-    borderFocus: '#22C55E',
+    borderFocus: '#10B981',
 
     // Textos
-    textPrimary: '#F9FAFB',
-    textSecondary: '#9CA3AF',
+    textPrimary: '#F8FAFC',
+    textSecondary: '#94A3B8',
+    textInput: '#0F172A',
+    textPlaceholder: '#64748B',
 
     // Header gradient
-    headerGrad: ['#1A3A2A', '#1a3260'],  // verde escuro → azul escuro
+    headerGrad: ['#064E3B', '#0F172A'],  // verde escuro → azul escuro
 
     // Sombras
     shadow: {
@@ -67,7 +69,7 @@ export const DS = {
         padding: 18,
         marginBottom: 16,
         borderWidth: 1,
-        borderColor: D.border,
+        borderColor: '#E2E8F0', // Borda sutil no branco
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
@@ -84,7 +86,7 @@ export const DS = {
         paddingHorizontal: 16,
         height: 54,
         fontSize: 15,
-        color: D.textPrimary,
+        color: D.textInput,
     },
 
     // Label do input

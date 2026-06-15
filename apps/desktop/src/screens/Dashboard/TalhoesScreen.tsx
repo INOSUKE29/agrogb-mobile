@@ -11,6 +11,7 @@ import {
     MapPin
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -32,7 +33,9 @@ interface Talhao {
 export default function TalhoesScreen() {
     const [talhoes, setTalhoes] = useState<Talhao[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<boolean>(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const { clientOverrideId, user } = useAuth();
     
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -45,22 +48,23 @@ export default function TalhoesScreen() {
     const fetchTalhoes = async () => {
         setLoading(true);
         try {
+            const currentUserId = clientOverrideId || user?.id;
+            
             // Tenta buscar da v2 primeiro
-            const response = await supabase
-                .from('v2_talhoes')
-                .select('*')
-                .order('nome', { ascending: true });
+            let queryV2 = supabase.from('v2_talhoes').select('*');
+            if (currentUserId) queryV2 = queryV2.eq('user_id', currentUserId);
+            
+            const response = await queryV2.order('nome', { ascending: true });
             
             let data = response.data;
             const error = response.error;
                 
             if (error) {
                 // Se falhar (não existe/cache), tenta a v1
-                const fallback = await supabase
-                    .from('talhoes')
-                    .select('*')
-                    .eq('is_deleted', false)
-                    .order('nome', { ascending: true });
+                let fallbackQuery = supabase.from('talhoes').select('*').eq('is_deleted', false);
+                if (currentUserId) fallbackQuery = fallbackQuery.eq('propriedade_id', currentUserId); // Simplificação de filtro na v1
+                
+                const fallback = await fallbackQuery.order('nome', { ascending: true });
                 if (fallback.error) throw fallback.error;
                 data = fallback.data;
             }
@@ -78,7 +82,8 @@ export default function TalhoesScreen() {
             setTalhoes(normalizedData);
         } catch (err: Record<string, string | number | boolean | null>) {
             console.error('Erro ao buscar talhões', err);
-            toast.error('Erro ao buscar talhões. Verifique sua conexão.');
+            setError(true);
+            toast.error('Não foi possível carregar os talhões.', { id: 'fetch-talhoes' });
         } finally {
             setLoading(false);
         }
@@ -92,8 +97,8 @@ export default function TalhoesScreen() {
         e.preventDefault();
         if (!form.nome || !form.area_ha) return toast.error('Preencha os campos obrigatórios');
 
-        const { data: userData } = await supabase.auth.getUser();
         const safeArea = parseFloat(String(form.area_ha).replace(',', '.'));
+        const currentUserId = clientOverrideId || user?.id;
 
         if (isNaN(safeArea)) {
             return toast.error('A área informada é inválida.');
@@ -121,7 +126,7 @@ export default function TalhoesScreen() {
             } else {
                 // INSERT (Try v2 first)
                 const payloadV2 = {
-                    user_id: userData?.user?.id,
+                    user_id: currentUserId,
                     nome: form.nome.toUpperCase(),
                     area: safeArea,
                     tipo_solo: form.observacao.toUpperCase(),
@@ -248,13 +253,15 @@ export default function TalhoesScreen() {
                         </p>
                     </div>
                     
-                    <button 
-                        onClick={() => openModal()}
-                        className="px-6 py-3 rounded-xl flex items-center justify-center gap-2 bg-[var(--color-primary)] hover:opacity-90 text-gray-900 dark:text-white font-bold shadow-lg shadow-[var(--color-primary)]/20 transition-all group"
-                    >
-                        <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-                        Novo Talhão
-                    </button>
+                    {!clientOverrideId && (
+                        <button 
+                            onClick={() => openModal()}
+                            className="px-6 py-3 rounded-xl flex items-center justify-center gap-2 bg-[var(--color-primary)] hover:opacity-90 text-gray-900 dark:text-white font-bold shadow-lg shadow-[var(--color-primary)]/20 transition-all group"
+                        >
+                            <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+                            Novo Talhão
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -335,6 +342,19 @@ export default function TalhoesScreen() {
                                         </Td>
                                     </Tr>
                                 ))
+                            ) : error ? (
+                                <Tr>
+                                    <Td colSpan={4} className="py-12">
+                                        <div className="flex flex-col items-center justify-center text-center p-8">
+                                            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4 border border-red-500/20">
+                                                <span className="text-2xl">⚠️</span>
+                                            </div>
+                                            <h3 className="text-xl font-bold text-white mb-2">Falha ao carregar dados</h3>
+                                            <p className="text-[var(--color-muted)] mb-6 max-w-sm">Não foi possível conectar com o banco de dados. Verifique sua conexão.</p>
+                                            <Button onClick={fetchTalhoes} size="sm">Tentar Novamente</Button>
+                                        </div>
+                                    </Td>
+                                </Tr>
                             ) : filteredTalhoes.length === 0 ? (
                                 <Tr>
                                     <Td colSpan={4} className="py-12">
@@ -346,9 +366,11 @@ export default function TalhoesScreen() {
                                             <p className="text-slate-500 dark:text-[var(--color-muted)] text-lg mb-8 text-center max-w-md relative z-10">
                                                 Inicie mapeando seu primeiro talhão para habilitar as funções de plantio e monitoramento.
                                             </p>
-                                            <Button onClick={() => openModal()} size="lg" leftIcon={<Plus className="w-5 h-5" />}>
-                                                Cadastrar Primeiro Talhão
-                                            </Button>
+                                            {!clientOverrideId && (
+                                                <Button onClick={() => openModal()} size="lg" leftIcon={<Plus className="w-5 h-5" />}>
+                                                    Cadastrar Primeiro Talhão
+                                                </Button>
+                                            )}
                                         </div>
                                     </Td>
                                 </Tr>
@@ -373,14 +395,16 @@ export default function TalhoesScreen() {
                                             <span className="text-sm font-medium">{talhao.observacao || 'Nenhum detalhe informado'}</span>
                                         </Td>
                                         <Td className="text-right">
-                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Button variant="secondary" size="sm" onClick={() => openModal(talhao)}>
-                                                    <Edit2 className="w-4 h-4" />
-                                                </Button>
-                                                <Button variant="danger" size="sm" onClick={() => handleDeleteClick(talhao)}>
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
-                                            </div>
+                                            {!clientOverrideId && (
+                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Button variant="secondary" size="sm" onClick={() => openModal(talhao)}>
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </Button>
+                                                    <Button variant="danger" size="sm" onClick={() => handleDeleteClick(talhao)}>
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                            )}
                                         </Td>
                                     </Tr>
                                 ))

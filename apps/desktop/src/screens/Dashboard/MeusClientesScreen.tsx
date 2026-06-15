@@ -1,16 +1,78 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Search, Plus, MapPin, Phone, Mail, MoreVertical, ShieldAlert } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../services/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { AgronomistService } from '../../../../../packages/services/src/agronomistService';
 import type { LinkedClient } from '../../../../../packages/services/src/agronomistService';
+import AreasEPlantioScreen from './AreasEPlantioScreen';
+import EstoqueScreen from './EstoqueScreen';
+import RecomendacoesScreen from './RecomendacoesScreen';
+import VisitasTecnicasScreen from './VisitasTecnicasScreen';
+import ManejoDashboard from './Manejo/ManejoDashboard';
+import ErrorBoundary from '../../components/common/ErrorBoundary';
+import { useBreadcrumbs } from '../../contexts/BreadcrumbContext';
 
 export default function MeusClientesScreen() {
     const [loading, setLoading] = useState(true);
     const [clientes, setClientes] = useState<LinkedClient[]>([]);
     const [selectedClient, setSelectedClient] = useState<any | null>(null);
+    const [activeViewerModule, setActiveViewerModule] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [inviteCode, setInviteCode] = useState<string>('');
+    
+    const navigate = useNavigate();
+    const { setClientOverrideId } = useAuth();
+    const { setBreadcrumbs, setTitle } = useBreadcrumbs();
+    
+    // Atualiza Breadcrumbs e Título globalmente
+    useEffect(() => {
+        const baseCrumbs = [
+            { label: 'Dashboard', path: '/dashboard/agronomo' },
+            { 
+                label: 'Clientes', 
+                onClick: () => { 
+                    setSelectedClient(null); 
+                    setActiveViewerModule(null); 
+                    setClientOverrideId(null); 
+                } 
+            }
+        ];
+
+        if (selectedClient) {
+            const clientName = selectedClient.nome || selectedClient.email;
+            if (!activeViewerModule) {
+                setBreadcrumbs([...baseCrumbs, { label: clientName }]);
+                setTitle(clientName);
+            } else {
+                baseCrumbs.push({ label: clientName, onClick: () => setActiveViewerModule(null) });
+                
+                const moduleMap: Record<string, string> = {
+                    'GERAL': 'Dados Gerais',
+                    'AREAS': 'Talhões e Mapas',
+                    'MANEJO': 'Análises de Solo',
+                    'ESTOQUE': 'Estoque Técnico',
+                    'RECEITAS': 'Recomendações e Receituários',
+                    'LAUDOS': 'Visitas Técnicas e Fotos',
+                    'RELATORIOS': 'Relatórios Técnicos'
+                };
+                
+                const moduleName = moduleMap[activeViewerModule] || activeViewerModule;
+                setBreadcrumbs([...baseCrumbs, { label: moduleName }]);
+                setTitle(moduleName);
+            }
+        } else {
+            setBreadcrumbs([{ label: 'Dashboard', path: '/dashboard/agronomo' }, { label: 'Meus Clientes' }]);
+            setTitle('Meus Clientes');
+        }
+        
+        // Limpa ao desmontar para evitar vazar breadcrumbs em telas sem contexto
+        return () => {
+            setBreadcrumbs([]);
+            setTitle('');
+        };
+    }, [selectedClient, activeViewerModule, setBreadcrumbs, setTitle, setClientOverrideId]);
     
     // Motor
     const agronomistService = new AgronomistService(supabase);
@@ -67,12 +129,6 @@ export default function MeusClientesScreen() {
             ) : (
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 border-b border-[rgba(255,255,255,0.05)] pb-6">
                     <div>
-                        <button 
-                            onClick={() => setSelectedClient(null)}
-                            className="text-[var(--color-muted)] hover:text-white mb-2 flex items-center gap-2 transition-colors font-bold text-sm"
-                        >
-                            ← Voltar para Carteira
-                        </button>
                         <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
                             {selectedClient.nome || selectedClient.email}
                         </h1>
@@ -82,7 +138,19 @@ export default function MeusClientesScreen() {
                         </p>
                     </div>
                     <div className="flex gap-3">
-                        <button className="bg-transparent hover:bg-white/5 text-white font-bold py-2.5 px-5 rounded-xl border border-[rgba(255,255,255,0.1)] transition-all flex items-center gap-2">
+                        <button 
+                            onClick={() => {
+                                const phone = selectedClient.telefone || selectedClient.celular;
+                                if (phone) {
+                                    // Remove tudo que não for número
+                                    const cleanPhone = phone.replace(/\\D/g, '');
+                                    window.open(`https://wa.me/55${cleanPhone}`, '_blank');
+                                } else {
+                                    toast.error('Cliente não possui telefone cadastrado');
+                                }
+                            }}
+                            className="bg-transparent hover:bg-white/5 text-white font-bold py-2.5 px-5 rounded-xl border border-[rgba(255,255,255,0.1)] transition-all flex items-center gap-2"
+                        >
                             <Phone className="w-4 h-4" /> Ligar
                         </button>
                         <button className="bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 px-5 rounded-xl transition-all">
@@ -178,45 +246,75 @@ export default function MeusClientesScreen() {
                 </>
             ) : (
                 <div className="animate-fade-in-up">
-                    <div className="flex items-center gap-3 mb-6">
-                        <ShieldAlert className="w-5 h-5 text-green-400" />
-                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Painel Operacional 360º (Leitura)</h3>
-                    </div>
-                    
-                    {/* SUPER GRADE (Dashboard do Agrônomo para o Cliente) */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                        {[
-                            { nome: 'Visão Geral', icon: '📊', border: 'border-blue-500/30' },
-                            { nome: 'Geometria', icon: '🗺️', border: 'border-green-500/30' },
-                            { nome: 'Talhões', icon: '📍', border: 'border-emerald-500/30' },
-                            { nome: 'Culturas', icon: '🌱', border: 'border-lime-500/30' },
-                            { nome: 'Solo / Análise', icon: '🟤', border: 'border-amber-500/30' },
-                            { nome: 'Nutrição Foliar', icon: '🍃', border: 'border-teal-500/30' },
-                            { nome: 'Aplicações', icon: '🚜', border: 'border-orange-500/30' },
-                            { nome: 'Estoque Local', icon: '📦', border: 'border-indigo-500/30' },
-                            { nome: 'Receituário', icon: '📝', border: 'border-purple-500/30' },
-                            { nome: 'Laudos/Visitas', icon: '📅', border: 'border-rose-500/30' }
-                        ].map((modulo, idx) => (
-                            <div key={idx} className={`premium-card p-5 rounded-2xl flex flex-col items-center justify-center text-center gap-3 hover:-translate-y-1 hover:bg-[rgba(255,255,255,0.02)] transition-all cursor-pointer border-t-2 ${modulo.border} group`}>
-                                <div className={`text-2xl group-hover:scale-110 transition-transform`}>
-                                    {modulo.icon}
-                                </div>
-                                <span className="text-white font-bold text-xs tracking-wide">{modulo.nome}</span>
+                    {!activeViewerModule ? (
+                        <>
+                            <div className="flex items-center gap-3 mb-6">
+                                <ShieldAlert className="w-5 h-5 text-green-400" />
+                                <h3 className="text-sm font-black text-white uppercase tracking-widest">Painel Operacional 360º (Leitura)</h3>
                             </div>
-                        ))}
-                    </div>
+                            
+                            {/* SUPER GRADE (Dashboard do Agrônomo para o Cliente) */}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                {[
+                                    { nome: 'Dados Gerais', id: 'GERAL', icon: '📋', border: 'border-gray-500/30' },
+                                    { nome: 'Localização/Mapa', id: 'AREAS', icon: '🗺️', border: 'border-green-500/30' },
+                                    { nome: 'Talhões e Safras', id: 'AREAS', icon: '📍', border: 'border-emerald-500/30' },
+                                    { nome: 'Análises de Solo/Folha', id: 'MANEJO', icon: '🧪', border: 'border-amber-500/30' },
+                                    { nome: 'Estoque Técnico', id: 'ESTOQUE', icon: '📦', border: 'border-indigo-500/30' },
+                                    { nome: 'Recomendações', id: 'RECEITAS', icon: '🌿', border: 'border-teal-500/30' },
+                                    { nome: 'Receituários', id: 'RECEITAS', icon: '📄', border: 'border-purple-500/30' },
+                                    { nome: 'Visitas Técnicas', id: 'LAUDOS', icon: '📅', border: 'border-rose-500/30' },
+                                    { nome: 'Monitoramento', id: 'LAUDOS', icon: '🌱', border: 'border-lime-500/30' },
+                                    { nome: 'Fotos', id: 'LAUDOS', icon: '📸', border: 'border-cyan-500/30' },
+                                    { nome: 'Relatórios', id: 'RELATORIOS', icon: '📊', border: 'border-blue-500/30' }
+                                ].map((modulo, idx) => (
+                                    <div 
+                                        key={idx} 
+                                        onClick={() => {
+                                            setClientOverrideId(selectedClient.client_id);
+                                            setActiveViewerModule(modulo.id);
+                                        }}
+                                        className={`premium-card p-5 rounded-2xl flex flex-col items-center justify-center text-center gap-3 hover:-translate-y-1 hover:bg-[rgba(255,255,255,0.02)] transition-all cursor-pointer border-t-2 ${modulo.border} group`}
+                                    >
+                                        <div className={`text-2xl group-hover:scale-110 transition-transform`}>
+                                            {modulo.icon}
+                                        </div>
+                                        <span className="text-white font-bold text-xs tracking-wide">{modulo.nome}</span>
+                                    </div>
+                                ))}
+                            </div>
 
-                    <div className="mt-8 border-t border-[rgba(255,255,255,0.05)] pt-6 flex items-start gap-4">
-                        <div className="bg-[#0a192f] p-3 rounded-lg border border-[rgba(255,255,255,0.05)] shrink-0">
-                            <ShieldAlert className="w-5 h-5 text-[var(--color-muted)]" />
+                            <div className="mt-8 border-t border-[rgba(255,255,255,0.05)] pt-6 flex items-start gap-4">
+                                <div className="bg-[#0a192f] p-3 rounded-lg border border-[rgba(255,255,255,0.05)] shrink-0">
+                                    <ShieldAlert className="w-5 h-5 text-[var(--color-muted)]" />
+                                </div>
+                                <div>
+                                    <p className="text-[var(--color-muted)] text-sm">
+                                        <strong className="text-white">Modo de Acesso Técnico Restrito:</strong> Como agrônomo, você tem acesso apenas de leitura (visualização) aos módulos técnicos do produtor. Módulos financeiros, comerciais ou de maquinário não estão disponíveis.
+                                    </p>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="bg-[#0a192f] border border-[rgba(255,255,255,0.05)] p-6 rounded-2xl relative min-h-[500px]">
+                            <div className="absolute top-2 right-4 z-10 pointer-events-none">
+                                <span className="bg-orange-500 text-white text-[10px] font-black uppercase px-2 py-1 rounded-md shadow-lg shadow-orange-500/50 flex items-center gap-1">
+                                    <ShieldAlert className="w-3 h-3" /> Visualização do Cliente
+                                </span>
+                            </div>
+                            
+                            {/* Renderizador do Módulo Interno */}
+                            <ErrorBoundary>
+                                {activeViewerModule === 'GERAL' && <div className="p-8 text-center text-white font-bold">Resumo da Propriedade (Em Desenvolvimento)</div>}
+                                {activeViewerModule === 'AREAS' && <AreasEPlantioScreen />}
+                                {activeViewerModule === 'MANEJO' && <ManejoDashboard />}
+                                {activeViewerModule === 'ESTOQUE' && <EstoqueScreen />}
+                                {activeViewerModule === 'RECEITAS' && <RecomendacoesScreen />}
+                                {activeViewerModule === 'LAUDOS' && <VisitasTecnicasScreen />}
+                                {activeViewerModule === 'RELATORIOS' && <div className="p-8 text-center text-white font-bold">Relatórios Técnicos (Em Desenvolvimento)</div>}
+                            </ErrorBoundary>
                         </div>
-                        <div>
-                            <p className="text-[var(--color-muted)] text-sm">
-                                <strong className="text-white">Modo de Acesso Técnico:</strong> Você está visualizando os dados restritos desta propriedade em modo leitura. Operações financeiras de custo e lançamentos de estoque são feitos exclusivamente pelo produtor. 
-                                Utilize o painel acima para auditar talhões e embasar suas Recomendações e Laudos.
-                            </p>
-                        </div>
-                    </div>
+                    )}
                 </div>
             )}
 

@@ -9,12 +9,14 @@ import {
     RefreshCw
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import DraggableModal from '../../components/common/DraggableModal';
 
 export default function PlantioScreen() {
     const [loading, setLoading] = useState(true);
     const [plantios, setPlantios] = useState<Record<string, string | number | boolean | null>[]>([]);
+    const { clientOverrideId, user } = useAuth();
     
     // Selects
     const [talhoes, setTalhoes] = useState<Record<string, string | number | boolean | null>[]>([]);
@@ -32,13 +34,23 @@ export default function PlantioScreen() {
     const fetchDados = async () => {
         setLoading(true);
         try {
+            const currentUserId = clientOverrideId || user?.id;
+
             // Load Talhoes
-            const { data: dataTalhoes } = await supabase.from('v2_talhoes').select('*');
+            let qTalhoes = supabase.from('v2_talhoes').select('*');
+            if (currentUserId) qTalhoes = qTalhoes.eq('user_id', currentUserId);
+            const { data: dataTalhoes } = await qTalhoes;
+            
             // Load Culturas
-            const responseCulturas = await supabase.from('v2_culturas').select('*');
+            let qCulturas = supabase.from('v2_culturas').select('*');
+            if (currentUserId) qCulturas = qCulturas.eq('user_id', currentUserId);
+            const responseCulturas = await qCulturas;
+            
             let dataCulturas = responseCulturas.data;
             if (responseCulturas.error) {
-                const fallback = await supabase.from('culturas').select('*').eq('is_deleted', 0);
+                let qFallbackCulturas = supabase.from('culturas').select('*').eq('is_deleted', 0);
+                if (currentUserId) qFallbackCulturas = qFallbackCulturas.eq('propriedade_id', currentUserId);
+                const fallback = await qFallbackCulturas;
                 dataCulturas = fallback.data;
             }
             
@@ -46,10 +58,9 @@ export default function PlantioScreen() {
             setCulturas(dataCulturas || []);
 
             // Load Plantios
-            const { data: dataPlantios, error } = await supabase
-                .from('v2_plantios')
-                .select('*')
-                .order('created_at', { ascending: false });
+            let qPlantios = supabase.from('v2_plantios').select('*');
+            if (currentUserId) qPlantios = qPlantios.eq('user_id', currentUserId);
+            const { data: dataPlantios, error } = await qPlantios.order('created_at', { ascending: false });
 
             if (error && error.code === '42P01') {
                 // Mock se não existir a tabela
@@ -89,6 +100,7 @@ export default function PlantioScreen() {
         const talhaoSelec = talhoes.find(t => t.id === talhaoId);
         const culturaSelec = culturas.find(c => (c.id || c.uuid) === culturaId);
 
+        const currentUserId = clientOverrideId || user?.id;
         const payload = {
             talhao_id: talhaoId,
             talhao_nome: talhaoSelec?.nome || 'Talhão',
@@ -97,7 +109,8 @@ export default function PlantioScreen() {
             quantidade_pes: parseInt(quantidade),
             data_plantio: dataPlantio,
             previsao_colheita: previsaoColheita,
-            observacao: observacao
+            observacao: observacao,
+            user_id: currentUserId
         };
 
         try {
@@ -160,12 +173,14 @@ export default function PlantioScreen() {
                             Registro e controle de novas culturas em campo, associando áreas produtivas (talhões) às variedades.
                         </p>
                     </div>
-                    <button 
-                        onClick={() => setShowModal(true)}
-                        className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2"
-                    >
-                        <Plus className="w-5 h-5" /> Registrar Plantio
-                    </button>
+                    {!clientOverrideId && (
+                        <button 
+                            onClick={() => setShowModal(true)}
+                            className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2"
+                        >
+                            <Plus className="w-5 h-5" /> Registrar Plantio
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -204,12 +219,14 @@ export default function PlantioScreen() {
                                             </p>
                                         </div>
                                     </div>
-                                    <button 
-                                        onClick={() => handleDelete(item.id)}
-                                        className="text-[var(--color-muted)] hover:text-red-400 p-2 rounded-lg hover:bg-red-500/10 transition-colors"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    {!clientOverrideId && (
+                                        <button 
+                                            onClick={() => handleDelete(item.id)}
+                                            className="text-[var(--color-muted)] hover:text-red-400 p-2 rounded-lg hover:bg-red-500/10 transition-colors"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    )}
                                 </div>
 
                                 <div className="bg-white/5 rounded-xl p-4 space-y-2 border border-white/5">

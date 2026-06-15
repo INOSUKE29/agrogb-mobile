@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    TextInput, SafeAreaView, StatusBar, Alert
-} from 'react-native';
+import { StyleSheet, View, Text, StyleSheet, TouchableOpacity, ScrollView,
+    TextInput, SafeAreaView, StatusBar, Alert } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { FertilizationService } from '../services/FertilizationService';

@@ -31,9 +31,16 @@ import {
     Tags,
     ShoppingCart,
     Car,
-    Database
+    Database,
+    CheckCircle,
+    Info,
+    AlertTriangle,
+    Bot
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications, type AppNotification } from '../../contexts/NotificationContext';
+import { useBreadcrumbs } from '../../contexts/BreadcrumbContext';
+import { GlobalBackButton, GlobalBreadcrumb } from '../../components/layout/GlobalNavigation';
 
 export default function DashboardLayout() {
     const navigate = useNavigate();
@@ -46,9 +53,12 @@ export default function DashboardLayout() {
     const [realRole, setRealRole] = useState<string | null>(null);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
-    const [selectedNotification, setSelectedNotification] = useState<any>(null);
+    const [selectedNotification, setSelectedNotification] = useState<AppNotification | null>(null);
     const isDevPortalUnlocked = sessionStorage.getItem('dev_portal_unlocked') === 'true';
     
+    const { markAsRead, markAllAsRead, unreadCount, notifications } = useNotifications();
+    const { title: customTitle } = useBreadcrumbs();
+
     // Accordion state
     const [openGroups, setOpenGroups] = useState<string[]>(['Visão Geral', 'Operação Agrícola']);
 
@@ -56,39 +66,16 @@ export default function DashboardLayout() {
         setOpenGroups(prev => prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]);
     };
 
-    const [notifications, setNotifications] = useState([
-        {
-            id: '1',
-            title: 'Novo usuário registrado',
-            message: 'Carlos Silva solicitou acesso como Agrônomo. Por favor, revise as credenciais no painel de usuários e aprove o acesso.',
-            time: 'Há 5 min',
-            read: false,
-            type: 'info',
-            icon: Activity,
-            color: 'blue'
-        },
-        {
-            id: '2',
-            title: 'Relatório processado',
-            message: 'O relatório consolidado de colheita mensal está pronto para download. Você pode acessá-lo na central de relatórios.',
-            time: 'Ontem',
-            read: false,
-            type: 'success',
-            icon: FileText,
-            color: 'green'
-        }
-    ]);
-
-    const unreadCount = notifications.filter(n => !n.read).length;
-
-    const handleOpenNotification = (n: Record<string, string | number | boolean | null>) => {
+    const handleOpenNotification = (n: AppNotification) => {
         setSelectedNotification(n);
-        setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, read: true } : item));
+        if (!n.is_read) {
+            markAsRead(n.id);
+        }
         setShowNotifications(false);
     };
 
     const handleMarkAllAsRead = () => {
-        setNotifications(prev => prev.map(item => ({ ...item, read: true })));
+        markAllAsRead();
     };
 
     useEffect(() => {
@@ -138,10 +125,15 @@ export default function DashboardLayout() {
     const getNavItems = (role: string): NavItem[] => {
         if (role === 'AGRONOMO') {
             return [
-                { path: '/dashboard/agronomo', label: 'Dashboard Agrônomo', icon: LayoutDashboard },
-                { path: '/dashboard/agronomo/clientes', label: 'Meus Clientes', icon: Users },
-                { path: '/dashboard/agronomo/recomendacoes', label: 'Recomendações', icon: FileText },
-                { path: '/dashboard/agronomo/visitas', label: 'Visitas Técnicas', icon: Calendar },
+                { path: '/dashboard/agronomo', label: 'Dashboard', icon: LayoutDashboard },
+                { path: '/dashboard/agronomo/clientes', label: 'Clientes', icon: Users },
+                { path: '/dashboard/agronomo/visitas', label: 'Visitas (Agenda)', icon: Calendar },
+                { path: '/dashboard/agronomo/monitoramentos', label: 'Monitoramentos', icon: Leaf },
+                { path: '/dashboard/agronomo/analises', label: 'Análises', icon: Activity },
+                { path: '/dashboard/agronomo/recomendacoes', label: 'Recomendações', icon: Sprout },
+                { path: '/dashboard/agronomo/relatorios', label: 'Relatórios', icon: ListTodo },
+                { path: '/dashboard/agronomo/notificacoes', label: 'Notificações', icon: Bell },
+                { path: '/dashboard/configuracoes', label: 'Preferências', icon: Settings },
             ];
         } else if (role === 'CLIENTE') {
             return [
@@ -380,30 +372,25 @@ export default function DashboardLayout() {
             {/* MAIN CONTENT AREA */}
             <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, overflow: 'hidden' }}>
                 
-                {/* Header - Minimalista */}
-                <header className="flex items-center justify-between z-10 shrink-0 py-4 px-4 sm:px-8 border-b border-[rgba(255,255,255,0.05)] bg-[var(--color-background)]">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => setIsSidebarOpen(true)}
-                            className="lg:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
-                        >
-                            <Menu className="w-5 h-5" />
-                        </button>
-                        <div className="hidden md:flex items-center gap-3">
-                            {location.pathname !== '/dashboard/cliente' && location.pathname !== '/dashboard' && (
-                                <button 
-                                    onClick={() => navigate(-1)}
-                                    className="p-2 rounded-lg text-[var(--color-muted)] hover:text-white hover:bg-white/10 transition-colors flex items-center justify-center"
-                                    title="Voltar para tela anterior"
-                                >
-                                    <ArrowLeft className="w-5 h-5" />
-                                </button>
-                            )}
-                            <h2 className="text-xl font-black text-white tracking-tight border-l border-[rgba(255,255,255,0.1)] pl-3">
-                                {navItems.find(i => i.path === location.pathname)?.label || 'Painel'}
-                            </h2>
+                {/* Header Superior Principal */}
+                <header className="flex flex-col z-10 shrink-0 border-b border-[rgba(255,255,255,0.05)] bg-[var(--color-background)]">
+                    
+                    {/* Linha 1: Controles e Busca */}
+                    <div className="flex items-center justify-between py-4 px-4 sm:px-8">
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={() => setIsSidebarOpen(true)}
+                                className="lg:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
+                            >
+                                <Menu className="w-5 h-5" />
+                            </button>
+                            <div className="hidden md:flex items-center gap-3">
+                                <GlobalBackButton />
+                                <h2 className="text-xl font-black text-white tracking-tight border-l border-[rgba(255,255,255,0.1)] pl-3">
+                                    {customTitle || navItems.find(i => i.path === location.pathname)?.label || 'Painel'}
+                                </h2>
+                            </div>
                         </div>
-                    </div>
 
                     {/* BUSCA GLOBAL */}
                     <div className="hidden lg:flex flex-1 max-w-md mx-6 relative">
@@ -450,20 +437,22 @@ export default function DashboardLayout() {
                                             </div>
                                         ) : (
                                             notifications.map(n => {
-                                                const Icon = n.icon;
+                                                const Icon = n.type === 'success' ? CheckCircle : n.type === 'error' ? X : n.type === 'warning' ? AlertTriangle : Info;
+                                                const color = n.type === 'success' ? 'green' : n.type === 'error' ? 'red' : n.type === 'warning' ? 'yellow' : 'blue';
+                                                
                                                 return (
                                                     <div 
                                                         key={n.id}
                                                         onClick={() => handleOpenNotification(n)}
-                                                        className={`p-4 border-b border-[var(--color-border)] hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer flex gap-3 ${n.read ? 'opacity-60' : ''}`}
+                                                        className={`p-4 border-b border-[var(--color-border)] hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer flex gap-3 ${n.is_read ? 'opacity-60' : ''}`}
                                                     >
-                                                        <div className={`w-8 h-8 rounded-full bg-${n.color}-500/20 flex items-center justify-center shrink-0`}>
-                                                            <Icon className={`w-4 h-4 text-${n.color}-400`} />
+                                                        <div className={`w-8 h-8 rounded-full bg-${color}-500/20 flex items-center justify-center shrink-0`}>
+                                                            <Icon className={`w-4 h-4 text-${color}-400`} />
                                                         </div>
                                                         <div>
-                                                            <p className={`text-sm font-medium ${n.read ? 'text-[var(--color-muted)]' : 'text-gray-900 dark:text-white'}`}>{n.title}</p>
+                                                            <p className={`text-sm font-medium ${n.is_read ? 'text-[var(--color-muted)]' : 'text-gray-900 dark:text-white'}`}>{n.title}</p>
                                                             <p className="text-xs text-[var(--color-muted)] mt-0.5 line-clamp-1">{n.message}</p>
-                                                            <p className={`text-xs mt-1 ${n.read ? 'text-[var(--color-muted)]' : `text-${n.color}-400`}`}>{n.time}</p>
+                                                            <p className={`text-xs mt-1 ${n.is_read ? 'text-[var(--color-muted)]' : `text-${color}-400`}`}>{new Date(n.created_at).toLocaleString('pt-BR')}</p>
                                                         </div>
                                                     </div>
                                                 );
@@ -535,6 +524,10 @@ export default function DashboardLayout() {
                             )}
                         </div>
                     </div>
+                    </div>
+                    
+                    {/* Linha 2: Breadcrumb (Só exibe se houver array preenchido no Context) */}
+                    <GlobalBreadcrumb />
                 </header>
 
                 {/* ══ Área de conteúdo com SCROLL ══ */}
@@ -573,22 +566,26 @@ export default function DashboardLayout() {
                 </div>
 
                 {/* MODAL DE NOTIFICAÇÃO COMPLETA */}
-                {selectedNotification && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setSelectedNotification(null)}>
-                        <div 
-                            className="bg-white dark:bg-[#121212] border border-[var(--color-border)] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="p-6 border-b border-[var(--color-border)] flex items-start justify-between">
-                                <div className="flex gap-4 items-center">
-                                    <div className={`w-12 h-12 rounded-full bg-${selectedNotification.color}-500/20 flex items-center justify-center shrink-0`}>
-                                        <selectedNotification.icon className={`w-6 h-6 text-${selectedNotification.color}-400`} />
+                {selectedNotification && (() => {
+                    const ModalIcon = selectedNotification.type === 'success' ? CheckCircle : selectedNotification.type === 'error' ? X : selectedNotification.type === 'warning' ? AlertTriangle : Info;
+                    const modalColor = selectedNotification.type === 'success' ? 'green' : selectedNotification.type === 'error' ? 'red' : selectedNotification.type === 'warning' ? 'yellow' : 'blue';
+                    
+                    return (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setSelectedNotification(null)}>
+                            <div 
+                                className="bg-white dark:bg-[#121212] border border-[var(--color-border)] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="p-6 border-b border-[var(--color-border)] flex items-start justify-between">
+                                    <div className="flex gap-4 items-center">
+                                        <div className={`w-12 h-12 rounded-full bg-${modalColor}-500/20 flex items-center justify-center shrink-0`}>
+                                            <ModalIcon className={`w-6 h-6 text-${modalColor}-400`} />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">{selectedNotification.title}</h2>
+                                            <p className="text-sm text-[var(--color-muted)]">{new Date(selectedNotification.created_at).toLocaleString('pt-BR')}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h2 className="text-lg font-bold text-gray-900 dark:text-white">{selectedNotification.title}</h2>
-                                        <p className="text-sm text-[var(--color-muted)]">{selectedNotification.time}</p>
-                                    </div>
-                                </div>
                                 <button 
                                     onClick={() => setSelectedNotification(null)}
                                     className="p-2 rounded-lg text-[var(--color-muted)] hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
@@ -608,10 +605,11 @@ export default function DashboardLayout() {
                                 >
                                     Fechar
                                 </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    );
+                })()}
             </main>
         </div>
     );

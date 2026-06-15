@@ -12,6 +12,7 @@ import {
     Loader2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../contexts/AuthContext';
 import DraggableModal from '../../components/common/DraggableModal';
 
 interface Cultura {
@@ -34,6 +35,7 @@ export default function CulturasScreen() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editItem, setEditItem] = useState<Cultura | null>(null);
     const [saving, setSaving] = useState(false);
+    const { clientOverrideId, user } = useAuth();
 
     // Form
     const [form, setForm] = useState({
@@ -48,22 +50,23 @@ export default function CulturasScreen() {
     const fetchCulturas = async () => {
         setLoading(true);
         try {
+            const currentUserId = clientOverrideId || user?.id;
+
             // Tenta v2 primeiro
-            const response = await supabase
-                .from('v2_culturas')
-                .select('*')
-                .order('created_at', { ascending: false });
+            let queryV2 = supabase.from('v2_culturas').select('*');
+            if (currentUserId) queryV2 = queryV2.eq('user_id', currentUserId);
+            
+            const response = await queryV2.order('created_at', { ascending: false });
             
             let data = response.data;
             const error = response.error;
 
             if (error) {
                 // Fallback para tabela v1
-                const fallback = await supabase
-                    .from('culturas')
-                    .select('*')
-                    .eq('is_deleted', 0)
-                    .order('created_at', { ascending: false });
+                let fallbackQuery = supabase.from('culturas').select('*').eq('is_deleted', 0);
+                if (currentUserId) fallbackQuery = fallbackQuery.eq('propriedade_id', currentUserId); // Simplificação de filtro na v1
+                
+                const fallback = await fallbackQuery.order('created_at', { ascending: false });
                 if (fallback.error) throw fallback.error;
                 data = fallback.data;
             }
@@ -125,11 +128,12 @@ export default function CulturasScreen() {
         };
 
         try {
+            const currentUserId = clientOverrideId || user?.id;
             if (editItem) {
                 await supabase.from(editItem.tableUsed).update(payload).eq('id', editItem.id);
             } else {
                 // Tenta inserir na v2 primeiro
-                const { error } = await supabase.from('v2_culturas').insert([payload]);
+                const { error } = await supabase.from('v2_culturas').insert([{ ...payload, user_id: currentUserId }]);
                 if (error) {
                     // Fallback para v1
                     await supabase.from('culturas').insert([{ ...payload, is_deleted: 0 }]);
@@ -197,13 +201,15 @@ export default function CulturasScreen() {
                             Acompanhe o que está plantado, o status de crescimento e prepare-se para a colheita.
                         </p>
                     </div>
-                    <button 
-                        onClick={() => openModal()}
-                        className="px-6 py-3 rounded-xl flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white font-bold shadow-lg shadow-green-500/20 transition-all group"
-                    >
-                        <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-                        Nova Cultura
-                    </button>
+                    {!clientOverrideId && (
+                        <button 
+                            onClick={() => openModal()}
+                            className="px-6 py-3 rounded-xl flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white font-bold shadow-lg shadow-green-500/20 transition-all group"
+                        >
+                            <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+                            Nova Cultura
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -247,14 +253,16 @@ export default function CulturasScreen() {
                                             {c.variedade || 'Variedade Genérica'}
                                         </div>
                                     </div>
-                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => openModal(c)} className="p-2.5 bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)]/20 text-[var(--color-primary)] rounded-xl transition-colors">
-                                            <Edit2 className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={() => handleDelete(c)} className="p-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-colors">
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
+                                    {!clientOverrideId && (
+                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => openModal(c)} className="p-2.5 bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)]/20 text-[var(--color-primary)] rounded-xl transition-colors">
+                                                <Edit2 className="w-4 h-4" />
+                                            </button>
+                                            <button onClick={() => handleDelete(c)} className="p-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-colors">
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-4">

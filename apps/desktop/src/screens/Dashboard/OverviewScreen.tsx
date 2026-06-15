@@ -44,30 +44,11 @@ export default function OverviewScreen() {
             setClientesAtivos(clientes);
             setAgronomosAtivos(agronomos);
 
-            // Dados Fakes para os Gráficos (Para simular o Mockup visualmente por enquanto)
-            setReceitaMes(124530.00);
-
-            setChartData([
-                { name: 'Dez', receita: 45000 },
-                { name: 'Jan', receita: 52000 },
-                { name: 'Fev', receita: 48000 },
-                { name: 'Mar', receita: 61000 },
-                { name: 'Abr', receita: 85000 },
-                { name: 'Mai', receita: 124530 }
-            ]);
-
-            setPieData([
-                { name: 'Básico', value: 45, color: '#10B981' },
-                { name: 'Intermediário', value: 30, color: '#3B82F6' },
-                { name: 'Profissional', value: 25, color: '#8B5CF6' }
-            ]);
-
-            setActivityData([
-                { name: 'Semana 1', receitas: 120, visitas: 45 },
-                { name: 'Semana 2', receitas: 150, visitas: 60 },
-                { name: 'Semana 3', receitas: 180, visitas: 75 },
-                { name: 'Semana 4', receitas: 220, visitas: 90 },
-            ]);
+            // Dados Fakes removidos conforme solicitação
+            setReceitaMes(0);
+            setChartData([]);
+            setPieData([]);
+            setActivityData([]);
 
         } catch (error) {
             console.error('Erro ao buscar dados do dashboard:', error);

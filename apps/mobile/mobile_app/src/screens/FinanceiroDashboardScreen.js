@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    View, 
+import { StyleSheet, View, 
     Text, 
     StyleSheet, 
     ScrollView, 
     TouchableOpacity, 
     Dimensions, 
     ActivityIndicator,
-    StatusBar
-} from 'react-native';
+    StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { LineChart } from 'react-native-chart-kit';

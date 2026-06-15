@@ -1,9 +1,7 @@
 ﻿import React, { useState, useCallback } from 'react';
-import { 
-    View, Text, StyleSheet, ScrollView, Alert, 
+import { StyleSheet, View, Text, StyleSheet, ScrollView, Alert, 
     TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform,
-    StatusBar 
-} from 'react-native';
+    StatusBar } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';

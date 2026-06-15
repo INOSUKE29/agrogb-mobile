@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, 
-    Alert, SafeAreaView, Platform 
-} from 'react-native';
+import { StyleSheet, View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, 
+    Alert, SafeAreaView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { executeQuery } from '../database/database';
 import { v4 as uuidv4 } from 'uuid';

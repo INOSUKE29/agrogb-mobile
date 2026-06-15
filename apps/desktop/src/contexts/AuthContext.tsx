@@ -8,6 +8,8 @@ interface AuthContextType {
     role: string | null;
     permissions: string[];
     loading: boolean;
+    clientOverrideId: string | null;
+    setClientOverrideId: (id: string | null) => void;
     signOut: () => Promise<void>;
     hasPermission: (perm: string) => boolean;
 }
@@ -17,6 +19,8 @@ const AuthContext = createContext<AuthContextType>({
     role: null,
     permissions: [],
     loading: true,
+    clientOverrideId: null,
+    setClientOverrideId: () => {},
     signOut: async () => {},
     hasPermission: () => false,
 });
@@ -26,6 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [role, setRole] = useState<string | null>(null);
     const [permissions, setPermissions] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
+    const [clientOverrideId, setClientOverrideId] = useState<string | null>(null);
 
     const fetchRoleAndPermissions = async (userId: string) => {
         try {
@@ -110,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ user, role, permissions, loading, signOut: async () => await supabase.auth.signOut(), hasPermission }}>
+        <AuthContext.Provider value={{ user, role, permissions, loading, clientOverrideId, setClientOverrideId, signOut: async () => await supabase.auth.signOut(), hasPermission }}>
             {children}
         </AuthContext.Provider>
     );

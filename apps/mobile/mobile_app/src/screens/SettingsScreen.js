@@ -1,8 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { 
-    View, Text, StyleSheet, ScrollView, Alert, 
-    TouchableOpacity, Image, Switch, Modal, Dimensions
-} from 'react-native';
+import { StyleSheet, View, Text, StyleSheet, ScrollView, Alert, 
+    TouchableOpacity, Image, Switch, Modal, Dimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';

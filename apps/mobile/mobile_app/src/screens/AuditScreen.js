@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    View, 
+import { StyleSheet, View, 
     Text, 
     StyleSheet, 
     FlatList, 
     TouchableOpacity, 
     ActivityIndicator, 
-    Alert 
-} from 'react-native';
+    Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { executeQuery } from '../database/database';
 import { useTheme } from '../theme/ThemeContext';

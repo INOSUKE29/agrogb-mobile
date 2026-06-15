@@ -30,17 +30,23 @@ import EncomendasScreen from './screens/Dashboard/EncomendasScreen';
 import ClimaScreen from './screens/Dashboard/ClimaScreen';
 import RelatoriosScreen from './screens/Dashboard/RelatoriosScreen';
 import MeuConsultorScreen from './screens/Dashboard/MeuConsultorScreen';
+import AnalisesScreen from './screens/Dashboard/AnalisesScreen';
+import NotificacoesFullScreen from './screens/Dashboard/NotificacoesFullScreen';
 import ManejoDashboard from './screens/Dashboard/Manejo/ManejoDashboard';
 import ProgramasScreen from './screens/Dashboard/Manejo/ProgramasScreen';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeProvider';
+import { NotificationProvider } from './contexts/NotificationContext';
+import { BreadcrumbProvider } from './contexts/BreadcrumbContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <NotificationProvider>
+          <BreadcrumbProvider>
         <div className="text-foreground bg-background transition-colors duration-300" style={{ height: '100vh', width: '100vw', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <Toaster 
           position="top-right" 
@@ -82,7 +88,10 @@ function App() {
               <Route path="agronomo/clientes" element={<MeusClientesScreen />} />
               <Route path="agronomo/recomendacoes" element={<RecomendacoesScreen />} />
               <Route path="agronomo/visitas" element={<VisitasTecnicasScreen />} />
-
+              <Route path="agronomo/monitoramentos" element={<MonitoramentoScreen />} />
+              <Route path="agronomo/relatorios" element={<RelatoriosScreen />} />
+              <Route path="agronomo/analises" element={<AnalisesScreen />} />
+              <Route path="agronomo/notificacoes" element={<NotificacoesFullScreen />} />
               {/* PORTAL CLIENTE (PRODUTOR) */}
               <Route path="cliente" element={<ClienteDashboard />} />
               <Route path="cliente/relatorios" element={<RelatoriosScreen />} />
@@ -143,6 +152,8 @@ function App() {
           </ErrorBoundary>
         </HashRouter>
         </div>
+          </BreadcrumbProvider>
+        </NotificationProvider>
       </AuthProvider>
     </ThemeProvider>
   );

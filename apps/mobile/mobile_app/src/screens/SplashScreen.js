@@ -1,12 +1,10 @@
 import React, { useEffect } from 'react';
-import { 
-    View, 
+import { StyleSheet, View, 
     Text, 
     StyleSheet, 
     ImageBackground, 
     Image, 
-    Dimensions 
-} from 'react-native';
+    Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import { StatusBar } from 'expo-status-bar';

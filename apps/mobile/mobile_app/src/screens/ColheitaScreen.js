@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, SafeAreaView, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, SafeAreaView, StatusBar , KeyboardAvoidingView, Platform} from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertColheita, getCadastro, executeQuery, insertDescarte, getColheitasRecentes, deleteColheita } from '../database/database';
 import { Ionicons } from '@expo/vector-icons';
@@ -229,6 +229,8 @@ export default function ColheitaScreen({ navigation }) {
 
     if (loading) {
         return (
+            <SafeAreaView style={{ flex: 1, backgroundColor: activeColors?.bg || "#0F172A" }}>
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{flex: 1}}>
             <View style={[styles.container, styles.center, { backgroundColor: activeColors.bg || '#0B121E' }]}>
                 <ActivityIndicator size="large" color="#10B981" />
             </View>
@@ -236,8 +238,10 @@ export default function ColheitaScreen({ navigation }) {
     }
 
     return (
-        <View style={[styles.container, { backgroundColor: activeColors.bg || '#0B121E' }]}>
-            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? activeColors?.bg || "#0F172A" : "#F3F4F6" }}>
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{flex: 1}}>
+            <View style={[styles.container, { backgroundColor: activeColors.bg || '#0B121E' }]}>
+                <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
             
             {/* CABEÇALHO GLASSMORPHISM */}
             <LinearGradient colors={['#111827', '#0F172A']} style={styles.header}>
@@ -448,6 +452,8 @@ export default function ColheitaScreen({ navigation }) {
             {/* MODAIS LEGADOS REMOVIDOS - INTEGRADO AO SMARTAUTOCOMPLETE */}
 
         </View>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 }
 

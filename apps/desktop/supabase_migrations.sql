@@ -129,3 +129,6 @@ CREATE TABLE IF NOT EXISTS produtos_cadastro (
     is_deleted INTEGER DEFAULT 0,
     curation_status TEXT DEFAULT 'PENDENTE'
 );
+
+-- Adicionado para Blocos de Aplicacao
+ALTER TABLE receita_insumos ADD COLUMN IF NOT EXISTS etapa_aplicacao TEXT;

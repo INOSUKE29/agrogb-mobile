@@ -79,7 +79,13 @@
       ],
       "expo-secure-store",
       "expo-local-authentication",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Permitir que o AgroGB acesse sua localização para previsão do clima nas fazendas."
+        }
+      ]
     ]
   }
 }

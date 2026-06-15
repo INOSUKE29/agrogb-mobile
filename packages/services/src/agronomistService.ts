@@ -228,4 +228,75 @@ export class AgronomistService {
 
         if (error) throw error;
     }
+    // ==========================================
+    // BIBLIOTECA TÉCNICA
+    // ==========================================
+
+    async getBibliotecaPragas(): Promise<any[]> {
+        const { data, error } = await this.supabase
+            .from('biblioteca_pragas')
+            .select('*')
+            .order('nome_comum', { ascending: true });
+        if (error) throw error;
+        return data || [];
+    }
+
+    async getBibliotecaDoencas(): Promise<any[]> {
+        const { data, error } = await this.supabase
+            .from('biblioteca_doencas')
+            .select('*')
+            .order('nome_comum', { ascending: true });
+        if (error) throw error;
+        return data || [];
+    }
+
+    async getBibliotecaDeficiencias(): Promise<any[]> {
+        const { data, error } = await this.supabase
+            .from('biblioteca_deficiencias')
+            .select('*')
+            .order('nutriente', { ascending: true });
+        if (error) throw error;
+        return data || [];
+    }
+
+    async getBibliotecaArtigos(): Promise<any[]> {
+        const { data, error } = await this.supabase
+            .from('biblioteca_artigos')
+            .select('*')
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data || [];
+    }
+
+    // ==========================================
+    // ANÁLISES LABORATORIAIS
+    // ==========================================
+
+    async getAnalisesLaboratoriais(): Promise<any[]> {
+        const { data, error } = await this.supabase
+            .from('analises_laboratoriais')
+            .select(`
+                *,
+                cliente:cliente_id(nome_completo)
+            `)
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data || [];
+    }
+
+    async createAnaliseLaboratorial(analise: any): Promise<void> {
+        const { data: userData } = await this.supabase.auth.getUser();
+        if (!userData || !userData.user) throw new Error("Usuário não autenticado");
+
+        const payload = {
+            ...analise,
+            agronomist_id: userData.user.id
+        };
+
+        const { error } = await this.supabase
+            .from('analises_laboratoriais')
+            .insert([payload]);
+
+        if (error) throw error;
+    }
 }
