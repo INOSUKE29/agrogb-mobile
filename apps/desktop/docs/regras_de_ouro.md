@@ -21,3 +21,11 @@ O Supabase bloqueia inserções silenciosamente se o `payload` violar as políti
 
 ## 4. Integração Prática vs Enfeites
 Funcionalidades como **"IA Agronômica", "Mapas de Satélite" e "Bibliotecas Enormes de Pragas"** são para o futuro. O foco atual é a operação: cadastrar visita, lançar recomendação (receita) de forma rápida e eficiente. Menos firula e mais funcionamento prático.
+
+## 5. Arquitetura de Formulários Mobile e Contraste
+O produtor está no sol, os formulários precisam de altíssimo contraste (Fundo Escuro, Input Branco). Além disso, é absolutamente proibido criar telas longas sem a trinca de ferro: `<SafeAreaView>`, `<KeyboardAvoidingView>` e `<ScrollView>`. (Vide ADS para regras de UI completas).
+
+## 6. Documentos-Mestre da Arquitetura
+Consulte sempre os artefatos sagrados antes de alterar qualquer código central:
+- **[AgroGB Development Standard (ADS)](file:///C:/Users/Bruno/.gemini/antigravity/brain/0dea86f6-86d7-4607-ae4c-0a0711bd4641/artifacts/AGROGB_DEVELOPMENT_STANDARD.md)**
+- **[Histórico de Erros e Vacinas](file:///C:/Users/Bruno/.gemini/antigravity/brain/0dea86f6-86d7-4607-ae4c-0a0711bd4641/artifacts/HISTORICO_ERROS_E_VACINAS.md)**

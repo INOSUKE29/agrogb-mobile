@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SectionList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, ScrollView, Dimensions, FlatList , KeyboardAvoidingView, SafeAreaView, Platform} from 'react-native';
+import { View, Text, StyleSheet, SectionList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, ScrollView, Dimensions, FlatList } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertCadastro, getCadastro, deleteCadastro, updateCadastro, insertReceita, getReceita, deleteItemReceita } from '../database/database';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -176,9 +176,7 @@ export default function CadastroScreen({ navigation }) {
     }, {})).sort((a, b) => a.title.localeCompare(b.title));
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: activeColors?.bg || "#0F172A" }}>
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{flex: 1}}>
-            <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
+        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#F3F4F6' }]}>
             <LinearGradient colors={isDark ? ['#111827', '#0F172A'] : [theme?.colors?.primary || '#10B981', '#059669']} style={styles.header}>
                 <View style={styles.headerTop}>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -553,8 +551,6 @@ export default function CadastroScreen({ navigation }) {
                 deleteLabel="Excluir Item"
             />
         </View>
-            </KeyboardAvoidingView>
-        </SafeAreaView>
     );
 
     async function handleSaveRecipeItem() {

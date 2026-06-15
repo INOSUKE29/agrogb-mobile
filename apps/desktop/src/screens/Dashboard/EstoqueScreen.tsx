@@ -40,7 +40,7 @@ export default function EstoqueScreen() {
 
             if (error) {
                 // If it fails, fallback to old estoque table just in case
-                const fallback = await supabase.from('estoque').select('*').order('last_updated', { ascending: false });
+                const fallback = await supabase.from('estoque').select('*').order('created_at', { ascending: false });
                 if (fallback.error) {
                     throw error;
                 } else {

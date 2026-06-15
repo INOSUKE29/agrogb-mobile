@@ -61,7 +61,7 @@ export default function TalhoesScreen() {
                 
             if (error) {
                 // Se falhar (não existe/cache), tenta a v1
-                let fallbackQuery = supabase.from('talhoes').select('*').eq('is_deleted', false);
+                let fallbackQuery = supabase.from('talhoes').select('*');
                 if (currentUserId) fallbackQuery = fallbackQuery.eq('propriedade_id', currentUserId); // Simplificação de filtro na v1
                 
                 const fallback = await fallbackQuery.order('nome', { ascending: true });
