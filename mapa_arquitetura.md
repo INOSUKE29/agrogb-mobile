@@ -73,6 +73,7 @@ C:\Users\Bruno\Documents\AgroGB\
 - **Limpeza de Build:** Limpamos mais de 350 MB de arquivos pesados inúteis (`agrogb-dev.apk`, backups `.zip`) que travavam o envio para o GitHub Actions.
 - **Correção de CI/CD (GitHub Actions):** Removemos pastas `.git` residuais dentro de `apps/desktop` e `apps/mobile/mobile_app` e atualizamos todos os caminhos do arquivo `build-apk.yml` para apontarem corretamente para o novo Monorepo (`./apps/mobile/mobile_app/...`), garantindo que o NodeJS consiga fazer cache e compilar a APK em nuvem sem erros de rota.
 - **Banco de Dados (SQL):** Mapeamos e adicionamos novos módulos cruciais para o ecossistema: Tarefas Kanban (`06_A_tarefas_kanban.sql`) e Compras/Fornecedores (`07_A_compras_fornecedores.sql`).
+- **Expansão Futura (Idea/Roadmap):** Registramos no código e na arquitetura que a **Biblioteca Global**, atualmente focada em Produtos/Insumos, poderá no futuro ser expandida para abrigar o **Catálogo Fitossanitário (Doenças e Pragas de Plantio)** com galeria de fotos.
 
 ## Próximos Passos (Imediatos)
 1. Iniciar o desenvolvimento dos Shared Services dentro da pasta `packages/` (transferindo lógicas do Mobile para a raiz).
