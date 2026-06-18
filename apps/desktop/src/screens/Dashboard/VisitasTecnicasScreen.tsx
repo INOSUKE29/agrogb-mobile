@@ -26,7 +26,8 @@ export default function VisitasTecnicasScreen() {
         hora: '',
         cliente_id: '',
         motivo: '',
-        local: ''
+        local: '',
+        status: 'PENDING' as 'PENDING' | 'COMPLETED'
     });
 
     const agronomistService = new AgronomistService(supabase);
@@ -61,12 +62,12 @@ export default function VisitasTecnicasScreen() {
                 visit_date: dataHora.toISOString(),
                 reason: formData.motivo,
                 location: formData.local,
-                status: 'PENDING'
+                status: formData.status
             });
 
             toast.success('Visita agendada com sucesso!');
             setShowModal(false);
-            setFormData({ data: '', hora: '', cliente_id: '', motivo: '', local: '' });
+            setFormData({ data: '', hora: '', cliente_id: '', motivo: '', local: '', status: 'PENDING' });
             await loadData();
         } catch (error) {
             console.error('Erro ao agendar visita:', error);
@@ -187,7 +188,7 @@ export default function VisitasTecnicasScreen() {
                         <div className="p-6 border-b border-[rgba(255,255,255,0.05)] flex justify-between items-center bg-white/5">
                             <h2 className="text-xl font-bold text-white flex items-center gap-2">
                                 <Calendar className="w-5 h-5 text-indigo-400" />
-                                Agendar Visita
+                                Registrar Visita
                             </h2>
                             <button 
                                 onClick={() => setShowModal(false)}
@@ -260,6 +261,20 @@ export default function VisitasTecnicasScreen() {
                                 />
                             </div>
 
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wide">Status da Visita</label>
+                                <div className="flex gap-4">
+                                    <label className={`flex-1 flex items-center justify-center gap-2 py-3 border rounded-xl cursor-pointer transition-all ${formData.status === 'PENDING' ? 'bg-orange-500/20 border-orange-500 text-orange-400 font-bold' : 'bg-white/5 border-[rgba(255,255,255,0.1)] text-gray-400'}`}>
+                                        <input type="radio" name="status" value="PENDING" className="hidden" checked={formData.status === 'PENDING'} onChange={() => setFormData({...formData, status: 'PENDING'})} />
+                                        <Calendar className="w-4 h-4" /> Futura (Agendar)
+                                    </label>
+                                    <label className={`flex-1 flex items-center justify-center gap-2 py-3 border rounded-xl cursor-pointer transition-all ${formData.status === 'COMPLETED' ? 'bg-green-500/20 border-green-500 text-green-400 font-bold' : 'bg-white/5 border-[rgba(255,255,255,0.1)] text-gray-400'}`}>
+                                        <input type="radio" name="status" value="COMPLETED" className="hidden" checked={formData.status === 'COMPLETED'} onChange={() => setFormData({...formData, status: 'COMPLETED'})} />
+                                        <CheckCircle className="w-4 h-4" /> Realizada
+                                    </label>
+                                </div>
+                            </div>
+
                             <div className="pt-4 flex gap-3">
                                 <button 
                                     type="button"
@@ -273,7 +288,7 @@ export default function VisitasTecnicasScreen() {
                                     disabled={loading}
                                     className="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center disabled:opacity-50"
                                 >
-                                    {loading ? 'Agendando...' : 'Salvar Visita'}
+                                    {loading ? 'Salvando...' : 'Salvar Visita'}
                                 </button>
                             </div>
 

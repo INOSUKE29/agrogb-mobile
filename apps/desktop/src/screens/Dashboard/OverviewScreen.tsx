@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
 import { subDays, format } from 'date-fns';
-import { 
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line
-} from 'recharts';
-import { Users, Sprout, ShieldCheck, DollarSign, Calendar as CalendarIcon, ArrowRight, Activity, Database, FolderKanban } from 'lucide-react';
+import { Users, Sprout, ShieldCheck, FileText, Calendar as CalendarIcon, ArrowRight, Activity, Database, FolderKanban } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function OverviewScreen() {
@@ -19,12 +16,7 @@ export default function OverviewScreen() {
     const [totalUsuarios, setTotalUsuarios] = useState(0);
     const [clientesAtivos, setClientesAtivos] = useState(0);
     const [agronomosAtivos, setAgronomosAtivos] = useState(0);
-    const [receitaMes, setReceitaMes] = useState(0);
-
-    // Chart Data States
-    const [chartData, setChartData] = useState<Record<string, string | number | boolean | null>[]>([]);
-    const [_pieData, setPieData] = useState<Record<string, string | number | boolean | null>[]>([]);
-    const [activityData, setActivityData] = useState<Record<string, string | number | boolean | null>[]>([]);
+    const [prescricoesEmitidas, setPrescricoesEmitidas] = useState(0);
 
     const fetchData = async () => {
         setLoading(true);
@@ -40,15 +32,19 @@ export default function OverviewScreen() {
             const clientes = profiles?.filter(p => p.role === 'CLIENTE').length || 0;
             const agronomos = profiles?.filter(p => p.role === 'AGRONOMO').length || 0;
 
+            // Fetch Prescrições (Receitas)
+            const { count: prescricoesCount, error: recError } = await supabase
+                .from('receitas_adubacao')
+                .select('*', { count: 'exact', head: true });
+            
+            if (recError && recError.code !== 'PGRST116') {
+                console.error('Erro prescricoes', recError);
+            }
+
             setTotalUsuarios(total);
             setClientesAtivos(clientes);
             setAgronomosAtivos(agronomos);
-
-            // Dados Fakes removidos conforme solicitação
-            setReceitaMes(0);
-            setChartData([]);
-            setPieData([]);
-            setActivityData([]);
+            setPrescricoesEmitidas(prescricoesCount || 0);
 
         } catch (error) {
             console.error('Erro ao buscar dados do dashboard:', error);
@@ -137,11 +133,11 @@ export default function OverviewScreen() {
                 <div className="glass p-6 rounded-2xl relative overflow-hidden group border-b-4 border-green-500">
                     <div className="flex flex-col">
                         <div className="flex items-center gap-3 mb-2">
-                            <DollarSign className="w-5 h-5 text-green-500" />
-                            <h3 className="text-[var(--color-muted)] font-bold text-sm">Receita (Mês)</h3>
+                            <FileText className="w-5 h-5 text-green-500" />
+                            <h3 className="text-[var(--color-muted)] font-bold text-sm">Prescrições Emitidas</h3>
                         </div>
                         <span className="text-2xl lg:text-3xl font-black text-white break-words">
-                            {loading ? '...' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(receitaMes)}
+                            {loading ? '...' : prescricoesEmitidas}
                         </span>
                     </div>
                 </div>
@@ -195,59 +191,13 @@ export default function OverviewScreen() {
                 </div>
             </div>
 
-            {/* CHARTS AREA */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
-                {/* Chart 1: Receita 6 Meses */}
-                <div className="glass p-6 rounded-2xl">
-                    <h3 className="text-lg font-bold text-white mb-6">Receita dos Últimos 6 Meses</h3>
-                    <div className="h-72 w-full">
-                        {loading ? (
-                            <div className="w-full h-full flex items-center justify-center text-[var(--color-muted)]">Carregando gráfico...</div>
-                        ) : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={chartData} barSize={30}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                    <XAxis dataKey="name" stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val/1000}k`} />
-                                    <Tooltip 
-                                        cursor={{fill: 'rgba(255,255,255,0.02)'}}
-                                        contentStyle={{ backgroundColor: '#152336', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                                        itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-                                        formatter={(value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value as number)}
-                                    />
-                                    <Bar dataKey="receita" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        )}
-                    </div>
-                </div>
-
-                {/* Chart 2: Fluxo de Atividade (Receitas e Visitas) */}
-                <div className="glass p-6 rounded-2xl">
-                    <h3 className="text-lg font-bold text-white mb-6">Atividade da Plataforma (Mês Atual)</h3>
-                    <div className="h-72 w-full">
-                        {loading ? (
-                            <div className="w-full h-full flex items-center justify-center text-[var(--color-muted)]">Carregando gráfico...</div>
-                        ) : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={activityData}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                    <XAxis dataKey="name" stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
-                                    <Tooltip 
-                                        contentStyle={{ backgroundColor: '#152336', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                                        itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-                                    />
-                                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                                    <Line type="monotone" dataKey="receitas" name="Prescrições Emitidas" stroke="#10B981" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} />
-                                    <Line type="monotone" dataKey="visitas" name="Visitas a Campo" stroke="#3B82F6" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        )}
-                    </div>
-                </div>
-
+            {/* CHARTS AREA REMOVIDA - Não temos dados financeiros reais na V1 ainda */}
+            <div className="mt-12 text-center text-[var(--color-muted)] p-8 border border-dashed border-[rgba(255,255,255,0.05)] rounded-2xl">
+                <Activity className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                <h3 className="text-lg font-bold text-white mb-2">Gráficos em Breve</h3>
+                <p className="text-sm max-w-md mx-auto">
+                    Os painéis visuais de faturamento e fluxo de atividade estarão disponíveis após a adoção massiva das rotinas operacionais no campo.
+                </p>
             </div>
 
         </div>

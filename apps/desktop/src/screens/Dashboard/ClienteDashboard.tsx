@@ -18,7 +18,8 @@ import {
     Car,
     ListTodo,
     CloudRain,
-    Sprout
+    Sprout,
+    Users
 } from 'lucide-react';
 import { 
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -223,18 +224,13 @@ export default function ClienteDashboard() {
                 </div>
                 <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(25, 179, 74, 0.3) transparent' }}>
                     {[
+                        { name: 'Consultor', icon: Users, color: 'text-indigo-400', path: '/dashboard/cliente/consultor' },
+                        { name: 'Recomendações', icon: FileText, color: 'text-emerald-400', path: '/dashboard/cliente/recomendacoes' },
                         { name: 'Caderno', icon: FileText, color: 'text-[#19B34A]', path: '/dashboard/cliente/caderno' },
+                        { name: 'Manejo', icon: ListTodo, color: 'text-[#19B34A]', path: '/dashboard/cliente/manejo' },
                         { name: 'Colheita', icon: Sprout, color: 'text-[#19B34A]', path: '/dashboard/cliente/colheita' },
                         { name: 'Vendas', icon: Store, color: 'text-[#19B34A]', path: '/dashboard/cliente/vendas' },
-                        { name: 'Estoque', icon: Package, color: 'text-gray-400', path: '/dashboard/cliente/estoque' },
                         { name: 'Monitorar', icon: MapIcon, color: 'text-blue-500', path: '/dashboard/cliente/areas' },
-                        { name: 'Manejo', icon: ListTodo, color: 'text-[#19B34A]', path: '/dashboard/cliente/manejo' },
-                        { name: 'Compras', icon: ShoppingCart, color: 'text-orange-500', path: '/dashboard/cliente/compras' },
-                        { name: 'Plantio', icon: Sprout, color: 'text-[#19B34A]', path: '/dashboard/cliente/plantio' },
-                        { name: 'Custos', icon: DollarSign, color: 'text-red-500', path: '/dashboard/cliente/financeiro' },
-                        { name: 'Descarte', icon: AlertTriangle, color: 'text-red-500', path: '/dashboard/cliente/descarte' },
-                        { name: 'Frota', icon: Car, color: 'text-gray-400', path: '/dashboard/cliente/frota' },
-                        { name: 'Sync', icon: CloudRain, color: 'text-blue-400', path: '/dashboard/cliente/sync' },
                     ].map((item, i) => (
                         <button 
                             key={i}

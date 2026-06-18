@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Dimensions, StatusBar, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Dimensions, StatusBar, SafeAreaView , KeyboardAvoidingView, Platform} from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertCompra, getComprasRecentes, updateCompra, deleteCompra, executeQuery, atualizarEstoque, inserirAlerta } from '../database/database';
 import { SyncWorker } from '../services/SyncWorker';
@@ -162,7 +162,9 @@ export default function ComprasScreen({ navigation }) {
     const borderCol = 'rgba(255,255,255,0.05)';
 
     return (
-        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#0B121E' }]}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: theme?.colors?.bg || '#0F172A' }}>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex: 1}}>
+                <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#0B121E' }]}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
             <LinearGradient colors={['#111827', '#0F172A']} style={styles.header}>
                 <SafeAreaView>
@@ -277,6 +279,8 @@ export default function ComprasScreen({ navigation }) {
 
             
         </View>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 }
 

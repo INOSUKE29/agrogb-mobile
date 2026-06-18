@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, StatusBar, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, StatusBar, SafeAreaView , KeyboardAvoidingView, Platform} from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertVenda, getVendasRecentes, deleteVenda, updateVenda, executeQuery, atualizarEstoque, inserirAlerta } from '../database/database';
 import { SyncWorker } from '../services/SyncWorker';
@@ -153,7 +153,9 @@ export default function VendasScreen({ navigation }) {
     }
 
     return (
-        <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#0B121E' }]}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: activeColors.bg || '#0B121E' }}>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex: 1}}>
+                <View style={[styles.container, { backgroundColor: theme?.colors?.bg || '#0B121E' }]}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
             <LinearGradient colors={['#111827', '#0F172A']} style={styles.header}>
                 <SafeAreaView>
@@ -285,6 +287,8 @@ export default function VendasScreen({ navigation }) {
 
             
         </View>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 }
 

@@ -1,12 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { StyleSheet, View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    StatusBar,
-    Platform,
-    ScrollView,
-    ActivityIndicator, } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, StatusBar, Platform, ScrollView, ActivityIndicator } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { executeQuery } from '../database/database';
 import { Ionicons } from '@expo/vector-icons';

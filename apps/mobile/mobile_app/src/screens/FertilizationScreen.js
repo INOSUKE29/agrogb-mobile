@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    SafeAreaView, StatusBar, Dimensions } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, SafeAreaView, StatusBar, Dimensions } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';

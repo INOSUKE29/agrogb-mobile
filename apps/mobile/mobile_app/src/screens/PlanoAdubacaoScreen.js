@@ -1,12 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { StyleSheet, View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  StatusBar,
-  RefreshControl } from 'react-native';
+import { StyleSheet, View, Text, FlatList, TouchableOpacity, Alert, StatusBar, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { executeQuery } from "../database/database";

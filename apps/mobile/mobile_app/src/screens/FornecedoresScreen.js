@@ -1,14 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, 
-    Text, 
-    StyleSheet, 
-    FlatList, 
-    TouchableOpacity, 
-    Modal, 
-    Alert,
-    StatusBar,
-    SafeAreaView,
-    ScrollView } from 'react-native';
+import { StyleSheet, View, Text, FlatList, TouchableOpacity, Modal, Alert, StatusBar, SafeAreaView, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme/ThemeContext';

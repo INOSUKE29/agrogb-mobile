@@ -12,6 +12,7 @@ import { useTheme } from '../theme/ThemeContext';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
 import AgroOptionsModal from '../components/common/AgroOptionsModal';
+import AgroStateOverlay from '../components/common/AgroStateOverlay';
 
 const { width } = Dimensions.get('window');
 
@@ -275,13 +276,16 @@ export default function CulturasScreen({ navigation }) {
                             </LinearGradient>
                         </TouchableOpacity>
                     )}
-                    ListEmptyComponent={
-                        <View style={styles.emptyBox}>
-                            <MaterialCommunityIcons name="sprout-outline" size={60} color="#374151" />
-                            <Text style={styles.emptyTxt}>Nenhuma cultura encontrada.</Text>
-                        </View>
-                    }
-                />
+                contentContainerStyle={plantings.length === 0 ? {flex: 1} : { paddingBottom: 100 }}
+                ListEmptyComponent={
+                    <AgroStateOverlay 
+                        state="empty" 
+                        message="Você ainda não cadastrou nenhuma cultura. Cadastre sua primeira safra ou cultura para iniciar o ciclo de manejo e acompanhamento."
+                        icon="leaf-outline"
+                        onRetry={() => { resetForm(); setModalVisible(true); }}
+                    />
+                }
+            />
             )}
 
             <TouchableOpacity style={styles.fab} onPress={() => { resetForm(); setModalVisible(true); }}>

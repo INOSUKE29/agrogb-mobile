@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, 
     Text, 
-    StyleSheet, 
     FlatList, 
     TouchableOpacity, 
     Modal, 
@@ -15,6 +14,7 @@ import Card from '../components/common/Card';
 import AgroButton from '../components/common/AgroButton';
 import AgroInput from '../components/common/AgroInput';
 import AgroOptionsModal from '../components/common/AgroOptionsModal';
+import AgroStateOverlay from '../components/common/AgroStateOverlay';
 
 const SCREEN_VERSION = 'v2.0.0';
 
@@ -125,8 +125,15 @@ export default function TalhoesScreen({ navigation }) {
                     maxToRenderPerBatch={10}
                     windowSize={5}
                     removeClippedSubviews={true}
-                contentContainerStyle={styles.list}
-                ListEmptyComponent={<Text style={styles.empty}>Nenhum talhão cadastrado.</Text>}
+                contentContainerStyle={talhoes.length === 0 ? {flex: 1} : styles.list}
+                ListEmptyComponent={
+                    <AgroStateOverlay 
+                        state="empty" 
+                        message="Você ainda não tem nenhum talhão cadastrado. Adicione um novo talhão para começar a monitorar a fazenda."
+                        icon="leaf-outline"
+                        onRetry={() => { setEditItem(null); setForm({ nome: '', area_ha: '', observacao: '' }); setModalVisible(true); }}
+                    />
+                }
 
             />
 
