@@ -237,7 +237,7 @@ export default function CulturasScreen({ navigation }) {
                     windowSize={5}
                     removeClippedSubviews={true}
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.list}
+                    contentContainerStyle={plantings.length === 0 ? {flex: 1} : { paddingBottom: 100 }}
                     renderItem={({ item }) => (
                         <TouchableOpacity 
                             activeOpacity={0.8}
@@ -276,7 +276,6 @@ export default function CulturasScreen({ navigation }) {
                             </LinearGradient>
                         </TouchableOpacity>
                     )}
-                contentContainerStyle={plantings.length === 0 ? {flex: 1} : { paddingBottom: 100 }}
                 ListEmptyComponent={
                     <AgroStateOverlay 
                         state="empty" 
