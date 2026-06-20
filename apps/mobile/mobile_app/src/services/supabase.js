@@ -5,7 +5,7 @@ import { executeQuery } from '../database/database';
 
 // ⚠️ CHAVES REAIS DO SUPABASE (RECUPERADAS HISTORICAMENTE) ⚠️
 const SUPABASE_URL = 'https://uklygrvibmiknwarzqap.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_6e3KZkbHgcfd_-xaOeIBLA_2AJeN9Ew';
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_6e3KZkbHgcfd_-xaOeIBLA_2AJeN9Ew';
 
 let supabaseInstance = null;
 

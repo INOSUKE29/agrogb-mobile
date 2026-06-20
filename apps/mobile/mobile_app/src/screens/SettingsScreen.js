@@ -26,7 +26,7 @@ import AgroInput from '../components/common/AgroInput';
 import Card from '../components/common/Card';
 
 const { width } = Dimensions.get('window');
-const BIO_KEY = 'agrogb_biometric_credentials';
+const BIO_STORE_ID = 'agrogb_biometric_credentials';
 
 export default function SettingsScreen({ navigation }) {
     const { theme, saveTheme } = useTheme();
@@ -202,7 +202,7 @@ export default function SettingsScreen({ navigation }) {
 
         if (biometryInfo.enrolled) {
             await StorageHelper.remove('@asked_biometrics');
-            await SecureStore.deleteItemAsync(BIO_KEY).catch(()=>{});
+            await SecureStore.deleteItemAsync(BIO_STORE_ID).catch(()=>{});
             showToast('Biometria desativada');
             loadData();
         } else {

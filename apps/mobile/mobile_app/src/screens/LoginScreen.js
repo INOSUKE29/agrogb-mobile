@@ -18,7 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 const { width, height } = Dimensions.get('window');
 const LOGO = require('../../assets/icon.png');
 const RURAL_BG = require('../../assets/farm_bg.png');
-const BIO_KEY = 'agrogb_biometric_credentials';
+const AGROGB_BIO_STORAGE = 'agrogb_biometric_credentials';
 
 const withTimeout = (promise, ms) => {
     return new Promise((resolve, reject) => {
@@ -130,7 +130,7 @@ export default function LoginScreen({ navigation }) {
         // MAS não forçaremos o auto-login imediato para evitar o loop de "Sessão Zumbi" após logout.
         // O usuário precisará clicar explicitamente em "Entrar com Biometria".
         try {
-            const bioCreds = await SecureStore.getItemAsync(BIO_KEY);
+            const bioCreds = await SecureStore.getItemAsync(AGROGB_BIO_STORAGE);
             if (bioCreds && isBiometricSupported) {
                 console.log('Chave biométrica detectada. O usuário pode usá-la se quiser, mas sem auto-login invasivo.');
             }
@@ -346,7 +346,7 @@ export default function LoginScreen({ navigation }) {
             // Pergunta biometria se aplicável
             if (!bypassBiometricPrompt && isBiometricSupported) {
                 try {
-                    const bioEnabled = await SecureStore.getItemAsync(BIO_KEY);
+                    const bioEnabled = await SecureStore.getItemAsync(AGROGB_BIO_STORAGE);
                     if (!bioEnabled) {
                         Alert.alert(
                             '🚀 Acesso Rápido',
@@ -363,7 +363,7 @@ export default function LoginScreen({ navigation }) {
                                                 promptMessage: 'Confirme sua biometria para ativar',
                                             });
                                             if (auth.success) {
-                                                await SecureStore.setItemAsync(BIO_KEY, JSON.stringify({ usuario: userTrim, senha: passTrim }), {
+                                                await SecureStore.setItemAsync(AGROGB_BIO_STORAGE, JSON.stringify({ usuario: userTrim, senha: passTrim }), {
                                                     keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY
                                                 });
                                                 Alert.alert('Sucesso', 'Login biométrico ativado!', [{
@@ -423,7 +423,7 @@ export default function LoginScreen({ navigation }) {
             setLoadingState('Lendo Cofre...');
             let rawCreds = null;
             try {
-                rawCreds = await SecureStore.getItemAsync(BIO_KEY);
+                rawCreds = await SecureStore.getItemAsync(AGROGB_BIO_STORAGE);
             } catch (secErr) {
                 console.log('Erro crítico no SecureStore:', secErr.message);
                 if (secErr.message && secErr.message.includes('Could not decrypt')) {
@@ -511,7 +511,7 @@ export default function LoginScreen({ navigation }) {
             let storeStatus = 'OK';
             let bioKeyPresent = false;
             try {
-                const val = await SecureStore.getItemAsync(BIO_KEY);
+                const val = await SecureStore.getItemAsync(AGROGB_BIO_STORAGE);
                 if (val) bioKeyPresent = true;
             } catch (e) {
                 storeStatus = 'CORROMPIDO (' + e.message + ')';
@@ -740,7 +740,7 @@ export default function LoginScreen({ navigation }) {
                         <View style={[styles.masterBtnRow, { marginTop: 15 }]}>
                             <TouchableOpacity 
                                 onPress={async () => {
-                                    await SecureStore.deleteItemAsync(BIO_KEY).catch(()=>{});
+                                    await SecureStore.deleteItemAsync(AGROGB_BIO_STORAGE).catch(()=>{});
                                     await AsyncStorage.removeItem('user_session').catch(()=>{});
                                     Alert.alert('Sucesso', 'Chaves limpas forçadamente.');
                                     gatherDiagnosticData();

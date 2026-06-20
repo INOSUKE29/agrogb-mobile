@@ -1,10 +1,9 @@
 import React from 'react';
-import { StyleSheet, View,
+import { StyleSheet,  View,
     Text,
-    StyleSheet,
     Modal,
     TouchableOpacity,
-    Dimensions } from 'react-native';
+    Dimensions  } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
 
 const { width } = Dimensions.get('window');

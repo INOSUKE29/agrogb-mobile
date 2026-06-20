@@ -15,7 +15,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
 
 const { width } = Dimensions.get('window');
-const BIO_KEY = 'agrogb_biometric_credentials';
+const BIO_STORE_ID = 'agrogb_biometric_credentials';
 
 export default function SyncScreen({ navigation }) {
     const { theme, saveTheme } = useTheme();
@@ -47,7 +47,7 @@ export default function SyncScreen({ navigation }) {
     const checkBiometrics = async () => {
         const compatible = await LocalAuthentication.hasHardwareAsync();
         setHasBioHardware(compatible);
-        const bio = await SecureStore.getItemAsync(BIO_KEY);
+        const bio = await SecureStore.getItemAsync(BIO_STORE_ID);
         setIsBioEnabled(!!bio);
     };
 
@@ -364,7 +364,7 @@ export default function SyncScreen({ navigation }) {
                                 color={isBioEnabled ? '#374151' : '#10B981'}
                                 onPress={async () => {
                                     if (isBioEnabled) {
-                                        await SecureStore.deleteItemAsync(BIO_KEY);
+                                        await SecureStore.deleteItemAsync(BIO_STORE_ID);
                                         setIsBioEnabled(false);
                                         Alert.alert('Sucesso', 'Biometria desativada. Use sua senha no próximo login.');
                                         setActiveModal(null);

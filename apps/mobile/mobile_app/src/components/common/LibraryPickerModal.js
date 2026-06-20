@@ -1,8 +1,7 @@
 // LibraryPickerModal.js - Frosted Glassmorphism Bottom Sheet for Smart Selection, Recents, Favorites, and Quick Adds
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, 
+import { StyleSheet,  View, 
     Text, 
-    StyleSheet, 
     Modal, 
     TouchableOpacity, 
     TextInput, 
@@ -10,7 +9,7 @@ import { StyleSheet, View,
     ActivityIndicator, 
     KeyboardAvoidingView, 
     Platform,
-    ScrollView } from 'react-native';
+    ScrollView  } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
 import { BlurView } from 'expo-blur';

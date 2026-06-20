@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, StyleSheet, Modal, TouchableOpacity, 
+import { StyleSheet,  View, Text, Modal, TouchableOpacity, 
     TextInput, FlatList, ActivityIndicator, KeyboardAvoidingView, 
-    Platform } from 'react-native';
+    Platform  } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../styles/globalStyles';
 import Button from './Button';
