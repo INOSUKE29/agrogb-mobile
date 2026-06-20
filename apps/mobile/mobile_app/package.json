@@ -18,6 +18,7 @@
     "test:watch": "jest --watch",
     "verify": "node scripts/prebuild-check.js",
     "prepare": "echo 'Husky disabled for mass refactoring'",
+    "postinstall": "node scripts/patch_expo_gradle.js",
     "lint-staged": "eslint ."
   },
   "dependencies": {

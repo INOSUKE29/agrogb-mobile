@@ -56,11 +56,9 @@ jobs:
       - name: 🏗️ Construindo o APK Release
         working-directory: apps/mobile/mobile_app/android
         run: |
-          # Remoção de limites de lint e injeção do R8 Full Mode
-          echo "android { lintOptions { checkReleaseBuilds false; abortOnError false } }" >> app/build.gradle
+          # Remoção de limites de lint (Formato AGP 8+)
+          echo "android { lint { checkReleaseBuilds false; abortOnError false } }" >> app/build.gradle
           echo "" >> gradle.properties
-          echo "android.enableR8.fullMode=true" >> gradle.properties
-          
           chmod +x ./gradlew
           ./gradlew assembleRelease --stacktrace
 
