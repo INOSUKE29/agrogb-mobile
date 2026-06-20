@@ -709,11 +709,12 @@ export default function AdminCatalogScreen() {
                 onClose={() => setEditingApproval(null)}
                 title="Revisar Sugestão"
             >
-                <div className="space-y-4">
-                            <div>
-                                <label className="text-xs text-[var(--color-muted)] font-bold uppercase">Nome do Produto</label>
-                                <input type="text" value={String(editingApproval.nome || '')} onChange={e => setEditingApproval({...editingApproval, nome: e.target.value.toUpperCase()})} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-2 mt-1 focus:ring-2 focus:ring-indigo-500 outline-none" />
-                            </div>
+                {editingApproval && (
+                    <div className="space-y-4">
+                        <div>
+                            <label className="text-xs text-[var(--color-muted)] font-bold uppercase">Nome do Produto</label>
+                            <input type="text" value={String(editingApproval.nome || '')} onChange={e => setEditingApproval({...editingApproval, nome: e.target.value.toUpperCase()})} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-2 mt-1 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                        </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-xs text-[var(--color-muted)] font-bold uppercase">Categoria</label>
@@ -772,7 +773,8 @@ export default function AdminCatalogScreen() {
                                     Salvar Alterações
                                 </button>
                             </div>
-                        </div>
+                    </div>
+                )}
             </DraggableModal>
         </div>
     );

@@ -1,0 +1,161 @@
+{
+  "total_count": 1,
+  "jobs": [
+    {
+      "id": 82516531350,
+      "run_id": 27884116870,
+      "workflow_name": "Fábrica de APK - AgroGB",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/INOSUKE29/agrogb-mobile/actions/runs/27884116870",
+      "run_attempt": 1,
+      "node_id": "CR_kwDORICSsM8AAAATNl5Ylg",
+      "head_sha": "8af0757541e3b579e675a1f942758a58ad9cbba8",
+      "url": "https://api.github.com/repos/INOSUKE29/agrogb-mobile/actions/jobs/82516531350",
+      "html_url": "https://github.com/INOSUKE29/agrogb-mobile/actions/runs/27884116870/job/82516531350",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-06-20T21:16:16Z",
+      "started_at": "2026-06-20T21:16:18Z",
+      "completed_at": "2026-06-20T21:26:32Z",
+      "name": "Gerar APK Android via Gradle",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-06-20T21:16:18Z",
+          "completed_at": "2026-06-20T21:16:21Z"
+        },
+        {
+          "name": "📥 Baixando o Código do Repositório",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-06-20T21:16:21Z",
+          "completed_at": "2026-06-20T21:16:26Z"
+        },
+        {
+          "name": "☕ Configurando Java 17",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-06-20T21:16:26Z",
+          "completed_at": "2026-06-20T21:16:26Z"
+        },
+        {
+          "name": "⚙️ Preparando NodeJS",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-06-20T21:16:26Z",
+          "completed_at": "2026-06-20T21:16:33Z"
+        },
+        {
+          "name": "📦 Instalando Dependências do AgroGB",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-06-20T21:16:33Z",
+          "completed_at": "2026-06-20T21:16:53Z"
+        },
+        {
+          "name": "🧹 Limpando Cache do Metro",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-06-20T21:16:53Z",
+          "completed_at": "2026-06-20T21:16:53Z"
+        },
+        {
+          "name": "🚀 Gerando Código Nativo Android (Expo Prebuild)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-06-20T21:16:53Z",
+          "completed_at": "2026-06-20T21:17:00Z"
+        },
+        {
+          "name": "⚡ Configurando Gradle Cache Avançado",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-06-20T21:17:00Z",
+          "completed_at": "2026-06-20T21:17:00Z"
+        },
+        {
+          "name": "🏗️ Construindo o APK Release",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 9,
+          "started_at": "2026-06-20T21:17:00Z",
+          "completed_at": "2026-06-20T21:26:19Z"
+        },
+        {
+          "name": "🔐 Processando Keystore Dinâmico e Otimizando (Zipalign + Signer)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 10,
+          "started_at": "2026-06-20T21:26:19Z",
+          "completed_at": "2026-06-20T21:26:19Z"
+        },
+        {
+          "name": "📤 Salvando o APK Otimizado no GitHub",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 11,
+          "started_at": "2026-06-20T21:26:19Z",
+          "completed_at": "2026-06-20T21:26:19Z"
+        },
+        {
+          "name": "Post ⚡ Configurando Gradle Cache Avançado",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19,
+          "started_at": "2026-06-20T21:26:19Z",
+          "completed_at": "2026-06-20T21:26:29Z"
+        },
+        {
+          "name": "Post ⚙️ Preparando NodeJS",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 20,
+          "started_at": "2026-06-20T21:26:29Z",
+          "completed_at": "2026-06-20T21:26:29Z"
+        },
+        {
+          "name": "Post ☕ Configurando Java 17",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21,
+          "started_at": "2026-06-20T21:26:29Z",
+          "completed_at": "2026-06-20T21:26:30Z"
+        },
+        {
+          "name": "Post 📥 Baixando o Código do Repositório",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 22,
+          "started_at": "2026-06-20T21:26:30Z",
+          "completed_at": "2026-06-20T21:26:30Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 23,
+          "started_at": "2026-06-20T21:26:30Z",
+          "completed_at": "2026-06-20T21:26:30Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/INOSUKE29/agrogb-mobile/check-runs/82516531350",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000000594,
+      "runner_name": "GitHub Actions 1000000594",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    }
+  ]
+}
