@@ -50,6 +50,7 @@ function App() {
         <div className="text-foreground bg-background transition-colors duration-300" style={{ height: '100vh', width: '100vw', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <Toaster 
           position="top-right" 
+          containerStyle={{ zIndex: 99999 }}
           toastOptions={{
             className: 'glass text-white border border-[var(--color-border)]',
             style: {
@@ -92,6 +93,9 @@ function App() {
               <Route path="agronomo/relatorios" element={<RelatoriosScreen />} />
               <Route path="agronomo/analises" element={<AnalisesScreen />} />
               <Route path="agronomo/notificacoes" element={<NotificacoesFullScreen />} />
+              <Route path="agronomo/receituarios" element={<div className="text-white p-8">Em breve: Emissão de Receituários</div>} />
+              <Route path="agronomo/biblioteca" element={<div className="text-white p-8">Em breve: Biblioteca Técnica</div>} />
+              <Route path="agronomo/preferencias" element={<div className="text-white p-8">Em breve: Preferências do Agrônomo</div>} />
               {/* PORTAL CLIENTE (PRODUTOR) */}
               <Route path="cliente" element={<ClienteDashboard />} />
               <Route path="cliente/relatorios" element={<RelatoriosScreen />} />

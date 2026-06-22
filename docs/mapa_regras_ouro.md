@@ -41,3 +41,18 @@ Para mantermos a aplicação Desktop em nível premium, as seguintes regras deve
 
 ### 4. Preservação de Regras Nativas
 - **A Regra:** Ao migrar ou espelhar telas do Mobile para o Desktop, as lógicas vitais de inserção de banco de dados (ex: Subtração do saldo do Talhão após Colheita, Validação de Congelamento) devem ser copiadas 1:1. Nunca simplifique o fluxo sacrificando dados do banco.
+
+### 5. Campos de Seleção Inteligentes (SearchableSelect)
+- **A Regra:** Não utilizar mais as tags nativas `<select>` do HTML que forçam o usuário a rolar listas infinitas manualmente.
+- **A Solução:** Padronizar o uso do componente `<SearchableSelect />` para **todos** os campos de escolha no sistema.
+- **Benefício:** Oferece ao usuário a dupla capacidade de clicar para ver a lista (comum) e digitar para buscar instantaneamente (autocomplete). Quando conectado à Biblioteca Global, permite cruzar buscas locais e globais na mesma experiência.
+
+### 6. Fluxo de Inserção Local-Global (Crowdsourcing)
+- **A Regra:** Sempre que o usuário adicionar um item inédito (que não está na Biblioteca Global nem na sua base local), o sistema **não** pode criar mágica invisível. Deve abrir um modal rápido (`QuickAddModal`) para coletar os dados básicos.
+- **A Solução:** Salvar imediatamente na base local para uso instantâneo, e disparar com `status_aprovacao = 'PENDENTE'` para a Biblioteca Global (Portal Admin).
+- **Benefício:** O usuário não tem o trabalho interrompido, enquanto a IA do Admin continua curando a qualidade dos dados do sistema.
+
+### 7. Padronização em MAIÚSCULAS
+- **A Regra:** Todo formulário de entrada textual relacionado a cadastros (Culturas, Produtos, Talhões) deve forçar a padronização das letras em CAIXA ALTA (`.toUpperCase()`).
+- **A Solução:** Tratar isso diretamente nos componentes base, como o `SearchableSelect`, tanto no momento da digitação quanto da gravação.
+- **Benefício:** Elimina a bagunça no banco de dados e problemas de chaves duplicadas por sensibilidade a maiúsculas/minúsculas.

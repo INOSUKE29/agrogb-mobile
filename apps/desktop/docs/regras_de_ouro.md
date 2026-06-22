@@ -40,3 +40,12 @@ Não crie telas separadas para "Planejar" e "Executar" se a ação no campo for 
 ## 8. Evitar Dados Falsos e Lúdicos
 O sistema é para uso real.
 - Em Dashboards e Visões Administrativas, prefira mostrar um número "0" ou omitir um gráfico do que colocar dados "mock" fakes de milhares de reais que poluem a visão. Foque nos cadastros e dados reais do banco (ex: Total de Usuários Ativos).
+
+## 9. Fluxo de Crowdsourcing e Componentes Inteligentes (Desktop)
+- **NUNCA** use tags nativas `<select>` do HTML que geram rolagem infinita. Use o componente `<SearchableSelect />` padronizado.
+- **Gatilho de Inserção:** Ao tentar adicionar um item que não existe na lista local/global, o sistema deve SEMPRE abrir o `<QuickAddModal />` (ou equivalente) para capturar o "Nome" e "Categoria".
+- **Salvamento Duplo:** A inserção desse novo item deve salvar localmente para uso imediato do produtor E salvar com `status_aprovacao = 'PENDENTE'` na Biblioteca Global (Portal Admin). Mágicas invisíveis que apenas gravam texto livre no banco sem estruturar a informação são terminantemente proibidas.
+
+## 10. Integridade de Dados: Padronização Maiúscula
+- **Regra:** Todo texto de entrada que alimentar os bancos de dados do AgroGB, especialmente as tabelas de Cadastros e Dicionários Globais (como Culturas, Produtos, Talhões, Nomes Oficiais), deve ser convertido usando `.toUpperCase()` obrigatoriamente.
+- Não permita que o produtor ou o sistema salvem "banana" e "Banana" em locais diferentes. Isso gera poluição irreparável na Inteligência do Sistema.

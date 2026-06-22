@@ -35,11 +35,11 @@ export const MenuConfigService = {
     /**
      * Obtém toda a configuração remota (Menu + Features).
      */
-    getRemoteConfig: async () => {
+    getRemoteConfig: async (role = 'AGRICULTOR') => {
         try {
             // 1. Cache Local (Rápido)
             const cached = await AsyncStorage.getItem(CACHE_KEY);
-            let config = cached ? JSON.parse(cached) : DEFAULT_CONFIG;
+            let config = cached ? JSON.parse(cached) : JSON.parse(JSON.stringify(DEFAULT_CONFIG));
 
             // 2. Fetch Remote (Simulado ou Real)
             // Aqui entraria: remoteConfig().fetchAndActivate()...
@@ -48,6 +48,21 @@ export const MenuConfigService = {
             // Garantir que monitoramento_features exista (fallback)
             if (!config.monitoramento_features) {
                 config.monitoramento_features = DEFAULT_CONFIG.monitoramento_features;
+            }
+
+            // Separação de Perfis:
+            if (role === 'AGRONOMO') {
+                config.menu_items = [
+                    { id: "clientes", label: "Clientes", icon: "people-outline", screen: "Clientes", color: "#3B82F6", enabled: true },
+                    { id: "visitas", label: "Visitas", icon: "calendar-outline", screen: "CadernoCampo", color: "#10B981", enabled: true }, 
+                    { id: "monitoramento", label: "Monitorar", icon: "camera-outline", screen: "Monitoramento", color: "#EC4899", enabled: true },
+                    { id: "analises", label: "Análises", icon: "flask-outline", screen: "AnalisesSolo", color: "#8B5CF6", enabled: true },
+                    { id: "recomendacoes", label: "Recomendar", icon: "leaf-outline", screen: "CreateRecommendation", color: "#059669", enabled: true },
+                    { id: "relatorios", label: "Relatórios", icon: "pie-chart-outline", screen: "Relatorios", color: "#374151", enabled: true },
+                    { id: "sync", label: "Sync", icon: "cloud-upload-outline", screen: "Sync", color: "#6366F1", enabled: true }
+                ];
+            } else {
+                 config.menu_items = DEFAULT_CONFIG.menu_items; // Produtor tem tudo (ou fallback do cache remoto)
             }
 
             return config;
@@ -66,8 +81,8 @@ export const MenuConfigService = {
     },
 
     // Mantendo compatibilidade com código anterior
-    getMenuConfig: async () => {
-        return MenuConfigService.getRemoteConfig();
+    getMenuConfig: async (role = 'AGRICULTOR') => {
+        return MenuConfigService.getRemoteConfig(role);
     },
 
     resetConfig: async () => {

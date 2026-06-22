@@ -74,7 +74,7 @@ export default function DraggableModal({
     const modalContent = (
         // Overlay (blocks clicks underneath)
         <div 
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in pointer-events-auto"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-transparent p-4 animate-fade-in pointer-events-auto"
             onClick={onClose}
         >
             {/* Draggable Container */}

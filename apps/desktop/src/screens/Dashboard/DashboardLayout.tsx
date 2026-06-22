@@ -125,15 +125,17 @@ export default function DashboardLayout() {
     const getNavItems = (role: string): NavItem[] => {
         if (role === 'AGRONOMO') {
             return [
-                { path: '/dashboard/agronomo', label: 'Dashboard', icon: LayoutDashboard },
+                { path: '/dashboard/agronomo', label: 'Dashboard Técnico', icon: LayoutDashboard },
                 { path: '/dashboard/agronomo/clientes', label: 'Clientes', icon: Users },
-                { path: '/dashboard/agronomo/visitas', label: 'Visitas (Agenda)', icon: Calendar },
+                { path: '/dashboard/agronomo/visitas', label: 'Agenda / Visitas', icon: Calendar },
                 { path: '/dashboard/agronomo/monitoramentos', label: 'Monitoramentos', icon: Leaf },
                 { path: '/dashboard/agronomo/analises', label: 'Análises', icon: Activity },
+                { path: '/dashboard/agronomo/receituarios', label: 'Receituários', icon: FileText },
                 { path: '/dashboard/agronomo/recomendacoes', label: 'Recomendações', icon: Sprout },
-                { path: '/dashboard/agronomo/relatorios', label: 'Relatórios', icon: ListTodo },
+                { path: '/dashboard/agronomo/biblioteca', label: 'Biblioteca Técnica', icon: Database },
+                { path: '/dashboard/agronomo/relatorios', label: 'Relatórios Técnicos', icon: ListTodo },
                 { path: '/dashboard/agronomo/notificacoes', label: 'Notificações', icon: Bell },
-                { path: '/dashboard/configuracoes', label: 'Preferências', icon: Settings },
+                { path: '/dashboard/agronomo/preferencias', label: 'Preferências', icon: Settings },
             ];
         } else if (role === 'CLIENTE') {
             return [

@@ -15,6 +15,8 @@ import {
 import toast from 'react-hot-toast';
 import DraggableModal from '../../components/common/DraggableModal';
 import FrotaScreen from './FrotaScreen';
+import SearchableSelect from '../../components/common/SearchableSelect';
+import QuickAddModal from '../../components/common/QuickAddModal';
 
 export default function HarvestScreen() {
     const [loading, setLoading] = useState(true);
@@ -47,6 +49,11 @@ export default function HarvestScreen() {
     const [descQtd, setDescQtd] = useState('');
     const [descMotivo, setDescMotivo] = useState('');
     const [descObs, setDescObs] = useState('');
+
+    // Quick Add Modal State
+    const [quickAddOpen, setQuickAddOpen] = useState(false);
+    const [quickAddName, setQuickAddName] = useState('');
+    const [quickAddType, setQuickAddType] = useState<'PRODUTO' | 'TALHAO'>('PRODUTO');
 
     const fetchDados = async () => {
         setLoading(true);
@@ -91,8 +98,7 @@ export default function HarvestScreen() {
         }
     };
 
-    const handleProdutoSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const prodName = e.target.value;
+    const handleProdutoSelect = (prodName: string) => {
         setProduto(prodName);
         
         const selectedProd = culturas.find(c => c.nome === prodName);
@@ -102,6 +108,18 @@ export default function HarvestScreen() {
         if (qtdCaixas) {
             setQuantidade((parseFloat(qtdCaixas) * factor).toFixed(2));
         }
+    };
+
+    const handleAddCustomProduto = (val: string) => {
+        setQuickAddName(val);
+        setQuickAddType('PRODUTO');
+        setQuickAddOpen(true);
+    };
+
+    const handleAddCustomTalhao = (val: string) => {
+        setQuickAddName(val);
+        setQuickAddType('TALHAO');
+        setQuickAddOpen(true);
     };
 
     const addHarvestItem = () => {
@@ -307,10 +325,13 @@ export default function HarvestScreen() {
                             <div>
                                 <h3 className="text-sm font-black text-[var(--color-muted)] uppercase tracking-wider mb-4 border-b border-white/5 pb-2">1. Onde? (Localização)</h3>
                                 <label className="block text-xs font-bold text-[var(--color-muted)] mb-1 uppercase">Local / Área *</label>
-                                <select value={talhao} onChange={e => setTalhao(e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white font-bold outline-none focus:border-green-500">
-                                    <option value="">Selecione o talhão...</option>
-                                    {talhoes.map(t => <option key={t.id} value={t.nome}>{t.nome}</option>)}
-                                </select>
+                                <SearchableSelect 
+                                    options={talhoes.map(t => ({ label: t.nome, value: t.nome }))}
+                                    value={talhao}
+                                    onChange={setTalhao}
+                                    placeholder="Selecione o talhão..."
+                                    onAddCustom={handleAddCustomTalhao}
+                                />
                             </div>
 
                             <div>
@@ -318,10 +339,13 @@ export default function HarvestScreen() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                     <div>
                                         <label className="block text-xs font-bold text-[var(--color-muted)] mb-1 uppercase">Variedade / Produto *</label>
-                                        <select value={produto} onChange={handleProdutoSelect} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white font-bold outline-none focus:border-green-500">
-                                            <option value="">Selecione o produto...</option>
-                                            {culturas.map(c => <option key={c.id || c.uuid} value={c.nome}>{c.nome}</option>)}
-                                        </select>
+                                        <SearchableSelect 
+                                            options={culturas.map(c => ({ label: c.nome, value: c.nome }))}
+                                            value={produto}
+                                            onChange={handleProdutoSelect}
+                                            placeholder="Selecione o produto..."
+                                            onAddCustom={handleAddCustomProduto}
+                                        />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
@@ -379,17 +403,23 @@ export default function HarvestScreen() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-[var(--color-muted)] mb-1 uppercase">Localização / Talhão *</label>
-                                    <select value={congTalhao} onChange={e => setCongTalhao(e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white font-bold outline-none focus:border-blue-500">
-                                        <option value="">Selecione...</option>
-                                        {talhoes.map(t => <option key={t.id} value={t.nome}>{t.nome}</option>)}
-                                    </select>
+                                    <SearchableSelect 
+                                        options={talhoes.map(t => ({ label: t.nome, value: t.nome }))}
+                                        value={congTalhao}
+                                        onChange={setCongTalhao}
+                                        placeholder="Selecione o talhão..."
+                                        onAddCustom={handleAddCustomTalhao}
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-[var(--color-muted)] mb-1 uppercase">Produto *</label>
-                                    <select value={congProduto} onChange={e => setCongProduto(e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white font-bold outline-none focus:border-blue-500">
-                                        <option value="">Selecione...</option>
-                                        {culturas.map(c => <option key={c.id || c.uuid} value={c.nome}>{c.nome}</option>)}
-                                    </select>
+                                    <SearchableSelect 
+                                        options={culturas.map(c => ({ label: c.nome, value: c.nome }))}
+                                        value={congProduto}
+                                        onChange={setCongProduto}
+                                        placeholder="Selecione o produto..."
+                                        onAddCustom={handleAddCustomProduto}
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-[var(--color-muted)] mb-1 uppercase">Quantidade a Congelar (Kg) *</label>
@@ -414,10 +444,13 @@ export default function HarvestScreen() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-xs font-bold text-[var(--color-muted)] uppercase mb-2">Qual Talhão? *</label>
-                                    <select value={descProduto} onChange={e => setDescProduto(e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white font-bold outline-none focus:border-red-500">
-                                        <option value="">Selecione...</option>
-                                        {culturas.map(c => <option key={c.id || c.uuid} value={c.nome}>{c.nome}</option>)}
-                                    </select>
+                                    <SearchableSelect 
+                                        options={culturas.map(c => ({ label: c.nome, value: c.nome }))}
+                                        value={descProduto}
+                                        onChange={setDescProduto}
+                                        placeholder="Selecione o produto..."
+                                        onAddCustom={handleAddCustomProduto}
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-[var(--color-muted)] mb-1 uppercase">Qtd Descartada (Kg) *</label>

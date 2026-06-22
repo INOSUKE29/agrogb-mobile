@@ -45,7 +45,7 @@ export default function AdminCatalogScreen() {
         setLoading(true);
         try {
             // SEMPRE busca aprovações pendentes para exibir o contador corretamente na aba
-            const { data: approvalsData } = await supabase.from('produtos_cadastro').select('*').eq('curation_status', 'PENDENTE').order('created_at', { ascending: false });
+            const { data: approvalsData } = await supabase.from('v2_produtos').select('*').eq('status_aprovacao', 'PENDENTE').order('created_at', { ascending: false });
             if (approvalsData) setApprovals(approvalsData);
 
             if (activeTab === 'CULTURAS') {
@@ -137,7 +137,8 @@ export default function AdminCatalogScreen() {
         try {
             if (activeTab === 'CULTURAS') {
                 if (!newItemName) return toast.error('Nome obrigatório');
-                await supabase.from('kb_crops').insert([{ name: newItemName, scope: 'GLOBAL' }]);
+                const { error } = await supabase.from('kb_crops').insert([{ name: newItemName, scope: 'GLOBAL' }]);
+                if (error) throw error;
                 toast.success('Cultura global adicionada!');
             } 
             else if (activeTab === 'PRODUTOS' || activeTab === 'APROVACOES') {
@@ -152,67 +153,74 @@ export default function AdminCatalogScreen() {
                     status_aprovacao: 'APROVADO' 
                 }]).select();
 
-                await supabase.from('kb_products').insert([{ 
+                const { error: error2 } = await supabase.from('kb_products').insert([{ 
                     name: newItemName, 
                     category: newItemCategory || 'INSUMO', 
                     scope: 'GLOBAL' 
                 }]);
+                if (error2) throw error2;
 
                 toast.success('Produto global inserido e liberado!');
             } 
             else if (activeTab === 'FITOSSANITARIO') {
                 if (!newItemName) return toast.error('Nome obrigatório');
                 if (newItemCategory === 'PRAGA') {
-                    await supabase.from('kb_pests').insert([{ common_name: newItemName, scope: 'GLOBAL' }]);
+                    const { error } = await supabase.from('kb_pests').insert([{ common_name: newItemName, scope: 'GLOBAL' }]);
+                    if (error) throw error;
                 } else {
-                    await supabase.from('kb_diseases').insert([{ name: newItemName, scope: 'GLOBAL' }]);
+                    const { error } = await supabase.from('kb_diseases').insert([{ name: newItemName, scope: 'GLOBAL' }]);
+                    if (error) throw error;
                 }
                 toast.success('Item fitossanitário adicionado!');
             } 
             else if (activeTab === 'RESULTADOS') {
                 if (!selectedProductA || !selectedProblem || !controlPercentage) return toast.error('Preencha os campos!');
-                await supabase.from('kb_outcomes').insert([{ 
+                const { error } = await supabase.from('kb_outcomes').insert([{ 
                     treatment_id: selectedProductA,
                     problem_id: selectedProblem,
                     control_percentage: Number(controlPercentage),
                     owner_id: user?.id,
                     scope: 'GLOBAL' // Global como teste, mas poderia ser AGRONOMO
                 }]);
+                if (error) throw error;
                 toast.success('Resultado registrado na Memória Técnica!');
             } 
             else if (activeTab === 'COMBINACOES') {
                 if (!selectedProductA || !selectedProductB || !resultStatus) return toast.error('Preencha os campos!');
-                await supabase.from('kb_combinations').insert([{ 
+                const { error } = await supabase.from('kb_combinations').insert([{ 
                     product_a_id: selectedProductA,
                     product_b_id: selectedProductB,
                     result_status: resultStatus,
                     scope: 'GLOBAL'
                 }]);
+                if (error) throw error;
                 toast.success('Combinação de Tanque registrada!');
             } 
             else if (activeTab === 'FASES') {
                 if (!selectedCropId || !newItemName || !phaseOrder) return toast.error('Preencha os campos obrigatórios!');
-                await supabase.from('kb_phenological_phases').insert([{ 
+                const { error } = await supabase.from('kb_phenological_phases').insert([{ 
                     crop_id: selectedCropId,
                     name: newItemName,
                     phase_order: Number(phaseOrder),
                     duration_days: Number(durationDays)
                 }]);
+                if (error) throw error;
                 toast.success('Fase Fenológica adicionada!');
             }
             
             resetModal();
             fetchDados();
         } catch (error) {
-            toast.error('Erro ao salvar no banco.');
             console.error(error);
+            toast.error(error?.message || 'Erro desconhecido ao salvar no banco.');
         }
     };
 
     const handleDeleteItem = async (table: string, id: string) => {
         if (!window.confirm("Esta ação é definitiva. Confirma?")) return;
         try {
-            await supabase.from(table).delete().eq('id', id);
+            const { error } = await supabase.from(table).delete().eq('id', id);
+            if (error) throw error;
             toast.success('Item apagado.');
             fetchDados();
         } catch (error) {
@@ -222,12 +230,12 @@ export default function AdminCatalogScreen() {
 
     const handleApprove = async (item: Record<string, string | number | boolean | null>) => {
         try {
-            await supabase.from('produtos_cadastro').update({ curation_status: 'APROVADO' }).eq('id', item.id);
+            await supabase.from('v2_produtos').update({ status_aprovacao: 'APROVADO' }).eq('id', item.id);
             
-            // Opcional: inserir também no kb_products se for uma biblioteca separada
+            // Inserir na Biblioteca Global kb_products
             await supabase.from('kb_products').insert([{ 
                 name: item.nome, 
-                category: item.tipo || 'INSUMO', 
+                category: item.categoria || 'INSUMO', 
                 scope: 'GLOBAL' 
             }]);
 
@@ -240,7 +248,7 @@ export default function AdminCatalogScreen() {
 
     const handleReject = async (item: Record<string, string | number | boolean | null>) => {
         try {
-            await supabase.from('produtos_cadastro').update({ curation_status: 'REJEITADO' }).eq('id', item.id);
+            await supabase.from('v2_produtos').update({ status_aprovacao: 'REJEITADO' }).eq('id', item.id);
             toast.success('Produto rejeitado.');
             fetchDados();
         } catch (_e) {
@@ -452,23 +460,18 @@ export default function AdminCatalogScreen() {
                                 <td className="p-4">
                                     <div className="font-bold text-white text-lg">{item.nome}</div>
                                     <div className="flex gap-2 mt-2">
-                                        <span className="px-2 py-1 bg-white/10 text-[var(--color-muted)] text-xs rounded">{item.tipo || 'INDEFINIDO'}</span>
+                                        <span className="px-2 py-1 bg-white/10 text-[var(--color-muted)] text-xs rounded">{item.categoria || 'INDEFINIDO'}</span>
                                         {item.fabricante && <span className="px-2 py-1 bg-indigo-500/20 text-indigo-400 text-xs rounded font-bold">🏭 {item.fabricante}</span>}
                                     </div>
                                     <div className="mt-2 text-xs text-[var(--color-muted)]">
-                                        <strong>Princípio:</strong> {item.principio_ativo || '-'} <br/>
-                                        <strong>Classe:</strong> {item.classe_toxicologica || '-'}
+                                        <strong>Princípio:</strong> {item.principio_ativo || '-'}
                                     </div>
                                 </td>
                                 <td className="p-4 text-sm text-[var(--color-muted)]">
-                                    <div className="mb-1"><strong>Nutrientes:</strong> {item.nutrientes || '-'}</div>
-                                    <div className="mb-1"><strong>Dose Padrão:</strong> <span className="text-emerald-400 font-bold">{item.dose_padrao || '-'}</span></div>
                                     <div className="mt-2 p-2 bg-white/5 rounded border border-white/5 text-xs italic">
-                                        {item.bula_texto ? item.bula_texto : 'Sem indicações de bula adicionadas.'}
+                                        Produto cadastrado rapidamente pelo usuário via sistema local. 
+                                        Aprove para adicionar à Biblioteca Global ou Rejeite.
                                     </div>
-                                    {item.bula_url && (
-                                        <a href={String(item.bula_url)} target="_blank" rel="noreferrer" className="text-blue-400 text-xs hover:underline mt-1 block">🔗 Ver PDF da Bula</a>
-                                    )}
                                 </td>
                                 <td className="p-4 text-right">
                                     <div className="flex flex-col gap-2 items-end">

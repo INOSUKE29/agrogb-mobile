@@ -1,35 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useWeather } from '../context/WeatherContext';
 import { BlurView } from 'expo-blur';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function WeatherWidget() {
-    const { weather, loading, error, permissionDenied, refreshWeather } = useWeather();
-    const [currentTime, setCurrentTime] = useState('');
+    const { weather, loading, error, permissionDenied } = useWeather();
     const navigation = useNavigation();
-
-    useEffect(() => {
-        const updateTime = () => {
-            const now = new Date();
-            const formatter = new Intl.DateTimeFormat('pt-BR', {
-                hour: '2-digit',
-                minute: '2-digit',
-                timeZone: 'America/Sao_Paulo',
-            });
-            setCurrentTime(formatter.format(now));
-        };
-        updateTime();
-        const interval = setInterval(updateTime, 60000); // Atualiza a cada minuto
-        return () => clearInterval(interval);
-    }, []);
+    const { theme } = useTheme();
 
     if (loading && !weather) {
         return (
-            <BlurView intensity={50} tint="dark" style={styles.container}>
+            <BlurView intensity={50} tint="dark" style={[styles.container, styles.centerAll]}>
                 <ActivityIndicator size="small" color="#FFF" />
-                <Text style={styles.loadingText}>Atualizando...</Text>
+                <Text style={styles.loadingText}>Atualizando Clima...</Text>
             </BlurView>
         );
     }
@@ -37,9 +23,10 @@ export default function WeatherWidget() {
     if (permissionDenied && !weather) {
         return (
             <TouchableOpacity onPress={() => navigation.navigate('Clima')}>
-                <BlurView intensity={50} tint="dark" style={styles.container}>
-                    <Ionicons name="location-outline" size={20} color="#FFF" />
+                <BlurView intensity={50} tint="dark" style={[styles.container, styles.centerAll]}>
+                    <Ionicons name="location-outline" size={24} color="#FFF" />
                     <Text style={styles.text}>Ativar Clima da Fazenda</Text>
+                    <Text style={styles.subTextMsg}>Necessário para recomendações precisas</Text>
                 </BlurView>
             </TouchableOpacity>
         );
@@ -48,9 +35,10 @@ export default function WeatherWidget() {
     if (error && !weather) {
         return (
             <TouchableOpacity onPress={() => navigation.navigate('Clima')}>
-                <BlurView intensity={50} tint="dark" style={styles.container}>
-                    <Ionicons name="cloud-offline-outline" size={20} color="#FFF" />
+                <BlurView intensity={50} tint="dark" style={[styles.container, styles.centerAll]}>
+                    <Ionicons name="cloud-offline-outline" size={24} color="#FFF" />
                     <Text style={styles.text}>Serviço de Clima Inativo</Text>
+                    <Text style={styles.subTextMsg}>Toque para tentar novamente</Text>
                 </BlurView>
             </TouchableOpacity>
         );
@@ -59,6 +47,7 @@ export default function WeatherWidget() {
     if (!weather) return null;
 
     const getIcon = (iconCode) => {
+        if (!iconCode) return 'cloud-outline';
         if (iconCode.includes('01')) return 'sunny';
         if (iconCode.includes('02')) return 'partly-sunny';
         if (iconCode.includes('03') || iconCode.includes('04')) return 'cloudy';
@@ -67,41 +56,129 @@ export default function WeatherWidget() {
         return 'cloud-outline';
     };
 
+    const getUVLevel = (uvIndex) => {
+        if (uvIndex < 3) return 'Baixo';
+        if (uvIndex < 6) return 'Moderado';
+        if (uvIndex < 8) return 'Alto';
+        if (uvIndex < 11) return 'Muito Alto';
+        return 'Extremo';
+    };
+
+    const formatDayOfWeek = (dateString) => {
+        const d = new Date(dateString);
+        d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+        const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        return days[d.getDay()];
+    };
+
+    // Gera recomendações dinâmicas da IA baseadas no clima atual
+    const generateAIRecommendations = () => {
+        const recs = [];
+        const isRaining = weather.pop > 50 || weather.description.toLowerCase().includes('chuva');
+        const isHot = weather.temp > 30;
+        const isHumid = weather.humidity > 80;
+        const isWindy = weather.wind > 15;
+
+        if (isRaining || isWindy) {
+            recs.push({ text: 'Pulverização: Suspender (Vento/Chuva)', type: 'error' });
+        } else {
+            recs.push({ text: 'Pulverização recomendada até 09:30', type: 'success' });
+        }
+
+        if (isRaining) {
+            recs.push({ text: 'Irrigação: Não necessária hoje', type: 'success' });
+        } else if (isHot) {
+            recs.push({ text: 'Irrigação: Ligar pivô (Alta transpiração)', type: 'warning' });
+        } else {
+            recs.push({ text: 'Irrigação: Ciclo normal', type: 'success' });
+        }
+
+        if (isHumid && isHot) {
+            recs.push({ text: 'Monitorar risco de fungos (Alta umidade e calor)', type: 'warning' });
+        }
+
+        return recs;
+    };
+
+    const recommendations = generateAIRecommendations();
+    // Pegar apenas os próximos 3 dias da previsão
+    const nextDays = weather.forecast && weather.forecast.length > 1 
+        ? weather.forecast.slice(1, 4) 
+        : [];
+
     return (
-        <TouchableOpacity onPress={() => navigation.navigate('Clima')} activeOpacity={0.8} style={styles.touchableWrapper}>
-            <BlurView intensity={60} tint="dark" style={styles.container}>
-                <View style={styles.leftCol}>
-                    <View style={styles.iconCircle}>
-                        <Ionicons name={getIcon(weather.icon)} size={32} color="#FBBF24" style={styles.shadowIcon} />
+        <TouchableOpacity onPress={() => navigation.navigate('Clima')} activeOpacity={0.9} style={styles.touchableWrapper}>
+            <BlurView intensity={theme?.theme_mode === 'dark' ? 60 : 80} tint={theme?.theme_mode === 'dark' ? "dark" : "light"} style={styles.container}>
+                
+                {/* Header Clima Hoje */}
+                <View style={styles.headerRow}>
+                    <View style={styles.titleCol}>
+                        <Text style={styles.titleLabel}>🌤 Clima Hoje</Text>
+                        <View style={styles.locationBadge}>
+                            <Ionicons name="location" size={12} color="#10B981" />
+                            <Text style={styles.locationText}>{weather.city}</Text>
+                        </View>
                     </View>
-                    <View style={styles.infoCol}>
-                        <Text style={styles.mainText}>{weather.temp}°C</Text>
-                        <Text style={styles.subText}>{weather.city}</Text>
+                    <View style={styles.tempCol}>
+                        <Text style={styles.mainTemp}>{weather.temp}°C</Text>
+                        <Text style={styles.weatherDesc}>{weather.description}</Text>
                     </View>
                 </View>
 
-                <View style={styles.rightCol}>
-                    <View style={styles.timeBadge}>
-                        <Ionicons name="time" size={12} color="#FFF" style={{ marginRight: 4 }} />
-                        <Text style={styles.timeBadgeText}>{currentTime} (BRT)</Text>
+                {/* Grid de Métricas */}
+                <View style={styles.metricsGrid}>
+                    <View style={styles.metricItem}>
+                        <Text style={styles.metricLabel}>💧 Umidade</Text>
+                        <Text style={styles.metricValue}>{weather.humidity}%</Text>
                     </View>
-                    <View style={styles.detailsRow}>
-                        <Text style={styles.detailText}><Ionicons name="umbrella" size={10} color="#E0F2FE" /> {weather.pop}% Chuva</Text>
-                        <Text style={styles.detailText}><Ionicons name="water" size={10} color="#E0F2FE" /> {weather.humidity}%</Text>
-                        <Text style={styles.detailText}><Ionicons name="leaf" size={10} color="#E0F2FE" /> {weather.wind} km/h</Text>
+                    <View style={styles.metricItem}>
+                        <Text style={styles.metricLabel}>🌧️ Chuva</Text>
+                        <Text style={styles.metricValue}>{weather.pop}%</Text>
+                    </View>
+                    <View style={styles.metricItem}>
+                        <Text style={styles.metricLabel}>💨 Vento</Text>
+                        <Text style={styles.metricValue}>{weather.wind} km/h</Text>
+                    </View>
+                    <View style={styles.metricItem}>
+                        <Text style={styles.metricLabel}>☀️ UV</Text>
+                        <Text style={styles.metricValue}>{getUVLevel(weather.uv)}</Text>
                     </View>
                 </View>
+
+                <View style={styles.divider} />
+
+                {/* Recomendações da IA */}
+                <View style={styles.aiSection}>
+                    <Text style={styles.aiTitle}>🤖 Recomendações da IA</Text>
+                    {recommendations.map((rec, index) => (
+                        <View key={index} style={styles.aiRow}>
+                            <Ionicons 
+                                name={rec.type === 'success' ? 'checkmark-circle' : rec.type === 'warning' ? 'warning' : 'close-circle'} 
+                                size={14} 
+                                color={rec.type === 'success' ? '#10B981' : rec.type === 'warning' ? '#F59E0B' : '#EF4444'} 
+                            />
+                            <Text style={styles.aiText}>{rec.text}</Text>
+                        </View>
+                    ))}
+                </View>
+
+                <View style={styles.divider} />
+
+                {/* Próximos 3 Dias */}
+                <View style={styles.forecastSection}>
+                    <Text style={styles.forecastTitle}>📅 Próximos dias</Text>
+                    <View style={styles.forecastRow}>
+                        {nextDays.map((day, index) => (
+                            <View key={index} style={styles.forecastDay}>
+                                <Text style={styles.dayLabel}>{formatDayOfWeek(day.date)}</Text>
+                                <Ionicons name={getIcon(day.icon)} size={20} color={day.icon.includes('01') ? '#FBBF24' : '#9CA3AF'} style={{ marginVertical: 4 }} />
+                                <Text style={styles.dayTemp}>{day.tempMax}°</Text>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+
             </BlurView>
-            {/* ALERTAS ESTILO DEFESA CIVIL */}
-            {weather.alerts && weather.alerts.length > 0 && (
-                <View style={[styles.alertBar, { backgroundColor: weather.alerts[0].color + 'E6' }]}>
-                    <Ionicons name="warning" size={16} color="#FFF" style={{ marginRight: 6 }} />
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.alertEvent}>{weather.alerts[0].event}</Text>
-                        <Text style={styles.alertDesc}>{weather.alerts[0].description}</Text>
-                    </View>
-                </View>
-            )}
         </TouchableOpacity>
     );
 }
@@ -110,86 +187,141 @@ const styles = StyleSheet.create({
     touchableWrapper: {
         width: '100%',
         marginTop: 5,
-        marginBottom: 5,
+        marginBottom: 15,
     },
     container: {
-        flexDirection: 'row',
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.2)',
+        overflow: 'hidden',
+        padding: 16,
+    },
+    centerAll: {
+        justifyContent: 'center',
         alignItems: 'center',
+        paddingVertical: 30,
+    },
+    headerRow: {
+        flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.15)',
-        overflow: 'hidden'
+        alignItems: 'center',
+        marginBottom: 16,
     },
-    leftCol: {
+    titleLabel: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+        marginBottom: 4,
+    },
+    locationBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-    },
-    iconCircle: {
-        width: 46,
-        height: 46,
-        borderRadius: 23,
-        backgroundColor: 'rgba(255, 255, 255, 0.25)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.5)',
-    },
-    shadowIcon: {
-        textShadowColor: 'rgba(0, 0, 0, 0.2)',
-        textShadowOffset: { width: 1, height: 1 },
-        textShadowRadius: 3
-    },
-    infoCol: {
-        justifyContent: 'center',
-    },
-    rightCol: {
-        alignItems: 'flex-end',
-        justifyContent: 'center'
-    },
-    timeBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(16, 185, 129, 0.15)',
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 12,
-        marginBottom: 6
     },
-    timeBadgeText: {
-        color: '#FFFFFF',
-        fontSize: 10,
-        fontWeight: 'bold'
-    },
-    detailsRow: {
-        flexDirection: 'row',
-        gap: 8,
-    },
-    detailText: {
-        color: '#FFFFFF',
+    locationText: {
+        color: '#D1FAE5',
         fontSize: 11,
         fontWeight: '600',
-        textShadowColor: 'rgba(0,0,0,0.1)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 2
+        marginLeft: 4,
     },
-    alertBar: {
+    tempCol: {
+        alignItems: 'flex-end',
+    },
+    mainTemp: {
+        fontSize: 32,
+        fontWeight: '900',
+        color: '#FFFFFF',
+        lineHeight: 36,
+    },
+    weatherDesc: {
+        fontSize: 12,
+        color: '#E0F2FE',
+        fontWeight: '600',
+        textTransform: 'capitalize',
+    },
+    metricsGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    },
+    metricItem: {
+        width: '48%',
+        backgroundColor: 'rgba(0, 0, 0, 0.2)',
+        padding: 8,
+        borderRadius: 12,
+        marginBottom: 8,
+    },
+    metricLabel: {
+        fontSize: 11,
+        color: '#9CA3AF',
+        fontWeight: 'bold',
+        marginBottom: 2,
+    },
+    metricValue: {
+        fontSize: 14,
+        color: '#FFFFFF',
+        fontWeight: '800',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        marginVertical: 12,
+    },
+    aiSection: {
+        marginBottom: 4,
+    },
+    aiTitle: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: '#A7F3D0',
+        marginBottom: 8,
+    },
+    aiRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderBottomLeftRadius: 16,
-        borderBottomRightRadius: 16,
-        marginTop: -10, // Para colar embaixo do widget de cima
-        zIndex: -1 // Para ficar debaixo do Blur principal
+        marginBottom: 6,
     },
-    alertEvent: { color: '#FFF', fontSize: 11, fontWeight: 'bold' },
-    alertDesc: { color: '#FFF', fontSize: 9 },
-    loadingText: { color: '#FFFFFF', fontSize: 13, marginLeft: 8, fontWeight: '600' },
-    text: { color: '#FFFFFF', fontSize: 13, marginLeft: 8, fontWeight: '600' },
-    mainText: { color: '#FFFFFF', fontSize: 24, fontWeight: '900', lineHeight: 28, textShadowColor: 'rgba(0,0,0,0.1)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
-    subText: { color: '#E0F2FE', fontSize: 13, fontWeight: '600', paddingBottom: 1, textShadowColor: 'rgba(0,0,0,0.1)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+    aiText: {
+        fontSize: 12,
+        color: '#FFFFFF',
+        marginLeft: 8,
+        flex: 1,
+    },
+    forecastSection: {
+        marginTop: 4,
+    },
+    forecastTitle: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: '#D1FAE5',
+        marginBottom: 8,
+    },
+    forecastRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+    },
+    forecastDay: {
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        padding: 8,
+        borderRadius: 12,
+        minWidth: 50,
+    },
+    dayLabel: {
+        fontSize: 11,
+        color: '#9CA3AF',
+        fontWeight: '600',
+    },
+    dayTemp: {
+        fontSize: 13,
+        color: '#FFFFFF',
+        fontWeight: 'bold',
+    },
+    text: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold', marginTop: 12 },
+    subTextMsg: { color: '#9CA3AF', fontSize: 12, marginTop: 4 },
+    loadingText: { color: '#FFFFFF', fontSize: 14, marginTop: 12, fontWeight: '600' },
 });

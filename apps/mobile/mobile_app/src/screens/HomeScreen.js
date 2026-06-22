@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import SidebarDrawer from '../components/SidebarDrawer';
 import { useTheme } from '../theme/ThemeContext';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { useAuth } from '../context/AuthContext';
 import TasksWidget from '../components/dashboard/TasksWidget';
 import SmartAlerts from '../components/dashboard/SmartAlerts';
 import ProductionChart from '../components/dashboard/ProductionChart';
@@ -18,6 +19,7 @@ const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
     const { theme } = useTheme();
+    const { user, role } = useAuth();
     const { data: dashboardData } = useDashboardData();
     const THEME = {
         bg: theme?.colors?.bg ?? '#091829',
@@ -66,7 +68,7 @@ export default function HomeScreen({ navigation }) {
             setTimeout(() => {
                 loadStats();
                 autoSync();
-                MenuConfigService.getMenuConfig().then(cfg => setMenuConfig(cfg));
+                MenuConfigService.getMenuConfig(role).then(cfg => setMenuConfig(cfg));
             }, 50);
         });
         return () => task.cancel();
@@ -99,8 +101,8 @@ export default function HomeScreen({ navigation }) {
                                 <Ionicons name="menu" size={30} color="#FFF" />
                             </TouchableOpacity>
                             <View>
-                                <Text style={styles.salutation}>Olá, Bruno 👋</Text>
-                                <Text style={styles.subSalutation}>Bem-vindo ao seu painel.</Text>
+                                <Text style={styles.salutation}>Olá, {user?.name || 'Bruno'} 👋</Text>
+                                <Text style={styles.subSalutation}>{role === 'AGRONOMO' ? 'Painel do Consultor' : 'Bem-vindo ao seu painel'}</Text>
                             </View>
                         </View>
                         <TouchableOpacity 
@@ -120,8 +122,8 @@ export default function HomeScreen({ navigation }) {
                     </View>
                 </View>
 
-                {/* SÓ RENDERIZA O RESTANTE SE A TRANSIÇÃO DE LOGIN ESTIVER PRONTA */}
-                {isReady && (
+                {/* SÓ RENDERIZA O RESTANTE SE A TRANSIÇÃO DE LOGIN ESTIVER PRONTA E NÃO FOR AGRÔNOMO */}
+                {isReady && role !== 'AGRONOMO' && (
                     <View style={styles.kpiRow}>
                         <View style={styles.kpiItem}>
                             <Text style={styles.kpiLabel}>COLHEITA (HOJE)</Text>
@@ -198,7 +200,7 @@ export default function HomeScreen({ navigation }) {
                             <View style={{ padding: 20, alignItems: 'center' }}><Text style={{ color: THEME.textSub }}>Carregando menu...</Text></View>
                         )}
 
-                        {dashboardData && <ProductionChart data={dashboardData.chartData} />}
+                        {dashboardData && role !== 'AGRONOMO' && <ProductionChart data={dashboardData.chartData} />}
 
                         <View style={styles.footer}>
                             <Text style={styles.version}>AgroGB Mobile v6.0 • Premium</Text>

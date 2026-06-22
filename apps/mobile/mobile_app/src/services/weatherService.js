@@ -29,8 +29,8 @@ export const WeatherService = {
 
     getWeather: async (lat, lon) => {
         try {
-            // URL da Open-Meteo com Temperatura, Humidade, Vento, Código WMO, e Previsão Max/Min diária
-            const endpoint = `${BASE_URL}?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=relative_humidity_2m,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,weathercode,precipitation_probability_max&timezone=auto`;
+            // URL da Open-Meteo com Temperatura, Humidade, Vento, Código WMO, Previsão Max/Min diária e Índice UV
+            const endpoint = `${BASE_URL}?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=relative_humidity_2m,precipitation_probability,uv_index&daily=temperature_2m_max,temperature_2m_min,weathercode,precipitation_probability_max&timezone=auto`;
 
             const response = await fetch(endpoint);
 
@@ -51,6 +51,7 @@ export const WeatherService = {
             const hourIndex = new Date().getHours();
             const humidity = data.hourly?.relative_humidity_2m?.[hourIndex] || 50;
             const pop = data.hourly?.precipitation_probability?.[hourIndex] || 0;
+            const uv = data.hourly?.uv_index?.[hourIndex] || 0;
 
             // Previsão Máx e Mín de hoje
             const tempMax = Math.round(data.daily?.temperature_2m_max?.[0] || temp);
@@ -106,6 +107,7 @@ export const WeatherService = {
                 icon: currentWmo.iconCode,
                 humidity: humidity,
                 wind: wind,
+                uv: uv,
                 city: 'Fazenda AgroGB', 
                 pop: pop,
                 alerts: alerts,
