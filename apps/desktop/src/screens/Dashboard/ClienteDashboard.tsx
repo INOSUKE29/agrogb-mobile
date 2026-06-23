@@ -160,21 +160,13 @@ export default function ClienteDashboard() {
                         ]);
                     }
 
-                    // Mock Dados Financeiros
+                    // Sem mock de dados financeiros (Regra de Ouro #8)
                     setFinancialData([
-                        { name: 'Jan', Receitas: 4000, Custos: 2400 },
-                        { name: 'Fev', Receitas: 3000, Custos: 1398 },
-                        { name: 'Mar', Receitas: 2000, Custos: 9800 },
-                        { name: 'Abr', Receitas: 2780, Custos: 3908 },
-                        { name: 'Mai', Receitas: 1890, Custos: 4800 },
-                        { name: 'Jun', Receitas: 2390, Custos: 3800 },
+                        { name: 'Mês Atual', Receitas: 0, Custos: 0 }
                     ]);
 
                     setExpensesData([
-                        { name: 'Insumos', value: 4500 },
-                        { name: 'Mão de Obra', value: 3000 },
-                        { name: 'Combustível', value: 2000 },
-                        { name: 'Manutenção', value: 1500 },
+                        { name: 'Sem registros', value: 0 }
                     ]);
                 } catch(e) {
                     console.log('Using fallback financial data');
@@ -249,60 +241,60 @@ export default function ClienteDashboard() {
             {/* LINHA 1: KPIs (Grid 4 colunas) */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
                 
-                {/* Faturamento */}
+                {/* Área Total */}
                 <div className="premium-card p-6 relative overflow-hidden group">
                     <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider">Faturamento (Mês)</h3>
+                        <h3 className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider">Área Total</h3>
                         <div className="w-10 h-10 rounded-xl bg-[#19B34A]/10 flex items-center justify-center border border-[#19B34A]/20">
-                            <DollarSign className="w-5 h-5 text-[#19B34A]" />
+                            <MapIcon className="w-5 h-5 text-[#19B34A]" />
                         </div>
                     </div>
-                    <span className="text-3xl font-black text-white">R$ 124.500</span>
+                    <span className="text-3xl font-black text-white">{kpis.areaTotal} ha</span>
                     <p className="text-[#19B34A] text-xs font-bold mt-3 flex items-center gap-1">
-                        <TrendingUp className="w-3 h-3" /> +15.3% vs mês anterior
+                        Cadastrada no sistema
                     </p>
                 </div>
 
-                {/* Custo */}
+                {/* Talhões Ativos */}
                 <div className="premium-card p-6 relative overflow-hidden group">
                     <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider">Custo Operacional</h3>
-                        <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
-                            <TrendingUp className="w-5 h-5 text-orange-500 rotate-180" />
-                        </div>
-                    </div>
-                    <span className="text-3xl font-black text-white">R$ 85.200</span>
-                    <p className="text-orange-500 text-xs font-bold mt-3 flex items-center gap-1">
-                        <TrendingUp className="w-3 h-3 rotate-180" /> +5.2% vs mês anterior
-                    </p>
-                </div>
-
-                {/* Colheita */}
-                <div className="premium-card p-6 relative overflow-hidden group">
-                    <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider">Colheita Realizada</h3>
+                        <h3 className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider">Talhões Ativos</h3>
                         <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                            <Sprout className="w-5 h-5 text-blue-500" />
+                            <Maximize className="w-5 h-5 text-blue-500" />
                         </div>
                     </div>
-                    <span className="text-3xl font-black text-white">14.500 sc</span>
+                    <span className="text-3xl font-black text-white">{kpis.talhoesAtivos}</span>
                     <p className="text-blue-500 text-xs font-bold mt-3 flex items-center gap-1">
-                        Soja (Talhão A, B, C)
+                        Monitorados
                     </p>
                 </div>
 
-                {/* Alertas */}
-                <div className="premium-card p-6 relative overflow-hidden group border-b-4 border-red-500">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
-                    <div className="flex justify-between items-start mb-4 relative z-10">
-                        <h3 className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider">Alertas Ativos</h3>
-                        <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center shadow-[0_0_15px_rgba(239,68,68,0.5)]">
-                            <AlertTriangle className="w-5 h-5 text-white" />
+                {/* Culturas */}
+                <div className="premium-card p-6 relative overflow-hidden group">
+                    <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider">Culturas Ativas</h3>
+                        <div className="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
+                            <Sprout className="w-5 h-5 text-yellow-500" />
                         </div>
                     </div>
-                    <span className="text-3xl font-black text-white relative z-10">3 Críticos</span>
-                    <p className="text-red-400 text-xs font-bold mt-3 flex items-center gap-1 relative z-10">
-                        Manutenção e Estoque
+                    <span className="text-3xl font-black text-white">{kpis.culturas}</span>
+                    <p className="text-yellow-500 text-xs font-bold mt-3 flex items-center gap-1">
+                        Variedades plantadas
+                    </p>
+                </div>
+
+                {/* Atividades em Andamento */}
+                <div className="premium-card p-6 relative overflow-hidden group border-b-4 border-orange-500">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                    <div className="flex justify-between items-start mb-4 relative z-10">
+                        <h3 className="text-[var(--color-muted)] font-bold text-xs uppercase tracking-wider">Em Andamento</h3>
+                        <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center shadow-[0_0_15px_rgba(249,115,22,0.5)]">
+                            <ListTodo className="w-5 h-5 text-white" />
+                        </div>
+                    </div>
+                    <span className="text-3xl font-black text-white relative z-10">{kpis.atividadesAndamento}</span>
+                    <p className="text-orange-400 text-xs font-bold mt-3 flex items-center gap-1 relative z-10">
+                        Atividades operacionais
                     </p>
                 </div>
             </div>

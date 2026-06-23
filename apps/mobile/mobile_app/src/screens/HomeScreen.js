@@ -156,6 +156,29 @@ export default function HomeScreen({ navigation }) {
                         </View>
                     </View>
                 )}
+
+                {/* KPIS TÉCNICOS DO AGRÔNOMO */}
+                {isReady && role === 'AGRONOMO' && (
+                    <View style={styles.kpiRow}>
+                        <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>ATENDIMENTOS (HOJE)</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                                <Text style={styles.kpiEmoji}>🤝</Text>
+                                <Text style={styles.kpiValue}>2 <Text style={styles.unit}>visitas</Text></Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.vr} />
+
+                        <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>RECOMENDAÇÕES PEND.</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                                <Text style={styles.kpiEmoji}>📝</Text>
+                                <Text style={styles.kpiValue}>5 <Text style={styles.unit}>rec.</Text></Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
             </LinearGradient>
 
             <View style={styles.content}>

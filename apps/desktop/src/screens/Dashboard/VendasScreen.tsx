@@ -13,6 +13,7 @@ import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
 import DraggableModal from '../../components/common/DraggableModal';
+import SearchableSelect from '../../components/common/SearchableSelect';
 
 export default function VendasScreen() {
     const [loading, setLoading] = useState(true);
@@ -311,37 +312,37 @@ export default function VendasScreen() {
             >
                 <form id="vendaForm" onSubmit={handleSalvar} className="space-y-6">
                     
-                    <div>
+                    <div className="z-[60] relative">
                         <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
                             <User className="w-4 h-4 text-emerald-400" /> Cliente / Parceiro
                         </label>
-                        <select 
-                            value={clienteId} onChange={e => setClienteId(e.target.value)}
-                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none"
-                        >
-                            <option value="" className="bg-[#121212] text-white">BALCÃO (Sem Cliente)</option>
-                            {clientes.map(c => <option key={c.id} value={c.id} className="bg-[#121212] text-white">{c.nome}</option>)}
-                        </select>
+                        <SearchableSelect 
+                            options={[
+                                { value: '', label: 'BALCÃO (Sem Cliente)' },
+                                ...clientes.map(c => ({ value: c.id, label: c.nome }))
+                            ]}
+                            value={clienteId}
+                            onChange={(val) => setClienteId(val || '')}
+                            placeholder="Selecionar Cliente..."
+                        />
                     </div>
 
-                    <div>
+                    <div className="z-[50] relative">
                         <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
                             <Package className="w-4 h-4 text-emerald-400" /> Produto Vendido *
                         </label>
-                        <select 
-                            required value={produtoId} onChange={e => {
-                                const newId = e.target.value;
-                                setProdutoId(newId);
+                        <SearchableSelect 
+                            options={produtos.map(p => ({ value: p.id, label: p.cultura || p.nome }))}
+                            value={produtoId}
+                            onChange={(newId) => {
+                                setProdutoId(newId || '');
                                 const prod = produtos.find(p => p.id === newId);
                                 if (prod && prod.preco_venda) {
                                     setValorUnitario(prod.preco_venda.toString());
                                 }
                             }}
-                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none"
-                        >
-                            <option value="" disabled className="bg-[#121212] text-[var(--color-muted)]">Selecionar Produto...</option>
-                            {produtos.map(p => <option key={p.id} value={p.id} className="bg-[#121212] text-white">{p.cultura || p.nome}</option>)}
-                        </select>
+                            placeholder="Selecionar Produto..."
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

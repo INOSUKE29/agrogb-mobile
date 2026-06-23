@@ -9,12 +9,26 @@ export default function ManejoDashboard() {
     const [pendentes, setPendentes] = useState<any[]>([]);
 
     useEffect(() => {
-        // Mock de atividades pendentes
-        setPendentes([
-            { id: 1, codigo: 'F1', tipo: 'Foliar', objetivo: 'Crescimento', data: '15/06/2026', status: 'PENDENTE', programa: 'Morango Safra 2026' },
-            { id: 2, codigo: 'G1', tipo: 'Gotejo', objetivo: 'Enraizamento', data: '16/06/2026', status: 'PENDENTE', programa: 'Morango Safra 2026' },
-            { id: 3, codigo: 'A1', tipo: 'Fitossanitário', objetivo: 'Preventivo', data: '17/06/2026', status: 'PENDENTE', programa: 'Morango Safra 2026' }
-        ]);
+        async function fetchPendentes() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { data } = await supabase.from('plantio').select('*').eq('user_id', user.id).eq('status', 'EM ANDAMENTO');
+            
+            if (data && data.length > 0) {
+                setPendentes(data.map((d: any) => ({
+                    id: d.id,
+                    codigo: d.id.substring(0,2).toUpperCase(),
+                    tipo: 'Operação',
+                    objetivo: d.cultura,
+                    data: new Date(d.data_plantio).toLocaleDateString(),
+                    status: d.status,
+                    programa: `Atividade no Talhão ${d.talhao_id}`
+                })));
+            } else {
+                setPendentes([]);
+            }
+        }
+        fetchPendentes();
     }, []);
 
     return (
@@ -59,7 +73,7 @@ export default function ManejoDashboard() {
                         </h2>
                         
                         <div className="space-y-4">
-                            {pendentes.map((ativ) => (
+                            {pendentes.length > 0 ? pendentes.map((ativ) => (
                                 <div key={ativ.id} className="bg-white/5 border border-white/10 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 hover:border-[var(--color-primary)]/50 transition-all cursor-pointer">
                                     <div className="flex items-center gap-4">
                                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg ${
@@ -87,7 +101,12 @@ export default function ManejoDashboard() {
                                         <CheckCircle2 className="w-4 h-4" /> Executar
                                     </button>
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="text-center py-8">
+                                    <ListTodo className="w-12 h-12 text-[var(--color-muted)] mx-auto mb-4 opacity-50" />
+                                    <p className="text-[var(--color-muted)]">Nenhuma atividade pendente no momento.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -99,12 +118,12 @@ export default function ManejoDashboard() {
                             <Wind className="w-5 h-5 text-amber-400" />
                             Alertas de Clima
                         </h2>
-                        <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl">
+                        <div className="bg-white/5 border border-white/10 p-4 rounded-2xl">
                             <div className="flex items-start gap-3">
-                                <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                                <CheckCircle2 className="w-5 h-5 text-[#19B34A] shrink-0 mt-0.5" />
                                 <div>
-                                    <h4 className="font-bold text-amber-500">Atenção com Ventos</h4>
-                                    <p className="text-sm text-amber-200/80 mt-1">Previsão de ventos acima de 12km/h amanhã à tarde. Evite aplicações foliares.</p>
+                                    <h4 className="font-bold text-[#19B34A]">Condições Favoráveis</h4>
+                                    <p className="text-sm text-[var(--color-muted)] mt-1">Nenhum alerta meteorológico crítico para as próximas horas.</p>
                                 </div>
                             </div>
                         </div>

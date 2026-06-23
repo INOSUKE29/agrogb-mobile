@@ -49,3 +49,10 @@ O sistema é para uso real.
 ## 10. Integridade de Dados: Padronização Maiúscula
 - **Regra:** Todo texto de entrada que alimentar os bancos de dados do AgroGB, especialmente as tabelas de Cadastros e Dicionários Globais (como Culturas, Produtos, Talhões, Nomes Oficiais), deve ser convertido usando `.toUpperCase()` obrigatoriamente.
 - Não permita que o produtor ou o sistema salvem "banana" e "Banana" em locais diferentes. Isso gera poluição irreparável na Inteligência do Sistema.
+
+## 11. Arquitetura de Banco de Dados: Tabelas V2 e Biblioteca Global
+- **Regra de Transição V1 para V2:** Nunca misture tabelas antigas (ex: `produtos_cadastro`) com a nova arquitetura V2.
+- O fluxo oficial de dados do AgroGB é:
+  1. **Locais (Produtor):** `v2_produtos`, `v2_talhoes`, `v2_visitas`, etc.
+  2. **Globais (Inteligência/Admin):** `kb_products`, `kb_crops`, `kb_pests`, etc.
+- **Aprovações:** A tela do Admin deve **sempre** ler as aprovações pendentes diretamente das tabelas locais do produtor (ex: `v2_produtos` onde `status_aprovacao = 'PENDENTE'`). Quando o Admin aprova, o sistema injeta os dados nas tabelas `kb_` e libera para todos. Mantenha essa separação estrita entre o "Mundo Local do Produtor" e o "Cérebro Global".

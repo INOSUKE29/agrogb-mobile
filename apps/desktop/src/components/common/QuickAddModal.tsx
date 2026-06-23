@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import DraggableModal from './DraggableModal';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 

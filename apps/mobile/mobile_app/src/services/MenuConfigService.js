@@ -5,20 +5,16 @@ const DEFAULT_CONFIG = {
     menu_columns: 3,
     menu_items: [
         { id: "caderno", label: "Caderno", icon: "book-outline", screen: "CadernoCampo", color: "#064E3B", enabled: true },
+        { id: "plantio", label: "Plantio", icon: "nutrition-outline", screen: "Plantio", color: "#8B5CF6", enabled: true },
+        { id: "manejo_lavoura", label: "Manejo", icon: "earth-outline", screen: "ManejoLavoura", color: "#064E3B", enabled: true },
         { id: "colheita", label: "Colheita", icon: "leaf-outline", screen: "Colheita", color: "#059669", enabled: true },
         { id: "vendas", label: "Vendas", icon: "cash-outline", screen: "Vendas", color: "#10B981", enabled: true },
         { id: "estoque", label: "Estoque", icon: "cube-outline", screen: "Estoque", color: "#3B82F6", enabled: true },
-        { id: "monitoramento", label: "Monitorar", icon: "camera-outline", screen: "Monitoramento", color: "#EC4899", enabled: true },
-        { id: "manejo_lavoura", label: "Manejo", icon: "earth-outline", screen: "ManejoLavoura", color: "#064E3B", enabled: true },
         { id: "compras", label: "Compras", icon: "cart-outline", screen: "Compras", color: "#F59E0B", enabled: true },
-        { id: "plantio", label: "Plantio", icon: "nutrition-outline", screen: "Plantio", color: "#8B5CF6", enabled: true },
         { id: "custos", label: "Custos", icon: "calculator-outline", screen: "Custos", color: "#F97316", enabled: true },
-        { id: "descarte", label: "Descarte", icon: "trash-outline", screen: "Descarte", color: "#EF4444", enabled: true },
         { id: "frota", label: "Frota", icon: "car-sport-outline", screen: "Frota", color: "#2563EB", enabled: true },
         { id: "relatorios", label: "Relatórios", icon: "pie-chart-outline", screen: "Relatorios", color: "#374151", enabled: true },
-        // Secondary
         { id: "cadastros", label: "Cadastros", icon: "create-outline", screen: "Cadastro", color: "#374151", enabled: true },
-        { id: "clientes", label: "Clientes", icon: "people-outline", screen: "Clientes", color: "#374151", enabled: true },
         { id: "areas", label: "Áreas", icon: "map-outline", screen: "Culturas", color: "#374151", enabled: true },
         { id: "sync", label: "Sync", icon: "cloud-upload-outline", screen: "Sync", color: "#6366F1", enabled: true }
     ],
@@ -57,7 +53,9 @@ export const MenuConfigService = {
                     { id: "visitas", label: "Visitas", icon: "calendar-outline", screen: "CadernoCampo", color: "#10B981", enabled: true }, 
                     { id: "monitoramento", label: "Monitorar", icon: "camera-outline", screen: "Monitoramento", color: "#EC4899", enabled: true },
                     { id: "analises", label: "Análises", icon: "flask-outline", screen: "AnalisesSolo", color: "#8B5CF6", enabled: true },
+                    { id: "receituarios", label: "Receituários", icon: "document-text-outline", screen: "RecipeForm", color: "#F59E0B", enabled: true },
                     { id: "recomendacoes", label: "Recomendar", icon: "leaf-outline", screen: "CreateRecommendation", color: "#059669", enabled: true },
+                    { id: "biblioteca", label: "Biblioteca", icon: "library-outline", screen: "Culturas", color: "#374151", enabled: true }, // Placeholder
                     { id: "relatorios", label: "Relatórios", icon: "pie-chart-outline", screen: "Relatorios", color: "#374151", enabled: true },
                     { id: "sync", label: "Sync", icon: "cloud-upload-outline", screen: "Sync", color: "#6366F1", enabled: true }
                 ];
