@@ -53,10 +53,7 @@ export const MenuConfigService = {
                     { id: "visitas", label: "Visitas", icon: "calendar-outline", screen: "CadernoCampo", color: "#10B981", enabled: true }, 
                     { id: "monitoramento", label: "Monitorar", icon: "camera-outline", screen: "Monitoramento", color: "#EC4899", enabled: true },
                     { id: "analises", label: "Análises", icon: "flask-outline", screen: "AnalisesSolo", color: "#8B5CF6", enabled: true },
-                    { id: "receituarios", label: "Receituários", icon: "document-text-outline", screen: "RecipeForm", color: "#F59E0B", enabled: true },
                     { id: "recomendacoes", label: "Recomendar", icon: "leaf-outline", screen: "CreateRecommendation", color: "#059669", enabled: true },
-                    { id: "biblioteca", label: "Biblioteca", icon: "library-outline", screen: "Culturas", color: "#374151", enabled: true }, // Placeholder
-                    { id: "relatorios", label: "Relatórios", icon: "pie-chart-outline", screen: "Relatorios", color: "#374151", enabled: true },
                     { id: "sync", label: "Sync", icon: "cloud-upload-outline", screen: "Sync", color: "#6366F1", enabled: true }
                 ];
             } else {
