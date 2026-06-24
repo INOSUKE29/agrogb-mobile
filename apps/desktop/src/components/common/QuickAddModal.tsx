@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import SearchableSelect from './SearchableSelect';
 import DraggableModal from './DraggableModal';
 import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
@@ -8,14 +9,15 @@ interface QuickAddModalProps {
     isOpen: boolean;
     onClose: () => void;
     initialName: string;
-    type: 'PRODUTO' | 'TALHAO';
+    type: 'PRODUTO' | 'TALHAO' | 'CLIENTE';
     onSuccess: () => void;
 }
 
 export default function QuickAddModal({ isOpen, onClose, initialName, type, onSuccess }: QuickAddModalProps) {
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
-    const [categoria, setCategoria] = useState(type === 'PRODUTO' ? 'PRODUTO FRESCO' : '');
+    const [name, setName] = useState(initialName);
+    const [categoria, setCategoria] = useState(type === 'PRODUTO' ? 'PRODUTO_FINAL' : '');
 
     const handleSave = async () => {
         setLoading(true);
@@ -23,7 +25,7 @@ export default function QuickAddModal({ isOpen, onClose, initialName, type, onSu
             if (type === 'PRODUTO') {
                 // Salvar como PENDENTE na Biblioteca (Crowdsourcing)
                 const { error } = await supabase.from('v2_produtos').insert([{
-                    nome: initialName.toUpperCase(),
+                    nome: name.toUpperCase(),
                     categoria: categoria.toUpperCase(),
                     empresa_id: user?.id,
                     status_aprovacao: 'PENDENTE'
@@ -33,12 +35,20 @@ export default function QuickAddModal({ isOpen, onClose, initialName, type, onSu
             } else if (type === 'TALHAO') {
                 // Salvar localmente
                 const { error } = await supabase.from('v2_talhoes').insert([{
-                    nome: initialName.toUpperCase(),
+                    nome: name.toUpperCase(),
                     empresa_id: user?.id,
                     ativo: true
                 }]);
                 if (error) throw error;
                 toast.success('Talhão criado com sucesso!');
+            } else if (type === 'CLIENTE') {
+                const { error } = await supabase.from('v2_clientes').insert([{
+                    nome: name.toUpperCase(),
+                    empresa_id: user?.id,
+                    tipo_cliente: 'PESSOA FISICA'
+                }]);
+                if (error) throw error;
+                toast.success('Cliente criado com sucesso!');
             }
             onSuccess();
             onClose();
@@ -73,7 +83,7 @@ export default function QuickAddModal({ isOpen, onClose, initialName, type, onSu
         <DraggableModal
             isOpen={isOpen}
             onClose={onClose}
-            title={`Adicionar ${type === 'PRODUTO' ? 'Novo Produto' : 'Novo Talhão'}`}
+            title={`Adicionar ${type === 'PRODUTO' ? 'Novo Produto' : type === 'CLIENTE' ? 'Novo Cliente' : 'Novo Talhão'}`}
             width="500px"
             footer={footer}
         >
@@ -82,7 +92,9 @@ export default function QuickAddModal({ isOpen, onClose, initialName, type, onSu
                     <p className="text-sm text-blue-200">
                         {type === 'PRODUTO' 
                             ? "Este produto será salvo para o seu uso imediato e enviado para aprovação na Biblioteca Global."
-                            : "Este talhão será salvo na sua fazenda para uso imediato."}
+                            : type === 'CLIENTE'
+                                ? "Este cliente será salvo na sua base local para uso imediato."
+                                : "Este talhão será salvo na sua fazenda para uso imediato."}
                     </p>
                 </div>
 
@@ -92,9 +104,9 @@ export default function QuickAddModal({ isOpen, onClose, initialName, type, onSu
                     </label>
                     <input 
                         type="text" 
-                        value={initialName.toUpperCase()} 
-                        disabled
-                        className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-white outline-none cursor-not-allowed opacity-70"
+                        value={name.toUpperCase()} 
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-[var(--color-primary)] transition-colors"
                     />
                 </div>
 
@@ -103,16 +115,23 @@ export default function QuickAddModal({ isOpen, onClose, initialName, type, onSu
                         <label className="block text-xs font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">
                             Categoria *
                         </label>
-                        <select 
-                            value={categoria}
-                            onChange={(e) => setCategoria(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-[var(--color-primary)] transition-colors"
-                        >
-                            <option value="PRODUTO FRESCO" className="bg-[#1a1f2e]">Produto Fresco (Colheita)</option>
-                            <option value="INSUMO" className="bg-[#1a1f2e]">Insumo / Defensivo</option>
-                            <option value="SEMENTE" className="bg-[#1a1f2e]">Semente</option>
-                            <option value="FERTILIZANTE" className="bg-[#1a1f2e]">Fertilizante</option>
-                        </select>
+                        <div className="relative z-[60]">
+                            <SearchableSelect 
+                                options={[
+                                    { value: 'PRODUTO_FINAL', label: 'Produto Final (Ex: Morango, Geleia, Buquê)' },
+                                    { value: 'EMBALAGEM', label: 'Embalagem (Ex: Bandeja, Caixa)' },
+                                    { value: 'PRODUTO FRESCO', label: 'Produto Fresco (Colheita Bruta)' },
+                                    { value: 'INSUMO', label: 'Insumo Geral' },
+                                    { value: 'SEMENTE', label: 'Semente / Muda' },
+                                    { value: 'FERTILIZANTE', label: 'Fertilizante / Adubo' },
+                                    { value: 'DEFENSIVO', label: 'Defensivo Agrícola' }
+                                ]}
+                                value={categoria}
+                                onChange={(val) => setCategoria(val || '')}
+                                placeholder="Selecione a categoria principal"
+                                allowCustom={true} // Permite o usuário digitar novas categorias como "Geleia de Morango"
+                            />
+                        </div>
                     </div>
                 )}
             </div>
