@@ -39,7 +39,9 @@ export default function HomeScreen({ navigation }) {
         plantioAtivo: 0,
         maquinasAlert: 0,
         pendentes: 0,
-        alertasPendentes: 0
+        alertasPendentes: 0,
+        atendimentosHoje: 0,
+        recomendacoesPendentes: 0
     });
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [isReady, setIsReady] = useState(false); // Gatilho de Skeleton View
@@ -164,7 +166,7 @@ export default function HomeScreen({ navigation }) {
                             <Text style={styles.kpiLabel}>ATENDIMENTOS (HOJE)</Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                                 <Text style={styles.kpiEmoji}>🤝</Text>
-                                <Text style={styles.kpiValue}>2 <Text style={styles.unit}>visitas</Text></Text>
+                                <Text style={styles.kpiValue}>{stats.atendimentosHoje} <Text style={styles.unit}>visitas</Text></Text>
                             </View>
                         </View>
 
@@ -174,7 +176,7 @@ export default function HomeScreen({ navigation }) {
                             <Text style={styles.kpiLabel}>RECOMENDAÇÕES PEND.</Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                                 <Text style={styles.kpiEmoji}>📝</Text>
-                                <Text style={styles.kpiValue}>5 <Text style={styles.unit}>rec.</Text></Text>
+                                <Text style={styles.kpiValue}>{stats.recomendacoesPendentes} <Text style={styles.unit}>rec.</Text></Text>
                             </View>
                         </View>
                     </View>

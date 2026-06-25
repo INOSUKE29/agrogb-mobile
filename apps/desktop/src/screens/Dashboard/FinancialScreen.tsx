@@ -29,14 +29,9 @@ export default function FinancialScreen() {
     const [totalDespesas, setTotalDespesas] = useState(0);
     const [saldo, setSaldo] = useState(0);
 
-    // Mock Chart Data for cash flow visualization
+    // Sem mock de dados (Regra de Ouro #8)
     const chartData = [
-        { name: 'Jan', receitas: 14000, despesas: 8000 },
-        { name: 'Fev', receitas: 18000, despesas: 9500 },
-        { name: 'Mar', receitas: 22000, despesas: 11000 },
-        { name: 'Abr', receitas: 17500, despesas: 13000 },
-        { name: 'Mai', receitas: 28000, despesas: 12000 },
-        { name: 'Jun', receitas: 32000, despesas: 15000 },
+        { name: 'Mês Atual', receitas: 0, despesas: 0 },
     ];
 
     const fetchFinanceiro = async () => {
@@ -291,15 +286,11 @@ export default function FinancialScreen() {
                 <div className="xl:col-span-1 glass p-6 rounded-3xl flex flex-col gap-4">
                     <h3 className="text-lg font-bold text-white mb-2">Alertas Financeiros</h3>
                     <div className="flex-1 flex flex-col gap-3">
-                        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20">
-                            <h4 className="text-red-400 font-bold text-sm mb-1">Contas em Atraso</h4>
-                            <p className="text-white text-xl font-black">2 Títulos</p>
-                            <p className="text-[var(--color-muted)] text-xs mt-1">Soma de R$ 3.500,00</p>
-                        </div>
-                        <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20">
-                            <h4 className="text-blue-400 font-bold text-sm mb-1">A Receber esta Semana</h4>
-                            <p className="text-white text-xl font-black">R$ 14.800,00</p>
-                            <p className="text-[var(--color-muted)] text-xs mt-1">4 Títulos pendentes</p>
+                        <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                            <h4 className="text-[#19B34A] font-bold text-sm mb-1 flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4" /> Sem Títulos Atrasados
+                            </h4>
+                            <p className="text-[var(--color-muted)] text-xs mt-1">Sua saúde financeira está em dia.</p>
                         </div>
                     </div>
                 </div>

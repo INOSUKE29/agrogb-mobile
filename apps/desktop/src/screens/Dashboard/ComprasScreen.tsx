@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { ShoppingCart, Store, FileText, Plus, Building2, CheckCircle, XCircle, AlertCircle, TrendingUp, Package, Box } from 'lucide-react';
 import toast from 'react-hot-toast';
+import SearchableSelect from '../../components/common/SearchableSelect';
 
 export default function ComprasScreen() {
     const [fornecedores, setFornecedores] = useState<Record<string, string | number | boolean | null>[]>([]);
@@ -338,25 +339,25 @@ export default function ComprasScreen() {
                         <form onSubmit={handleSaveCompra} className="p-6 space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Fornecedor *</label>
-                                <select 
-                                    required value={fornecedorSelecionado} onChange={e => setFornecedorSelecionado(e.target.value)}
-                                    className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none appearance-none transition-all"
-                                >
-                                    <option value="" disabled>Selecione um Fornecedor</option>
-                                    {fornecedores.map(f => <option key={f.uuid} value={f.uuid}>{f.nome_fantasia}</option>)}
-                                </select>
+                                <div className="relative z-[60]">
+                                    <SearchableSelect 
+                                        options={fornecedores.map(f => ({ value: f.uuid as string, label: f.nome_fantasia as string }))}
+                                        value={fornecedorSelecionado}
+                                        onChange={(val) => setFornecedorSelecionado(val || '')}
+                                        placeholder="Selecione um Fornecedor"
+                                    />
+                                </div>
                             </div>
                             
                             <div>
                                 <label className="block text-xs font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Produto Comprado *</label>
-                                <div className="relative">
-                                    <select 
-                                        required value={itemNome} onChange={e => setItemNome(e.target.value)}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none appearance-none transition-all"
-                                    >
-                                        <option value="" disabled>Selecione do Catálogo...</option>
-                                        {produtos.map(p => <option key={p.id || p.uuid} value={p.nome}>{p.nome} ({p.unidade_medida || 'UN'})</option>)}
-                                    </select>
+                                <div className="relative z-[50]">
+                                    <SearchableSelect 
+                                        options={produtos.map(p => ({ value: p.nome as string, label: `${p.nome} (${p.unidade_medida || 'UN'})` }))}
+                                        value={itemNome}
+                                        onChange={(val) => setItemNome(val || '')}
+                                        placeholder="Selecione do Catálogo..."
+                                    />
                                     <div className="text-right mt-1">
                                         <a href="#/dashboard/cliente/cadastro" className="text-xs text-[var(--color-primary)] hover:underline opacity-80">+ Novo Produto no Catálogo</a>
                                     </div>

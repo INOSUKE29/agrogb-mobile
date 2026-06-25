@@ -129,7 +129,7 @@ export default function QuickAddModal({ isOpen, onClose, initialName, type, onSu
                                 value={categoria}
                                 onChange={(val) => setCategoria(val || '')}
                                 placeholder="Selecione a categoria principal"
-                                allowCustom={true} // Permite o usuário digitar novas categorias como "Geleia de Morango"
+                                allowCustom={false} // Regra 10: Nunca permitir free-text em FKs ou classificadores fixos
                             />
                         </div>
                     </div>

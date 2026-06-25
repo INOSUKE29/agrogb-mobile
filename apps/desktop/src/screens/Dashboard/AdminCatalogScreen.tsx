@@ -6,7 +6,7 @@ import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import DraggableModal from '../../components/common/DraggableModal';
-
+import SearchableSelect from '../../components/common/SearchableSelect';
 export default function AdminCatalogScreen() {
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -588,14 +588,20 @@ export default function AdminCatalogScreen() {
                                 <>
                                     <div>
                                         <label className="text-xs font-bold text-[var(--color-muted)] uppercase mb-1 block">Categoria do Produto</label>
-                                        <select value={newItemCategory} onChange={(e) => setNewItemCategory(e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-indigo-500">
-                                            <option value="">Selecione...</option>
-                                            <option value="INSUMO">Insumo Geral</option>
-                                            <option value="FERTILIZANTE">Fertilizante</option>
-                                            <option value="DEFENSIVO">Defensivo</option>
-                                            <option value="SEMENTE">Semente / Muda</option>
-                                            <option value="ADJUVANTE">Adjuvante</option>
-                                        </select>
+                                        <div className="relative z-[60]">
+                                            <SearchableSelect 
+                                                options={[
+                                                    { value: 'INSUMO', label: 'Insumo Geral' },
+                                                    { value: 'FERTILIZANTE', label: 'Fertilizante' },
+                                                    { value: 'DEFENSIVO', label: 'Defensivo' },
+                                                    { value: 'SEMENTE', label: 'Semente / Muda' },
+                                                    { value: 'ADJUVANTE', label: 'Adjuvante' }
+                                                ]}
+                                                value={newItemCategory}
+                                                onChange={(val) => setNewItemCategory(val || '')}
+                                                placeholder="Selecione a categoria"
+                                            />
+                                        </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
@@ -613,11 +619,17 @@ export default function AdminCatalogScreen() {
                             {activeTab === 'FITOSSANITARIO' && (
                                 <div>
                                     <label className="text-xs font-bold text-[var(--color-muted)] uppercase mb-1 block">Classificação</label>
-                                    <select value={newItemCategory} onChange={(e) => setNewItemCategory(e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-indigo-500">
-                                        <option value="">Selecione...</option>
-                                        <option value="PRAGA">Praga</option>
-                                        <option value="DOENCA">Doença</option>
-                                    </select>
+                                    <div className="relative z-[60]">
+                                        <SearchableSelect 
+                                            options={[
+                                                { value: 'PRAGA', label: 'Praga' },
+                                                { value: 'DOENCA', label: 'Doença' }
+                                            ]}
+                                            value={newItemCategory}
+                                            onChange={(val) => setNewItemCategory(val || '')}
+                                            placeholder="Selecione a classificação"
+                                        />
+                                    </div>
                                 </div>
                             )}
 
@@ -626,18 +638,28 @@ export default function AdminCatalogScreen() {
                                 <>
                                     <div>
                                         <label className="text-xs font-bold text-[var(--color-muted)] uppercase mb-1 block">Produto (Tratamento)</label>
-                                        <select value={selectedProductA} onChange={(e) => setSelectedProductA(e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white">
-                                            <option value="">Selecione o produto...</option>
-                                            {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                        </select>
+                                        <div className="relative z-[70]">
+                                            <SearchableSelect 
+                                                options={products.map(p => ({ value: p.id as string, label: p.name as string }))}
+                                                value={selectedProductA}
+                                                onChange={(val) => setSelectedProductA(val || '')}
+                                                placeholder="Selecione o produto..."
+                                            />
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-[var(--color-muted)] uppercase mb-1 block">Problema Fitossanitário</label>
-                                        <select value={selectedProblem} onChange={(e) => setSelectedProblem(e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white">
-                                            <option value="">Selecione o alvo...</option>
-                                            <optgroup label="Pragas">{pests.map(p => <option key={p.id} value={p.id}>{p.common_name}</option>)}</optgroup>
-                                            <optgroup label="Doenças">{diseases.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}</optgroup>
-                                        </select>
+                                        <div className="relative z-[60]">
+                                            <SearchableSelect 
+                                                options={[
+                                                    ...pests.map(p => ({ value: p.id as string, label: `Praga: ${p.common_name}` })),
+                                                    ...diseases.map(d => ({ value: d.id as string, label: `Doença: ${d.name}` }))
+                                                ]}
+                                                value={selectedProblem}
+                                                onChange={(val) => setSelectedProblem(val || '')}
+                                                placeholder="Selecione o alvo..."
+                                            />
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-[var(--color-muted)] uppercase mb-1 block">Eficiência de Controle (%)</label>
@@ -651,26 +673,40 @@ export default function AdminCatalogScreen() {
                                 <>
                                     <div>
                                         <label className="text-xs font-bold text-[var(--color-muted)] uppercase mb-1 block">Produto A</label>
-                                        <select value={selectedProductA} onChange={(e) => setSelectedProductA(e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white">
-                                            <option value="">Selecione o produto...</option>
-                                            {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                        </select>
+                                        <div className="relative z-[70]">
+                                            <SearchableSelect 
+                                                options={products.map(p => ({ value: p.id as string, label: p.name as string }))}
+                                                value={selectedProductA}
+                                                onChange={(val) => setSelectedProductA(val || '')}
+                                                placeholder="Selecione o produto..."
+                                            />
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-[var(--color-muted)] uppercase mb-1 block">Produto B (Mistura)</label>
-                                        <select value={selectedProductB} onChange={(e) => setSelectedProductB(e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white">
-                                            <option value="">Selecione o produto...</option>
-                                            {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                        </select>
+                                        <div className="relative z-[60]">
+                                            <SearchableSelect 
+                                                options={products.map(p => ({ value: p.id as string, label: p.name as string }))}
+                                                value={selectedProductB}
+                                                onChange={(val) => setSelectedProductB(val || '')}
+                                                placeholder="Selecione o produto..."
+                                            />
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-[var(--color-muted)] uppercase mb-1 block">Status do Tanque</label>
-                                        <select value={resultStatus} onChange={(e) => setResultStatus(e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white font-bold">
-                                            <option value="">Selecione...</option>
-                                            <option value="COMPATIVEL" className="text-green-500">Compatível (Seguro)</option>
-                                            <option value="INCOMPATIVEL" className="text-red-500">Incompatível (Não Misturar)</option>
-                                            <option value="FITOTOXICO" className="text-orange-500">Gera Fitotoxidade na Planta</option>
-                                        </select>
+                                        <div className="relative z-[50]">
+                                            <SearchableSelect 
+                                                options={[
+                                                    { value: 'COMPATIVEL', label: 'Compatível (Seguro)' },
+                                                    { value: 'INCOMPATIVEL', label: 'Incompatível (Não Misturar)' },
+                                                    { value: 'FITOTOXICO', label: 'Gera Fitotoxidade na Planta' }
+                                                ]}
+                                                value={resultStatus}
+                                                onChange={(val) => setResultStatus(val || '')}
+                                                placeholder="Selecione o status"
+                                            />
+                                        </div>
                                     </div>
                                 </>
                             )}
@@ -680,10 +716,14 @@ export default function AdminCatalogScreen() {
                                 <>
                                     <div>
                                         <label className="text-xs font-bold text-[var(--color-muted)] uppercase mb-1 block">Cultura Vinculada</label>
-                                        <select value={selectedCropId} onChange={(e) => setSelectedCropId(e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white">
-                                            <option value="">Selecione a cultura...</option>
-                                            {crops.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                        </select>
+                                        <div className="relative z-[70]">
+                                            <SearchableSelect 
+                                                options={crops.map(c => ({ value: c.id as string, label: c.name as string }))}
+                                                value={selectedCropId}
+                                                onChange={(val) => setSelectedCropId(val || '')}
+                                                placeholder="Selecione a cultura..."
+                                            />
+                                        </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
@@ -721,12 +761,19 @@ export default function AdminCatalogScreen() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-xs text-[var(--color-muted)] font-bold uppercase">Categoria</label>
-                                    <select value={String(editingApproval.categoria || '')} onChange={e => setEditingApproval({...editingApproval, categoria: e.target.value})} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-2 mt-1 focus:ring-2 focus:ring-indigo-500 outline-none appearance-none">
-                                        <option value="INSUMO">Insumo Geral</option>
-                                        <option value="FERTILIZANTE">Fertilizante / Adubo</option>
-                                        <option value="DEFENSIVO">Defensivo Agrícola</option>
-                                        <option value="SEMENTE">Semente / Muda</option>
-                                    </select>
+                                    <div className="relative z-[70]">
+                                        <SearchableSelect 
+                                            options={[
+                                                { value: 'INSUMO', label: 'Insumo Geral' },
+                                                { value: 'FERTILIZANTE', label: 'Fertilizante / Adubo' },
+                                                { value: 'DEFENSIVO', label: 'Defensivo Agrícola' },
+                                                { value: 'SEMENTE', label: 'Semente / Muda' }
+                                            ]}
+                                            value={String(editingApproval.categoria || '')}
+                                            onChange={(val) => setEditingApproval({...editingApproval, categoria: val})}
+                                            placeholder="Selecione a categoria"
+                                        />
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="text-xs text-[var(--color-muted)] font-bold uppercase">Fabricante</label>

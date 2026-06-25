@@ -14,6 +14,8 @@ import {
 import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import SearchableSelect from '../../components/common/SearchableSelect';
+import QuickAddModal from '../../components/common/QuickAddModal';
 
 export default function EncomendasScreen() {
     const [loading, setLoading] = useState(true);
@@ -25,6 +27,10 @@ export default function EncomendasScreen() {
     // Modal state
     const [showModal, setShowModal] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+
+    // Quick Add Modal state
+    const [quickAddType, setQuickAddType] = useState<'PRODUTO' | 'TALHAO' | 'CLIENTE' | null>(null);
+    const [quickAddName, setQuickAddName] = useState('');
 
     // Relacionamentos para Selects
     const [clientes, setClientes] = useState<Record<string, string | number | boolean | null>[]>([]);
@@ -402,25 +408,37 @@ export default function EncomendasScreen() {
                                         <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
                                             <User className="w-4 h-4 text-emerald-400" /> Cliente Destino *
                                         </label>
-                                        <select 
-                                            required value={clienteId} onChange={e => setClienteId(e.target.value)}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none"
-                                        >
-                                            <option value="" disabled>Selecione o cliente...</option>
-                                            {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-                                        </select>
+                                        <div className="relative z-[70]">
+                                            <SearchableSelect 
+                                                options={clientes.map(c => ({ value: c.id as string, label: c.nome as string }))}
+                                                value={clienteId}
+                                                onChange={(val) => setClienteId(val || '')}
+                                                placeholder="Selecione o cliente..."
+                                                allowCustom={true}
+                                                onAddCustom={(text) => {
+                                                    setQuickAddName(text);
+                                                    setQuickAddType('CLIENTE');
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
                                             <Package className="w-4 h-4 text-emerald-400" /> Produto/Carga *
                                         </label>
-                                        <select 
-                                            required value={produtoId} onChange={e => setProdutoId(e.target.value)}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none"
-                                        >
-                                            <option value="" disabled>O que vamos entregar?</option>
-                                            {produtos.map(p => <option key={p.id} value={p.id}>{p.cultura || p.nome}</option>)}
-                                        </select>
+                                        <div className="relative z-[60]">
+                                            <SearchableSelect 
+                                                options={produtos.map(p => ({ value: p.id as string, label: (p.cultura || p.nome) as string }))}
+                                                value={produtoId}
+                                                onChange={(val) => setProdutoId(val || '')}
+                                                placeholder="O que vamos entregar?"
+                                                allowCustom={true}
+                                                onAddCustom={(text) => {
+                                                    setQuickAddName(text);
+                                                    setQuickAddType('PRODUTO');
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
@@ -430,17 +448,21 @@ export default function EncomendasScreen() {
                                         <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
                                             Unidade
                                         </label>
-                                        <select 
-                                            value={unidade} onChange={e => setUnidade(e.target.value)}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 outline-none"
-                                        >
-                                            <option value="CAIXA">CAIXA (CX)</option>
-                                            <option value="KG">QUILO (KG)</option>
-                                            <option value="LITRO">LITRO (LT)</option>
-                                            <option value="UNIDADE">UNIDADE (UN)</option>
-                                            <option value="SACO">SACO (SC)</option>
-                                            <option value="TONELADA">TONELADA (TON)</option>
-                                        </select>
+                                        <div className="relative z-[50]">
+                                            <SearchableSelect 
+                                                options={[
+                                                    { value: 'CAIXA', label: 'CAIXA (CX)' },
+                                                    { value: 'KG', label: 'QUILO (KG)' },
+                                                    { value: 'LITRO', label: 'LITRO (LT)' },
+                                                    { value: 'UNIDADE', label: 'UNIDADE (UN)' },
+                                                    { value: 'SACO', label: 'SACO (SC)' },
+                                                    { value: 'TONELADA', label: 'TONELADA (TON)' }
+                                                ]}
+                                                value={unidade}
+                                                onChange={(val) => setUnidade(val || '')}
+                                                placeholder="Selecione a unidade..."
+                                            />
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
@@ -517,6 +539,23 @@ export default function EncomendasScreen() {
                 </div>
             )}
 
+            {/* QUICK ADD MODAL */}
+            {quickAddType && (
+                <QuickAddModal 
+                    isOpen={true}
+                    onClose={() => {
+                        setQuickAddType(null);
+                        setQuickAddName('');
+                    }}
+                    initialName={quickAddName}
+                    type={quickAddType}
+                    onSuccess={() => {
+                        fetchDados();
+                        setQuickAddType(null);
+                        setQuickAddName('');
+                    }}
+                />
+            )}
         </div>
     );
 }

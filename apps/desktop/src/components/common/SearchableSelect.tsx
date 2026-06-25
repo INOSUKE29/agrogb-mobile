@@ -22,7 +22,7 @@ export default function SearchableSelect({
     value,
     onChange,
     placeholder = "Selecione...",
-    allowCustom = true,
+    allowCustom = false,
     onAddCustom,
     disabled = false
 }: SearchableSelectProps) {

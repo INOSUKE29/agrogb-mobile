@@ -222,6 +222,7 @@ export default function ClienteDashboard() {
                         { name: 'Manejo', icon: ListTodo, color: 'text-[#19B34A]', path: '/dashboard/cliente/manejo' },
                         { name: 'Colheita', icon: Sprout, color: 'text-[#19B34A]', path: '/dashboard/cliente/colheita' },
                         { name: 'Vendas', icon: Store, color: 'text-[#19B34A]', path: '/dashboard/cliente/vendas' },
+                        { name: 'Encomendas', icon: ShoppingCart, color: 'text-purple-400', path: '/dashboard/cliente/encomendas' },
                         { name: 'Monitorar', icon: MapIcon, color: 'text-blue-500', path: '/dashboard/cliente/areas' },
                     ].map((item, i) => (
                         <button 

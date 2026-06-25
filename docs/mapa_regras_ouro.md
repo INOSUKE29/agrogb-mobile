@@ -56,3 +56,13 @@ Para mantermos a aplicação Desktop em nível premium, as seguintes regras deve
 - **A Regra:** Todo formulário de entrada textual relacionado a cadastros (Culturas, Produtos, Talhões) deve forçar a padronização das letras em CAIXA ALTA (`.toUpperCase()`).
 - **A Solução:** Tratar isso diretamente nos componentes base, como o `SearchableSelect`, tanto no momento da digitação quanto da gravação.
 - **Benefício:** Elimina a bagunça no banco de dados e problemas de chaves duplicadas por sensibilidade a maiúsculas/minúsculas.
+
+### 8. Zero Mocks e Fake Data
+- **A Regra:** Nunca deixe dados fictícios, mocks (ex: listas estáticas de meses, alertas falsos, valores financeiros fixos) na aplicação final.
+- **A Solução:** Onde não houver dados reais no banco (Supabase) para preencher a tela, o sistema deve assumir uma "postura de vazio" elegante. Gráficos devem iniciar zerados, listas vazias devem exibir um aviso claro ("Nenhum item encontrado").
+- **Benefício:** Não assusta o usuário com números financeiros ou alertas de erros/boletos atrasados que não existem no banco dele.
+
+### 9. Comportamento Padrão do SearchableSelect (Evite Fake IDs)
+- **A Regra:** A propriedade `allowCustom` do componente `<SearchableSelect />` deve ter o valor padrão estrito de `false`.
+- **A Solução:** Só sobrescrever para `allowCustom={true}` se a caixa for especificamente para inserção de um texto livre (combobox simples). Para FKs (Chaves Estrangeiras) como Produtos, Clientes, etc, mantenha como `false`.
+- **Benefício:** Evita que o usuário clique em "Adicionar XYZ" e injete strings textuais num campo do banco que só aceitaria um UUID válido, quebrando a gravação de dados.
