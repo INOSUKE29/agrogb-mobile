@@ -199,7 +199,7 @@ export default function HomeScreen({ navigation }) {
                         <Text style={[styles.sectionTitle, { color: THEME.textSub }]}>ACESSO RÁPIDO</Text>
                         {menuConfig ? (
                             <View style={styles.grid}>
-                                {menuConfig.menu_items.filter(i => i.enabled).map((item, index) => (
+                                {menuConfig.menu_items.filter(i => i.enabled).slice(0, 6).map((item, index) => (
                                     <TouchableOpacity
                                         key={item.id}
                                         style={[styles.card, { width: cardWidth, height: 110, backgroundColor: theme?.colors?.cardMenu || '#152235' }]}
