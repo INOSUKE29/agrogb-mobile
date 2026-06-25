@@ -19,7 +19,7 @@ export const themeDark = {
         // --- TEXTOS ---
         textMain: '#FFFFFF',           // Textos Claros Premium
         textSub: '#A7B0B5',            // Textos Secundários
-        text: '#FFFFFF',               // Sobrescrita legacy
+        text: '#F8FAFC',               // Sobrescrita legacy
         textDark: '#FFFFFF',           // Sobrescrita legacy
         textMuted: '#94A3B8',          // Sobrescrita legacy
         

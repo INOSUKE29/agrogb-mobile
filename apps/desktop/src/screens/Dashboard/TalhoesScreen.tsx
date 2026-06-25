@@ -8,7 +8,11 @@ import {
     CheckCircle2,
     Maximize,
     Leaf,
-    MapPin
+    MapPin,
+    DollarSign,
+    TrendingUp,
+    TrendingDown,
+    Activity
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -44,6 +48,11 @@ export default function TalhoesScreen() {
     
     // Deletion Modal State
     const [_itemToDelete, _setItemToDelete] = useState<Talhao | null>(null);
+
+    // Fechamento de Safra (ROI) State
+    const [isFechamentoModalOpen, setIsFechamentoModalOpen] = useState(false);
+    const [fechamentoData, setFechamentoData] = useState<Record<string, string | number | boolean | null> | null>(null);
+    const [loadingFechamento, setLoadingFechamento] = useState(false);
 
     const fetchTalhoes = async () => {
         setLoading(true);
@@ -210,6 +219,41 @@ export default function TalhoesScreen() {
 
     const filteredTalhoes = talhoes.filter(t => t.nome.toLowerCase().includes(searchTerm.toLowerCase()));
     const totalArea = talhoes.reduce((acc, curr) => acc + (curr.area_ha || 0), 0);
+
+    const openFechamentoModal = async (talhao: Talhao) => {
+        setIsFechamentoModalOpen(true);
+        setLoadingFechamento(true);
+        setFechamentoData(null);
+        try {
+            // 1. Receitas: colheitas do talhão
+            const { data: colheitas } = await supabase.from('colheitas').select('*').eq('talhao_id', talhao.uuid);
+            const totalColhido = (colheitas || []).reduce((acc: number, curr: any) => acc + (curr.quantidade || 0), 0);
+            
+            // Heurística de Preço (ex: R$ 100 por unidade/saco) - Baseado no plano
+            const precoMedio = 100;
+            const receitaEstimada = totalColhido * precoMedio;
+
+            // 2. Custos: Operações do caderno agrícola deste talhão
+            const { data: operacoes } = await supabase.from('caderno_agricola').select('*').eq('talhao_id', talhao.uuid);
+            const totalCusto = (operacoes || []).reduce((acc: number, curr: any) => acc + (curr.custo_estimado || curr.valor_total || 0), 0);
+
+            let custoFinal = totalCusto;
+            const lucroLiquido = receitaEstimada - custoFinal;
+
+            setFechamentoData({
+                talhao,
+                receitaEstimada,
+                totalColhido,
+                custoFinal,
+                lucroLiquido,
+                roi: custoFinal > 0 ? ((lucroLiquido / custoFinal) * 100).toFixed(2) : (receitaEstimada > 0 ? '100.00' : '0.00')
+            });
+        } catch (error) {
+            toast.error('Erro ao calcular fechamento.');
+        } finally {
+            setLoadingFechamento(false);
+        }
+    };
 
     return (
         <div className="animate-fade-in pb-12 space-y-8 relative">
@@ -397,6 +441,9 @@ export default function TalhoesScreen() {
                                         <Td className="text-right">
                                             {!clientOverrideId && (
                                                 <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Button variant="secondary" size="sm" onClick={() => openFechamentoModal(talhao)} title="Fechamento de Safra (ROI)">
+                                                        <DollarSign className="w-4 h-4 text-green-500" />
+                                                    </Button>
                                                     <Button variant="secondary" size="sm" onClick={() => openModal(talhao)}>
                                                         <Edit2 className="w-4 h-4" />
                                                     </Button>
@@ -463,6 +510,62 @@ export default function TalhoesScreen() {
                         </Button>
                     </div>
                 </form>
+            </Modal>
+
+            {/* MODAL FECHAMENTO DE SAFRA (ROI) */}
+            <Modal
+                isOpen={isFechamentoModalOpen}
+                onClose={() => setIsFechamentoModalOpen(false)}
+                title="Fechamento de Safra (ROI)"
+                maxWidth="lg"
+            >
+                {loadingFechamento ? (
+                    <div className="flex flex-col items-center justify-center py-12 gap-4">
+                        <div className="w-12 h-12 border-4 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-[var(--color-muted)] font-bold">Calculando rentabilidade...</p>
+                    </div>
+                ) : fechamentoData ? (
+                    <div className="space-y-6">
+                        <div className="glass bg-[#0F172A]/80 p-6 rounded-2xl border border-white/5">
+                            <h3 className="text-xl font-black text-white mb-1">{fechamentoData.talhao.nome}</h3>
+                            <p className="text-sm text-[var(--color-muted)] mb-6">{fechamentoData.talhao.area_ha} hectares</p>
+                            
+                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                                    <p className="text-sm text-[var(--color-muted)] mb-1">Receita Estimada</p>
+                                    <h4 className="text-xl font-bold text-green-400">R$ {Number(fechamentoData.receitaEstimada).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</h4>
+                                    <p className="text-xs text-[var(--color-muted)] mt-1">{fechamentoData.totalColhido} sc colhidas</p>
+                                </div>
+                                <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                                    <p className="text-sm text-[var(--color-muted)] mb-1">Custos Insumos</p>
+                                    <h4 className="text-xl font-bold text-orange-400">R$ {Number(fechamentoData.custoFinal).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</h4>
+                                    <p className="text-xs text-[var(--color-muted)] mt-1">Lançamentos</p>
+                                </div>
+                            </div>
+
+                            <div className={`p-6 rounded-xl border flex items-center justify-between ${Number(fechamentoData.lucroLiquido) >= 0 ? 'bg-green-500/10 border-green-500/20' : 'bg-orange-500/10 border-orange-500/20'}`}>
+                                <div>
+                                    <p className={`text-sm font-bold mb-1 ${Number(fechamentoData.lucroLiquido) >= 0 ? 'text-green-500' : 'text-orange-500'}`}>
+                                        Lucro Líquido
+                                    </p>
+                                    <h2 className={`text-3xl font-black ${Number(fechamentoData.lucroLiquido) >= 0 ? 'text-green-400' : 'text-orange-400'}`}>
+                                        R$ {Number(fechamentoData.lucroLiquido).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                                    </h2>
+                                </div>
+                                <div className="text-right">
+                                    <p className={`text-sm font-bold mb-1 ${Number(fechamentoData.lucroLiquido) >= 0 ? 'text-green-500' : 'text-orange-500'}`}>ROI</p>
+                                    <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-bold text-sm ${Number(fechamentoData.lucroLiquido) >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                                        {Number(fechamentoData.lucroLiquido) >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                                        {fechamentoData.roi}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <Button type="button" variant="ghost" onClick={() => setIsFechamentoModalOpen(false)} fullWidth>
+                            Fechar
+                        </Button>
+                    </div>
+                ) : null}
             </Modal>
 
         </div>

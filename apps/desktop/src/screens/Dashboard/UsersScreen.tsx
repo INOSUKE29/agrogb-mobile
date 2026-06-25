@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
+import SearchableSelect from '../../components/ui/SearchableSelect';
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
 interface Profile {
@@ -403,18 +404,32 @@ export default function UsersScreen() {
                 <div className="flex gap-4 w-full md:w-auto">
                     <div className="flex items-center gap-2">
                         <Filter className="w-4 h-4 text-[var(--color-muted)]" />
-                        <select value={filterRole} onChange={e => { setFilterRole(e.target.value); setCurrentPage(1); }} className="bg-[var(--color-background)] border border-[var(--color-border)] text-white text-sm rounded-xl py-3 px-4 outline-none appearance-none">
-                            <option value="">Qualquer Tipo</option>
-                            <option value="ADMIN">Administrador</option>
-                            <option value="AGRONOMO">Agrônomo</option>
-                            <option value="CLIENTE">Cliente</option>
-                        </select>
+                        <SearchableSelect 
+                            value={filterRole} 
+                            onChange={val => { setFilterRole(val); setCurrentPage(1); }} 
+                            options={[
+                                { label: 'Qualquer Tipo', value: '' },
+                                { label: 'Administrador', value: 'ADMIN' },
+                                { label: 'Agrônomo', value: 'AGRONOMO' },
+                                { label: 'Cliente', value: 'CLIENTE' }
+                            ]}
+                            allowCustom={false}
+                            placeholder="Tipo"
+                        />
                     </div>
-                    <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setCurrentPage(1); }} className="bg-[var(--color-background)] border border-[var(--color-border)] text-white text-sm rounded-xl py-3 px-4 outline-none appearance-none">
-                        <option value="">Qualquer Status</option>
-                        <option value="ATIVO">Ativo</option>
-                        <option value="BLOQUEADO">Bloqueado</option>
-                    </select>
+                    <div className="w-48">
+                        <SearchableSelect 
+                            value={filterStatus} 
+                            onChange={val => { setFilterStatus(val); setCurrentPage(1); }} 
+                            options={[
+                                { label: 'Qualquer Status', value: '' },
+                                { label: 'Ativo', value: 'ATIVO' },
+                                { label: 'Bloqueado', value: 'BLOQUEADO' }
+                            ]}
+                            allowCustom={false}
+                            placeholder="Status"
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -556,15 +571,17 @@ export default function UsersScreen() {
                                     <div className="space-y-3">
                                         <div className="glass p-4 rounded-2xl border border-white/5">
                                             <p className="text-xs font-bold text-gray-400 mb-2">Alterar Nível de Acesso</p>
-                                            <select 
+                                            <SearchableSelect 
                                                 value={selectedUser.role?.toUpperCase()} 
-                                                onChange={e => updateRole(selectedUser.id, e.target.value)}
-                                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white font-bold text-sm focus:outline-none focus:border-indigo-500"
-                                            >
-                                                <option value="CLIENTE">Agricultor / Cliente</option>
-                                                <option value="AGRONOMO">Agrônomo</option>
-                                                <option value="ADMIN">Administrador</option>
-                                            </select>
+                                                onChange={val => updateRole(selectedUser.id, val)}
+                                                options={[
+                                                    { label: 'Agricultor / Cliente', value: 'CLIENTE' },
+                                                    { label: 'Agrônomo', value: 'AGRONOMO' },
+                                                    { label: 'Administrador', value: 'ADMIN' }
+                                                ]}
+                                                allowCustom={false}
+                                                placeholder="Alterar Nível"
+                                            />
                                         </div>
 
                                         <button 

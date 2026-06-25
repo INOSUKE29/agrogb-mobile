@@ -14,6 +14,7 @@ import {
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import DraggableModal from '../../components/common/DraggableModal';
+import SearchableSelect from '../../components/ui/SearchableSelect';
 
 interface Cultura {
     id: string;
@@ -347,16 +348,20 @@ export default function CulturasScreen() {
                                                 className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl focus:ring-2 focus:ring-green-500 p-3 transition-all"
                                                 placeholder="Ex: 100"
                                             />
-                                            <select
-                                                value={form.unidade_medida}
-                                                onChange={(e) => setForm({...form, unidade_medida: e.target.value})}
-                                                className="bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl focus:ring-2 focus:ring-green-500 px-4 transition-all appearance-none cursor-pointer text-center font-bold"
-                                            >
-                                                <option value="HA">HA</option>
-                                                <option value="PÉS">PÉS</option>
-                                                <option value="M²">M²</option>
-                                                <option value="ESTUFAS">ESTUFAS</option>
-                                            </select>
+                                            <div className="w-1/3">
+                                                <SearchableSelect
+                                                    value={form.unidade_medida}
+                                                    onChange={(val) => setForm({...form, unidade_medida: val})}
+                                                    options={[
+                                                        { label: 'HA', value: 'HA' },
+                                                        { label: 'PÉS', value: 'PÉS' },
+                                                        { label: 'M²', value: 'M²' },
+                                                        { label: 'ESTUFAS', value: 'ESTUFAS' }
+                                                    ]}
+                                                    allowCustom={false}
+                                                    placeholder="Unidade"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                     <div>
@@ -372,17 +377,19 @@ export default function CulturasScreen() {
 
                                 <div>
                                     <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Fase / Status</label>
-                                    <select
+                                    <SearchableSelect
                                         value={form.status}
-                                        onChange={(e) => setForm({...form, status: e.target.value})}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl focus:ring-2 focus:ring-green-500 p-3 transition-all appearance-none"
-                                    >
-                                        <option value="PREPARO DE SOLO">Preparo de Solo</option>
-                                        <option value="EM CRESCIMENTO">Em Crescimento</option>
-                                        <option value="PRAGA/DOENÇA">Alerta: Praga/Doença</option>
-                                        <option value="PRONTO PARA COLHEITA">Pronto para Colheita</option>
-                                        <option value="COLHIDO">Já Colhido</option>
-                                    </select>
+                                        onChange={(val) => setForm({...form, status: val})}
+                                        options={[
+                                            { label: 'Preparo de Solo', value: 'PREPARO DE SOLO' },
+                                            { label: 'Em Crescimento', value: 'EM CRESCIMENTO' },
+                                            { label: 'Alerta: Praga/Doença', value: 'PRAGA/DOENÇA' },
+                                            { label: 'Pronto para Colheita', value: 'PRONTO PARA COLHEITA' },
+                                            { label: 'Já Colhido', value: 'COLHIDO' }
+                                        ]}
+                                        allowCustom={false}
+                                        placeholder="Selecione a fase..."
+                                    />
                                 </div>
                             </form>
                         </div>

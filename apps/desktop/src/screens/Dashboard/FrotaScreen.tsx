@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { Truck, Search, Plus, Filter, Wrench, AlertTriangle, CheckCircle, Clock, PenTool } from 'lucide-react';
 import toast from 'react-hot-toast';
+import SearchableSelect from '../../components/ui/SearchableSelect';
 
 export default function FrotaScreen() {
     const [frota, setFrota] = useState<Record<string, string | number | boolean | null>[]>([]);
@@ -314,19 +315,21 @@ export default function FrotaScreen() {
                                 
                                 <div>
                                     <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Categoria / Tipo *</label>
-                                    <select 
+                                    <SearchableSelect 
                                         value={tipo}
-                                        onChange={(e) => setTipo(e.target.value)}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none appearance-none transition-all"
-                                    >
-                                        <option value="TRATOR">Trator</option>
-                                        <option value="COLHEITADEIRA">Colheitadeira</option>
-                                        <option value="PULVERIZADOR">Pulverizador</option>
-                                        <option value="CAMINHÃO">Caminhão / Veículo Pesado</option>
-                                        <option value="VEÍCULO LEVE">Caminhonete / Veículo Leve</option>
-                                        <option value="IMPLEMENTO">Implemento Agrícola</option>
-                                        <option value="OUTROS">Outros Equipamentos</option>
-                                    </select>
+                                        onChange={(val) => setTipo(val)}
+                                        options={[
+                                            { label: 'Trator', value: 'TRATOR' },
+                                            { label: 'Colheitadeira', value: 'COLHEITADEIRA' },
+                                            { label: 'Pulverizador', value: 'PULVERIZADOR' },
+                                            { label: 'Caminhão / Veículo Pesado', value: 'CAMINHÃO' },
+                                            { label: 'Caminhonete / Veículo Leve', value: 'VEÍCULO LEVE' },
+                                            { label: 'Implemento Agrícola', value: 'IMPLEMENTO' },
+                                            { label: 'Outros Equipamentos', value: 'OUTROS' }
+                                        ]}
+                                        allowCustom={false}
+                                        placeholder="Selecione a Categoria"
+                                    />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-5">

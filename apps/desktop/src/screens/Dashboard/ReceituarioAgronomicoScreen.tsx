@@ -4,6 +4,7 @@ import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
 import { jsPDF } from 'jspdf';
 import { useLocation, useNavigate } from 'react-router-dom';
+import SearchableSelect from '../../components/common/SearchableSelect';
 
 export default function ReceituarioAgronomicoScreen() {
     const location = useLocation();
@@ -322,15 +323,33 @@ export default function ReceituarioAgronomicoScreen() {
                                     {formProdutos.map(prod => (
                                         <div key={prod.id} className="flex gap-4 items-end mb-4">
                                             <div className="flex-1">
-                                                <input type="text" placeholder="Nome do Produto" value={prod.nome} onChange={e => updateProduto(prod.id, 'nome', e.target.value)} className="w-full bg-transparent border-b-2 border-gray-400 py-2 text-lg focus:outline-none focus:border-green-600" />
+                                                <SearchableSelect
+                                                    value={prod.nome}
+                                                    onChange={val => updateProduto(prod.id, 'nome', val)}
+                                                    options={[
+                                                        { label: 'Masterins (Insumo Base)', value: 'MASTERINS' },
+                                                        { label: 'Glifosato (Herbicida)', value: 'GLIFOSATO' },
+                                                        { label: 'Ureia (Fertilizante)', value: 'UREIA' }
+                                                    ]}
+                                                    placeholder="Buscar produto..."
+                                                    allowCustom={false}
+                                                />
                                             </div>
                                             <div className="w-32">
                                                 <input type="number" placeholder="Dose/ha" value={prod.dose} onChange={e => updateProduto(prod.id, 'dose', e.target.value)} className="w-full bg-transparent border-b-2 border-gray-400 py-2 text-lg focus:outline-none focus:border-green-600" />
                                             </div>
                                             <div className="w-20">
-                                                <select value={prod.unidade} onChange={e => updateProduto(prod.id, 'unidade', e.target.value)} className="w-full bg-transparent border-b-2 border-gray-400 py-2 text-lg focus:outline-none focus:border-green-600">
-                                                    <option value="L">L</option><option value="mL">mL</option><option value="Kg">Kg</option><option value="g">g</option>
-                                                </select>
+                                                <SearchableSelect
+                                                    value={prod.unidade}
+                                                    onChange={val => updateProduto(prod.id, 'unidade', val)}
+                                                    options={[
+                                                        { label: 'L', value: 'L' },
+                                                        { label: 'mL', value: 'mL' },
+                                                        { label: 'Kg', value: 'Kg' },
+                                                        { label: 'g', value: 'g' }
+                                                    ]}
+                                                    allowCustom={false}
+                                                />
                                             </div>
                                             <button onClick={() => removeProduto(prod.id)} className="text-red-500 mb-2 hover:scale-110 transition-transform"><Trash2 className="w-5 h-5"/></button>
                                         </div>
@@ -369,27 +388,29 @@ export default function ReceituarioAgronomicoScreen() {
                                                 Minha Fazenda (Autoprescrição)
                                             </div>
                                         ) : (
-                                            <select 
+                                            <SearchableSelect
                                                 value={formCliente}
-                                                onChange={e => setFormCliente(e.target.value)}
-                                                className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-[var(--color-primary)] transition-all font-bold"
-                                            >
-                                                <option>João (Fazenda Ouro Verde)</option>
-                                                <option>Maria (Sítio das Flores)</option>
-                                            </select>
+                                                onChange={val => setFormCliente(val)}
+                                                options={[
+                                                    { label: 'João (Fazenda Ouro Verde)', value: 'João (Fazenda Ouro Verde)' },
+                                                    { label: 'Maria (Sítio das Flores)', value: 'Maria (Sítio das Flores)' }
+                                                ]}
+                                                allowCustom={false}
+                                            />
                                         )}
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">Via de Aplicação</label>
-                                        <select 
+                                        <SearchableSelect
                                             value={formTipo}
-                                            onChange={e => setFormTipo(e.target.value)}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-[var(--color-primary)] transition-all font-bold"
-                                        >
-                                            <option value="Foliar">Foliar</option>
-                                            <option value="Solo">Solo (Via Fertirrigação)</option>
-                                            <option value="Semente">Tratamento de Sementes</option>
-                                        </select>
+                                            onChange={val => setFormTipo(val)}
+                                            options={[
+                                                { label: 'Foliar', value: 'Foliar' },
+                                                { label: 'Solo (Via Fertirrigação)', value: 'Solo' },
+                                                { label: 'Tratamento de Sementes', value: 'Semente' }
+                                            ]}
+                                            allowCustom={false}
+                                        />
                                     </div>
                                 </div>
                                 <div>
@@ -435,11 +456,34 @@ export default function ReceituarioAgronomicoScreen() {
                                         <div key={prod.id} className="grid grid-cols-12 gap-3 items-end bg-black/20 p-3 rounded-xl border border-white/5">
                                             <div className="col-span-12 md:col-span-4">
                                                 <label className="block text-[10px] font-bold text-[var(--color-muted)] uppercase mb-1">Produto Comercial</label>
-                                                <input type="text" placeholder="Ex: Masterins" value={prod.nome} onChange={e => updateProduto(prod.id, 'nome', e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg py-2 px-3 text-white text-sm" />
+                                                <SearchableSelect
+                                                    value={prod.nome}
+                                                    onChange={val => updateProduto(prod.id, 'nome', val)}
+                                                    options={[
+                                                        { label: 'Masterins (Insumo Base)', value: 'MASTERINS' },
+                                                        { label: 'Glifosato (Herbicida)', value: 'GLIFOSATO' },
+                                                        { label: 'Ureia (Fertilizante)', value: 'UREIA' }
+                                                    ]}
+                                                    placeholder="Buscar na base..."
+                                                    allowCustom={false}
+                                                />
                                             </div>
                                             <div className="col-span-12 md:col-span-3">
                                                 <label className="block text-[10px] font-bold text-[var(--color-muted)] uppercase mb-1">Função</label>
-                                                <input type="text" placeholder="Inseticida" value={prod.funcao} onChange={e => updateProduto(prod.id, 'funcao', e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg py-2 px-3 text-white text-sm" />
+                                                <SearchableSelect
+                                                    value={prod.funcao}
+                                                    onChange={val => updateProduto(prod.id, 'funcao', val)}
+                                                    options={[
+                                                        { label: 'Inseticida', value: 'Inseticida' },
+                                                        { label: 'Fungicida', value: 'Fungicida' },
+                                                        { label: 'Herbicida', value: 'Herbicida' },
+                                                        { label: 'Acaricida', value: 'Acaricida' },
+                                                        { label: 'Fertilizante Foliar', value: 'Fertilizante Foliar' },
+                                                        { label: 'Adjuvante', value: 'Adjuvante' }
+                                                    ]}
+                                                    placeholder="Selecione..."
+                                                    allowCustom={false}
+                                                />
                                             </div>
                                             <div className="col-span-8 md:col-span-3">
                                                 <label className="block text-[10px] font-bold text-[var(--color-muted)] uppercase mb-1">Dose / Hectare</label>
@@ -447,9 +491,17 @@ export default function ReceituarioAgronomicoScreen() {
                                             </div>
                                             <div className="col-span-3 md:col-span-1">
                                                 <label className="block text-[10px] font-bold text-[var(--color-muted)] uppercase mb-1">Un</label>
-                                                <select value={prod.unidade} onChange={e => updateProduto(prod.id, 'unidade', e.target.value)} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg py-2 px-1 text-white text-sm">
-                                                    <option value="L">L</option><option value="mL">mL</option><option value="Kg">Kg</option><option value="g">g</option>
-                                                </select>
+                                                <SearchableSelect
+                                                    value={prod.unidade}
+                                                    onChange={val => updateProduto(prod.id, 'unidade', val)}
+                                                    options={[
+                                                        { label: 'L', value: 'L' },
+                                                        { label: 'mL', value: 'mL' },
+                                                        { label: 'Kg', value: 'Kg' },
+                                                        { label: 'g', value: 'g' }
+                                                    ]}
+                                                    allowCustom={false}
+                                                />
                                             </div>
                                             <div className="col-span-1 flex justify-center pb-2">
                                                 <button onClick={() => removeProduto(prod.id)} className="text-red-400 hover:text-red-300"><Trash2 className="w-4 h-4" /></button>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { LayoutList, Plus, AlertCircle, Clock, CheckCircle2, GripVertical, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import SearchableSelect from '../../components/ui/SearchableSelect';
 
 interface Tarefa {
     uuid: string;
@@ -285,15 +286,17 @@ export default function TarefasScreen() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-[var(--color-muted)] mb-1">Prioridade</label>
-                                        <select 
+                                        <SearchableSelect 
                                             value={prioridade}
-                                            onChange={(e) => setPrioridade(e.target.value as any)}
-                                            className="w-full bg-[#121212] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none appearance-none"
-                                        >
-                                            <option value="BAIXA">Baixa</option>
-                                            <option value="MÉDIA">Média</option>
-                                            <option value="ALTA">Alta</option>
-                                        </select>
+                                            onChange={(val) => setPrioridade(val as any)}
+                                            options={[
+                                                { label: 'Baixa', value: 'BAIXA' },
+                                                { label: 'Média', value: 'MÉDIA' },
+                                                { label: 'Alta', value: 'ALTA' }
+                                            ]}
+                                            allowCustom={false}
+                                            placeholder="Selecione a Prioridade"
+                                        />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-[var(--color-muted)] mb-1">Vencimento (Opcional)</label>

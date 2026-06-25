@@ -4,6 +4,7 @@ import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/
 // Screens - Onboarding
 import LoginScreen from '../screens/onboarding/LoginScreen';
 import SelectProfileScreen from '../screens/onboarding/SelectProfileScreen';
+import ValidateAgronomistScreen from '../screens/onboarding/ValidateAgronomistScreen';
 import PersonalDataScreen from '../screens/onboarding/PersonalDataScreen';
 import FarmDataScreen from '../screens/onboarding/FarmDataScreen';
 import LinkAgronomistScreen from '../screens/onboarding/LinkAgronomistScreen';
@@ -84,6 +85,7 @@ export default function AppNavigator() {
             <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ClientTabs" component={ClientNavigator} options={{ headerShown: false }} />
             <Stack.Screen name="SelectProfile" component={SelectProfileScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ValidateAgronomist" component={ValidateAgronomistScreen} options={{ headerShown: false }} />
             <Stack.Screen name="PersonalData" component={PersonalDataScreen} options={{ headerShown: false }} />
             <Stack.Screen name="FarmData" component={FarmDataScreen} options={{ headerShown: false }} />
             <Stack.Screen name="LinkAgronomist" component={LinkAgronomistScreen} options={{ headerShown: false }} />

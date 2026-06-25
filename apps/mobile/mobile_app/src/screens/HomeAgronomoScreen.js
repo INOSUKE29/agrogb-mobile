@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, StatusBar as RNStatusBar, InteractionManager } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import WeatherWidget from '../components/WeatherWidget';
-import { getDashboardStats } from '../database/database';
+import { getDashboardAgronomoStats } from '../database/database';
 import { syncTable } from '../services/supabase';
 import { MenuConfigService } from '../services/MenuConfigService';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -31,21 +31,17 @@ export default function HomeAgronomoScreen({ navigation }) {
     };
 
     const [stats, setStats] = useState({
-        saldo: 0,
-        colheitaHoje: 0,
-        vendasHoje: 0,
-        plantioAtivo: 0,
-        maquinasAlert: 0,
-        pendentes: 0,
-        alertasPendentes: 0,
+        clientesCount: 0,
+        recomendacoesPendentes: 0,
         atendimentosHoje: 0,
-        recomendacoesPendentes: 0
+        pendentes: 0,
+        alertasPendentes: 0
     });
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [isReady, setIsReady] = useState(false); // Gatilho de Skeleton View
 
     const loadStats = async () => {
-        const data = await getDashboardStats();
+        const data = await getDashboardAgronomoStats();
         setStats(data);
     };
 
@@ -101,7 +97,7 @@ export default function HomeAgronomoScreen({ navigation }) {
                                 <Ionicons name="menu" size={30} color="#FFF" />
                             </TouchableOpacity>
                             <View>
-                                <Text style={styles.salutation}>Olá, {user?.name || 'Bruno'} 👋</Text>
+                                <Text style={styles.salutation}>Olá, {user?.name || 'Consultor'} 👋</Text>
                                 <Text style={styles.subSalutation}>{role === 'AGRONOMO' ? 'Painel do Consultor' : 'Bem-vindo ao seu painel'}</Text>
                             </View>
                         </View>
@@ -125,6 +121,16 @@ export default function HomeAgronomoScreen({ navigation }) {
                 {/* KPIS TÉCNICOS DO AGRÔNOMO */}
                 {isReady && (
                     <View style={styles.kpiRow}>
+                        <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>CLIENTES</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                                <Text style={styles.kpiEmoji}>👥</Text>
+                                <Text style={styles.kpiValue}>{stats.clientesCount} <Text style={styles.unit}>ativos</Text></Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.vr} />
+
                         <View style={styles.kpiItem}>
                             <Text style={styles.kpiLabel}>ATENDIMENTOS (HOJE)</Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>

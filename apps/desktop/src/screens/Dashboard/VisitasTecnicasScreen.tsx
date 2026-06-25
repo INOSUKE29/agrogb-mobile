@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../services/supabase';
+import SearchableSelect from '../../components/ui/SearchableSelect';
 import { AgronomistService } from '../../../../../packages/services/src/agronomistService';
 import type { TechnicalVisit, LinkedClient } from '../../../../../packages/services/src/agronomistService';
 
@@ -225,17 +226,16 @@ export default function VisitasTecnicasScreen() {
 
                             <div>
                                 <label className="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wide">Cliente Vinculado</label>
-                                <select 
-                                    className="w-full bg-[#1A1A1A] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors" 
-                                    required
+                                <SearchableSelect 
                                     value={formData.cliente_id}
-                                    onChange={(e) => setFormData({...formData, cliente_id: e.target.value})}
-                                >
-                                    <option value="">Selecione o produtor...</option>
-                                    {clientes.map(c => (
-                                        <option key={c.client_id} value={c.client_id}>{c.nome_completo} ({c.email})</option>
-                                    ))}
-                                </select>
+                                    onChange={(val) => setFormData({...formData, cliente_id: val})}
+                                    options={clientes.map(c => ({
+                                        label: `${c.nome_completo} (${c.email})`,
+                                        value: c.client_id
+                                    }))}
+                                    allowCustom={false}
+                                    placeholder="Selecione o produtor..."
+                                />
                             </div>
 
                             <div>

@@ -16,7 +16,12 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.agrogb.mobile"
+      "bundleIdentifier": "com.agrogb.mobile",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Permitir salvar relatórios e fotos.",
+        "NSPhotoLibraryAddUsageDescription": "Allow $(PRODUCT_NAME) to save photos",
+        "NSFaceIDUsageDescription": "Allow $(PRODUCT_NAME) to use Face ID"
+      }
     },
     "android": {
       "versionCode": 4,
@@ -35,7 +40,10 @@
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.DETECT_SCREEN_CAPTURE",
         "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT"
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_MEDIA_LOCATION"
       ]
     },
     "web": {
@@ -86,6 +94,12 @@
           "locationAlwaysAndWhenInUsePermission": "Permitir que o AgroGB acesse sua localização para previsão do clima nas fazendas."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "dd5b4ea9-8594-4f37-86a3-b5ef94900b23"
+      }
+    },
+    "owner": "inosuke29"
   }
 }

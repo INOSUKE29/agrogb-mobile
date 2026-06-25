@@ -12,6 +12,7 @@ import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import DraggableModal from '../../components/common/DraggableModal';
+import SearchableSelect from '../../components/ui/SearchableSelect';
 
 export default function PlantioScreen() {
     const [loading, setLoading] = useState(true);
@@ -267,26 +268,32 @@ export default function PlantioScreen() {
                                     <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
                                         <Map className="w-4 h-4 text-emerald-400" /> Área de Plantio (Onde?) *
                                     </label>
-                                    <select 
-                                        required value={talhaoId} onChange={e => setTalhaoId(e.target.value)}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none"
-                                    >
-                                        <option value="" disabled>Selecione um Talhão...</option>
-                                        {talhoes.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
-                                    </select>
+                                    <SearchableSelect 
+                                        value={talhaoId}
+                                        onChange={(val) => setTalhaoId(val)}
+                                        options={talhoes.map(t => ({
+                                            label: t.nome as string,
+                                            value: t.id as string
+                                        }))}
+                                        allowCustom={false}
+                                        placeholder="Selecione um Talhão..."
+                                    />
                                 </div>
 
                                 <div>
                                     <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
                                         <Leaf className="w-4 h-4 text-emerald-400" /> Cultura (O Que?) *
                                     </label>
-                                    <select 
-                                        required value={culturaId} onChange={e => setCulturaId(e.target.value)}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none"
-                                    >
-                                        <option value="" disabled>Selecione a cultura / variedade...</option>
-                                        {culturas.map(c => <option key={c.id || c.uuid} value={c.id || c.uuid}>{c.nome} {c.variedade ? `- ${c.variedade}` : ''}</option>)}
-                                    </select>
+                                    <SearchableSelect 
+                                        value={culturaId}
+                                        onChange={(val) => setCulturaId(val)}
+                                        options={culturas.map(c => ({
+                                            label: `${c.nome} ${c.variedade ? `- ${c.variedade}` : ''}`,
+                                            value: String(c.id || c.uuid)
+                                        }))}
+                                        allowCustom={false}
+                                        placeholder="Selecione a cultura / variedade..."
+                                    />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { ShoppingCart, Store, FileText, Plus, Building2, CheckCircle, XCircle, AlertCircle, TrendingUp, Package, Box } from 'lucide-react';
 import toast from 'react-hot-toast';
+import SearchableSelect from '../../components/ui/SearchableSelect';
 
 export default function CotacoesScreen() {
     const [fornecedores, setFornecedores] = useState<Record<string, string | number | boolean | null>[]>([]);
@@ -308,13 +309,16 @@ export default function CotacoesScreen() {
                         <form onSubmit={handleSaveCotacao} className="p-6 space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Fornecedor *</label>
-                                <select 
-                                    required value={fornecedorSelecionado} onChange={e => setFornecedorSelecionado(e.target.value)}
-                                    className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none appearance-none transition-all"
-                                >
-                                    <option value="" disabled>Selecione um Fornecedor</option>
-                                    {fornecedores.map(f => <option key={f.uuid} value={f.uuid}>{f.nome_fantasia}</option>)}
-                                </select>
+                                <SearchableSelect 
+                                    value={fornecedorSelecionado}
+                                    onChange={(val) => setFornecedorSelecionado(val)}
+                                    options={fornecedores.map(f => ({
+                                        label: f.nome_fantasia,
+                                        value: f.uuid
+                                    }))}
+                                    allowCustom={false}
+                                    placeholder="Selecione um Fornecedor"
+                                />
                             </div>
                             
                             <div>

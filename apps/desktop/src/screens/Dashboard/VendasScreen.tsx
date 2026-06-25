@@ -155,6 +155,37 @@ export default function VendasScreen() {
                         .update({ status: 'CONCLUIDA' }) // Idealmente calcularia restante
                         .eq('id', vinculoEncomendaId);
                 }
+
+                // Gargalo 1: Abater a venda do Estoque (Zero Mocks)
+                const { data: userData } = await supabase.auth.getUser();
+                const userId = userData.user?.id;
+
+                const { data: estoqueAtual } = await supabase.from('v2_estoque_atual').select('*');
+                let itemEstoque = (estoqueAtual || []).find(item => item.id === produtoId || item.uuid === produtoId);
+
+                if (itemEstoque) {
+                    await supabase
+                        .from('v2_estoque_atual')
+                        .update({ quantidade: Math.max(0, (itemEstoque.quantidade || 0) - qtdTotal), last_updated: new Date().toISOString() })
+                        .eq(itemEstoque.id ? 'id' : 'uuid', itemEstoque.id || itemEstoque.uuid);
+                } else {
+                    // Fallback para tabela antiga
+                    const { data: estV1 } = await supabase.from('estoque').select('*');
+                    let itemV1 = (estV1 || []).find(item => item.uuid === produtoId);
+                    if (itemV1) {
+                        await supabase.from('estoque').update({ quantidade: Math.max(0, (itemV1.quantidade || 0) - qtdTotal), last_updated: new Date().toISOString() }).eq('uuid', itemV1.uuid);
+                    }
+                }
+
+                // Registrar movimentação de saída
+                await supabase.from('v2_movimentacoes_estoque').insert([{
+                    user_id: userId,
+                    tipo: 'SAIDA',
+                    quantidade: qtdTotal,
+                    origem: 'VENDA',
+                    data: new Date().toISOString(),
+                    produto_uuid: produtoId
+                }]);
             }
 
             closeModal();

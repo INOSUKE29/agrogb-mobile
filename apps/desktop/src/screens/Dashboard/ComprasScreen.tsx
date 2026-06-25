@@ -146,7 +146,17 @@ export default function ComprasScreen() {
                     }]);
             }
 
-            toast.success('Compra confirmada e Estoque atualizado!');
+            // 4. Integrar com o Financeiro (Contas a Pagar) - Gargalo 3 (Zero Mocks)
+            await supabase.from('contas').insert([{
+                user_id: userId,
+                tipo: 'PAGAR',
+                descricao: `Compra de Insumos: ${itemNome}`,
+                valor: parseFloat(valorUnitario) * qtdNum,
+                data_vencimento: new Date().toISOString().split('T')[0],
+                status: 'PENDENTE'
+            }]);
+
+            toast.success('Compra confirmada! Estoque e Financeiro atualizados.', { icon: '🔄' });
             setShowCompraModal(false);
             setItemNome('');
             setQuantidade('');

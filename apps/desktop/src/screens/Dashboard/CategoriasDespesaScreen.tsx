@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
+import SearchableSelect from '../../components/ui/SearchableSelect';
 
 export default function CategoriasDespesaScreen() {
     const [loading, setLoading] = useState(true);
@@ -211,13 +212,16 @@ export default function CategoriasDespesaScreen() {
                                     <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
                                         Tipo Contábil *
                                     </label>
-                                    <select 
-                                        required value={tipo} onChange={e => setTipo(e.target.value)}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"
-                                    >
-                                        <option value="DESPESA">Saída (Despesa / Custo)</option>
-                                        <option value="RECEITA">Entrada (Receita / Venda)</option>
-                                    </select>
+                                    <SearchableSelect 
+                                        value={tipo}
+                                        onChange={(val) => setTipo(val)}
+                                        options={[
+                                            { label: 'Saída (Despesa / Custo)', value: 'DESPESA' },
+                                            { label: 'Entrada (Receita / Venda)', value: 'RECEITA' }
+                                        ]}
+                                        allowCustom={false}
+                                        placeholder="Selecione o Tipo"
+                                    />
                                 </div>
 
                                 <div>

@@ -9,6 +9,7 @@ import {
     CheckCircle2,
     Loader2
 } from 'lucide-react';
+import SearchableSelect from '../../components/ui/SearchableSelect';
 
 interface Monitoramento {
     id: string;
@@ -227,30 +228,34 @@ export default function MonitoramentoScreen() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-bold text-[var(--color-muted)] mb-2">Tipo *</label>
-                                        <select
+                                        <SearchableSelect
                                             value={form.tipo}
-                                            onChange={(e) => setForm({...form, tipo: e.target.value})}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl focus:ring-2 focus:ring-orange-500 p-3"
-                                        >
-                                            <option value="PRAGA">Praga (Insetos)</option>
-                                            <option value="DOENÇA">Doença (Fungo/Vírus)</option>
-                                            <option value="ERVA DANINHA">Erva Daninha</option>
-                                        </select>
+                                            onChange={(val) => setForm({...form, tipo: val})}
+                                            options={[
+                                                { label: 'Praga (Insetos)', value: 'PRAGA' },
+                                                { label: 'Doença (Fungo/Vírus)', value: 'DOENÇA' },
+                                                { label: 'Erva Daninha', value: 'ERVA DANINHA' }
+                                            ]}
+                                            allowCustom={false}
+                                            placeholder="Selecione o Tipo"
+                                        />
                                     </div>
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-bold text-[var(--color-muted)] mb-2">Nível de Infecção *</label>
-                                    <select
+                                    <SearchableSelect
                                         value={form.nivel_infeccao}
-                                        onChange={(e) => setForm({...form, nivel_infeccao: e.target.value})}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl focus:ring-2 focus:ring-orange-500 p-3"
-                                    >
-                                        <option value="BAIXO">Baixo (Controle preventivo)</option>
-                                        <option value="MÉDIO">Médio (Atenção necessária)</option>
-                                        <option value="ALTO">Alto (Ação imediata recomendada)</option>
-                                        <option value="CRÍTICO">Crítico (Danos severos)</option>
-                                    </select>
+                                        onChange={(val) => setForm({...form, nivel_infeccao: val})}
+                                        options={[
+                                            { label: 'Baixo (Controle preventivo)', value: 'BAIXO' },
+                                            { label: 'Médio (Atenção necessária)', value: 'MÉDIO' },
+                                            { label: 'Alto (Ação imediata recomendada)', value: 'ALTO' },
+                                            { label: 'Crítico (Danos severos)', value: 'CRÍTICO' }
+                                        ]}
+                                        allowCustom={false}
+                                        placeholder="Selecione o Nível"
+                                    />
                                 </div>
 
                                 <div>

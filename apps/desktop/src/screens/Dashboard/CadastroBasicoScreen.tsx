@@ -18,6 +18,7 @@ import {
 import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
 import DraggableModal from '../../components/common/DraggableModal';
+import SearchableSelect from '../../components/ui/SearchableSelect';
 
 export default function CadastroBasicoScreen() {
     const [loading, setLoading] = useState(true);
@@ -582,33 +583,39 @@ export default function CadastroBasicoScreen() {
                                         <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
                                             Categoria *
                                         </label>
-                                        <select 
-                                            required value={categoria} onChange={e => setCategoria(e.target.value)}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
-                                        >
-                                            <option value="INSUMO">Insumo Geral</option>
-                                            <option value="FERTILIZANTE">Fertilizante / Adubo</option>
-                                            <option value="DEFENSIVO">Defensivo Agrícola</option>
-                                            <option value="SEMENTE">Semente / Muda</option>
-                                            <option value="PRODUTO_FINAL">Produto Final (Venda)</option>
-                                            <option value="EMBALAGEM">Embalagem</option>
-                                        </select>
+                                        <SearchableSelect 
+                                            value={categoria}
+                                            onChange={(val) => setCategoria(val)}
+                                            options={[
+                                                { label: 'Insumo Geral', value: 'INSUMO' },
+                                                { label: 'Fertilizante / Adubo', value: 'FERTILIZANTE' },
+                                                { label: 'Defensivo Agrícola', value: 'DEFENSIVO' },
+                                                { label: 'Semente / Muda', value: 'SEMENTE' },
+                                                { label: 'Produto Final (Venda)', value: 'PRODUTO_FINAL' },
+                                                { label: 'Embalagem', value: 'EMBALAGEM' }
+                                            ]}
+                                            allowCustom={false}
+                                            placeholder="Selecione a Categoria"
+                                        />
                                     </div>
                                     <div>
                                         <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
                                             Unid. de Medida *
                                         </label>
-                                        <select 
-                                            required value={unidade} onChange={e => setUnidade(e.target.value)}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
-                                        >
-                                            <option value="KG">KG (Quilogramas)</option>
-                                            <option value="LT">LT (Litros)</option>
-                                            <option value="SC">SC (Sacas)</option>
-                                            <option value="CX">CX (Caixas)</option>
-                                            <option value="TON">TON (Toneladas)</option>
-                                            <option value="UN">UN (Unidade)</option>
-                                        </select>
+                                        <SearchableSelect 
+                                            value={unidade}
+                                            onChange={(val) => setUnidade(val)}
+                                            options={[
+                                                { label: 'KG (Quilogramas)', value: 'KG' },
+                                                { label: 'LT (Litros)', value: 'LT' },
+                                                { label: 'SC (Sacas)', value: 'SC' },
+                                                { label: 'CX (Caixas)', value: 'CX' },
+                                                { label: 'TON (Toneladas)', value: 'TON' },
+                                                { label: 'UN (Unidade)', value: 'UN' }
+                                            ]}
+                                            allowCustom={false}
+                                            placeholder="Selecione a Unidade"
+                                        />
                                     </div>
                                 </div>
 
@@ -642,17 +649,19 @@ export default function CadastroBasicoScreen() {
                                                 <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
                                                     Modo Aplicação
                                                 </label>
-                                                <select 
-                                                    value={modoAplicacao} onChange={e => setModoAplicacao(e.target.value)}
-                                                    className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
-                                                >
-                                                    <option value="">Selecione...</option>
-                                                    <option value="FOLIAR">Foliar</option>
-                                                    <option value="SOLO">Via Solo</option>
-                                                    <option value="FERTIRRIGACAO">Fertirrigação</option>
-                                                    <option value="SEMENTE">Trat. Semente</option>
-                                                    <option value="OUTROS">Outros</option>
-                                                </select>
+                                                <SearchableSelect 
+                                                    value={modoAplicacao}
+                                                    onChange={(val) => setModoAplicacao(val)}
+                                                    options={[
+                                                        { label: 'Foliar', value: 'FOLIAR' },
+                                                        { label: 'Via Solo', value: 'SOLO' },
+                                                        { label: 'Fertirrigação', value: 'FERTIRRIGACAO' },
+                                                        { label: 'Trat. Semente', value: 'SEMENTE' },
+                                                        { label: 'Outros', value: 'OUTROS' }
+                                                    ]}
+                                                    allowCustom={false}
+                                                    placeholder="Selecione..."
+                                                />
                                             </div>
                                             <div>
                                                 <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
@@ -710,20 +719,20 @@ export default function CadastroBasicoScreen() {
                                             <div className="space-y-3">
                                                 {fichas.map((ficha, idx) => (
                                                     <div key={idx} className="flex gap-3 items-center bg-[var(--color-background)] p-2 rounded-lg border border-[var(--color-border)]">
-                                                        <select 
+                                                        <SearchableSelect 
                                                             value={ficha.insumo_id}
-                                                            onChange={e => {
+                                                            onChange={val => {
                                                                 const newF = [...fichas];
-                                                                newF[idx].insumo_id = e.target.value;
+                                                                newF[idx].insumo_id = val;
                                                                 setFichas(newF);
                                                             }}
-                                                            className="flex-1 bg-transparent text-white text-sm outline-none"
-                                                        >
-                                                            <option value="" className="bg-[#121212] text-white">Selecione o Insumo/Embalagem...</option>
-                                                            {items.filter(i => i.categoria === 'EMBALAGEM' || i.categoria === 'INSUMO').map(i => (
-                                                                <option key={i.id} value={i.id} className="bg-[#121212] text-white">{i.nome}</option>
-                                                            ))}
-                                                        </select>
+                                                            options={items.filter(i => i.categoria === 'EMBALAGEM' || i.categoria === 'INSUMO').map(i => ({
+                                                                label: i.nome,
+                                                                value: i.id
+                                                            }))}
+                                                            allowCustom={false}
+                                                            placeholder="Selecione o Insumo/Embalagem..."
+                                                        />
                                                         <button 
                                                             type="button" onClick={() => handlePauseAndCreate(idx)} 
                                                             className="p-2 text-indigo-400 hover:bg-indigo-500/20 rounded-lg transition-colors tooltip"

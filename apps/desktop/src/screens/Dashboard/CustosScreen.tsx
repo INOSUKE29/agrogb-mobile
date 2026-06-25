@@ -12,6 +12,7 @@ import {
 import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
 import DraggableModal from '../../components/common/DraggableModal';
+import SearchableSelect from '../../components/ui/SearchableSelect';
 
 export default function CustosScreen() {
     const [loading, setLoading] = useState(true);
@@ -267,13 +268,16 @@ export default function CustosScreen() {
                         <label className="flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
                             <List className="w-4 h-4 text-red-400" /> Categoria da Despesa *
                         </label>
-                        <select 
-                            required value={categoriaId} onChange={e => setCategoriaId(e.target.value)}
-                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-red-500 outline-none"
-                        >
-                            <option value="" disabled className="bg-[#121212] text-[var(--color-muted)]">Selecione uma Categoria...</option>
-                            {categorias.map(c => <option key={c.id} value={c.id} className="bg-[#121212] text-white">{c.nome}</option>)}
-                        </select>
+                        <SearchableSelect 
+                            value={categoriaId}
+                            onChange={(val) => setCategoriaId(val)}
+                            options={categorias.map(c => ({
+                                label: c.nome,
+                                value: c.id
+                            }))}
+                            allowCustom={false}
+                            placeholder="Selecione uma Categoria..."
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

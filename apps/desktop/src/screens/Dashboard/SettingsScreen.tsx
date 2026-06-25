@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User, Shield, Monitor, Key, Bell, Save } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Select } from '../../components/ui/Select';
+import SearchableSelect from '../../components/ui/SearchableSelect';
 import { Switch } from '../../components/ui/Switch';
 import { Card } from '../../components/ui/Card';
 import { Avatar } from '../../components/ui/Avatar';
@@ -108,25 +108,34 @@ export default function SettingsScreen() {
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Preferências do Sistema</h2>
                             
                             <div className="flex flex-col gap-6 max-w-sm">
-                                <Select 
-                                    label="Tema"
-                                    value={theme}
-                                    onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
-                                    options={[
-                                        { label: 'Claro', value: 'light' },
-                                        { label: 'Escuro', value: 'dark' },
-                                        { label: 'Sistema (Automático)', value: 'system' }
-                                    ]}
-                                />
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-900 dark:text-white mb-1.5">Tema</label>
+                                    <SearchableSelect 
+                                        value={theme}
+                                        onChange={(val) => setTheme(val as 'light' | 'dark' | 'system')}
+                                        options={[
+                                            { label: 'Claro', value: 'light' },
+                                            { label: 'Escuro', value: 'dark' },
+                                            { label: 'Sistema (Automático)', value: 'system' }
+                                        ]}
+                                        allowCustom={false}
+                                        placeholder="Tema"
+                                    />
+                                </div>
                                 
-                                <Select 
-                                    label="Idioma"
-                                    defaultValue="pt-BR"
-                                    options={[
-                                        { label: 'Português (Brasil)', value: 'pt-BR' },
-                                        { label: 'English', value: 'en-US' }
-                                    ]}
-                                />
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-900 dark:text-white mb-1.5">Idioma</label>
+                                    <SearchableSelect 
+                                        value="pt-BR"
+                                        onChange={() => {}}
+                                        options={[
+                                            { label: 'Português (Brasil)', value: 'pt-BR' },
+                                            { label: 'English', value: 'en-US' }
+                                        ]}
+                                        allowCustom={false}
+                                        placeholder="Idioma"
+                                    />
+                                </div>
 
                                 <div className="border-t border-[var(--color-border)] pt-6 mt-2 flex items-center justify-between">
                                     <span className="text-gray-900 dark:text-white font-medium flex items-center gap-2">

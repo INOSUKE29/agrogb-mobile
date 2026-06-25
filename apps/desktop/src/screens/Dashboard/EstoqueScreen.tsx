@@ -4,6 +4,7 @@ import { Package, Search, ArrowDownCircle, ArrowUpCircle, Filter, Activity, Box,
 import toast from 'react-hot-toast';
 import DraggableModal from '../../components/common/DraggableModal';
 import { useAuth } from '../../contexts/AuthContext';
+import SearchableSelect from '../../components/ui/SearchableSelect';
 
 export default function EstoqueScreen() {
     const { clientOverrideId } = useAuth();
@@ -338,15 +339,16 @@ export default function EstoqueScreen() {
                                 <div>
                                     <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Produto</label>
                                     <div className="relative">
-                                        <select 
-                                            required
+                                        <SearchableSelect 
                                             value={produtoId}
-                                            onChange={(e) => setProdutoId(e.target.value)}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none appearance-none transition-all"
-                                        >
-                                            <option value="" disabled>Selecione do Catálogo...</option>
-                                            {produtos.map(p => <option key={p.id || p.uuid} value={String(p.id || p.uuid)}>{p.nome} ({p.unidade_medida || 'UN'})</option>)}
-                                        </select>
+                                            onChange={(val) => setProdutoId(val)}
+                                            options={produtos.map(p => ({
+                                                label: `${p.nome} (${p.unidade_medida || 'UN'})`,
+                                                value: String(p.id || p.uuid)
+                                            }))}
+                                            allowCustom={false}
+                                            placeholder="Selecione do Catálogo..."
+                                        />
                                         <div className="text-right mt-1">
                                             <a href="#/dashboard/cliente/cadastro" className="text-xs text-[var(--color-primary)] hover:underline opacity-80">+ Novo Produto no Catálogo</a>
                                         </div>
@@ -367,26 +369,22 @@ export default function EstoqueScreen() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-bold text-[var(--color-muted)] mb-2 uppercase tracking-wider">Origem/Destino</label>
-                                        <select 
+                                        <SearchableSelect 
                                             value={origem}
-                                            onChange={(e) => setOrigem(e.target.value)}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white text-lg rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--color-primary)] outline-none appearance-none transition-all"
-                                        >
-                                            {modalType === 'ENTRADA' ? (
-                                                <>
-                                                    <option value="COMPRA">Compra Direta</option>
-                                                    <option value="DEVOLUÇÃO">Devolução do Campo</option>
-                                                    <option value="AJUSTE">Ajuste de Inventário</option>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <option value="APLICAÇÃO">Aplicação no Talhão</option>
-                                                    <option value="VENDA">Venda</option>
-                                                    <option value="PERDA">Perda/Descarte</option>
-                                                    <option value="AJUSTE">Ajuste de Inventário</option>
-                                                </>
-                                            )}
-                                        </select>
+                                            onChange={(val) => setOrigem(val)}
+                                            options={modalType === 'ENTRADA' ? [
+                                                { label: 'Compra Direta', value: 'COMPRA' },
+                                                { label: 'Devolução do Campo', value: 'DEVOLUÇÃO' },
+                                                { label: 'Ajuste de Inventário', value: 'AJUSTE' }
+                                            ] : [
+                                                { label: 'Aplicação no Talhão', value: 'APLICAÇÃO' },
+                                                { label: 'Venda', value: 'VENDA' },
+                                                { label: 'Perda/Descarte', value: 'PERDA' },
+                                                { label: 'Ajuste de Inventário', value: 'AJUSTE' }
+                                            ]}
+                                            allowCustom={false}
+                                            placeholder="Selecione a origem/destino"
+                                        />
                                     </div>
                                 </div>
                             </form>

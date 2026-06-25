@@ -21,6 +21,7 @@
       "bundleIdentifier": "com.agrogb.mobile"
     },
     "android": {
+      "allowBackup": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#10B981"

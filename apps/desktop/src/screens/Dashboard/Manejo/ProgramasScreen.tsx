@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Plus, Save, Leaf, Droplet, Clock, ListTodo, Map, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
+import SearchableSelect from '../../../components/ui/SearchableSelect';
 
 export default function ProgramasScreen() {
     const navigate = useNavigate();
@@ -83,15 +84,17 @@ export default function ProgramasScreen() {
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-[var(--color-muted)] uppercase mb-2">Talhão Vinculado</label>
-                                <select 
+                                <SearchableSelect 
                                     value={talhao}
-                                    onChange={e => setTalhao(e.target.value)}
-                                    className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-[var(--color-primary)] transition-all font-bold"
-                                >
-                                    <option value="">Geral (Aplicável a vários)</option>
-                                    <option value="Gleba A">Gleba A (Tomate)</option>
-                                    <option value="Gleba B">Gleba B (Morango)</option>
-                                </select>
+                                    onChange={(val) => setTalhao(val)}
+                                    options={[
+                                        { label: 'Geral (Aplicável a vários)', value: '' },
+                                        { label: 'Gleba A (Tomate)', value: 'Gleba A' },
+                                        { label: 'Gleba B (Morango)', value: 'Gleba B' }
+                                    ]}
+                                    allowCustom={false}
+                                    placeholder="Selecione o Talhão"
+                                />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-[var(--color-muted)] uppercase mb-2">Data de Início Base *</label>
@@ -136,11 +139,17 @@ export default function ProgramasScreen() {
                                     </div>
                                     <div className="col-span-2">
                                         <label className="block text-xs font-bold text-[var(--color-muted)] uppercase mb-1">Via</label>
-                                        <select value={novaAtiv.tipo} onChange={e => setNovaAtiv({...novaAtiv, tipo: e.target.value})} className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg py-2 px-3 text-white text-sm">
-                                            <option value="Foliar">Foliar</option>
-                                            <option value="Gotejo">Via Gotejo (Fertirrigação)</option>
-                                            <option value="Fitossanitario">Fitossanitário</option>
-                                        </select>
+                                        <SearchableSelect 
+                                            value={novaAtiv.tipo} 
+                                            onChange={(val) => setNovaAtiv({...novaAtiv, tipo: val})}
+                                            options={[
+                                                { label: 'Foliar', value: 'Foliar' },
+                                                { label: 'Via Gotejo (Fertirrigação)', value: 'Gotejo' },
+                                                { label: 'Fitossanitário', value: 'Fitossanitario' }
+                                            ]}
+                                            allowCustom={false}
+                                            placeholder="Selecione a Via"
+                                        />
                                     </div>
                                 </div>
                                 <div className="mb-4">

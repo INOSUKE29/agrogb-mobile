@@ -1680,6 +1680,43 @@ export const getDashboardStats = async () => {
     }
 };
 
+export const getDashboardAgronomoStats = async () => {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+
+        // 1. Clientes Ativos
+        const resClientes = await executeQuery(`SELECT COUNT(DISTINCT client_id) as total FROM agronomist_client_links WHERE status = 'active'`);
+        const clientesCount = resClientes.rows.item(0)?.total || 0;
+
+        // 2. Recomendações Pendentes
+        const resRecPendente = await executeQuery(`SELECT COUNT(*) as total FROM recommendations WHERE status = 'PENDING' AND is_deleted = 0`);
+        const recomendacoesPendentes = resRecPendente.rows.item(0)?.total || 0;
+
+        // 3. Atendimentos Hoje (Visitas / Monitoramentos)
+        // Simplificado: Contar quantos monitoramentos foram feitos hoje
+        const resMonitoramentos = await executeQuery(`SELECT COUNT(*) as total FROM monitoramento_entidade WHERE date(data) = ? AND is_deleted = 0`, [today]);
+        const atendimentosHoje = resMonitoramentos.rows.item(0)?.total || 0;
+
+        // 4. Alertas / Pendentes Sync
+        const pendentes = (await getDadosPendentes()).total;
+
+        // 5. Alertas/Pendências do Sistema
+        const resAlertas = await executeQuery(`SELECT COUNT(*) as total FROM alertas_pendencias WHERE status = 'PENDENTE' AND is_deleted = 0`);
+        const alertasPendentes = resAlertas.rows.item(0)?.total || 0;
+
+        return {
+            clientesCount,
+            recomendacoesPendentes,
+            atendimentosHoje,
+            pendentes,
+            alertasPendentes
+        };
+    } catch (e) {
+        console.error('Dashboard Agronomo Stats Error:', e);
+        return { clientesCount: 0, recomendacoesPendentes: 0, atendimentosHoje: 0, pendentes: 0, alertasPendentes: 0 };
+    }
+};
+
 // ==========================================
 // FUNÇÕES AUXILIARES - APP SETTINGS (FASE 10)
 // ==========================================

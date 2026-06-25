@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Plus, Trash2, Send, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ProductAutocomplete } from '../common/ProductAutocomplete';
+import SearchableSelect from '../ui/SearchableSelect';
 import { AgronomistService } from '../../../../../packages/services/src/agronomistService';
 
 interface Props {
@@ -238,16 +239,16 @@ export default function RecomendacaoWizard({ isAgronomo, onComplete, onCancel }:
                     {isAgronomo && (
                         <div>
                             <label className="block text-xs font-bold text-[var(--color-muted)] uppercase mb-2">Cliente / Produtor</label>
-                            <select
+                            <SearchableSelect
                                 value={data.cliente_id}
-                                onChange={(e) => updateData('cliente_id', e.target.value)}
-                                className="w-full bg-[#0a192f] border border-[rgba(255,255,255,0.1)] rounded-xl p-3 text-white text-sm focus:border-green-500 outline-none"
-                            >
-                                <option value="" className="bg-[#0a192f]">Selecione o Cliente...</option>
-                                {clientes.map(c => (
-                                    <option key={c.id} value={c.id} className="bg-[#0a192f]">{c.name}</option>
-                                ))}
-                            </select>
+                                onChange={(val) => updateData('cliente_id', val)}
+                                options={clientes.map(c => ({
+                                    label: c.name,
+                                    value: c.id
+                                }))}
+                                allowCustom={false}
+                                placeholder="Selecione o Cliente..."
+                            />
                         </div>
                     )}
                     <div>
@@ -282,17 +283,19 @@ export default function RecomendacaoWizard({ isAgronomo, onComplete, onCancel }:
                                     className="bg-transparent border-b border-transparent hover:border-[rgba(255,255,255,0.2)] focus:border-green-500 text-lg font-black text-white w-full sm:w-48 px-1 py-1 transition-all outline-none"
                                 />
                                 <div className="border-l border-[rgba(255,255,255,0.1)] h-6 mx-2 hidden sm:block"></div>
-                                <select
+                                <SearchableSelect
                                     value={app.metodo}
-                                    onChange={e => updateAplicacaoMetodo(app.id, e.target.value)}
-                                    className="bg-[#112240] border border-[rgba(255,255,255,0.1)] text-white text-xs font-bold uppercase p-2 rounded-lg outline-none focus:border-green-500"
-                                >
-                                    <option value="Foliar" className="bg-[#0a192f] text-white">Via Foliar</option>
-                                    <option value="Gotejo" className="bg-[#0a192f] text-white">Gotejo / Irrigação</option>
-                                    <option value="Solo" className="bg-[#0a192f] text-white">Via Solo / Cobertura</option>
-                                    <option value="Sulco" className="bg-[#0a192f] text-white">Sulco de Plantio</option>
-                                    <option value="Semente" className="bg-[#0a192f] text-white">Trat. de Semente</option>
-                                </select>
+                                    onChange={(val) => updateAplicacaoMetodo(app.id, val)}
+                                    options={[
+                                        { label: 'Via Foliar', value: 'Foliar' },
+                                        { label: 'Gotejo / Irrigação', value: 'Gotejo' },
+                                        { label: 'Via Solo / Cobertura', value: 'Solo' },
+                                        { label: 'Sulco de Plantio', value: 'Sulco' },
+                                        { label: 'Trat. de Semente', value: 'Semente' }
+                                    ]}
+                                    allowCustom={false}
+                                    placeholder="Método"
+                                />
                             </div>
                             
                             <div className="flex items-center gap-2">
@@ -339,16 +342,18 @@ export default function RecomendacaoWizard({ isAgronomo, onComplete, onCancel }:
                                     {/* Unidade */}
                                     <div className="w-full sm:w-20">
                                         <label className="block text-[10px] font-black text-[var(--color-muted)] uppercase tracking-widest mb-1">Und.</label>
-                                        <select
+                                        <SearchableSelect
                                             value={item.unidade}
-                                            onChange={e => updateInsumo(app.id, item.id, 'unidade', e.target.value)}
-                                            className="w-full bg-[#112240] border border-[rgba(255,255,255,0.1)] rounded-lg p-2 text-white text-sm focus:border-green-500 outline-none"
-                                        >
-                                            <option value="ML" className="bg-[#0a192f]">ML</option>
-                                            <option value="L" className="bg-[#0a192f]">L</option>
-                                            <option value="GR" className="bg-[#0a192f]">GR</option>
-                                            <option value="KG" className="bg-[#0a192f]">KG</option>
-                                        </select>
+                                            onChange={(val) => updateInsumo(app.id, item.id, 'unidade', val)}
+                                            options={[
+                                                { label: 'ML', value: 'ML' },
+                                                { label: 'L', value: 'L' },
+                                                { label: 'GR', value: 'GR' },
+                                                { label: 'KG', value: 'KG' }
+                                            ]}
+                                            allowCustom={false}
+                                            placeholder="Und."
+                                        />
                                     </div>
                                     {/* Calda */}
                                     <div className="w-full sm:w-32">

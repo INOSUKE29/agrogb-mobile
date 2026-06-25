@@ -55,7 +55,7 @@ export default function SelectProfileScreen({ navigation }) {
                     <TouchableOpacity 
                         style={styles.card} 
                         activeOpacity={0.8}
-                        onPress={() => handleSelectProfile('AGRONOMO')}
+                        onPress={() => navigation.navigate('ValidateAgronomist')}
                     >
                         <LinearGradient colors={['#FFFFFF', '#E8F5E9']} style={styles.cardGrad}>
                             <View style={styles.iconCircle}>

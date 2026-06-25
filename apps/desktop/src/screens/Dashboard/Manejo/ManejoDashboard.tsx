@@ -34,9 +34,9 @@ export default function ManejoDashboard() {
     return (
         <div className="animate-fade-in pb-12 space-y-6">
             {/* HERO CABEÇALHO */}
-            <div className="relative rounded-3xl overflow-hidden glass border border-[var(--color-border)] p-8">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--color-primary)]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+            <div className="relative rounded-3xl overflow-hidden glass bg-[#0F172A]/90 border border-white/5 shadow-2xl p-10">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--color-primary)]/15 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
                 
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
@@ -53,7 +53,7 @@ export default function ManejoDashboard() {
                     <div>
                         <button 
                             onClick={() => navigate('/dashboard/cliente/manejo/programas')}
-                            className="px-6 py-4 rounded-2xl font-black text-white shadow-lg flex items-center justify-center gap-3 transition-all hover:scale-95 active:scale-90"
+                            className="px-8 py-4 rounded-2xl font-black text-white shadow-xl flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 border border-white/10"
                             style={{ background: 'linear-gradient(135deg, var(--color-primary), #047857)' }}
                         >
                             <Plus className="w-5 h-5" /> Novo Programa
@@ -63,18 +63,18 @@ export default function ManejoDashboard() {
             </div>
 
             {/* SEÇÕES */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-8">
                     {/* PRÓXIMAS ATIVIDADES */}
-                    <div className="glass rounded-3xl border border-[var(--color-border)] p-6">
-                        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                            <Calendar className="w-5 h-5 text-[var(--color-primary)]" />
+                    <div className="glass bg-[#0F172A]/80 rounded-3xl border border-white/5 shadow-xl p-8">
+                        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                            <Calendar className="w-6 h-6 text-[var(--color-primary)]" />
                             Atividades Pendentes
                         </h2>
                         
                         <div className="space-y-4">
                             {pendentes.length > 0 ? pendentes.map((ativ) => (
-                                <div key={ativ.id} className="bg-white/5 border border-white/10 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 hover:border-[var(--color-primary)]/50 transition-all cursor-pointer">
+                                <div key={ativ.id} className="bg-white/5 border border-white/10 p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group">
                                     <div className="flex items-center gap-4">
                                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg ${
                                             ativ.tipo === 'Foliar' ? 'bg-green-500/20 text-green-400' :
@@ -96,7 +96,7 @@ export default function ManejoDashboard() {
                                                 }
                                             });
                                         }}
-                                        className="w-full sm:w-auto px-6 py-2 bg-[var(--color-primary)] hover:bg-emerald-500 text-white font-bold rounded-xl transition-all flex items-center gap-2 justify-center"
+                                        className="w-full sm:w-auto px-6 py-3 bg-white/5 hover:bg-[var(--color-primary)] border border-white/10 hover:border-transparent text-white font-bold rounded-xl transition-all flex items-center gap-2 justify-center group-hover:scale-105 active:scale-95"
                                     >
                                         <CheckCircle2 className="w-4 h-4" /> Executar
                                     </button>
@@ -111,14 +111,15 @@ export default function ManejoDashboard() {
                     </div>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-8">
                     {/* ALERTAS CLIMÁTICOS */}
-                    <div className="glass rounded-3xl border border-[var(--color-border)] p-6">
-                        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                            <Wind className="w-5 h-5 text-amber-400" />
+                    <div className="glass bg-[#0F172A]/80 rounded-3xl border border-white/5 shadow-xl p-8 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3 relative z-10">
+                            <Wind className="w-6 h-6 text-amber-400" />
                             Alertas de Clima
                         </h2>
-                        <div className="bg-white/5 border border-white/10 p-4 rounded-2xl">
+                        <div className="bg-white/5 border border-white/10 p-5 rounded-2xl relative z-10">
                             <div className="flex items-start gap-3">
                                 <CheckCircle2 className="w-5 h-5 text-[#19B34A] shrink-0 mt-0.5" />
                                 <div>
@@ -131,12 +132,12 @@ export default function ManejoDashboard() {
                     
                     {/* ATALHOS */}
                     <div className="grid grid-cols-2 gap-4">
-                        <div onClick={() => navigate('/dashboard/cliente/recomendacoes')} className="glass p-4 rounded-2xl border border-[var(--color-border)] text-center cursor-pointer hover:bg-white/5 transition-all">
-                            <ListTodo className="w-8 h-8 text-[var(--color-primary)] mx-auto mb-2" />
+                        <div onClick={() => navigate('/dashboard/cliente/recomendacoes')} className="glass bg-[#0F172A]/80 p-6 rounded-3xl border border-white/5 shadow-xl text-center cursor-pointer hover:bg-white/10 hover:-translate-y-1 transition-all group">
+                            <ListTodo className="w-10 h-10 text-[var(--color-primary)] mx-auto mb-3 group-hover:scale-110 transition-transform" />
                             <span className="text-sm font-bold text-white">Receituários</span>
                         </div>
-                        <div onClick={() => navigate('/dashboard/cliente/clima')} className="glass p-4 rounded-2xl border border-[var(--color-border)] text-center cursor-pointer hover:bg-white/5 transition-all">
-                            <Wind className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+                        <div onClick={() => navigate('/dashboard/cliente/clima')} className="glass bg-[#0F172A]/80 p-6 rounded-3xl border border-white/5 shadow-xl text-center cursor-pointer hover:bg-white/10 hover:-translate-y-1 transition-all group">
+                            <Wind className="w-10 h-10 text-blue-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
                             <span className="text-sm font-bold text-white">Previsão</span>
                         </div>
                     </div>

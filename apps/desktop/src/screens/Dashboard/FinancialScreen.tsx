@@ -209,8 +209,8 @@ export default function FinancialScreen() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="glass p-6 rounded-3xl flex flex-col justify-between group hover:-translate-y-1 transition-all">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+                <div className="glass bg-[#0F172A]/80 p-8 rounded-3xl flex flex-col justify-between group hover:-translate-y-1 transition-all border border-white/5 shadow-xl">
                     <div className="flex justify-between items-start mb-4">
                         <div className="w-12 h-12 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
                             <TrendingUp className="w-6 h-6" />
@@ -223,12 +223,12 @@ export default function FinancialScreen() {
                     </div>
                 </div>
 
-                <div className="glass p-6 rounded-3xl flex flex-col justify-between group hover:-translate-y-1 transition-all">
+                <div className="glass bg-[#0F172A]/80 p-8 rounded-3xl flex flex-col justify-between group hover:-translate-y-1 transition-all border border-white/5 shadow-xl">
                     <div className="flex justify-between items-start mb-4">
-                        <div className="w-12 h-12 rounded-2xl bg-red-500/20 flex items-center justify-center text-red-400 group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 rounded-2xl bg-orange-500/20 flex items-center justify-center text-orange-400 group-hover:scale-110 transition-transform">
                             <TrendingDown className="w-6 h-6" />
                         </div>
-                        <span className="text-xs font-bold text-red-400 bg-red-500/10 px-2 py-1 rounded-lg">Saídas</span>
+                        <span className="text-xs font-bold text-orange-400 bg-orange-500/10 px-3 py-1.5 rounded-lg">Saídas</span>
                     </div>
                     <div>
                         <p className="text-[var(--color-muted)] font-bold text-sm mb-1">Total Despesas</p>
@@ -236,12 +236,13 @@ export default function FinancialScreen() {
                     </div>
                 </div>
 
-                <div className="glass p-6 rounded-3xl flex flex-col justify-between group hover:-translate-y-1 transition-all border-b-4 border-green-500">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="w-12 h-12 rounded-2xl bg-green-500/20 flex items-center justify-center text-green-400 group-hover:scale-110 transition-transform">
+                <div className="glass bg-[#0F172A]/90 p-8 rounded-3xl flex flex-col justify-between group hover:-translate-y-1 transition-all border-t border-l border-r border-white/5 border-b-4 border-b-green-500 shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                    <div className="flex justify-between items-start mb-4 relative z-10">
+                        <div className="w-12 h-12 rounded-2xl bg-green-500/20 flex items-center justify-center text-green-500 group-hover:scale-110 transition-transform">
                             <Wallet className="w-6 h-6" />
                         </div>
-                        <span className="text-xs font-bold text-green-400 bg-green-500/10 px-2 py-1 rounded-lg">Líquido</span>
+                        <span className="text-xs font-bold text-green-500 bg-green-500/10 px-3 py-1.5 rounded-lg">Líquido</span>
                     </div>
                     <div>
                         <p className="text-[var(--color-muted)] font-bold text-sm mb-1">Saldo em Caixa</p>
@@ -250,9 +251,9 @@ export default function FinancialScreen() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-10">
                 {/* Gráfico de Fluxo */}
-                <div className="xl:col-span-2 glass p-6 rounded-3xl">
+                <div className="xl:col-span-2 glass bg-[#0F172A]/80 p-8 rounded-3xl border border-white/5 shadow-xl">
                     <h3 className="text-lg font-bold text-white mb-6">Projeção de Fluxo de Caixa (Mensal)</h3>
                     <div className="h-72 w-full">
                         <ResponsiveContainer width="100%" height="100%">
@@ -263,8 +264,8 @@ export default function FinancialScreen() {
                                         <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
                                     </linearGradient>
                                     <linearGradient id="colorDes" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#EF4444" stopOpacity={0.3}/>
-                                        <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
+                                        <stop offset="5%" stopColor="#F97316" stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor="#F97316" stopOpacity={0}/>
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -276,14 +277,14 @@ export default function FinancialScreen() {
                                     formatter={(value: Record<string, string | number | boolean | null>) => [`R$ ${value}`, '']}
                                 />
                                 <Area type="monotone" dataKey="receitas" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorRec)" name="Receitas" />
-                                <Area type="monotone" dataKey="despesas" stroke="#EF4444" strokeWidth={3} fillOpacity={1} fill="url(#colorDes)" name="Despesas" />
+                                <Area type="monotone" dataKey="despesas" stroke="#F97316" strokeWidth={3} fillOpacity={1} fill="url(#colorDes)" name="Despesas" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
                 {/* Resumo Rápido */}
-                <div className="xl:col-span-1 glass p-6 rounded-3xl flex flex-col gap-4">
+                <div className="xl:col-span-1 glass bg-[#0F172A]/80 p-8 rounded-3xl flex flex-col gap-4 border border-white/5 shadow-xl">
                     <h3 className="text-lg font-bold text-white mb-2">Alertas Financeiros</h3>
                     <div className="flex-1 flex flex-col gap-3">
                         <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
@@ -297,10 +298,10 @@ export default function FinancialScreen() {
             </div>
 
             {/* Lista de Contas */}
-            <div className="glass rounded-3xl overflow-hidden border border-[var(--color-border)] p-6">
+            <div className="glass bg-[#0F172A]/80 rounded-3xl overflow-hidden border border-[var(--color-border)] p-8 shadow-xl">
                 
                 {/* Filter Bar */}
-                <div className="flex flex-col md:flex-row gap-4 items-center mb-6">
+                <div className="flex flex-col md:flex-row gap-4 items-center mb-8">
                     <h3 className="text-lg font-bold text-white whitespace-nowrap">Lançamentos</h3>
                     <div className="relative flex-1 w-full mx-2">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-muted)]" />
@@ -328,7 +329,7 @@ export default function FinancialScreen() {
                         </button>
                         <button 
                             onClick={() => setFilterTipo('PAGAR')}
-                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${filterTipo === 'PAGAR' ? 'bg-red-500/20 text-red-400' : 'text-[var(--color-muted)] hover:bg-red-500/10'}`}
+                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${filterTipo === 'PAGAR' ? 'bg-orange-500/20 text-orange-400' : 'text-[var(--color-muted)] hover:bg-orange-500/10'}`}
                         >
                             <ArrowDownRight className="w-4 h-4" /> A Pagar
                         </button>
@@ -340,12 +341,12 @@ export default function FinancialScreen() {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-white/5">
-                                <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Tipo</th>
-                                <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Descrição</th>
-                                <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Valor (R$)</th>
-                                <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Vencimento</th>
-                                <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider text-center">Status</th>
-                                <th className="p-4 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider text-right">Ações</th>
+                                <th className="p-5 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Tipo</th>
+                                <th className="p-5 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Descrição</th>
+                                <th className="p-5 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Valor (R$)</th>
+                                <th className="p-5 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Vencimento</th>
+                                <th className="p-5 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider text-center">Status</th>
+                                <th className="p-5 text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider text-right">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -371,22 +372,22 @@ export default function FinancialScreen() {
 
                                     return (
                                         <tr key={row.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                                            <td className="p-4">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isReceber ? 'bg-blue-500/20 text-blue-400' : 'bg-red-500/20 text-red-400'}`}>
+                                            <td className="p-5">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isReceber ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
                                                     <Icon className="w-5 h-5" />
                                                 </div>
                                             </td>
-                                            <td className="p-4 text-sm">
-                                                <p className="font-bold text-white">{row.descricao}</p>
+                                            <td className="p-5 text-sm">
+                                                <p className="font-bold text-white text-base">{row.descricao}</p>
                                                 <p className="text-xs text-[var(--color-muted)] mt-0.5">{row.forma_pagamento ? `Via ${row.forma_pagamento}` : ''}</p>
                                             </td>
-                                            <td className={`p-4 text-sm font-black ${isReceber ? 'text-blue-400' : 'text-red-400'}`}>
+                                            <td className={`p-5 text-base font-black ${isReceber ? 'text-blue-400' : 'text-orange-400'}`}>
                                                 R$ {Number(row.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                             </td>
-                                            <td className="p-4 text-sm text-[var(--color-muted)] font-medium">
+                                            <td className="p-5 text-sm text-[var(--color-muted)] font-medium">
                                                 {row.data_vencimento ? format(parseISO(row.data_vencimento), 'dd/MM/yyyy') : '-'}
                                             </td>
-                                            <td className="p-4 text-center">
+                                            <td className="p-5 text-center">
                                                 {isPago ? (
                                                     <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold bg-green-500/20 text-green-400">
                                                         PAGO
@@ -401,19 +402,19 @@ export default function FinancialScreen() {
                                                     </span>
                                                 )}
                                             </td>
-                                            <td className="p-4 text-right">
+                                            <td className="p-5 text-right">
                                                 {!isPago && !isCancelado && (
-                                                    <div className="flex items-center justify-end gap-2">
+                                                    <div className="flex items-center justify-end gap-3">
                                                         <button 
                                                             onClick={() => baixarConta(row.id)}
-                                                            className="p-2.5 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-xl transition-colors tooltip"
+                                                            className="p-3 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-xl transition-colors tooltip hover:scale-105 active:scale-95"
                                                             title="Baixar como Pago"
                                                         >
                                                             <CheckCircle className="w-5 h-5" />
                                                         </button>
                                                         <button 
                                                             onClick={() => cancelarConta(row.id)}
-                                                            className="p-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-colors tooltip"
+                                                            className="p-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-colors tooltip hover:scale-105 active:scale-95"
                                                             title="Cancelar Título"
                                                         >
                                                             <XCircle className="w-5 h-5" />
