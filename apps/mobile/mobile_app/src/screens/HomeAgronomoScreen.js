@@ -11,9 +11,7 @@ import SidebarDrawer from '../components/SidebarDrawer';
 import { useTheme } from '../theme/ThemeContext';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useAuth } from '../context/AuthContext';
-import TasksWidget from '../components/dashboard/TasksWidget';
 import SmartAlerts from '../components/dashboard/SmartAlerts';
-import ProductionChart from '../components/dashboard/ProductionChart';
 
 const { width } = Dimensions.get('window');
 
@@ -153,18 +151,7 @@ export default function HomeAgronomoScreen({ navigation }) {
                 {isReady ? (
                     <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-                        {stats.maquinasAlert > 0 && (
-                            <TouchableOpacity style={[styles.alertBar, { backgroundColor: theme?.theme_mode === 'dark' ? 'rgba(245, 158, 11, 0.15)' : '#FEF3C7' }]} onPress={() => navigation.navigate('Frota')}>
-                                <Ionicons name="warning" size={20} color={THEME.alert} />
-                                <Text style={[styles.alertText, { color: theme?.theme_mode === 'dark' ? '#FCD34D' : '#92400E' }]}>{stats.maquinasAlert} MÁQUINAS PRECISAM DE REVISÃO</Text>
-                                <Ionicons name="chevron-forward" size={20} color={THEME.alert} />
-                            </TouchableOpacity>
-                        )}
-
-                        <TasksWidget />
-                        {dashboardData && <SmartAlerts alerts={dashboardData.alerts} navigation={navigation} />}
-
-                        <Text style={[styles.sectionTitle, { color: THEME.textSub }]}>ACESSO RÁPIDO</Text>
+                        <Text style={[styles.sectionTitle, { color: THEME.textSub }]}>FERRAMENTAS TÉCNICAS</Text>
                         {menuConfig ? (
                             <View style={styles.grid}>
                                 {menuConfig.menu_items.filter(i => i.enabled).slice(0, 6).map((item, index) => (

@@ -134,37 +134,43 @@ export default function SidebarDrawer({ visible, onClose }) {
 
                     {/* Menu Items */}
                     <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-                        <Text style={styles.sectionTitle}>OPERACIONAL</Text>
+                        <Text style={styles.sectionTitle}>{role === 'AGRONOMO' ? 'FERRAMENTAS TÉCNICAS' : 'OPERACIONAL'}</Text>
                         <MenuItem icon="home-outline" label="Painel / Início" screen="Home" />
-                        <MenuItem icon="leaf-outline" label="Plantio" screen="Plantio" />
+                        {role !== 'AGRONOMO' && <MenuItem icon="leaf-outline" label="Plantio" screen="Plantio" />}
                         <MenuItem icon="camera-outline" label="Monitoramento" screen="Monitoramento" />
-                        <MenuItem icon="water-outline" label="Irrigação" screen="Irrigacao" />
-                        <MenuItem icon="flask-outline" label="Fertirrigação" screen="Fertirrigacao" />
-                        <MenuItem icon="color-filter-outline" label="Adubação" screen="AdubacaoList" />
-                        <MenuItem icon="shield-checkmark-outline" label="Aplicações" screen="Aplicacoes" />
-                        <MenuItem icon="basket-outline" label="Colheita" screen="Colheita" />
+                        {role !== 'AGRONOMO' && <MenuItem icon="water-outline" label="Irrigação" screen="Irrigacao" />}
+                        {role !== 'AGRONOMO' && <MenuItem icon="flask-outline" label="Fertirrigação" screen="Fertirrigacao" />}
+                        {role !== 'AGRONOMO' && <MenuItem icon="color-filter-outline" label="Adubação" screen="AdubacaoList" />}
+                        {role !== 'AGRONOMO' && <MenuItem icon="shield-checkmark-outline" label="Aplicações" screen="Aplicacoes" />}
+                        {role !== 'AGRONOMO' && <MenuItem icon="basket-outline" label="Colheita" screen="Colheita" />}
                         <MenuItem icon="book-outline" label="Caderno de Campo" screen="CadernoCampo" />
-                        <MenuItem icon="link-outline" label="Vincular Agrônomo" screen="AgronomistLink" />
-                        <MenuItem icon="receipt-outline" label="Receitas e Prescrições" screen="RecommendationsList" />
+                        {role !== 'AGRONOMO' && <MenuItem icon="link-outline" label="Vincular Agrônomo" screen="AgronomistLink" />}
+                        <MenuItem icon="receipt-outline" label={role === 'AGRONOMO' ? 'Emitir Receitas' : 'Receitas e Prescrições'} screen="RecommendationsList" />
 
-                        <View style={styles.divider} />
-                        
-                        <Text style={styles.sectionTitle}>ADMINISTRATIVO</Text>
-                        <MenuItem icon="cube-outline" label="Estoque" screen="Estoque" />
-                        <MenuItem icon="cart-outline" label="Compras" screen="Compras" />
-                        <MenuItem icon="barcode-outline" label="Vendas" screen="Vendas" />
-                        <MenuItem icon="people-outline" label="Clientes" screen="Clientes" />
-                        <MenuItem icon="business-outline" label="Fornecedores" screen="Fornecedores" />
-                        <MenuItem icon="map-outline" label="Talhões" screen="Talhoes" />
-                        <MenuItem icon="car-outline" label="Frota / Máquinas" screen="Frota" />
-                        <MenuItem icon="people-circle-outline" label="Equipes" screen="Equipes" />
+                        {role !== 'AGRONOMO' && (
+                            <>
+                                <View style={styles.divider} />
+                                <Text style={styles.sectionTitle}>ADMINISTRATIVO</Text>
+                                <MenuItem icon="cube-outline" label="Estoque" screen="Estoque" />
+                                <MenuItem icon="cart-outline" label="Compras" screen="Compras" />
+                                <MenuItem icon="barcode-outline" label="Vendas" screen="Vendas" />
+                                <MenuItem icon="people-outline" label="Clientes" screen="Clientes" />
+                                <MenuItem icon="business-outline" label="Fornecedores" screen="Fornecedores" />
+                                <MenuItem icon="map-outline" label="Talhões" screen="Talhoes" />
+                                <MenuItem icon="car-outline" label="Frota / Máquinas" screen="Frota" />
+                                <MenuItem icon="people-circle-outline" label="Equipes" screen="Equipes" />
+                            </>
+                        )}
 
-                        <View style={styles.divider} />
-
-                        <Text style={styles.sectionTitle}>FINANCEIRO</Text>
-                        <MenuItem icon="cash-outline" label="Contas Pagar/Rec" screen="FinanceiroLancamentos" />
-                        <MenuItem icon="stats-chart-outline" label="Financeiro Pro" screen="FinanceiroDashboard" />
-                        <MenuItem icon="document-text-outline" label="Relatórios / PDF" screen="Relatorios" />
+                        {role !== 'AGRONOMO' && (
+                            <>
+                                <View style={styles.divider} />
+                                <Text style={styles.sectionTitle}>FINANCEIRO</Text>
+                                <MenuItem icon="cash-outline" label="Contas Pagar/Rec" screen="FinanceiroLancamentos" />
+                                <MenuItem icon="stats-chart-outline" label="Financeiro Pro" screen="FinanceiroDashboard" />
+                                <MenuItem icon="document-text-outline" label="Relatórios / PDF" screen="Relatorios" />
+                            </>
+                        )}
 
                         <View style={styles.divider} />
 
