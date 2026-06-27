@@ -4,16 +4,24 @@ import { useFocusEffect } from '@react-navigation/native';
 import WeatherWidget from '../components/WeatherWidget';
 import { getDashboardAgronomoStats } from '../database/database';
 import { syncTable } from '../services/supabase';
-import { MenuConfigService } from '../services/MenuConfigService';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import SidebarDrawer from '../components/SidebarDrawer';
+import SidebarAgronomo from '../components/SidebarAgronomo';
 import { useTheme } from '../theme/ThemeContext';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useAuth } from '../context/AuthContext';
 import SmartAlerts from '../components/dashboard/SmartAlerts';
 
 const { width } = Dimensions.get('window');
+
+const AGRONOMO_MENU = [
+    { id: "clientes", label: "Clientes", icon: "people-outline", screen: "Clientes", color: "#3B82F6" },
+    { id: "visitas", label: "Visitas", icon: "calendar-outline", screen: "CadernoCampo", color: "#10B981" },
+    { id: "monitoramento", label: "Monitorar", icon: "camera-outline", screen: "Monitoramento", color: "#EC4899" },
+    { id: "analises", label: "Análises", icon: "flask-outline", screen: "AnalisesSolo", color: "#8B5CF6" },
+    { id: "recomendacoes", label: "Recomendar", icon: "leaf-outline", screen: "CreateRecommendation", color: "#059669" },
+    { id: "relatorios", label: "Relatórios", icon: "document-text-outline", screen: "Relatorios", color: "#374151" }
+];
 
 export default function HomeAgronomoScreen({ navigation }) {
     const { theme } = useTheme();
@@ -38,7 +46,7 @@ export default function HomeAgronomoScreen({ navigation }) {
         alertasPendentes: 0
     });
     const [drawerVisible, setDrawerVisible] = useState(false);
-    const [isReady, setIsReady] = useState(false); // Gatilho de Skeleton View
+    const [isReady, setIsReady] = useState(false); 
 
     const loadStats = async () => {
         const data = await getDashboardAgronomoStats();
@@ -52,36 +60,20 @@ export default function HomeAgronomoScreen({ navigation }) {
         }
     };
 
-    const [menuConfig, setMenuConfig] = useState(null);
-
     useFocusEffect(useCallback(() => {
-        // Aguardar o término das animações pesadas do React Navigation 
-        // e adicionar um 'suspiro' de 250ms para garantir que o CPU 
-        // renderizou todos os blocos verdes do layout antes de inundar a API
         const task = InteractionManager.runAfterInteractions(() => {
-            // Libera a tela de desenhar os blocos e listas só quando a tampa for aberta
             setIsReady(true);
             setTimeout(() => {
                 loadStats();
                 autoSync();
-                MenuConfigService.getMenuConfig(role).then(cfg => setMenuConfig(cfg));
             }, 50);
         });
         return () => task.cancel();
     }, []));
 
-    // Lógica de Colunas Adaptativas
-    // Se a config diz X colunas, mas a tela for pequena, reduzimos.
     const screenWidth = Dimensions.get('window').width;
-    const getNumColumns = () => {
-        if (!menuConfig) return 4; 
-        const desired = menuConfig.menu_columns || 4;
-        if (screenWidth < 380 && desired > 3) return 3; 
-        return desired;
-    };
-
-    const numColumns = getNumColumns();
-    const cardWidth = (screenWidth - 40 - ((numColumns - 1) * 12)) / numColumns; // 40 (padding) + gaps
+    const numColumns = 3;
+    const cardWidth = (screenWidth - 40 - ((numColumns - 1) * 12)) / numColumns; 
 
     const formatBRL = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -98,7 +90,7 @@ export default function HomeAgronomoScreen({ navigation }) {
                             </TouchableOpacity>
                             <View>
                                 <Text style={styles.salutation}>Olá, {user?.name || 'Consultor'} 👋</Text>
-                                <Text style={styles.subSalutation}>{role === 'AGRONOMO' ? 'Painel do Consultor' : 'Bem-vindo ao seu painel'}</Text>
+                                <Text style={styles.subSalutation}>Painel do Consultor</Text>
                             </View>
                         </View>
                         <TouchableOpacity 
@@ -114,11 +106,10 @@ export default function HomeAgronomoScreen({ navigation }) {
                         </TouchableOpacity>
                     </View>
                     <View style={{ marginTop: 20, width: '100%' }}>
-                        <WeatherWidget />
+                        <WeatherWidget compact={true} />
                     </View>
                 </View>
 
-                {/* KPIS TÉCNICOS DO AGRÔNOMO */}
                 {isReady && (
                     <View style={styles.kpiRow}>
                         <View style={styles.kpiItem}>
@@ -158,36 +149,24 @@ export default function HomeAgronomoScreen({ navigation }) {
                     <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
                         <Text style={[styles.sectionTitle, { color: THEME.textSub }]}>FERRAMENTAS TÉCNICAS</Text>
-                        {menuConfig ? (
-                            <View style={styles.grid}>
-                                {menuConfig.menu_items.filter(i => i.enabled).slice(0, 6).map((item, index) => (
-                                    <TouchableOpacity
-                                        key={item.id}
-                                        style={[styles.card, { width: cardWidth, height: 110, backgroundColor: theme?.colors?.cardMenu || '#152235' }]}
-                                        onPress={() => navigation.navigate(item.screen)}
-                                        activeOpacity={0.7}
-                                    >
-                                        <View style={styles.iconCirclePremium}>
-                                            <Ionicons name={item.icon} size={28} color={item.color || '#10B981'} />
-                                        </View>
-                                        <Text style={[styles.cardTitle, { color: '#FFF' }]} numberOfLines={1}>{item.label}</Text>
-                                        {/* Badges Especiais */}
-                                        {item.id === 'sync' && stats.pendentes > 0 && (
-                                            <View style={styles.badge}>
-                                                <Text style={styles.badgeText}>{stats.pendentes}</Text>
-                                            </View>
-                                        )}
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        ) : (
-                            <View style={{ padding: 20, alignItems: 'center' }}><Text style={{ color: THEME.textSub }}>Carregando menu...</Text></View>
-                        )}
-
-                        {/* Sem gráfico de produção para o Agrônomo */}
+                        <View style={styles.grid}>
+                            {AGRONOMO_MENU.map((item) => (
+                                <TouchableOpacity
+                                    key={item.id}
+                                    style={[styles.card, { width: cardWidth, height: 110, backgroundColor: theme?.colors?.cardMenu || '#152235' }]}
+                                    onPress={() => navigation.navigate(item.screen)}
+                                    activeOpacity={0.7}
+                                >
+                                    <View style={styles.iconCirclePremium}>
+                                        <Ionicons name={item.icon} size={28} color={item.color || '#10B981'} />
+                                    </View>
+                                    <Text style={[styles.cardTitle, { color: '#FFF' }]} numberOfLines={1}>{item.label}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
 
                         <View style={styles.footer}>
-                            <Text style={styles.version}>AgroGB Mobile v6.0 • Premium</Text>
+                            <Text style={styles.version}>AgroGB Mobile v8.0 • Premium (Agrônomo)</Text>
                         </View>
                     </ScrollView>
                 ) : (
@@ -203,7 +182,7 @@ export default function HomeAgronomoScreen({ navigation }) {
                 )}
             </View>
 
-            <SidebarDrawer visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
+            <SidebarAgronomo visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
         </View>
     );
 }
