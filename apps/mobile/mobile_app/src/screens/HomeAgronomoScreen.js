@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, StatusBar as RNStatusBar, InteractionManager } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import WeatherWidget from '../components/WeatherWidget';
@@ -11,6 +11,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useAuth } from '../context/AuthContext';
 import SmartAlerts from '../components/dashboard/SmartAlerts';
+import SyncWorker from '../services/SyncWorker';
 
 const { width } = Dimensions.get('window');
 
@@ -20,7 +21,7 @@ const AGRONOMO_ATALHOS = [
     { id: "culturas", label: "Culturas", icon: "leaf-outline", screen: "Culturas", color: "#8B5CF6" },
     { id: "monitoramento", label: "Monitoramento", icon: "camera-outline", screen: "Monitoramento", color: "#EC4899" },
     { id: "diagnostico", label: "Diagnóstico", icon: "medkit-outline", screen: "Diagnosticos", color: "#F59E0B" },
-    { id: "prescricoes", label: "Prescrições", icon: "receipt-outline", screen: "Home", color: "#059669" },
+    { id: "prescricoes", label: "Prescrições", icon: "receipt-outline", screen: "Receitas", color: "#059669" },
     { id: "biblioteca", label: "Biblioteca", icon: "library-outline", screen: "BibliotecaGlobal", color: "#6366F1" },
     { id: "relatorios", label: "Relatórios", icon: "document-text-outline", screen: "Relatorios", color: "#374151" }
 ];
@@ -56,6 +57,7 @@ export default function HomeAgronomoScreen({ navigation }) {
     };
 
     const autoSync = async () => {
+        // Fallback antigo de sincronização mantido para não quebrar tabelas legadas
         const tables = ['colheitas', 'vendas', 'compras', 'plantio', 'custos', 'descarte', 'clientes', 'culturas', 'cadastro', 'maquinas', 'manutencao_frota', 'monitoramento_entidade', 'analise_ia', 'monitoramento_media'];
         for (const tab of tables) {
             syncTable(tab).catch(err => console.log('Background sync error', tab, err));
@@ -68,6 +70,8 @@ export default function HomeAgronomoScreen({ navigation }) {
             setTimeout(() => {
                 loadStats();
                 autoSync();
+                // Novo motor offline-first
+                SyncWorker.processSyncQueue();
             }, 50);
         });
         return () => task.cancel();

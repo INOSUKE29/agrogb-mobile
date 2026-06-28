@@ -71,6 +71,8 @@ import DiagnosticosScreen from './src/screens/DiagnosticosScreen';
 import DiagnosticoFormScreen from './src/screens/DiagnosticoFormScreen';
 import PropriedadesScreen from './src/screens/PropriedadesScreen';
 import AreasScreen from './src/screens/AreasScreen';
+import ReceitasScreen from './src/screens/ReceitasScreen';
+import ReceitaFormScreen from './src/screens/ReceitaFormScreen';
 
 import ProfileScreen from './src/screens/ProfileScreen';
 import ProfileEditScreen from './src/screens/ProfileEditScreen';
@@ -290,6 +292,10 @@ function AppInner() {
                         {/* Módulo de Propriedades (Agrônomo) */}
                         <Stack.Screen name="Propriedades" component={PropriedadesScreen} />
                         <Stack.Screen name="Areas" component={AreasScreen} />
+                        
+                        {/* Módulo de Manejo/Receitas (Agrônomo) */}
+                        <Stack.Screen name="Receitas" component={ReceitasScreen} />
+                        <Stack.Screen name="ReceitaForm" component={ReceitaFormScreen} />
                         
                         {/* Fallback Screen */}
                         <Stack.Screen name="Usuarios" component={UsuariosScreen} />
