@@ -19,7 +19,7 @@ const AGRONOMO_ATALHOS = [
     { id: "propriedades", label: "Propriedades", icon: "home-outline", screen: "Home", color: "#10B981" },
     { id: "culturas", label: "Culturas", icon: "leaf-outline", screen: "Culturas", color: "#8B5CF6" },
     { id: "monitoramento", label: "Monitoramento", icon: "camera-outline", screen: "Monitoramento", color: "#EC4899" },
-    { id: "diagnostico", label: "Diagnóstico", icon: "medkit-outline", screen: "Home", color: "#F59E0B" },
+    { id: "diagnostico", label: "Diagnóstico", icon: "medkit-outline", screen: "Diagnosticos", color: "#F59E0B" },
     { id: "prescricoes", label: "Prescrições", icon: "receipt-outline", screen: "Home", color: "#059669" },
     { id: "biblioteca", label: "Biblioteca", icon: "library-outline", screen: "BibliotecaGlobal", color: "#6366F1" },
     { id: "relatorios", label: "Relatórios", icon: "document-text-outline", screen: "Relatorios", color: "#374151" }

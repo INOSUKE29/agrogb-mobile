@@ -102,7 +102,7 @@ export default function SidebarAgronomo({ visible, onClose }) {
                         <MenuItem icon="home-outline" label="Propriedades" screen="Home" />
                         <MenuItem icon="map-outline" label="Áreas / Talhões" screen="Home" />
                         <MenuItem icon="camera-outline" label="Monitoramento" screen="Monitoramento" />
-                        <MenuItem icon="medkit-outline" label="Diagnósticos" screen="Home" />
+                        <MenuItem icon="medkit-outline" label="Diagnósticos" screen="Diagnosticos" />
                         <MenuItem icon="earth-outline" label="Manejo" screen="Home" />
                         <MenuItem icon="shield-checkmark-outline" label="Aplicações" screen="Home" />
 

@@ -64,10 +64,11 @@ import MaquinaFormScreen from './src/screens/MaquinaFormScreen';
 import NotificationTestScreen from './src/screens/NotificationTestScreen';
 import ProdutividadeScreen from './src/screens/ProdutividadeScreen';
 import ProdutividadeTalhaoScreen from './src/screens/ProdutividadeTalhaoScreen';
-import VendasScreen from './src/screens/VendasScreen';
 import VendaFormScreen from './src/screens/VendaFormScreen';
 import BibliotecaGlobalScreen from './src/screens/BibliotecaGlobalScreen';
 import BibliotecaFormScreen from './src/screens/BibliotecaFormScreen';
+import DiagnosticosScreen from './src/screens/DiagnosticosScreen';
+import DiagnosticoFormScreen from './src/screens/DiagnosticoFormScreen';
 
 import ProfileScreen from './src/screens/ProfileScreen';
 import ProfileEditScreen from './src/screens/ProfileEditScreen';
@@ -269,7 +270,6 @@ function AppInner() {
                         <Stack.Screen name="Colheita" component={ColheitaScreen} />
                         <Stack.Screen name="Vendas" component={VendasScreen} />
                         <Stack.Screen name="Estoque" component={EstoqueScreen} />
-                        <Stack.Screen name="Sync" component={SyncScreen} />
                         <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />
                         <Stack.Screen name="Settings" component={SettingsScreen} />
                         <Stack.Screen name="Compras" component={ComprasScreen} />
@@ -280,6 +280,12 @@ function AppInner() {
                         <Stack.Screen name="Clientes" component={ClientesScreen} />
                         <Stack.Screen name="Culturas" component={CulturasScreen} />
                         <Stack.Screen name="Relatorios" component={RelatoriosScreen} />
+                        
+                        {/* Módulo de Diagnóstico Agrônomo */}
+                        <Stack.Screen name="Diagnosticos" component={DiagnosticosScreen} />
+                        <Stack.Screen name="DiagnosticoForm" component={DiagnosticoFormScreen} />
+                        
+                        {/* Fallback Screen */}
                         <Stack.Screen name="Usuarios" component={UsuariosScreen} />
                         <Stack.Screen name="Monitoramento" component={MonitoramentoScreen} />
                         <Stack.Screen name="Ocr" component={OcrScreen} />
