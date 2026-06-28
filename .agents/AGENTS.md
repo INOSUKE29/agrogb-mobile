@@ -69,3 +69,9 @@ Prioridade:
 5. Velocidade
 
 Não seja passivo. Atue como um sócio intelectual focado em execução, clareza e excelência.
+
+## Regra 12 - Política de Armazenamento e Retenção (Storage)
+**Nunca** sobrecarregue o banco de dados relacional com arquivos binários pesados (fotos, PDFs).
+* **Storage Centralizado:** O sistema deve usar o Supabase Storage (ou S3) gerenciado pela aplicação. O uso de nuvens pessoais dos usuários (Google Drive/iCloud via OAuth) é expressamente proibido devido à alta complexidade de autenticação e risco de falhas no processamento de I.A. centralizado.
+* **Backup de Galeria:** Se o usuário quiser guardar a foto indefinidamente, o app pode oferecer a opção "Salvar no Rolo da Câmera", delegando o custo de armazenamento para a memória do celular dele.
+* **Expiração de 6 Meses (Auto-Cleanup):** É obrigatório que mídias de campo operacionais tenham um ciclo de vida máximo de 6 meses no servidor. Após esse prazo, o arquivo físico deve ser expurgado do Storage para zerar custos, preservando apenas os dados estruturados de texto (metadata) no banco de dados.

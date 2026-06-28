@@ -29,6 +29,7 @@ export default function DiagnosticoFormScreen() {
     const [cultura, setCultura] = useState('');
     const [foto, setFoto] = useState(null);
     const [localizacao, setLocalizacao] = useState(null);
+    const [salvarNuvem, setSalvarNuvem] = useState(false);
 
     const takePhoto = async () => {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -117,23 +118,26 @@ export default function DiagnosticoFormScreen() {
                 await executeQuery(
                     `INSERT INTO monitoramento_media (uuid, monitoramento_uuid, tipo, caminho_arquivo, criado_em) 
                      VALUES (?, ?, 'IMAGEM', ?, ?)`,
-                    [mediaUuid, diagUuid, foto, now]
+                    [mediaUuid, diagUuid, 'IMAGEM', foto, now]
                 );
 
-                const mediaPayload = JSON.stringify({
-                    uuid: mediaUuid,
-                    monitoramento_uuid: diagUuid,
-                    tipo: 'IMAGEM',
-                    caminho_arquivo: 'offline_storage' // Server-side needs to handle actual upload later
-                });
+                // Só manda para a nuvem se o usuário ativou o toggle Premium
+                if (salvarNuvem) {
+                    const mediaPayload = JSON.stringify({
+                        uuid: mediaUuid,
+                        monitoramento_uuid: diagUuid,
+                        tipo: 'IMAGEM',
+                        caminho_arquivo: 'offline_storage' // Server-side needs to handle actual upload later
+                    });
 
-                await executeQuery(
-                    `INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, ?, ?, ?, ?, 'PENDENTE', ?)`,
-                    [uuidv4(), 'monitoramento_media', mediaUuid, 'INSERT', mediaPayload, now]
-                );
+                    await executeQuery(
+                        `INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, ?, ?, ?, ?, 'PENDENTE', ?)`,
+                        [uuidv4(), 'monitoramento_media', mediaUuid, 'INSERT', mediaPayload, now]
+                    );
+                }
             }
 
-            Alert.alert('Sucesso', 'Diagnóstico registrado! Ele será sincronizado automaticamente quando houver conexão.', [
+            Alert.alert('Sucesso', salvarNuvem ? 'Diagnóstico registrado na Nuvem AgroGB!' : 'Diagnóstico salvo apenas localmente no seu dispositivo.', [
                 { text: 'OK', onPress: () => navigation.goBack() }
             ]);
 
@@ -230,6 +234,23 @@ export default function DiagnosticoFormScreen() {
                             )}
                         </TouchableOpacity>
                     </View>
+                    
+                    {foto && (
+                        <View style={styles.cloudToggleBox}>
+                            <View style={{ flex: 1 }}>
+                                <Text style={[styles.cloudToggleTitle, { color: textColor }]}>Salvar Imagem na Nuvem (Premium)</Text>
+                                <Text style={[styles.cloudToggleDesc, { color: textMutedColor }]}>
+                                    Se desativado, a foto fica só no seu celular (Custo zero). Se ativado, fazemos backup na Nuvem AgroGB (Retenção de 6 meses).
+                                </Text>
+                            </View>
+                            <TouchableOpacity 
+                                style={[styles.toggleSwitch, salvarNuvem ? styles.toggleOn : styles.toggleOff]} 
+                                onPress={() => setSalvarNuvem(!salvarNuvem)}
+                            >
+                                <View style={[styles.toggleCircle, salvarNuvem ? styles.circleOn : styles.circleOff]} />
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </Card>
 
                 <View style={styles.btnWrapper}>
@@ -265,5 +286,14 @@ const styles = StyleSheet.create({
     gpsCaptureBtn: { position: 'absolute', right: 12, top: 40, padding: 6, borderRadius: 8 },
     gpsBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F59E0B15', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
     gpsText: { fontSize: 10, fontWeight: '900', color: '#F59E0B' },
-    btnWrapper: { paddingBottom: 20 }
+    btnWrapper: { paddingBottom: 20 },
+    cloudToggleBox: { flexDirection: 'row', alignItems: 'center', marginTop: 15, padding: 15, backgroundColor: 'rgba(245, 158, 11, 0.05)', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(245, 158, 11, 0.2)' },
+    cloudToggleTitle: { fontSize: 13, fontWeight: 'bold' },
+    cloudToggleDesc: { fontSize: 11, marginTop: 4, lineHeight: 16 },
+    toggleSwitch: { width: 44, height: 24, borderRadius: 12, padding: 2, justifyContent: 'center' },
+    toggleOn: { backgroundColor: '#F59E0B' },
+    toggleOff: { backgroundColor: '#CBD5E1' },
+    toggleCircle: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#FFF' },
+    circleOn: { alignSelf: 'flex-end' },
+    circleOff: { alignSelf: 'flex-start' }
 });
