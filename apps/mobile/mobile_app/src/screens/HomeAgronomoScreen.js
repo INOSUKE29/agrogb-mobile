@@ -22,8 +22,7 @@ const AGRONOMO_ATALHOS = [
     { id: "monitoramento", label: "Monitoramento", icon: "camera-outline", screen: "Monitoramento", color: "#EC4899" },
     { id: "diagnostico", label: "Diagnóstico", icon: "medkit-outline", screen: "Diagnosticos", color: "#F59E0B" },
     { id: "prescricoes", label: "Prescrições", icon: "receipt-outline", screen: "Receitas", color: "#059669" },
-    { id: "biblioteca", label: "Biblioteca", icon: "library-outline", screen: "BibliotecaGlobal", color: "#6366F1" },
-    { id: "relatorios", label: "Relatórios", icon: "document-text-outline", screen: "Relatorios", color: "#374151" }
+    { id: "biblioteca", label: "Biblioteca", icon: "library-outline", screen: "BibliotecaGlobal", color: "#6366F1" }
 ];
 
 export default function HomeAgronomoScreen({ navigation }) {

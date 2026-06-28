@@ -113,15 +113,10 @@ export default function SidebarAgronomo({ visible, onClose }) {
                         <MenuItem icon="library-outline" label="Biblioteca Global" screen="BibliotecaGlobal" />
 
                         <View style={styles.divider} />
-                        <Text style={styles.sectionTitle}>GESTÃO & RESULTADOS</Text>
-                        <MenuItem icon="calendar-outline" label="Agenda de Visitas" screen="CadernoCampo" />
-                        <MenuItem icon="stats-chart-outline" label="Indicadores" screen="Home" />
-                        <MenuItem icon="document-text-outline" label="Relatórios" screen="Relatorios" />
-
-                        <View style={styles.divider} />
-                        <Text style={styles.sectionTitle}>SISTEMA</Text>
+                        <Text style={styles.sectionTitle}>CONFIGURAÇÕES</Text>
                         <MenuItem icon="person-outline" label="Meu Perfil" screen="Profile" />
-                        <MenuItem icon="sync-outline" label="Sincronizar" screen="Sync" />
+                        <MenuItem icon="settings-outline" label="Ajustes do App" screen="Home" />
+                        <MenuItem icon="cloud-offline-outline" label="Sincronização" screen="Home" />
 
                     </ScrollView>
 
