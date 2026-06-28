@@ -14,7 +14,7 @@ import {
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import DraggableModal from '../../components/common/DraggableModal';
-import SearchableSelect from '../../components/ui/SearchableSelect';
+import SearchableSelect from '../../components/common/SearchableSelect';
 
 interface Cultura {
     id: string;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { Truck, Search, Plus, Filter, Wrench, AlertTriangle, CheckCircle, Clock, PenTool } from 'lucide-react';
 import toast from 'react-hot-toast';
-import SearchableSelect from '../../components/ui/SearchableSelect';
+import SearchableSelect from '../../components/common/SearchableSelect';
 
 export default function FrotaScreen() {
     const [frota, setFrota] = useState<Record<string, string | number | boolean | null>[]>([]);

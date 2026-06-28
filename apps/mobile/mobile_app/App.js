@@ -61,6 +61,14 @@ import ScannerScreen from './src/screens/ScannerScreen';
 import CadernoCampoScreen from './src/screens/CadernoCampoScreen';
 import FrotaScreen from './src/screens/FrotaScreen';
 import MaquinaFormScreen from './src/screens/MaquinaFormScreen';
+import NotificationTestScreen from './src/screens/NotificationTestScreen';
+import ProdutividadeScreen from './src/screens/ProdutividadeScreen';
+import ProdutividadeTalhaoScreen from './src/screens/ProdutividadeTalhaoScreen';
+import VendasScreen from './src/screens/VendasScreen';
+import VendaFormScreen from './src/screens/VendaFormScreen';
+import BibliotecaGlobalScreen from './src/screens/BibliotecaGlobalScreen';
+import BibliotecaFormScreen from './src/screens/BibliotecaFormScreen';
+
 import ProfileScreen from './src/screens/ProfileScreen';
 import ProfileEditScreen from './src/screens/ProfileEditScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
@@ -237,6 +245,14 @@ function AppInner() {
                         {/* Telas Principais */}
                         <Stack.Screen name="AdminSelector" component={AdminSelectorScreen} options={{ headerShown: false }} />
                         <Stack.Screen name="Dashboard" component={HomeScreen} options={{ headerShown: false }} />
+                        <Stack.Screen name="Sync" component={SyncScreen} options={{ presentation: 'modal' }} />
+                        
+                        {/* Biblioteca Global Offline-First */}
+                        <Stack.Screen name="BibliotecaGlobal" component={BibliotecaGlobalScreen} />
+                        <Stack.Screen name="BibliotecaForm" component={BibliotecaFormScreen} options={{ presentation: 'modal' }} />
+
+                        {/* Development / Testing */}
+                        <Stack.Screen name="NotificationTest" component={NotificationTestScreen} />
 
                         {/* Telas Agrônomo */}
                         <Stack.Screen name="AgronomistClients" component={AgronomistClientsScreen} />

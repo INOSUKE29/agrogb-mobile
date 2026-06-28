@@ -12,7 +12,7 @@ import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import DraggableModal from '../../components/common/DraggableModal';
-import SearchableSelect from '../../components/ui/SearchableSelect';
+import SearchableSelect from '../../components/common/SearchableSelect';
 
 export default function PlantioScreen() {
     const [loading, setLoading] = useState(true);

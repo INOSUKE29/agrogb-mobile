@@ -18,7 +18,7 @@ import {
 import { supabase } from '../../services/supabase';
 import toast from 'react-hot-toast';
 import DraggableModal from '../../components/common/DraggableModal';
-import SearchableSelect from '../../components/ui/SearchableSelect';
+import SearchableSelect from '../../components/common/SearchableSelect';
 
 export default function CadastroBasicoScreen() {
     const [loading, setLoading] = useState(true);

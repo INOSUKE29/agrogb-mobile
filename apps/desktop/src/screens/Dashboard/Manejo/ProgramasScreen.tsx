@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Plus, Save, Leaf, Droplet, Clock, ListTodo, Map, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
-import SearchableSelect from '../../../components/ui/SearchableSelect';
+import SearchableSelect from '../../../components/common/SearchableSelect';
 
 export default function ProgramasScreen() {
     const navigate = useNavigate();

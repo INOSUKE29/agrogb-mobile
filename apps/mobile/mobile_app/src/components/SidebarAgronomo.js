@@ -97,25 +97,31 @@ export default function SidebarAgronomo({ visible, onClose }) {
 
                     <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
                         
-                        <Text style={styles.sectionTitle}>FERRAMENTAS TÉCNICAS</Text>
-                        <MenuItem icon="home-outline" label="Painel / Início" screen="Home" />
-                        <MenuItem icon="people-outline" label="Meus Clientes" screen="Clientes" />
-                        <MenuItem icon="map-outline" label="Fazendas Atendidas" screen="Culturas" />
-                        <MenuItem icon="analytics-outline" label="Monitoramento (Consultor)" screen="Monitoramento" />
-                        <MenuItem icon="calendar-outline" label="Visitas Técnicas" screen="CadernoCampo" />
-                        
+                        <Text style={styles.sectionTitle}>TÉCNICO & CAMPO</Text>
+                        <MenuItem icon="people-outline" label="Clientes" screen="Clientes" />
+                        <MenuItem icon="home-outline" label="Propriedades" screen="Home" />
+                        <MenuItem icon="map-outline" label="Áreas / Talhões" screen="Home" />
+                        <MenuItem icon="camera-outline" label="Monitoramento" screen="Monitoramento" />
+                        <MenuItem icon="medkit-outline" label="Diagnósticos" screen="Home" />
+                        <MenuItem icon="earth-outline" label="Manejo" screen="Home" />
+                        <MenuItem icon="shield-checkmark-outline" label="Aplicações" screen="Home" />
+
                         <View style={styles.divider} />
-                        <Text style={styles.sectionTitle}>RECEITUÁRIO</Text>
-                        <MenuItem icon="leaf-outline" label="Criar Recomendação" screen="CreateRecommendation" />
-                        <MenuItem icon="receipt-outline" label="Histórico e Prescrições" screen="RecommendationsList" />
-                        <MenuItem icon="flask-outline" label="Análises de Diagnóstico" screen="AnalisesSolo" />
+                        <Text style={styles.sectionTitle}>RECOMENDAÇÃO</Text>
+                        <MenuItem icon="receipt-outline" label="Receitas" screen="Home" />
+                        <MenuItem icon="document-text-outline" label="Prescrições" screen="CreateRecommendation" />
+                        <MenuItem icon="library-outline" label="Biblioteca Global" screen="BibliotecaGlobal" />
+
+                        <View style={styles.divider} />
+                        <Text style={styles.sectionTitle}>GESTÃO & RESULTADOS</Text>
+                        <MenuItem icon="calendar-outline" label="Agenda de Visitas" screen="CadernoCampo" />
+                        <MenuItem icon="stats-chart-outline" label="Indicadores" screen="Home" />
+                        <MenuItem icon="document-text-outline" label="Relatórios" screen="Relatorios" />
 
                         <View style={styles.divider} />
                         <Text style={styles.sectionTitle}>SISTEMA</Text>
                         <MenuItem icon="person-outline" label="Meu Perfil" screen="Profile" />
-                        <MenuItem icon="document-text-outline" label="Relatórios Técnicos" screen="Relatorios" />
-                        <MenuItem icon="sync-outline" label="Sincronizar Dados" screen="Sync" />
-                        <MenuItem icon="shield-outline" label="Auditoria Logs" screen="Audit" />
+                        <MenuItem icon="sync-outline" label="Sincronizar" screen="Sync" />
 
                     </ScrollView>
 

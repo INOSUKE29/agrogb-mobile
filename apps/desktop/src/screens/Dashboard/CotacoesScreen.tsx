@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { ShoppingCart, Store, FileText, Plus, Building2, CheckCircle, XCircle, AlertCircle, TrendingUp, Package, Box } from 'lucide-react';
 import toast from 'react-hot-toast';
-import SearchableSelect from '../../components/ui/SearchableSelect';
+import SearchableSelect from '../../components/common/SearchableSelect';
 
 export default function CotacoesScreen() {
     const [fornecedores, setFornecedores] = useState<Record<string, string | number | boolean | null>[]>([]);

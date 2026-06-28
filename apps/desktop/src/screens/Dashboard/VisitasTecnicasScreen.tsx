@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../services/supabase';
-import SearchableSelect from '../../components/ui/SearchableSelect';
+import SearchableSelect from '../../components/common/SearchableSelect';
 import { AgronomistService } from '../../../../../packages/services/src/agronomistService';
 import type { TechnicalVisit, LinkedClient } from '../../../../../packages/services/src/agronomistService';
 

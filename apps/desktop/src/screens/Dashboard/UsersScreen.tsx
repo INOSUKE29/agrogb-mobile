@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
-import SearchableSelect from '../../components/ui/SearchableSelect';
+import SearchableSelect from '../../components/common/SearchableSelect';
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
 interface Profile {

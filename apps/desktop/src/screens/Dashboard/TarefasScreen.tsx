@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { LayoutList, Plus, AlertCircle, Clock, CheckCircle2, GripVertical, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import SearchableSelect from '../../components/ui/SearchableSelect';
+import SearchableSelect from '../../components/common/SearchableSelect';
 
 interface Tarefa {
     uuid: string;

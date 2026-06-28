@@ -16,13 +16,11 @@ import ProductionChart from '../components/dashboard/ProductionChart';
 
 const { width } = Dimensions.get('window');
 
-const AGRICULTOR_MENU = [
-    { id: "caderno", label: "Caderno", icon: "book-outline", screen: "CadernoCampo", color: "#064E3B" },
-    { id: "plantio", label: "Plantio", icon: "nutrition-outline", screen: "Plantio", color: "#8B5CF6" },
-    { id: "manejo_lavoura", label: "Manejo", icon: "earth-outline", screen: "ManejoLavoura", color: "#064E3B" },
-    { id: "colheita", label: "Colheita", icon: "leaf-outline", screen: "Colheita", color: "#059669" },
-    { id: "vendas", label: "Vendas", icon: "cash-outline", screen: "Vendas", color: "#10B981" },
-    { id: "estoque", label: "Estoque", icon: "cube-outline", screen: "Estoque", color: "#3B82F6" }
+const AGRICULTOR_ATALHOS = [
+    { id: "registrar_colheita", label: "Registrar Colheita", icon: "basket-outline", screen: "Colheita", color: "#F59E0B" },
+    { id: "registrar_aplicacao", label: "Registrar Aplicação", icon: "shield-checkmark-outline", screen: "Aplicacoes", color: "#10B981" },
+    { id: "nova_compra", label: "Nova Compra", icon: "cart-outline", screen: "Compras", color: "#3B82F6" },
+    { id: "anotar_atividade", label: "Anotar Atividade", icon: "create-outline", screen: "CadernoCampo", color: "#8B5CF6" },
 ];
 
 export default function HomeAgricultorScreen({ navigation }) {
@@ -111,7 +109,7 @@ export default function HomeAgricultorScreen({ navigation }) {
                             )}
                         </TouchableOpacity>
                     </View>
-                    <View style={{ marginTop: 20, width: '100%' }}>
+                    <View style={{ marginTop: 10, width: '100%', flexDirection: 'row', alignItems: 'center' }}>
                         <WeatherWidget compact={true} />
                     </View>
                 </View>
@@ -119,32 +117,18 @@ export default function HomeAgricultorScreen({ navigation }) {
                 {isReady && (
                     <View style={styles.kpiRow}>
                         <View style={styles.kpiItem}>
-                            <Text style={styles.kpiLabel}>COLHEITA (HOJE)</Text>
+                            <Text style={styles.kpiLabel}>PLANTIOS ATIVOS</Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                                 <Text style={styles.kpiEmoji}>🌱</Text>
-                                <Text style={styles.kpiValue}>{stats.colheitaHoje} <Text style={styles.unit}>kg</Text></Text>
+                                <Text style={styles.kpiValue}>{stats.plantioAtivo || 0} <Text style={styles.unit}>áreas</Text></Text>
                             </View>
                         </View>
-
                         <View style={styles.vr} />
-
                         <View style={styles.kpiItem}>
-                            <Text style={styles.kpiLabel}>VENDAS (HOJE)</Text>
+                            <Text style={styles.kpiLabel}>PENDÊNCIAS</Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                                <Text style={styles.kpiEmoji}>💵</Text>
-                                <Text style={styles.kpiValue}>{stats.vendasHoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.vr} />
-
-                        <View style={styles.kpiItem}>
-                            <Text style={styles.kpiLabel}>RESULTADO (MÊS)</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                                <Text style={styles.kpiEmoji}>📈</Text>
-                                <Text style={[styles.kpiValue, { color: stats.saldo >= 0 ? '#34D399' : '#F87171' }]}>
-                                    {formatBRL(stats.saldo)}
-                                </Text>
+                                <Text style={styles.kpiEmoji}>📋</Text>
+                                <Text style={styles.kpiValue}>{stats.pendentes || 0} <Text style={styles.unit}>itens</Text></Text>
                             </View>
                         </View>
                     </View>
@@ -166,19 +150,19 @@ export default function HomeAgricultorScreen({ navigation }) {
                         <TasksWidget />
                         {dashboardData && <SmartAlerts alerts={dashboardData.alerts} navigation={navigation} />}
 
-                        <Text style={[styles.sectionTitle, { color: THEME.textSub }]}>ACESSO RÁPIDO</Text>
+                        <Text style={[styles.sectionTitle, { color: THEME.textSub, marginTop: 10 }]}>AÇÕES RÁPIDAS</Text>
                         <View style={styles.grid}>
-                            {AGRICULTOR_MENU.map((item) => (
+                            {AGRICULTOR_ATALHOS.map((item) => (
                                 <TouchableOpacity
                                     key={item.id}
                                     style={[styles.card, { width: cardWidth, height: 110, backgroundColor: theme?.colors?.cardMenu || '#152235' }]}
                                     onPress={() => navigation.navigate(item.screen)}
                                     activeOpacity={0.7}
                                 >
-                                    <View style={styles.iconCirclePremium}>
+                                    <View style={[styles.iconCirclePremium, { backgroundColor: 'rgba(255,255,255,0.05)' }]}>
                                         <Ionicons name={item.icon} size={28} color={item.color || '#10B981'} />
                                     </View>
-                                    <Text style={[styles.cardTitle, { color: '#FFF' }]} numberOfLines={1}>{item.label}</Text>
+                                    <Text style={[styles.cardTitle, { color: '#FFF' }]} numberOfLines={2}>{item.label}</Text>
                                 </TouchableOpacity>
                             ))}
                         </View>

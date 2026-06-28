@@ -4,7 +4,7 @@ import { Package, Search, ArrowDownCircle, ArrowUpCircle, Filter, Activity, Box,
 import toast from 'react-hot-toast';
 import DraggableModal from '../../components/common/DraggableModal';
 import { useAuth } from '../../contexts/AuthContext';
-import SearchableSelect from '../../components/ui/SearchableSelect';
+import SearchableSelect from '../../components/common/SearchableSelect';
 
 export default function EstoqueScreen() {
     const { clientOverrideId } = useAuth();

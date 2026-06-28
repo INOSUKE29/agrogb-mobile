@@ -186,6 +186,7 @@ const createTables = async () => {
                 tipo TEXT,
                 observacao TEXT,
                 fator_conversao REAL DEFAULT 1,
+                status_curadoria TEXT DEFAULT 'APROVADO',
                 last_updated TEXT NOT NULL,
                 sync_status INTEGER DEFAULT 0
             );`,
@@ -574,10 +575,11 @@ const createTables = async () => {
         }
         try { await executeQuery('CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_uuid ON usuarios(uuid)'); } catch(e) {}
 
-        // MIGRATION: Cadastro (v4.0)
+        // MIGRATION: Cadastro (v4.0 e v8.1)
         try { await executeQuery('ALTER TABLE cadastro ADD COLUMN estocavel INTEGER DEFAULT 1'); } catch(e) {}
         try { await executeQuery('ALTER TABLE cadastro ADD COLUMN vendavel INTEGER DEFAULT 1'); } catch(e) {}
         try { await executeQuery('ALTER TABLE cadastro ADD COLUMN fator_conversao REAL DEFAULT 1'); } catch(e) {}
+        try { await executeQuery('ALTER TABLE cadastro ADD COLUMN status_curadoria TEXT DEFAULT "APROVADO"'); } catch(e) {}
 
         // MIGRATION: Compras (v4.0 e v7.1)
         try { await executeQuery('ALTER TABLE compras ADD COLUMN fornecedor_uuid TEXT'); } catch(e) {}

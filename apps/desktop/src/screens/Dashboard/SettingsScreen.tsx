@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User, Shield, Monitor, Key, Bell, Save } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import SearchableSelect from '../../components/ui/SearchableSelect';
+import SearchableSelect from '../../components/common/SearchableSelect';
 import { Switch } from '../../components/ui/Switch';
 import { Card } from '../../components/ui/Card';
 import { Avatar } from '../../components/ui/Avatar';

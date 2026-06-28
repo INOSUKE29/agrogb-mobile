@@ -9,7 +9,7 @@ import {
     CheckCircle2,
     Loader2
 } from 'lucide-react';
-import SearchableSelect from '../../components/ui/SearchableSelect';
+import SearchableSelect from '../../components/common/SearchableSelect';
 
 interface Monitoramento {
     id: string;

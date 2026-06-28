@@ -14,12 +14,14 @@ import SmartAlerts from '../components/dashboard/SmartAlerts';
 
 const { width } = Dimensions.get('window');
 
-const AGRONOMO_MENU = [
+const AGRONOMO_ATALHOS = [
     { id: "clientes", label: "Clientes", icon: "people-outline", screen: "Clientes", color: "#3B82F6" },
-    { id: "visitas", label: "Visitas", icon: "calendar-outline", screen: "CadernoCampo", color: "#10B981" },
-    { id: "monitoramento", label: "Monitorar", icon: "camera-outline", screen: "Monitoramento", color: "#EC4899" },
-    { id: "analises", label: "Análises", icon: "flask-outline", screen: "AnalisesSolo", color: "#8B5CF6" },
-    { id: "recomendacoes", label: "Recomendar", icon: "leaf-outline", screen: "CreateRecommendation", color: "#059669" },
+    { id: "propriedades", label: "Propriedades", icon: "home-outline", screen: "Home", color: "#10B981" },
+    { id: "culturas", label: "Culturas", icon: "leaf-outline", screen: "Culturas", color: "#8B5CF6" },
+    { id: "monitoramento", label: "Monitoramento", icon: "camera-outline", screen: "Monitoramento", color: "#EC4899" },
+    { id: "diagnostico", label: "Diagnóstico", icon: "medkit-outline", screen: "Home", color: "#F59E0B" },
+    { id: "prescricoes", label: "Prescrições", icon: "receipt-outline", screen: "Home", color: "#059669" },
+    { id: "biblioteca", label: "Biblioteca", icon: "library-outline", screen: "BibliotecaGlobal", color: "#6366F1" },
     { id: "relatorios", label: "Relatórios", icon: "document-text-outline", screen: "Relatorios", color: "#374151" }
 ];
 
@@ -105,42 +107,10 @@ export default function HomeAgronomoScreen({ navigation }) {
                             )}
                         </TouchableOpacity>
                     </View>
-                    <View style={{ marginTop: 20, width: '100%' }}>
-                        <WeatherWidget compact={true} />
+                    <View style={{ marginTop: 10, width: '100%', flexDirection: 'row', alignItems: 'center' }}>
+                        <WeatherWidget compact={true} customLocation="Fazenda Vale Verde" />
                     </View>
                 </View>
-
-                {isReady && (
-                    <View style={styles.kpiRow}>
-                        <View style={styles.kpiItem}>
-                            <Text style={styles.kpiLabel}>CLIENTES</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                                <Text style={styles.kpiEmoji}>👥</Text>
-                                <Text style={styles.kpiValue}>{stats.clientesCount} <Text style={styles.unit}>ativos</Text></Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.vr} />
-
-                        <View style={styles.kpiItem}>
-                            <Text style={styles.kpiLabel}>ATENDIMENTOS (HOJE)</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                                <Text style={styles.kpiEmoji}>🤝</Text>
-                                <Text style={styles.kpiValue}>{stats.atendimentosHoje} <Text style={styles.unit}>visitas</Text></Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.vr} />
-
-                        <View style={styles.kpiItem}>
-                            <Text style={styles.kpiLabel}>RECOMENDAÇÕES PEND.</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                                <Text style={styles.kpiEmoji}>📝</Text>
-                                <Text style={styles.kpiValue}>{stats.recomendacoesPendentes} <Text style={styles.unit}>rec.</Text></Text>
-                            </View>
-                        </View>
-                    </View>
-                )}
 
             </LinearGradient>
 
@@ -148,16 +118,47 @@ export default function HomeAgronomoScreen({ navigation }) {
                 {isReady ? (
                     <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-                        <Text style={[styles.sectionTitle, { color: THEME.textSub }]}>FERRAMENTAS TÉCNICAS</Text>
+                        <View style={styles.dashPanel}>
+                            <Text style={styles.panelTitle}>ACOMPANHAMENTO TÉCNICO</Text>
+                            
+                            <TouchableOpacity style={styles.listItem}>
+                                <View style={styles.listIcon}><Ionicons name="people" size={20} color="#3B82F6" /></View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.listTitle}>Clientes para acompanhar</Text>
+                                    <Text style={styles.listSub}>{stats.clientesCount} clientes ativos</Text>
+                                </View>
+                                <Ionicons name="chevron-forward" size={16} color="#6B7280" />
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity style={styles.listItem}>
+                                <View style={styles.listIcon}><Ionicons name="warning" size={20} color="#F59E0B" /></View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.listTitle}>Alertas de Lavoura</Text>
+                                    <Text style={styles.listSub}>{stats.alertasPendentes} ocorrências</Text>
+                                </View>
+                                <Ionicons name="chevron-forward" size={16} color="#6B7280" />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={styles.listItem}>
+                                <View style={styles.listIcon}><Ionicons name="receipt" size={20} color="#10B981" /></View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.listTitle}>Recomendações Pendentes</Text>
+                                    <Text style={styles.listSub}>{stats.recomendacoesPendentes} aguardando envio</Text>
+                                </View>
+                                <Ionicons name="chevron-forward" size={16} color="#6B7280" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={[styles.sectionTitle, { color: THEME.textSub, marginTop: 20 }]}>FERRAMENTAS TÉCNICAS</Text>
                         <View style={styles.grid}>
-                            {AGRONOMO_MENU.map((item) => (
+                            {AGRONOMO_ATALHOS.map((item) => (
                                 <TouchableOpacity
                                     key={item.id}
                                     style={[styles.card, { width: cardWidth, height: 110, backgroundColor: theme?.colors?.cardMenu || '#152235' }]}
                                     onPress={() => navigation.navigate(item.screen)}
                                     activeOpacity={0.7}
                                 >
-                                    <View style={styles.iconCirclePremium}>
+                                    <View style={[styles.iconCirclePremium, { backgroundColor: 'rgba(255,255,255,0.05)' }]}>
                                         <Ionicons name={item.icon} size={28} color={item.color || '#10B981'} />
                                     </View>
                                     <Text style={[styles.cardTitle, { color: '#FFF' }]} numberOfLines={1}>{item.label}</Text>
@@ -219,6 +220,13 @@ const styles = StyleSheet.create({
     card: { borderRadius: 18, padding: 10, alignItems: 'center', justifyContent: 'center', elevation: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
     iconCirclePremium: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.95)', shadowColor: 'rgba(255,255,255,0.20)', shadowOffset: {width: 0, height: 2}, shadowOpacity: 1, shadowRadius: 5, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
     cardTitle: { fontSize: 11, fontWeight: 'bold', textAlign: 'center' },
+    
+    dashPanel: { backgroundColor: '#142233', borderRadius: 16, padding: 15, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+    panelTitle: { fontSize: 11, fontWeight: 'bold', color: '#9CA3AF', marginBottom: 15, letterSpacing: 0.5 },
+    listItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 12, marginBottom: 8 },
+    listIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+    listTitle: { color: '#FFF', fontSize: 13, fontWeight: 'bold' },
+    listSub: { color: '#9CA3AF', fontSize: 11 },
 
     badge: { position: 'absolute', top: 5, right: 5, backgroundColor: '#EF4444', minWidth: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
     badgeText: { color: '#FFF', fontSize: 9, fontWeight: 'bold' },

@@ -5,12 +5,14 @@ import { useWeather } from '../context/WeatherContext';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
 
-export default function WeatherWidget() {
+export default function WeatherWidget({ compact = false, customLocation = null }) {
     const { weather, loading, error, permissionDenied } = useWeather();
     const navigation = useNavigation();
     const { theme } = useTheme();
 
+    // Se estiver carregando
     if (loading && !weather) {
+        if (compact) return <Text style={{ color: '#9CA3AF', fontSize: 12 }}>Buscando clima...</Text>;
         return (
             <View style={styles.container}>
                 <ActivityIndicator size="small" color={theme?.colors?.primary || '#10B981'} />
@@ -19,7 +21,16 @@ export default function WeatherWidget() {
         );
     }
 
+    // Se a permissão foi negada
     if (permissionDenied && !weather) {
+        if (compact) {
+            return (
+                <TouchableOpacity onPress={() => navigation.navigate('Clima')} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Ionicons name="location-outline" size={14} color="#9CA3AF" />
+                    <Text style={{ color: '#9CA3AF', fontSize: 11, marginLeft: 4 }}>Ativar Clima</Text>
+                </TouchableOpacity>
+            );
+        }
         return (
             <TouchableOpacity onPress={() => navigation.navigate('Clima')} style={styles.container}>
                 <Ionicons name="location-outline" size={16} color="#9CA3AF" />
@@ -28,7 +39,16 @@ export default function WeatherWidget() {
         );
     }
 
+    // Se deu erro
     if (error && !weather) {
+        if (compact) {
+             return (
+                 <TouchableOpacity onPress={() => navigation.navigate('Clima')} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                     <Ionicons name="cloud-offline-outline" size={14} color="#EF4444" />
+                     <Text style={{ color: '#FCA5A5', fontSize: 11, marginLeft: 4 }}>Indisponível</Text>
+                 </TouchableOpacity>
+             );
+        }
         return (
             <TouchableOpacity onPress={() => navigation.navigate('Clima')} style={styles.container}>
                 <Ionicons name="cloud-offline-outline" size={16} color="#EF4444" />
@@ -48,6 +68,17 @@ export default function WeatherWidget() {
         if (iconCode.includes('11')) return 'thunderstorm';
         return 'cloud-outline';
     };
+
+    if (compact) {
+        return (
+            <TouchableOpacity onPress={() => navigation.navigate('Clima')} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name={getIcon(weather.icon)} size={16} color="#FBBF24" />
+                <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: 'bold', marginLeft: 6 }}>
+                    {customLocation || weather.city} — {weather.temp}°C
+                </Text>
+            </TouchableOpacity>
+        );
+    }
 
     return (
         <TouchableOpacity onPress={() => navigation.navigate('Clima')} activeOpacity={0.7} style={styles.touchableWrapper}>
