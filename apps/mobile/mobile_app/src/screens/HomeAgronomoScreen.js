@@ -16,7 +16,7 @@ const { width } = Dimensions.get('window');
 
 const AGRONOMO_ATALHOS = [
     { id: "clientes", label: "Clientes", icon: "people-outline", screen: "Clientes", color: "#3B82F6" },
-    { id: "propriedades", label: "Propriedades", icon: "home-outline", screen: "Home", color: "#10B981" },
+    { id: "propriedades", label: "Propriedades", icon: "home-outline", screen: "Propriedades", color: "#10B981" },
     { id: "culturas", label: "Culturas", icon: "leaf-outline", screen: "Culturas", color: "#8B5CF6" },
     { id: "monitoramento", label: "Monitoramento", icon: "camera-outline", screen: "Monitoramento", color: "#EC4899" },
     { id: "diagnostico", label: "Diagnóstico", icon: "medkit-outline", screen: "Diagnosticos", color: "#F59E0B" },

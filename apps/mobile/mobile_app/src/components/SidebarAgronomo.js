@@ -99,7 +99,7 @@ export default function SidebarAgronomo({ visible, onClose }) {
                         
                         <Text style={styles.sectionTitle}>TÉCNICO & CAMPO</Text>
                         <MenuItem icon="people-outline" label="Clientes" screen="Clientes" />
-                        <MenuItem icon="home-outline" label="Propriedades" screen="Home" />
+                        <MenuItem icon="home-outline" label="Propriedades" screen="Propriedades" />
                         <MenuItem icon="map-outline" label="Áreas / Talhões" screen="Home" />
                         <MenuItem icon="camera-outline" label="Monitoramento" screen="Monitoramento" />
                         <MenuItem icon="medkit-outline" label="Diagnósticos" screen="Diagnosticos" />

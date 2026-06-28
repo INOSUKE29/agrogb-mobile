@@ -69,6 +69,8 @@ import BibliotecaGlobalScreen from './src/screens/BibliotecaGlobalScreen';
 import BibliotecaFormScreen from './src/screens/BibliotecaFormScreen';
 import DiagnosticosScreen from './src/screens/DiagnosticosScreen';
 import DiagnosticoFormScreen from './src/screens/DiagnosticoFormScreen';
+import PropriedadesScreen from './src/screens/PropriedadesScreen';
+import AreasScreen from './src/screens/AreasScreen';
 
 import ProfileScreen from './src/screens/ProfileScreen';
 import ProfileEditScreen from './src/screens/ProfileEditScreen';
@@ -284,6 +286,10 @@ function AppInner() {
                         {/* Módulo de Diagnóstico Agrônomo */}
                         <Stack.Screen name="Diagnosticos" component={DiagnosticosScreen} />
                         <Stack.Screen name="DiagnosticoForm" component={DiagnosticoFormScreen} />
+                        
+                        {/* Módulo de Propriedades (Agrônomo) */}
+                        <Stack.Screen name="Propriedades" component={PropriedadesScreen} />
+                        <Stack.Screen name="Areas" component={AreasScreen} />
                         
                         {/* Fallback Screen */}
                         <Stack.Screen name="Usuarios" component={UsuariosScreen} />
