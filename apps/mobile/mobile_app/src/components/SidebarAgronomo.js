@@ -100,15 +100,15 @@ export default function SidebarAgronomo({ visible, onClose }) {
                         <Text style={styles.sectionTitle}>TÉCNICO & CAMPO</Text>
                         <MenuItem icon="people-outline" label="Clientes" screen="Clientes" />
                         <MenuItem icon="home-outline" label="Propriedades" screen="Propriedades" />
-                        <MenuItem icon="map-outline" label="Áreas / Talhões" screen="Home" />
+                        <MenuItem icon="map-outline" label="Áreas / Talhões" screen="TalhoesAgronomo" />
                         <MenuItem icon="camera-outline" label="Monitoramento" screen="Monitoramento" />
                         <MenuItem icon="medkit-outline" label="Diagnósticos" screen="Diagnosticos" />
-                        <MenuItem icon="earth-outline" label="Manejo" screen="Receitas" />
-                        <MenuItem icon="shield-checkmark-outline" label="Aplicações" screen="Receitas" />
+                        <MenuItem icon="earth-outline" label="Manejo" screen="AgronomistReceitas" />
+                        <MenuItem icon="shield-checkmark-outline" label="Aplicações" screen="AgronomistReceitas" />
 
                         <View style={styles.divider} />
                         <Text style={styles.sectionTitle}>RECOMENDAÇÃO</Text>
-                        <MenuItem icon="receipt-outline" label="Receitas" screen="Home" />
+                        <MenuItem icon="receipt-outline" label="Receitas" screen="AgronomistReceitas" />
                         <MenuItem icon="document-text-outline" label="Prescrições" screen="CreateRecommendation" />
                         <MenuItem icon="library-outline" label="Biblioteca Global" screen="BibliotecaGlobal" />
 

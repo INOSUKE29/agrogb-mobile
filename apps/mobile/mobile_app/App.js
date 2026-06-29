@@ -69,6 +69,9 @@ import DiagnosticosScreen from './src/screens/DiagnosticosScreen';
 import DiagnosticoFormScreen from './src/screens/DiagnosticoFormScreen';
 import PropriedadesScreen from './src/screens/PropriedadesScreen';
 import AreasScreen from './src/screens/AreasScreen';
+import TalhoesAgronomoScreen from './src/screens/agronomist/TalhoesAgronomoScreen';
+import NovaReceitaScreen from './src/screens/agronomist/NovaReceitaScreen';
+import AgronomistReceitasScreen from './src/screens/agronomist/ReceitasScreen';
 import ReceitasScreen from './src/screens/ReceitasScreen';
 import ReceitaFormScreen from './src/screens/ReceitaFormScreen';
 
@@ -272,6 +275,13 @@ function AppInner() {
                         <Stack.Screen name="Colheita" component={ColheitaScreen} />
                         <Stack.Screen name="Vendas" component={VendasScreen} />
                         <Stack.Screen name="Estoque" component={EstoqueScreen} />
+                        <Stack.Screen name="Propriedades" component={PropriedadesScreen} />
+                        <Stack.Screen name="Areas" component={AreasScreen} />
+                        <Stack.Screen name="TalhoesAgronomo" component={TalhoesAgronomoScreen} />
+                        <Stack.Screen name="Receitas" component={ReceitasScreen} />
+                        <Stack.Screen name="AgronomistReceitas" component={AgronomistReceitasScreen} />
+                        <Stack.Screen name="NovaReceita" component={NovaReceitaScreen} />
+                        <Stack.Screen name="ReceitaForm" component={ReceitaFormScreen} />
                         <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />
                         <Stack.Screen name="Settings" component={SettingsScreen} />
                         <Stack.Screen name="Compras" component={ComprasScreen} />
