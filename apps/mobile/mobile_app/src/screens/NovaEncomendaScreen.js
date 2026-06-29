@@ -128,19 +128,19 @@ export default function NovaEncomendaScreen({ route }) {
                 let novoStatus = novaRestante <= 0 ? 'CONCLUIDA' : (novaRestante < qtdTotal ? 'PARCIAL' : 'PENDENTE');
 
                 await executeQuery(
-                    `UPDATE orders SET 
-                        cliente_id = ?, produto_id = ?, unidade = ?, 
+                    `UPDATE v2_encomendas SET 
+                        cliente_id = ?, cliente_nome = ?, produto_id = ?, produto_nome = ?, unidade = ?, 
                         quantidade_total = ?, quantidade_restante = ?, 
                         valor_unitario = ?, data_prevista = ?, status = ?, 
                         observacao = ?, last_updated = ?, sync_status = 0
                     WHERE id = ?`,
-                    [clienteId, produtoId, unidade, qtdTotal, novaRestante, valUnit, dataPrevista, novoStatus, observacao, now, editingId]
+                    [clienteId, clienteVal?.nome || 'Cliente', produtoId, produtoVal?.nome || 'Produto', unidade, qtdTotal, novaRestante, valUnit, dataPrevista, novoStatus, observacao, now, editingId]
                 );
             } else {
                 const novoId = uuidv4();
                 await executeQuery(
-                    `INSERT INTO orders (id, cliente_id, produto_id, unidade, quantidade_total, quantidade_restante, valor_unitario, data_prevista, status, observacao, created_at, is_deleted, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDENTE', ?, ?, 0, 0)`,
-                    [novoId, clienteId, produtoId, unidade, qtdTotal, qtdTotal, valUnit, dataPrevista, observacao, now]
+                    `INSERT INTO v2_encomendas (id, cliente_id, cliente_nome, produto_id, produto_nome, unidade, quantidade_total, quantidade_restante, valor_unitario, data_prevista, status, observacao, created_at, is_deleted, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDENTE', ?, ?, 0, 0)`,
+                    [novoId, clienteId, clienteVal?.nome || 'Cliente', produtoId, produtoVal?.nome || 'Produto', unidade, qtdTotal, qtdTotal, valUnit, dataPrevista, observacao, now]
                 );
             }
             navigation.goBack();
@@ -156,7 +156,7 @@ export default function NovaEncomendaScreen({ route }) {
                 text: 'Sim',
                 style: 'destructive',
                 onPress: async () => {
-                    await executeQuery(`UPDATE orders SET is_deleted = 1, sync_status = 0, last_updated = ? WHERE id = ?`, [new Date().toISOString(), editingId]);
+                    await executeQuery(`UPDATE v2_encomendas SET is_deleted = 1, sync_status = 0, last_updated = ? WHERE id = ?`, [new Date().toISOString(), editingId]);
                     navigation.goBack();
                 }
             }

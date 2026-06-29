@@ -245,6 +245,24 @@ export const SCHEMA_V10 = [
         last_sync TEXT,
         created_at TEXT DEFAULT (datetime('now'))
     )`,
+    `CREATE TABLE IF NOT EXISTS v2_encomendas (
+        id TEXT PRIMARY KEY,
+        cliente_id TEXT,
+        cliente_nome TEXT,
+        produto_id TEXT,
+        produto_nome TEXT,
+        unidade TEXT,
+        quantidade_total REAL,
+        quantidade_restante REAL,
+        valor_unitario REAL,
+        data_prevista TEXT,
+        status TEXT DEFAULT 'PENDENTE',
+        observacao TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        last_updated TEXT,
+        sync_status INTEGER DEFAULT 0,
+        is_deleted INTEGER DEFAULT 0
+    )`,
     `CREATE TABLE IF NOT EXISTS v2_conflicts (
         id TEXT PRIMARY KEY,
         table_name TEXT,

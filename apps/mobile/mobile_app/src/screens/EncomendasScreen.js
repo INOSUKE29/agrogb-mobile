@@ -23,10 +23,8 @@ export default function EncomendasScreen() {
         setLoading(true);
         try {
             const query = `
-                SELECT o.*, c.nome as cliente_nome, p.nome as produto_nome
-                FROM orders o
-                LEFT JOIN clientes c ON o.cliente_id = c.uuid
-                LEFT JOIN cadastro p ON o.produto_id = p.uuid
+                SELECT o.*
+                FROM v2_encomendas o
                 WHERE o.is_deleted = 0
                 ORDER BY o.data_prevista ASC`;
             const result = await executeQuery(query);
