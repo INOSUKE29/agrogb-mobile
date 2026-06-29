@@ -42,8 +42,8 @@ export default function AdminSelectorScreen({ navigation }) {
                     </LinearGradient>
                 </TouchableOpacity>
 
-                {/* Visão Admin (Futuro Desktop App Mobile View) */}
-                <TouchableOpacity activeOpacity={0.9} style={styles.cardWrapper} onPress={() => alert('O Gerenciamento (Aprovações, Faturamento) será mantido no Desktop Web como planejado!')}>
+                {/* Visão Admin (Painel de Bolso) */}
+                <TouchableOpacity activeOpacity={0.9} style={styles.cardWrapper} onPress={() => navigation.navigate('HomeAdmin')}>
                     <LinearGradient colors={['#111111', '#000000']} style={[styles.card, { borderColor: '#D4AF37', borderWidth: 1 }]}>
                         <View style={styles.cardHeader}>
                             <MaterialCommunityIcons name="shield-crown" size={30} color="#D4AF37" />

@@ -15,6 +15,7 @@ import ClientNavigator from './ClientNavigator'; // <-- Novo módulo do Cliente
 import AgronomistClientsScreen from '../screens/agronomist/AgronomistClientsScreen'; // <-- Fase 3 CRM
 import CreateRecommendationScreen from '../screens/agronomist/CreateRecommendationScreen'; // <-- Fase 3 Receitas
 import AdminSelectorScreen from '../screens/admin/AdminSelectorScreen'; // <-- Fase 6 ADM
+import HomeAdminScreen from '../screens/admin/HomeAdminScreen'; // <-- Painel de Bolso ADM
 
 // --- NOVO: FASE 3 (COMERCIAL E ASSINATURAS) ---
 import CRMScreen from '../screens/CRMScreen';
@@ -96,6 +97,7 @@ export default function AppNavigator() {
             
             {/* Tela Nova do ADM (V2) */}
             <Stack.Screen name="AdminSelector" component={AdminSelectorScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="HomeAdmin" component={HomeAdminScreen} options={{ headerShown: false }} />
             
             {/* Novas Telas Fase 3 (Comercial e Planos) */}
             <Stack.Screen name="CRM" component={CRMScreen} options={{ headerShown: false }} />
