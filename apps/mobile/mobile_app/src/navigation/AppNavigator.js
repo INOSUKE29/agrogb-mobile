@@ -50,17 +50,15 @@ import AdubacaoFormScreen from '../screens/AdubacaoFormScreen';
 import AdubacaoDetailScreen from '../screens/AdubacaoDetailScreen';
 import CadernoCampoScreen from '../screens/CadernoCampoScreen';
 import ClienteFormScreen from '../screens/ClienteFormScreen';
-import CadastroFormScreen from '../screens/CadastroFormScreen';
-import MenuCadastrosScreen from '../screens/MenuCadastrosScreen';
+import CadastroScreen from '../screens/CadastroScreen';
+import ClienteFormScreen from '../screens/ClienteFormScreen';
 import ResetPasswordScreen from '../screens/ResetPasswordScreen';
-import CategoriasDespesaScreen from '../screens/CategoriasDespesaScreen';
 import VerifyCodeScreen from '../screens/VerifyCodeScreen';
 import FinancialAccountsScreen from '../screens/FinancialAccountsScreen';
 import DescarteScreen from '../screens/DescarteScreen';
 
 import FertilizationScreen from '../screens/FertilizationScreen';
 import RecipeFormScreen from '../screens/RecipeFormScreen';
-import ApplicationFormScreen from '../screens/ApplicationFormScreen';
 import ClimaScreen from '../screens/ClimaScreen';
 
 // Mega Central: Manejo da Lavoura
@@ -120,10 +118,7 @@ export default function AppNavigator() {
             <Stack.Screen name="AnalisesSolo" component={AnalisesSoloScreen} options={{ headerShown: false }} />
             <Stack.Screen name="AnaliseSoloForm" component={AnaliseSoloFormScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Custos" component={CustosScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="MenuCadastros" component={MenuCadastrosScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="CategoriasDespesa" component={CategoriasDespesaScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Cadastro" component={CadastroScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="CadastroForm" component={CadastroFormScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Clientes" component={ClientesScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Culturas" component={CulturasScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Relatorios" component={RelatoriosScreen} options={{ headerShown: false }} />
@@ -137,7 +132,6 @@ export default function AppNavigator() {
             <Stack.Screen name="Area" component={CulturasScreen} options={{ headerShown: false }} />
             <Stack.Screen name="AdubacaoList" component={FertilizationScreen} options={{ headerShown: false }} />
             <Stack.Screen name="RecipeForm" component={RecipeFormScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="ApplicationForm" component={ApplicationFormScreen} options={{ headerShown: false }} />
             <Stack.Screen name="AdubacaoForm" component={AdubacaoFormScreen} options={{ headerShown: false }} />
             <Stack.Screen name="AdubacaoDetail" component={AdubacaoDetailScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ClienteForm" component={ClienteFormScreen} options={{ headerShown: false }} />

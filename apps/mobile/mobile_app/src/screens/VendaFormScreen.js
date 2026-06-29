@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIn
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { executeQuery } from '../database/database';
-import AgroInput from '../components/ui/AgroInput';
+import AgroInput from '../components/AgroInput';
 import SmartEntitySelector from '../components/common/SmartEntitySelector';
 import { ClientLibraryService, ProductLibraryService } from '../services/LibraryServices';
 
