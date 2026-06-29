@@ -527,6 +527,115 @@ def criar_tabelas():
     )
     """)
 
+    # ==========================
+    # NOVAS TABELAS DE PARIDADE COM MOBILE
+    # ==========================
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS farms (
+        uuid TEXT PRIMARY KEY,
+        owner_id TEXT NOT NULL,
+        nome TEXT NOT NULL,
+        cidade TEXT,
+        estado TEXT,
+        area_total REAL,
+        source_platform TEXT DEFAULT 'desktop',
+        created_by TEXT,
+        updated_by TEXT,
+        last_updated TEXT NOT NULL,
+        sync_status INTEGER DEFAULT 0,
+        is_deleted INTEGER DEFAULT 0,
+        FOREIGN KEY(owner_id) REFERENCES clientes(uuid)
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS fields (
+        uuid TEXT PRIMARY KEY,
+        farm_uuid TEXT NOT NULL,
+        nome TEXT NOT NULL,
+        area REAL,
+        plant_count INTEGER,
+        source_platform TEXT DEFAULT 'desktop',
+        created_by TEXT,
+        updated_by TEXT,
+        last_updated TEXT NOT NULL,
+        sync_status INTEGER DEFAULT 0,
+        is_deleted INTEGER DEFAULT 0,
+        FOREIGN KEY(farm_uuid) REFERENCES farms(uuid) ON DELETE CASCADE
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS recommendations (
+        uuid TEXT PRIMARY KEY,
+        agronomist_id TEXT,
+        client_id TEXT NOT NULL,
+        farm_uuid TEXT NOT NULL,
+        field_uuid TEXT NOT NULL,
+        planting_uuid TEXT,
+        title TEXT NOT NULL,
+        description TEXT,
+        application_type TEXT NOT NULL,
+        recipe_data TEXT NOT NULL,
+        scheduled_date TEXT NOT NULL,
+        status TEXT DEFAULT 'PENDING',
+        source_platform TEXT DEFAULT 'desktop',
+        created_by TEXT,
+        updated_by TEXT,
+        last_updated TEXT NOT NULL,
+        sync_status INTEGER DEFAULT 0,
+        is_deleted INTEGER DEFAULT 0,
+        FOREIGN KEY(farm_uuid) REFERENCES farms(uuid) ON DELETE CASCADE
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS monitoramento_entidade (
+        uuid TEXT PRIMARY KEY,
+        safra_uuid TEXT,
+        agronomo_id TEXT,
+        nome_praga TEXT,
+        severidade TEXT,
+        data_registro TEXT,
+        latitude REAL,
+        longitude REAL,
+        observacoes TEXT,
+        status_tratamento TEXT DEFAULT 'PENDENTE',
+        created_by TEXT,
+        last_updated TEXT NOT NULL,
+        sync_status INTEGER DEFAULT 0,
+        is_deleted INTEGER DEFAULT 0
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS monitoramento_media (
+        uuid TEXT PRIMARY KEY,
+        monitoramento_uuid TEXT,
+        tipo TEXT,
+        caminho_arquivo TEXT,
+        created_at TEXT NOT NULL,
+        sync_status INTEGER DEFAULT 0,
+        is_deleted INTEGER DEFAULT 0,
+        FOREIGN KEY(monitoramento_uuid) REFERENCES monitoramento_entidade(uuid) ON DELETE CASCADE
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS sync_outbox (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        uuid TEXT UNIQUE,
+        tabela TEXT NOT NULL,
+        registro_uuid TEXT NOT NULL,
+        acao TEXT NOT NULL,
+        payload_json TEXT NOT NULL,
+        status TEXT DEFAULT 'PENDENTE',
+        criado_em TEXT NOT NULL,
+        tentativas INTEGER DEFAULT 0,
+        ultimo_erro TEXT
+    )
+    """)
+
     # Admin Padrão
     import bcrypt
     try:
@@ -547,7 +656,8 @@ def criar_tabelas():
         "colheitas", "estoque", "vendas", "descarte", "custos", "manutencao_frota",
         "receitas", "talhoes", "fornecedores", "irrigacao", "financeiro_transacoes",
         "fertirrigacao", "aplicacoes", "equipes", "planos_adubacao", "caderno_notas",
-        "monitoramento"
+        "monitoramento", "farms", "fields", "recommendations", "monitoramento_entidade",
+        "monitoramento_media"
     ]
     
     for tab in tabelas_uuid:

@@ -144,11 +144,11 @@ def iniciar_painel_agronomo(root, usuario_logado):
         return btn
 
     add_menu("Dashboard Técnico", "🏠", exibir_dashboard_agronomo, active=True)
-    add_menu("Meus Clientes", "👥", lambda: print("Clientes"))
+    add_menu("Clientes (CRM)", "👥", lambda: print("Clientes"))
+    add_menu("Fazendas (Propriedades)", "🏡", lambda: print("Fazendas"))
     add_menu("Áreas e Talhões", "🗺️", lambda: print("Áreas"))
-    add_menu("Recomendações", "📋", lambda: print("Rec"))
-    add_menu("Visitas Técnicas", "📍", lambda: print("Visitas"))
-    add_menu("Monitoramento", "🔍", lambda: print("Monitoramento"))
+    add_menu("Manejo (Prescrições)", "📋", lambda: print("Rec"))
+    add_menu("Monitoramento (Diagnóstico)", "🔍", lambda: print("Monitoramento"))
     add_menu("Relatórios de Campo", "📊", lambda: print("Relatórios"))
 
     # --- RODAPÉ DA SIDEBAR (MODAL) ---
