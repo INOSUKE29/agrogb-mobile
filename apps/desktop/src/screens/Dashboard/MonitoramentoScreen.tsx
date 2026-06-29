@@ -7,17 +7,27 @@ import {
     Bug, 
     AlertTriangle, 
     CheckCircle2,
-    Loader2
+    Loader2,
+    MapPin,
+    Camera
 } from 'lucide-react';
 import SearchableSelect from '../../components/common/SearchableSelect';
+import { v4 as uuidv4 } from 'uuid';
+
+interface MonitoramentoMidia {
+    caminho_arquivo: string;
+    tipo: string;
+}
 
 interface Monitoramento {
-    id: string;
-    data_registro: string;
+    uuid: string;
+    criado_em: string;
     tipo: string;
-    nivel_infeccao: string;
-    observacao: string;
-    talhao_nome?: string;
+    observacao_usuario: string;
+    nivel_confianca: string;
+    status: string;
+    geoloc?: string;
+    v2_monitoramentos_midia?: MonitoramentoMidia[];
 }
 
 export default function MonitoramentoScreen() {
@@ -28,26 +38,26 @@ export default function MonitoramentoScreen() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [saving, setSaving] = useState(false);
 
-    // Form
+    // Form Mock
     const [form, setForm] = useState({
-        data_registro: new Date().toISOString().split('T')[0],
         tipo: 'PRAGA',
-        nivel_infeccao: 'BAIXO',
-        observacao: '',
-        talhao_nome: ''
+        nivel_confianca: 'TÉCNICO',
+        observacao_usuario: '',
     });
 
     const fetchRegistros = async () => {
         setLoading(true);
         try {
             const { data, error } = await supabase
-                .from('monitoramento')
-                .select('*')
-                .order('data_registro', { ascending: false });
+                .from('v2_monitoramentos')
+                .select(`
+                    *,
+                    v2_monitoramentos_midia ( caminho_arquivo, tipo )
+                `)
+                .order('criado_em', { ascending: false });
 
             if (error) {
-                // If table doesn't exist yet, just ignore for now
-                console.log('Tabela monitoramento pode não existir ainda:', error);
+                console.log('Tabela v2_monitoramentos pode não existir ainda:', error);
                 setRegistros([]);
             } else {
                 setRegistros(data || []);
@@ -65,11 +75,9 @@ export default function MonitoramentoScreen() {
 
     const openModal = () => {
         setForm({
-            data_registro: new Date().toISOString().split('T')[0],
             tipo: 'PRAGA',
-            nivel_infeccao: 'BAIXO',
-            observacao: '',
-            talhao_nome: ''
+            nivel_confianca: 'TÉCNICO',
+            observacao_usuario: '',
         });
         setIsModalOpen(true);
     };
@@ -79,17 +87,20 @@ export default function MonitoramentoScreen() {
         setSaving(true);
 
         const payload = {
-            data_registro: form.data_registro,
+            uuid: uuidv4(),
+            criado_em: new Date().toISOString(),
             tipo: form.tipo,
-            nivel_infeccao: form.nivel_infeccao,
-            observacao: form.observacao,
-            talhao_nome: form.talhao_nome
+            nivel_confianca: form.nivel_confianca,
+            observacao_usuario: form.observacao_usuario,
+            status: 'ABERTO',
+            geoloc: '-15.7801,-47.9292', // Mock GPS
+            sync_status: 1
         };
 
         try {
-            const { error } = await supabase.from('monitoramento').insert([payload]);
+            const { error } = await supabase.from('v2_monitoramentos').insert([payload]);
             if (error) {
-                alert('Aviso: A tabela "monitoramento" ainda não foi criada no banco de dados. Os dados são apenas visuais por enquanto.');
+                alert('Erro ao salvar em v2_monitoramentos. Verifique o banco.');
             } else {
                 fetchRegistros();
             }
@@ -102,19 +113,9 @@ export default function MonitoramentoScreen() {
     };
 
     const filtered = registros.filter(r => 
-        (r.observacao?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (r.talhao_nome?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+        (r.observacao_usuario?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (r.tipo?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     );
-
-    const getNivelColor = (nivel: string) => {
-        switch (nivel) {
-            case 'BAIXO': return 'bg-green-500/20 text-green-400 border-green-500/30';
-            case 'MÉDIO': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-            case 'ALTO': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-            case 'CRÍTICO': return 'bg-red-500/20 text-red-400 border-red-500/30';
-            default: return 'bg-gray-500/20 text-gray-400';
-        }
-    };
 
     return (
         <div className="animate-fade-in pb-12 max-w-7xl mx-auto">
@@ -123,10 +124,10 @@ export default function MonitoramentoScreen() {
                 <div>
                     <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
                         <Activity className="w-8 h-8 text-orange-500" />
-                        Monitoramento de Pragas
+                        Monitoramento V2 (Galeria de Campo)
                     </h1>
                     <p className="text-[var(--color-muted)] font-medium mt-1">
-                        Check-in de pragas e doenças identificadas no campo.
+                        Laudos agronômicos e fotos de pragas diretamente do aplicativo móvel.
                     </p>
                 </div>
                 
@@ -135,7 +136,7 @@ export default function MonitoramentoScreen() {
                     className="flex items-center justify-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl shadow-lg shadow-orange-500/20 transition-all"
                 >
                     <Plus className="w-5 h-5" />
-                    Novo Check-in
+                    Simular Check-in
                 </button>
             </div>
 
@@ -144,7 +145,7 @@ export default function MonitoramentoScreen() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-muted)]" />
                     <input 
                         type="text" 
-                        placeholder="Buscar por talhão ou observação..." 
+                        placeholder="Buscar por observação ou praga..." 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-[var(--color-background)]/50 border border-[var(--color-border)] rounded-xl py-2.5 pl-10 pr-4 text-white placeholder-[var(--color-muted)] focus:outline-none focus:border-orange-500 transition-all"
@@ -155,47 +156,73 @@ export default function MonitoramentoScreen() {
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 text-[var(--color-muted)]">
                     <Loader2 className="w-10 h-10 animate-spin mb-4 text-orange-500" />
-                    <p className="font-bold">Buscando registros...</p>
+                    <p className="font-bold">Sincronizando com o campo...</p>
                 </div>
             ) : filtered.length === 0 ? (
                 <div className="glass p-12 rounded-3xl flex flex-col items-center justify-center text-[var(--color-muted)] border border-[var(--color-border)]">
                     <CheckCircle2 className="w-16 h-16 mb-4 text-green-500/50" />
                     <p className="font-bold text-white text-xl mb-2">Área Limpa!</p>
-                    <p className="text-sm">Nenhum registro de praga ou doença foi reportado recentemente.</p>
+                    <p className="text-sm">Nenhum registro de praga ou doença foi enviado pelo aplicativo.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {filtered.map((r, index) => (
-                        <div key={r.id || index} className="glass rounded-3xl border border-[var(--color-border)] overflow-hidden group hover:-translate-y-1 transition-all">
-                            <div className="p-6">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${r.tipo === 'PRAGA' ? 'bg-orange-500/20 text-orange-400' : 'bg-red-500/20 text-red-400'}`}>
-                                            {r.tipo === 'PRAGA' ? <Bug className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-black text-white leading-tight">{r.tipo}</h3>
-                                            <p className="text-sm text-[var(--color-muted)] mt-1">{new Date(r.data_registro).toLocaleDateString('pt-BR')}</p>
-                                        </div>
+                        <div key={r.uuid || index} className="glass rounded-3xl border border-[var(--color-border)] overflow-hidden group hover:-translate-y-1 transition-all flex flex-col">
+                            {/* Galeria de Fotos */}
+                            {r.v2_monitoramentos_midia && r.v2_monitoramentos_midia.length > 0 ? (
+                                <div className="h-48 w-full bg-black/40 relative overflow-hidden">
+                                    <img 
+                                        src={r.v2_monitoramentos_midia[0].caminho_arquivo} 
+                                        alt="Evidência de campo" 
+                                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                                    />
+                                    <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 flex items-center gap-1.5">
+                                        <Camera className="w-3.5 h-3.5 text-white" />
+                                        <span className="text-xs text-white font-bold">{r.v2_monitoramentos_midia.length}</span>
                                     </div>
                                 </div>
+                            ) : (
+                                <div className="h-24 w-full bg-gradient-to-br from-[#1E1E1E] to-black relative overflow-hidden flex items-center justify-center border-b border-[var(--color-border)]">
+                                    <span className="text-[var(--color-muted)] text-sm flex items-center gap-2">
+                                        <Camera className="w-4 h-4" /> Sem foto anexada
+                                    </span>
+                                </div>
+                            )}
 
-                                <div className="space-y-4">
-                                    <div>
-                                        <p className="text-xs text-[var(--color-muted)] font-bold uppercase tracking-wider mb-1">Local / Talhão</p>
-                                        <p className="text-white font-bold">{r.talhao_nome || 'Local não especificado'}</p>
+                            <div className="p-6 flex-1 flex flex-col justify-between">
+                                <div>
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${r.tipo === 'PRAGA' ? 'bg-orange-500/20 text-orange-400' : 'bg-red-500/20 text-red-400'}`}>
+                                                {r.tipo === 'PRAGA' ? <Bug className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-black text-white leading-tight">{r.tipo || 'Desconhecido'}</h3>
+                                                <p className="text-xs text-[var(--color-muted)] mt-1">{new Date(r.criado_em).toLocaleDateString('pt-BR')} às {new Date(r.criado_em).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-xs text-[var(--color-muted)] font-bold uppercase tracking-wider mb-1">Observações</p>
-                                        <p className="text-white text-sm">{r.observacao}</p>
+
+                                    <div className="space-y-4 mb-4">
+                                        <div>
+                                            <p className="text-xs text-[var(--color-muted)] font-bold uppercase tracking-wider mb-1">Laudo / Observações</p>
+                                            <p className="text-white text-sm line-clamp-3">{r.observacao_usuario || 'Nenhum detalhe informado.'}</p>
+                                        </div>
+                                        {r.geoloc && (
+                                            <div className="flex items-center gap-1.5 text-xs text-blue-400 font-bold bg-blue-500/10 self-start px-2 py-1 rounded border border-blue-500/20 w-fit">
+                                                <MapPin className="w-3.5 h-3.5" />
+                                                GPS: {r.geoloc}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                            </div>
-                            <div className="bg-black/20 p-4 border-t border-[var(--color-border)] flex justify-between items-center">
-                                <span className="text-xs text-[var(--color-muted)] font-bold uppercase">Nível de Infecção:</span>
-                                <span className={`text-xs font-bold px-3 py-1 rounded-lg border ${getNivelColor(r.nivel_infeccao)}`}>
-                                    {r.nivel_infeccao}
-                                </span>
+                                
+                                <div className="mt-4 pt-4 border-t border-[var(--color-border)] flex justify-between items-center">
+                                    <span className="text-xs text-[var(--color-muted)] font-bold uppercase">Status / Confiança:</span>
+                                    <span className="text-xs font-bold px-3 py-1 rounded-lg border bg-green-500/20 text-green-400 border-green-500/30">
+                                        {r.status} - {r.nivel_confianca}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -209,23 +236,13 @@ export default function MonitoramentoScreen() {
                         <div className="p-6 border-b border-[var(--color-border)] bg-white/5">
                             <h2 className="text-xl font-bold text-white flex items-center gap-2">
                                 <Activity className="w-5 h-5 text-orange-500" />
-                                Registrar Monitoramento
+                                Registrar Monitoramento V2
                             </h2>
                         </div>
                         
                         <div className="p-6">
                             <form id="monitoramentoForm" onSubmit={handleSave} className="flex flex-col gap-5">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-bold text-[var(--color-muted)] mb-2">Data *</label>
-                                        <input 
-                                            type="date" 
-                                            required
-                                            value={form.data_registro}
-                                            onChange={(e) => setForm({...form, data_registro: e.target.value})}
-                                            className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl focus:ring-2 focus:ring-orange-500 p-3"
-                                        />
-                                    </div>
                                     <div>
                                         <label className="block text-sm font-bold text-[var(--color-muted)] mb-2">Tipo *</label>
                                         <SearchableSelect
@@ -234,49 +251,36 @@ export default function MonitoramentoScreen() {
                                             options={[
                                                 { label: 'Praga (Insetos)', value: 'PRAGA' },
                                                 { label: 'Doença (Fungo/Vírus)', value: 'DOENÇA' },
-                                                { label: 'Erva Daninha', value: 'ERVA DANINHA' }
+                                                { label: 'Erva Daninha', value: 'DANINHA' }
                                             ]}
                                             allowCustom={false}
                                             placeholder="Selecione o Tipo"
                                         />
                                     </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-[var(--color-muted)] mb-2">Confiança *</label>
+                                        <SearchableSelect
+                                            value={form.nivel_confianca}
+                                            onChange={(val) => setForm({...form, nivel_confianca: val})}
+                                            options={[
+                                                { label: 'Informativo', value: 'INFORMATIVO' },
+                                                { label: 'Técnico', value: 'TÉCNICO' },
+                                                { label: 'Validado', value: 'VALIDADO' }
+                                            ]}
+                                            allowCustom={false}
+                                            placeholder="Confiança"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-2">Nível de Infecção *</label>
-                                    <SearchableSelect
-                                        value={form.nivel_infeccao}
-                                        onChange={(val) => setForm({...form, nivel_infeccao: val})}
-                                        options={[
-                                            { label: 'Baixo (Controle preventivo)', value: 'BAIXO' },
-                                            { label: 'Médio (Atenção necessária)', value: 'MÉDIO' },
-                                            { label: 'Alto (Ação imediata recomendada)', value: 'ALTO' },
-                                            { label: 'Crítico (Danos severos)', value: 'CRÍTICO' }
-                                        ]}
-                                        allowCustom={false}
-                                        placeholder="Selecione o Nível"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-2">Local/Talhão Afetado</label>
-                                    <input 
-                                        type="text" 
-                                        value={form.talhao_nome}
-                                        onChange={(e) => setForm({...form, talhao_nome: e.target.value})}
-                                        className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl focus:ring-2 focus:ring-orange-500 p-3"
-                                        placeholder="Ex: Talhão 01, Lote B"
-                                    />
-                                </div>
-                                
-                                <div>
-                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-2">Observações / Detalhes</label>
+                                    <label className="block text-sm font-bold text-[var(--color-muted)] mb-2">Observações (Laudo)</label>
                                     <textarea 
-                                        rows={3}
-                                        value={form.observacao}
-                                        onChange={(e) => setForm({...form, observacao: e.target.value})}
+                                        rows={4}
+                                        value={form.observacao_usuario}
+                                        onChange={(e) => setForm({...form, observacao_usuario: e.target.value})}
                                         className="w-full bg-[var(--color-background)] border border-[var(--color-border)] text-white rounded-xl focus:ring-2 focus:ring-orange-500 p-3 resize-none"
-                                        placeholder="Descreva o que foi encontrado (ex: Mosca Branca, Ferrugem Asiática)..."
+                                        placeholder="Ex: Identificado foco de ferrugem asiática..."
                                     />
                                 </div>
                             </form>
@@ -297,7 +301,7 @@ export default function MonitoramentoScreen() {
                                 className="px-6 py-3 rounded-xl font-bold text-white bg-orange-600 hover:bg-orange-500 transition-all flex items-center gap-2"
                             >
                                 {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-                                Salvar Check-in
+                                Salvar V2
                             </button>
                         </div>
                     </div>

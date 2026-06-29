@@ -57,7 +57,7 @@ export default function HomeAgronomoScreen({ navigation }) {
 
     const autoSync = async () => {
         // Fallback antigo de sincronização mantido para não quebrar tabelas legadas
-        const tables = ['colheitas', 'vendas', 'compras', 'plantio', 'custos', 'descarte', 'clientes', 'culturas', 'cadastro', 'maquinas', 'manutencao_frota', 'monitoramento_entidade', 'analise_ia', 'monitoramento_media'];
+        const tables = ['colheitas', 'vendas', 'compras', 'plantio', 'custos', 'descarte', 'clientes', 'culturas', 'cadastro', 'maquinas', 'manutencao_frota', 'v2_monitoramentos', 'analise_ia', 'v2_monitoramentos_midia'];
         for (const tab of tables) {
             syncTable(tab).catch(err => console.log('Background sync error', tab, err));
         }

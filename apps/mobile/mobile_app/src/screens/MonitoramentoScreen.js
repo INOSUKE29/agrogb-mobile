@@ -60,9 +60,9 @@ export default function MonitoramentoScreen({ navigation }) {
         try {
             const res = await executeQuery(`
                 SELECT m.*, i.classificacao_principal, i.tipo_problema, i.sugestao_controle,
-                       (SELECT caminho_arquivo FROM monitoramento_media WHERE monitoramento_uuid = m.uuid AND tipo = 'PDF' LIMIT 1) as pdf_uri,
-                       (SELECT COUNT(*) FROM monitoramento_media WHERE monitoramento_uuid = m.uuid AND tipo = 'IMAGEM') as foto_count
-                FROM monitoramento_entidade m
+                       (SELECT caminho_arquivo FROM v2_monitoramentos_midia WHERE monitoramento_uuid = m.uuid AND tipo = 'PDF' LIMIT 1) as pdf_uri,
+                       (SELECT COUNT(*) FROM v2_monitoramentos_midia WHERE monitoramento_uuid = m.uuid AND tipo = 'IMAGEM') as foto_count
+                FROM v2_monitoramentos m
                 LEFT JOIN analise_ia i ON m.uuid = i.monitoramento_uuid
                 ORDER BY m.data DESC LIMIT 50
             `);
@@ -111,10 +111,10 @@ export default function MonitoramentoScreen({ navigation }) {
     const saveFinal = async () => {
         try {
             const uuid = form.uuid;
-            await executeQuery(`INSERT INTO monitoramento_entidade (uuid, area_id, cultura_id, data, observacao_usuario, status, nivel_confianca, geoloc, criado_em, last_updated) VALUES (?,?,?,?,?,?,?,?,?,?)`,
+            await executeQuery(`INSERT INTO v2_monitoramentos (uuid, area_id, cultura_id, data, observacao_usuario, status, nivel_confianca, geoloc, criado_em, last_updated) VALUES (?,?,?,?,?,?,?,?,?,?)`,
                 [uuid, form.area?.uuid || 'N/A', form.area?.nome || form.cultura || 'GERAL', form.data, form.observacao.toUpperCase(), 'CONFIRMADO', analysis?.nivel_confianca_sugerido || 'INFORMATIVO', form.geoloc || null, new Date().toISOString(), new Date().toISOString()]
             );
-            if (form.mediaURI) await executeQuery(`INSERT INTO monitoramento_media (uuid, monitoramento_uuid, tipo, caminho_arquivo, criado_em, last_updated) VALUES (?,?,?,?,?,?)`, [uuidv4(), uuid, form.mediaType, form.mediaURI, new Date().toISOString(), new Date().toISOString()]);
+            if (form.mediaURI) await executeQuery(`INSERT INTO v2_monitoramentos_midia (uuid, monitoramento_uuid, tipo, caminho_arquivo, criado_em, last_updated) VALUES (?,?,?,?,?,?)`, [uuidv4(), uuid, form.mediaType, form.mediaURI, new Date().toISOString(), new Date().toISOString()]);
             if (analysis) await executeQuery(`INSERT INTO analise_ia (uuid, monitoramento_uuid, classificacao_principal, sintomas, causa_provavel, sugestao_controle, produtos_citados, criado_em, last_updated) VALUES (?,?,?,?,?,?,?,?,?)`,
                 [uuidv4(), uuid, analysis.classificacao_principal, analysis.sintomas, analysis.causa_provavel, analysis.sugestao_controle, analysis.produtos_citados, new Date().toISOString(), new Date().toISOString()]
             );
@@ -136,7 +136,7 @@ export default function MonitoramentoScreen({ navigation }) {
             const dateStr = new Date(item.data).toLocaleDateString('pt-BR');
             
             // Fetch media path for photos
-            const mediaRes = await executeQuery(`SELECT * FROM monitoramento_media WHERE monitoramento_uuid = ? AND tipo = 'IMAGEM'`, [item.uuid]);
+            const mediaRes = await executeQuery(`SELECT * FROM v2_monitoramentos_midia WHERE monitoramento_uuid = ? AND tipo = 'IMAGEM'`, [item.uuid]);
             const photos = [];
             for (let i = 0; i < mediaRes.rows.length; i++) {
                 photos.push(mediaRes.rows.item(i));
@@ -235,15 +235,15 @@ export default function MonitoramentoScreen({ navigation }) {
             const newPath = `${FileSystem.documentDirectory}${safeTitle}`;
             await FileSystem.moveAsync({ from: uri, to: newPath });
             
-            const countRes = await executeQuery(`SELECT * FROM monitoramento_media WHERE monitoramento_uuid = ? AND tipo = 'PDF'`, [item.uuid]);
+            const countRes = await executeQuery(`SELECT * FROM v2_monitoramentos_midia WHERE monitoramento_uuid = ? AND tipo = 'PDF'`, [item.uuid]);
             if (countRes.rows.length === 0) {
                 await executeQuery(
-                    `INSERT INTO monitoramento_media (uuid, monitoramento_uuid, tipo, caminho_arquivo, criado_em, last_updated) VALUES (?, ?, ?, ?, ?, ?)`,
+                    `INSERT INTO v2_monitoramentos_midia (uuid, monitoramento_uuid, tipo, caminho_arquivo, criado_em, last_updated) VALUES (?, ?, ?, ?, ?, ?)`,
                     [uuidv4(), item.uuid, 'PDF', newPath, new Date().toISOString(), new Date().toISOString()]
                 );
             } else {
                 await executeQuery(
-                    `UPDATE monitoramento_media SET caminho_arquivo = ?, last_updated = ? WHERE monitoramento_uuid = ? AND tipo = 'PDF'`,
+                    `UPDATE v2_monitoramentos_midia SET caminho_arquivo = ?, last_updated = ? WHERE monitoramento_uuid = ? AND tipo = 'PDF'`,
                     [newPath, new Date().toISOString(), item.uuid]
                 );
             }
@@ -287,8 +287,8 @@ export default function MonitoramentoScreen({ navigation }) {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            await executeQuery('DELETE FROM monitoramento_entidade WHERE uuid = ?', [uuid]);
-                            await executeQuery('DELETE FROM monitoramento_media WHERE monitoramento_uuid = ?', [uuid]);
+                            await executeQuery('DELETE FROM v2_monitoramentos WHERE uuid = ?', [uuid]);
+                            await executeQuery('DELETE FROM v2_monitoramentos_midia WHERE monitoramento_uuid = ?', [uuid]);
                             await executeQuery('DELETE FROM analise_ia WHERE monitoramento_uuid = ?', [uuid]);
                             Alert.alert('Sucesso', 'Monitoramento excluído.');
                             loadData();

@@ -89,15 +89,15 @@ export default function DiagnosticoFormScreen() {
                 geoStr = `${localizacao.lat},${localizacao.lng}`;
             }
 
-            // 1. Insert into monitoramento_entidade
+            // 1. Insert into v2_monitoramentos
             await executeQuery(
-                `INSERT INTO monitoramento_entidade 
+                `INSERT INTO v2_monitoramentos 
                  (uuid, usuario_id, observacao_usuario, nivel_confianca, geoloc, status, criado_em, sync_status, last_updated) 
                  VALUES (?, ?, ?, 'TECNICO', ?, 'ABERTO', ?, 0, ?)`,
                 [diagUuid, session.id, observacao, geoStr, now, now]
             );
 
-            // Queue outbox for monitoramento_entidade
+            // Queue outbox for v2_monitoramentos
             const diagPayload = JSON.stringify({
                 uuid: diagUuid,
                 usuario_id: session.id,
@@ -109,14 +109,14 @@ export default function DiagnosticoFormScreen() {
 
             await executeQuery(
                 `INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, ?, ?, ?, ?, 'PENDENTE', ?)`,
-                [uuidv4(), 'monitoramento_entidade', diagUuid, 'INSERT', diagPayload, now]
+                [uuidv4(), 'v2_monitoramentos', diagUuid, 'INSERT', diagPayload, now]
             );
 
-            // 2. Insert into monitoramento_media if there is a photo
+            // 2. Insert into v2_monitoramentos_midia if there is a photo
             if (foto) {
                 const mediaUuid = uuidv4();
                 await executeQuery(
-                    `INSERT INTO monitoramento_media (uuid, monitoramento_uuid, tipo, caminho_arquivo, criado_em) 
+                    `INSERT INTO v2_monitoramentos_midia (uuid, monitoramento_uuid, tipo, caminho_arquivo, criado_em) 
                      VALUES (?, ?, 'IMAGEM', ?, ?)`,
                     [mediaUuid, diagUuid, 'IMAGEM', foto, now]
                 );
@@ -132,7 +132,7 @@ export default function DiagnosticoFormScreen() {
 
                     await executeQuery(
                         `INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, ?, ?, ?, ?, 'PENDENTE', ?)`,
-                        [uuidv4(), 'monitoramento_media', mediaUuid, 'INSERT', mediaPayload, now]
+                        [uuidv4(), 'v2_monitoramentos_midia', mediaUuid, 'INSERT', mediaPayload, now]
                     );
                 }
             }

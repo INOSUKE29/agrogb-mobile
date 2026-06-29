@@ -50,7 +50,7 @@ export const PRODUCTION_SCHEMA = [
         last_updated TEXT NOT NULL, 
         sync_status INTEGER DEFAULT 0
     );`,
-    `CREATE TABLE IF NOT EXISTS monitoramento_entidade (
+    `CREATE TABLE IF NOT EXISTS v2_monitoramentos (
         uuid TEXT PRIMARY KEY, 
         usuario_id TEXT, 
         area_id TEXT, 
@@ -65,7 +65,7 @@ export const PRODUCTION_SCHEMA = [
         sync_status INTEGER DEFAULT 0, 
         last_updated TEXT NOT NULL
     );`,
-    `CREATE TABLE IF NOT EXISTS monitoramento_media (
+    `CREATE TABLE IF NOT EXISTS v2_monitoramentos_midia (
         uuid TEXT PRIMARY KEY, 
         monitoramento_uuid TEXT NOT NULL, 
         tipo TEXT NOT NULL, 

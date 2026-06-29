@@ -13,7 +13,7 @@ const TABLES = [
     'compras', 'plantio', 'custos', 'descarte', 'cadastro', 'clientes', 
     'culturas', 'maquinas', 'manutencao_frota', 'receitas', 'profiles', 
     'movimentacoes_financeiras', 'app_settings', 'planos_adubacao', 
-    'monitoramento_entidade', 'monitoramento_media', 'analise_ia', 
+    'v2_monitoramentos', 'v2_monitoramentos_midia', 'analise_ia', 
     'base_conhecimento_pro', 'cadastro_midia', 'auditoria_cadastro', 
     'cost_categories', 'costs', 'areas', 'caderno_notas', 
     'categorias_despesa', 'activity_log', 'error_logs', 'unidades_medida', 

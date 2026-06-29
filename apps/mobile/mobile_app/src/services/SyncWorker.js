@@ -35,7 +35,7 @@ class SyncWorker {
                 // Em um cenário real, aqui entraria o fetch() para a API do Supabase
 
                 // Regra 12: Expurgar mídia local após o upload
-                if (item.tabela === 'monitoramento_media' && payload.tipo === 'IMAGEM') {
+                if (item.tabela === 'v2_monitoramentos_midia' && payload.tipo === 'IMAGEM') {
                     console.log(`[SyncWorker] ☁️ Simulando Upload de Mídia para Supabase Storage: ${payload.caminho_arquivo}`);
                     // await uploadToSupabaseStorage(payload.caminho_arquivo);
                     
@@ -56,7 +56,7 @@ class SyncWorker {
 
                     // Atualizar tabela de mídia local com a URL real e sync=1
                     await executeQuery(
-                        "UPDATE monitoramento_media SET caminho_arquivo = ?, sync_status = 1 WHERE uuid = ?",
+                        "UPDATE v2_monitoramentos_midia SET caminho_arquivo = ?, sync_status = 1 WHERE uuid = ?",
                         [cloudUrl, payload.uuid]
                     );
                 } else {

@@ -32,7 +32,9 @@ const TABLES_TO_SYNC = [
     'v2_clientes',
     'v2_produtos',
     'recommendations',
-    'v2_encomendas'
+    'v2_encomendas',
+    'v2_monitoramentos',
+    'v2_monitoramentos_midia'
 ];
 
 let isSyncing = false;

@@ -27,11 +27,11 @@ export default function DiagnosticosScreen() {
     const loadData = async () => {
         setLoading(true);
         try {
-            // Puxamos monitoramento_entidade e fazemos join com monitoramento_media para tentar pegar uma imagem
+            // Puxamos v2_monitoramentos e fazemos join com v2_monitoramentos_midia para tentar pegar uma imagem
             const sql = `
                 SELECT m.*, 
-                       (SELECT caminho_arquivo FROM monitoramento_media WHERE monitoramento_uuid = m.uuid AND tipo = 'IMAGEM' LIMIT 1) as imagem_capa
-                FROM monitoramento_entidade m
+                       (SELECT caminho_arquivo FROM v2_monitoramentos_midia WHERE monitoramento_uuid = m.uuid AND tipo = 'IMAGEM' LIMIT 1) as imagem_capa
+                FROM v2_monitoramentos m
                 ORDER BY m.criado_em DESC
                 LIMIT 50
             `;

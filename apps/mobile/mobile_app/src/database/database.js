@@ -651,7 +651,7 @@ const createTables = async () => {
             // Dada a mudança radical, vou criar tabelas novas limpas para esta arquitetura e
             // o app usará elas.
 
-            await executeQuery(`CREATE TABLE IF NOT EXISTS monitoramento_entidade (
+            await executeQuery(`CREATE TABLE IF NOT EXISTS v2_monitoramentos (
                 uuid TEXT PRIMARY KEY,
                 usuario_id TEXT,
                 area_id TEXT,
@@ -665,11 +665,11 @@ const createTables = async () => {
                 sync_status INTEGER DEFAULT 0,
                 last_updated TEXT NOT NULL
             )`);
-        } catch (e) { console.error('Erro table monitoramento_entidade', e); }
+        } catch (e) { console.error('Erro table v2_monitoramentos', e); }
 
         // 2. MONITORAMENTO MÍDIA
         try {
-            await executeQuery(`CREATE TABLE IF NOT EXISTS monitoramento_media (
+            await executeQuery(`CREATE TABLE IF NOT EXISTS v2_monitoramentos_midia (
                 uuid TEXT PRIMARY KEY,
                 monitoramento_uuid TEXT NOT NULL,
                 tipo TEXT NOT NULL, -- IMAGEM / PDF / TEXTO
@@ -677,9 +677,9 @@ const createTables = async () => {
                 criado_em TEXT NOT NULL,
                 sync_status INTEGER DEFAULT 0,
                 last_updated TEXT NOT NULL,
-                FOREIGN KEY(monitoramento_uuid) REFERENCES monitoramento_entidade(uuid)
+                FOREIGN KEY(monitoramento_uuid) REFERENCES v2_monitoramentos(uuid)
             )`);
-        } catch (e) { console.error('Erro table monitoramento_media', e); }
+        } catch (e) { console.error('Erro table v2_monitoramentos_midia', e); }
 
         // 3. ANÁLISE IA (Resultados)
         try {
@@ -701,7 +701,7 @@ const createTables = async () => {
                 criado_em TEXT NOT NULL,
                 sync_status INTEGER DEFAULT 0,
                 last_updated TEXT NOT NULL,
-                FOREIGN KEY(monitoramento_uuid) REFERENCES monitoramento_entidade(uuid)
+                FOREIGN KEY(monitoramento_uuid) REFERENCES v2_monitoramentos(uuid)
             )`);
         } catch (e) { console.error('Erro table analise_ia', e); }
 
@@ -873,8 +873,8 @@ const createTables = async () => {
 
         // MIGRATION: Monitoramento Geoloc (v7.2)
         try {
-            await executeQuery('ALTER TABLE monitoramento_entidade ADD COLUMN geoloc TEXT');
-            console.log('✅ Coluna geoloc adicionada em monitoramento_entidade');
+            await executeQuery('ALTER TABLE v2_monitoramentos ADD COLUMN geoloc TEXT');
+            console.log('✅ Coluna geoloc adicionada em v2_monitoramentos');
         } catch (e) { }
 
         try {
@@ -1755,7 +1755,7 @@ export const getDashboardAgronomoStats = async () => {
 
         // 3. Atendimentos Hoje (Visitas / Monitoramentos)
         // Simplificado: Contar quantos monitoramentos foram feitos hoje
-        const resMonitoramentos = await executeQuery(`SELECT COUNT(*) as total FROM monitoramento_entidade WHERE date(data) = ? AND is_deleted = 0`, [today]);
+        const resMonitoramentos = await executeQuery(`SELECT COUNT(*) as total FROM v2_monitoramentos WHERE date(data) = ? AND is_deleted = 0`, [today]);
         const atendimentosHoje = resMonitoramentos.rows.item(0)?.total || 0;
 
         // 4. Alertas / Pendentes Sync

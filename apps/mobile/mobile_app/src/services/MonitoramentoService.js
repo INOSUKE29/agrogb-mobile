@@ -12,7 +12,7 @@ const MonitoramentoService = {
     getHistorico: async (limit = 60) => {
         try {
             const res = await executeQuery(
-                `SELECT * FROM monitoramento_entidade 
+                `SELECT * FROM v2_monitoramentos 
                  WHERE status != 'EXCLUIDO' 
                  AND is_deleted = 0 
                  ORDER BY data DESC LIMIT ?`,
@@ -39,7 +39,7 @@ const MonitoramentoService = {
 
         try {
             await executeQuery(
-                `INSERT INTO monitoramento_entidade (
+                `INSERT INTO v2_monitoramentos (
                     uuid, cultura_id, data, observacao_usuario, status, 
                     nivel_confianca, severidade, categoria, criado_em, 
                     last_updated, sync_status, is_deleted
@@ -72,7 +72,7 @@ const MonitoramentoService = {
     excluirRegistro: async (uuid) => {
         try {
             await executeQuery(
-                `UPDATE monitoramento_entidade SET status='EXCLUIDO', is_deleted = 1, last_updated = ? WHERE uuid = ?`,
+                `UPDATE v2_monitoramentos SET status='EXCLUIDO', is_deleted = 1, last_updated = ? WHERE uuid = ?`,
                 [new Date().toISOString(), uuid]
             );
             return true;
