@@ -41,7 +41,8 @@ export default function ClientesScreen({ navigation }) {
     const loadData = async () => {
         setLoading(true);
         try {
-            const data = await getClientes();
+            const result = await executeQuery('SELECT * FROM v2_clientes WHERE is_deleted = 0 ORDER BY nome');
+            const data = result.rows._array;
             setItems(data);
         } catch (e) {
             console.error('Erro ao carregar clientes:', e);
@@ -105,7 +106,7 @@ export default function ClientesScreen({ navigation }) {
                 style: 'destructive', 
                 onPress: async () => { 
                     try {
-                        await deleteCliente(item.id); 
+                        await executeQuery('UPDATE v2_clientes SET is_deleted = 1 WHERE id = ?', [item.id]); 
                         loadData(); 
                     } catch (e) {
                         Alert.alert('Erro', 'Falha ao excluir.');

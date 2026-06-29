@@ -1331,42 +1331,82 @@ export const insertDescarte = async (d) => {
 // --- CADASTROS ---
 
 export const insertCultura = async (d) => {
-    await executeQuery(`INSERT INTO culturas (uuid, nome, observacao, last_updated, sync_status) VALUES (?, ?, ?, ?, ?)`,
-        [d.uuid, up(d.nome), up(d.observacao), new Date().toISOString(), 0]);
+    const now = new Date().toISOString();
+    await executeQuery(`INSERT INTO v2_culturas (id, nome, variedade, ciclo_dias, quantidade, unidade_medida, data_plantio, status, is_deleted, created_at, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 'pending')`,
+        [d.uuid, up(d.nome), d.variedade || null, d.ciclo_dias || null, d.quantidade || null, d.unidade_medida || null, d.data_plantio || null, d.status || null, now]);
+        
+    const payload = JSON.stringify({
+        id: d.uuid, nome: up(d.nome), variedade: d.variedade || null, ciclo_dias: d.ciclo_dias || null, quantidade: d.quantidade || null, unidade_medida: d.unidade_medida || null, data_plantio: d.data_plantio || null, status: d.status || null
+    });
+    await executeQuery(`INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, ?, ?, ?, ?, 'PENDENTE', ?)`,
+        [d.uuid, 'v2_culturas', d.uuid, 'INSERT', payload, now]);
 };
 
 export const updateCultura = async (d) => {
-    await executeQuery(`UPDATE culturas SET nome = ?, observacao = ?, last_updated = ?, sync_status = 0 WHERE uuid = ?`,
-        [up(d.nome), up(d.observacao), new Date().toISOString(), d.uuid]);
+    const now = new Date().toISOString();
+    await executeQuery(`UPDATE v2_culturas SET nome = ?, variedade = ?, ciclo_dias = ?, quantidade = ?, unidade_medida = ?, data_plantio = ?, status = ?, updated_at = ?, sync_status = 'pending' WHERE id = ?`,
+        [up(d.nome), d.variedade || null, d.ciclo_dias || null, d.quantidade || null, d.unidade_medida || null, d.data_plantio || null, d.status || null, now, d.uuid]);
+        
+    const payload = JSON.stringify({
+        id: d.uuid, nome: up(d.nome), variedade: d.variedade || null, ciclo_dias: d.ciclo_dias || null, quantidade: d.quantidade || null, unidade_medida: d.unidade_medida || null, data_plantio: d.data_plantio || null, status: d.status || null
+    });
+    await executeQuery(`INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, ?, ?, ?, ?, 'PENDENTE', ?)`,
+        [d.uuid, 'v2_culturas', d.uuid, 'UPDATE', payload, now]);
 };
 
 export const getCulturas = async () => {
-    const res = await executeQuery('SELECT * FROM culturas WHERE is_deleted = 0 ORDER BY nome ASC');
+    const res = await executeQuery('SELECT * FROM v2_culturas WHERE is_deleted = 0 ORDER BY nome ASC');
     const rows = [];
     for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
     return rows;
 };
 
-export const deleteCultura = async (id) => { await executeQuery('UPDATE culturas SET is_deleted = 1, sync_status = 0 WHERE id = ?', [id]); };
+export const deleteCultura = async (id) => { 
+    const now = new Date().toISOString();
+    await executeQuery('UPDATE v2_culturas SET is_deleted = 1, sync_status = "pending", updated_at = ? WHERE id = ?', [now, id]); 
+    const payload = JSON.stringify({ id, is_deleted: true });
+    await executeQuery(`INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, ?, ?, ?, ?, 'PENDENTE', ?)`,
+        [id, 'v2_culturas', id, 'UPDATE', payload, now]);
+};
 
 export const insertCliente = async (d) => {
-    await executeQuery(`INSERT INTO clientes (uuid, nome, telefone, endereco, cpf_cnpj, observacao, last_updated, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [d.uuid, up(d.nome), d.telefone, up(d.endereco), d.cpf_cnpj, up(d.observacao), new Date().toISOString(), 0]);
+    const now = new Date().toISOString();
+    await executeQuery(`INSERT INTO v2_clientes (id, nome, telefone, endereco, cpf_cnpj, observacao_interna, tipo_cliente, ativo, created_at, sync_status) VALUES (?, ?, ?, ?, ?, ?, 'CLIENTE', 1, ?, 'pending')`,
+        [d.uuid, up(d.nome), d.telefone, up(d.endereco), d.cpf_cnpj, up(d.observacao), now]);
+        
+    const payload = JSON.stringify({
+        id: d.uuid, nome: up(d.nome), telefone: d.telefone, endereco: up(d.endereco), cpf_cnpj: d.cpf_cnpj, observacao_interna: up(d.observacao), tipo_cliente: 'CLIENTE', ativo: true
+    });
+    await executeQuery(`INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, ?, ?, ?, ?, 'PENDENTE', ?)`,
+        [d.uuid, 'v2_clientes', d.uuid, 'INSERT', payload, now]);
 };
 
 export const updateCliente = async (d) => {
-    await executeQuery(`UPDATE clientes SET nome = ?, telefone = ?, endereco = ?, cpf_cnpj = ?, observacao = ?, last_updated = ?, sync_status = 0 WHERE uuid = ?`,
-        [up(d.nome), d.telefone, up(d.endereco), d.cpf_cnpj, up(d.observacao), new Date().toISOString(), d.uuid]);
+    const now = new Date().toISOString();
+    await executeQuery(`UPDATE v2_clientes SET nome = ?, telefone = ?, endereco = ?, cpf_cnpj = ?, observacao_interna = ?, updated_at = ?, sync_status = 'pending' WHERE id = ?`,
+        [up(d.nome), d.telefone, up(d.endereco), d.cpf_cnpj, up(d.observacao), now, d.uuid]);
+        
+    const payload = JSON.stringify({
+        id: d.uuid, nome: up(d.nome), telefone: d.telefone, endereco: up(d.endereco), cpf_cnpj: d.cpf_cnpj, observacao_interna: up(d.observacao)
+    });
+    await executeQuery(`INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, ?, ?, ?, ?, 'PENDENTE', ?)`,
+        [d.uuid, 'v2_clientes', d.uuid, 'UPDATE', payload, now]);
 };
 
 export const getClientes = async () => {
-    const res = await executeQuery('SELECT * FROM clientes WHERE is_deleted = 0 ORDER BY nome ASC');
+    const res = await executeQuery('SELECT * FROM v2_clientes WHERE is_deleted = 0 ORDER BY nome ASC');
     const rows = [];
     for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
     return rows;
 };
 
-export const deleteCliente = async (id) => { await executeQuery('UPDATE clientes SET is_deleted = 1, sync_status = 0 WHERE id = ?', [id]); };
+export const deleteCliente = async (id) => { 
+    const now = new Date().toISOString();
+    await executeQuery('UPDATE v2_clientes SET is_deleted = 1, sync_status = "pending", updated_at = ? WHERE id = ?', [now, id]); 
+    const payload = JSON.stringify({ id, is_deleted: true });
+    await executeQuery(`INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, ?, ?, ?, ?, 'PENDENTE', ?)`,
+        [id, 'v2_clientes', id, 'UPDATE', payload, now]);
+};
 
 export const insertCadastro = async (d) => {
     await executeQuery(`INSERT INTO cadastro (
@@ -1517,11 +1557,9 @@ export const insertCostCategory = async (name, type) => {
 
 export const getCosts = async () => {
     const res = await executeQuery(`
-        SELECT c.*, cat.name as category_name 
-        FROM costs c
-        LEFT JOIN cost_categories cat ON c.category_id = cat.id
-        WHERE c.is_deleted = 0
-        ORDER BY c.created_at DESC
+        SELECT * FROM v2_custos
+        WHERE is_deleted = 0
+        ORDER BY created_at DESC
     `);
     const rows = [];
     for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
@@ -1530,15 +1568,36 @@ export const getCosts = async () => {
 
 export const insertCost = async (c) => {
     const total = (parseFloat(c.quantity) || 0) * (parseFloat(c.unit_value) || 0);
+    const now = c.created_at || new Date().toISOString();
+    const id = uuidv4();
+    
     await executeQuery(
-        `INSERT INTO costs (category_id, culture_id, fleet_id, quantity, unit_value, total_value, notes, created_at) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [c.category_id, c.culture_id || null, c.fleet_id || null, parseFloat(c.quantity) || 0, parseFloat(c.unit_value) || 0, total, up(c.notes), c.created_at || new Date().toISOString()]
+        `INSERT INTO v2_custos (id, categoria_id, categoria_nome, quantidade, valor_unitario, valor_total, observacao, is_deleted, created_at, sync_status) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, 'pending')`,
+        [id, c.category_id, up(c.category_name || ''), parseFloat(c.quantity) || 0, parseFloat(c.unit_value) || 0, total, up(c.notes), now]
     );
+    
+    const payload = JSON.stringify({
+        id,
+        categoria_id: c.category_id,
+        categoria_nome: up(c.category_name || ''),
+        quantidade: parseFloat(c.quantity) || 0,
+        valor_unitario: parseFloat(c.unit_value) || 0,
+        valor_total: total,
+        observacao: up(c.notes)
+    });
+    
+    await executeQuery(`INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, ?, ?, ?, ?, 'PENDENTE', ?)`,
+        [uuidv4(), 'v2_custos', id, 'INSERT', payload, now]);
 };
 
 export const deleteCost = async (id) => {
-    await executeQuery('UPDATE costs SET is_deleted = 1 WHERE id = ?', [id]);
+    const now = new Date().toISOString();
+    await executeQuery('UPDATE v2_custos SET is_deleted = 1, sync_status = "pending" WHERE id = ?', [id]);
+    
+    const payload = JSON.stringify({ id, is_deleted: true });
+    await executeQuery(`INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, ?, ?, ?, ?, 'PENDENTE', ?)`,
+        [uuidv4(), 'v2_custos', id, 'UPDATE', payload, now]);
 };
 
 export const getDadosPendentes = async () => {

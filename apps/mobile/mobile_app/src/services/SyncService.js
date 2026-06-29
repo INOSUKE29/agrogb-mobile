@@ -12,11 +12,11 @@ const TABLES_TO_SYNC = [
     'vendas', 
     'compras', 
     'plantio', 
-    'custos', 
+    'v2_custos', 
     'descarte', 
     'cadastro', 
     'clientes', 
-    'culturas', 
+    'v2_culturas', 
     'maquinas', 
     'manutencao_frota', 
     'planos_adubacao', 
@@ -29,7 +29,8 @@ const TABLES_TO_SYNC = [
     'plantings',
     'agronomist_codes',
     'agronomist_client_links',
-    'products',
+    'v2_clientes',
+    'v2_produtos',
     'recommendations',
     'v2_encomendas'
 ];

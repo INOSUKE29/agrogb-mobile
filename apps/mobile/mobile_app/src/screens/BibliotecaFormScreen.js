@@ -40,19 +40,19 @@ export default function BibliotecaFormScreen({ navigation }) {
             const now = new Date().toISOString();
 
             const sql = `
-                INSERT INTO cadastro (
-                    uuid, nome, tipo, fabricante, dose_padrao, principio_ativo,
-                    status_curadoria, last_updated, sync_status, is_deleted
-                ) VALUES (?, ?, ?, ?, ?, ?, 'PENDENTE', ?, 0, 0)
+                INSERT INTO v2_produtos (
+                    id, nome, categoria, fabricante, dose_padrao, principio_ativo,
+                    status_curadoria, created_at, sync_status, is_deleted
+                ) VALUES (?, ?, ?, ?, ?, ?, 'PENDENTE_GLOBAL', ?, 'pending', 0)
             `;
 
             const params = [
                 uuid,
-                formData.nome,
-                formData.tipo,
-                formData.fabricante,
+                formData.nome.toUpperCase(),
+                formData.tipo.toUpperCase(),
+                formData.fabricante.toUpperCase(),
                 formData.dose_padrao,
-                formData.principio_ativo,
+                formData.principio_ativo.toUpperCase(),
                 now
             ];
 
@@ -60,18 +60,19 @@ export default function BibliotecaFormScreen({ navigation }) {
             
             // Queue for sync
             const payload = JSON.stringify({
-                uuid,
-                nome: formData.nome,
-                tipo: formData.tipo,
-                fabricante: formData.fabricante,
+                id: uuid,
+                nome: formData.nome.toUpperCase(),
+                categoria: formData.tipo.toUpperCase(),
+                fabricante: formData.fabricante.toUpperCase(),
                 dose_padrao: formData.dose_padrao,
-                principio_ativo: formData.principio_ativo,
-                status_curadoria: 'PENDENTE'
+                principio_ativo: formData.principio_ativo.toUpperCase(),
+                status_aprovacao: 'PENDENTE_GLOBAL',
+                is_global: false
             });
 
             await executeQuery(
                 `INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, ?, ?, ?, ?, 'PENDENTE', ?)`,
-                [uuidv4(), 'cadastro', uuid, 'INSERT', payload, now]
+                [uuidv4(), 'v2_produtos', uuid, 'INSERT', payload, now]
             );
             
             Alert.alert('Sucesso', 'Produto salvo e adicionado à fila de validação.', [

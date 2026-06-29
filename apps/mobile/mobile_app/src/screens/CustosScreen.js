@@ -56,6 +56,7 @@ export default function CustosScreen({ navigation }) {
 
         const dados = {
             category_id: categoria.id,
+            category_name: categoria.nome,
             quantity: parseFloat(quantidade) || 0,
             unit_value: parseFloat(valorUnitario) || 0,
             notes: observacao.toUpperCase(),

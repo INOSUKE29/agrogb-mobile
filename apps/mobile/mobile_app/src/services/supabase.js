@@ -24,13 +24,6 @@ export const getSupabase = () => {
     return supabaseInstance;
 };
 
-// 🗺️ TRADUTOR DE ARQUITETURA V2 (Desktop ↔ Mobile)
-const V2_TABLE_MAP = {
-    'clientes': 'v2_clientes',
-    'culturas': 'v2_culturas',
-    'products': 'v2_produtos',
-    'custos': 'v2_custos',
-};
 
 // Sincronização Bidirecional via Outbox
 export const processOutbox = async () => {
@@ -51,9 +44,8 @@ export const processOutbox = async () => {
                 const row = resData.rows.item(0);
                 const { id, sync_status, ...cleanRow } = row;
                 
-                // 🔄 Interceptador V2
-                const cloudTable = V2_TABLE_MAP[item.tabela] || item.tabela;
-                const { error } = await supabase.from(cloudTable).upsert([cleanRow], { onConflict: 'uuid' });
+                // Direto para a tabela nativa sem interceptadores
+                const { error } = await supabase.from(item.tabela).upsert([cleanRow], { onConflict: 'uuid' });
 
                 if (!error) {
                     await executeQuery(`UPDATE sync_outbox SET status = 'CONCLUIDO' WHERE uuid = ?`, [item.uuid]);
@@ -82,11 +74,8 @@ export const syncTable = async (tableName) => {
         const resLast = await executeQuery(`SELECT MAX(last_updated) as max_date FROM ${tableName}`);
         const lastDate = resLast.rows.item(0).max_date || '1970-01-01T00:00:00.000Z';
 
-        // 🔄 Interceptador V2
-        const cloudTable = V2_TABLE_MAP[tableName] || tableName;
-
         const { data, error } = await supabase
-            .from(cloudTable)
+            .from(tableName)
             .select('*')
             .gt('last_updated', lastDate);
 

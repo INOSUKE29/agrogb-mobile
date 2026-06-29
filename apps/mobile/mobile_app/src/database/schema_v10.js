@@ -48,6 +48,11 @@ export const SCHEMA_V10 = [
         nome TEXT NOT NULL,
         variedade TEXT,
         ciclo_dias INTEGER,
+        quantidade REAL,
+        unidade_medida TEXT,
+        data_plantio TEXT,
+        status TEXT,
+        is_deleted INTEGER DEFAULT 0,
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT,
         sync_status TEXT DEFAULT 'pending'
@@ -119,11 +124,18 @@ export const SCHEMA_V10 = [
     `CREATE TABLE IF NOT EXISTS v2_clientes (
         id TEXT PRIMARY KEY,
         nome TEXT NOT NULL,
+        tipo_cliente TEXT,
         cpf_cnpj TEXT,
         telefone TEXT,
+        telefone_secundario TEXT,
         email TEXT,
         cidade TEXT,
+        estado TEXT,
         endereco TEXT,
+        observacao TEXT,
+        observacao_interna TEXT,
+        ativo INTEGER DEFAULT 1,
+        is_deleted INTEGER DEFAULT 0,
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT,
         sync_status TEXT DEFAULT 'pending'
@@ -148,6 +160,11 @@ export const SCHEMA_V10 = [
         categoria TEXT, -- Semente, Fertilizante, Defensivo, Maquinário
         unidade_medida TEXT,
         preco_base REAL,
+        fabricante TEXT,
+        dose_padrao TEXT,
+        principio_ativo TEXT,
+        status_curadoria TEXT DEFAULT 'APROVADO',
+        is_deleted INTEGER DEFAULT 0,
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT,
         sync_status TEXT DEFAULT 'pending'
@@ -197,6 +214,18 @@ export const SCHEMA_V10 = [
     )`,
 
     // --- 6. FINANCEIRO ---
+    `CREATE TABLE IF NOT EXISTS v2_custos (
+        id TEXT PRIMARY KEY,
+        categoria_id TEXT,
+        categoria_nome TEXT,
+        quantidade REAL,
+        valor_unitario REAL,
+        valor_total REAL,
+        observacao TEXT,
+        is_deleted INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now')),
+        sync_status TEXT DEFAULT 'pending'
+    )`,
     `CREATE TABLE IF NOT EXISTS v2_contas_financeiras (
         id TEXT PRIMARY KEY,
         nome TEXT, -- Banco X, Caixa Local, etc

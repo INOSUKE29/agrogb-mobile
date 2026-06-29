@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View, Text, ScrollView, Alert, TouchableOpacity, TextInput, SafeAreaView, StatusBar, Platform, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,15 +12,20 @@ export default function ClienteFormScreen({ navigation, route }) {
     const isEditing = !!cliente;
     const [loading, setLoading] = useState(false);
 
-    // Parse legacy extended data embedded in observacao field
-    const getExtendedData = (obs) => {
-        if (!obs) return { tipo: 'CLIENTE', ativo: true };
-        try { if (obs.startsWith('{')) return JSON.parse(obs); } catch { }
-        const match = obs.match(/\[TIPO:(.*?)\]/);
-        return { tipo: match ? match[1] : 'CLIENTE', ativo: true };
+    const getExtendedData = (clienteObj) => {
+        if (!clienteObj) return { tipo: 'CLIENTE', ativo: true };
+        return {
+            tipo: clienteObj.tipo_cliente || 'CLIENTE',
+            ativo: clienteObj.ativo !== 0,
+            email: clienteObj.email || '',
+            telefone2: clienteObj.telefone_secundario || '',
+            cidade: clienteObj.cidade || '',
+            estado: clienteObj.estado || '',
+            obs: clienteObj.observacao_interna || ''
+        };
     };
 
-    const extendedData = getExtendedData(cliente?.observacao);
+    const extendedData = getExtendedData(cliente);
 
     // States
     const [nome, setNome] = useState(cliente?.nome || '');
@@ -45,8 +50,6 @@ export default function ClienteFormScreen({ navigation, route }) {
         }
         setLoading(true);
         try {
-            const payloadJSON = { tipo, ativo, email, telefone2, cidade, estado, obs: observacaoInterna };
-            const obsStr = JSON.stringify(payloadJSON);
             const clientData = { 
                 id: cliente?.id, 
                 uuid: cliente?.uuid || uuidv4(), 
@@ -54,22 +57,48 @@ export default function ClienteFormScreen({ navigation, route }) {
                 telefone, 
                 endereco: endereco ? endereco.toUpperCase() : '', 
                 cpf_cnpj: cpf, 
-                observacao: obsStr, 
-                tipo 
+                observacao: '', // Limpo, já que usamos observacao_interna 
+                tipo_cliente: tipo,
+                email,
+                telefone_secundario: telefone2,
+                cidade,
+                estado,
+                observacao_interna: observacaoInterna,
+                ativo: ativo ? 1 : 0
             };
             
+            const now = new Date().toISOString();
+
             if (isEditing) {
                 await executeQuery(
-                    `UPDATE clientes SET nome=?, telefone=?, endereco=?, cpf_cnpj=?, observacao=? WHERE id=?`, 
-                    [clientData.nome, clientData.telefone, clientData.endereco, clientData.cpf_cnpj, clientData.observacao, clientData.id]
+                    `UPDATE v2_clientes SET nome=?, telefone=?, endereco=?, cpf_cnpj=?, observacao=?, tipo_cliente=?, email=?, telefone_secundario=?, cidade=?, estado=?, observacao_interna=?, ativo=?, updated_at=?, sync_status='pending' WHERE id=?`, 
+                    [clientData.nome, clientData.telefone, clientData.endereco, clientData.cpf_cnpj, clientData.observacao, clientData.tipo_cliente, clientData.email, clientData.telefone_secundario, clientData.cidade, clientData.estado, clientData.observacao_interna, clientData.ativo, now, clientData.id]
                 );
             } else {
-                await insertCliente({ 
-                    uuid: clientData.uuid, nome: clientData.nome, telefone: clientData.telefone, 
-                    endereco: clientData.endereco, cpf_cnpj: clientData.cpf_cnpj, observacao: clientData.observacao 
-                });
+                await executeQuery(
+                    `INSERT INTO v2_clientes (id, nome, cpf_cnpj, telefone, telefone_secundario, email, cidade, estado, endereco, observacao, observacao_interna, tipo_cliente, ativo, created_at, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+                    [clientData.uuid, clientData.nome, clientData.cpf_cnpj, clientData.telefone, clientData.telefone_secundario, clientData.email, clientData.cidade, clientData.estado, clientData.endereco, clientData.observacao, clientData.observacao_interna, clientData.tipo_cliente, clientData.ativo, now]
+                );
             }
             
+            // Queue sync (Outbox) - Using the actual V2 schema
+            const payload = JSON.stringify({
+                id: clientData.uuid,
+                nome: clientData.nome,
+                cpf_cnpj: clientData.cpf_cnpj,
+                telefone: clientData.telefone,
+                email: clientData.email,
+                cidade: clientData.cidade,
+                estado: clientData.estado,
+                endereco: clientData.endereco,
+                tipo_cliente: clientData.tipo_cliente,
+                ativo: clientData.ativo === 1
+            });
+            await executeQuery(
+                `INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, ?, ?, ?, ?, 'PENDENTE', ?)`,
+                [uuidv4(), 'v2_clientes', clientData.uuid, isEditing ? 'UPDATE' : 'INSERT', payload, now]
+            );
+
             showToast(isEditing ? 'Cadastro editado com sucesso!' : 'Parceiro salvo com sucesso!');
 
             if (returnTo === 'Vendas' && !isEditing) {
