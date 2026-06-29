@@ -75,3 +75,9 @@ Não seja passivo. Atue como um sócio intelectual focado em execução, clareza
 * **Storage Centralizado:** O sistema deve usar o Supabase Storage (ou S3) gerenciado pela aplicação. O uso de nuvens pessoais dos usuários (Google Drive/iCloud via OAuth) é expressamente proibido devido à alta complexidade de autenticação e risco de falhas no processamento de I.A. centralizado.
 * **Backup de Galeria:** Se o usuário quiser guardar a foto indefinidamente, o app pode oferecer a opção "Salvar no Rolo da Câmera", delegando o custo de armazenamento para a memória do celular dele.
 * **Expiração de 6 Meses (Auto-Cleanup):** É obrigatório que mídias de campo operacionais tenham um ciclo de vida máximo de 6 meses no servidor. Após esse prazo, o arquivo físico deve ser expurgado do Storage para zerar custos, preservando apenas os dados estruturados de texto (metadata) no banco de dados.
+
+## Regra 13 - Paridade Arquitetural Estrita (Fim dos Interceptadores)
+**O sistema fala um idioma só.** É terminantemente proibido criar mapeamentos de DE/PARA (`V2_TABLE_MAP`) ou interceptadores de payload no Mobile para tentar "traduzir" dados antigos para a V2.
+* O banco de dados SQLite local no Mobile (ex: `fields`, `recommendations`, `v2_monitoramentos`) deve ter os mesmos nomes de tabelas, nomes de colunas e constraints que o Supabase PostgreSQL V2.
+* As inserções devem ser enviadas puras e diretas ao `sync_outbox`. 
+* Se um formulário legado ou tabela local do Mobile tiver campos diferentes da nuvem (V2), **altere o banco local (SQLite) e refatore o formulário Mobile** para corresponder à nuvem, em vez de criar conversores.
