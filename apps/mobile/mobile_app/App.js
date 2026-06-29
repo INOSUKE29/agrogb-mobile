@@ -62,7 +62,6 @@ import CadernoCampoScreen from './src/screens/CadernoCampoScreen';
 import FrotaScreen from './src/screens/FrotaScreen';
 import MaquinaFormScreen from './src/screens/MaquinaFormScreen';
 
-import ProdutividadeTalhaoScreen from './src/screens/ProdutividadeTalhaoScreen';
 import VendaFormScreen from './src/screens/VendaFormScreen';
 import BibliotecaGlobalScreen from './src/screens/BibliotecaGlobalScreen';
 import BibliotecaFormScreen from './src/screens/BibliotecaFormScreen';
