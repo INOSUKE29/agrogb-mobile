@@ -29,7 +29,6 @@ const V2_TABLE_MAP = {
     'clientes': 'v2_clientes',
     'culturas': 'v2_culturas',
     'products': 'v2_produtos',
-    'vendas': 'v2_encomendas',
     'custos': 'v2_custos',
 };
 

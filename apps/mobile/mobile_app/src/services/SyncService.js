@@ -30,7 +30,8 @@ const TABLES_TO_SYNC = [
     'agronomist_codes',
     'agronomist_client_links',
     'products',
-    'recommendations'
+    'recommendations',
+    'v2_encomendas'
 ];
 
 let isSyncing = false;
