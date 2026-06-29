@@ -61,8 +61,7 @@ import ScannerScreen from './src/screens/ScannerScreen';
 import CadernoCampoScreen from './src/screens/CadernoCampoScreen';
 import FrotaScreen from './src/screens/FrotaScreen';
 import MaquinaFormScreen from './src/screens/MaquinaFormScreen';
-import NotificationTestScreen from './src/screens/NotificationTestScreen';
-import ProdutividadeScreen from './src/screens/ProdutividadeScreen';
+
 import ProdutividadeTalhaoScreen from './src/screens/ProdutividadeTalhaoScreen';
 import VendaFormScreen from './src/screens/VendaFormScreen';
 import BibliotecaGlobalScreen from './src/screens/BibliotecaGlobalScreen';
@@ -257,7 +256,7 @@ function AppInner() {
                         <Stack.Screen name="BibliotecaForm" component={BibliotecaFormScreen} options={{ presentation: 'modal' }} />
 
                         {/* Development / Testing */}
-                        <Stack.Screen name="NotificationTest" component={NotificationTestScreen} />
+
 
                         {/* Telas Agrônomo */}
                         <Stack.Screen name="AgronomistClients" component={AgronomistClientsScreen} />
