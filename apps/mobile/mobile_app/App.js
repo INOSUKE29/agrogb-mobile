@@ -297,13 +297,7 @@ function AppInner() {
                         <Stack.Screen name="Diagnosticos" component={DiagnosticosScreen} />
                         <Stack.Screen name="DiagnosticoForm" component={DiagnosticoFormScreen} />
                         
-                        {/* Módulo de Propriedades (Agrônomo) */}
-                        <Stack.Screen name="Propriedades" component={PropriedadesScreen} />
-                        <Stack.Screen name="Areas" component={AreasScreen} />
-                        
-                        {/* Módulo de Manejo/Receitas (Agrônomo) */}
-                        <Stack.Screen name="Receitas" component={ReceitasScreen} />
-                        <Stack.Screen name="ReceitaForm" component={ReceitaFormScreen} />
+
                         
                         {/* Fallback Screen */}
                         <Stack.Screen name="Usuarios" component={UsuariosScreen} />
