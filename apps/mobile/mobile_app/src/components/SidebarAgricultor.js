@@ -101,10 +101,12 @@ export default function SidebarAgricultor({ visible, onClose }) {
                         <MenuItem icon="home-outline" label="Início" screen="Home" />
                         <MenuItem icon="basket-outline" label="Colheita" screen="Colheita" />
                         
+                        <MenuItem icon="home-outline" label="Fazendas" screen="Propriedades" />
+                        <MenuItem icon="map-outline" label="Áreas / Talhões" screen="Areas" />
+                        <MenuItem icon="leaf-outline" label="Plantios" screen="Plantio" />
+                        
                         {false && (
                         <>
-                        <MenuItem icon="leaf-outline" label="Plantio" screen="Plantio" />
-                        <MenuItem icon="map-outline" label="Áreas" screen="Home" />
                         <MenuItem icon="earth-outline" label="Manejo" screen="ManejoLavoura" />
                         <MenuItem icon="water-outline" label="Irrigação" screen="Irrigacao" />
                         <MenuItem icon="flask-outline" label="Fertirrigação" screen="Fertirrigacao" />
