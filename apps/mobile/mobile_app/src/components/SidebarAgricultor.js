@@ -101,7 +101,8 @@ export default function SidebarAgricultor({ visible, onClose }) {
                         <MenuItem icon="home-outline" label="Início" screen="Home" />
                         <MenuItem icon="basket-outline" label="Colheita" screen="Colheita" />
                         
-                        {/* Funcionalidades Ocultas para o MVP V1
+                        {false && (
+                        <>
                         <MenuItem icon="leaf-outline" label="Plantio" screen="Plantio" />
                         <MenuItem icon="map-outline" label="Áreas" screen="Home" />
                         <MenuItem icon="earth-outline" label="Manejo" screen="ManejoLavoura" />
@@ -109,7 +110,8 @@ export default function SidebarAgricultor({ visible, onClose }) {
                         <MenuItem icon="flask-outline" label="Fertirrigação" screen="Fertirrigacao" />
                         <MenuItem icon="shield-checkmark-outline" label="Aplicações" screen="Aplicacoes" />
                         <MenuItem icon="book-outline" label="Caderno de Campo" screen="CadernoCampo" />
-                        */}
+                        </>
+                        )}
 
                         <View style={styles.divider} />
                         <Text style={styles.sectionTitle}>ADMINISTRATIVO & ESTOQUE</Text>
@@ -117,11 +119,13 @@ export default function SidebarAgricultor({ visible, onClose }) {
                         <MenuItem icon="cube-outline" label="Encomendas" screen="Encomendas" />
                         <MenuItem icon="document-text-outline" label="Relatórios" screen="Relatorios" />
                         
-                        {/* Funcionalidades Ocultas para o MVP V1
+                        {false && (
+                        <>
                         <MenuItem icon="cube-outline" label="Estoque" screen="Estoque" />
                         <MenuItem icon="cart-outline" label="Compras" screen="Compras" />
                         <MenuItem icon="cash-outline" label="Custos" screen="Custos" />
-                        */}
+                        </>
+                        )}
 
                         <View style={styles.divider} />
                         <Text style={styles.sectionTitle}>SISTEMA</Text>

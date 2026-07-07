@@ -115,7 +115,8 @@ export default function RelatoriosScreen({ navigation }) {
                                 color="#3B82F6"
                                 style={[styles.metricItem, { backgroundColor: '#142233', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)' }]}
                             />
-                            {/* Oculto para MVP V1
+                            {false && (
+                            <>
                             <MetricCard 
                                 title="CUSTOS" 
                                 value={`R$ ${data.custos.toLocaleString('pt-BR')}`} 
@@ -130,7 +131,8 @@ export default function RelatoriosScreen({ navigation }) {
                                 color="#7C3AED"
                                 style={[styles.metricItem, { backgroundColor: '#142233', borderWidth: 1, borderColor: 'rgba(124,58,237,0.3)' }]}
                             />
-                            */}
+                            </>
+                            )}
                         </View>
 
                         <Card style={styles.insightCard} noPadding>

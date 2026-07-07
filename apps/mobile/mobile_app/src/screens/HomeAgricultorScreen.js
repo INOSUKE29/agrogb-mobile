@@ -116,7 +116,7 @@ export default function HomeAgricultorScreen({ navigation }) {
 
                 {isReady && (
                     <View style={styles.kpiRow}>
-                        {/* Oculto para o MVP V1
+                        {false && (
                         <View style={styles.kpiItem}>
                             <Text style={styles.kpiLabel}>PLANTIOS ATIVOS</Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
@@ -124,8 +124,8 @@ export default function HomeAgricultorScreen({ navigation }) {
                                 <Text style={styles.kpiValue}>{stats.plantioAtivo || 0} <Text style={styles.unit}>áreas</Text></Text>
                             </View>
                         </View>
-                        <View style={styles.vr} />
-                        */}
+                        )}
+                        {false && <View style={styles.vr} />}
                         <View style={styles.kpiItem}>
                             <Text style={styles.kpiLabel}>PENDÊNCIAS</Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
@@ -141,15 +141,13 @@ export default function HomeAgricultorScreen({ navigation }) {
                 {isReady ? (
                     <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-                        {/* Oculto para o MVP V1 (Módulo de Frota não disponível)
-                        {stats.maquinasAlert > 0 && (
+                        {false && stats.maquinasAlert > 0 && (
                             <TouchableOpacity style={[styles.alertBar, { backgroundColor: theme?.theme_mode === 'dark' ? 'rgba(245, 158, 11, 0.15)' : '#FEF3C7' }]} onPress={() => navigation.navigate('Frota')}>
                                 <Ionicons name="warning" size={20} color={THEME.alert} />
                                 <Text style={[styles.alertText, { color: theme?.theme_mode === 'dark' ? '#FCD34D' : '#92400E' }]}>{stats.maquinasAlert} MÁQUINAS PRECISAM DE REVISÃO</Text>
                                 <Ionicons name="chevron-forward" size={20} color={THEME.alert} />
                             </TouchableOpacity>
                         )}
-                        */}
 
                         <TasksWidget />
                         {dashboardData && <SmartAlerts alerts={dashboardData.alerts} navigation={navigation} />}
