@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../../../theme/ThemeContext';
-import { executeQuery } from '../../../database/database';
-import AgroInput from '../../../components/common/AgroInput';
-import AgroButton from '../../../components/common/AgroButton';
-import SearchableSelect from '../../../components/common/SearchableSelect';
+import { useTheme } from '../../theme/ThemeContext';
+import { executeQuery } from '../../database/database';
+import AgroInput from '../../components/common/AgroInput';
+import AgroButton from '../../components/common/AgroButton';
+import SearchableSelect from '../../components/common/SearchableSelect';
 import { v4 as uuidv4 } from 'uuid';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 

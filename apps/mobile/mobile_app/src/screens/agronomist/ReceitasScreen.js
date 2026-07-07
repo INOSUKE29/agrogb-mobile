@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../../../theme/ThemeContext';
-import { executeQuery } from '../../../database/database';
-import AgroStateOverlay from '../../../components/common/AgroStateOverlay';
+import { useTheme } from '../../theme/ThemeContext';
+import { executeQuery } from '../../database/database';
+import AgroStateOverlay from '../../components/common/AgroStateOverlay';
 
 export default function ReceitasScreen({ navigation }) {
     const { theme } = useTheme();
