@@ -25,9 +25,9 @@ export default function WeatherWidget({ compact = false, customLocation = null }
     if (permissionDenied && !weather) {
         if (compact) {
             return (
-                <TouchableOpacity onPress={() => navigation.navigate('Clima')} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Ionicons name="location-outline" size={14} color="#9CA3AF" />
-                    <Text style={{ color: '#9CA3AF', fontSize: 11, marginLeft: 4 }}>Ativar Clima</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('Clima')} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+                    <Ionicons name="location-outline" size={16} color="#FBBF24" />
+                    <Text style={{ color: '#FFF', fontSize: 12, marginLeft: 6, fontWeight: 'bold' }}>Toque para ativar previsão local</Text>
                 </TouchableOpacity>
             );
         }
@@ -43,9 +43,9 @@ export default function WeatherWidget({ compact = false, customLocation = null }
     if (error && !weather) {
         if (compact) {
              return (
-                 <TouchableOpacity onPress={() => navigation.navigate('Clima')} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                     <Ionicons name="cloud-offline-outline" size={14} color="#EF4444" />
-                     <Text style={{ color: '#FCA5A5', fontSize: 11, marginLeft: 4 }}>Indisponível</Text>
+                 <TouchableOpacity onPress={() => navigation.navigate('Clima')} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20 }}>
+                     <Ionicons name="cloud-offline-outline" size={16} color="#EF4444" />
+                     <Text style={{ color: '#FFF', fontSize: 12, marginLeft: 6, fontWeight: 'bold' }}>Clima indisponível (Toque)</Text>
                  </TouchableOpacity>
              );
         }

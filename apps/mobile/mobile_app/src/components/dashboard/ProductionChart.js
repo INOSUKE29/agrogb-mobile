@@ -24,6 +24,22 @@ export default function ProductionChart({ data }) {
         ? (opacity = 1) => `rgba(30, 41, 59, ${opacity * 0.5})`
         : (opacity = 1) => `rgba(226, 232, 240, ${opacity * 0.5})`;
 
+    // Checar se não tem dados de verdade (Regra 8 - Zero Mocks)
+    const hasAnyData = data.datasets && data.datasets.length > 0 && data.datasets[0].data && data.datasets[0].data.some(val => val > 0);
+
+    if (!hasAnyData) {
+        return (
+            <Card style={styles.container}>
+                <Text style={[styles.title, { color: activeColors.textMuted || '#9CA3AF' }]}>PRODUÇÃO (ÚLTIMOS 7 DIAS)</Text>
+                <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 25 }}>
+                    <Text style={{ fontSize: 32, marginBottom: 8, opacity: 0.8 }}>📈</Text>
+                    <Text style={{ color: activeColors.textMuted || '#9CA3AF', fontSize: 13, textAlign: 'center', fontWeight: 'bold' }}>Sua produção aparecerá aqui</Text>
+                    <Text style={{ color: '#6B7280', fontSize: 11, textAlign: 'center', marginTop: 4 }}>Nenhum volume colhido nos últimos 7 dias.</Text>
+                </View>
+            </Card>
+        );
+    }
+
     return (
         <Card style={styles.container}>
             <Text style={[styles.title, { color: activeColors.textMuted || '#9CA3AF' }]}>PRODUÇÃO (ÚLTIMOS 7 DIAS)</Text>

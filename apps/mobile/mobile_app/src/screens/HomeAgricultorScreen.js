@@ -163,7 +163,7 @@ export default function HomeAgricultorScreen({ navigation }) {
                                     onPress={() => navigation.navigate(item.screen)}
                                     activeOpacity={0.7}
                                 >
-                                    <View style={[styles.iconCirclePremium, { backgroundColor: 'rgba(255,255,255,0.05)' }]}>
+                                    <View style={[styles.iconCirclePremium, { backgroundColor: '#FFFFFF' }]}>
                                         <Ionicons name={item.icon} size={28} color={item.color || '#10B981'} />
                                     </View>
                                     <Text style={[styles.cardTitle, { color: '#FFF' }]} numberOfLines={2}>{item.label}</Text>
