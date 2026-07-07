@@ -17,10 +17,10 @@ import ProductionChart from '../components/dashboard/ProductionChart';
 const { width } = Dimensions.get('window');
 
 const AGRICULTOR_ATALHOS = [
-    { id: "registrar_colheita", label: "Registrar Colheita", icon: "basket-outline", screen: "Colheita", color: "#F59E0B" },
-    { id: "registrar_aplicacao", label: "Registrar Aplicação", icon: "shield-checkmark-outline", screen: "Aplicacoes", color: "#10B981" },
-    { id: "nova_compra", label: "Nova Compra", icon: "cart-outline", screen: "Compras", color: "#3B82F6" },
-    { id: "anotar_atividade", label: "Anotar Atividade", icon: "create-outline", screen: "CadernoCampo", color: "#8B5CF6" },
+    { id: "registrar_colheita", label: "Colheita", icon: "basket-outline", screen: "Colheita", color: "#F59E0B" },
+    { id: "registrar_venda", label: "Venda", icon: "barcode-outline", screen: "Vendas", color: "#10B981" },
+    { id: "nova_encomenda", label: "Encomenda", icon: "cube-outline", screen: "Encomendas", color: "#3B82F6" },
+    { id: "ver_relatorios", label: "Relatórios", icon: "document-text-outline", screen: "Relatorios", color: "#8B5CF6" },
 ];
 
 export default function HomeAgricultorScreen({ navigation }) {
@@ -116,6 +116,7 @@ export default function HomeAgricultorScreen({ navigation }) {
 
                 {isReady && (
                     <View style={styles.kpiRow}>
+                        {/* Oculto para o MVP V1
                         <View style={styles.kpiItem}>
                             <Text style={styles.kpiLabel}>PLANTIOS ATIVOS</Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
@@ -124,6 +125,7 @@ export default function HomeAgricultorScreen({ navigation }) {
                             </View>
                         </View>
                         <View style={styles.vr} />
+                        */}
                         <View style={styles.kpiItem}>
                             <Text style={styles.kpiLabel}>PENDÊNCIAS</Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
@@ -139,6 +141,7 @@ export default function HomeAgricultorScreen({ navigation }) {
                 {isReady ? (
                     <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
+                        {/* Oculto para o MVP V1 (Módulo de Frota não disponível)
                         {stats.maquinasAlert > 0 && (
                             <TouchableOpacity style={[styles.alertBar, { backgroundColor: theme?.theme_mode === 'dark' ? 'rgba(245, 158, 11, 0.15)' : '#FEF3C7' }]} onPress={() => navigation.navigate('Frota')}>
                                 <Ionicons name="warning" size={20} color={THEME.alert} />
@@ -146,6 +149,7 @@ export default function HomeAgricultorScreen({ navigation }) {
                                 <Ionicons name="chevron-forward" size={20} color={THEME.alert} />
                             </TouchableOpacity>
                         )}
+                        */}
 
                         <TasksWidget />
                         {dashboardData && <SmartAlerts alerts={dashboardData.alerts} navigation={navigation} />}
