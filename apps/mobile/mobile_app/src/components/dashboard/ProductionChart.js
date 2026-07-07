@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { useTheme } from '../../theme/ThemeContext';
 import Card from '../common/Card';
