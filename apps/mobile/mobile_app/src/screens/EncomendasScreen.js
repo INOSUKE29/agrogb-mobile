@@ -5,6 +5,7 @@ import { executeQuery } from '../database/database';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import SafeBlurView from '../components/ui/SafeBlurView';
+import ScreenLayout from '../components/layout/ScreenLayout';
 
 export default function EncomendasScreen() {
     const navigation = useNavigation();
