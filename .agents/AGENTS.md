@@ -81,3 +81,9 @@ Não seja passivo. Atue como um sócio intelectual focado em execução, clareza
 * O banco de dados SQLite local no Mobile (ex: `fields`, `recommendations`, `v2_monitoramentos`) deve ter os mesmos nomes de tabelas, nomes de colunas e constraints que o Supabase PostgreSQL V2.
 * As inserções devem ser enviadas puras e diretas ao `sync_outbox`. 
 * Se um formulário legado ou tabela local do Mobile tiver campos diferentes da nuvem (V2), **altere o banco local (SQLite) e refatore o formulário Mobile** para corresponder à nuvem, em vez de criar conversores.
+
+## Regra 14 - Estratégia de Versionamento e Ocultação Inteligente (MVP vs Full)
+**Nunca exclua código de módulos concluídos.** Quando precisarmos lançar versões simplificadas (MVPs) para os clientes, a regra é ocultar/comentar os acessos na interface (UI), mantendo toda a estrutura lógica intacta no repositório.
+* **Coordenação de Releases:** Não devem ser geradas novas versões "Release" a cada correção pequena. A liberação de novas versões do aplicativo deve ser sempre coordenada e pré-aprovada em conjunto.
+* **Hotfixes:** Apenas erros gravíssimos estruturais que inviabilizam o uso justificam quebra do protocolo para atualização imediata (seguindo as regras de ouro de programação). Fora isso, correções menores aguardam a janela de atualização definida com o líder do projeto.
+* O crescimento do aplicativo para o cliente será feito "ligando" módulos gradativamente, sem perder trabalho anterior.
