@@ -103,6 +103,7 @@ export default function SidebarAgricultor({ visible, onClose }) {
                         
                         <MenuItem icon="home-outline" label="Fazendas" screen="Propriedades" />
                         <MenuItem icon="map-outline" label="Áreas / Talhões" screen="Areas" />
+                        <MenuItem icon="leaf-outline" label="Culturas" screen="Culturas" />
                         <MenuItem icon="leaf-outline" label="Plantios" screen="Plantio" />
                         
                         {false && (
@@ -125,6 +126,7 @@ export default function SidebarAgricultor({ visible, onClose }) {
                         
                         <MenuItem icon="cube-outline" label="Estoque" screen="Estoque" />
                         <MenuItem icon="cart-outline" label="Compras" screen="Compras" />
+                        <MenuItem icon="business-outline" label="Fornecedores" screen="Fornecedores" />
                         
                         {false && (
                         <>
