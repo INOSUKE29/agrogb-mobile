@@ -115,14 +115,16 @@ export default function SidebarAgricultor({ visible, onClose }) {
 
                         <View style={styles.divider} />
                         <Text style={styles.sectionTitle}>ADMINISTRATIVO & ESTOQUE</Text>
+                        <MenuItem icon="people-outline" label="Clientes" screen="Clientes" />
                         <MenuItem icon="barcode-outline" label="Vendas" screen="Vendas" />
                         <MenuItem icon="cube-outline" label="Encomendas" screen="Encomendas" />
                         <MenuItem icon="document-text-outline" label="Relatórios" screen="Relatorios" />
                         
-                        {false && (
-                        <>
                         <MenuItem icon="cube-outline" label="Estoque" screen="Estoque" />
                         <MenuItem icon="cart-outline" label="Compras" screen="Compras" />
+                        
+                        {false && (
+                        <>
                         <MenuItem icon="cash-outline" label="Custos" screen="Custos" />
                         </>
                         )}
