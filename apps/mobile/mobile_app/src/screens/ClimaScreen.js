@@ -1,25 +1,53 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, StatusBar, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useWeather } from '../context/WeatherContext';
-import ScreenHeader from '../components/ui/ScreenHeader';
 import ScreenLayout from '../components/layout/ScreenLayout';
+import { WeatherService, DadosClima, Recomendacao, AgronomicMetrics } from '../services/WeatherService';
 
 export default function ClimaScreen() {
     const navigation = useNavigation();
     const { theme } = useTheme();
     const activeColors = theme?.colors || {};
-    const { weather, loading, error, refreshWeather } = useWeather();
     
     const [activeTab, setActiveTab] = useState('HOJE');
+    const [weatherData, setWeatherData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [recommendations, setRecommendations] = useState([]);
+    const [metrics, setMetrics] = useState(null);
 
     const isDark = theme?.theme_mode === 'dark';
-    const textColor = activeColors.text || '#FFFFFF';
-    const textMuted = activeColors.textMuted || '#9CA3AF';
-    const borderColor = activeColors.border || 'rgba(255,255,255,0.05)';
+    const textColor = activeColors.text || (isDark ? '#FFFFFF' : '#111827');
+    const textMuted = activeColors.textMuted || (isDark ? '#9CA3AF' : '#6B7280');
+    const borderColor = activeColors.border || (isDark ? '#374151' : '#E5E7EB');
+    const cardBg = activeColors.card || (isDark ? '#1F2937' : '#FFFFFF');
+
+    const loadWeather = async () => {
+        try {
+            // Mock coordenadas (pode usar Geolocation na v9)
+            const data = await WeatherService.fetchHyperlocalWeather(-23.5505, -46.6333);
+            setWeatherData(data);
+            setRecommendations(WeatherService.gerarRecomendacoesAgro(data));
+            setMetrics(WeatherService.calcularMetricasAgronomicas(data));
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    useEffect(() => {
+        loadWeather();
+    }, []);
+
+    const onRefresh = useCallback(() => {
+        setRefreshing(true);
+        loadWeather();
+    }, []);
 
     const getIcon = (iconCode) => {
         if (!iconCode) return 'cloud-outline';
@@ -31,174 +59,136 @@ export default function ClimaScreen() {
         return 'cloud-outline';
     };
 
-    const getUVLevel = (uvIndex) => {
-        if (uvIndex < 3) return 'Baixo';
-        if (uvIndex < 6) return 'Moderado';
-        if (uvIndex < 8) return 'Alto';
-        if (uvIndex < 11) return 'Muito Alto';
-        return 'Extremo';
-    };
+    const TABS = [
+        { id: 'HOJE', label: 'Hoje' },
+        { id: 'PROXIMOS', label: 'Próximos Dias' },
+        { id: 'RADAR', label: 'Radar Agro' },
+        { id: 'HISTORICO', label: 'Histórico' }
+    ];
 
-    const generateAIRecommendations = () => {
-        if (!weather) return [];
-        const recs = [];
-        const isRaining = weather.pop > 50 || weather.description.toLowerCase().includes('chuva');
-        const isHot = weather.temp > 30;
-        const isHumid = weather.humidity > 80;
-        const isWindy = weather.wind > 15;
-
-        if (isRaining || isWindy) {
-            recs.push({ text: 'Pulverização: Suspender (Vento/Chuva)', type: 'error' });
-        } else {
-            recs.push({ text: 'Pulverização: Recomendada', type: 'success' });
-        }
-
-        if (isRaining) {
-            recs.push({ text: 'Irrigação: Não necessária hoje', type: 'success' });
-        } else if (isHot) {
-            recs.push({ text: 'Irrigação: Ligar pivô (Calor alto)', type: 'warning' });
-        } else {
-            recs.push({ text: 'Irrigação: Ciclo normal', type: 'success' });
-        }
-
-        if (isHumid && isHot) {
-            recs.push({ text: 'Monitorar risco de fungos (Alta umidade)', type: 'warning' });
-        }
-
-        return recs;
-    };
-
-    const recommendations = generateAIRecommendations();
+    if (loading) {
+        return (
+            <ScreenLayout title="CENTRAL CLIMÁTICA">
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color="#10B981" />
+                </View>
+            </ScreenLayout>
+        );
+    }
 
     return (
-        <ScreenLayout title="CLIMA DA FAZENDA">
-            <View style={styles.tabsContainer}>
-                <TouchableOpacity 
-                    style={[styles.tab, activeTab === 'HOJE' && [styles.activeTab, { borderBottomColor: activeColors.primary || '#10B981' }]]}
-                    onPress={() => setActiveTab('HOJE')}
-                >
-                    <Text style={[styles.tabText, { color: activeTab === 'HOJE' ? (activeColors.primary || '#10B981') : textMuted }]}>HOJE</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                    style={[styles.tab, activeTab === '7DIAS' && [styles.activeTab, { borderBottomColor: activeColors.primary || '#10B981' }]]}
-                    onPress={() => setActiveTab('7DIAS')}
-                >
-                    <Text style={[styles.tabText, { color: activeTab === '7DIAS' ? (activeColors.primary || '#10B981') : textMuted }]}>PRÓXIMOS DIAS</Text>
-                </TouchableOpacity>
+        <ScreenLayout title="CENTRAL CLIMÁTICA">
+            {/* TABS */}
+            <View style={[styles.tabsContainer, { borderBottomColor: borderColor }]}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {TABS.map(tab => (
+                        <TouchableOpacity 
+                            key={tab.id}
+                            style={[styles.tab, activeTab === tab.id && [styles.activeTab, { borderBottomColor: '#10B981' }]]}
+                            onPress={() => setActiveTab(tab.id)}
+                        >
+                            <Text style={[styles.tabText, { color: activeTab === tab.id ? '#10B981' : textMuted }]}>{tab.label}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
             </View>
 
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                {activeTab === 'HOJE' ? (
-                    <>
-                        {weather ? (
-                            <>
-                                <LinearGradient colors={['#1F2937', '#111827']} style={[styles.heroCard, { borderColor }]}>
-                                    <View style={styles.heroTop}>
-                                        <View>
-                                            <Text style={styles.cityName}>{weather.city}</Text>
-                                            <Text style={styles.weatherDesc}>{weather.description}</Text>
-                                        </View>
-                                        <Ionicons name={getIcon(weather.icon)} size={56} color="#FBBF24" />
-                                    </View>
-                                    <Text style={styles.tempMain}>{weather.temp}°C</Text>
-                                    
-                                    <View style={styles.metricsGrid}>
-                                        <View style={styles.metricItem}>
-                                            <Ionicons name="umbrella" size={20} color="#60A5FA" />
-                                            <Text style={styles.statLabel}>Chuva</Text>
-                                            <Text style={styles.statValue}>{weather.pop}%</Text>
-                                        </View>
-                                        <View style={styles.metricItem}>
-                                            <Ionicons name="water" size={20} color="#60A5FA" />
-                                            <Text style={styles.statLabel}>Umidade</Text>
-                                            <Text style={styles.statValue}>{weather.humidity}%</Text>
-                                        </View>
-                                        <View style={styles.metricItem}>
-                                            <Ionicons name="leaf" size={20} color="#34D399" />
-                                            <Text style={styles.statLabel}>Vento</Text>
-                                            <Text style={styles.statValue}>{weather.wind} km/h</Text>
-                                        </View>
-                                        <View style={styles.metricItem}>
-                                            <Ionicons name="sunny" size={20} color="#FBBF24" />
-                                            <Text style={styles.statLabel}>Índice UV</Text>
-                                            <Text style={styles.statValue}>{weather.uv ? getUVLevel(weather.uv) : '--'}</Text>
-                                        </View>
-                                    </View>
-                                </LinearGradient>
-
-                                {/* ALERTAS DE DEFESA CIVIL */}
-                                {weather.alerts && weather.alerts.length > 0 && (
-                                    <View style={[styles.alertBar, { backgroundColor: weather.alerts[0].color + 'E6' }]}>
-                                        <Ionicons name="warning" size={20} color="#FFF" style={{ marginRight: 10 }} />
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={styles.alertEvent}>{weather.alerts[0].event}</Text>
-                                            <Text style={styles.alertDesc}>{weather.alerts[0].description}</Text>
-                                        </View>
-                                    </View>
-                                )}
-
-                                {/* IA RECOMENDAÇÕES */}
-                                <View style={styles.aiCard}>
-                                    <View style={styles.aiHeader}>
-                                        <Ionicons name="sparkles" size={20} color="#C4B5FD" />
-                                        <Text style={styles.aiTitle}>Recomendações da IA (AgroGB)</Text>
-                                    </View>
-                                    <View style={styles.aiList}>
-                                        {recommendations.map((rec, index) => (
-                                            <View key={index} style={styles.aiRow}>
-                                                <Ionicons 
-                                                    name={rec.type === 'success' ? 'checkmark-circle' : rec.type === 'warning' ? 'warning' : 'close-circle'} 
-                                                    size={16} 
-                                                    color={rec.type === 'success' ? '#10B981' : rec.type === 'warning' ? '#F59E0B' : '#EF4444'} 
-                                                />
-                                                <Text style={styles.aiText}>{rec.text}</Text>
-                                            </View>
-                                        ))}
-                                    </View>
+            <ScrollView 
+                style={styles.content} 
+                showsVerticalScrollIndicator={false}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10B981" />}
+            >
+                {activeTab === 'HOJE' && weatherData && (
+                    <View style={styles.section}>
+                        <LinearGradient colors={isDark ? ['#1F2937', '#111827'] : ['#10B981', '#059669']} style={[styles.heroCard, { borderColor }]}>
+                            <View style={styles.heroTop}>
+                                <View>
+                                    <Text style={[styles.cityName, { color: '#FFF' }]}>Fazenda Principal</Text>
+                                    <Text style={[styles.weatherDesc, { color: '#D1FAE5' }]}>{weatherData.descricao.toUpperCase()}</Text>
                                 </View>
-                            </>
-                        ) : (
-                            <View style={[styles.heroCard, { borderColor, alignItems: 'center', justifyContent: 'center', height: 200 }]}>
-                                {loading ? (
-                                    <ActivityIndicator size="large" color="#10B981" />
-                                ) : (
-                                    <>
-                                        <Text style={{ color: textMuted }}>Nenhum dado de clima disponível</Text>
-                                        <TouchableOpacity style={{ marginTop: 15 }} onPress={() => refreshWeather(true)}>
-                                            <Text style={{ color: activeColors.primary || '#10B981', fontWeight: 'bold' }}>Buscar Clima</Text>
-                                        </TouchableOpacity>
-                                    </>
-                                )}
+                                <Ionicons name={getIcon(weatherData.icone)} size={60} color="#FBBF24" />
                             </View>
-                        )}
-                    </>
-                ) : (
-                    <View style={{ paddingVertical: 10 }}>
-                        {weather?.forecast?.map((day, index) => {
-                            const dateObj = new Date(day.date + 'T12:00:00Z');
-                            const dayName = dateObj.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase();
-                            const dateStr = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-                            
+                            <View style={styles.tempContainer}>
+                                <Text style={[styles.tempMain, { color: '#FFF' }]}>{weatherData.temperaturaAtual}°</Text>
+                                <View style={styles.tempMinMax}>
+                                    <Text style={[styles.tempSub, { color: '#D1FAE5' }]}>Máx: {weatherData.temperaturaMaxima}°</Text>
+                                    <Text style={[styles.tempSub, { color: '#D1FAE5' }]}>Mín: {weatherData.temperaturaMinima}°</Text>
+                                </View>
+                            </View>
+                        </LinearGradient>
+
+                        <Text style={[styles.sectionTitle, { color: textMuted }]}>RECOMENDAÇÕES DA IA (AGORA)</Text>
+                        {recommendations.map((rec, index) => {
+                            let icon = 'information-circle';
+                            let color = '#3B82F6';
+                            if (rec.tipo === 'AVISO') { icon = 'warning'; color = '#F59E0B'; }
+                            if (rec.tipo === 'ALERTA') { icon = 'alert-circle'; color = '#EF4444'; }
+                            if (rec.tipo === 'CRITICO' || rec.tipo === 'PERIGO_GEADA') { icon = 'skull'; color = '#991B1B'; }
+                            if (rec.tipo === 'RECOMENDADO') { icon = 'checkmark-circle'; color = '#10B981'; }
+
                             return (
-                                <View key={index} style={[styles.forecastRow, { borderBottomColor: borderColor }]}>
-                                    <View style={{ width: 60 }}>
-                                        <Text style={styles.forecastDay}>{dayName}</Text>
-                                        <Text style={styles.forecastDate}>{dateStr}</Text>
+                                <View key={index} style={[styles.aiCard, { backgroundColor: cardBg, borderColor }]}>
+                                    <View style={[styles.aiIconBox, { backgroundColor: color + '20' }]}>
+                                        <Ionicons name={icon} size={24} color={color} />
                                     </View>
-                                    <View style={styles.forecastIconCol}>
-                                        <Ionicons name={getIcon(day.icon)} size={28} color="#FBBF24" />
-                                        <Text style={styles.forecastPop}>{day.pop}% chuva</Text>
-                                    </View>
-                                    <View style={styles.forecastTempCol}>
-                                        <Text style={styles.forecastTempMax}>{day.tempMax}°</Text>
-                                        <Text style={styles.forecastTempMin}>{day.tempMin}°</Text>
-                                    </View>
+                                    <Text style={[styles.aiMessage, { color: textColor }]}>{rec.mensagem}</Text>
                                 </View>
                             );
                         })}
                     </View>
                 )}
-                
+
+                {activeTab === 'RADAR' && metrics && (
+                    <View style={styles.section}>
+                        <Text style={[styles.sectionTitle, { color: textMuted }]}>PARÂMETROS AGRONÔMICOS</Text>
+                        
+                        <View style={styles.grid}>
+                            <View style={[styles.gridCard, { backgroundColor: cardBg, borderColor }]}>
+                                <Ionicons name="water" size={24} color="#3B82F6" />
+                                <Text style={[styles.gridValue, { color: textColor }]}>{metrics.et0} mm</Text>
+                                <Text style={[styles.gridLabel, { color: textMuted }]}>Evapotranspiração (ET0)</Text>
+                            </View>
+                            
+                            <View style={[styles.gridCard, { backgroundColor: cardBg, borderColor }]}>
+                                <Ionicons name="leaf" size={24} color="#10B981" />
+                                <Text style={[styles.gridValue, { color: textColor }]}>{metrics.hmf} h</Text>
+                                <Text style={[styles.gridLabel, { color: textMuted }]}>Molhamento Foliar</Text>
+                            </View>
+                        </View>
+
+                        <Text style={[styles.sectionTitle, { color: textMuted, marginTop: 20 }]}>JANELAS OPERACIONAIS</Text>
+                        <View style={[styles.windowCard, { backgroundColor: cardBg, borderColor }]}>
+                            <Text style={[styles.windowLabel, { color: textColor }]}>Pulverização Foliar:</Text>
+                            <Text style={[styles.windowStatus, { color: metrics.janelaPulverizacao === 'IDEAL' ? '#10B981' : (metrics.janelaPulverizacao === 'RISCO' ? '#F59E0B' : '#EF4444') }]}>
+                                {metrics.janelaPulverizacao}
+                            </Text>
+                        </View>
+                        <View style={[styles.windowCard, { backgroundColor: cardBg, borderColor }]}>
+                            <Text style={[styles.windowLabel, { color: textColor }]}>Irrigação:</Text>
+                            <Text style={[styles.windowStatus, { color: metrics.janelaIrrigacao === 'IDEAL' ? '#10B981' : (metrics.janelaIrrigacao === 'DESNECESSARIA' ? '#F59E0B' : '#EF4444') }]}>
+                                {metrics.janelaIrrigacao}
+                            </Text>
+                        </View>
+                    </View>
+                )}
+
+                {/* Próximos Dias e Histórico são apenas placeholders estéticos para a versão 8.0, o foco é Hoje e Radar */}
+                {activeTab === 'PROXIMOS' && (
+                    <View style={styles.section}>
+                        <View style={[styles.aiCard, { backgroundColor: cardBg, borderColor, justifyContent: 'center' }]}>
+                            <Text style={{ color: textMuted, textAlign: 'center', padding: 20 }}>Previsão para 7 dias em manutenção no modelo de IA.</Text>
+                        </View>
+                    </View>
+                )}
+
+                {activeTab === 'HISTORICO' && (
+                    <View style={styles.section}>
+                        <View style={[styles.aiCard, { backgroundColor: cardBg, borderColor, justifyContent: 'center' }]}>
+                            <Text style={{ color: textMuted, textAlign: 'center', padding: 20 }}>O histórico climático acumulado estará disponível na próxima safra.</Text>
+                        </View>
+                    </View>
+                )}
+
                 <View style={{ height: 40 }} />
             </ScrollView>
         </ScreenLayout>
@@ -206,163 +196,34 @@ export default function ClimaScreen() {
 }
 
 const styles = StyleSheet.create({
-    tabsContainer: {
-        flexDirection: 'row',
-        borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.05)',
-    },
-    tab: {
-        flex: 1,
-        paddingVertical: 15,
-        alignItems: 'center',
-    },
-    activeTab: {
-        borderBottomWidth: 3,
-    },
-    tabText: {
-        fontSize: 13,
-        fontWeight: 'bold',
-        letterSpacing: 1,
-    },
-    content: {
-        flex: 1,
-        padding: 20,
-    },
-    heroCard: {
-        borderRadius: 24,
-        padding: 25,
-        borderWidth: 1,
-        marginBottom: 20,
-    },
-    heroTop: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    cityName: {
-        color: '#FFF',
-        fontSize: 20,
-        fontWeight: '900',
-        letterSpacing: 0.5,
-    },
-    weatherDesc: {
-        color: '#9CA3AF',
-        fontSize: 14,
-        fontWeight: '600',
-        marginTop: 4,
-        textTransform: 'capitalize'
-    },
-    tempMain: {
-        color: '#FFF',
-        fontSize: 64,
-        fontWeight: '900',
-        marginVertical: 10,
-    },
-    metricsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        marginTop: 10,
-        borderTopWidth: 1,
-        borderTopColor: 'rgba(255,255,255,0.1)',
-        paddingTop: 15
-    },
-    metricItem: {
-        width: '48%',
-        backgroundColor: 'rgba(0, 0, 0, 0.2)',
-        padding: 12,
-        borderRadius: 12,
-        marginBottom: 10,
-        alignItems: 'center',
-    },
-    statLabel: {
-        color: '#9CA3AF',
-        fontSize: 11,
-        fontWeight: 'bold',
-        marginTop: 6,
-    },
-    statValue: {
-        color: '#FFF',
-        fontSize: 14,
-        fontWeight: '900',
-        marginTop: 2,
-    },
-    alertBar: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-        borderRadius: 16,
-        marginBottom: 20,
-    },
-    alertEvent: { color: '#FFF', fontSize: 13, fontWeight: 'bold', marginBottom: 2 },
-    alertDesc: { color: '#FFF', fontSize: 11, opacity: 0.9 },
-    aiCard: {
-        borderRadius: 20,
-        padding: 20,
-        backgroundColor: 'rgba(139, 92, 246, 0.1)',
-        borderWidth: 1,
-        borderColor: 'rgba(139, 92, 246, 0.3)',
-    },
-    aiHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 15,
-    },
-    aiTitle: {
-        color: '#C4B5FD',
-        fontWeight: 'bold',
-        fontSize: 14,
-        marginLeft: 8,
-    },
-    aiList: {
-        gap: 10,
-    },
-    aiRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    aiText: {
-        color: '#E2E8F0',
-        fontSize: 13,
-        marginLeft: 8,
-        flex: 1,
-    },
-    forecastRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: 15,
-        borderBottomWidth: 1,
-    },
-    forecastDay: {
-        color: '#FFF',
-        fontWeight: 'bold',
-        fontSize: 14,
-    },
-    forecastDate: {
-        color: '#9CA3AF',
-        fontSize: 12,
-    },
-    forecastIconCol: {
-        alignItems: 'center',
-        flex: 1,
-    },
-    forecastPop: {
-        color: '#60A5FA',
-        fontSize: 11,
-        marginTop: 4,
-    },
-    forecastTempCol: {
-        alignItems: 'flex-end',
-        width: 60,
-    },
-    forecastTempMax: {
-        color: '#FFF',
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
-    forecastTempMin: {
-        color: '#9CA3AF',
-        fontSize: 14,
-    }
+    tabsContainer: { flexDirection: 'row', borderBottomWidth: 1 },
+    tab: { paddingVertical: 15, paddingHorizontal: 20, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+    activeTab: {},
+    tabText: { fontSize: 13, fontWeight: 'bold' },
+    content: { flex: 1, padding: 20 },
+    section: { marginBottom: 20 },
+    
+    heroCard: { padding: 25, borderRadius: 24, borderWidth: 1, marginBottom: 25, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
+    heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    cityName: { fontSize: 20, fontWeight: 'bold' },
+    weatherDesc: { fontSize: 14, fontWeight: '500', marginTop: 4 },
+    tempContainer: { marginTop: 25, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+    tempMain: { fontSize: 56, fontWeight: '900', lineHeight: 60 },
+    tempMinMax: { alignItems: 'flex-end', paddingBottom: 5 },
+    tempSub: { fontSize: 14, fontWeight: '600' },
+
+    sectionTitle: { fontSize: 12, fontWeight: '900', letterSpacing: 1, marginBottom: 15 },
+    
+    aiCard: { flexDirection: 'row', alignItems: 'center', padding: 15, borderRadius: 16, borderWidth: 1, marginBottom: 12 },
+    aiIconBox: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    aiMessage: { flex: 1, fontSize: 13, fontWeight: '500', lineHeight: 18 },
+
+    grid: { flexDirection: 'row', gap: 12, marginBottom: 10 },
+    gridCard: { flex: 1, padding: 20, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+    gridValue: { fontSize: 20, fontWeight: 'bold', marginVertical: 8 },
+    gridLabel: { fontSize: 11, textAlign: 'center' },
+
+    windowCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderRadius: 12, borderWidth: 1, marginBottom: 10 },
+    windowLabel: { fontSize: 14, fontWeight: '600' },
+    windowStatus: { fontSize: 14, fontWeight: '900' },
 });

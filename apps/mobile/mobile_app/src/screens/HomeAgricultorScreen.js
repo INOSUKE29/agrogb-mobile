@@ -10,8 +10,6 @@ import SidebarAgricultor from '../components/SidebarAgricultor';
 import { useTheme } from '../theme/ThemeContext';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useAuth } from '../context/AuthContext';
-import TasksWidget from '../components/dashboard/TasksWidget';
-import SmartAlerts from '../components/dashboard/SmartAlerts';
 import ProductionChart from '../components/dashboard/ProductionChart';
 
 const { width } = Dimensions.get('window');
@@ -27,8 +25,10 @@ const AGRICULTOR_ATALHOS = [
 
 export default function HomeAgricultorScreen({ navigation }) {
     const { theme } = useTheme();
-    const { user, role } = useAuth();
+    const { user } = useAuth();
     const { data: dashboardData } = useDashboardData();
+    const isDark = theme?.theme_mode === 'dark';
+
     const THEME = {
         bg: theme?.colors?.bg ?? '#091829',
         headerBg: theme?.colors?.headerBg ?? ['#0D8C39', '#18B34A'],
@@ -87,8 +87,9 @@ export default function HomeAgricultorScreen({ navigation }) {
         <View style={[styles.container, { backgroundColor: THEME.bg }]}>
             <RNStatusBar barStyle="light-content" backgroundColor={THEME.headerBg[0]} />
 
+            {/* 1. HEADER (Status Instantâneo) */}
             <LinearGradient colors={THEME.headerBg} style={styles.header}>
-                <View style={[styles.headerTop, { alignItems: 'flex-start', flexDirection: 'column', width: '100%' }]}>
+                <View style={styles.headerTop}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
                             <TouchableOpacity onPress={() => setDrawerVisible(true)} style={styles.profileBtn}>
@@ -111,82 +112,117 @@ export default function HomeAgricultorScreen({ navigation }) {
                             )}
                         </TouchableOpacity>
                     </View>
-                    <View style={{ marginTop: 10, width: '100%', flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ marginTop: 15, width: '100%', flexDirection: 'row', alignItems: 'center' }}>
+                        {/* Mini-widget de clima compacto */}
                         <WeatherWidget compact={true} />
                     </View>
                 </View>
-
-                {isReady && (
-                    <View style={styles.kpiRow}>
-                        {false && (
-                        <View style={styles.kpiItem}>
-                            <Text style={styles.kpiLabel}>PLANTIOS ATIVOS</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                                <Text style={styles.kpiEmoji}>🌱</Text>
-                                <Text style={styles.kpiValue}>{stats.plantioAtivo || 0} <Text style={styles.unit}>áreas</Text></Text>
-                            </View>
-                        </View>
-                        )}
-                        {false && <View style={styles.vr} />}
-                        <View style={styles.kpiItem}>
-                            <Text style={styles.kpiLabel}>PENDÊNCIAS</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                                <Text style={styles.kpiEmoji}>📋</Text>
-                                <Text style={styles.kpiValue}>{stats.pendentes || 0} <Text style={styles.unit}>itens</Text></Text>
-                            </View>
-                        </View>
-                    </View>
-                )}
             </LinearGradient>
 
             <View style={styles.content}>
                 {isReady ? (
                     <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-                        {false && stats.maquinasAlert > 0 && (
-                            <TouchableOpacity style={[styles.alertBar, { backgroundColor: theme?.theme_mode === 'dark' ? 'rgba(245, 158, 11, 0.15)' : '#FEF3C7' }]} onPress={() => navigation.navigate('Frota')}>
-                                <Ionicons name="warning" size={20} color={THEME.alert} />
-                                <Text style={[styles.alertText, { color: theme?.theme_mode === 'dark' ? '#FCD34D' : '#92400E' }]}>{stats.maquinasAlert} MÁQUINAS PRECISAM DE REVISÃO</Text>
-                                <Ionicons name="chevron-forward" size={20} color={THEME.alert} />
+                        {/* 2. CARDS DE RESUMO (Métricas de Impacto) */}
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.summaryCarousel}>
+                            <View style={[styles.summaryCard, { backgroundColor: theme?.colors?.card || '#1F2937', borderColor: theme?.colors?.border || '#374151' }]}>
+                                <View style={[styles.summaryIcon, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
+                                    <Ionicons name="wallet" size={22} color="#3B82F6" />
+                                </View>
+                                <Text style={[styles.summaryTitle, { color: THEME.textSub }]}>VENDAS (HOJE)</Text>
+                                <Text style={[styles.summaryValue, { color: THEME.textMain }]}>{formatBRL(stats.vendasHoje || 0)}</Text>
+                            </View>
+                            <View style={[styles.summaryCard, { backgroundColor: theme?.colors?.card || '#1F2937', borderColor: theme?.colors?.border || '#374151' }]}>
+                                <View style={[styles.summaryIcon, { backgroundColor: 'rgba(245, 158, 11, 0.1)' }]}>
+                                    <Ionicons name="basket" size={22} color="#F59E0B" />
+                                </View>
+                                <Text style={[styles.summaryTitle, { color: THEME.textSub }]}>COLHEITA</Text>
+                                <Text style={[styles.summaryValue, { color: THEME.textMain }]}>{stats.colheitaHoje || 0} kg</Text>
+                            </View>
+                            <View style={[styles.summaryCard, { backgroundColor: theme?.colors?.card || '#1F2937', borderColor: theme?.colors?.border || '#374151' }]}>
+                                <View style={[styles.summaryIcon, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+                                    <Ionicons name="leaf" size={22} color="#10B981" />
+                                </View>
+                                <Text style={[styles.summaryTitle, { color: THEME.textSub }]}>PLANTIO ATIVO</Text>
+                                <Text style={[styles.summaryValue, { color: THEME.textMain }]}>{stats.plantioAtivo || 0} Áreas</Text>
+                            </View>
+                        </ScrollView>
+
+                        {/* 3. BLOCO DE RESOLUÇÃO DE PROBLEMAS */}
+                        <Text style={[styles.sectionTitle, { color: THEME.textSub, marginTop: 30 }]}>QUADRO OPERACIONAL</Text>
+                        <View style={styles.problemBlock}>
+                            <TouchableOpacity style={[styles.problemCard, { backgroundColor: theme?.colors?.card || '#1F2937', borderColor: theme?.colors?.border || '#374151' }]} onPress={() => navigation.navigate('Pendencias')}>
+                                <View style={styles.problemHeader}>
+                                    <Ionicons name="clipboard" size={24} color="#EF4444" />
+                                    <Text style={[styles.problemValue, { color: THEME.textMain }]}>{stats.pendentes || 0}</Text>
+                                </View>
+                                <Text style={[styles.problemLabel, { color: THEME.textSub }]}>Pendências Críticas</Text>
                             </TouchableOpacity>
-                        )}
+                            
+                            <TouchableOpacity style={[styles.problemCard, { backgroundColor: theme?.colors?.card || '#1F2937', borderColor: theme?.colors?.border || '#374151' }]} onPress={() => navigation.navigate('Intelligence')}>
+                                <View style={styles.problemHeader}>
+                                    <Ionicons name="flash" size={24} color="#F59E0B" />
+                                    <Text style={[styles.problemValue, { color: THEME.textMain }]}>{stats.alertasPendentes || 0}</Text>
+                                </View>
+                                <Text style={[styles.problemLabel, { color: THEME.textSub }]}>Alertas IA (Clima)</Text>
+                            </TouchableOpacity>
+                        </View>
 
-                        <TasksWidget />
-                        {dashboardData && <SmartAlerts alerts={dashboardData.alerts} navigation={navigation} />}
-
-                        <Text style={[styles.sectionTitle, { color: THEME.textSub, marginTop: 10 }]}>AÇÕES RÁPIDAS</Text>
+                        {/* 4. AÇÕES RÁPIDAS */}
+                        <Text style={[styles.sectionTitle, { color: THEME.textSub, marginTop: 30 }]}>AÇÕES RÁPIDAS</Text>
                         <View style={styles.grid}>
                             {AGRICULTOR_ATALHOS.map((item) => (
                                 <TouchableOpacity
                                     key={item.id}
-                                    style={[styles.card, { width: cardWidth, height: 110, backgroundColor: theme?.colors?.cardMenu || '#152235' }]}
+                                    style={[styles.actionCard, { width: cardWidth, backgroundColor: theme?.colors?.cardMenu || '#152235' }]}
                                     onPress={() => navigation.navigate(item.screen)}
                                     activeOpacity={0.7}
                                 >
-                                    <View style={[styles.iconCirclePremium, { backgroundColor: '#FFFFFF' }]}>
+                                    <View style={styles.iconCirclePremium}>
                                         <Ionicons name={item.icon} size={28} color={item.color || '#10B981'} />
                                     </View>
-                                    <Text style={[styles.cardTitle, { color: '#FFF' }]} numberOfLines={2}>{item.label}</Text>
+                                    <Text style={styles.cardTitle} numberOfLines={2}>{item.label}</Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
 
-                        {dashboardData && <ProductionChart data={dashboardData.chartData} />}
+                        {/* 5. GRÁFICOS E INTELIGÊNCIA */}
+                        <View style={styles.chartSection}>
+                            <Text style={[styles.sectionTitle, { color: THEME.textSub }]}>PRODUÇÃO (ÚLTIMOS 7 DIAS)</Text>
+                            {dashboardData && <ProductionChart data={dashboardData.chartData} />}
+                        </View>
+
+                        {/* 6. ATIVIDADES RECENTES */}
+                        <Text style={[styles.sectionTitle, { color: THEME.textSub }]}>HISTÓRICO RECENTE</Text>
+                        <View style={[styles.timeline, { backgroundColor: theme?.colors?.card || '#1F2937', borderColor: theme?.colors?.border || '#374151' }]}>
+                            <View style={styles.timelineItem}>
+                                <View style={[styles.timelineDot, { backgroundColor: '#10B981' }]} />
+                                <View style={styles.timelineContent}>
+                                    <Text style={[styles.timelineText, { color: THEME.textMain }]}>Sincronização de dados concluída</Text>
+                                    <Text style={[styles.timelineTime, { color: THEME.textSub }]}>Hoje</Text>
+                                </View>
+                            </View>
+                            {/* Linha conectora */}
+                            <View style={[styles.timelineLine, { backgroundColor: theme?.colors?.border || '#374151' }]} />
+                            <View style={styles.timelineItem}>
+                                <View style={[styles.timelineDot, { backgroundColor: '#3B82F6' }]} />
+                                <View style={styles.timelineContent}>
+                                    <Text style={[styles.timelineText, { color: THEME.textMain }]}>Acesso ao sistema via dispositivo móvel</Text>
+                                    <Text style={[styles.timelineTime, { color: THEME.textSub }]}>Hoje</Text>
+                                </View>
+                            </View>
+                        </View>
 
                         <View style={styles.footer}>
-                            <Text style={styles.version}>AgroGB Mobile v8.0 • Premium (Agricultor)</Text>
+                            <Text style={styles.version}>AgroGB v8.0 • ERP Agrícola Inteligente</Text>
                         </View>
                     </ScrollView>
                 ) : (
-                    <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
-                            <View style={[styles.skeletonBlock, { width: '30%', height: 60 }]} />
-                            <View style={[styles.skeletonBlock, { width: '30%', height: 60 }]} />
-                            <View style={[styles.skeletonBlock, { width: '30%', height: 60 }]} />
-                        </View>
-                        <View style={[styles.skeletonBlock, { width: '100%', height: 180, marginBottom: 20 }]} />
-                        <View style={[styles.skeletonBlock, { width: '45%', height: 110, marginBottom: 10 }]} />
-                    </ScrollView>
+                    <View style={styles.loadingContainer}>
+                        <View style={[styles.skeletonBlock, { width: '100%', height: 100, marginBottom: 20 }]} />
+                        <View style={[styles.skeletonBlock, { width: '100%', height: 200, marginBottom: 20 }]} />
+                        <View style={[styles.skeletonBlock, { width: '100%', height: 200 }]} />
+                    </View>
                 )}
             </View>
 
@@ -198,9 +234,7 @@ export default function HomeAgricultorScreen({ navigation }) {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F3F4F6' },
     header: { paddingHorizontal: 20, paddingTop: 50, paddingBottom: 30, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
-    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
-    brand: { fontSize: 22, fontWeight: '900', color: '#FFF', letterSpacing: 0.5 },
-    brandPro: { fontSize: 10, backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden', color: '#A7F3D0' },
+    headerTop: { flexDirection: 'column', alignItems: 'flex-start' },
     salutation: { fontSize: 18, color: '#FFFFFF', fontWeight: 'bold' },
     subSalutation: { fontSize: 12, color: '#D1FAE5' },
     profileBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12 },
@@ -208,31 +242,41 @@ const styles = StyleSheet.create({
     bellBadge: { position: 'absolute', top: 2, right: 4, backgroundColor: '#EF4444', minWidth: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
     bellBadgeText: { color: '#FFF', fontSize: 9, fontWeight: 'bold' },
 
-    kpiRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#142233', padding: 15, borderRadius: 16, shadowColor: '#10B981', shadowOpacity: 0.1, shadowRadius: 10, elevation: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-    kpiItem: { flex: 1, alignItems: 'center' },
-    kpiLabel: { fontSize: 9, color: '#9CA3AF', fontWeight: '900', marginBottom: 4, letterSpacing: 0.5 },
-    kpiValue: { fontSize: 14, color: '#FFF', fontWeight: 'bold' },
-    kpiEmoji: { fontSize: 14 },
-    unit: { fontSize: 10, color: '#6B7280' },
-    vr: { width: 1, height: 25, backgroundColor: 'rgba(255,255,255,0.1)' },
-
-    content: { flex: 1, marginTop: -10 },
+    content: { flex: 1, marginTop: -20 },
     scroll: { padding: 20 },
 
-    alertBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', padding: 12, borderRadius: 12, marginBottom: 20, gap: 10, borderLeftWidth: 4, borderLeftColor: '#F59E0B' },
-    alertText: { flex: 1, fontSize: 11, fontWeight: 'bold', color: '#92400E' },
+    summaryCarousel: { paddingBottom: 10, flexDirection: 'row', gap: 12 },
+    summaryCard: { width: 140, padding: 16, borderRadius: 16, borderWidth: 1, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3 },
+    summaryIcon: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+    summaryTitle: { fontSize: 10, fontWeight: 'bold', marginBottom: 4, letterSpacing: 0.5 },
+    summaryValue: { fontSize: 16, fontWeight: 'bold' },
 
-    sectionTitle: { fontSize: 12, fontWeight: '900', color: '#9CA3AF', marginBottom: 15, letterSpacing: 1 },
+    sectionTitle: { fontSize: 12, fontWeight: '900', marginBottom: 15, letterSpacing: 1 },
+    
+    problemBlock: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+    problemCard: { flex: 1, padding: 16, borderRadius: 16, borderWidth: 1, elevation: 1 },
+    problemHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+    problemValue: { fontSize: 22, fontWeight: 'bold' },
+    problemLabel: { fontSize: 12, fontWeight: '600' },
+
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-    card: { borderRadius: 18, padding: 10, alignItems: 'center', justifyContent: 'center', elevation: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-    iconCirclePremium: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.95)', shadowColor: 'rgba(255,255,255,0.20)', shadowOffset: {width: 0, height: 2}, shadowOpacity: 1, shadowRadius: 5, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-    cardTitle: { fontSize: 11, fontWeight: 'bold', textAlign: 'center' },
+    actionCard: { borderRadius: 18, padding: 10, height: 110, alignItems: 'center', justifyContent: 'center', elevation: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+    iconCirclePremium: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#FFFFFF', shadowColor: 'rgba(0,0,0,0.1)', shadowOffset: {width: 0, height: 2}, shadowOpacity: 1, shadowRadius: 4, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+    cardTitle: { fontSize: 11, fontWeight: 'bold', textAlign: 'center', color: '#FFFFFF' },
 
-    badge: { position: 'absolute', top: 5, right: 5, backgroundColor: '#EF4444', minWidth: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
-    badgeText: { color: '#FFF', fontSize: 9, fontWeight: 'bold' },
+    chartSection: { marginVertical: 48 }, // Espaçamento exigido de ~50px acima e abaixo
 
+    timeline: { padding: 20, borderRadius: 16, borderWidth: 1 },
+    timelineItem: { flexDirection: 'row', alignItems: 'flex-start' },
+    timelineDot: { width: 12, height: 12, borderRadius: 6, marginTop: 4, zIndex: 2 },
+    timelineLine: { width: 2, height: 24, marginLeft: 5, marginVertical: -4, zIndex: 1 },
+    timelineContent: { marginLeft: 16, flex: 1 },
+    timelineText: { fontSize: 13, fontWeight: '500' },
+    timelineTime: { fontSize: 11, marginTop: 4 },
+
+    loadingContainer: { padding: 20 },
     skeletonBlock: { backgroundColor: 'rgba(150,150,150,0.15)', borderRadius: 12 },
 
-    footer: { marginTop: 40, alignItems: 'center' },
-    version: { color: '#D1D5DB', fontSize: 10, fontWeight: 'bold' }
+    footer: { marginTop: 40, alignItems: 'center', paddingBottom: 20 },
+    version: { color: '#9CA3AF', fontSize: 10, fontWeight: 'bold' }
 });

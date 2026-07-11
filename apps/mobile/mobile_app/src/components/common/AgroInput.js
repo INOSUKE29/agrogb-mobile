@@ -16,35 +16,27 @@ export default function AgroInput({
     style,
     icon,
     editable = true,
+    ...props
 }) {
     const { theme } = useTheme();
     const [isFocused, setIsFocused] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
-    // Cores Dinâmicas baseadas no Tema Ativo
+    const isDark = theme?.theme_mode === 'dark';
     const activeColors = theme?.colors || {};
-    const isDark = theme?.dark || false;
+    const primaryColor = activeColors.primary || '#10B981';
     
-    // Fallbacks para Dark Premium ou Claro
-    const inputBg = !editable 
-        ? (isDark ? 'rgba(255,255,255,0.02)' : '#F9FAFB')
-        : (activeColors.inputBg || (isDark ? 'rgba(0,0,0,0.2)' : '#FFFFFF'));
-        
-    const placeholderColor = isDark ? '#6B7280' : '#9CA3AF';
-    const textColor = activeColors.inputText || (isDark ? '#F3F4F6' : '#1F2937');
-    const labelColor = activeColors.textMuted || (isDark ? '#9CA3AF' : '#6B7280');
+    // Novas Regras Rigorosas de UI/UX (Clean Premium)
+    // TEMA CLARO: Fundo branco, Borda D1D1D6, Texto Escuro, Placeholder 8E8E93
+    // TEMA ESCURO: Fundo 1C1C1E, Borda 3A3A3C, Texto Branco, Placeholder AEAEB2
     
-    const borderColor = error
-        ? (activeColors.error || '#EF4444')
-        : isFocused
-            ? (activeColors.primary || '#10B981')
-            : (activeColors.inputBorder || (isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0'));
-
+    const inputBg = isDark ? '#1C1C1E' : '#FFFFFF';
+    const borderColor = error ? '#EF4444' : isFocused ? primaryColor : (isDark ? '#3A3A3C' : '#D1D1D6');
+    const textColor = isDark ? '#FFFFFF' : '#1C1C1E';
+    const placeholderColor = isDark ? '#AEAEB2' : '#8E8E93';
+    const labelColor = isDark ? '#AEAEB2' : '#6B7280';
+    
     const actualSecureTextEntry = secureTextEntry && !isPasswordVisible;
-
-    // Métricas padronizadas compartilhadas com AgroButton
-    const standardHeight = theme?.metrics?.buttonHeight || 55;
-    const standardRadius = theme?.metrics?.radius || 12;
 
     return (
         <View style={[styles.container, style]}>
@@ -58,17 +50,15 @@ export default function AgroInput({
                 styles.inputContainer, 
                 { 
                     borderColor: borderColor, 
-                    backgroundColor: inputBg,
-                    height: standardHeight,
-                    borderRadius: standardRadius,
-                    borderWidth: isFocused ? 1.5 : 1, // Destaque extra no foco
+                    backgroundColor: !editable ? (isDark ? '#2C2C2E' : '#F5F5F7') : inputBg,
+                    borderWidth: isFocused ? 2 : 1,
                 }
             ]}>
                 {icon && (
                     <Ionicons 
                         name={icon} 
                         size={20} 
-                        color={isFocused ? (activeColors.primary || '#10B981') : placeholderColor} 
+                        color={isFocused ? primaryColor : placeholderColor} 
                         style={styles.icon} 
                     />
                 )}
@@ -86,6 +76,7 @@ export default function AgroInput({
                     editable={editable}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
+                    {...props}
                 />
 
                 {secureTextEntry && (
@@ -96,7 +87,7 @@ export default function AgroInput({
             </View>
 
             {error && (
-                <Text style={[styles.errorText, { color: activeColors.error || '#EF4444' }]}>
+                <Text style={styles.errorText}>
                     {error}
                 </Text>
             )}
@@ -106,7 +97,7 @@ export default function AgroInput({
 
 const styles = StyleSheet.create({
     container: {
-        marginBottom: 16, // Espaçamento padronizado
+        marginBottom: 16,
         width: '100%',
     },
     label: {
@@ -119,11 +110,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 15,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.02,
-        shadowRadius: 2,
-        elevation: 1,
+        height: 55,
+        borderRadius: 12,
     },
     icon: {
         marginRight: 10,
@@ -139,6 +127,6 @@ const styles = StyleSheet.create({
     errorText: {
         fontSize: 12,
         marginTop: 4,
+        color: '#EF4444'
     }
 });
-
