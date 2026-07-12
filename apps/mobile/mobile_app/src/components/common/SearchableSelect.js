@@ -53,32 +53,32 @@ export default function SearchableSelect({
         <View style={styles.container}>
             {label && <Text style={[styles.label, { color: textMutedColor }]}>{label}</Text>}
             <TouchableOpacity 
-                style={[styles.inputBox, { backgroundColor: isDark ? '#111827' : '#F8FAFC', borderColor: borderCol }]} 
+                style={[styles.inputBox, { backgroundColor: '#F5F5F7', borderColor: '#D1D1D6' }]} 
                 onPress={() => setModalVisible(true)}
             >
-                <Ionicons name={icon} size={18} color={textMutedColor} style={styles.icon} />
-                <Text style={[styles.inputText, { color: displayValue ? textColor : textMutedColor }]}>
+                <Ionicons name={icon} size={18} color="#6B7280" style={styles.icon} />
+                <Text style={[styles.inputText, { color: displayValue ? '#1C1C1E' : '#8E8E93' }]}>
                     {displayValue || placeholder}
                 </Text>
-                <Ionicons name="chevron-down" size={18} color={textMutedColor} />
+                <Ionicons name="chevron-down" size={18} color="#6B7280" />
             </TouchableOpacity>
 
             <Modal visible={modalVisible} transparent animationType="slide">
                 <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+                    <View style={[styles.modalContent, { backgroundColor: '#FFFFFF' }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={[styles.modalTitle, { color: textColor }]}>{label || 'Selecione'}</Text>
+                            <Text style={[styles.modalTitle, { color: '#1C1C1E' }]}>{label || 'Selecione'}</Text>
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <Ionicons name="close-circle" size={28} color={textMutedColor} />
+                                <Ionicons name="close-circle" size={28} color="#6B7280" />
                             </TouchableOpacity>
                         </View>
                         
-                        <View style={[styles.searchBox, { backgroundColor: isDark ? '#111827' : '#F3F4F6' }]}>
-                            <Ionicons name="search" size={18} color={textMutedColor} style={styles.searchIcon} />
+                        <View style={[styles.searchBox, { backgroundColor: '#F5F5F7', borderWidth: 1, borderColor: '#D1D1D6' }]}>
+                            <Ionicons name="search" size={18} color="#6B7280" style={styles.searchIcon} />
                             <TextInput
-                                style={[styles.searchInput, { color: textColor }]}
+                                style={[styles.searchInput, { color: '#1C1C1E' }]}
                                 placeholder="Buscar..."
-                                placeholderTextColor={textMutedColor}
+                                placeholderTextColor="#8E8E93"
                                 value={search}
                                 onChangeText={setSearch}
                                 autoFocus
@@ -91,16 +91,16 @@ export default function SearchableSelect({
                             showsVerticalScrollIndicator={false}
                             renderItem={({ item }) => (
                                 <TouchableOpacity 
-                                    style={[styles.optionItem, { borderBottomColor: borderCol }]}
+                                    style={[styles.optionItem, { borderBottomColor: '#E5E7EB' }]}
                                     onPress={() => handleSelect(item)}
                                 >
-                                    <Text style={[styles.optionText, { color: textColor }]}>{item.name}</Text>
+                                    <Text style={[styles.optionText, { color: '#1C1C1E' }]}>{item.name}</Text>
                                     {value === item.id && <Ionicons name="checkmark-circle" size={20} color="#10B981" />}
                                 </TouchableOpacity>
                             )}
                             ListEmptyComponent={
                                 <View style={styles.emptyBox}>
-                                    <Text style={[styles.emptyText, { color: textMutedColor }]}>Nenhum item encontrado.</Text>
+                                    <Text style={[styles.emptyText, { color: '#6B7280' }]}>Nenhum item encontrado.</Text>
                                     {allowCustom && search.trim() !== '' && (
                                         <TouchableOpacity style={styles.customBtn} onPress={handleCustom}>
                                             <Ionicons name="add-circle-outline" size={18} color="#10B981" />

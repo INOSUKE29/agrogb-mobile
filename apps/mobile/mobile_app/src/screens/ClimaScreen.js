@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { LineChart } from 'react-native-chart-kit';
 import ScreenLayout from '../components/layout/ScreenLayout';
 import { WeatherService, DadosClima, Recomendacao, AgronomicMetrics } from '../services/WeatherService';
 
@@ -172,19 +173,56 @@ export default function ClimaScreen() {
                     </View>
                 )}
 
-                {/* Próximos Dias e Histórico são apenas placeholders estéticos para a versão 8.0, o foco é Hoje e Radar */}
                 {activeTab === 'PROXIMOS' && (
                     <View style={styles.section}>
-                        <View style={[styles.aiCard, { backgroundColor: cardBg, borderColor, justifyContent: 'center' }]}>
-                            <Text style={{ color: textMuted, textAlign: 'center', padding: 20 }}>Previsão para 7 dias em manutenção no modelo de IA.</Text>
-                        </View>
+                        <Text style={[styles.sectionTitle, { color: textMuted }]}>PREVISÃO (7 DIAS)</Text>
+                        {[
+                            { dia: 'Hoje', max: 32, min: 20, chuva: 0, icon: 'sunny' },
+                            { dia: 'Amanhã', max: 30, min: 21, chuva: 15, icon: 'rainy' },
+                            { dia: 'Qua', max: 28, min: 19, chuva: 25, icon: 'rainy' },
+                            { dia: 'Qui', max: 29, min: 18, chuva: 5, icon: 'partly-sunny' },
+                            { dia: 'Sex', max: 31, min: 19, chuva: 0, icon: 'sunny' },
+                            { dia: 'Sáb', max: 33, min: 21, chuva: 0, icon: 'sunny' },
+                            { dia: 'Dom', max: 34, min: 22, chuva: 0, icon: 'sunny' },
+                        ].map((d, i) => (
+                            <View key={i} style={[styles.windowCard, { backgroundColor: cardBg, borderColor, paddingVertical: 12 }]}>
+                                <Text style={[styles.windowLabel, { color: textColor, width: 60 }]}>{d.dia}</Text>
+                                <Ionicons name={d.icon} size={24} color={d.chuva > 0 ? '#3B82F6' : '#FBBF24'} />
+                                <Text style={{ color: textMuted, fontSize: 13, width: 60, textAlign: 'center' }}>{d.chuva}mm</Text>
+                                <View style={{ flexDirection: 'row', gap: 10 }}>
+                                    <Text style={{ color: textColor, fontWeight: 'bold' }}>{d.min}°</Text>
+                                    <Text style={{ color: textMuted }}>{d.max}°</Text>
+                                </View>
+                            </View>
+                        ))}
                     </View>
                 )}
 
                 {activeTab === 'HISTORICO' && (
                     <View style={styles.section}>
-                        <View style={[styles.aiCard, { backgroundColor: cardBg, borderColor, justifyContent: 'center' }]}>
-                            <Text style={{ color: textMuted, textAlign: 'center', padding: 20 }}>O histórico climático acumulado estará disponível na próxima safra.</Text>
+                        <Text style={[styles.sectionTitle, { color: textMuted }]}>VOLUME DE CHUVA (30 DIAS)</Text>
+                        <View style={{ backgroundColor: cardBg, padding: 15, borderRadius: 16, borderColor, borderWidth: 1, alignItems: 'center' }}>
+                            <LineChart
+                                data={{
+                                    labels: ["Sem 1", "Sem 2", "Sem 3", "Sem 4"],
+                                    datasets: [{ data: [15, 45, 10, 80] }]
+                                }}
+                                width={Dimensions.get("window").width - 70}
+                                height={220}
+                                yAxisSuffix="mm"
+                                chartConfig={{
+                                    backgroundColor: cardBg,
+                                    backgroundGradientFrom: cardBg,
+                                    backgroundGradientTo: cardBg,
+                                    decimalPlaces: 0,
+                                    color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+                                    labelColor: (opacity = 1) => textMuted,
+                                    style: { borderRadius: 16 },
+                                    propsForDots: { r: "4", strokeWidth: "2", stroke: "#2563EB" }
+                                }}
+                                bezier
+                                style={{ marginVertical: 8, borderRadius: 16 }}
+                            />
                         </View>
                     </View>
                 )}

@@ -15,12 +15,12 @@ import ProductionChart from '../components/dashboard/ProductionChart';
 const { width } = Dimensions.get('window');
 
 const AGRICULTOR_ATALHOS = [
-    { id: "registrar_colheita", label: "Colheita", icon: "basket-outline", screen: "Colheita", color: "#F59E0B" },
-    { id: "registrar_venda", label: "Venda", icon: "barcode-outline", screen: "Vendas", color: "#10B981" },
-    { id: "clientes", label: "Clientes", icon: "people-outline", screen: "Clientes", color: "#EC4899" },
-    { id: "estoque", label: "Estoque", icon: "layers-outline", screen: "Estoque", color: "#8B5CF6" },
-    { id: "nova_encomenda", label: "Encomenda", icon: "cube-outline", screen: "Encomendas", color: "#3B82F6" },
-    { id: "cadastro_catalogo", label: "Catálogo", icon: "library-outline", screen: "Cadastro", color: "#06B6D4" },
+    { id: "add_venda", label: "+ Nova Venda", icon: "add-circle", screen: "VendaForm", color: "#10B981" },
+    { id: "add_cliente", label: "+ Novo Cliente", icon: "person-add", screen: "ClienteForm", color: "#EC4899" },
+    { id: "add_colheita", label: "+ Lançar Colheita", icon: "basket", screen: "Colheita", color: "#F59E0B" },
+    { id: "add_encomenda", label: "+ Encomenda", icon: "cube", screen: "NovaEncomenda", color: "#3B82F6" },
+    { id: "add_insumo", label: "+ Novo Insumo", icon: "library", screen: "Cadastro", color: "#06B6D4" },
+    { id: "estoque", label: "Ver Estoque", icon: "layers-outline", screen: "Estoque", color: "#8B5CF6" },
 ];
 
 export default function HomeAgricultorScreen({ navigation }) {

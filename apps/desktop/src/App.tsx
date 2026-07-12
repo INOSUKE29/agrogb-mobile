@@ -81,7 +81,6 @@ function App() {
               {/* PORTAL ADMIN */}
               <Route path="admin" element={<OverviewScreen />} />
               <Route path="admin/usuarios" element={<UsersScreen />} />
-              <Route path="admin/planos" element={<div className="text-white p-8">Em breve: Gestão de Planos e Assinaturas (Admin)</div>} />
               <Route path="admin/financeiro" element={<FinancialScreen />} />
               <Route path="admin/biblioteca" element={<AdminCatalogScreen />} />
 
@@ -96,7 +95,6 @@ function App() {
               <Route path="agronomo/notificacoes" element={<NotificacoesFullScreen />} />
               <Route path="agronomo/receituarios" element={<ReceituarioAgronomicoScreen />} />
               <Route path="agronomo/biblioteca" element={<BibliotecaTecnicaScreen />} />
-              <Route path="agronomo/preferencias" element={<div className="text-white p-8">Em breve: Preferências do Agrônomo</div>} />
               
               {/* PORTAL CLIENTE (PRODUTOR) */}
               <Route path="cliente" element={<ClienteDashboard />} />

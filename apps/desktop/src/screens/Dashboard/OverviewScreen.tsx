@@ -91,7 +91,7 @@ export default function OverviewScreen() {
                 </div>
             </div>
 
-            {/* KPI CARDS (ADMIN MOCKUP) */}
+            {/* KPI CARDS (DADOS REAIS) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
                 
                 <div className="glass p-6 rounded-2xl relative overflow-hidden group">

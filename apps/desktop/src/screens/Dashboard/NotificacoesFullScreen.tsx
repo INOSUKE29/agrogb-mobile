@@ -22,53 +22,12 @@ interface Notification {
   read: boolean;
 }
 
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'weather',
-    title: 'Alerta Climático',
-    message: 'Chuva prevista para os próximos 3 dias na região da Fazenda Bela Vista. Considere adiar a pulverização.',
-    timestamp: 'Há 2 horas',
-    read: false,
-  },
-  {
-    id: '2',
-    type: 'recommendation',
-    title: 'Recomendação #123 Visualizada',
-    message: 'O agrônomo Carlos Silva visualizou e aprovou a recomendação de manejo para o talhão Sul.',
-    timestamp: 'Há 5 horas',
-    read: false,
-  },
-  {
-    id: '3',
-    type: 'inventory',
-    title: 'Estoque Baixo',
-    message: 'Estoque de Nitrato de Amônio está abaixo de 15%. Necessário realizar novo pedido.',
-    timestamp: 'Há 1 dia',
-    read: true,
-  },
-  {
-    id: '4',
-    type: 'alert',
-    title: 'Manutenção Preventiva',
-    message: 'Trator JD-8R atingiu 500 horas de uso. Agende a manutenção preventiva.',
-    timestamp: 'Há 2 dias',
-    read: true,
-  },
-  {
-    id: '5',
-    type: 'recommendation',
-    title: 'Nova Recomendação Gerada',
-    message: 'Nova recomendação de calagem gerada pelo sistema baseada na última análise de solo.',
-    timestamp: 'Há 3 dias',
-    read: true,
-  }
-];
+
 
 type FilterType = 'all' | 'unread' | 'alerts' | 'recommendations';
 
 export const NotificacoesFullScreen: React.FC = () => {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
 
   const handleMarkAllAsRead = () => {
@@ -233,6 +192,14 @@ export const NotificacoesFullScreen: React.FC = () => {
                 </div>
               </div>
             ))
+          ) : (
+            <div className="flex flex-col items-center justify-center p-12 glass rounded-2xl">
+              <Bell className="w-16 h-16 text-[var(--color-muted)] opacity-30 mb-4" />
+              <h3 className="text-xl font-bold text-white mb-2">Sua caixa de entrada está vazia</h3>
+              <p className="text-[var(--color-muted)] text-center max-w-md">
+                Nenhuma notificação no momento. Tudo certo nas operações!
+              </p>
+            </div>
           )}
         </div>
       </div>

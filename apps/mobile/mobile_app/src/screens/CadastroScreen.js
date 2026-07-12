@@ -16,7 +16,12 @@ const { width } = Dimensions.get('window');
 
 // --- CONFIGURAÇÃO DE CATEGORIAS (UX) ---
 const CATEGORIES = {
-    // Novas categorias estruturadas e profissionais de mercado
+    // Categorias de Ouro - Não remover (Manejo e Saúde)
+    BIOESTIMULANTES: { label: 'Bioestimulantes / Aminoácidos', icon: 'leaf', color: '#16A34A', bg: '#DCFCE7', fields: ['composicao', 'fabricante', 'dose'] },
+    NUTRICAO_MINERAL: { label: 'Nutrição Mineral (Cálcio / Boro / Micronutrientes)', icon: 'flask', color: '#06B6D4', bg: '#ECFEFF', fields: ['composicao', 'nutrientes', 'fabricante', 'dose'] },
+    SAUDE_ANIMAL: { label: 'Saúde Animal / Vacinas / Medicamentos', icon: 'medical', color: '#DC2626', bg: '#FEE2E2', fields: ['principio', 'fabricante', 'dose', 'bula'] },
+
+    // Categorias Padrão
     FERTILIZANTES: { label: 'Fertilizantes', icon: 'leaf-outline', color: '#16A34A', bg: '#DCFCE7', fields: ['composicao', 'nutrientes', 'fabricante', 'dose', 'bula'] },
     DEFENSIVOS: { label: 'Defensivos Agrícolas', icon: 'flask-outline', color: '#DC2626', bg: '#FEE2E2', fields: ['principio', 'classe', 'fabricante', 'dose', 'bula'] },
     BIOLOGICOS: { label: 'Insumos Biológicos', icon: 'bug-outline', color: '#8B5CF6', bg: '#F5F3FF', fields: ['principio', 'fabricante', 'dose', 'bula'] },
@@ -25,13 +30,6 @@ const CATEGORIES = {
     NUTRI_FOLIAR: { label: 'Nutrição Foliar', icon: 'water-outline', color: '#06B6D4', bg: '#ECFEFF', fields: ['composicao', 'nutrientes', 'fabricante', 'dose', 'bula'] },
     SEMENTES: { label: 'Sementes / Mudas', icon: 'rose-outline', color: '#10B981', bg: '#ECFDF5', fields: ['fabricante'] },
     
-    // [TODO/FUTURO - BIBLIOTECA GLOBAL] 
-    // Atualmente a Biblioteca Global foca fortemente em PRODUTOS e INSUMOS.
-    // Futuramente, a Biblioteca poderá ser expandida para catalogar DOENÇAS e PRAGAS de cada plantio,
-    // permitindo anexar fotos de referência, níveis de severidade e protocolos de tratamento.
-    // Isso deve ser validado no roadmap pois "pode ou não acontecer".
-    // DOENCAS: { label: 'Doenças / Pragas', icon: 'bug-outline', color: '#991B1B', bg: '#FEE2E2', fields: ['nome_cientifico', 'sintomas', 'fotos', 'culturas_afetadas'] },
-
     // Legado e estruturais
     DEFENSIVO: { label: 'Defensivo Agrícola', icon: 'flask-outline', color: '#DC2626', bg: '#FEE2E2', fields: ['principio', 'classe', 'fabricante', 'dose', 'bula'] },
     FERTILIZANTE: { label: 'Fertilizante / Adubo', icon: 'leaf-outline', color: '#16A34A', bg: '#DCFCE7', fields: ['composicao', 'nutrientes', 'fabricante', 'dose'] },

@@ -9,10 +9,24 @@ import {
     CheckCircle,
     Clock,
     Activity,
-    Leaf
+    Leaf,
+    Bell,
+    Calendar as CalendarIcon,
+    CheckCircle2,
+    ChevronRight,
+    Cloud,
+    CloudDrizzle,
+    CloudLightning,
+    Droplets,
+    Search,
+    Sprout,
+    Wind,
+    Package,
+    ShieldCheck
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { supabase } from '../../services/supabase';
+import { WeatherService, DadosClima, Recomendacao } from '../../services/WeatherService';
 import { useNavigate } from 'react-router-dom';
 
 export default function AgroDashboard() {
@@ -78,8 +92,40 @@ export default function AgroDashboard() {
                     recomendacoesAprovadas: countRecAprovadas || 0
                 });
 
-                // 4. Fazendas em Alerta (Monitor) - Real (Em branco até existir módulo de alertas no IoT)
-                setAlertasFazendas([]);
+                // 4. Fazendas em Alerta (Monitor) - Real
+                const { data: clientesData } = await supabase
+                    .from('profiles')
+                    .select('id, full_name, farm_name')
+                    .eq('role', 'CLIENTE')
+                    .limit(5);
+
+                if (clientesData) {
+                    const alertas: any[] = [];
+                    for (const cli of clientesData) {
+                        try {
+                            const clima = await WeatherService.fetchHyperlocalWeather(0, 0); // Coordenadas mockadas localmente pelo serviço
+                            const recs = WeatherService.gerarRecomendacoesAgro(clima);
+                            const recsAlerta = recs.filter(r => ['AVISO', 'ALERTA', 'CRITICO', 'PERIGO_GEADA'].includes(r.tipo));
+                            
+                            if (recsAlerta.length > 0) {
+                                recsAlerta.forEach((rec, idx) => {
+                                    alertas.push({
+                                        id: `${cli.id}-${idx}`,
+                                        cliente: cli.farm_name || 'Fazenda Não Nomeada',
+                                        produtor: cli.full_name || 'Produtor',
+                                        problema: rec.mensagem,
+                                        criticidade: rec.tipo === 'CRITICO' || rec.tipo === 'PERIGO_GEADA' ? 'critica' : rec.tipo === 'ALERTA' ? 'alta' : 'media'
+                                    });
+                                });
+                            }
+                        } catch (e) {
+                            console.error('Erro ao buscar clima para cliente:', e);
+                        }
+                    }
+                    setAlertasFazendas(alertas);
+                } else {
+                    setAlertasFazendas([]);
+                }
 
                 // 5. Agenda do Dia (Real)
                 const today = new Date().toISOString().split('T')[0];
