@@ -109,3 +109,8 @@ Não seja passivo. Atue como um sócio intelectual focado em execução, clareza
 * **Dropdowns Operacionais:** Telas como "Produção e Colheita", "Estoque" ou "Descarte" nunca devem confiar exclusivamente na tabela `v2_produtos` para popular seus `<SearchableSelect />`. 
 * **Mesclagem Obrigatória:** Sempre realize o fetch simultâneo na tabela `kb_products` e faça a mesclagem (merge) dos resultados com a tabela local/antiga (`v2_produtos` e `culturas`), padronizando as chaves (`nome` vs `name`) antes de passar para o componente visual.
 
+## Regra 18 - Proibição de Binários em Repositório (Limite de 100MB)
+**Nunca faça commit de artefatos de compilação.** O GitHub possui um limite estrito de 100MB por arquivo (e recomenda 50MB). Arquivos `.exe`, `.asar`, `.apk` ou pastas de compilação final (como `apps/desktop/release` e `apps/desktop/dist`) são estritamente proibidos no controle de versão.
+* Se essas pastas ou arquivos entrarem acidentalmente no Git, o comando `git push` irá falhar com o erro `GH001: Large files detected`.
+* A resolução exige a remoção cirúrgica do hitórico usando `git reset` seguido de deleção ou adição correta no `.gitignore`.
+* A pasta `release/` e arquivos de instalação devem ser gerados sob demanda via GitHub Actions ou localmente, apenas para testes manuais, sem envolvimento do tracker do git.

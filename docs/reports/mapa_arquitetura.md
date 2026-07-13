@@ -49,6 +49,12 @@ C:\Users\Bruno\Documents\AgroGB\
 - **Implementação do AgroStateOverlay:** Criamos o componente universal que encapsula os estados `loading`, `empty`, e `error` de forma padronizada.
 - **Prevenção de Quebra de Layout (Trinca de Ferro):** Envolvemos de forma sistêmica as telas de formulário (`CadastroScreen`, `ComprasScreen`, `VendasScreen`, `ColheitaScreen`) com a trinca de ferro `<SafeAreaView>`, `<KeyboardAvoidingView>`, `<ScrollView>`.
 - **Rotas e UX:** Padronização completa do Header em módulos como `ManejoLavoura`, `Relatorios` e adição compulsória do botão Voltar `<-`.
+
+## Evolução Recente (Julho/2026) - Paridade Arquitetural e Faxina de Repositório
+- **Migração do Cadastro (Regra 13):** A tabela genérica `cadastro` local do Mobile foi oficialmente extinta e substituída por `v2_produtos` e `sync_outbox`, estabelecendo 100% de paridade (Schema Match) com o banco PostgreSQL no Supabase.
+- **Central Climática e Dashboard:** Atualização da Home para incluir blocos interativos (Acesso Rápido, Indicadores Ouro do Catálogo) e resolução do gráfico de clima para exibir de forma Premium as previsões diárias, eliminando a dependência de falsos mapeamentos ou interceptadores.
+- **Faxina do Git (Limite de 100MB):** Foi feita uma compressão profunda e reset (`git reset --soft`) do histórico de versão para remover binários massivos (`.exe`, `.asar`) de 180MB que bloqueavam os deploys de GitHub Actions, garantindo CI/CD automáticos saudáveis.
+
 ## Próximos Passos (Imediatos)
 1. Iniciar o desenvolvimento dos Shared Services dentro da pasta `packages/` (transferindo lógicas do Mobile para a raiz).
 2. Plugar o React Native (Mobile) e o Vite/Next.js (Desktop) simultaneamente neste novo motor compartilhado.
