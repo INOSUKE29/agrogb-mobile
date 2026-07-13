@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     field: { marginBottom: 20 },
     label: { color: '#94A3B8', fontSize: 11, fontWeight: '800', letterSpacing: 1.5, marginBottom: 8 },
     inputContainer: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D1D1D6', borderRadius: 16, height: 56, justifyContent: 'center' },
-    inputContainerFocused: { borderColor: '#10B981', backgroundColor: '#FFFFFF', elevation: 2 } },
+    inputContainerFocused: { borderColor: '#10B981', backgroundColor: '#FFFFFF', elevation: 2 },
     input: { flex: 1, color: '#1C1C1E', fontSize: 15, fontWeight: '600', paddingHorizontal: 16, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) },
 
     // Sections
