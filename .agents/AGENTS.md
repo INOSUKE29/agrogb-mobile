@@ -114,3 +114,14 @@ Não seja passivo. Atue como um sócio intelectual focado em execução, clareza
 * Se essas pastas ou arquivos entrarem acidentalmente no Git, o comando `git push` irá falhar com o erro `GH001: Large files detected`.
 * A resolução exige a remoção cirúrgica do hitórico usando `git reset` seguido de deleção ou adição correta no `.gitignore`.
 * A pasta `release/` e arquivos de instalação devem ser gerados sob demanda via GitHub Actions ou localmente, apenas para testes manuais, sem envolvimento do tracker do git.
+
+## Regra 19 - Tratamento Rigoroso de Erros (Fim do Catch Silencioso)
+**Nunca** omita ou "engula" erros de requisições de banco de dados (Supabase).
+* **Motivo:** Falhas de permissão (RLS) ou quedas do banco não lançam exceções globais; elas simplesmente retornam 
+ull no objeto de dados e preenchem o objeto error. Se o erro for ignorado, a interface exibirá uma lista vazia, mascarando um problema grave de infraestrutura.
+* **Obrigatório:** Todo wait supabase.from() deve validar a resposta com if (error). Caso exista erro, ele deve ser obrigatoriamente registrado no console e exibido ao usuário (via 	oast.error no Desktop ou Alert.alert no Mobile).
+
+## Regra 20 - Diagn�stico Falso-Positivo na Nuvem (SyntaxError Oculto)
+**Nunca confie cegamente em mensagens de queda de servi�o no GitHub Actions (Ex: 'Cache Error 503' ou 'Services aren't available').** Frequentemente, pequenos erros de sintaxe (como uma chave } extra num StyleSheet de uma tela rec�m-atualizada) quebram a compila��o (Metro Bundler) prematuramente. A queda � t�o inesperada que corrompe o salvamento do cache da nuvem, fazendo com que o log exiba a falha do cache em grande destaque e oculte o verdadeiro SyntaxError nas linhas anteriores.
+* **Preven��o:** Sempre fa�a a busca pelas palavras SyntaxError ou Unexpected token no log bruto antes de assumir que a infraestrutura da nuvem caiu.
+* Sempre valide o fechamento de par�nteses e chaves ao aplicar o Design Premium em telas.

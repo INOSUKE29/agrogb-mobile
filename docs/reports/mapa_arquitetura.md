@@ -70,3 +70,5 @@ C:\Users\Bruno\Documents\AgroGB\
 Para garantir máxima eficiência no desenvolvimento do AgroGB, estabelecemos um modelo de **Liderança Técnica (Tech Lead)**:
 - **Antigravity (Eu):** Atuo como Tech Lead e desenvolvedor focado no momento. Faço modificações rápidas, ajustes de UI/UX, resolvo erros instantâneos e tomo decisões de arquitetura em pair programming.
 - **Jules (Agente Autônomo Google):** Atua como desenvolvedor de background. Recebe as tarefas que eu delego via terminal (ex: `jules new "tarefa"`) para realizar o "trabalho pesado" (refatorações em massa, criação de testes, atualizações em dezenas de arquivos) de forma assíncrona, abrindo Pull Requests no GitHub quando finalizar.
+
+- **Descoberta Cr�tica de CI/CD (Regra 20):** Identificamos que falhas silenciosas de sintaxe no React Native (Metro Bundler) podem mascarar os logs do GitHub Actions, fazendo o sistema reportar um 'Erro de Cache (503)' falso. O processo de depura��o foi atualizado para for�ar a busca profunda por 'SyntaxError' em quebras de nuvem.
