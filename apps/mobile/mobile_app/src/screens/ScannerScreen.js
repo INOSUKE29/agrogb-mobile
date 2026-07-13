@@ -54,19 +54,19 @@ export default function ScannerScreen({ navigation, route }) {
         // Simulation of AI processing
         setTimeout(() => {
             setProcessing(false);
-            const mockData = {
-                nome: "FUNGICIDA PREMIUM X1",
-                tipo: "DEFENSIVO",
-                observacao: "Ingrediente Ativo: Tebuconazol. Dosagem recomendada: 0.5L/ha. Carência: 14 dias.",
+            const scanResult = {
+                nome: "",
+                tipo: "",
+                observacao: "Extração automática indisponível. Por favor, preencha manualmente.",
                 images: { produto: imgProduto, rotulo: imgRotulo }
             };
 
-            Alert.alert("Inteligência Artificial", "Processamento concluído! Os dados técnicos foram extraídos com sucesso.");
+            Alert.alert("Aviso", "As imagens foram salvas, mas o serviço de inteligência artificial para extração de texto está indisponível no momento.");
             if (route.params?.onScanComplete) {
-                route.params.onScanComplete(mockData);
+                route.params.onScanComplete(scanResult);
             }
             navigation.goBack();
-        }, 2500);
+        }, 1500);
     };
 
     const reset = () => {

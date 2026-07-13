@@ -136,11 +136,23 @@ export default function NovaEncomendaScreen({ route }) {
                     WHERE id = ?`,
                     [clienteId, clienteVal?.nome || 'Cliente', produtoId, produtoVal?.nome || 'Produto', unidade, qtdTotal, novaRestante, valUnit, dataPrevista, novoStatus, observacao, now, editingId]
                 );
+
+                const payload = JSON.stringify({ id: editingId, quantidade_total: qtdTotal, quantidade_restante: novaRestante, valor_unitario: valUnit, status: novoStatus, data_prevista: dataPrevista, observacao });
+                await executeQuery(
+                    `INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, 'v2_encomendas', ?, 'UPDATE', ?, 'PENDENTE', ?)`,
+                    [uuidv4(), editingId, payload, now]
+                );
             } else {
                 const novoId = uuidv4();
                 await executeQuery(
                     `INSERT INTO v2_encomendas (id, cliente_id, cliente_nome, produto_id, produto_nome, unidade, quantidade_total, quantidade_restante, valor_unitario, data_prevista, status, observacao, created_at, is_deleted, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDENTE', ?, ?, 0, 0)`,
                     [novoId, clienteId, clienteVal?.nome || 'Cliente', produtoId, produtoVal?.nome || 'Produto', unidade, qtdTotal, qtdTotal, valUnit, dataPrevista, observacao, now]
+                );
+
+                const payload = JSON.stringify({ id: novoId, cliente_id: clienteId, produto_id: produtoId, quantidade_total: qtdTotal, valor_unitario: valUnit, data_prevista: dataPrevista });
+                await executeQuery(
+                    `INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, 'v2_encomendas', ?, 'INSERT', ?, 'PENDENTE', ?)`,
+                    [uuidv4(), novoId, payload, now]
                 );
             }
             navigation.goBack();
@@ -156,7 +168,15 @@ export default function NovaEncomendaScreen({ route }) {
                 text: 'Sim',
                 style: 'destructive',
                 onPress: async () => {
-                    await executeQuery(`UPDATE v2_encomendas SET is_deleted = 1, sync_status = 0, last_updated = ? WHERE id = ?`, [new Date().toISOString(), editingId]);
+                    const now = new Date().toISOString();
+                    await executeQuery(`UPDATE v2_encomendas SET is_deleted = 1, sync_status = 0, last_updated = ? WHERE id = ?`, [now, editingId]);
+                    
+                    const payload = JSON.stringify({ id: editingId, is_deleted: 1 });
+                    await executeQuery(
+                        `INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, 'v2_encomendas', ?, 'UPDATE', ?, 'PENDENTE', ?)`,
+                        [uuidv4(), editingId, payload, now]
+                    );
+                    
                     navigation.goBack();
                 }
             }
@@ -371,9 +391,9 @@ const styles = StyleSheet.create({
     
     // Inputs (Fake Web <select> bugfix logic applied here)
     inputContainer: {
-        backgroundColor: '#0B111A',
+        backgroundColor: '#FFFFFF',
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: '#D1D1D6',
         borderRadius: 16,
         height: 56,
         flexDirection: 'row',
@@ -381,19 +401,19 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     inputContainerActive: {
-        borderColor: '#34D399',
-        backgroundColor: '#0B151F',
-        shadowColor: '#34D399',
+        borderColor: '#10B981',
+        backgroundColor: '#FFFFFF',
+        shadowColor: '#10B981',
         shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
-        elevation: 5,
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 2,
     },
     
     textInputFull: {
         flex: 1,
         height: 56,
-        color: '#FFF',
+        color: '#1C1C1E',
         fontSize: 16,
         fontWeight: '600',
         paddingHorizontal: 16,
@@ -407,7 +427,7 @@ const styles = StyleSheet.create({
     textArea: {
         flex: 1,
         width: '100%',
-        color: '#FFF',
+        color: '#1C1C1E',
         fontSize: 15,
         padding: 16,
         textAlignVertical: 'top',

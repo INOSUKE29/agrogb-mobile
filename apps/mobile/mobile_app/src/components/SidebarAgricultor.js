@@ -106,30 +106,23 @@ export default function SidebarAgricultor({ visible, onClose }) {
                         <MenuItem icon="leaf-outline" label="Culturas" screen="Culturas" />
                         <MenuItem icon="leaf-outline" label="Plantios" screen="Plantio" />
                         
-                        {false && (
-                        <>
                         <MenuItem icon="earth-outline" label="Manejo" screen="ManejoLavoura" />
-                        <MenuItem icon="water-outline" label="Irrigação" screen="Irrigacao" />
-                        <MenuItem icon="flask-outline" label="Fertirrigação" screen="Fertirrigacao" />
-                        <MenuItem icon="shield-checkmark-outline" label="Aplicações" screen="Aplicacoes" />
                         <MenuItem icon="book-outline" label="Caderno de Campo" screen="CadernoCampo" />
-                        </>
-                        )}
 
                         <View style={styles.divider} />
                         <Text style={styles.sectionTitle}>ADMINISTRATIVO & ESTOQUE</Text>
+                        <MenuItem icon="library-outline" label="Catálogo (Local)" screen="Cadastro" />
+                        <MenuItem icon="cube-outline" label="Estoque" screen="Estoque" />
+                        
+                        {false && (
+                        <>
                         <MenuItem icon="people-outline" label="Clientes" screen="Clientes" />
                         <MenuItem icon="library-outline" label="Catálogo (Biblioteca)" screen="BibliotecaGlobal" />
                         <MenuItem icon="barcode-outline" label="Vendas" screen="Vendas" />
                         <MenuItem icon="cube-outline" label="Encomendas" screen="Encomendas" />
                         <MenuItem icon="document-text-outline" label="Relatórios" screen="Relatorios" />
-                        
-                        <MenuItem icon="cube-outline" label="Estoque" screen="Estoque" />
                         <MenuItem icon="cart-outline" label="Compras" screen="Compras" />
                         <MenuItem icon="business-outline" label="Fornecedores" screen="Fornecedores" />
-                        
-                        {false && (
-                        <>
                         <MenuItem icon="cash-outline" label="Custos" screen="Custos" />
                         </>
                         )}

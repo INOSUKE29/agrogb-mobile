@@ -111,13 +111,28 @@ export default function MonitoramentoScreen({ navigation }) {
     const saveFinal = async () => {
         try {
             const uuid = form.uuid;
+            const now = new Date().toISOString();
+            
             await executeQuery(`INSERT INTO v2_monitoramentos (uuid, area_id, cultura_id, data, observacao_usuario, status, nivel_confianca, geoloc, criado_em, last_updated) VALUES (?,?,?,?,?,?,?,?,?,?)`,
-                [uuid, form.area?.uuid || 'N/A', form.area?.nome || form.cultura || 'GERAL', form.data, form.observacao.toUpperCase(), 'CONFIRMADO', analysis?.nivel_confianca_sugerido || 'INFORMATIVO', form.geoloc || null, new Date().toISOString(), new Date().toISOString()]
+                [uuid, form.area?.uuid || 'N/A', form.area?.nome || form.cultura || 'GERAL', form.data, form.observacao.toUpperCase(), 'CONFIRMADO', analysis?.nivel_confianca_sugerido || 'INFORMATIVO', form.geoloc || null, now, now]
             );
-            if (form.mediaURI) await executeQuery(`INSERT INTO v2_monitoramentos_midia (uuid, monitoramento_uuid, tipo, caminho_arquivo, criado_em, last_updated) VALUES (?,?,?,?,?,?)`, [uuidv4(), uuid, form.mediaType, form.mediaURI, new Date().toISOString(), new Date().toISOString()]);
-            if (analysis) await executeQuery(`INSERT INTO analise_ia (uuid, monitoramento_uuid, classificacao_principal, sintomas, causa_provavel, sugestao_controle, produtos_citados, criado_em, last_updated) VALUES (?,?,?,?,?,?,?,?,?)`,
-                [uuidv4(), uuid, analysis.classificacao_principal, analysis.sintomas, analysis.causa_provavel, analysis.sugestao_controle, analysis.produtos_citados, new Date().toISOString(), new Date().toISOString()]
-            );
+            const payload = JSON.stringify({ uuid, area_id: form.area?.uuid || 'N/A', cultura_id: form.area?.nome || form.cultura || 'GERAL', data: form.data, observacao_usuario: form.observacao.toUpperCase(), status: 'CONFIRMADO', nivel_confianca: analysis?.nivel_confianca_sugerido || 'INFORMATIVO', geoloc: form.geoloc || null });
+            await executeQuery(`INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, 'v2_monitoramentos', ?, 'INSERT', ?, 'PENDENTE', ?)`, [uuidv4(), uuid, payload, now]);
+
+            if (form.mediaURI) {
+                const mediaUuid = uuidv4();
+                await executeQuery(`INSERT INTO v2_monitoramentos_midia (uuid, monitoramento_uuid, tipo, caminho_arquivo, criado_em, last_updated) VALUES (?,?,?,?,?,?)`, [mediaUuid, uuid, form.mediaType, form.mediaURI, now, now]);
+                const mediaPayload = JSON.stringify({ uuid: mediaUuid, monitoramento_uuid: uuid, tipo: form.mediaType, caminho_arquivo: 'offline_storage' });
+                await executeQuery(`INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, 'v2_monitoramentos_midia', ?, 'INSERT', ?, 'PENDENTE', ?)`, [uuidv4(), mediaUuid, mediaPayload, now]);
+            }
+            if (analysis) {
+                const iaUuid = uuidv4();
+                await executeQuery(`INSERT INTO analise_ia (uuid, monitoramento_uuid, classificacao_principal, sintomas, causa_provavel, sugestao_controle, produtos_citados, criado_em, last_updated) VALUES (?,?,?,?,?,?,?,?,?)`,
+                    [iaUuid, uuid, analysis.classificacao_principal, analysis.sintomas, analysis.causa_provavel, analysis.sugestao_controle, analysis.produtos_citados, now, now]
+                );
+                const iaPayload = JSON.stringify({ uuid: iaUuid, monitoramento_uuid: uuid, classificacao_principal: analysis.classificacao_principal, sintomas: analysis.sintomas, causa_provavel: analysis.causa_provavel, sugestao_controle: analysis.sugestao_controle, produtos_citados: analysis.produtos_citados });
+                await executeQuery(`INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, 'analise_ia', ?, 'INSERT', ?, 'PENDENTE', ?)`, [uuidv4(), iaUuid, iaPayload, now]);
+            }
             Alert.alert('Sucesso', 'Monitoramento registrado com sucesso!');
             loadData();
             setScreen('LIST');
@@ -287,7 +302,11 @@ export default function MonitoramentoScreen({ navigation }) {
                     style: 'destructive',
                     onPress: async () => {
                         try {
+                            const { v4: uuidv4 } = require('uuid');
+                            const now = new Date().toISOString();
                             await executeQuery('DELETE FROM v2_monitoramentos WHERE uuid = ?', [uuid]);
+                            await executeQuery(`INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, 'v2_monitoramentos', ?, 'DELETE', '{}', 'PENDENTE', ?)`, [uuidv4(), uuid, now]);
+                            
                             await executeQuery('DELETE FROM v2_monitoramentos_midia WHERE monitoramento_uuid = ?', [uuid]);
                             await executeQuery('DELETE FROM analise_ia WHERE monitoramento_uuid = ?', [uuid]);
                             Alert.alert('Sucesso', 'Monitoramento excluído.');

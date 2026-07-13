@@ -192,14 +192,6 @@ export const NotificacoesFullScreen: React.FC = () => {
                 </div>
               </div>
             ))
-          ) : (
-            <div className="flex flex-col items-center justify-center p-12 glass rounded-2xl">
-              <Bell className="w-16 h-16 text-[var(--color-muted)] opacity-30 mb-4" />
-              <h3 className="text-xl font-bold text-white mb-2">Sua caixa de entrada está vazia</h3>
-              <p className="text-[var(--color-muted)] text-center max-w-md">
-                Nenhuma notificação no momento. Tudo certo nas operações!
-              </p>
-            </div>
           )}
         </div>
       </div>

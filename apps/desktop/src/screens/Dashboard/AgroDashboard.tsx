@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { supabase } from '../../services/supabase';
-import { WeatherService, DadosClima, Recomendacao } from '../../services/WeatherService';
+import { WeatherService, type DadosClima, type Recomendacao } from '../../services/WeatherService';
 import { useNavigate } from 'react-router-dom';
 
 export default function AgroDashboard() {
@@ -130,18 +130,18 @@ export default function AgroDashboard() {
                 // 5. Agenda do Dia (Real)
                 const today = new Date().toISOString().split('T')[0];
                 const { data: agendaReal } = await supabase
-                    .from('tarefas')
+                    .from('v2_tarefas')
                     .select('*')
                     .eq('responsavel_id', user.id)
-                    .eq('data_vencimento', today)
-                    .order('data_vencimento', { ascending: true });
+                    .eq('data_agendada', today)
+                    .order('data_agendada', { ascending: true });
                 
                 if (agendaReal) {
                     setAgendaDia(agendaReal.map(t => ({
                         id: t.id,
-                        hora: t.data_vencimento ? new Date(t.data_vencimento).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : '--:--',
+                        hora: t.data_agendada ? new Date(t.data_agendada).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : '--:--',
                         tarefa: t.titulo,
-                        local: t.local || 'Não especificado',
+                        local: t.fazenda_id || 'Não especificado',
                         status: t.status === 'CONCLUIDA' ? 'concluido' : t.status === 'EM_ANDAMENTO' ? 'em_andamento' : 'pendente'
                     })));
                 } else {

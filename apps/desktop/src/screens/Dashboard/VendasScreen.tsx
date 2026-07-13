@@ -52,26 +52,11 @@ export default function VendasScreen() {
                 { id: 'cli-1', nome: 'João Batista' },
                 { id: 'cli-2', nome: 'Supermercado Central' }
             ]);
-            setProdutos(prodData || [
-                { id: 'prod-1', cultura: 'Morango Premium', preco_venda: 45.0, unidade: 'CAIXA' },
-                { id: 'prod-2', cultura: 'Soja', preco_venda: 120.0, unidade: 'SACO' }
-            ]);
+            setClientes(cliData || []);
+            setProdutos(prodData || []);
 
-            if (error && error.code === '42P01') {
-                // Mock behavior se a tabela não existir
-                setVendas([
-                    {
-                        id: 'mock-v-1',
-                        cliente_nome: 'João Batista',
-                        produto_nome: 'Morango Premium',
-                        quantidade: 50,
-                        valor_unitario: 45.0,
-                        valor_total: 2250.0,
-                        observacao: 'Pagamento à vista',
-                        data_venda: new Date().toISOString().split('T')[0],
-                        created_at: new Date().toISOString()
-                    }
-                ]);
+            if (error) {
+                console.error(error);
             } else {
                 setVendas(venData || []);
             }
@@ -135,19 +120,9 @@ export default function VendasScreen() {
 
             const { error } = await supabase.from('v2_vendas').insert([payload]);
 
-            if (error && error.code === '42P01') {
-                // Modo simulação: atualiza o state local e cria transação fake
-                const novaVenda = { ...payload, id: crypto.randomUUID(), created_at: new Date().toISOString() };
-                setVendas([novaVenda, ...vendas]);
-                toast.success('Venda registrada! (Modo Simulação)');
-                toast.success(`Gerado 'Contas a Receber' de R$ ${valTotal.toFixed(2)}`, { icon: '💰' });
-
-                // MOCK: Atualiza a encomenda vinculada
-                if (vinculoEncomendaId) {
-                    toast.success('Encomenda atualizada e vinculada!');
-                }
-            } else if (error) throw error;
-            else {
+            if (error) {
+                throw error;
+            } else {
                 toast.success('Venda criada com sucesso!');
                 if (vinculoEncomendaId) {
                     // Update encomenda
@@ -156,7 +131,6 @@ export default function VendasScreen() {
                         .eq('id', vinculoEncomendaId);
                 }
 
-                // Gargalo 1: Abater a venda do Estoque (Zero Mocks)
                 const { data: userData } = await supabase.auth.getUser();
                 const userId = userData.user?.id;
 
@@ -168,13 +142,6 @@ export default function VendasScreen() {
                         .from('v2_estoque_atual')
                         .update({ quantidade: Math.max(0, (itemEstoque.quantidade || 0) - qtdTotal), last_updated: new Date().toISOString() })
                         .eq(itemEstoque.id ? 'id' : 'uuid', itemEstoque.id || itemEstoque.uuid);
-                } else {
-                    // Fallback para tabela antiga
-                    const { data: estV1 } = await supabase.from('estoque').select('*');
-                    let itemV1 = (estV1 || []).find(item => item.uuid === produtoId);
-                    if (itemV1) {
-                        await supabase.from('estoque').update({ quantidade: Math.max(0, (itemV1.quantidade || 0) - qtdTotal), last_updated: new Date().toISOString() }).eq('uuid', itemV1.uuid);
-                    }
                 }
 
                 // Registrar movimentação de saída

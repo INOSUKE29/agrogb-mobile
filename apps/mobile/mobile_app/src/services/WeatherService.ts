@@ -118,36 +118,9 @@ export const WeatherService = {
             }
 
             // SIMULAÇÃO DA API AGROMETEOROLÓGICA REAL (OpenWeather / WeatherAPI)
-            // A ser substituído pela chamada real de contrato:
-            /*
-            const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=YOUR_API_KEY&units=metric`);
-            const json = await response.json();
-            ... mapeamento ...
-            */
-           
-            const mockData: DadosClima = {
-                temperaturaAtual: 24,
-                temperaturaMinima: 18,
-                temperaturaMaxima: 29,
-                sensacaoTermica: 25,
-                umidadeRelativa: 65,
-                probabilidadeChuva: 15,
-                volumeChuvaMmMagnitude: 0,
-                velocidadeVento: 8,
-                rajadasVento: 12,
-                indiceUV: 6,
-                nascerSol: '06:15',
-                porSol: '18:05',
-                descricao: 'Céu limpo',
-                icone: '01d'
-            };
-
-            await AsyncStorage.setItem(CACHE_KEY, JSON.stringify({
-                data: mockData,
-                timestamp: Date.now()
-            }));
-
-            return mockData;
+            // Como a integração real ainda não está disponível, retornamos nulo ou disparamos erro.
+            // Para respeitar a Regra 8, não inventamos clima fictício.
+            throw new Error("Serviço de agrometeorologia offline.");
         } catch (error) {
             console.error('Erro no serviço agrometeorológico:', error);
             throw error;

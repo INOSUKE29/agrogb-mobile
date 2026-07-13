@@ -26,14 +26,13 @@ export default function AgroInput({
     const activeColors = theme?.colors || {};
     const primaryColor = activeColors.primary || '#10B981';
     
-    // Novas Regras Rigorosas de UI/UX (Clean Premium)
-    // TEMA CLARO: Fundo branco, Borda D1D1D6, Texto Escuro, Placeholder 8E8E93
-    // TEMA ESCURO: Fundo 1C1C1E, Borda 3A3A3C, Texto Branco, Placeholder AEAEB2
+    // Novas Regras Rigorosas de UI/UX (Clean Premium) - FUNDO BRANCO OBRIGATÓRIO
+    // Fundo branco, Borda D1D1D6, Texto Escuro, Placeholder 8E8E93, ignorando o dark mode internamente no input.
     
-    const inputBg = isDark ? '#1C1C1E' : '#FFFFFF';
-    const borderColor = error ? '#EF4444' : isFocused ? primaryColor : (isDark ? '#3A3A3C' : '#D1D1D6');
-    const textColor = isDark ? '#FFFFFF' : '#1C1C1E';
-    const placeholderColor = isDark ? '#AEAEB2' : '#8E8E93';
+    const inputBg = '#FFFFFF';
+    const borderColor = error ? '#EF4444' : isFocused ? primaryColor : '#D1D1D6';
+    const textColor = '#1C1C1E';
+    const placeholderColor = '#8E8E93';
     const labelColor = isDark ? '#AEAEB2' : '#6B7280';
     
     const actualSecureTextEntry = secureTextEntry && !isPasswordVisible;

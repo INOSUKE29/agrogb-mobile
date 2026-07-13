@@ -30,15 +30,7 @@ export default function FrotaScreen() {
             if (error) {
                 const fallback = await supabase.from('farm_machines').select('*').order('nome', { ascending: true });
                 if (fallback.error) {
-                    if (fallback.error.code === '42P01' || fallback.error.message?.includes('Could not find the table') || error.code === '42P01' || error.message?.includes('Could not find the table')) {
-                        // Mock fallback
-                        data = [
-                            { id: '1', nome: 'Trator John Deere 6100J', tipo: 'TRATOR', placa: 'ABC-1234', horimetro_atual: 1500, status: 'ATIVO' },
-                            { id: '2', nome: 'Colheitadeira Case 2388', tipo: 'COLHEITADEIRA', placa: 'XYZ-9876', horimetro_atual: 3200, status: 'MANUTENÇÃO' }
-                        ];
-                    } else {
-                        throw error;
-                    }
+                    throw fallback.error;
                 } else {
                     data = fallback.data;
                 }

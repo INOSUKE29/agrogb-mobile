@@ -30,16 +30,8 @@ export default function CategoriasDespesaScreen() {
                 .order('tipo', { ascending: true })
                 .order('nome', { ascending: true });
 
-            if (error && error.code === '42P01') {
-                // Mock behavior se não existir
-                setCategorias([
-                    { id: '1', nome: 'Insumos Agrícolas', tipo: 'DESPESA', descricao: 'Sementes, Adubos, Defensivos' },
-                    { id: '2', nome: 'Manutenção de Frota', tipo: 'DESPESA', descricao: 'Peças e serviços para tratores' },
-                    { id: '3', nome: 'Mão de Obra Diarista', tipo: 'DESPESA', descricao: 'Pagamento de safristas' },
-                    { id: '4', nome: 'Combustível', tipo: 'DESPESA', descricao: 'Diesel, Etanol, Gasolina' },
-                    { id: '5', nome: 'Venda de Colheita', tipo: 'RECEITA', descricao: 'Recebimentos de safra' },
-                    { id: '6', nome: 'Aluguel de Máquina', tipo: 'RECEITA', descricao: 'Locação para vizinhos' }
-                ]);
+            if (error) {
+                throw error;
             } else {
                 setCategorias(data || []);
             }
@@ -72,10 +64,7 @@ export default function CategoriasDespesaScreen() {
         try {
             const { error } = await supabase.from('v2_categorias_despesa').insert([payload]);
 
-            if (error && error.code === '42P01') {
-                // Mock behavior
-                setCategorias([...categorias, { ...payload, id: Math.random().toString() }]);
-            } else if (error) throw error;
+            if (error) throw error;
 
             toast.success('Categoria criada com sucesso!');
             setShowModal(false);

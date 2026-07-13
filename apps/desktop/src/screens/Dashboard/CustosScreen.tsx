@@ -48,18 +48,9 @@ export default function CustosScreen() {
                 .select('*')
                 .order('created_at', { ascending: false });
 
-            if (error && error.code === '42P01') {
-                setCustos([
-                    {
-                        id: 'mock-1',
-                        categoria_nome: 'Combustível',
-                        quantidade: 100,
-                        valor_unitario: 5.99,
-                        valor_total: 599.00,
-                        observacao: 'Abastecimento Trator JD',
-                        created_at: new Date().toISOString()
-                    }
-                ]);
+            if (error) {
+                console.error(error);
+                setCustos([]);
             } else {
                 setCustos(dataCustos || []);
             }
@@ -101,10 +92,7 @@ export default function CustosScreen() {
         try {
             const { error } = await supabase.from('v2_custos').insert([payload]);
 
-            if (error && error.code === '42P01') {
-                // Mock behavior
-                setCustos([{ ...payload, id: crypto.randomUUID(), created_at: new Date().toISOString() }, ...custos]);
-            } else if (error) throw error;
+            if (error) throw error;
 
             toast.success('Despesa registrada com sucesso!');
             setShowModal(false);

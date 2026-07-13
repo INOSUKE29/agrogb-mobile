@@ -8,10 +8,8 @@ Conforme a nossa decisão estratégica, o projeto AgroGB migrou de aplicações 
 C:\Users\Bruno\Documents\AgroGB\
 │
 ├── apps/
-│   ├── desktop/      (Onde construiremos o painel Electron/React)
-│   ├── web/          (Onde construiremos o painel para navegadores)
-│   └── mobile/       
-│       └── mobile_app/ (Repositório Original - Single Source of Truth do App e Builds)
+│   ├── desktop/      (Painel Electron/React)
+│   └── mobile/       (Single Source of Truth do App Mobile React Native)
 │
 ├── packages/
 │   ├── auth/         (Regras de autenticação Supabase / Permissões RLS)
@@ -19,6 +17,14 @@ C:\Users\Bruno\Documents\AgroGB\
 │   ├── services/     (Acesso ao banco: recommendationService.ts, etc)
 │   ├── shared/       (Tipos globais, Constantes, Regras agronômicas)
 │   └── ui/           (Botões, Cards, Cores, Design System Premium)
+│
+├── docs/             (Documentação Estrutural e Arquitetural)
+│   └── reports/      (Relatórios Históricos, Logs Analíticos IA)
+│
+├── scripts/          (Scripts Utilitários de Migração, Node/Python)
+│
+├── _legacy/          (Projetos antigos - Python Desktop, Expo V1 - Congelados)
+├── _archive/         (Logs antigos, outputs de sistema, lixeiras recuperáveis)
 │
 ├── pnpm-workspace.yaml
 └── turbo.json

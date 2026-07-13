@@ -10,19 +10,14 @@ export default function ClientDashboardScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
-    // Mock data based on Image 2 for MVP
-    const propertySummary = {
-        talhoes: 5,
-        area: 320.5,
-        culturas: 3,
-        atividades: 12
-    };
+    const [propertySummary, setPropertySummary] = useState({
+        talhoes: 0,
+        area: 0,
+        culturas: 0,
+        atividades: 0
+    });
 
-    const recentActivities = [
-        { id: 1, type: 'Plantio', name: 'Plantio de Milho', date: 'Talhão 01 - 15/05/2024', status: 'Em andamento', icon: 'leaf-outline', color: '#10B981' },
-        { id: 2, type: 'Adubacao', name: 'Adubação', date: 'Talhão 02 - 14/05/2024', status: 'Concluída', icon: 'flask-outline', color: '#64748B' },
-        { id: 3, type: 'Pulverizacao', name: 'Pulverização', date: 'Talhão 03 - 13/05/2024', status: 'Em andamento', icon: 'water-outline', color: '#10B981' }
-    ];
+    const [recentActivities, setRecentActivities] = useState([]);
 
     const loadData = async (isRefreshing = false) => {
         try {
@@ -110,23 +105,24 @@ export default function ClientDashboardScreen({ navigation }) {
                     </TouchableOpacity>
                 </View>
 
-                {recentActivities.map((activity) => {
-                    const statusCfg = getStatusStyle(activity.status);
-                    return (
-                        <TouchableOpacity key={activity.id} style={styles.activityCard} activeOpacity={0.7}>
-                            <View style={styles.activityIconBox}>
-                                <Ionicons name={activity.icon} size={22} color={activity.color} />
+                {recentActivities.length === 0 ? (
+                    <Text style={{ color: '#64748B', textAlign: 'center', marginTop: 20 }}>Nenhuma atividade recente.</Text>
+                ) : (
+                    recentActivities.map((act) => (
+                        <View key={act.id} style={styles.activityCard}>
+                            <View style={[styles.activityIconBox, { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
+                                <Ionicons name={act.icon} size={20} color={act.color} />
                             </View>
                             <View style={styles.activityInfo}>
-                                <Text style={styles.activityName}>{activity.name}</Text>
-                                <Text style={styles.activityDate}>{activity.date}</Text>
+                                <Text style={styles.activityName}>{act.name}</Text>
+                                <Text style={styles.activityDate}>{act.date}</Text>
                             </View>
-                            <View style={[styles.statusBadge, { backgroundColor: statusCfg.bg }]}>
-                                <Text style={[styles.statusText, { color: statusCfg.text }]}>{activity.status}</Text>
+                            <View style={[styles.statusBadge, { backgroundColor: getStatusStyle(act.status).bg }]}>
+                                <Text style={[styles.statusText, { color: getStatusStyle(act.status).text }]}>{act.status}</Text>
                             </View>
-                        </TouchableOpacity>
-                    );
-                })}
+                        </View>
+                    ))
+                )}
 
             </ScrollView>
         </SafeAreaView>

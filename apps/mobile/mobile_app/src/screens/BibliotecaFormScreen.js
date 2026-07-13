@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { executeQuery } from '../database/database';
 import { useTheme } from '../theme/ThemeContext';
 import { v4 as uuidv4 } from 'uuid';
-import { Picker } from '@react-native-picker/picker';
+import SearchableSelect from '../components/common/SearchableSelect';
 
 export default function BibliotecaFormScreen({ navigation }) {
     const { theme } = useTheme();
@@ -108,18 +108,20 @@ export default function BibliotecaFormScreen({ navigation }) {
                     </View>
 
                     <Text style={[styles.label, { color: THEME.text }]}>Tipo de Insumo</Text>
-                    <View style={[styles.pickerContainer, { backgroundColor: THEME.card, borderColor: THEME.border }]}>
-                        <Picker
-                            selectedValue={formData.tipo}
-                            onValueChange={(itemValue) => setFormData({ ...formData, tipo: itemValue })}
-                            style={{ color: THEME.text }}
-                            dropdownIconColor={THEME.textSub}
-                        >
-                            <Picker.Item label="Defensivo" value="Defensivo" />
-                            <Picker.Item label="Fertilizante" value="Fertilizante" />
-                            <Picker.Item label="Semente" value="Semente" />
-                            <Picker.Item label="Outros" value="Outros" />
-                        </Picker>
+                    <View style={{ marginBottom: 15 }}>
+                        <SearchableSelect 
+                            label=""
+                            value={formData.tipo}
+                            options={[
+                                { uuid: 'Defensivo', nome: 'Defensivo' },
+                                { uuid: 'Fertilizante', nome: 'Fertilizante' },
+                                { uuid: 'Semente', nome: 'Semente' },
+                                { uuid: 'Outros', nome: 'Outros' }
+                            ]}
+                            onSelect={(val) => setFormData({ ...formData, tipo: val })}
+                            icon="flask-outline"
+                            allowCustom={false}
+                        />
                     </View>
 
                     <Text style={[styles.label, { color: THEME.text }]}>Nome do Produto *</Text>

@@ -153,11 +153,7 @@ export default function ClienteDashboard() {
                     if (estData && estData.length > 0) {
                         setStockAlerts(estData.filter((e: any) => e.quantidade < 50));
                     } else {
-                        // Mock
-                        setStockAlerts([
-                            { id: 1, nome: 'Ureia Agrícola', quantidade: 15, unidade: 'Sacos' },
-                            { id: 2, nome: 'Glifosato', quantidade: 5, unidade: 'Litros' }
-                        ]);
+                        setStockAlerts([]);
                     }
 
                     // Sem mock de dados financeiros (Regra de Ouro #8)

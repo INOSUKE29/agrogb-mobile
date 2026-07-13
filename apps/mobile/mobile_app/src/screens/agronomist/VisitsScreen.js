@@ -2,20 +2,13 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-
-// Mock data para UI inicial (depois integraremos ao Supabase)
-const MOCK_VISITS = [
-    { id: '1', date: '25/05/2026', time: '09:00', client: 'João Batista', farm: 'Fazenda Boa Esperança', status: 'PENDENTE' },
-    { id: '2', date: '26/05/2026', time: '14:30', client: 'Carlos Silva', farm: 'Sítio Santa Rita', status: 'PENDENTE' },
-    { id: '3', date: '20/05/2026', time: '10:00', client: 'Marcos Paulo', farm: 'Fazenda Alvorada', status: 'CONCLUIDA' },
-];
-
 export default function VisitsScreen({ navigation }) {
+    const [visits, setVisits] = useState([]); // Será populado pelo banco depois
     const [activeTab, setActiveTab] = useState('futuras');
 
     const filteredVisits = activeTab === 'futuras' 
-        ? MOCK_VISITS.filter(v => v.status === 'PENDENTE')
-        : MOCK_VISITS.filter(v => v.status === 'CONCLUIDA');
+        ? visits.filter(v => v.status === 'PENDENTE')
+        : visits.filter(v => v.status === 'CONCLUIDA');
 
     const renderVisit = ({ item }) => (
         <View style={styles.card}>

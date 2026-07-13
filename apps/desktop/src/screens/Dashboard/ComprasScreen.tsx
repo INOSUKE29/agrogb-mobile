@@ -146,15 +146,20 @@ export default function ComprasScreen() {
                     }]);
             }
 
-            // 4. Integrar com o Financeiro (Contas a Pagar) - Gargalo 3 (Zero Mocks)
-            await supabase.from('contas').insert([{
-                user_id: userId,
-                tipo: 'PAGAR',
+            // 4. Integrar com o Financeiro
+            const { error: errorContas } = await supabase.from('v2_transacoes_financeiras').insert([{
+                conta_id: userId, // Assuming user's primary account, or fallback
+                tipo: 'SAIDA',
                 descricao: `Compra de Insumos: ${itemNome}`,
                 valor: parseFloat(valorUnitario) * qtdNum,
-                data_vencimento: new Date().toISOString().split('T')[0],
-                status: 'PENDENTE'
+                data: new Date().toISOString().split('T')[0],
+                sync_status: 'synced'
             }]);
+
+            if (errorContas) {
+                console.error('Erro ao inserir conta:', errorContas);
+                throw errorContas;
+            }
 
             toast.success('Compra confirmada! Estoque e Financeiro atualizados.', { icon: '🔄' });
             setShowCompraModal(false);
@@ -162,8 +167,9 @@ export default function ComprasScreen() {
             setQuantidade('');
             setValorUnitario('');
             fetchDados();
-        } catch (error) {
-            toast.error('Erro ao registrar compra.');
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error.message || 'Erro ao registrar compra.');
         } finally {
             setLoading(false);
         }

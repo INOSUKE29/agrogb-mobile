@@ -98,6 +98,7 @@ export default function SidebarAgronomo({ visible, onClose }) {
                     <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
                         
                         <Text style={styles.sectionTitle}>TÉCNICO & CAMPO</Text>
+                        <MenuItem icon="stats-chart" label="Meus Indicadores" screen="ConsultorDashboard" />
                         <MenuItem icon="people-outline" label="Clientes" screen="Clientes" />
                         <MenuItem icon="home-outline" label="Propriedades" screen="Propriedades" />
                         <MenuItem icon="map-outline" label="Áreas / Talhões" screen="TalhoesAgronomo" />

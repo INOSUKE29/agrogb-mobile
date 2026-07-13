@@ -37,12 +37,12 @@ export default function FinancialScreen() {
     const fetchFinanceiro = async () => {
         setLoading(true);
         try {
-            // Updated to use the correct 'contas' table as defined in Supabase schema
+            // Updated to use the correct 'financial_accounts' table as defined in Supabase schema (V2)
             const { data, error } = await supabase
-                .from('contas')
-                .select('*')
-                .eq('is_deleted', 0)
-                .order('data_vencimento', { ascending: true });
+                .from('financial_accounts')
+                .select('id, description as descricao, type as tipo, total_amount as valor, due_date as data_vencimento, status, is_deleted')
+                .eq('is_deleted', false)
+                .order('due_date', { ascending: true });
 
             if (error) throw error;
             
@@ -86,7 +86,7 @@ export default function FinancialScreen() {
             'Valor (R$)': Number(t.valor).toFixed(2),
             'Tipo': t.tipo,
             'Status': t.status,
-            'Vencimento': format(parseISO(t.data_vencimento), 'dd/MM/yyyy')
+            'Vencimento': format(parseISO(t.data_vencimento as string), 'dd/MM/yyyy')
         }));
 
         const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -112,7 +112,7 @@ export default function FinancialScreen() {
         const timer = setTimeout(async () => {
             // Commita no banco de dados após 4s
             try {
-                await supabase.from('contas').update({ status: 'PAGO' }).eq('id', id);
+                await supabase.from('financial_accounts').update({ status: 'pago' }).eq('id', id);
                 setUndoToast(null);
                 fetchFinanceiro();
             } catch (error) {
@@ -135,7 +135,7 @@ export default function FinancialScreen() {
         const timer = setTimeout(async () => {
             // Commita no banco de dados após 4s
             try {
-                await supabase.from('contas').update({ status: 'CANCELADO' }).eq('id', id);
+                await supabase.from('financial_accounts').update({ status: 'cancelado' }).eq('id', id);
                 setUndoToast(null);
                 fetchFinanceiro();
             } catch (error) {

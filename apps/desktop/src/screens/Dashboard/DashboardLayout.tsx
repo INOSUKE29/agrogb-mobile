@@ -41,6 +41,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications, type AppNotification } from '../../contexts/NotificationContext';
 import { useBreadcrumbs } from '../../contexts/BreadcrumbContext';
 import { GlobalBackButton, GlobalBreadcrumb } from '../../components/layout/GlobalNavigation';
+import logo from '../../assets/logo.png';
 
 export default function DashboardLayout() {
     const navigate = useNavigate();
@@ -216,7 +217,7 @@ export default function DashboardLayout() {
                 
                 <div className="relative z-10 flex flex-col items-center max-w-5xl w-full animate-fade-in">
                     <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 overflow-hidden shadow-lg border border-[var(--color-primary)]/20">
-                        <img src="/logo.png" alt="AgroGB Logo" className="w-full h-full object-cover" />
+                        <img src={logo} alt="AgroGB Logo" className="w-full h-full object-cover" />
                     </div>
                     <h1 className="text-4xl font-black text-gray-900 dark:text-white mb-2">Modo Auditoria</h1>
                     <p className="text-[var(--color-muted)] text-lg mb-12">Selecione qual portal você deseja simular na sessão atual.</p>
@@ -278,7 +279,7 @@ export default function DashboardLayout() {
                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 >
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden shadow-sm border border-[var(--color-border)] transition-all">
-                        <img src="/logo.png" alt="AgroGB Logo" className="w-full h-full object-cover" />
+                        <img src={logo} alt="AgroGB Logo" className="w-full h-full object-cover" />
                     </div>
                     {isSidebarOpen && (
                         <div className="flex flex-col ml-3 animate-slide-in-right overflow-hidden">

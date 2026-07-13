@@ -30,9 +30,11 @@ import VerifyCodeScreen from './src/screens/VerifyCodeScreen';
 
 // Navegadores e Telas V2
 import AdminSelectorScreen from './src/screens/admin/AdminSelectorScreen';
+import AdminDashboardScreen from './src/screens/admin/AdminDashboardScreen';
 import AgronomistClientsScreen from './src/screens/agronomist/AgronomistClientsScreen';
 import CreateRecommendationScreen from './src/screens/agronomist/CreateRecommendationScreen';
 import VisitsScreen from './src/screens/agronomist/VisitsScreen';
+import ConsultorDashboardScreen from './src/screens/agronomist/ConsultorDashboardScreen';
 import ScheduleVisitFormScreen from './src/screens/agronomist/ScheduleVisitFormScreen';
 import AgronomistEstoqueScreen from './src/screens/agronomist/AgronomistEstoqueScreen';
 import AgronomistCadernoScreen from './src/screens/agronomist/AgronomistCadernoScreen';
@@ -250,6 +252,7 @@ function AppInner() {
                         
                         {/* Telas Principais */}
                         <Stack.Screen name="AdminSelector" component={AdminSelectorScreen} options={{ headerShown: false }} />
+                        <Stack.Screen name="HomeAdmin" component={AdminDashboardScreen} options={{ headerShown: false }} />
                         <Stack.Screen name="Dashboard" component={HomeScreen} options={{ headerShown: false }} />
                         <Stack.Screen name="Sync" component={SyncScreen} options={{ presentation: 'modal' }} />
                         
@@ -261,6 +264,7 @@ function AppInner() {
 
 
                         {/* Telas Agrônomo */}
+                        <Stack.Screen name="ConsultorDashboard" component={ConsultorDashboardScreen} />
                         <Stack.Screen name="AgronomistClients" component={AgronomistClientsScreen} />
                         <Stack.Screen name="CreateRecommendation" component={CreateRecommendationScreen} />
                         <Stack.Screen name="Visitas" component={VisitsScreen} />

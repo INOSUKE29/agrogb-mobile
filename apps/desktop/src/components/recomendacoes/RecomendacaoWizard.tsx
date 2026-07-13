@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Plus, Trash2, Send, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ProductAutocomplete } from '../common/ProductAutocomplete';
-import SearchableSelect from '../ui/SearchableSelect';
+import SearchableSelect from '../common/SearchableSelect';
 import { AgronomistService } from '../../../../../packages/services/src/agronomistService';
 
 interface Props {
@@ -170,19 +170,14 @@ export default function RecomendacaoWizard({ isAgronomo, onComplete, onCancel }:
             // Tentaremos inserir tentando com e sem cliente_id / agronomist_id dependendo do RLS
             // Para simplificar e evitar o erro RLS, nós usamos um try catch em fallback:
             const { data: inserted, error: receitaError } = await supabase
-                .from('receitas_adubacao')
+                .from('fertilization_recipes')
                 .insert({
-                    nome: `Prescrição Técnica — ${new Date().toLocaleDateString('pt-BR')}`,
-                    tipo: 'geral',
-                    status: status,
-                    cliente_id: data.cliente_id || null,
-                    talhao_id: null,
-                    agronomist_id: user?.id || null,
-                    classificacao: 'preventiva', 
-                    instrucoes: data.instrucoes || null,
-                    assinatura_nome: data.assinatura_nome || null,
-                    assinatura_crea: data.assinatura_crea || null,
-                    assinatura_data: new Date().toISOString(),
+                    name: `Prescrição Técnica — ${new Date().toLocaleDateString('pt-BR')}`,
+                    type: 'foliar', // default for now
+                    culture: data.cultura || 'Geral',
+                    description: data.instrucoes || '',
+                    user_id: user?.id || null,
+                    sync_status: 1
                 })
                 .select('id')
                 .single();
@@ -194,18 +189,18 @@ export default function RecomendacaoWizard({ isAgronomo, onComplete, onCancel }:
                 let insumosToInsert: any[] = [];
                 data.aplicacoes.forEach(app => {
                     const validInsumos = app.insumos.filter(i => i.insumo_nome.trim()).map(i => ({
-                        receita_id: inserted.id,
-                        insumo_nome: i.insumo_nome,
-                        quantidade: i.dose ? Number(i.dose) : 0,
-                        unidade_medida: i.unidade,
-                        etapa_aplicacao: `${app.nome} (${app.metodo})` // Salva nome + metodo
+                        recipe_id: inserted.id,
+                        product_name: i.insumo_nome,
+                        quantity: i.dose ? Number(i.dose) : 0,
+                        unit: i.unidade,
+                        sync_status: 1
                     }));
                     insumosToInsert = [...insumosToInsert, ...validInsumos];
                 });
 
                 if (insumosToInsert.length > 0) {
                     const { error: insumosError } = await supabase
-                        .from('receita_insumos')
+                        .from('fertilization_items')
                         .insert(insumosToInsert);
 
                     if (insumosError) {
@@ -219,9 +214,8 @@ export default function RecomendacaoWizard({ isAgronomo, onComplete, onCancel }:
             onComplete();
         } catch (err: any) {
             console.error('Erro geral ao salvar:', err);
-            // Fallback for demo mode se o Supabase RLS bloquear:
-            toast.success('Receita salva offline com sucesso (RLS Bypass Ativado para Teste).');
-            onComplete();
+            toast.error('Erro de conexão ao salvar a receita. Tente novamente mais tarde.');
+            // Regra Zero Mocks: Nada de Bypass, propagar falha real.
         } finally {
             setSubmitting(false);
         }

@@ -136,9 +136,9 @@ export default function EntitySelectorModal({
                         <View style={styles.searchBox}>
                             <Ionicons name="search" size={20} color={colors.textMuted} style={styles.searchIcon} />
                             <TextInput
-                                style={styles.searchInput}
+                                style={[styles.searchInput, { color: '#1C1C1E' }]}
                                 placeholder={placeholder}
-                                placeholderTextColor={colors.textMuted}
+                                placeholderTextColor="#8E8E93"
                                 value={searchQuery}
                                 onChangeText={handleSearch}
                                 autoCapitalize="none"
@@ -229,10 +229,10 @@ const styles = StyleSheet.create({
     searchBox: { 
         flex: 1, flexDirection: 'row', alignItems: 'center', height: 52, 
         borderRadius: 16, borderWidth: 1, paddingHorizontal: 15,
-        backgroundColor: colors.bgInput, borderColor: colors.border
+        backgroundColor: '#FFFFFF', borderColor: '#D1D1D6'
     },
     searchIcon: { marginRight: 10 },
-    searchInput: { flex: 1, fontSize: 14, fontWeight: '700', color: colors.text },
+    searchInput: { flex: 1, fontSize: 14, fontWeight: '700', color: '#1C1C1E' },
     
     quickAddSwitch: { 
         flexDirection: 'row', alignItems: 'center', gap: 4, height: 52, 

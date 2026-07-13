@@ -8,6 +8,7 @@ Estas são as diretrizes de desenvolvimento estritas que devem ser seguidas em t
 * Gráficos devem iniciar zerados.
 * Listas vazias devem mostrar mensagens informativas ("Nenhum item encontrado", "Sem títulos em atraso", "Sua saúde financeira está em dia"). 
 * Não polua a visão do agricultor com números assustadores ou confusos que não existem no banco de dados dele.
+* **Tolerância Zero em Serviços/IA:** Componentes de predição (Clima, Análises de IA) **jamais** devem retornar diagnósticos simulados (ex: "Céu Limpo 24ºC" ou "Doença Fúngica"). Se o backend estiver offline ou não integrado, o serviço deve falhar graciosamente (exibir erro ou estado vazio), mas nunca enganar o usuário com predições fabricadas.
 
 ## Regra 9 - Caixas de Seleção e Modais (Fim do `<select>` nativo)
 O uso de tags nativas HTML `<select>` está terminantemente proibido para formulários ou telas que contenham listas longas ou requeiram um padrão visual premium. 
@@ -78,7 +79,8 @@ Não seja passivo. Atue como um sócio intelectual focado em execução, clareza
 
 ## Regra 13 - Paridade Arquitetural Estrita (Fim dos Interceptadores)
 **O sistema fala um idioma só.** É terminantemente proibido criar mapeamentos de DE/PARA (`V2_TABLE_MAP`) ou interceptadores de payload no Mobile para tentar "traduzir" dados antigos para a V2.
-* O banco de dados SQLite local no Mobile (ex: `fields`, `recommendations`, `v2_monitoramentos`) deve ter os mesmos nomes de tabelas, nomes de colunas e constraints que o Supabase PostgreSQL V2.
+* O banco de dados SQLite local no Mobile (ex: `fields`, `recommendations`, `v2_monitoramentos`, `v2_produtos`) deve ter os mesmos nomes de tabelas, nomes de colunas e constraints que o Supabase PostgreSQL V2.
+* **Tabela Cadastro foi extinta:** O mobile não deve mais usar a tabela `cadastro` genérica. O armazenamento de insumos e embalagens agora ocorre diretamente na tabela nativa `v2_produtos` com as colunas oficiais (`categoria`, `unidade_medida`, `fator_conversao`, etc).
 * As inserções devem ser enviadas puras e diretas ao `sync_outbox`. 
 * Se um formulário legado ou tabela local do Mobile tiver campos diferentes da nuvem (V2), **altere o banco local (SQLite) e refatore o formulário Mobile** para corresponder à nuvem, em vez de criar conversores.
 
@@ -87,3 +89,23 @@ Não seja passivo. Atue como um sócio intelectual focado em execução, clareza
 * **Coordenação de Releases:** Não devem ser geradas novas versões "Release" a cada correção pequena. A liberação de novas versões do aplicativo deve ser sempre coordenada e pré-aprovada em conjunto.
 * **Hotfixes:** Apenas erros gravíssimos estruturais que inviabilizam o uso justificam quebra do protocolo para atualização imediata (seguindo as regras de ouro de programação). Fora isso, correções menores aguardam a janela de atualização definida com o líder do projeto.
 * O crescimento do aplicativo para o cliente será feito "ligando" módulos gradativamente, sem perder trabalho anterior.
+
+## Regra 15 - Isolamento e Organização Estrutural (Faxina Contínua)
+**A raiz do projeto deve permanecer imaculada.** Nenhum script utilitário solto, log pesado ou projeto abandonado deve residir na raiz `C:\Users\Bruno\Documents\AgroGB`.
+* **Projetos Antigos (Gelo):** Projetos legados substituídos (ex: Python Desktop antigo, Expo Mobile V1) não devem ser deletados permanentemente para não perder referências históricas de regras de negócio, mas **devem** ser movidos para a pasta `_legacy/`.
+* **Documentação:** Todos os relatórios, mapas mentais e logs da Inteligência Artificial devem residir em `docs/reports/` ou pastas organizadas dentro de `docs/`.
+* **Scripts Temporários:** Utilitários JS/PY de migração e correções pontuais devem ir para `scripts/`.
+* **Logs e Lixo:** Saídas brutas de erro, `runs.json` ou backups de banco antigos devem ser movidos para `_archive/`.
+* A raiz deve conter apenas o essencial do monorepo (`apps`, `packages`, configurações e documentação central).
+
+## Regra 16 - Resolução de Assets Nativos (Electron + Vite)
+**Aplicações Desktop empacotadas via Electron exigem importação modular de imagens.** O protocolo `file://` utilizado no Windows quebra caminhos relativos estáticos (`./logo.png` ou `/logo.png`) que funcionam normalmente na Web.
+* **Importação Correta:** Todas as imagens devem ser importadas via Javascript/Typescript (`import logo from '../../assets/logo.png'`) para que o Vite crie o hash e empacote corretamente a imagem no diretório `dist/assets` da versão final compilada.
+* **Ícones de Desktop (.ico):** Ícones para Windows não podem ter sobras transparentes (fundo inútil), ou o atalho da área de trabalho ficará minúsculo. Eles devem ser recortados milimetricamente encostando nas bordas da imagem real, mantendo a proporção 1:1, antes da conversão.
+* **Fluxo de Compilação:** Nunca execute apenas o `electron-builder` (`npm run dist`) se houver mudanças no código-fonte. **Sempre** rode `npm run build` (Vite) antes para gerar o novo `dist`, caso contrário o instalador (.exe) congelará código velho.
+
+## Regra 17 - Sincronia de Consultas (kb_products vs v2_produtos)
+**Sempre consolide o Catálogo Global e o Local.** Quando usuários criam novos produtos (como "Produto Final") no Portal Admin (Biblioteca Global), esses itens muitas vezes são registrados primariamente na tabela `kb_products` (Knowledge Base) para treinar a IA, em vez de apenas na `v2_produtos`.
+* **Dropdowns Operacionais:** Telas como "Produção e Colheita", "Estoque" ou "Descarte" nunca devem confiar exclusivamente na tabela `v2_produtos` para popular seus `<SearchableSelect />`. 
+* **Mesclagem Obrigatória:** Sempre realize o fetch simultâneo na tabela `kb_products` e faça a mesclagem (merge) dos resultados com a tabela local/antiga (`v2_produtos` e `culturas`), padronizando as chaves (`nome` vs `name`) antes de passar para o componente visual.
+

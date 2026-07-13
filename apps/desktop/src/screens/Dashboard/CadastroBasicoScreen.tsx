@@ -47,8 +47,9 @@ export default function CadastroBasicoScreen() {
     const fetchDados = async () => {
         setLoading(true);
         try {
-            const { data: userData } = await supabase.auth.getUser();
-            const userId = userData.user?.id || 'mock-user-id';
+            const { data: userData, error: userError } = await supabase.auth.getUser();
+            if (userError || !userData.user) throw new Error('Usuário não autenticado');
+            const userId = userData.user.id;
 
             const { data, error } = await supabase
                 .from('v2_produtos')
@@ -56,16 +57,10 @@ export default function CadastroBasicoScreen() {
                 .order('categoria', { ascending: true })
                 .order('nome', { ascending: true });
 
-            if (error && (error.code === '42P01' || error.message?.includes('Could not find the table'))) {
-                // Mock behavior se a tabela não existir ainda
-                setItems([
-                    { id: '1', nome: 'UREIA AGRÍCOLA 46%', categoria: 'FERTILIZANTE', unidade_medida: 'KG', observacao: 'Adubação padrão AgroGB', is_global: true, status_aprovacao: 'APROVADO' },
-                    { id: '2', nome: 'GLIFOSATO 480', categoria: 'DEFENSIVO', unidade_medida: 'LT', observacao: 'Herbicida', is_global: true, status_aprovacao: 'APROVADO' },
-                    { id: '5', nome: 'ADUBO NPK 04-14-08', categoria: 'FERTILIZANTE', unidade_medida: 'KG', observacao: 'Adubo de Plantio Global', is_global: true, status_aprovacao: 'APROVADO' },
-                    { id: '6', nome: 'ADUBO FOLIAR (ZINCO)', categoria: 'FERTILIZANTE', unidade_medida: 'LT', observacao: 'Micronutrientes', is_global: true, status_aprovacao: 'APROVADO' },
-                    { id: '3', nome: 'SEMENTE MILHO (TESTE)', categoria: 'SEMENTE', unidade_medida: 'KG', observacao: 'Meu milho', is_global: false, status_aprovacao: 'PENDENTE_GLOBAL', user_id: userId },
-                    { id: '4', nome: 'SOJA EM GRÃO (SAFRA)', categoria: 'PRODUTO_FINAL', unidade_medida: 'SC', observacao: 'Produto para venda', is_global: false, status_aprovacao: 'LOCAL', user_id: userId },
-                ]);
+            if (error) {
+                console.error(error);
+                toast.error('Erro ao buscar produtos.');
+                setItems([]);
             } else {
                 setItems(data || []);
             }
@@ -81,8 +76,10 @@ export default function CadastroBasicoScreen() {
         if (!quickCreateNome) return;
         
         try {
-            const { data: userData } = await supabase.auth.getUser();
-            const userId = userData.user?.id || 'mock-user-id';
+            const { data: userData, error: userError } = await supabase.auth.getUser();
+            if (userError || !userData.user) throw new Error('Usuário não autenticado');
+            const userId = userData.user.id;
+
             const payload = {
                 nome: quickCreateNome.toUpperCase(),
                 categoria: 'EMBALAGEM',
@@ -191,7 +188,8 @@ export default function CadastroBasicoScreen() {
         }
 
         const { data: userData } = await supabase.auth.getUser();
-        const userId = userData.user?.id || 'mock-user-id';
+        if (!userData.user) return toast.error('Não autenticado');
+        const userId = userData.user.id;
 
         const payload = {
             nome: nome.toUpperCase(),

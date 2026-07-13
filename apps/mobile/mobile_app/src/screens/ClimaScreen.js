@@ -99,6 +99,18 @@ export default function ClimaScreen() {
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10B981" />}
             >
+                {!weatherData ? (
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, marginTop: 50 }}>
+                        <Ionicons name="cloud-offline-outline" size={60} color={textMuted} />
+                        <Text style={{ color: textMuted, textAlign: 'center', marginTop: 15, fontSize: 16 }}>
+                            Dados climáticos indisponíveis no momento.
+                        </Text>
+                        <Text style={{ color: textMuted, textAlign: 'center', marginTop: 5, fontSize: 14 }}>
+                            Conecte-se à internet para buscar a previsão hiperlocal.
+                        </Text>
+                    </View>
+                ) : (
+                    <>
                 {activeTab === 'HOJE' && weatherData && (
                     <View style={styles.section}>
                         <LinearGradient colors={isDark ? ['#1F2937', '#111827'] : ['#10B981', '#059669']} style={[styles.heroCard, { borderColor }]}>
@@ -176,25 +188,20 @@ export default function ClimaScreen() {
                 {activeTab === 'PROXIMOS' && (
                     <View style={styles.section}>
                         <Text style={[styles.sectionTitle, { color: textMuted }]}>PREVISÃO (7 DIAS)</Text>
-                        {[
-                            { dia: 'Hoje', max: 32, min: 20, chuva: 0, icon: 'sunny' },
-                            { dia: 'Amanhã', max: 30, min: 21, chuva: 15, icon: 'rainy' },
-                            { dia: 'Qua', max: 28, min: 19, chuva: 25, icon: 'rainy' },
-                            { dia: 'Qui', max: 29, min: 18, chuva: 5, icon: 'partly-sunny' },
-                            { dia: 'Sex', max: 31, min: 19, chuva: 0, icon: 'sunny' },
-                            { dia: 'Sáb', max: 33, min: 21, chuva: 0, icon: 'sunny' },
-                            { dia: 'Dom', max: 34, min: 22, chuva: 0, icon: 'sunny' },
-                        ].map((d, i) => (
-                            <View key={i} style={[styles.windowCard, { backgroundColor: cardBg, borderColor, paddingVertical: 12 }]}>
-                                <Text style={[styles.windowLabel, { color: textColor, width: 60 }]}>{d.dia}</Text>
-                                <Ionicons name={d.icon} size={24} color={d.chuva > 0 ? '#3B82F6' : '#FBBF24'} />
-                                <Text style={{ color: textMuted, fontSize: 13, width: 60, textAlign: 'center' }}>{d.chuva}mm</Text>
-                                <View style={{ flexDirection: 'row', gap: 10 }}>
-                                    <Text style={{ color: textColor, fontWeight: 'bold' }}>{d.min}°</Text>
-                                    <Text style={{ color: textMuted }}>{d.max}°</Text>
+                        
+                        <View style={{ backgroundColor: cardBg, borderRadius: 16, borderColor, borderWidth: 1, padding: 15 }}>
+                            {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((dia, idx) => (
+                                <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: idx === 6 ? 0 : 1, borderBottomColor: borderColor }}>
+                                    <Text style={{ color: textColor, fontWeight: '700', width: 40 }}>{dia}</Text>
+                                    <Ionicons name={idx % 2 === 0 ? "partly-sunny" : "rainy"} size={22} color={idx % 2 === 0 ? "#FBBF24" : "#3B82F6"} />
+                                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                                        <Text style={{ color: textMuted }}>{idx % 2 === 0 ? "0mm" : "15mm"}</Text>
+                                        <Text style={{ color: textColor, fontWeight: '600' }}>2{8 - (idx%4)}°</Text>
+                                        <Text style={{ color: textMuted }}>1{5 + (idx%3)}°</Text>
+                                    </View>
                                 </View>
-                            </View>
-                        ))}
+                            ))}
+                        </View>
                     </View>
                 )}
 
@@ -205,7 +212,7 @@ export default function ClimaScreen() {
                             <LineChart
                                 data={{
                                     labels: ["Sem 1", "Sem 2", "Sem 3", "Sem 4"],
-                                    datasets: [{ data: [15, 45, 10, 80] }]
+                                    datasets: [{ data: [12, 45, 10, 80] }]
                                 }}
                                 width={Dimensions.get("window").width - 70}
                                 height={220}
@@ -228,6 +235,8 @@ export default function ClimaScreen() {
                 )}
 
                 <View style={{ height: 40 }} />
+                    </>
+                )}
             </ScrollView>
         </ScreenLayout>
     );

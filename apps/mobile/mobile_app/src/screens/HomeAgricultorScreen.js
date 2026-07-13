@@ -15,12 +15,12 @@ import ProductionChart from '../components/dashboard/ProductionChart';
 const { width } = Dimensions.get('window');
 
 const AGRICULTOR_ATALHOS = [
-    { id: "add_venda", label: "+ Nova Venda", icon: "add-circle", screen: "VendaForm", color: "#10B981" },
-    { id: "add_cliente", label: "+ Novo Cliente", icon: "person-add", screen: "ClienteForm", color: "#EC4899" },
-    { id: "add_colheita", label: "+ Lançar Colheita", icon: "basket", screen: "Colheita", color: "#F59E0B" },
-    { id: "add_encomenda", label: "+ Encomenda", icon: "cube", screen: "NovaEncomenda", color: "#3B82F6" },
-    { id: "add_insumo", label: "+ Novo Insumo", icon: "library", screen: "Cadastro", color: "#06B6D4" },
-    { id: "estoque", label: "Ver Estoque", icon: "layers-outline", screen: "Estoque", color: "#8B5CF6" },
+    { id: "add_colheita", label: "Colheita", icon: "basket", screen: "Colheita", color: "#F59E0B" },
+    { id: "add_venda", label: "Venda", icon: "barcode", screen: "VendaForm", color: "#10B981" },
+    { id: "clientes", label: "Clientes", icon: "people", screen: "Clientes", color: "#EC4899" },
+    { id: "estoque", label: "Estoque", icon: "layers", screen: "Estoque", color: "#8B5CF6" },
+    { id: "add_encomenda", label: "Encomenda", icon: "cube", screen: "NovaEncomenda", color: "#3B82F6" },
+    { id: "catalogo", label: "Catálogo", icon: "library", screen: "Cadastro", color: "#06B6D4" },
 ];
 
 export default function HomeAgricultorScreen({ navigation }) {
@@ -245,22 +245,22 @@ const styles = StyleSheet.create({
     content: { flex: 1, marginTop: -20 },
     scroll: { padding: 20 },
 
-    summaryCarousel: { paddingBottom: 10, flexDirection: 'row', gap: 12 },
-    summaryCard: { width: 140, padding: 16, borderRadius: 16, borderWidth: 1, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3 },
+    summaryCarousel: { paddingBottom: 20, flexDirection: 'row', gap: 24 },
+    summaryCard: { width: 140, padding: 20, borderRadius: 16, borderWidth: 1, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3 },
     summaryIcon: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
     summaryTitle: { fontSize: 10, fontWeight: 'bold', marginBottom: 4, letterSpacing: 0.5 },
     summaryValue: { fontSize: 16, fontWeight: 'bold' },
 
-    sectionTitle: { fontSize: 12, fontWeight: '900', marginBottom: 15, letterSpacing: 1 },
+    sectionTitle: { fontSize: 13, fontWeight: '900', marginBottom: 20, marginTop: 40, letterSpacing: 1 },
     
-    problemBlock: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-    problemCard: { flex: 1, padding: 16, borderRadius: 16, borderWidth: 1, elevation: 1 },
-    problemHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-    problemValue: { fontSize: 22, fontWeight: 'bold' },
-    problemLabel: { fontSize: 12, fontWeight: '600' },
+    problemBlock: { flexDirection: 'row', justifyContent: 'space-between', gap: 16 },
+    problemCard: { flex: 1, padding: 20, borderRadius: 16, borderWidth: 1, elevation: 1 },
+    problemHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+    problemValue: { fontSize: 24, fontWeight: 'bold' },
+    problemLabel: { fontSize: 13, fontWeight: '600' },
 
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-    actionCard: { borderRadius: 18, padding: 10, height: 110, alignItems: 'center', justifyContent: 'center', elevation: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, paddingBottom: 10 },
+    actionCard: { borderRadius: 20, padding: 12, height: 120, alignItems: 'center', justifyContent: 'center', elevation: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
     iconCirclePremium: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#FFFFFF', shadowColor: 'rgba(0,0,0,0.1)', shadowOffset: {width: 0, height: 2}, shadowOpacity: 1, shadowRadius: 4, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
     cardTitle: { fontSize: 11, fontWeight: 'bold', textAlign: 'center', color: '#FFFFFF' },
 

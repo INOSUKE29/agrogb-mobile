@@ -45,7 +45,7 @@ export default function ClienteFormScreen({ navigation, route }) {
 
     const handleSave = async () => {
         if (!nome.trim()) { 
-            Alert.alert('ObrigatÃ³rio', 'Nome ou Empresa Ã© obrigatÃ³rio.'); 
+            Alert.alert('Obrigatório', 'Nome ou Empresa é obrigatório.'); 
             return; 
         }
         setLoading(true);
@@ -163,9 +163,9 @@ export default function ClienteFormScreen({ navigation, route }) {
 
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                     
-                    {/* SessÃ£o 1: Controle/Status */}
+                    {/* Sessão 1: Controle/Status */}
                     <View style={styles.groupCard}>
-                        <Text style={styles.sectionHeader}>CLASSIFICAÃ‡ÃƒO DO REGISTRO</Text>
+                        <Text style={styles.sectionHeader}>CLASSIFICAÇÃO DO REGISTRO</Text>
                         
                         <View style={styles.pillContainer}>
                             {[
@@ -199,32 +199,32 @@ export default function ClienteFormScreen({ navigation, route }) {
                         </View>
                     </View>
 
-                    {/* SessÃ£o 2: InformaÃ§Ãµes Principais */}
-                    <Text style={styles.groupTitleDivider}>IDENTIFICAÃ‡ÃƒO</Text>
-                    {renderInput('NOME COMPLETO / RAZÃƒO SOCIAL', nome, setNome, 'Ex: JoÃ£o Silva ou Agrotech LTDA', 'nome')}
-                    {renderInput('CPF / CNPJ (Somente NÃºmeros)', cpf, setCpf, '12345678900', 'cpf', false, false, 'numeric')}
+                    {/* Sessão 2: Informações Principais */}
+                    <Text style={styles.groupTitleDivider}>IDENTIFICAÇÃO</Text>
+                    {renderInput('NOME COMPLETO / RAZÃO SOCIAL', nome, setNome, 'Ex: João Silva ou Agrotech LTDA', 'nome')}
+                    {renderInput('CPF / CNPJ (Somente Números)', cpf, setCpf, '12345678900', 'cpf', false, false, 'numeric')}
 
-                    {/* SessÃ£o 3: Contatos */}
+                    {/* Sessão 3: Contatos */}
                     <Text style={styles.groupTitleDivider}>CONTATOS DIRETOS</Text>
                     <View style={{ flexDirection: 'row', gap: 15 }}>
                         {renderInput('ATENDIMENTO (WHATSAPP)', telefone, setTelefone, '(11) 999...', 'tel1', false, true, 'phone-pad')}
                         {renderInput('TELEFONE FIXO/EXTRA', telefone2, setTelefone2, '(11) 321...', 'tel2', false, true, 'phone-pad')}
                     </View>
-                    {renderInput('ENDEREÃ‡O DE E-MAIL', email, setEmail, 'contato@email.com', 'email', false, false, 'email-address')}
+                    {renderInput('ENDEREÇO DE E-MAIL', email, setEmail, 'contato@email.com', 'email', false, false, 'email-address')}
 
-                    {/* SessÃ£o 4: EndereÃ§amento */}
-                    <Text style={styles.groupTitleDivider}>LOGÃSTICA / ENDEREÃ‡O</Text>
-                    {renderInput('LOGRADOURO, NÃšMERO E BAIRRO', endereco, setEndereco, 'Rua das Ostras, 10 - Centro', 'end')}
+                    {/* Sessão 4: EndereÃ§amento */}
+                    <Text style={styles.groupTitleDivider}>LOGÃSTICA / ENDEREÇO</Text>
+                    {renderInput('LOGRADOURO, NÚMERO E BAIRRO', endereco, setEndereco, 'Rua das Ostras, 10 - Centro', 'end')}
                     <View style={{ flexDirection: 'row', gap: 15 }}>
-                        {renderInput('MUNICÃPIO / CIDADE', cidade, setCidade, 'SÃ£o Paulo', 'cidade', false, true)}
+                        {renderInput('MUNICÃPIO / CIDADE', cidade, setCidade, 'São Paulo', 'cidade', false, true)}
                         <View style={{ width: 80 }}>
                             {renderInput('UF', estado, setEstado, 'SP', 'estado', false)}
                         </View>
                     </View>
 
-                    {renderInput('OBSERVAÃ‡Ã•ES E NOTAS INTERNAS', observacaoInterna, setObservacaoInterna, 'AnotaÃ§Ãµes gerais visÃ­veis com a operaÃ§Ã£o...', 'obs', true)}
+                    {renderInput('OBSERVAÇÕES E NOTAS INTERNAS', observacaoInterna, setObservacaoInterna, 'Anotações gerais visíveis com a operação...', 'obs', true)}
 
-                    {/* AÃ§Ãµes */}
+                    {/* Ações */}
                     <View style={styles.actionRow}>
                         <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()}>
                             <Text style={styles.cancelBtnText}>VOLTAR</Text>
@@ -255,9 +255,9 @@ const styles = StyleSheet.create({
     // Inputs (Copied from AdubacaoForm Screen Premium Style)
     field: { marginBottom: 20 },
     label: { color: '#94A3B8', fontSize: 11, fontWeight: '800', letterSpacing: 1.5, marginBottom: 8 },
-    inputContainer: { backgroundColor: 'rgba(15, 23, 42, 0.6)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 16, height: 56, justifyContent: 'center' },
-    inputContainerFocused: { borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.05)' },
-    input: { flex: 1, color: '#F8FAFC', fontSize: 15, fontWeight: '600', paddingHorizontal: 16, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) },
+    inputContainer: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D1D1D6', borderRadius: 16, height: 56, justifyContent: 'center' },
+    inputContainerFocused: { borderColor: '#10B981', backgroundColor: '#FFFFFF', elevation: 2 } },
+    input: { flex: 1, color: '#1C1C1E', fontSize: 15, fontWeight: '600', paddingHorizontal: 16, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) },
 
     // Sections
     groupTitleDivider: { color: '#3B82F6', fontSize: 13, fontWeight: '900', letterSpacing: 1.5, marginVertical: 20 },
@@ -266,13 +266,13 @@ const styles = StyleSheet.create({
 
     // Pills
     pillContainer: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-    pill: { flex: 1, height: 56, borderRadius: 14, backgroundColor: 'rgba(15, 23, 42, 0.6)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' },
-    pillText: { color: '#64748B', fontSize: 9, fontWeight: '900', marginTop: 4, letterSpacing: 1 },
+    pill: { flex: 1, height: 56, borderRadius: 14, backgroundColor: '#E5E5EA', borderWidth: 1, borderColor: '#D1D1D6', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' },
+    pillText: { color: '#8E8E93', fontSize: 9, fontWeight: '900', marginTop: 4, letterSpacing: 1 },
     glowDot: { position: 'absolute', bottom: -1, width: 20, height: 3, borderRadius: 2, shadowOpacity: 1, shadowRadius: 5 },
 
     // Toggle
-    toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)', padding: 14, borderRadius: 12 },
-    toggleText: { color: '#E2E8F0', fontSize: 13, fontWeight: '700' },
+    toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#E5E5EA', padding: 14, borderRadius: 12 },
+    toggleText: { color: '#1C1C1E', fontSize: 13, fontWeight: '700' },
     toggleBtn: { width: 46, height: 26, borderRadius: 13, padding: 2, justifyContent: 'center' },
     toggleActive: { backgroundColor: '#10B981' },
     toggleInactive: { backgroundColor: '#475569' },

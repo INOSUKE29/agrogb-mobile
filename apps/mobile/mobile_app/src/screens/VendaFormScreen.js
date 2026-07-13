@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIn
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { executeQuery } from '../database/database';
+import { v4 as uuidv4 } from 'uuid';
 import AgroInput from '../components/AgroInput';
 import SmartEntitySelector from '../components/common/SmartEntitySelector';
 import { ClientLibraryService, ProductLibraryService } from '../services/LibraryServices';
@@ -28,6 +29,7 @@ export default function VendaFormScreen({ navigation }) {
             const valNum = parseFloat(valorUnitario.replace(',', '.'));
             const valorTotal = qtdNum * valNum;
 
+            const novoId = uuidv4();
             const query = `
                 INSERT INTO v2_vendas (
                     id, 
@@ -41,12 +43,26 @@ export default function VendaFormScreen({ navigation }) {
                     created_at, 
                     sync_status
                 ) VALUES (
-                    lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))),
-                    ?, ?, ?, ?, ?, datetime('now'), ?, datetime('now'), 'pending'
+                    ?, ?, ?, ?, ?, ?, datetime('now'), ?, datetime('now'), 'pending'
                 )
             `;
+            await executeQuery(query, [novoId, cliente, produto, qtdNum, valNum, valorTotal, observacao]);
 
-            await executeQuery(query, [cliente, produto, qtdNum, valNum, valorTotal, observacao]);
+            // Inserir obrigatoriamente no sync_outbox
+            const payload = JSON.stringify({
+                id: novoId,
+                cliente_nome: cliente,
+                produto_nome: produto,
+                quantidade: qtdNum,
+                valor_unitario: valNum,
+                valor_total: valorTotal,
+                observacao: observacao,
+                data_venda: new Date().toISOString()
+            });
+            await executeQuery(
+                `INSERT INTO sync_outbox (uuid, tabela, registro_uuid, acao, payload_json, status, criado_em) VALUES (?, 'v2_vendas', ?, 'INSERT', ?, 'PENDENTE', ?)`,
+                [uuidv4(), novoId, payload, new Date().toISOString()]
+            );
 
             Alert.alert("Sucesso", "Venda registrada com sucesso!", [
                 { text: "OK", onPress: () => navigation.goBack() }

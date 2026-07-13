@@ -93,7 +93,7 @@ export default function MonitoramentoScreen() {
             nivel_confianca: form.nivel_confianca,
             observacao_usuario: form.observacao_usuario,
             status: 'ABERTO',
-            geoloc: '-15.7801,-47.9292', // Mock GPS
+            geoloc: null, // Sem GPS no desktop
             sync_status: 1
         };
 

@@ -44,10 +44,10 @@ export default function SmartAutocomplete({
             <View style={[
                 styles.inputWrapper, 
                 { 
-                    backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : '#F3F4F6', 
+                    backgroundColor: '#F5F5F7', 
                     borderColor: isSelected 
                         ? (theme?.colors?.primary || '#10B981') 
-                        : (isDark ? 'rgba(255,255,255,0.08)' : '#E5E7EB')
+                        : '#D1D1D6'
                 }
             ]}>
                 {/* Main Tap Target */}
@@ -59,7 +59,7 @@ export default function SmartAutocomplete({
                     <Ionicons 
                         name={icon} 
                         size={18} 
-                        color={isSelected ? (theme?.colors?.primary || '#10B981') : '#9CA3AF'} 
+                        color={isSelected ? (theme?.colors?.primary || '#10B981') : '#6B7280'} 
                         style={styles.icon} 
                     />
                     <Text 
@@ -68,8 +68,8 @@ export default function SmartAutocomplete({
                             styles.displayText, 
                             { 
                                 color: isSelected 
-                                    ? (isDark ? '#FFF' : '#1F2937') 
-                                    : (isDark ? '#4B5563' : '#9CA3AF'),
+                                    ? '#1C1C1E' 
+                                    : '#8E8E93',
                                 fontWeight: isSelected ? '800' : '500'
                             }
                         ]}

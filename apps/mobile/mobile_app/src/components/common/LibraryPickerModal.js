@@ -26,7 +26,7 @@ export default function LibraryPickerModal({
     createParams = {}, // Parâmetros adicionais para a rota
 }) {
     const { theme } = useTheme();
-    const isDark = theme?.dark || false;
+    const isDark = false; // Forçado para UX no Sol (Branco/Cinza claro)
 
     // Search and data state
     const [searchQuery, setSearchQuery] = useState('');

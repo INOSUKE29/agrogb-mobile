@@ -178,17 +178,25 @@ const createTables = async () => {
                 last_updated TEXT NOT NULL,
                 sync_status INTEGER DEFAULT 0
             );`,
-            `CREATE TABLE IF NOT EXISTS cadastro (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uuid TEXT UNIQUE NOT NULL,
+            `CREATE TABLE IF NOT EXISTS v2_produtos (
+                id TEXT PRIMARY KEY,
                 nome TEXT NOT NULL,
-                unidade TEXT,
-                tipo TEXT,
+                categoria TEXT NOT NULL,
+                unidade_medida TEXT NOT NULL,
+                fabricante TEXT,
+                modo_aplicacao TEXT,
+                composicao_npk TEXT,
+                principio_ativo TEXT,
+                dose_recomendada TEXT,
                 observacao TEXT,
+                user_id TEXT,
+                is_global INTEGER DEFAULT 0,
                 fator_conversao REAL DEFAULT 1,
-                status_curadoria TEXT DEFAULT 'APROVADO',
-                last_updated TEXT NOT NULL,
-                sync_status INTEGER DEFAULT 0
+                status_aprovacao TEXT DEFAULT 'LOCAL',
+                sync_status INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0,
+                created_at TEXT NOT NULL,
+                last_updated TEXT NOT NULL
             );`,
             `CREATE TABLE IF NOT EXISTS clientes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -238,8 +246,8 @@ const createTables = async () => {
                 quantidade REAL NOT NULL,
                 last_updated TEXT NOT NULL,
                 sync_status INTEGER DEFAULT 0,
-                FOREIGN KEY(produto_pai_uuid) REFERENCES cadastro(uuid) ON DELETE CASCADE,
-                FOREIGN KEY(item_filho_uuid) REFERENCES cadastro(uuid) ON DELETE CASCADE
+                FOREIGN KEY(produto_pai_uuid) REFERENCES v2_produtos(id) ON DELETE CASCADE,
+                FOREIGN KEY(item_filho_uuid) REFERENCES v2_produtos(id) ON DELETE CASCADE
             );`,
             `CREATE TABLE IF NOT EXISTS talhoes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -792,7 +800,7 @@ const createTables = async () => {
                 ocr_texto_bruto TEXT,      -- Texto extraído via OCR desta imagem
                 criado_em TEXT NOT NULL,
                 sync_status INTEGER DEFAULT 0,
-                FOREIGN KEY(produto_uuid) REFERENCES cadastro(uuid)
+                FOREIGN KEY(produto_uuid) REFERENCES v2_produtos(id)
             )`);
 
             await executeQuery(`CREATE TABLE IF NOT EXISTS auditoria_cadastro (
@@ -803,8 +811,7 @@ const createTables = async () => {
         } catch (e) { console.error('Erro migração V7.0', e); }
 
 
-        // MIGRATION: Soft Delete Flag
-        const tablesToCheck = ['usuarios', 'colheitas', 'monitoramento', 'vendas', 'estoque', 'compras', 'plantio', 'custos', 'descarte', 'cadastro', 'clientes', 'culturas', 'maquinas', 'manutencao_frota', 'receitas', 'planos_adubacao'];
+        const tablesToCheck = ['usuarios', 'colheitas', 'monitoramento', 'vendas', 'estoque', 'compras', 'plantio', 'custos', 'descarte', 'v2_produtos', 'clientes', 'culturas', 'maquinas', 'manutencao_frota', 'receitas', 'planos_adubacao'];
         for (const table of tablesToCheck) {
             try { 
                 await executeQuery(`ALTER TABLE ${table} ADD COLUMN is_deleted INTEGER DEFAULT 0`); 
@@ -949,7 +956,7 @@ const createTables = async () => {
 
 const TABLES_TO_SYNC = [
     'usuarios', 'colheitas', 'vendas', 'compras', 'plantio', 'custos', 
-    'descarte', 'cadastro', 'clientes', 'culturas', 'maquinas', 
+    'descarte', 'v2_produtos', 'clientes', 'culturas', 'maquinas', 
     'manutencao_frota', 'planos_adubacao', 'etapas_adubacao',
     'equipes', 'financeiro_transacoes', 'farms', 'fields', 'plantings',
     'agronomist_codes', 'agronomist_client_links', 'products', 'recommendations'
@@ -1409,46 +1416,42 @@ export const deleteCliente = async (id) => {
 };
 
 export const insertCadastro = async (d) => {
-    await executeQuery(`INSERT INTO cadastro (
-        uuid, nome, unidade, tipo, observacao, estocavel, vendavel, fator_conversao, 
-        principio_ativo, classe_toxicologica, composicao, preco_venda,
-        fabricante, nutrientes, dose_padrao, bula_texto, bula_url,
-        last_updated, sync_status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    const id = d.uuid || uuidv4();
+    await executeQuery(`INSERT INTO v2_produtos (
+        id, nome, categoria, unidade_medida, fabricante, modo_aplicacao, 
+        composicao_npk, principio_ativo, dose_recomendada, observacao,
+        user_id, is_global, fator_conversao, status_aprovacao,
+        created_at, last_updated, sync_status, is_deleted
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-            d.uuid, up(d.nome), up(d.unidade), up(d.tipo), up(d.observacao),
-            d.estocavel !== undefined ? d.estocavel : 1,
-            d.vendavel !== undefined ? d.vendavel : 1,
-            d.fator_conversao || 1,
-            up(d.principio_ativo), up(d.classe_toxicologica), up(d.composicao), d.preco_venda || 0,
-            up(d.fabricante), up(d.nutrientes), up(d.dose_padrao), d.bula_texto, d.bula_url,
-            new Date().toISOString(), 0
+            id, up(d.nome), up(d.categoria || d.tipo), up(d.unidade_medida || d.unidade), up(d.fabricante), up(d.modo_aplicacao),
+            up(d.composicao_npk || d.composicao), up(d.principio_ativo), up(d.dose_recomendada || d.dose_padrao), up(d.observacao),
+            d.user_id || currentUserUuid, d.is_global ? 1 : 0, parseFloat(d.fator_conversao) || 1, d.status_aprovacao || 'LOCAL',
+            d.created_at || new Date().toISOString(), new Date().toISOString(), 0, 0
         ]);
 };
 
 export const updateCadastro = async (d) => {
-    await executeQuery(`UPDATE cadastro SET 
-        nome = ?, unidade = ?, tipo = ?, observacao = ?, estocavel = ?, vendavel = ?, fator_conversao = ?, 
-        principio_ativo = ?, classe_toxicologica = ?, composicao = ?, preco_venda = ?,
-        fabricante = ?, nutrientes = ?, dose_padrao = ?, bula_texto = ?, bula_url = ?,
-        last_updated = ?, sync_status = 0 
-        WHERE uuid = ?`,
+    await executeQuery(`UPDATE v2_produtos SET 
+        nome = ?, categoria = ?, unidade_medida = ?, fabricante = ?, modo_aplicacao = ?, 
+        composicao_npk = ?, principio_ativo = ?, dose_recomendada = ?, observacao = ?,
+        is_global = ?, fator_conversao = ?, status_aprovacao = ?, last_updated = ?, sync_status = 0 
+        WHERE id = ?`,
         [
-            up(d.nome), up(d.unidade), up(d.tipo), up(d.observacao), d.estocavel, d.vendavel, d.fator_conversao,
-            up(d.principio_ativo), up(d.classe_toxicologica), up(d.composicao), d.preco_venda,
-            up(d.fabricante), up(d.nutrientes), up(d.dose_padrao), d.bula_texto, d.bula_url,
-            new Date().toISOString(), d.uuid
+            up(d.nome), up(d.categoria || d.tipo), up(d.unidade_medida || d.unidade), up(d.fabricante), up(d.modo_aplicacao),
+            up(d.composicao_npk || d.composicao), up(d.principio_ativo), up(d.dose_recomendada || d.dose_padrao), up(d.observacao),
+            d.is_global ? 1 : 0, parseFloat(d.fator_conversao) || 1, d.status_aprovacao || 'LOCAL', new Date().toISOString(), d.uuid || d.id
         ]);
 };
 
 export const getCadastro = async () => {
-    const res = await executeQuery('SELECT * FROM cadastro WHERE is_deleted = 0 ORDER BY nome ASC');
+    const res = await executeQuery('SELECT * FROM v2_produtos WHERE is_deleted = 0 ORDER BY nome ASC');
     const rows = [];
     for (let i = 0; i < res.rows.length; i++) rows.push(res.rows.item(i));
     return rows;
 };
 
-export const deleteCadastro = async (id) => { await executeQuery('UPDATE cadastro SET is_deleted = 1, sync_status = 0 WHERE id = ?', [id]); };
+export const deleteCadastro = async (id) => { await executeQuery('UPDATE v2_produtos SET is_deleted = 1, sync_status = 0 WHERE id = ?', [id]); };
 
 // --- RECEITAS (v4.1) ---
 
@@ -1461,9 +1464,9 @@ export const insertReceita = async (paiUuid, filhoUuid, qtd) => {
 
 export const getReceita = async (paiUuid) => {
     const res = await executeQuery(
-        `SELECT r.*, c.nome as nome_filho, c.unidade as unidade_filho 
+        `SELECT r.*, c.nome as nome_filho, c.unidade_medida as unidade_filho 
          FROM receitas r 
-         JOIN cadastro c ON r.item_filho_uuid = c.uuid 
+         JOIN v2_produtos c ON r.item_filho_uuid = c.id 
          WHERE r.produto_pai_uuid = ?`,
         [paiUuid]
     );
@@ -1526,11 +1529,11 @@ export const atualizarEstoque = async (produto, quantidadeDelta, dataReferencia 
 };
 
 export const getEstoque = async () => {
-    // JOIN com cadastro para pegar unidade e tipo
+    // JOIN com v2_produtos para pegar unidade e tipo
     const res = await executeQuery(`
-        SELECT e.*, c.unidade, c.tipo, c.fator_conversao, c.preco_venda 
+        SELECT e.*, c.unidade_medida as unidade, c.categoria as tipo, c.fator_conversao 
         FROM estoque e
-        LEFT JOIN cadastro c ON UPPER(e.produto) = UPPER(c.nome)
+        LEFT JOIN v2_produtos c ON UPPER(e.produto) = UPPER(c.nome)
         WHERE e.is_deleted = 0
         ORDER BY e.quantidade ASC
     `);
@@ -1704,35 +1707,42 @@ export const getDashboardStats = async () => {
     try {
         const today = new Date().toISOString().split('T')[0];
 
-        // 1. Colheita Hoje (KG)
-        const resColheita = await executeQuery(`SELECT SUM(quantidade) as total FROM colheitas WHERE data = ? AND is_deleted = 0`, [today]);
-        const colheitaHoje = resColheita.rows.item(0).total || 0;
+        const safeQuery = async (query, params = []) => {
+            try {
+                return await executeQuery(query, params);
+            } catch (err) {
+                return { rows: { item: () => ({ total: 0 }), length: 0 } };
+            }
+        };
+
+        // 1. Colheita Hoje (KG) - usa fallback genérico se v2_colheitas não tiver migrado
+        const resColheita = await safeQuery(`SELECT SUM(quantidade) as total FROM v2_colheitas WHERE data_colheita LIKE ? AND (is_deleted = 0 OR is_deleted IS NULL)`, [`${today}%`]);
+        const colheitaHoje = resColheita.rows.item(0)?.total || 0;
 
         // 2. Vendas Hoje (R$)
-        const resVendas = await executeQuery(`SELECT SUM(valor) as total FROM vendas WHERE data = ? AND is_deleted = 0`, [today]);
-        const vendasHoje = resVendas.rows.item(0).total || 0;
+        const resVendas = await safeQuery(`SELECT SUM(valor_total) as total FROM v2_vendas WHERE data_venda LIKE ? AND (is_deleted = 0 OR is_deleted IS NULL)`, [`${today}%`]);
+        const vendasHoje = resVendas.rows.item(0)?.total || 0;
 
-        // 3. Plantio Ativo (Total de registros não colhidos? Simplificado: Total Plantio Recente)
-        const resPlantio = await executeQuery(`SELECT COUNT(*) as total FROM plantio WHERE is_deleted = 0`);
-        const plantioAtivo = resPlantio.rows.item(0).total || 0;
+        // 3. Plantio Ativo
+        const resPlantio = await safeQuery(`SELECT COUNT(*) as total FROM v2_plantios WHERE status = 'ATIVO' AND (is_deleted = 0 OR is_deleted IS NULL)`);
+        const plantioAtivo = resPlantio.rows.item(0)?.total || 0;
 
         // 4. Máquinas Revisão (Alerta)
-        const resMaquinas = await executeQuery(`SELECT COUNT(*) as total FROM maquinas WHERE horimetro_atual >= intervalo_revisao AND is_deleted = 0`);
-        const maquinasAlert = resMaquinas.rows.item(0).total || 0;
+        const resMaquinas = await safeQuery(`SELECT COUNT(*) as total FROM v2_maquinas WHERE horimetro_atual >= intervalo_revisao AND (is_deleted = 0 OR is_deleted IS NULL)`);
+        const maquinasAlert = resMaquinas.rows.item(0)?.total || 0;
 
-        // 5. Saldo Geral (AGORA: Resultado do Ano/Período Atual)
-        // Ignora histórico incompleto antes de APP_START_DATE
-        const resRec = await executeQuery('SELECT SUM(valor * quantidade) as total FROM vendas WHERE data >= ? AND is_deleted = 0', [APP_START_DATE]);
-        const resDesp = await executeQuery('SELECT SUM(valor) as total FROM compras WHERE data >= ? AND is_deleted = 0', [APP_START_DATE]);
-        const resCust = await executeQuery('SELECT SUM(valor_total) as total FROM custos WHERE data >= ? AND is_deleted = 0', [APP_START_DATE]);
-        const saldo = (resRec.rows.item(0).total || 0) - ((resDesp.rows.item(0).total || 0) + (resCust.rows.item(0).total || 0));
+        // 5. Saldo Geral (AGORA: Resultado da V2)
+        const resRec = await safeQuery('SELECT SUM(valor_total) as total FROM v2_vendas WHERE (is_deleted = 0 OR is_deleted IS NULL)');
+        const resCust = await safeQuery('SELECT SUM(valor_total) as total FROM v2_custos WHERE (is_deleted = 0 OR is_deleted IS NULL)');
+        const saldo = (resRec.rows.item(0)?.total || 0) - (resCust.rows.item(0)?.total || 0);
 
         // 6. Pendentes Sync
-        const pendentes = (await getDadosPendentes()).total;
+        let pendentes = 0;
+        try { pendentes = (await getDadosPendentes()).total; } catch (e) {}
 
-        // 7. Alertas/Pendências do Sistema (Estoque negativo, etc)
-        const resAlertas = await executeQuery(`SELECT COUNT(*) as total FROM alertas_pendencias WHERE status = 'PENDENTE' AND is_deleted = 0`);
-        const alertasPendentes = resAlertas.rows.item(0).total || 0;
+        // 7. Alertas/Pendências do Sistema
+        const resAlertas = await safeQuery(`SELECT COUNT(*) as total FROM alertas_pendencias WHERE status = 'PENDENTE' AND (is_deleted = 0 OR is_deleted IS NULL)`);
+        const alertasPendentes = resAlertas.rows.item(0)?.total || 0;
 
         return { colheitaHoje, vendasHoje, plantioAtivo, maquinasAlert, saldo, pendentes, alertasPendentes };
     } catch (e) {

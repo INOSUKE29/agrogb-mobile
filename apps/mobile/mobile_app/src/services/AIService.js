@@ -53,26 +53,26 @@ export const analyzeContent = async (sourceUri, sourceType, mediaContent = null)
 
     return new Promise((resolve) => {
         setTimeout(() => {
-            const mockAnalysis = {
-                classificacao_principal: "Fitossanidade / Doença Fúngica",
-                sintomas: "Manchas necróticas circulares com halo amarelado nas folhas baixas.",
-                causa_provavel: "Fungo Alternaria solani (Pinta Preta)",
-                tipo_problema: "DOENCA",
-                sugestao_controle: "Realizar rotação de culturas. Aplicação preventiva de fungicidas cúpricos ou à base de Mancozeb.",
-                produtos_citados: "Dithane, Recop",
-                dosagem: "200g/100L (Exemplo Referencial)",
-                forma_aplicacao: "Pulverização foliar",
-                observacoes_tecnicas: "Favorecida por alta umidade e temperaturas entre 24-29°C.",
-                fonte_informacao: "Análise IA via Base de Conhecimento (Embrapa/Manual)",
-                nivel_confianca_sugerido: "TÉCNICO"
+            const emptyAnalysis = {
+                classificacao_principal: "Serviço IA Indisponível",
+                sintomas: "-",
+                causa_provavel: "-",
+                tipo_problema: "OFFLINE",
+                sugestao_controle: "O motor de IA não está conectado. Contate o suporte técnico.",
+                produtos_citados: "-",
+                dosagem: "-",
+                forma_aplicacao: "-",
+                observacoes_tecnicas: "Regra 8: Sistema não retorna dados fantasmas.",
+                fonte_informacao: "Sistema AgroGB",
+                nivel_confianca_sugerido: "N/A"
             };
 
             resolve({
-                success: true,
-                data: mockAnalysis,
-                formattedResponse: formatUserResponse(mockAnalysis)
+                success: false,
+                data: emptyAnalysis,
+                formattedResponse: "❌ Serviço de IA indisponível no momento. Não é possível gerar análise."
             });
-        }, 2000); // 2s delay para "pensar"
+        }, 1000);
     });
 };
 
@@ -101,16 +101,16 @@ export const predictHarvest = async (plantioData) => {
     return new Promise((resolve) => {
         setTimeout(() => {
             resolve({
-                success: true,
+                success: false,
                 data: {
                     data_estimada: dataEstimada.toISOString().split('T')[0],
-                    volume_estimado_kg: (plantioData.quantidade_pes * 0.8).toFixed(2), // Mock: 800g por pé
-                    confianca: "85%",
-                    status: "DENTRO DO PRAZO",
-                    recomendacao: "Manter irrigação constante nos últimos 15 dias para maximizar volume."
+                    volume_estimado_kg: 0,
+                    confianca: "0%",
+                    status: "AGUARDANDO DADOS",
+                    recomendacao: "Sem histórico suficiente para predição. O sistema de I.A. preditivo requer conexão online ativa."
                 }
             });
-        }, 1500);
+        }, 1000);
     });
 };
 

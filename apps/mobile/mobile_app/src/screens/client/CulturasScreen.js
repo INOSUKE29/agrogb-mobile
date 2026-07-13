@@ -2,61 +2,33 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform, TextInput } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
-const MOCK_CULTURAS = [
-    {
-        id: '1',
-        nome: 'Morango',
-        area: 1.2,
-        plantio: '10/01/2026',
-        variedade: 'Albion',
-        status: 'Produção',
-        ultimaColheita: 500,
-        producaoTotal: 3200,
-        icone: 'leaf'
-    },
-    {
-        id: '2',
-        nome: 'Milho',
-        area: 8.5,
-        plantio: '05/03/2026',
-        variedade: 'Híbrido',
-        status: 'Desenvolvimento',
-        ultimaColheita: 0,
-        producaoTotal: 5000,
-        icone: 'corn'
-    },
-    {
-        id: '3',
-        nome: 'Café',
-        area: 5.0,
-        plantio: '12/08/2025',
-        variedade: 'Arábica',
-        status: 'Plantado',
-        ultimaColheita: 0,
-        producaoTotal: 1800,
-        icone: 'coffee-outline'
-    },
-    {
-        id: '4',
-        nome: 'Alface',
-        area: 1.5,
-        plantio: '20/09/2024',
-        variedade: 'Crespa',
-        status: 'Finalizada',
-        ultimaColheita: 100,
-        producaoTotal: 900,
-        icone: 'sprout'
-    }
-];
+import { getCulturas } from '../../database/database';
+import { useFocusEffect } from '@react-navigation/native';
 
 const FILTERS = ['Todas', 'Produção', 'Desenvolvimento', 'Plantado', 'Finalizadas'];
 
 export default function CulturasScreen({ navigation }) {
     const [search, setSearch] = useState('');
     const [activeFilter, setActiveFilter] = useState('Todas');
+    const [culturasData, setCulturasData] = useState([]);
+    
+    useFocusEffect(
+        React.useCallback(() => {
+            loadData();
+        }, [])
+    );
 
-    const filteredCulturas = MOCK_CULTURAS.filter(c => {
-        const matchSearch = c.nome.toLowerCase().includes(search.toLowerCase());
+    const loadData = async () => {
+        try {
+            const data = await getCulturas();
+            setCulturasData(data);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const filteredCulturas = culturasData.filter(c => {
+        const matchSearch = (c.nome || '').toLowerCase().includes(search.toLowerCase());
         const matchFilter = activeFilter === 'Todas' || (activeFilter === 'Finalizadas' ? c.status === 'Finalizada' : c.status === activeFilter);
         return matchSearch && matchFilter;
     });
@@ -96,20 +68,20 @@ export default function CulturasScreen({ navigation }) {
                         <Text style={styles.summaryLabel}>Total Culturas</Text>
                         <View style={styles.summaryValueRow}>
                             <MaterialCommunityIcons name="seed-outline" size={20} color="#F59E0B" />
-                            <Text style={styles.summaryValue}>5</Text>
+                            <Text style={styles.summaryValue}>{culturasData.length}</Text>
                         </View>
                     </View>
                     <View style={styles.summaryCard}>
                         <Text style={styles.summaryLabel}>Área Total</Text>
                         <View style={styles.summaryValueRow}>
-                            <Text style={styles.summaryValue}>25.4<Text style={styles.unitText}> ha</Text></Text>
+                            <Text style={styles.summaryValue}>{culturasData.reduce((acc, c) => acc + (parseFloat(c.area) || 0), 0).toFixed(1)}<Text style={styles.unitText}> ha</Text></Text>
                         </View>
                     </View>
                     <View style={styles.summaryCard}>
                         <Text style={styles.summaryLabel}>Em Produção</Text>
                         <View style={styles.summaryValueRow}>
                             <Ionicons name="checkmark-circle" size={18} color="#10B981" />
-                            <Text style={styles.summaryValue}>3</Text>
+                            <Text style={styles.summaryValue}>{culturasData.filter(c => c.status === 'Produção').length}</Text>
                         </View>
                     </View>
                 </View>
@@ -140,12 +112,14 @@ export default function CulturasScreen({ navigation }) {
                 </ScrollView>
 
                 {/* Lista de Culturas */}
-                {filteredCulturas.map(c => {
+                {filteredCulturas.length === 0 ? (
+                    <Text style={{ textAlign: 'center', color: '#64748B', marginTop: 30, fontSize: 16 }}>Nenhuma cultura encontrada.</Text>
+                ) : filteredCulturas.map(c => {
                     const statusStyle = getStatusStyle(c.status);
                     return (
-                        <View key={c.id} style={styles.culturaCard}>
+                        <View key={c.id || c.uuid || Math.random().toString()} style={styles.culturaCard}>
                             <View style={styles.cardHeader}>
-                                <MaterialCommunityIcons name={c.icone} size={24} color="#10B981" />
+                                <MaterialCommunityIcons name={c.icone || 'leaf'} size={24} color="#10B981" />
                                 <Text style={styles.culturaNome}>{c.nome}</Text>
                             </View>
                             

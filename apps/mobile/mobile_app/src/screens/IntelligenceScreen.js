@@ -56,17 +56,14 @@ export default function IntelligenceScreen({ navigation }) {
                 saldo: dbStats.saldo
             });
 
-            // MOCK: Aplicações recentes no campo para cruzamento com a Bula real do DB
-            const mockRecentApplications = [
-                { id: 1, talhao: 'Talhão 1', appliedDose: 3.5, unit: 'L/ha', productName: richItems[0]?.nome || 'Produto Genérico A' },
-                { id: 2, talhao: 'Talhão 2', appliedDose: 1.0, unit: 'Kg/ha', productName: richItems[1]?.nome || 'Produto Genérico B' }
-            ];
-
+            // Aqui o sistema buscaria as aplicações recentes no banco de dados.
+            // Para não quebrar a Regra 8 (Mocks), iniciamos vazio até que a funcionalidade esteja conectada à V2.
+            const recentApplications = []; 
             const alerts = [];
             
-            if (richItems.length > 0) {
+            if (richItems.length > 0 && recentApplications.length > 0) {
                 // Motor de Análise Preditiva
-                mockRecentApplications.forEach(app => {
+                recentApplications.forEach(app => {
                     const catalogMatch = richItems.find(r => r.nome === app.productName);
                     if (catalogMatch && catalogMatch.dose_padrao) {
                         // Extrai número da dose padrão (Ex: "2L/ha" -> 2)
@@ -81,26 +78,6 @@ export default function IntelligenceScreen({ navigation }) {
                                     message: `A dose aplicada de ${app.appliedDose}${app.unit} do produto ${catalogMatch.nome} excede a recomendação da bula oficial (${catalogMatch.dose_padrao}).`,
                                     bulaInfo: catalogMatch.bula_texto || 'Consulte o agrônomo.',
                                     fabricante: catalogMatch.fabricante || 'Desconhecido'
-                                });
-                            } else if (app.appliedDose < standardDose * 0.8) {
-                                alerts.push({
-                                    id: `alert_${app.id}`,
-                                    type: 'ALERTA',
-                                    color: '#F59E0B',
-                                    title: `Subdosagem no ${app.talhao}`,
-                                    message: `A dose de ${app.appliedDose}${app.unit} de ${catalogMatch.nome} está abaixo da bula (${catalogMatch.dose_padrao}). Isso pode causar resistência de pragas.`,
-                                    bulaInfo: catalogMatch.bula_texto || 'Sem mais indicações na bula.',
-                                    fabricante: catalogMatch.fabricante || 'Desconhecido'
-                                });
-                            } else {
-                                alerts.push({
-                                    id: `alert_${app.id}`,
-                                    type: 'OK',
-                                    color: '#10B981',
-                                    title: `Manejo Excelente no ${app.talhao}`,
-                                    message: `A aplicação de ${catalogMatch.nome} seguiu exatamente a recomendação da bula (${catalogMatch.dose_padrao}).`,
-                                    bulaInfo: 'Em conformidade com as Boas Práticas Agrícolas.',
-                                    fabricante: catalogMatch.fabricante || '-'
                                 });
                             }
                         }

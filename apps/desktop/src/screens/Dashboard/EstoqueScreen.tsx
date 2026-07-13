@@ -168,7 +168,7 @@ export default function EstoqueScreen() {
     );
 
     const totalItens = estoque.length;
-    const valorEstimado = estoque.reduce((acc, item) => acc + (Number(item.quantidade) * 50), 0); // Mock value
+    const valorEstimado = estoque.reduce((acc, item) => acc + (Number(item.quantidade) * (Number(item.preco_venda) || 0)), 0);
 
     return (
         <div className="space-y-8 animate-fade-in pb-12">

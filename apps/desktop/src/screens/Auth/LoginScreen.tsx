@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Mail, ArrowRight, ShieldCheck, Terminal, X, Key } from 'lucide-react';
+import { Lock, Mail, ArrowRight, ShieldCheck, Terminal, X, Key, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
+import logo from '../../assets/logo.png';
 
 export default function LoginScreen() {
     const navigate = useNavigate();
@@ -139,7 +140,7 @@ export default function LoginScreen() {
                         className="w-48 h-48 rounded-3xl flex items-center justify-center mb-8 overflow-hidden shadow-2xl shadow-emerald-500/20 dark:shadow-[0_0_80px_rgba(34,197,94,0.3)] border border-white dark:border-[var(--color-primary)]/30 cursor-pointer backdrop-blur-md bg-white dark:bg-white/5 transition-all duration-500 hover:scale-105" 
                         onClick={handleLogoClick}
                     >
-                        <img src="/logo.png" alt="AgroGB Logo" className="w-full h-full object-cover" />
+                        <img src={logo} alt="AgroGB Logo" className="w-full h-full object-cover" />
                     </div>
                     <h1 className="text-5xl font-black text-gray-900 dark:text-white mb-6 leading-tight drop-shadow-2xl">
                         AgroGB <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500 drop-shadow-none">Pro</span>
@@ -166,7 +167,7 @@ export default function LoginScreen() {
                             {/* Logo Mobile */}
                             <div className="flex lg:hidden flex-col items-center mb-10 cursor-pointer" onClick={handleLogoClick}>
                                 <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-4 overflow-hidden shadow-lg border border-[var(--color-primary)]/20">
-                                    <img src="/logo.png" alt="AgroGB Logo" className="w-full h-full object-cover" />
+                                    <img src={logo} alt="AgroGB Logo" className="w-full h-full object-cover" />
                                 </div>
                                 <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">AgroGB <span className="text-[var(--color-primary)]">Pro</span></h2>
                                 <p className="text-[var(--color-muted)] text-sm font-medium mt-1">Acesso Restrito ao Sistema</p>

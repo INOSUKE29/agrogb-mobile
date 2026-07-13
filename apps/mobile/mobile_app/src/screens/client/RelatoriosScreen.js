@@ -41,14 +41,13 @@ export default function RelatoriosScreen({ navigation }) {
                     })}
                 </ScrollView>
 
-                {/* LUCRO LÍQUIDO GIGANTE */}
+                {/* LUCRO LÍQUIDO */}
                 <View style={styles.highlightCard}>
                     <Text style={styles.highlightLabel}>LUCRO LÍQUIDO</Text>
-                    <Text style={styles.highlightValue}>R$ 42.850,00</Text>
+                    <Text style={styles.highlightValue}>R$ 0,00</Text>
                     <View style={styles.badgeRow}>
-                        <View style={styles.badgePositive}>
-                            <Ionicons name="trending-up" size={14} color="#10B981" />
-                            <Text style={styles.badgeTextPositive}>+12% vs mês passado</Text>
+                        <View style={[styles.badgePositive, { backgroundColor: 'transparent' }]}>
+                            <Text style={[styles.badgeTextPositive, { color: '#64748B' }]}>Sem dados no período</Text>
                         </View>
                     </View>
                 </View>
@@ -60,9 +59,8 @@ export default function RelatoriosScreen({ navigation }) {
                             <View style={[styles.kpiIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
                                 <Ionicons name="arrow-down" size={16} color="#10B981" />
                             </View>
-                            <Text style={[styles.kpiTrend, { color: '#10B981' }]}>+8%</Text>
                         </View>
-                        <Text style={styles.kpiValue}>R$ 65.400</Text>
+                        <Text style={styles.kpiValue}>R$ 0,00</Text>
                         <Text style={styles.kpiLabel}>Receitas</Text>
                     </View>
 
@@ -71,9 +69,8 @@ export default function RelatoriosScreen({ navigation }) {
                             <View style={[styles.kpiIconBox, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}>
                                 <Ionicons name="arrow-up" size={16} color="#EF4444" />
                             </View>
-                            <Text style={[styles.kpiTrend, { color: '#EF4444' }]}>+2%</Text>
                         </View>
-                        <Text style={styles.kpiValue}>R$ 22.550</Text>
+                        <Text style={styles.kpiValue}>R$ 0,00</Text>
                         <Text style={styles.kpiLabel}>Custos</Text>
                     </View>
                     
@@ -83,7 +80,7 @@ export default function RelatoriosScreen({ navigation }) {
                                 <Ionicons name="basket" size={16} color="#3B82F6" />
                             </View>
                         </View>
-                        <Text style={styles.kpiValue}>8.250 kg</Text>
+                        <Text style={styles.kpiValue}>0 kg</Text>
                         <Text style={styles.kpiLabel}>Produção Total</Text>
                     </View>
                     
@@ -93,57 +90,20 @@ export default function RelatoriosScreen({ navigation }) {
                                 <Ionicons name="pricetag" size={16} color="#F59E0B" />
                             </View>
                         </View>
-                        <Text style={styles.kpiValue}>R$ 7,92</Text>
+                        <Text style={styles.kpiValue}>R$ 0,00</Text>
                         <Text style={styles.kpiLabel}>Ticket Médio/kg</Text>
                     </View>
                 </View>
 
-                {/* GRÁFICO (Mock Visual de Barras) */}
                 <View style={styles.chartSection}>
                     <Text style={styles.sectionTitle}>Fluxo de Caixa (Receitas vs Custos)</Text>
-                    <View style={styles.chartMock}>
-                        {/* Linhas de grade */}
-                        <View style={styles.gridLine} />
-                        <View style={[styles.gridLine, { top: '50%' }]} />
-                        <View style={[styles.gridLine, { top: '100%' }]} />
-                        
-                        {/* Barras do Gráfico */}
-                        <View style={styles.barsContainer}>
-                            {['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'].map((s, idx) => (
-                                <View key={idx} style={styles.barGroup}>
-                                    <View style={styles.barWrapper}>
-                                        <LinearGradient colors={['#10B981', '#047857']} style={[styles.bar, { height: `${60 + Math.random() * 40}%` }]} />
-                                        <LinearGradient colors={['#EF4444', '#B91C1C']} style={[styles.bar, styles.barNegative, { height: `${20 + Math.random() * 30}%` }]} />
-                                    </View>
-                                    <Text style={styles.barLabel}>{s}</Text>
-                                </View>
-                            ))}
-                        </View>
-                    </View>
+                    <Text style={{ textAlign: 'center', color: '#64748B', marginTop: 20 }}>Gráfico indisponível por falta de dados.</Text>
                 </View>
 
                 {/* RANKING (Despesas por Categoria) */}
                 <Text style={styles.sectionTitle}>Maiores Despesas</Text>
                 <View style={styles.rankingCard}>
-                    {[
-                        { cat: 'Insumos / Fertilizantes', val: 'R$ 12.400', pct: 55, color: '#F59E0B' },
-                        { cat: 'Mão de Obra', val: 'R$ 6.000', pct: 26, color: '#3B82F6' },
-                        { cat: 'Combustível', val: 'R$ 2.800', pct: 12, color: '#EF4444' },
-                        { cat: 'Manutenção', val: 'R$ 1.350', pct: 7, color: '#8B5CF6' }
-                    ].map((item, idx) => (
-                        <View key={idx} style={styles.rankingRow}>
-                            <View style={styles.rankingInfo}>
-                                <View style={[styles.colorDot, { backgroundColor: item.color }]} />
-                                <Text style={styles.rankingName}>{item.cat}</Text>
-                            </View>
-                            <View style={styles.rankingProgressRow}>
-                                <View style={styles.progressBarBg}>
-                                    <View style={[styles.progressBarFill, { width: `${item.pct}%`, backgroundColor: item.color }]} />
-                                </View>
-                                <Text style={styles.rankingVal}>{item.val}</Text>
-                            </View>
-                        </View>
-                    ))}
+                    <Text style={{ textAlign: 'center', color: '#64748B', paddingVertical: 10 }}>Nenhuma despesa registrada no período.</Text>
                 </View>
 
             </ScrollView>

@@ -152,20 +152,9 @@ export const AuthService = {
      * Mock de Login via Biometria para testes
      */
     loginWithBiometrics: async () => {
-        try {
-            const sessionObj = {
-                id: 'mock-bio-id',
-                email: 'produtor@agrogb.com',
-                usuario: 'produtor',
-                role: 'CLIENTE',
-                nome_completo: 'Produtor Biometria',
-                token: 'mock-token'
-            };
-            await AsyncStorage.setItem('user_session', JSON.stringify(sessionObj));
-            return { success: true, session: sessionObj };
-        } catch (error) {
-            return { success: false, message: 'Erro na biometria' };
-        }
+        // Biometria real deve ser implementada com LocalAuthentication.
+        // Removido mock de usuário para respeitar a Regra 8.
+        return { success: false, message: 'Autenticação biométrica não configurada.' };
     },
 
     /**
