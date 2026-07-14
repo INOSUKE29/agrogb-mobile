@@ -79,7 +79,7 @@ export default function HomeAgricultorScreen({ navigation }) {
 
     const screenWidth = Dimensions.get('window').width;
     const numColumns = 3;
-    const cardWidth = (screenWidth - 40 - ((numColumns - 1) * 12)) / numColumns; 
+    const cardWidth = (screenWidth - 40 - ((numColumns - 1) * 16)) / numColumns;
 
     const formatBRL = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 

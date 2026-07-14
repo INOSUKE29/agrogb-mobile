@@ -9,7 +9,8 @@ import SmartEntitySelector from '../components/common/SmartEntitySelector';
 import { ClientLibraryService, ProductLibraryService } from '../services/LibraryServices';
 
 export default function VendaFormScreen({ navigation }) {
-    const { colors } = useTheme();
+    const { theme } = useTheme();
+    const colors = theme?.colors || {};
     const [cliente, setCliente] = useState('');
     const [produto, setProduto] = useState('');
     const [quantidade, setQuantidade] = useState('');

@@ -251,7 +251,7 @@ export default function CadastroScreen({ navigation }) {
                             </TouchableOpacity>
                         </View>
 
-                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 50 }}>
+                        <ScrollView showsVerticalScrollIndicator={true} contentContainerStyle={{ paddingBottom: 40 }} style={{ flex: 1 }}>
                             <Text style={styles.inputLabel}>CATEGORIA / TIPO</Text>
                             <TouchableOpacity 
                                 style={[styles.categorySelector, { borderColor: CATEGORIES[tipo]?.color || '#E5E7EB' }]} 
@@ -617,7 +617,7 @@ const styles = StyleSheet.create({
     empty: { textAlign: 'center', marginTop: 50, color: '#9CA3AF', fontWeight: 'bold' },
     fab: { position: 'absolute', bottom: 30, right: 30, width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', elevation: 10 },
     overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30, height: '90%', padding: 25 },
+    modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30, flex: 1, maxHeight: '90%', padding: 25 },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
     modalTitle: { fontSize: 16, fontWeight: '900', color: '#1F2937', letterSpacing: 1 },
     closeBtn: { backgroundColor: '#F3F4F6', padding: 8, borderRadius: 12 },
@@ -642,11 +642,11 @@ const styles = StyleSheet.create({
     toggleActive: { backgroundColor: '#10B981' },
     toggleText: { fontSize: 11, fontWeight: '900', color: '#6B7280' },
     actionRow: { flexDirection: 'row', marginTop: 30 },
-    overlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 25 },
-    gridModal: { padding: 25 },
+    overlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 10 },
+    gridModal: { padding: 15 },
     modalTitleCenter: { fontSize: 16, fontWeight: '900', color: '#1F2937', textAlign: 'center', marginBottom: 25, letterSpacing: 1 },
     catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 25, justifyContent: 'center' },
-    gridItem: { width: (width - 110) / 3, backgroundColor: '#F9FAFB', padding: 10, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#F3F4F6' },
+    gridItem: { width: (width - 70) / 3, backgroundColor: '#F9FAFB', padding: 10, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#F3F4F6' },
     gridIcon: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
     gridLabel: { fontSize: 10, fontWeight: '800', color: '#4B5563', textAlign: 'center' },
     stdModal: { padding: 25, maxHeight: '80%' },
