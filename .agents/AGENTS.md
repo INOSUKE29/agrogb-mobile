@@ -125,3 +125,6 @@ ull no objeto de dados e preenchem o objeto error. Se o erro for ignorado, a int
 **Nunca confie cegamente em mensagens de queda de serviço no GitHub Actions (Ex: 'Cache Error 503' ou 'Services aren't available').** Frequentemente, pequenos erros de sintaxe (como uma chave } extra num StyleSheet de uma tela recém-atualizada) quebram a compilação (Metro Bundler) prematuramente. A queda é tão inesperada que corrompe o salvamento do cache da nuvem, fazendo com que o log exiba a falha do cache em grande destaque e oculte o verdadeiro SyntaxError nas linhas anteriores.
 * **Prevenção:** Sempre faça a busca pelas palavras SyntaxError ou Unexpected token no log bruto antes de assumir que a infraestrutura da nuvem caiu.
 * Sempre valide o fechamento de parênteses e chaves ao aplicar o Design Premium em telas.
+
+## Regra 21 - Formulários em Modais (Scroll & Dimensionamento)
+**NUNCA** deixe formulários grandes (ou modais de preenchimento) sem um ScrollView. Em modais (<Modal>), o ScrollView deve ter lex: 1 e o container do modal (View) deve ter lex: 1 e maxHeight: '90%' para garantir que a rolagem funcione e o app não trave por vazamento de layout. Falhas nisso causam o erro 'tela sem rolagem travando app'.
