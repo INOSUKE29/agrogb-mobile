@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SectionList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, ScrollView, Dimensions, FlatList , SafeAreaView, KeyboardAvoidingView, Platform} from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, SectionList, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, ScrollView, Dimensions, FlatList, SafeAreaView, KeyboardAvoidingView, Platform, Animated, PanResponder } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 import { insertCadastro, getCadastro, deleteCadastro, updateCadastro, insertReceita, getReceita, deleteItemReceita } from '../database/database';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -51,6 +51,77 @@ const MARKET_STANDARDS = [
     { label: 'Unitário', unit: 'UNI', weight: '1' }
 ];
 
+
+// --- BOTTOM SHEET COMPONENT ---
+const BottomSheet = ({ visible, onClose, children, title }) => {
+    const { theme } = useTheme();
+    const isDark = theme?.theme_mode === 'dark';
+    const bgColor = isDark ? '#111827' : '#FFFFFF';
+    const textColor = isDark ? '#F9FAFB' : '#1F2937';
+    
+    const screenHeight = Dimensions.get('window').height;
+    const [animVisible, setAnimVisible] = useState(visible);
+    const panY = useRef(new Animated.Value(screenHeight)).current;
+
+    useEffect(() => {
+        if (visible) {
+            setAnimVisible(true);
+            Animated.spring(panY, {
+                toValue: 0,
+                useNativeDriver: true,
+                bounciness: 4,
+            }).start();
+        } else {
+            Animated.timing(panY, {
+                toValue: screenHeight,
+                duration: 300,
+                useNativeDriver: true,
+            }).start(() => setAnimVisible(false));
+        }
+    }, [visible]);
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (evt, gestureState) => gestureState.dy > 5,
+            onPanResponderMove: (evt, gestureState) => {
+                if (gestureState.dy > 0) {
+                    panY.setValue(gestureState.dy);
+                }
+            },
+            onPanResponderRelease: (evt, gestureState) => {
+                if (gestureState.dy > 100 || gestureState.vy > 0.5) {
+                    onClose();
+                } else {
+                    Animated.spring(panY, {
+                        toValue: 0,
+                        useNativeDriver: true,
+                        bounciness: 4,
+                    }).start();
+                }
+            },
+        })
+    ).current;
+
+    if (!animVisible) return null;
+
+    return (
+        <Modal transparent visible={animVisible} animationType="fade" onRequestClose={onClose}>
+            <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+                <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
+                <Animated.View style={[{ backgroundColor: bgColor, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: Platform.OS === 'ios' ? 30 : 10, maxHeight: screenHeight * 0.85 }, { transform: [{ translateY: panY }] }]}>
+                    <View {...panResponder.panHandlers} style={{ height: 35, justifyContent: 'center', alignItems: 'center', width: '100%' }}>
+                        <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#D1D5DB' }} />
+                    </View>
+                    <View style={{ paddingHorizontal: 15, paddingBottom: 20 }}>
+                        {title && <Text style={{ fontSize: 16, fontWeight: '900', color: textColor, textAlign: 'center', marginBottom: 25, letterSpacing: 1 }}>{title}</Text>}
+                        {children}
+                    </View>
+                </Animated.View>
+            </View>
+        </Modal>
+    );
+};
 export default function CadastroScreen({ navigation }) {
     const { theme } = useTheme();
     const isDark = theme?.theme_mode === 'dark';
@@ -374,12 +445,11 @@ export default function CadastroScreen({ navigation }) {
                 </View>
             </Modal>
 
-            {/* MODAL CATEGORIAS GRID */}
-            <Modal visible={categoryModalVisible} transparent animationType="fade">
-                <View style={styles.overlayCenter}>
-                    <Card style={styles.gridModal}>
-                        <Text style={styles.modalTitleCenter}>CATEGORIAS</Text>
-                        <View style={styles.catGrid}>
+            {/* MODAL CATEGORIAS GRID (BOTTOM SHEET) */}
+            <BottomSheet visible={categoryModalVisible} onClose={() => setCategoryModalVisible(false)} title="CATEGORIAS">
+                <ScrollView showsVerticalScrollIndicator={false} bounces={true} contentContainerStyle={{ paddingBottom: 20 }}>
+                    <View style={styles.catGrid}>
+
                             {Object.keys(CATEGORIES).filter(key => !['DEFENSIVO', 'FERTILIZANTE', 'NUTRIENTE'].includes(key)).map(key => {
                                 const cat = CATEGORIES[key];
                                 return (
@@ -397,11 +467,11 @@ export default function CadastroScreen({ navigation }) {
                                 </View>
                                 <Text style={[styles.gridLabel, { color: '#9CA3AF' }]}>Solicitar Categoria</Text>
                             </TouchableOpacity>
-                        </View>
-                        <AgroButton title="CANCELAR" variant="secondary" onPress={() => setCategoryModalVisible(false)} />
-                    </Card>
-                </View>
-            </Modal>
+                        
+                    </View>
+                    <AgroButton title="CANCELAR" variant="secondary" onPress={() => setCategoryModalVisible(false)} />
+                </ScrollView>
+            </BottomSheet>
 
             {/* MODAL PADRÕES */}
             <Modal visible={assistantVisible} transparent animationType="fade">
