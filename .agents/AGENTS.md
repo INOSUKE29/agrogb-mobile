@@ -128,3 +128,6 @@ ull no objeto de dados e preenchem o objeto error. Se o erro for ignorado, a int
 
 ## Regra 21 - Formulários em Modais (Scroll & Dimensionamento)
 **NUNCA** deixe formulários grandes (ou modais de preenchimento) sem um ScrollView. Em modais (<Modal>), o ScrollView deve ter lex: 1 e o container do modal (View) deve ter lex: 1 e maxHeight: '90%' para garantir que a rolagem funcione e o app não trave por vazamento de layout. Falhas nisso causam o erro 'tela sem rolagem travando app'.
+
+## Regra 22 - UI/UX Premium com Zero Dependências Nativas
+**SEMPRE** prefira criar componentes animados fluídos (ex: BottomSheets com pull-to-dismiss) usando o motor nativo do React Native (\Animated\ + \PanResponder\) ao invés de injetar bibliotecas de terceiros pesadas que exijam \eact-native-reanimated\ ou manipulação em arquivos do Android/iOS. Isso entrega a mesma fluidez premium (nível app de primeira linha) e zero risco de corrupção na esteira de build do DevOps.
