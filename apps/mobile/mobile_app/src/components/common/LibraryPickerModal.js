@@ -297,7 +297,7 @@ export default function LibraryPickerModal({
                                 <View style={{ marginTop: 10 }}>
                                     <View style={styles.sectionHeader}>
                                         <Ionicons name="list" size={14} color="#9CA3AF" />
-                                        <Text style={[styles.sectionLabel, { color: isDark ? '#9CA3AF' : '#4B5563' }]}>RESTANTE DO CATÁLOGO</Text>
+                                        <Text style={[styles.sectionLabel, { color: isDark ? '#9CA3AF' : '#4B5563' }]}>RESTANTE DO CADASTRO</Text>
                                     </View>
                                     {results.slice(0, 10).map((item) => {
                                         const name = item.nome || item.name || item.produto || item.item || 'NÃO IDENTIFICADO';

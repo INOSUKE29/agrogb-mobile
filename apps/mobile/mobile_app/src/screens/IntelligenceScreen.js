@@ -149,7 +149,7 @@ export default function IntelligenceScreen({ navigation }) {
             <View style={{ marginBottom: 20 }}>
                 <Text style={{ fontSize: 13, fontWeight: '800', color: textColor, marginBottom: 5 }}>Auditoria Inteligente de Manejo</Text>
                 <Text style={{ fontSize: 11, color: textMutedColor, lineHeight: 16 }}>
-                    A Inteligência Artificial cruza os dados do seu campo com as Bulas e Fichas Técnicas recém cadastradas no seu Catálogo Rico.
+                    A Inteligência Artificial cruza os dados do seu campo com as Bulas e Fichas Técnicas recém cadastradas no seu Cadastro Rico.
                 </Text>
             </View>
 
@@ -162,7 +162,7 @@ export default function IntelligenceScreen({ navigation }) {
                     <Text style={{ marginTop: 5, fontSize: 11, color: textMutedColor, textAlign: 'center' }}>
                         Cadastre produtos no "Estoque" informando a Ficha Técnica (Dose e Bula) para que a IA possa auditar seus manejos.
                     </Text>
-                    <AgroButton title="Ir para Catálogo" variant="secondary" style={{ marginTop: 15 }} onPress={() => navigation.navigate('Cadastro')} />
+                    <AgroButton title="Ir para Cadastro" variant="secondary" style={{ marginTop: 15 }} onPress={() => navigation.navigate('Cadastro')} />
                 </Card>
             ) : (
                 auditAlerts.map(alert => (

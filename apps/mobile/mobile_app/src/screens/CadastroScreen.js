@@ -152,7 +152,7 @@ export default function CadastroScreen({ navigation }) {
     const [precoVenda, setPrecoVenda] = useState('');
     const [precoUnitario, setPrecoUnitario] = useState('');
 
-    // V8.0 Catálogo Rico
+    // V8.0 Cadastro Rico
     const [fabricante, setFabricante] = useState('');
     const [nutrientes, setNutrientes] = useState('');
     const [dosePadrao, setDosePadrao] = useState('');
@@ -226,7 +226,7 @@ export default function CadastroScreen({ navigation }) {
     };
 
     const handleDelete = (id) => {
-        Alert.alert('Excluir', 'Remover item permanentemente do catálogo?', [
+        Alert.alert('Excluir', 'Remover item permanentemente do cadastro?', [
             { text: 'Não', style: 'cancel' }, 
             { text: 'Sim, Excluir', style: 'destructive', onPress: async () => { await deleteCadastro(id); loadData(); } }
         ]);
@@ -253,7 +253,7 @@ export default function CadastroScreen({ navigation }) {
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Ionicons name="arrow-back" size={24} color="#FFF" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>CATÁLOGO RURAL</Text>
+                    <Text style={styles.headerTitle}>CADASTRO RURAL</Text>
                     <TouchableOpacity 
                         style={styles.scanBtn}
                         onPress={() => navigation.navigate('Scanner', {
@@ -304,7 +304,7 @@ export default function CadastroScreen({ navigation }) {
                             </View>
                         </TouchableOpacity>
                     )}
-                    ListEmptyComponent={<Text style={styles.empty}>Nenhum item cadastrado no catálogo.</Text>}
+                    ListEmptyComponent={<Text style={styles.empty}>Nenhum item cadastrado no cadastro.</Text>}
                 />}
 
             <TouchableOpacity style={[styles.fab, { backgroundColor: theme?.colors?.primary || '#10B981' }]} onPress={() => { resetForm(); setModalVisible(true); }}>

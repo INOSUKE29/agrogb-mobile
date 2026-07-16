@@ -120,7 +120,7 @@ export default function AplicacoesScreen({ navigation, isTabbed }) {
                         onPress={() => setModalProduto(true)}
                     >
                         <Text style={[styles.selectText, { color: form.produto_nome ? textColor : textMutedColor }]}>
-                            {form.produto_nome || "SELECIONAR PRODUTO (CATÁLOGO)..."}
+                            {form.produto_nome || "SELECIONAR PRODUTO (CADASTRO)..."}
                         </Text>
                         <Ionicons name="flask-outline" size={20} color={textMutedColor} />
                     </TouchableOpacity>
@@ -192,7 +192,7 @@ export default function AplicacoesScreen({ navigation, isTabbed }) {
             <Modal visible={modalProduto} animationType="fade" transparent>
                 <View style={styles.overlay}>
                     <View style={[styles.modal, { backgroundColor: cardBg }]}>
-                        <Text style={[styles.modalTitle, { color: textColor }]}>CATÁLOGO DE PRODUTOS</Text>
+                        <Text style={[styles.modalTitle, { color: textColor }]}>CADASTRO DE PRODUTOS</Text>
                         <FlatList
                             data={produtosCatalogo}
                             keyExtractor={i => i.uuid.toString()}

@@ -123,8 +123,8 @@ export default function ComprasScreen({ navigation }) {
                 // Checar se produto está no catálogo
                 const resCat = await executeQuery('SELECT uuid FROM cadastro WHERE nome = ?', [dados.item]);
                 if (resCat.rows.length === 0) {
-                    await inserirAlerta('CADASTRO_FALTANTE', `O insumo "${dados.item}" foi comprado, mas sua ficha técnica não existe no Catálogo. É necessário cadastrá-lo.`);
-                    Alert.alert('✅ Compra Registrada', `A entrada foi lançada no Estoque e no Contas a Pagar. O produto "${dados.item}" não foi encontrado no seu catálogo de insumos. Lembre-se de atualizá-lo depois.`);
+                    await inserirAlerta('CADASTRO_FALTANTE', `O insumo "${dados.item}" foi comprado, mas sua ficha técnica não existe no Cadastro. É necessário cadastrá-lo.`);
+                    Alert.alert('✅ Compra Registrada', `A entrada foi lançada no Estoque e no Contas a Pagar. O produto "${dados.item}" não foi encontrado no seu cadastro de insumos. Lembre-se de atualizá-lo depois.`);
                 } else {
                     Alert.alert('✅ Sucesso', 'Entrada registrada e gerada no Contas a Pagar.');
                 }
@@ -201,7 +201,7 @@ export default function ComprasScreen({ navigation }) {
                             value={item}
                             onSelect={setItem}
                             service={ProductLibraryService}
-                            placeholder="PESQUISAR CATÁLOGO..."
+                            placeholder="PESQUISAR CADASTRO..."
                             icon="leaf-outline"
                             createRoute="ProdutoFormScreen"
                         />

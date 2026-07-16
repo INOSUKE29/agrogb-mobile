@@ -20,7 +20,7 @@ const AGRICULTOR_ATALHOS = [
     { id: "clientes", label: "Clientes", icon: "people", screen: "Clientes", color: "#EC4899" },
     { id: "estoque", label: "Estoque", icon: "layers", screen: "Estoque", color: "#8B5CF6" },
     { id: "add_encomenda", label: "Encomenda", icon: "cube", screen: "NovaEncomenda", color: "#3B82F6" },
-    { id: "catalogo", label: "Catálogo", icon: "library", screen: "Cadastro", color: "#06B6D4" },
+    { id: "catalogo", label: "Cadastro", icon: "library", screen: "Cadastro", color: "#06B6D4" },
 ];
 
 export default function HomeAgricultorScreen({ navigation }) {

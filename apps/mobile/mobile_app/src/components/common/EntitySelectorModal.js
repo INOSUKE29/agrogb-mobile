@@ -5,6 +5,7 @@ import { StyleSheet,  View, Text, Modal, TouchableOpacity,
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../styles/globalStyles';
 import Button from './Button';
+import QuickAddModal from './QuickAddModal';
 
 export default function EntitySelectorModal({
     visible, onClose, onSelect, service,
@@ -17,6 +18,8 @@ export default function EntitySelectorModal({
     const [loading, setLoading] = useState(false);
     const [searchMode, setSearchMode] = useState('local'); // 'local' | 'global'
     const [importing, setImporting] = useState(null);
+    const [quickAddVisible, setQuickAddVisible] = useState(false);
+    const [quickAddLoading, setQuickAddLoading] = useState(false);
 
     useEffect(() => {
         if (visible) {
@@ -75,6 +78,27 @@ export default function EntitySelectorModal({
     const handleSelectItem = (item) => {
         onSelect(item);
         onClose();
+    };
+
+    
+    const handleQuickAddSave = async (name, category) => {
+        if (!service || !service.quickAdd) {
+            // Fallback to old behavior if no quickAdd is defined
+            handleCreateNew();
+            return;
+        }
+        setQuickAddLoading(true);
+        try {
+            const newItem = await service.quickAdd(name, category || filterType);
+            onSelect(newItem);
+            setQuickAddVisible(false);
+            onClose();
+        } catch (e) {
+            console.error('Erro no quick add:', e);
+            alert('Não foi possível realizar o cadastro rápido.');
+        } finally {
+            setQuickAddLoading(false);
+        }
     };
 
     const handleCreateNew = () => {
@@ -150,12 +174,12 @@ export default function EntitySelectorModal({
                             )}
                         </View>
                         
-                        {createRoute && (
-                            <TouchableOpacity style={styles.quickAddSwitch} onPress={handleCreateNew}>
-                                <Ionicons name="add" size={18} color={colors.text} />
-                                <Text style={styles.quickAddText}>NOVO</Text>
-                            </TouchableOpacity>
-                        )}
+                        
+                        <TouchableOpacity style={styles.quickAddSwitch} onPress={() => setQuickAddVisible(true)}>
+                            <Ionicons name="add" size={18} color="#FFF" />
+                            <Text style={[styles.quickAddText, {color: '#FFF'}]}>NOVO CADASTRO</Text>
+                        </TouchableOpacity>
+    
                     </View>
 
                     {loading && !importing ? (
@@ -204,6 +228,14 @@ export default function EntitySelectorModal({
                         />
                     )}
                 </View>
+            
+                <QuickAddModal
+                    visible={quickAddVisible}
+                    onClose={() => setQuickAddVisible(false)}
+                    onSave={handleQuickAddSave}
+                    loading={quickAddLoading}
+                    hideCategory={!(service && service.name === 'ProductLibraryService')}
+                />
             </KeyboardAvoidingView>
         </Modal>
     );
